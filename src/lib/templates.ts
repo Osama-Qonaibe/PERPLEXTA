@@ -1,0 +1,318 @@
+
+const header = (lang: string) => `
+  <div style="text-align: center; padding: 50px 0; background-color: #ffffff; border-bottom: 1px solid #f1f5f9;">
+    <h1 style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 300; letter-spacing: 8px; color: #0f172a; text-transform: uppercase;">PERPLEXTA</h1>
+    <p style="margin: 10px 0 0 0; font-size: 10px; color: #94a3b8; letter-spacing: 3px; text-transform: uppercase;">Advanced Analytics Terminal</p>
+  </div>
+`;
+
+const footer = (lang: string) => {
+  const isAr = lang === 'ar';
+  return `
+    <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #f1f5f9; text-align: ${isAr ? 'right' : 'left'};">
+      <p style="margin: 0; color: #0f172a; font-family: ${isAr ? 'Tajawal, Arial' : 'Arial'}; font-weight: 700; font-size: 15px;">
+        ${isAr ? 'فريق عمل بيربليكستا' : 'Perplexta Operations Team'}
+      </p>
+      
+      <div style="margin-top: 15px; font-family: ${isAr ? 'Tajawal, Arial' : 'Arial'}; font-size: 13px; color: #64748b; line-height: 1.8;">
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'الدعم الفني:' : 'Support:'}</strong> <a href="mailto:support@perplexta.com" style="color: #10b981; text-decoration: none;">support@perplexta.com</a></div>
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'المنصة الرئيسية:' : 'Primary Domain:'}</strong> <a href="https://perplexta.com" style="color: #10b981; text-decoration: none;">perplexta.com</a></div>
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'بوابة الشركة:' : 'Corporate Gateway:'}</strong> <a href="https://perplexta.uk" style="color: #10b981; text-decoration: none;">perplexta.uk</a></div>
+      </div>
+      
+      <div style="margin-top: 40px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+        <div style="display: table; margin: 0 auto; border-collapse: separate; border-spacing: 12px 0;">
+          <div style="display: table-cell;">
+            <a href="{{baseUrl}}/terms" style="color: #94a3b8; text-decoration: none; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+              ${isAr ? 'شروط الاستخدام' : 'Terms of Use'}
+            </a>
+          </div>
+          <div style="display: table-cell; border-left: 1px solid #e2e8f0; height: 12px;"></div>
+          <div style="display: table-cell;">
+            <a href="{{baseUrl}}/privacy" style="color: #94a3b8; text-decoration: none; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+              ${isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}
+            </a>
+          </div>
+          <div style="display: table-cell; border-left: 1px solid #e2e8f0; height: 12px;"></div>
+          <div style="display: table-cell;">
+            <a href="{{baseUrl}}/about" style="color: #94a3b8; text-decoration: none; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+              ${isAr ? 'عن المنصة' : 'About Platform'}
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <p style="margin-top: 30px; text-align: center; color: #cbd5e1; font-family: Arial; font-size: 9px; letter-spacing: 2px; text-transform: uppercase;">
+        Confidential System Notification | © 2026 PERPLEXTA
+      </p>
+    </div>
+  `;
+};
+
+const wrapper = (content: string, lang: string) => `
+  <div dir="${lang === 'ar' ? 'rtl' : 'ltr'}" style="background-color: #fcfcfc; padding: 40px 20px; font-family: ${lang === 'ar' ? "'Tajawal', Arial, sans-serif" : "'Helvetica Neue', Helvetica, Arial, sans-serif"};">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+      ${header(lang)}
+      <div style="padding: 50px 60px;">
+        ${content}
+        ${footer(lang)}
+      </div>
+    </div>
+  </div>
+`;
+
+export const systemTemplates = [
+  { 
+    name: 'welcome_email', 
+    subject_en: 'Perplexta System: Official Identity Provisioning', 
+    subject_ar: 'نظام بيربليكستا: تفعيل الهوية الرسمية', 
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Identity Authentication Required</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Verification sequence initiated for: <strong>{{userName}}</strong></p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">Your registration on the Perplexta Advanced Analytics Terminal has been recorded. To authorize your access and enable system features, please proceed with the mandatory email confirmation protocol.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Confirm Identity</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; line-height: 1.6;">Note: This link will expire after 24 hours of generation.</p>
+    `, 'en'), 
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">مطلوب توثيق الهوية</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم بدء سلسلة التحقق للمعرّف: <strong>{{userName}}</strong></p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">لقد تم تسجيل بياناتكم في نظام بيربليكستا للتحليلات المتقدمة. لتفعيل حق الوصول وتمكين ميزات النظام، يرجى المتابعة لإتمام بروتوكول تأكيد البريد الإلكتروني الإلزامي.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block;">تأكيد الهوية الرقمية</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">تنبيه: تنتهي صلاحية هذا الرابط بعد مرور 24 ساعة من صدوره.</p>
+    `, 'ar') 
+  },
+  { 
+    name: 'password_reset', 
+    subject_en: 'Instruction: Security Access Override - Perplexta', 
+    subject_ar: 'إجراء: تجاوز أمني لمفتاح الوصول - بيربليكستا', 
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Access Key Re-Authorization</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">A request has been logged to reset the access credentials associated with identity <strong>{{userName}}</strong>.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">For system integrity, this authorization link is dynamically generated and must be executed within the next 60 minutes.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Execute Reset</a>
+      </div>
+      <p style="color: #ef4444; font-size: 12px; font-weight: 600;">IF YOU DID NOT REQUEST THIS: Notify Perplexta Security immediately.</p>
+    `, 'en'), 
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">إعادة تفويض مفتاح الوصول</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم تسجيل طلب لإعادة تعيين بيانات الوصول المرتبطة بالمعرّف <strong>{{userName}}</strong>.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">لضمان سلامة النظام، تم إنشاء رابط التفويض هذا بشكل ديناميكي ويجب استخدامه خلال نافذة زمنية مدتها 60 دقيقة فقط.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block;">تنفيذ إعادة التعيين</a>
+      </div>
+      <p style="color: #ef4444; font-size: 13px; font-weight: 700;">في حال لم تطلب هذا الإجراء: يرجى إبلاغ أمن بيربليكستا فوراً.</p>
+    `, 'ar') 
+  },
+  {
+    name: 'security_alert_login',
+    subject_en: 'Security Alert: New Authorized Entry Detected',
+    subject_ar: 'تنبيه أمني: رصد دخول جديد للنظام',
+    body_en: wrapper(`
+      <h3 style="color: #0f172a; font-size: 18px; font-weight: 600; margin-bottom: 20px;">System Entry Logged</h3>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A new terminal session has been established for account <strong>{{userName}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Network Source:</strong> <span style="color: #0f172a;">{{ipAddress}}</span></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Device Interface:</strong> <span style="color: #0f172a;">{{deviceInfo}}</span></div>
+        <div style="font-size: 13px; color: #64748b;"><strong>Execution Time:</strong> <span style="color: #0f172a;">{{time}}</span></div>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px;">Standard security monitoring active. This is an automated log entry.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h3 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-bottom: 20px;">تم تسجيل دخول للنظام</h3>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم إنشاء جلسة عمل جديدة للمعرّف <strong>{{userName}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>المصدر الرقمي:</strong> <span style="color: #0f172a;">{{ipAddress}}</span></div>
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>واجهة الجهاز:</strong> <span style="color: #0f172a;">{{deviceInfo}}</span></div>
+        <div style="font-size: 14px; color: #64748b;"><strong>توقيت التنفيذ:</strong> <span style="color: #0f172a;">{{time}}</span></div>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px;">مراقبة أمنية قياسية مفعلة. هذا السجل يتم إنشاؤه تلقائياً.</p>
+    `, 'ar')
+  },
+  {
+    name: 'subscription_activated',
+    subject_en: 'Logistics Update: Subscription Provisioned',
+    subject_ar: 'تحديث لوجستي: تم تخصيص الاشتراك',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Provisioning Successful</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Operations have successfully provisioned the <strong>[{{planName}}]</strong> tier to your identity profile.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Your premium access is now fully authorized for the current billing term.</p>
+      <div style="background-color: #f0fdf4; padding: 20px; border: 1px solid #dcfce7; color: #166534; font-size: 14px; font-weight: 700; text-align: center; margin: 30px 0; border-radius: 2px;">
+        TERM EXPIRY: {{expiryDate}}
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">اكتمل التخصيص بنجاح</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">نجح قسم العمليات في تخصيص فئة <strong>[{{planName}}]</strong> لملفكم الرقمي بنجاح.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">حق الوصول الخاص بكم مفعل الآن بالكامل للفترة الحالية.</p>
+      <div style="background-color: #f0fdf4; padding: 20px; border: 1px solid #dcfce7; color: #166534; font-size: 16px; font-weight: 700; text-align: center; margin: 30px 0; border-radius: 2px;">
+        انتهاء الصلاحية: {{expiryDate}}
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'subscription_expiring',
+    subject_en: 'Resource Notice: Access Term Concluding Soon',
+    subject_ar: 'إشعار بالموارد: اقتراب انتهاء فترة الوصول',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Subscription Maturation</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">This is a logistical notice that your <strong>[{{planName}}]</strong> access term will conclude on: <strong>{{expiryDate}}</strong>.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 30px;">To maintain uninterrupted terminal availability and preserve your data integrity, please initiate a renewal protocol.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{baseUrl}}/subscription" style="border: 1px solid #0f172a; color: #0f172a; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Renew Access</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">نضوج الاشتراك</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">نحيطكم علماً بأن فترة وصولكم من فئة <strong>[{{planName}}]</strong> ستنتهي بتاريخ: <strong>{{expiryDate}}</strong>.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">لضمان استمرارية توافر النظام والحفاظ على سلامة بياناتكم، يرجى بدء بروتوكول التجديد.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{baseUrl}}/subscription" style="border: 1px solid #0f172a; color: #0f172a; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">تجديد الوصول</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'quota_warning',
+    subject_en: 'System Alert: Resource Consumption Threshold',
+    subject_ar: 'تنبيه النظام: عتبة استهلاك الموارد',
+    body_en: wrapper(`
+      <h3 style="color: #ef4444; font-size: 18px; font-weight: 600;">Bandwidth Usage Critical</h3>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Identity has consumed <strong>{{usagePercentage}}%</strong> of the assigned {{scope}} quota for: <strong>{{toolId}}</strong>.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Approaching threshold will result in temporary throttling of the specific functional route.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h3 style="color: #ef4444; font-size: 20px; font-weight: 700;">استهلاك حرج للنطاق الترددي</h3>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">استهلكت هويتكم ما يعادل <strong>{{usagePercentage}}%</strong> من الحصة الـ{{scope}} المخصصة لـ: <strong>{{toolId}}</strong>.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">الاقتراب من العتبة القصوى سيؤدي إلى تحديد مؤقت لمسار الوظيفة المحدد.</p>
+    `, 'ar')
+  },
+  {
+    name: 'withdrawal_requested',
+    subject_en: 'Financial Record: Capital Export Initiated',
+    subject_ar: 'سجل مالي: تم بدء تصدير رأس المال',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Export Acknowledged</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A capital export request of <strong>{{amount}}</strong> has been registered in the Perplexta Terminal.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Audit Reference ID:</span><br>
+        <code style="color: #10b981; font-size: 15px; font-weight: 700;">{{referenceId}}</code>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">Our auditing team is currently verifying the ledger integrity for this transaction.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم استلام طلب التصدير</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل طلب تصدير رأس مال بمبلغ <strong>{{amount}}</strong> في نظام بيربليكستا.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0; text-align: center;">
+        <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase; font-weight: 700;">معرّف المراجعة:</span><br>
+        <code style="color: #10b981; font-size: 18px; font-weight: 700;">{{referenceId}}</code>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">يقوم فريق التدقيق حالياً بالتحقق من سلامة السجلات لهذه المعاملة.</p>
+    `, 'ar')
+  },
+  {
+    name: 'withdrawal_approved',
+    subject_en: 'Financial Record: Capital Export Finalized',
+    subject_ar: 'سجل مالي: تم اعتماد طلب التصدير',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Export Authorized</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Audit confirmed. The export request for <strong>{{amount}}</strong> has been cleared for execution.</p>
+      <div style="border-left: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; color: #166534; font-size: 13px; font-family: monospace;">{{transactionDetails}}</p>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px;">Transaction officially recorded in the global ledger.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد التصدير</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تأكيد التدقيق. تمت الموافقة على طلب التصدير لمبلغ <strong>{{amount}}</strong> وهو الآن قيد التنفيذ.</p>
+      <div style="border-right: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; color: #166534; font-size: 14px; font-family: monospace;">{{transactionDetails}}</p>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px;">تم تسجيل المعاملة رسمياً في السجل العالمي.</p>
+    `, 'ar')
+  },
+  {
+    name: 'referral_bonus_earned',
+    subject_en: 'Protocol Update: Infrastructure Growth Incentive',
+    subject_ar: 'تحديث البروتوكول: حافز نمو البنية التحتية',
+    body_en: wrapper(`
+      <h3 style="color: #10b981; font-size: 18px;">Network Expansion Successful</h3>
+      <p style="color: #475569; font-size: 15px;">System adjustment: <strong>+{{bonusPoints}} PTS</strong> credited to your profile for successful terminal referral.</p>
+      <p style="color: #0f172a; font-weight: 700; margin-top: 20px;">Current Identity Balance: {{newBalance}} PTS</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h3 style="color: #10b981; font-size: 20px;">توسعة ناجحة للشبكة</h3>
+      <p style="color: #475569; font-size: 16px;">تعديل النظام: تم إيداع <strong>+{{bonusPoints}} نقطة</strong> في ملفكم نتيجة إحالة ناجحة للنظام.</p>
+      <p style="color: #0f172a; font-weight: 700; margin-top: 20px;">رصيد الهوية الحالي: {{newBalance}} نقطة</p>
+    `, 'ar')
+  },
+  {
+    name: 'kyc_submitted',
+    subject_en: 'Compliance Record: Material Ingestion Initiated',
+    subject_ar: 'سجل الامتثال: بدء عملية استيعاب المواد',
+    body_en: wrapper(`
+      <h3 style="color: #0f172a;">Audit Sequence Active</h3>
+      <p style="color: #475569; font-size: 15px;">Your verification documentation has been received and queued for a mandatory compliance audit.</p>
+      <p style="color: #64748b; font-size: 13px;">Status updates will be dispatched upon conclusion of the review phase.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h3 style="color: #0f172a;">سلسلة التدقيق نشطة</h3>
+      <p style="color: #475569; font-size: 16px;">تم استلام وثائق التحقق الخاصة بكم بنجاح وهي الآن في قائمة الانتظار لتدقيق الامتثال الإلزامي.</p>
+      <p style="color: #64748b; font-size: 14px;">سيتم إرسال تحديثات الحالة فور الانتهاء من مرحلة المراجعة.</p>
+    `, 'ar')
+  },
+  {
+    name: 'kyc_approved',
+    subject_en: 'Compliance Result: Identity Verified',
+    subject_ar: 'نتيجة الامتثال: تم توثيق الهوية',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600;">Audit Successful</h2>
+      <p style="color: #475569; font-size: 15px;">Full identity verification for <strong>{{userName}}</strong> has been successfully concluded. All terminal restrictions related to identity verification have been lifted.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700;">نجاح التدقيق</h2>
+      <p style="color: #475569; font-size: 16px;">تم الانتهاء بنجاح من عملية تدقيق الهوية بالكامل للمعرّف <strong>{{userName}}</strong>. تم رفع كافة قيود النظام المرتبطة بتوثيق الهوية.</p>
+    `, 'ar')
+  },
+  {
+    name: 'kyc_rejected',
+    subject_en: 'Compliance Result: Identity Audit Failure',
+    subject_ar: 'نتيجة الامتثال: فشل تدقيق الهوية',
+    body_en: wrapper(`
+      <h2 style="color: #ef4444; font-size: 22px; font-weight: 600;">Audit Rejected</h2>
+      <p style="color: #475569; font-size: 15px; margin-bottom: 20px;">Reason for protocol failure: <strong>{{rejectionReason}}</strong></p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #ef4444; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Rectify Issues</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #ef4444; font-size: 24px; font-weight: 700;">رفض التدقيق</h2>
+      <p style="color: #475569; font-size: 16px; margin-bottom: 20px;">سبب فشل البروتوكول: <strong>{{rejectionReason}}</strong></p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #ef4444; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">تصحيح البيانات</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'balance_update',
+    subject_en: 'Ledger Notice: Identity Credit Sync',
+    subject_ar: 'إشعار بالسجل: مزامنة رصيد الهوية',
+    body_en: wrapper(`
+      <div style="background-color: #f8fafc; padding: 25px; border-radius: 2px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px;">Transaction Type: {{type}}</div>
+        <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px;">Adjustment: {{amount}} PTS</div>
+        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #10b981;">New Authorized Balance: {{newBalance}} PTS</div>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <div style="background-color: #f8fafc; padding: 25px; border-radius: 2px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px;">نوع المعاملة: {{type}}</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 15px;">مقدار التعديل: {{amount}} نقطة</div>
+        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 16px; font-weight: 700; color: #10b981;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</div>
+      </div>
+    `, 'ar')
+  }
+];

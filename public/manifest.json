@@ -1,0 +1,23 @@
+{
+  "name": "Perplexta",
+  "short_name": "Perplexta",
+  "description": "A professional elite platform for advanced AI capabilities and technical analysis.",
+  "start_url": ".",
+  "display": "browser",
+  "orientation": "any",
+  "background_color": "#0f0f11",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "app-assets/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "app-assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

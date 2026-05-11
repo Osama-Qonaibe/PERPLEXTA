@@ -1,0 +1,201 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Share2, Copy, Check, X, Megaphone, Users, ArrowUpRight, MousePointer2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAppContext } from '../context/AppContext';
+
+export const IncentiveCard: React.FC = () => {
+  const { dir, t, user, milestoneData, setMilestoneData, theme, siteSettings } = useAppContext();
+  const [copied, setCopied] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Hidden/Visible state based on milestoneData
+  const isVisible = !!milestoneData && !isClosing;
+
+  // Use dynamic site name for share
+  const currentSiteName = dir === 'rtl' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
+  const shareTitle = currentSiteName || 'AI Platform';
+
+  // Function to handle close
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    // Slight delay to allow animation to finish
+    setTimeout(() => {
+      setMilestoneData(null);
+      setIsClosing(false);
+    }, 500);
+  }, [setMilestoneData]);
+
+  // Handle global mouse move or click to hide
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const hideHandler = () => {
+      // We use a small delay so human eyes can at least see it popped up
+      // but the user requested "if user clicks or moves mouse anywhere it disappears"
+      handleClose();
+    };
+
+    // Delay adding listeners to prevent immediate closing during the trigger action
+    const timeout = setTimeout(() => {
+      window.addEventListener('mousemove', hideHandler, { once: true });
+      window.addEventListener('click', hideHandler, { once: true });
+    }, 1500); // 1.5s grace period to see it
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('mousemove', hideHandler);
+      window.removeEventListener('click', hideHandler);
+    };
+  }, [isVisible, handleClose]);
+
+  if (!milestoneData) return null;
+
+  const { percentage, toolId, planNameEn, planNameAr } = milestoneData;
+  const planName = dir === 'rtl' ? planNameAr : planNameEn;
+  
+  const referralLink = `${window.location.origin}/?ref=${user?.id || 'elite'}`;
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: t('quotaMilestoneIncentive'),
+          url: referralLink,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      handleCopy(e);
+    }
+  };
+
+  // Milestone specific content
+  const getMilestoneContent = () => {
+    if (percentage === 50) {
+      return {
+        title: t('quotaMilestoneTitle').replace('{percentage}', '50'),
+        desc: t('quotaMilestone50'),
+        color: 'text-emerald-500',
+        bg: 'bg-emerald-500/10',
+        progress: 'w-1/2',
+        icon: <Megaphone className="text-emerald-500" size={24} />
+      };
+    }
+    if (percentage === 90) {
+      return {
+        title: t('quotaMilestoneTitle').replace('{percentage}', '90'),
+        desc: t('quotaMilestone90'),
+        color: 'text-amber-500',
+        bg: 'bg-amber-500/10',
+        progress: 'w-[90%]',
+        icon: <Megaphone className="text-amber-500" size={24} />
+      };
+    }
+    return {
+      title: t('quotaMilestone100'),
+      desc: t('quotaMilestone100'),
+      color: 'text-rose-500',
+      bg: 'bg-rose-500/10',
+      progress: 'w-full',
+      icon: <ArrowUpRight className="text-rose-500" size={24} />
+    };
+  };
+
+  const content = getMilestoneContent();
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50, scale: 0.9, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
+          exit={{ opacity: 0, scale: 0.9, y: 20, x: '-50%' }}
+          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-2xl overflow-hidden ${
+            theme === 'dark' ? 'bg-[#1a1a1c]/95 backdrop-blur-2xl' : 'bg-white/95 backdrop-blur-2xl'
+          }`}
+          onClick={(e) => e.stopPropagation()} // Prevent close when clicking the card itself
+        >
+          {/* Progress Bar (Header) */}
+          <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800/50">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+              className={`h-full ${content.color.replace('text', 'bg')}`}
+            />
+          </div>
+
+          <div className="p-6">
+            <div className={`flex items-start gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`w-14 h-14 rounded-2xl ${content.bg} flex items-center justify-center shrink-0`}>
+                {content.icon}
+              </div>
+              
+              <div className={`flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                <h3 className="text-gray-900 dark:text-white font-bold text-lg tracking-tight">
+                  {content.title}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 leading-relaxed">
+                  {content.desc}
+                </p>
+              </div>
+
+              <button 
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className={`mt-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={16} className="text-emerald-500" />
+                <span className="text-[13px] font-bold text-emerald-500 uppercase tracking-wider">
+                  {t('rewardFriends')}
+                </span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 text-[13px] leading-snug">
+                {t('quotaMilestoneIncentive')}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button 
+                  onClick={handleShare}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                >
+                  <Share2 size={14} />
+                  {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
+                </button>
+                <button 
+                  onClick={handleCopy}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all active:scale-95"
+                >
+                  {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
+              <MousePointer2 size={12} className="text-gray-400" />
+              <span className="text-[10px] text-gray-400 italic">
+                {dir === 'rtl' ? 'حرك الماوس أو اضغط للإخفاء' : 'Move mouse or click to dismiss'}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};

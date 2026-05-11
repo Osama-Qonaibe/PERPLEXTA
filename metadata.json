@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Perplexta",
+  "description": "A professional elite platform for advanced multimodal AI capabilities and deep forensic technical analysis.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
