@@ -1,6 +1,6 @@
 import express from 'express';
 import pkg from 'pg';
-import { pool, ledgerPool } from '../db/index.js';
+import { pool, ledgerPool, createInternalPool, initializeSovereignPools } from '../db/index.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { syncProviderModelsInternal } from '../services/ai.js';
@@ -24,32 +24,19 @@ router.get("/databases/registry", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/databases/registry", authenticateAdmin, async (req, res) => {
-  try {
-    const { id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active } = req.body;
-    const encryptedPassword = password ? encrypt(password) : null;
-    const encryptedConnString = connection_string ? encrypt(connection_string) : null;
-
-    await pool.query(`
-      INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT (id) DO UPDATE SET
-        type = EXCLUDED.type, host = EXCLUDED.host, port = EXCLUDED.port, db_name = EXCLUDED.db_name,
-        username = EXCLUDED.username, password = COALESCE(EXCLUDED.password, db_connections_registry.password),
-        connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
-        ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size, is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-    `, [id, type, host, port, db_name, username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, is_active]);
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
 router.post("/databases/save", authenticateAdmin, async (req, res) => {
   try {
-    const { id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active } = req.body;
-    const encryptedPassword = password ? encrypt(password) : null;
+    const body = req.body.config || req.body;
+    const { id, type, host, port, username, password, is_active, activate } = req.body;
+    
+    // Normalize fields from either flat or config object
+    const db_name = body.db_name || body.dbName;
+    const connection_string = body.connection_string || body.connectionString;
+    const ssl_mode = body.ssl_mode || body.sslMode;
+    const pool_size = body.pool_size || body.poolSize;
+    const active_state = is_active !== undefined ? is_active : activate;
+
+    const encryptedPassword = body.password ? encrypt(body.password) : null;
     const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
     await pool.query(`
@@ -60,30 +47,72 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
         username = EXCLUDED.username, password = COALESCE(EXCLUDED.password, db_connections_registry.password),
         connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
         ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size, is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-    `, [id, type, host, port, db_name, username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, is_active]);
+    `, [id || body.id, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
 
     res.json({ success: true });
+
+    // --- SOVEREIGN POOL RELOAD ---
+    // If we just activated a core or ledger DB, we should reload the pools in-memory
+    if (active_state) {
+      const targetId = id || body.id;
+      if (targetId === 'core' || targetId === 'ledger') {
+        let newConnStr = connection_string;
+        if (!newConnStr && body.host) {
+          const u = encodeURIComponent(body.username || '');
+          const p = encodeURIComponent(body.password || '');
+          newConnStr = `postgres://${u}:${p}@${body.host}:${body.port}/${db_name}`;
+        }
+        
+        if (newConnStr) {
+          console.log(`[Admin] Live-reloading pools for ${targetId}...`);
+          try {
+            const allRegs = await pool.query("SELECT id, connection_string FROM db_connections_registry WHERE id IN ('core', 'ledger')");
+            const coreReg = allRegs.rows.find(r => r.id === 'core');
+            const ledgerReg = allRegs.rows.find(r => r.id === 'ledger');
+            
+            let cUrl = targetId === 'core' ? newConnStr : (coreReg?.connection_string ? decrypt(coreReg.connection_string) : process.env.DATABASE_URL);
+            let lUrl = targetId === 'ledger' ? newConnStr : (ledgerReg?.connection_string ? decrypt(ledgerReg.connection_string) : (process.env.LEDGER_DATABASE_URL || cUrl));
+            
+            await initializeSovereignPools(cUrl || '', lUrl || '');
+            
+            // --- AUTO MIGRATE ON RELOAD ---
+            console.log(`[Admin] Ensuring tables exist on new pools...`);
+            await runDatabaseMigrations();
+            
+            console.log(`[Admin] Sovereign Pools synchronized and migrated.`);
+          } catch (reloadErr) {
+            console.error('[Admin] Failed to live-reload pools:', reloadErr);
+          }
+        }
+      }
+    }
   } catch (error) {
+    console.error('[Admin] Database save error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
-    const { connection_string, host, port, db_name, username, password } = req.body;
+    const body = req.body.config || req.body;
+    const connection_string = body.connection_string || body.connectionString;
+    const host = body.host;
+    const port = body.port;
+    const db_name = body.db_name || body.dbName;
+    const username = body.username;
+    const password = body.password;
+
     let connStr = connection_string;
     
     if (!connStr && host) {
-      connStr = `postgres://${username}:${password}@${host}:${port}/${db_name}`;
+      const encodedUser = encodeURIComponent(username || '');
+      const encodedPass = encodeURIComponent(password || '');
+      connStr = `postgres://${encodedUser}:${encodedPass}@${host}:${port}/${db_name}`;
     }
 
     if (!connStr) return res.status(400).json({ error: 'Missing connection settings' });
 
-    const testPool = new pkg.Pool({
-      connectionString: connStr,
-      connectionTimeoutMillis: 5000,
-      max: 1
-    });
+    const testPool = createInternalPool(connStr);
 
     try {
       await testPool.query('SELECT 1');
@@ -283,16 +312,31 @@ router.delete("/plans/:id", authenticateAdmin, async (req, res) => {
 // Admin User Management
 router.get("/users", authenticateAdmin, async (req, res) => {
   try {
+    // Phase 1: Fetch core user data
     const result = await pool.query(`
       SELECT 
-        u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
-        w.balance, w.points
+        u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at
       FROM users u
-      LEFT JOIN wallets w ON u.id = w.user_id
       ORDER BY u.created_at DESC
     `);
-    res.json(result.rows);
+    
+    // Phase 2: Fetch wallet data from Ledger DB (Isolated)
+    // We fetch all needed wallets in one go and map them to users
+    const walletRes = await ledgerPool.query('SELECT user_id, balance, points FROM wallets');
+    const walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
+
+    const usersWithWallets = result.rows.map(user => {
+      const wallet = walletMap.get(user.id) as any;
+      return {
+        ...user,
+        balance: wallet ? wallet.balance : 0,
+        points: wallet ? wallet.points : 0
+      };
+    });
+
+    res.json(usersWithWallets);
   } catch (error) {
+    console.error('[Admin] Failed to fetch users:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -319,20 +363,11 @@ router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
   }
 });
 
-// System Monitoring & Stats
-router.get("/orchestrator/tools-list", authenticateAdmin, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Error' });
-  }
-});
-
+// Orchestrator & Tool Routing
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
-    res.json(result.rows);
+    res.json({ routes: result.rows, tools: result.rows });
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }

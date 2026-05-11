@@ -9,16 +9,31 @@ import { logSystemActivity } from '../services/notifications.js';
 
 const router = express.Router();
 
-const oauthStateStore = new Map<string, { ref: string; lang: string; expires: number }>();
+const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, remember?: boolean, expires: number }>();
 
 const getBaseUrl = (req: express.Request) => {
-  const protocol = req.get('x-forwarded-proto') || req.protocol;
-  const host = req.get('x-forwarded-host') || req.get('host');
+  // Sovereign: Robust origin detection for proxy/container environments
+  const xProto = req.get('x-forwarded-proto');
+  const xHost = req.get('x-forwarded-host');
+  const host = req.get('host');
+  
+  const protocol = xProto || req.protocol;
+  const finalHost = xHost || host;
+  
   const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
+  
+  // Prioritize production environment URL if available
   if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
     return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
   }
-  const origin = `${protocol}://${host}`;
+  
+  // Force HTTPS in production environments if not detected but on a real domain
+  let finalProto = protocol;
+  if (finalHost && !finalHost.includes('localhost') && !finalHost.includes('127.0.0.1') && !finalHost.includes('0.0.0.0')) {
+    finalProto = 'https';
+  }
+  
+  let origin = `${finalProto}://${finalHost}`;
   return origin.endsWith('/') ? origin.slice(0, -1) : origin;
 };
 
@@ -67,6 +82,13 @@ router.post("/login", async (req, res) => {
     const user = result.rows[0];
     if (user.status === 'suspended') return res.status(403).json({ error: 'Account suspended' });
 
+    if (!user.password_hash) {
+      if (user.provider === 'google') {
+        return res.status(401).json({ error: 'Please login using Google' });
+      }
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -79,13 +101,15 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/google/url", (req, res) => {
-  const { ref, lang } = req.query;
+  const { ref, lang, remember } = req.query;
   const nonce = crypto.randomBytes(16).toString('hex');
-  oauthStateStore.set(nonce, {
-    ref: (ref as string) || '',
-    lang: (lang as string) || 'ar',
-    expires: Date.now() + 10 * 60 * 1000
+  oauthStateStore.set(nonce, { 
+    ref: ref as string || null, 
+    lang: lang as string || 'ar', 
+    remember: remember === 'true',
+    expires: Date.now() + 600000 
   });
+
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || '',
     redirect_uri: getRedirectUri(req),
@@ -101,14 +125,12 @@ router.get("/google/callback", async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('No code provided');
 
-    const stateData = oauthStateStore.get(state as string);
-    if (!stateData || Date.now() > stateData.expires) {
-      oauthStateStore.delete(state as string);
-      return res.status(400).send('Invalid or expired state');
+    // CSRF verification
+    const storedState = oauthStateStore.get(state as string);
+    if (!storedState || storedState.expires < Date.now()) {
+      return res.status(403).send('Invalid or expired auth session');
     }
     oauthStateStore.delete(state as string);
-
-    const { ref, lang } = stateData;
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -136,15 +158,19 @@ router.get("/google/callback", async (req, res) => {
     if (!googleUser.email) return res.status(400).send('No email from Google');
 
     const lowerEmail = googleUser.email.toLowerCase();
-
+    
+    // Check if user exists (Sovereign: use explicit type casting)
     let result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1::text', [lowerEmail]);
     let user;
 
     if (result.rows.length === 0) {
       const role = lowerEmail === 'qoomre@gmail.com' ? 'admin' : 'user';
+      // Sovereign: Prioritize language from OAuth state during signup
+      const finalLang = storedState.lang || 'ar';
+      
       const insertResult = await pool.query(
-        `INSERT INTO users (email, name, avatar, provider, role) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role]
+        `INSERT INTO users (email, name, avatar, provider, role, language) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role, finalLang]
       );
       user = insertResult.rows[0];
       await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
@@ -152,81 +178,161 @@ router.get("/google/callback", async (req, res) => {
     } else {
       user = result.rows[0];
       if (user.status === 'suspended') return res.status(403).send('Account suspended');
+      
+      // Update info if provider changed or if we have a fresh language preference
+      const updates = [];
+      const values = [];
       if (user.provider !== 'google') {
-        await pool.query('UPDATE users SET provider = $1, avatar = $2 WHERE id = $3', ['google', googleUser.picture, user.id]);
+        updates.push(`provider = $${updates.length + 1}, avatar = $${updates.length + 2}`);
+        values.push('google', googleUser.picture);
       }
+      
+      // Sync language from OAuth state to DB if it's different
+      if (storedState.lang && storedState.lang !== user.language) {
+        updates.push(`language = $${updates.length + 1}`);
+        values.push(storedState.lang);
+        user.language = storedState.lang; // Update local object for token payload
+      }
+
+      if (updates.length > 0) {
+        values.push(user.id);
+        await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${values.length}`, values);
+      }
+      
       await logSystemActivity(user.id, 'login', 'User logged in via Google', {}, req);
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
-
-    const redirectBase = getBaseUrl(req).replace(/\/+$/, '');
-
-    const authPayload = JSON.stringify({
-      token,
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
+    
+    const lang = storedState.lang || user.language || 'ar';
+    const targetRef = storedState.ref || '/';
+    const allowedOrigin = getBaseUrl(req);
+    
+    // Sovereign: XSS Hardening - Escape special characters for JS context
+    const rawPayload = JSON.stringify({ 
+      token, 
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      role: user.role, 
       avatar: user.avatar,
-      lang
+      lang: lang,
+      ref: targetRef,
+      remember: !!storedState.remember
     });
 
-    const safePayload = authPayload
-      .replace(/\\/g, '\\\\')
-      .replace(/`/g, '\\`')
-      .replace(/<\/script>/gi, '<\\/script>');
+    const safePayload = rawPayload
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/\//g, '\\u002f')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
+    
+    res.send(`
+      <html>
+        <head>
+          <title>${lang === 'ar' ? 'جاري التحقق...' : 'Authenticating...'}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+        </head>
+        <body style="background: #0f0f11; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Tajawal', sans-serif; overflow: hidden;">
+          <div style="text-align: center; padding: 40px; background: rgba(26, 26, 28, 0.8); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 24px; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 90%; width: 400px; animation: fadeIn 0.5s ease-out;">
+            <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 24px;">
+              <div style="position: absolute; inset: 0; border: 4px solid rgba(16, 185, 129, 0.1); border-radius: 50%;"></div>
+              <div style="position: absolute; inset: 0; border: 4px solid transparent; border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+            </div>
+            <h2 style="color: white; margin: 0 0 12px 0; font-size: 24px; font-weight: 700;">
+              ${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}
+            </h2>
+            <p style="color: #9ca3af; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">
+              ${lang === 'ar' ? 'تمت مزامنة بياناتك بأمان. يمكنك الآن إغلاق هذه النافذة والعودة للمنصة.' : 'Session secured. You can now close this window and return to the platform.'}
+            </p>
+            <button id="closeBtn" style="background: #10b981; color: white; border: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 16px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+              ${lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue'}
+            </button>
+          </div>
+          
+          <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            body { direction: ${lang === 'ar' ? 'rtl' : 'ltr'}; }
+          </style>
 
-    res.send(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Authenticating...</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="background:#0f0f11;color:white;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:'Tajawal',sans-serif;">
-  <div style="text-align:center;padding:20px;">
-    <div style="width:50px;height:50px;border:3px solid #10b981;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
-    <h2 style="color:#10b981;margin:0 0 10px 0;">Authentication Successful</h2>
-    <p style="color:#9ca3af;margin:0;">Finalizing your secure session...</p>
-  </div>
-  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-  <script>
-    (function() {
-      try {
-        const data = JSON.parse(\`${safePayload}\`);
-        const allowedOrigin = ${JSON.stringify(redirectBase)};
+          <script>
+            (function() {
+              const closeBtn = document.getElementById('closeBtn');
+              const closeAction = () => {
+                try {
+                   window.close();
+                } catch (e) {
+                   console.error('Manual close failed');
+                }
+              };
+              
+              if (closeBtn) closeBtn.onclick = closeAction;
 
-        if (window.opener) {
-          try {
-            window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
-          } catch (e) {}
-        }
+              try {
+                const data = JSON.parse('${safePayload}');
+                const allowedOrigin = ${JSON.stringify(allowedOrigin)};
+                const targetRef = ${JSON.stringify(targetRef)};
+                
+                // 1. Storage
+                try {
+                  localStorage.setItem('app_token', data.token);
+                  localStorage.setItem('app_oauth_user', JSON.stringify(data));
+                  localStorage.setItem('language', data.lang);
+                  if (data.remember) {
+                    localStorage.setItem('app_remember', 'true');
+                  }
+                  localStorage.setItem('app_oauth_trigger', Date.now().toString());
+                } catch (e) {}
 
-        try {
-          const channel = new BroadcastChannel('app_oauth_channel');
-          channel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
-        } catch (e) {}
+                // 2. Post Message to Opener
+                let isPopup = false;
+                try {
+                  isPopup = !!(window.opener && window.opener !== window);
+                } catch (e) {}
 
-        try {
-          localStorage.setItem('app_token', data.token);
-          localStorage.setItem('app_oauth_user', JSON.stringify(data));
-          localStorage.setItem('app_oauth_trigger', Date.now().toString());
-        } catch (e) {}
+                if (isPopup) {
+                   try {
+                     window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
+                   } catch (e) {
+                     try { window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*'); } catch (err) {}
+                   }
+                }
+                
+                // 3. Broadcast Channel
+                try {
+                  const authChannel = new BroadcastChannel('app_oauth_channel');
+                  authChannel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
+                } catch (e) {}
 
-        setTimeout(() => {
-          if (window.opener && !window.opener.closed) {
-            window.close();
-          } else {
-            window.location.href = allowedOrigin + '/';
-          }
-        }, 800);
-      } catch (err) {
-        window.location.href = ${JSON.stringify(redirectBase + '/')};
-      }
-    })();
-  </script>
-</body>
-</html>`);
+                // Final action
+                setTimeout(() => {
+                  if (isPopup) {
+                    window.close();
+                  } else {
+                    const currentOrigin = window.location.origin;
+                    window.location.href = targetRef.startsWith('http') ? targetRef : currentOrigin + (targetRef.startsWith('/') ? '' : '/') + targetRef;
+                  }
+                }, 1500);
+              } catch (err) {
+                console.error('Auth processing failed', err);
+                window.location.href = "/";
+              }
+            })();
+          </script>
+        </body>
+      </html>
+    `);
   } catch (error) {
     console.error('[GoogleAuth] Callback Error:', error);
     res.status(500).send('Authentication processing failed');

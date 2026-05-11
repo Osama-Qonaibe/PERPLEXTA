@@ -5,12 +5,13 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { callAIProvider } from '../services/ai.js';
 import { decrypt } from '../utils/crypto.js';
 import { getAppName } from '../services/system.js';
-import { CORE_PROTOCOL } from '../../src/lib/protocol.js';
+import { CORE_PROTOCOL } from '../config/protocol.js';
 
 const router = express.Router();
 
 router.post("/", authenticateToken, async (req: any, res) => {
   try {
+    if (!pool) return res.status(503).json({ error: 'Database initializing' });
     const { title } = req.body;
     const userId = req.user.id;
     const result = await pool.query('INSERT INTO chats (user_id, title) VALUES ($1, $2) RETURNING *', [userId, title || 'New Chat']);
@@ -22,6 +23,7 @@ router.post("/", authenticateToken, async (req: any, res) => {
 
 router.get("/", authenticateToken, async (req: any, res) => {
   try {
+    if (!pool) return res.status(503).json({ error: 'Database initializing' });
     const userId = req.user.id;
     const result = await pool.query('SELECT * FROM chats WHERE user_id = $1 ORDER BY updated_at DESC', [userId]);
     res.json(result.rows);
@@ -32,6 +34,7 @@ router.get("/", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
+    if (!pool) return res.status(503).json({ error: 'Database initializing' });
     const { role, content, tool } = req.body;
     const chatId = req.params.id;
     await pool.query('INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4)', [chatId, role, content, tool]);
@@ -60,6 +63,38 @@ router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, re
     }
   } catch (error) {
     res.status(500).json({ error: 'Failed to add message' });
+  }
+});
+
+router.get("/:id/messages", authenticateToken, async (req: any, res) => {
+  try {
+    if (!pool) return res.status(503).json({ error: 'Database initializing' });
+    const userId = req.user.id;
+    const chatId = req.params.id;
+    
+    // Security check: ensure chat belongs to user
+    const chatCheck = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
+    if (chatCheck.rows.length === 0 || chatCheck.rows[0].user_id !== userId) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    const result = await pool.query('SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC', [chatId]);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+router.delete("/:id", authenticateToken, async (req: any, res) => {
+  try {
+    if (!pool) return res.status(503).json({ error: 'Database initializing' });
+    const userId = req.user.id;
+    const chatId = req.params.id;
+    const result = await pool.query('DELETE FROM chats WHERE id = $1 AND user_id = $2 RETURNING *', [chatId, userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Chat not found' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete chat' });
   }
 });
 

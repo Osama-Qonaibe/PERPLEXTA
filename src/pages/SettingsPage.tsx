@@ -50,7 +50,7 @@ export const SettingsPage: React.FC = () => {
         console.error('Failed to fetch profile', error);
       }
     };
-    if (token) fetchProfile();
+    if (token && token !== 'null') fetchProfile();
   }, [token]);
 
   const handleUpdateProfile = async (updates: any) => {
@@ -83,6 +83,7 @@ export const SettingsPage: React.FC = () => {
   }, [activeTab]);
 
   const fetchMemories = async () => {
+    if (!token || token === 'null') return;
     setIsLoadingMemories(true);
     try {
       const res = await fetch('/api/memories', {

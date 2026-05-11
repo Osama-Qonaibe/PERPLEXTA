@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { systemTemplates } from '../lib/templates';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Music, Activity, Key, Database, Cpu, Landmark, Cloud,
@@ -1937,32 +1936,26 @@ const OrchestratorView = ({ theme, t, dir, providerModels }: { theme: string, t:
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const toolsListRes = await fetch('/api/admin/orchestrator/tools-list', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        let masterTools = [];
-        if (toolsListRes.ok) {
-          const listData = await toolsListRes.json();
-          masterTools = listData.tools.map((t: any) => ({
-            id: t.id,
-            titleKey: t.id,
-            description: t.description,
-            descriptionAr: t.descriptionAr,
-            icon: LayoutGrid,
-            primaryProvider: '', primaryModel: '', 
-            fallback1Provider: '', fallback1Model: '', 
-            fallback2Provider: '', fallback2Model: '', 
-            fallback3Provider: '', fallback3Model: '', 
-            isActive: true, costPerUsage: t.cost || 10, isSaving: false 
-          }));
-        }
-
         const routesRes = await fetch('/api/admin/orchestrator/routes', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (routesRes.ok) {
           const routesData = await routesRes.json();
+          const listData = routesData;
           const savedRoutes = routesData.routes;
+
+          const masterTools = listData.tools.map((t: any) => ({
+            id: t.tool_id || t.id,
+            titleKey: t.tool_id || t.id,
+            description: t.description || t.task_description,
+            descriptionAr: t.descriptionAr || t.task_description_ar,
+            icon: LayoutGrid,
+            primaryProvider: '', primaryModel: '', 
+            fallback1Provider: '', fallback1Model: '', 
+            fallback2Provider: '', fallback2Model: '', 
+            fallback3Provider: '', fallback3Model: '', 
+            isActive: true, costPerUsage: t.cost_per_usage || 10, isSaving: false 
+          }));
           
           if (savedRoutes && savedRoutes.length > 0) {
             // Merge saved routes into master tools

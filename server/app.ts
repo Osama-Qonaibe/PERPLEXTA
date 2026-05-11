@@ -84,18 +84,6 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 
-// Explicit economy fallback for robustness
-app.get('/api/economy', async (req, res) => {
-  try {
-    const { pool: dbPool } = await import('./db/index.js');
-    if (!dbPool) return res.json({ points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
-    const result = await dbPool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent FROM system_settings LIMIT 1');
-    res.json(result.rows[0] || { points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
-  } catch (e) {
-    res.json({ points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
-  }
-});
-
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));

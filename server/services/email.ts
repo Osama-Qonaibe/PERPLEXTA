@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { pool } from '../db/index.js';
-import { systemTemplates } from '../../src/lib/templates.js';
+import { systemTemplates } from '../config/templates.js';
 
 export async function sendEmail(to: string, subject: string, html: string) {
   try {

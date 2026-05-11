@@ -1,14 +1,13 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import bcrypt from "bcryptjs";
-import { pool, ledgerPool, initializeSovereignPools } from "./index.js";
+import { pool, ledgerPool, initializeSovereignPools, createInternalPool } from "./index.js";
 import { encrypt, decrypt } from "../utils/crypto.js";
 
 export async function runSystemMaintenance() {
   console.log('[SystemMaintenance] Starting Sovereign cleanup...');
   // Add logic if needed
 }
-import { ANALYSIS_PROTOCOL, CODE_GEN_PROTOCOL, IMAGE_GEN_PROTOCOL, ADS_ASSISTANT_PROTOCOL, AUDIO_STUDIO_PROTOCOL, SOUND_STUDIO_PROTOCOL } from "../../src/lib/protocol.js";
 
 // We'll need a way to access 'io' for notifications in monitorDatabases
 // For now we might need to pass it or have a getter
@@ -39,10 +38,6 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
 
 export async function runDatabaseMigrations() {
   try {
-    if (!pool || !ledgerPool) {
-      initializeSovereignPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
-    }
-
     if (!pool) {
       return;
     }
@@ -80,14 +75,16 @@ export async function runDatabaseMigrations() {
 
     await initDb('additive');
 
-    await ensureColumn(pool, 'db_connections_registry', 'provider', 'VARCHAR(50)');
-    await ensureColumn(pool, 'db_connections_registry', 'status', 'VARCHAR(20)', "'unknown'");
-    await ensureColumn(pool, 'db_connections_registry', 'last_checked_at', 'TIMESTAMP');
-    await ensureColumn(pool, 'db_connections_registry', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-    await ensureColumn(pool, 'system_broadcasts', 'status', 'VARCHAR(20)', "'completed'");
-    await ensureColumn(pool, 'messages', 'tool', 'VARCHAR(50)');
+    // Sovereign: Defensive column enforcement for existing tables
     await ensureColumn(pool, 'users', 'last_active_at', 'TIMESTAMP');
     await ensureColumn(pool, 'users', 'theme', 'VARCHAR(10)', "'dark'");
+    await ensureColumn(pool, 'system_broadcasts', 'status', 'VARCHAR(20)', "'completed'");
+    await ensureColumn(pool, 'system_broadcasts', 'type', 'VARCHAR(50)', "'system'");
+    await ensureColumn(pool, 'system_broadcasts', 'target_role', 'VARCHAR(20)', "'all'");
+    await ensureColumn(pool, 'system_broadcasts', 'target_group', 'VARCHAR(20)', "'all'");
+    await ensureColumn(pool, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
+    
+    // Financial settings extension
     await ensureColumn(pool, 'system_settings', 'points_per_dollar', 'INTEGER', '100');
     await ensureColumn(pool, 'system_settings', 'min_payout_usd', 'DECIMAL(10, 2)', '10.00');
     await ensureColumn(pool, 'system_settings', 'min_deposit_usd', 'DECIMAL(10, 2)', '5.00');
@@ -96,6 +93,8 @@ export async function runDatabaseMigrations() {
     await ensureColumn(pool, 'system_settings', 'referral_bonus_points', 'INTEGER', '1000');
     await ensureColumn(pool, 'system_settings', 'min_withdrawal_cents', 'INTEGER', '2000');
     await ensureColumn(pool, 'system_settings', 'conversion_rate', 'DECIMAL(15, 6)', '0.001');
+    
+    // SEO & Branding extension
     await ensureColumn(pool, 'system_settings', 'seo_description_en', 'TEXT');
     await ensureColumn(pool, 'system_settings', 'seo_description_ar', 'TEXT');
     await ensureColumn(pool, 'system_settings', 'keywords_en', 'TEXT');
@@ -123,9 +122,7 @@ export async function runDatabaseMigrations() {
         await pool.query(`
           INSERT INTO db_connections_registry (id, provider, connection_string, is_active)
           VALUES ('core', 'core', $1, true)
-          ON CONFLICT (id) DO UPDATE SET 
-            connection_string = EXCLUDED.connection_string,
-            updated_at = CURRENT_TIMESTAMP
+          ON CONFLICT (id) DO NOTHING
         `, [coreEncrypted]);
       } catch (e) {}
     }
@@ -136,9 +133,7 @@ export async function runDatabaseMigrations() {
         await pool.query(`
           INSERT INTO db_connections_registry (id, provider, connection_string, is_active)
           VALUES ('ledger', 'ledger', $1, true)
-          ON CONFLICT (id) DO UPDATE SET 
-            connection_string = EXCLUDED.connection_string,
-            updated_at = CURRENT_TIMESTAMP
+          ON CONFLICT (id) DO NOTHING
         `, [ledgerEncrypted]);
       } catch (e) {}
     }
@@ -154,7 +149,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   const targetLedgerPool = customLedgerPool || (ledgerPool || pool);
 
   const schema = [
-    { name: 'users', query: `CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, name VARCHAR(255), avatar TEXT, provider TEXT DEFAULT 'local', role VARCHAR(20) DEFAULT 'user', kyc_status VARCHAR(20) DEFAULT 'none', kyc_required BOOLEAN DEFAULT false, kyc_selfie TEXT, kyc_full_name VARCHAR(255), kyc_rejection_reason TEXT, custom_instructions TEXT, memory TEXT, password_hash TEXT, language VARCHAR(5) DEFAULT 'ar', status VARCHAR(20) DEFAULT 'active', last_active_at TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
+    { name: 'users', query: `CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, name VARCHAR(255), avatar TEXT, provider TEXT DEFAULT 'local', role VARCHAR(20) DEFAULT 'user', theme VARCHAR(10) DEFAULT 'dark', kyc_status VARCHAR(20) DEFAULT 'none', kyc_required BOOLEAN DEFAULT false, kyc_selfie TEXT, kyc_full_name VARCHAR(255), kyc_rejection_reason TEXT, custom_instructions TEXT, memory TEXT, password_hash TEXT, language VARCHAR(5) DEFAULT 'ar', status VARCHAR(20) DEFAULT 'active', last_active_at TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'chats', query: `CREATE TABLE IF NOT EXISTS chats (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255) NOT NULL, context_summary TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'messages', query: `CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE, role VARCHAR(50) NOT NULL, content TEXT NOT NULL, tool VARCHAR(50), feedback SMALLINT DEFAULT 0, is_pinned BOOLEAN DEFAULT FALSE, thinking_steps JSONB DEFAULT '[]', citations JSONB DEFAULT '[]', follow_ups JSONB DEFAULT '[]', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'api_keys_vault', query: `CREATE TABLE IF NOT EXISTS api_keys_vault (id SERIAL PRIMARY KEY, provider VARCHAR(50) UNIQUE NOT NULL, encrypted_key TEXT NOT NULL, daily_budget DECIMAL(10, 4) DEFAULT 0, used_today DECIMAL(10, 4) DEFAULT 0, last_reset_date DATE DEFAULT CURRENT_DATE, models JSONB DEFAULT '[]', model_list JSONB DEFAULT '[]', is_active BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
@@ -165,8 +160,34 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { name: 'subscriptions', query: `CREATE TABLE IF NOT EXISTS subscriptions (id SERIAL PRIMARY KEY, user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE, plan_id INTEGER REFERENCES plans(id), status VARCHAR(50) DEFAULT 'active', billing_period VARCHAR(20) DEFAULT 'monthly', current_period_end TIMESTAMP, last_period_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'user_usage', query: `CREATE TABLE IF NOT EXISTS user_usage (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, tool_id VARCHAR(50) NOT NULL, usage_count INTEGER DEFAULT 0, usage_date DATE DEFAULT CURRENT_DATE, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, tool_id, usage_date))` },
     { name: 'notifications', query: `CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, title_en VARCHAR(255), title_ar VARCHAR(255), message_en TEXT, message_ar TEXT, type VARCHAR(50) DEFAULT 'system', is_read BOOLEAN DEFAULT FALSE, metadata JSONB DEFAULT '{}', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'system_settings', query: `CREATE TABLE IF NOT EXISTS system_settings (id SERIAL PRIMARY KEY, site_name_en VARCHAR(255) DEFAULT 'Sovereign', site_name_ar VARCHAR(255) DEFAULT 'سوفيرن', site_description_en TEXT, site_description_ar TEXT, stripe_secret_key TEXT, stripe_webhook_secret TEXT, contact_email VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'system_broadcasts', query: `CREATE TABLE IF NOT EXISTS system_broadcasts (id SERIAL PRIMARY KEY, title_en VARCHAR(255), title_ar VARCHAR(255), content_en TEXT, content_ar TEXT, status VARCHAR(20) DEFAULT 'pending', target_role VARCHAR(20) DEFAULT 'all', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
+    { name: 'system_settings', query: `CREATE TABLE IF NOT EXISTS system_settings (
+        id SERIAL PRIMARY KEY, 
+        site_name_en VARCHAR(255) DEFAULT 'Sovereign', 
+        site_name_ar VARCHAR(255) DEFAULT 'سوفيرن', 
+        site_description_en TEXT, 
+        site_description_ar TEXT, 
+        seo_description_en TEXT,
+        seo_description_ar TEXT,
+        keywords_en TEXT,
+        keywords_ar TEXT,
+        google_analytics_id VARCHAR(255),
+        logo_url TEXT,
+        favicon_url TEXT,
+        stripe_secret_key TEXT, 
+        stripe_webhook_secret TEXT, 
+        points_per_dollar INTEGER DEFAULT 100,
+        min_payout_usd DECIMAL(10, 2) DEFAULT 10.00,
+        min_deposit_usd DECIMAL(10, 2) DEFAULT 5.00,
+        referral_bonus_percent INTEGER DEFAULT 10,
+        welcome_bonus_points INTEGER DEFAULT 600,
+        referral_bonus_points INTEGER DEFAULT 1000,
+        min_withdrawal_cents INTEGER DEFAULT 2000,
+        conversion_rate DECIMAL(15, 6) DEFAULT 0.001,
+        contact_email VARCHAR(255), 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )` },
+    { name: 'system_broadcasts', query: `CREATE TABLE IF NOT EXISTS system_broadcasts (id SERIAL PRIMARY KEY, title_en VARCHAR(255), title_ar VARCHAR(255), content_en TEXT, content_ar TEXT, type VARCHAR(50) DEFAULT 'system', status VARCHAR(20) DEFAULT 'pending', target_role VARCHAR(20) DEFAULT 'all', target_group VARCHAR(20) DEFAULT 'all', sent_count INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'user_files', query: `CREATE TABLE IF NOT EXISTS user_files (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, file_name VARCHAR(255) NOT NULL, file_url TEXT NOT NULL, file_size BIGINT, mime_type VARCHAR(100), file_type VARCHAR(50), metadata JSONB DEFAULT '{}', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'security_alerts', query: `CREATE TABLE IF NOT EXISTS security_alerts (id SERIAL PRIMARY KEY, user_id INTEGER, alert_type VARCHAR(50), severity VARCHAR(20), description TEXT, metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'system_logs', query: `CREATE TABLE IF NOT EXISTS system_logs (id SERIAL PRIMARY KEY, user_id INTEGER, action VARCHAR(100), description TEXT, metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` }
@@ -184,7 +205,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   }
 
   // Seeding
-  const adminEmails = [process.env.ADMIN_EMAIL || 'admin@example.com', 'qoomre@gmail.com'];
+  const masterAdmin = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || 'admin@example.com';
+  const adminEmails = [masterAdmin, 'qoomre@gmail.com'];
   for (const email of adminEmails) {
     const adminCheck = await targetPool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (adminCheck.rows.length === 0) {
@@ -237,7 +259,7 @@ export async function monitorDatabases() {
       
       if (!connectionString.startsWith('postgres')) continue;
 
-      const TestPool = new Pool({ connectionString, connectionTimeoutMillis: 5000, max: 1 });
+      const TestPool = createInternalPool(connectionString);
       try {
         await TestPool.query('SELECT 1');
         isAlive = true;

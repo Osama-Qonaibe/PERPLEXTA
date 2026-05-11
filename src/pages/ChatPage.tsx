@@ -566,7 +566,11 @@ const stripProtocolMarkers = (text: string) => {
 };
 
 export const ChatPage: React.FC = () => {
-  const { t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, installApp, isInstalling, siteSettings, setIsOperationPending } = useAppContext();
+  const { 
+    t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
+    installApp, isInstalling, siteSettings, setIsOperationPending, isAuthReady,
+    refreshUser, balanceUSD, economySettings 
+  } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState(() => {
@@ -1122,7 +1126,9 @@ export const ChatPage: React.FC = () => {
         console.log('[ChatPage] Skipping redundant load for active generation session.');
         return;
       }
-      loadChat(routeChatId);
+      if (isAuthReady) {
+        loadChat(routeChatId);
+      }
     } else {
       setMessages([]);
       setChatId(null);
@@ -1131,7 +1137,7 @@ export const ChatPage: React.FC = () => {
       setMemoryNotificationType('startup');
       setShowMemoryNotification(true);
     }
-  }, [routeChatId]);
+  }, [routeChatId, token, isAuthReady]);
 
   useEffect(() => {
     if (chatId) {
@@ -1172,6 +1178,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const loadChat = async (id: string) => {
+    if (!token || token === 'null') return;
     setChatId(id);
     try {
       const res = await fetch(`/api/chats/${id}/messages`, {
@@ -1221,6 +1228,19 @@ export const ChatPage: React.FC = () => {
         streamingBuffer.current = '';
       } else {
         streamingBuffer.current += data.chunk;
+        
+        // Sovereign: Efficient real-time streaming update
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant') {
+            newMessages[newMessages.length - 1] = {
+              ...lastMessage,
+              content: streamingBuffer.current
+            };
+          }
+          return newMessages;
+        });
       }
     };
 

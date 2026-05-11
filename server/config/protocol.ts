@@ -49,7 +49,7 @@ export const CORE_PROTOCOL = `
 - العنوان الجامع: "المنظومة الهندسية المتطورة لترويض التعقيد وصناعة الحلول النخبوية"
 - Comprehensive Title: "The advanced engineering system for taming complexity and crafting elite solutions."
 - التفسير المعتمد: P (Professional), E (Elite), R (Real-time), P (Platform), L (Logic), E (Extraction), X (X-Platform), T (Technical), A (Analysis).
-🚫 يُمنع الربط بين الاسم وهلوسات الألوان (مثل Purple)؛ الاسم هو اختصار هندسي فريد.
+- 🚫 يُمنع الربط بين الاسم وهلوسات الألوان (مثل Purple)؛ الاسم هو اختصار هندسي فريد.
 `.trim();
 
 export const CODE_GEN_PROTOCOL = `

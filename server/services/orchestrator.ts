@@ -10,12 +10,14 @@ import { sovereignTTS } from './tts.js';
 import { performSovereignSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps } from '../utils/helpers.js';
-import { CORE_PROTOCOL } from '../../src/lib/protocol.js';
+import { CORE_PROTOCOL } from '../config/protocol.js';
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, model_id, chat_id, file_data } = reqBody;
   const toolIdStr = tool_id as string;
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
+  
+  if (!pool) throw new Error('System still initializing. Please wait.');
   
   const [routeResult, quota, chatRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
@@ -27,7 +29,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   if (routeResult.rows.length === 0) throw new Error('Tool disabled or unconfigured');
   
   const route = routeResult.rows[0];
-  const appName = await getAppName('en');
+  const appName = getAppName('en');
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
   const finalSystemPrompt = protocol + (system_prompt || '');

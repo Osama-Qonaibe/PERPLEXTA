@@ -1,5 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
+import { encrypt, decrypt } from "../utils/crypto.js";
 
 export let pool: any;
 export let ledgerPool: any;
@@ -24,8 +25,34 @@ function validateDatabaseUrl(url: string, name: string) {
   }
 }
 
+export function getSslConfig() {
+  return process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
+    ? { rejectUnauthorized: false }
+    : undefined;
+}
+
+export function createInternalPool(connectionString: string, max = 1) {
+  return new Pool({
+    connectionString,
+    ssl: getSslConfig(),
+    connectionTimeoutMillis: 5000,
+    max
+  });
+}
+
 export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
-  console.log(`[DB] Re-initializing Sovereign Pools...`);
+  const redactedUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      u.password = '****';
+      return u.toString();
+    } catch {
+      return 'invalid-url';
+    }
+  };
+
+  console.log(`[DB] initializing Sovereign Pools...`);
+  if (coreUrl) console.log(`[DB] Core Target: ${redactedUrl(coreUrl)}`);
   
   if (!coreUrl) {
     console.warn('[DB] ⚠️ DATABASE_URL is missing. Operating in Degraded Mode (No DB).');
@@ -94,5 +121,57 @@ export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
     }
     pool = null;
     ledgerPool = null;
+  }
+}
+
+export async function synchronizeSovereignPoolsFromRegistry() {
+  if (!pool) return;
+  console.log('[DB] Checking for active remote database overrides...');
+  
+  try {
+    const result = await pool.query("SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core', 'ledger')");
+    
+    if (result.rows.length === 0) {
+      console.log('[DB] No active overrides found in registry. Using environment defaults.');
+      return;
+    }
+
+    const coreReg = result.rows.find((r: any) => r.id === 'core');
+    const ledgerReg = result.rows.find((r: any) => r.id === 'ledger');
+
+    const getUrlFromReg = (reg: any) => {
+      if (!reg) return null;
+      if (reg.connection_string) return decrypt(reg.connection_string);
+      if (reg.host) {
+        const u = encodeURIComponent(reg.username || '');
+        const p = reg.password ? encodeURIComponent(decrypt(reg.password)) : '';
+        const port = reg.port || '5432';
+        return `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
+      }
+      return null;
+    };
+
+    let coreUrl = getUrlFromReg(coreReg) || process.env.DATABASE_URL;
+    let ledgerUrl = getUrlFromReg(ledgerReg) || (process.env.LEDGER_DATABASE_URL || coreUrl);
+    
+    if (!coreUrl) return;
+
+    // PRE-FLIGHT CHECK: Don't flip the global pool if the new one is invalid
+    console.log('[DB] Verifying registry connection strings...');
+    const testCorePool = createInternalPool(coreUrl);
+    try {
+      await testCorePool.query('SELECT 1');
+      await testCorePool.end();
+    } catch (testErr: any) {
+      console.warn(`[DB] ❌ Registry Core DB connection failed: ${testErr.message}. Falling back to environment.`);
+      await testCorePool.end().catch(() => {});
+      return; // Keep existing ENV pools
+    }
+
+    console.log('[DB] ✅ Registry connections verified. Swapping pools...');
+    await initializeSovereignPools(coreUrl, ledgerUrl || coreUrl);
+    console.log('[DB] Sovereign Pools synchronized with active registry configuration.');
+  } catch (syncErr: any) {
+    console.warn('[DB] Registry synchronization skipped:', syncErr.message);
   }
 }

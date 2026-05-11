@@ -2,9 +2,9 @@ import 'dotenv/config';
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';
-import { initializeSovereignPools } from './db/index.js';
+import { initializeSovereignPools, synchronizeSovereignPoolsFromRegistry } from './db/index.js';
 import { createServer as createViteServer } from 'vite';
-import { runDatabaseMigrations } from './db/migrations.js';
+import { runDatabaseMigrations, setIo } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
@@ -17,6 +17,7 @@ async function startServer() {
     
     await initializeSovereignPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
     await runDatabaseMigrations();
+    await synchronizeSovereignPoolsFromRegistry();
     await syncSystemTemplates();
     await refreshCachedAppName();
     
@@ -30,7 +31,8 @@ async function startServer() {
     }
     
     const httpServer = createServer(app);
-    initSocket(httpServer);
+    const ioInstance = initSocket(httpServer);
+    setIo(ioInstance);
     
     initCronJobs();
 

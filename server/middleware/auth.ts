@@ -6,7 +6,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   console.log(`[Auth] Request: ${req.method} ${req.url}`);
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
+    
+    if (token === 'null' || token === 'undefined') {
+      token = undefined;
+    }
     
     if (!token) {
       console.warn(`[Auth] No token provided for ${req.method} ${req.url}`);
@@ -23,6 +27,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       const userPayload = user as any;
       
       try {
+        if (!pool) {
+          (req as any).user = userPayload;
+          next();
+          return;
+        }
         const userCheck = await pool.query('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
         if (userCheck.rows.length === 0) {
           res.status(401).json({ error: 'User not found' });
@@ -45,7 +54,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       (req as any).user = userPayload;
       
-      if (userPayload && userPayload.id) {
+      if (userPayload && userPayload.id && pool) {
         pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
           .catch((e: any) => console.error('Error updating last_active_at:', e));
       }

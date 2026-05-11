@@ -49,7 +49,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }, []);
 
   const fetchChats = async () => {
-    if (!token) return;
+    if (!token || token === 'null') return;
     try {
       const res = await fetch('/api/chats', {
         headers: { 

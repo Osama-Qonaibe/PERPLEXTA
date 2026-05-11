@@ -1419,12 +1419,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const fromUrl = urlParams.get('token');
-      if (fromUrl) return fromUrl;
-      return localStorage.getItem('app_token');
+      // Sovereign: Comprehensive token discovery (Search URL, Hash Fragment, and LocalStorage)
+      const getParam = (name: string) => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get(name)) return searchParams.get(name);
+        const hash = window.location.hash;
+        if (hash.includes('?')) {
+          const hashQueryParams = new URLSearchParams(hash.split('?')[1]);
+          return hashQueryParams.get(name);
+        }
+        return null;
+      };
+
+      const fromUrl = getParam('token');
+      if (fromUrl) {
+        localStorage.setItem('app_token', fromUrl);
+        return fromUrl;
+      }
+      const rawToken = localStorage.getItem('app_token');
+      if (rawToken === 'null' || rawToken === 'undefined') return null;
+      return rawToken;
     } catch (e) {
-      console.warn('Failed to parse URL token or storage', e);
+      console.warn('Failed to parse token from URL or storage', e);
       return null;
     }
   });
@@ -1446,7 +1462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const handleLanguageChange = async (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang);
+    localStorage.setItem('language', lang); // Note: Unified key 'language' matched with initializer
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1456,6 +1472,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       } catch (e) {
         console.error('Failed to sync language to server', e);
+      }
+    }
+  };
+
+  const handleThemeChange = async (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (token) {
+      try {
+        await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (e) {
+        console.error('Failed to sync theme to server', e);
       }
     }
   };
@@ -1514,18 +1546,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   useEffect(() => {
     const handleAuthSuccess = (userData: any) => {
-      if (localStorage.getItem('app_oauth_syncing')) return; 
+      if (localStorage.getItem('app_oauth_syncing') === 'true') return;
       localStorage.setItem('app_oauth_syncing', 'true');
 
-      const { token: newToken, ...info } = userData;
+      const { token: newToken, lang: authLang, ...info } = userData;
       localStorage.setItem('app_token', newToken);
       setToken(newToken);
       setUser(info);
-      setIsAuthModalOpen(false);
+      setIsAuthModalOpen(false); // Close auth modal immediately
+      
+      // Sync language if provided in OAuth payload
+      if (authLang && (authLang === 'ar' || authLang === 'en')) {
+        setLanguage(authLang as any);
+        localStorage.setItem('language', authLang);
+      }
       
       toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
       
-      setTimeout(() => localStorage.removeItem('app_oauth_syncing'), 2000);
+      const targetRef = userData.ref || localStorage.getItem('app_ref') || '/';
+      localStorage.removeItem('app_ref');
+      
+      // Sovereign: Only redirect if this window is NOT the main app window that was already visible
+      setTimeout(() => {
+        localStorage.removeItem('app_oauth_syncing');
+        
+        const currentPath = window.location.pathname;
+        // If we are already on home or chats, just stay there to avoid flickering
+        if ((targetRef === '/' || targetRef === '/chats') && (currentPath === '/' || currentPath === '/chats')) {
+          return;
+        }
+        
+        window.location.href = targetRef.startsWith('http') ? targetRef : (targetRef.startsWith('/') ? targetRef : '/' + targetRef);
+      }, 600);
     };
 
     // Parse both search and hash for tokens (Sovereign uses hash for popup redirects)
@@ -1544,7 +1596,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const urlToken = getParam('token');
     const urlUserRaw = getParam('user');
 
-    if (urlToken && !token) {
+    // Sovereign: Prioritize URL-based authentication signals over existing session data to support seamless redirects/popups
+    if (urlToken && urlToken !== token) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
       
@@ -1552,9 +1605,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (urlUserRaw) {
         try {
           userData = JSON.parse(decodeURIComponent(urlUserRaw));
+          // Synchronize user state immediately from URL payload to minimize UI flickering
           setUser(userData);
-        } catch (err) {
-          console.error('Failed to parse user from URL', err);
+        } catch (e) {
+          console.error('Failed to parse user from URL', e);
         }
       }
 
@@ -1574,10 +1628,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         setTimeout(() => window.close(), 500);
       } else {
-        // Not a popup, just clean the URL
-        const newUrl = window.location.pathname + window.location.hash.split('?')[0];
+        // Not a popup (Redirect Mode): Integrate user data via handleAuthSuccess to ensure full state sync and target redirection
+        handleAuthSuccess({ token: urlToken, ...userData });
+        // Clean the URL history to remove sensitive tokens without forcing a reload
+        const newUrl = window.location.pathname + (window.location.hash.includes('?') ? window.location.hash.split('?')[0] : window.location.hash);
         window.history.replaceState({}, '', newUrl);
-        toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
       }
     }
 
@@ -1663,11 +1718,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (data.user) {
-        setUser(data.user);
-        setBalance(Number(data.points || 0));
-        setBalanceUSD(Number(data.balance || 0));
-        if (data.user.language) setLanguage(data.user.language as Language);
+      // Sovereign: Handle both legacy wrapped and modern flat user response payloads for maximum resilience
+      const userProfile = data.user || (data.email ? data : null);
+      
+      if (userProfile) {
+        setUser(userProfile);
+        setBalance(Number(data.points || userProfile.points || 0));
+        setBalanceUSD(Number(data.balance || userProfile.balance || 0));
+        if (userProfile.language) setLanguage(userProfile.language as Language);
         if (data.economy) setEconomySettings(data.economy);
       }
       setIsAuthReady(true);
@@ -1714,7 +1772,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogle = async () => {
     try {
       const ref = localStorage.getItem('app_ref');
-      const lang = localStorage.getItem('app_lang') || 'ar';
+      const lang = localStorage.getItem('language') || 'ar';
       
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -1769,6 +1827,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+          
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -1806,6 +1869,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+          
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -2052,10 +2120,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-          setBalance(Number(data.points || 0));
-          setBalanceUSD(Number(data.balance || 0));
+        const userProfile = data.user || (data.email ? data : null);
+        if (userProfile) {
+          setUser(userProfile);
+          setBalance(Number(data.points || userProfile.points || 0));
+          setBalanceUSD(Number(data.balance || userProfile.balance || 0));
           if (data.economy) {
             setEconomySettings(data.economy);
           }
@@ -2278,7 +2347,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       language, setLanguage: handleLanguageChange, 
-      theme, setTheme, 
+      theme, setTheme: handleThemeChange, 
       dir, t, 
       isSidebarOpen, setIsSidebarOpen,
       user, setUser, isAuthReady,

@@ -14,9 +14,14 @@ export function initSocket(httpServer: HttpServer) {
   io.on("connection", (socket) => {
     console.log(`[Socket] New connection: ${socket.id}`);
     
-    socket.on("join_user_room", (userId: number) => {
+    socket.on("register_user", (userId: number) => {
       socket.join(`user_${userId}`);
-      console.log(`[Socket] User ${userId} joined room user_${userId}`);
+      console.log(`[Socket] User ${userId} registered and joined room user_${userId}`);
+    });
+
+    socket.on("chat_message", async (data: any) => {
+      const { handleChatMessage } = await import('../services/chat.js');
+      await handleChatMessage(socket, data);
     });
 
     socket.on("disconnect", () => {
