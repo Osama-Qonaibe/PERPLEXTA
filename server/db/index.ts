@@ -96,8 +96,3 @@ export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
     ledgerPool = null;
   }
 }
-
-initializeSovereignPools(
-  process.env.DATABASE_URL || '', 
-  process.env.LEDGER_DATABASE_URL || ''
-);

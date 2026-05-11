@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import fetch from 'node-fetch';
 import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
@@ -12,20 +13,19 @@ const getBaseUrl = (req: express.Request) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('x-forwarded-host') || req.get('host');
   const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
+  
+  // If we have an environment URL and it's not a generic localhost, prioritize it
+  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  }
+  
+  // Otherwise fallback to request headers (reliable in Cloud Run/Proxy)
   let origin = `${protocol}://${host}`;
-  if (envUrl && envUrl.startsWith('http')) origin = envUrl;
   return origin.endsWith('/') ? origin.slice(0, -1) : origin;
 };
 
-const getRedirectUri = (req?: any) => {
-  let baseUrl = process.env.APP_URL;
-  if (!baseUrl && req) {
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers.host;
-    baseUrl = `${protocol}://${host}`;
-  }
-  if (!baseUrl) baseUrl = 'http://localhost:3000';
-  return `${baseUrl.replace(/\/$/, '')}/api/auth/google/callback`;
+const getRedirectUri = (req: express.Request) => {
+  return `${getBaseUrl(req)}/api/auth/google/callback`;
 };
 
 router.post("/signup", async (req, res) => {
@@ -91,6 +91,155 @@ router.get("/google/url", (req, res) => {
     state: state
   });
   res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+});
+
+router.get("/google/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send('No code provided');
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: process.env.GOOGLE_CLIENT_ID || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        redirect_uri: getRedirectUri(req),
+        grant_type: 'authorization_code'
+      } as any).toString()
+    });
+
+    const tokens = await tokenResponse.json() as any;
+    if (tokens.error) {
+      console.error('[GoogleAuth] Token Error:', tokens.error);
+      return res.status(400).send('Auth failed');
+    }
+
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+    const googleUser = await userRes.json() as any;
+
+    if (!googleUser.email) return res.status(400).send('No email from Google');
+
+    const lowerEmail = googleUser.email.toLowerCase();
+    
+    // Check if user exists
+    let result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [lowerEmail]);
+    let user;
+
+    if (result.rows.length === 0) {
+      const role = lowerEmail === 'qoomre@gmail.com' ? 'admin' : 'user';
+      const insertResult = await pool.query(
+        `INSERT INTO users (email, name, avatar, provider, role) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role]
+      );
+      user = insertResult.rows[0];
+      await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+      await logSystemActivity(user.id, 'signup', 'User signed up via Google', {}, req);
+    } else {
+      user = result.rows[0];
+      if (user.status === 'suspended') return res.status(403).send('Account suspended');
+      
+      // Update info if from email provider but same email
+      if (user.provider !== 'google') {
+        await pool.query('UPDATE users SET provider = $1, avatar = $2 WHERE id = $3', ['google', googleUser.picture, user.id]);
+      }
+      await logSystemActivity(user.id, 'login', 'User logged in via Google', {}, req);
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    
+    // Robust state parsing
+    let ref = '';
+    let lang = 'ar';
+    if (state && typeof state === 'string') {
+      const parts = state.split('|');
+      ref = parts[0] || '';
+      lang = parts[1] || 'ar';
+    }
+
+    const redirectBase = getBaseUrl(req).replace(/\/+$/, '');
+    
+    // Flatten the payload so handleAuthSuccess in AppContext can process it correctly
+    const authPayload = encodeURIComponent(JSON.stringify({ 
+      token, 
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      role: user.role, 
+      avatar: user.avatar,
+      lang: lang
+    }));
+    
+    res.send(`
+      <html>
+        <head>
+          <title>Authenticating...</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body style="background: #0f0f11; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Tajawal', sans-serif;">
+          <div style="text-align: center; padding: 20px;">
+            <div style="width: 50px; height: 50px; border: 3px solid #10b981; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h2 style="color: #10b981; margin: 0 0 10px 0;">Authentication Successful</h2>
+            <p style="color: #9ca3af; margin: 0;">Finalizing your secure session...</p>
+          </div>
+          <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+          </style>
+          <script>
+            (function() {
+              try {
+                const data = JSON.parse(decodeURIComponent("${authPayload}"));
+                const origin = window.location.origin;
+                
+                // 1. Post Message to Opener
+                if (window.opener) {
+                  try {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, origin);
+                  } catch (e) {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
+                  }
+                }
+                
+                // 2. Broadcast Channel
+                try {
+                  const channel = new BroadcastChannel('app_oauth_channel');
+                  channel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
+                } catch (e) {}
+
+                // 3. Storage fallbacks
+                try {
+                  localStorage.setItem('app_token', data.token);
+                  localStorage.setItem('app_oauth_user', JSON.stringify(data));
+                  localStorage.setItem('app_oauth_trigger', Date.now().toString());
+                } catch (e) {}
+
+                // Final action: Close popup or Redirect main window
+                setTimeout(() => {
+                  if (window.opener && !window.opener.closed) {
+                    window.close();
+                  } else {
+                    const userQuery = encodeURIComponent(JSON.stringify({ 
+                      id: data.id, email: data.email, name: data.name, role: data.role, avatar: data.avatar 
+                    }));
+                    window.location.href = "${redirectBase}/#?token=" + data.token + "&user=" + userQuery + "&lang=" + data.lang;
+                  }
+                }, 800);
+              } catch (err) {
+                console.error('Auth processing failed', err);
+                window.location.href = "${redirectBase}/";
+              }
+            })();
+          </script>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('[GoogleAuth] Callback Error:', error);
+    res.status(500).send('Authentication processing failed');
+  }
 });
 
 export default router;

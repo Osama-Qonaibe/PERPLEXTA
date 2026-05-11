@@ -1528,17 +1528,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setTimeout(() => localStorage.removeItem('app_oauth_syncing'), 2000);
     };
 
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
+    // Parse both search and hash for tokens (Sovereign uses hash for popup redirects)
+    const getParam = (name: string) => {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get(name)) return searchParams.get(name);
+      
+      const hash = window.location.hash;
+      if (hash.includes('?')) {
+        const hashQueryParams = new URLSearchParams(hash.split('?')[1]);
+        return hashQueryParams.get(name);
+      }
+      return null;
+    };
+
+    const urlToken = getParam('token');
+    const urlUserRaw = getParam('user');
+
     if (urlToken && !token) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
-      const newUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, '', newUrl);
-      toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+      
+      let userData = null;
+      if (urlUserRaw) {
+        try {
+          userData = JSON.parse(decodeURIComponent(urlUserRaw));
+          setUser(userData);
+        } catch (err) {
+          console.error('Failed to parse user from URL', err);
+        }
+      }
+
+      // If we're in a popup, notify the opener and close
+      if (window.opener && window.opener !== window) {
+        window.opener.postMessage({ 
+          type: 'OAUTH_AUTH_SUCCESS', 
+          user: { token: urlToken, ...userData } 
+        }, window.location.origin);
+        
+        // Also use BroadcastChannel for same-origin robustness
+        const authChannel = new BroadcastChannel('app_oauth_channel');
+        authChannel.postMessage({ 
+          type: 'OAUTH_AUTH_SUCCESS', 
+          user: { token: urlToken, ...userData } 
+        });
+        
+        setTimeout(() => window.close(), 500);
+      } else {
+        // Not a popup, just clean the URL
+        const newUrl = window.location.pathname + window.location.hash.split('?')[0];
+        window.history.replaceState({}, '', newUrl);
+        toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+      }
     }
 
-    const ref = params.get('ref');
+    const ref = getParam('ref');
     if (ref) localStorage.setItem('app_ref', ref);
 
     const messageListener = (event: MessageEvent) => {
@@ -1561,11 +1604,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (storedToken && userDataJson) {
           try {
             const userData = JSON.parse(userDataJson);
-            if (userData.token === storedToken) {
-              handleAuthSuccess(userData);
-              localStorage.removeItem('app_oauth_user');
-              localStorage.removeItem('app_oauth_trigger');
-            }
+            // Ensure payload is flattened if it was wrapped by popup logic
+            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
+            handleAuthSuccess(processedUser);
+            localStorage.removeItem('app_oauth_user');
+            localStorage.removeItem('app_oauth_trigger');
           } catch (e) { console.error('Failed to parse OAuth storage data', e); }
         }
       }

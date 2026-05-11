@@ -37,7 +37,22 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-app.use('/api/', globalLimiter);
+// Request Logger
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`[API Request] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
+// --- STATIC ASSETS ---
+const publicPath = path.join(process.cwd(), 'public');
+const uploadsPath = path.join(process.cwd(), 'uploads');
+
+app.use(express.static(publicPath));
+app.use('/uploads', express.static(uploadsPath));
+
+app.use('/api', globalLimiter);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
@@ -53,6 +68,7 @@ import systemRoutes from './routes/system.js';
 import walletRoutes from './routes/wallet.js';
 import planRoutes from './routes/plans.js';
 import notificationRoutes from './routes/notifications.js';
+import subscriptionRoutes from './routes/subscriptions.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
@@ -64,17 +80,21 @@ app.use('/api/user', userRoutes); // Singular alias
 app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 
-// --- API 404 HANDLER ---
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
+// Explicit economy fallback for robustness
+app.get('/api/economy', async (req, res) => {
+  try {
+    const { pool: dbPool } = await import('./db/index.js');
+    if (!dbPool) return res.json({ points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
+    const result = await dbPool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent FROM system_settings LIMIT 1');
+    res.json(result.rows[0] || { points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
+  } catch (e) {
+    res.json({ points_per_dollar: 100, min_payout_usd: 10, min_deposit_usd: 5, referral_bonus_percent: 10 });
+  }
 });
-
-// --- STATIC ASSETS & SPA ---
-const uploadsPath = path.join(process.cwd(), 'uploads');
-app.use('/uploads', express.static(uploadsPath));
 
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), 'dist');
@@ -85,5 +105,11 @@ if (process.env.NODE_ENV === "production") {
     }
   });
 }
+
+// --- API 404 HANDLER ---
+// Should be AFTER other routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
+});
 
 export { app };

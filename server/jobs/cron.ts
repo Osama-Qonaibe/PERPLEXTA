@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { runSystemMaintenance } from '../db/migrations.js';
+import { runSystemMaintenance, monitorDatabases } from '../db/migrations.js';
 import { pool } from '../db/index.js';
 import { createNotification } from '../services/notifications.js';
 
@@ -12,7 +12,8 @@ export function initCronJobs() {
 
   // Database monitoring every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
-    // This could also be a separate monitoring service
+    console.log('[Cron] 💓 Running database heartbeat check...');
+    await monitorDatabases();
   });
 
   // Subscription reminders at 3:05 AM

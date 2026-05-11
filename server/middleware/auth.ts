@@ -23,14 +23,22 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       const userPayload = user as any;
       
       try {
-        const userCheck = await pool.query('SELECT status FROM users WHERE id = $1', [userPayload.id]);
-        if (userCheck.rows.length > 0 && userCheck.rows[0].status === 'suspended') {
+        const userCheck = await pool.query('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
+        if (userCheck.rows.length === 0) {
+          res.status(401).json({ error: 'User not found' });
+          return;
+        }
+
+        if (userCheck.rows[0].status === 'suspended') {
           res.status(403).json({ 
             error: 'Account Suspended', 
             message: 'Your account has been suspended by the administration. Please contact support.' 
           });
           return;
         }
+
+        // Update user payload with actual role from DB to ensure real-time accuracy
+        userPayload.role = userCheck.rows[0].role;
       } catch (dbErr) {
         console.error('[Security] Failed to verify user status:', dbErr);
       }
