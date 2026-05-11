@@ -13,6 +13,8 @@ import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto';
+import { rateLimit } from 'express-rate-limit';
+import helmet from 'helmet';
 import pkg from 'pg';
 const { Pool } = pkg;
 import fs from 'fs/promises';
@@ -47,10 +49,17 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 100 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    const blocked = ['.exe', '.sh', '.php', '.bat', '.cmd', '.js', '.vbs', '.msi'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (blocked.includes(ext)) {
+      return cb(new Error('File type not allowed for security reasons.'));
+    }
+    cb(null, true);
   }
 });
 
-// Multer error handling middleware
 const handleMulterError = (err: any, req: any, res: any, next: any) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -133,7 +142,6 @@ const sovereignMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fi
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
     const base64Data = dataBuffer.toString('base64');
     
-    // SOVEREIGN: Elite Multimodal Sensory Analysis Prompt
     const prompt = `--- [SOVEREIGN_MULTIMODAL_SENSORY_ACTIVATION] ---
 [IDENTITY]: You are the Sovereign Multimodal Intelligence Sensor. 
 [TASK]: Execute high-fidelity forensic analysis of the attached ${mimeType} file "${fileName}".
@@ -187,7 +195,6 @@ Output format: [SENSORY_EXTRACTION_START] ... [SENSORY_EXTRACTION_END]`;
   try {
     let result = await tryExtraction(apiKey);
     
-    // Fallback logic using the Vault
     if (!result || (typeof result === 'object' && (result as any).error === 'KEY_INVALID')) {
       console.log(`[Sensory Sensor] Primary key failing. Accessing Sovereign Vault...`);
       try {
@@ -220,7 +227,6 @@ const extractTextFromFile = async (dataBuffer: Buffer, mimeType: string, fileNam
   try {
     let resultText = '';
     
-    // Sovereign: Handle multimodal files via the Sensory Layer FIRST if they are media
     if (mimeType.startsWith('image/') || mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
        console.log(`[Extraction Engine] 🎙️ Media detected: ${fileName}. Activating Sovereign Multimodal Sense.`);
        return await sovereignMultimodalSense(dataBuffer, mimeType, fileName);
@@ -264,8 +270,6 @@ const extractTextFromFile = async (dataBuffer: Buffer, mimeType: string, fileNam
       resultText = dataBuffer.toString('utf-8').trim();
     }
     else {
-      // Legacy Override: High-Fidelity Sensory fallback for unknown or generic formats
-      // This bypasses legacy MIME type rejections by attempting multimodal sense on EVERYTHING unknown
       console.log(`[Extraction Engine] 🔍 Unknown format "${mimeType}" for "${fileName}". Falling back to Multimodal Sense.`);
       resultText = await sovereignMultimodalSense(dataBuffer, mimeType, fileName);
     }
@@ -281,12 +285,11 @@ const extractTextFromFile = async (dataBuffer: Buffer, mimeType: string, fileNam
 const sovereignTTS = async (text: string, voiceId?: string): Promise<Buffer | null> => {
   if (!text || text.trim().length < 5) return null;
   
-  // 1. Try ElevenLabs (Premier Vocal Synthesis)
   try {
      const elevenKeyRes = await pool.query("SELECT encrypted_key FROM api_keys_vault WHERE provider = 'elevenlabs' AND is_active = true LIMIT 1");
      if (elevenKeyRes.rows.length > 0) {
         const key = decrypt(elevenKeyRes.rows[0].encrypted_key).trim().replace(/^Bearer\s+/i, '');
-        const vId = voiceId || 'pNInz6obpguePs3dfguv'; // Global Sovereign Voice (Professional, Authoritative)
+        const vId = voiceId || 'pNInz6obpguePs3dfguv'; 
         
         console.log(`[TTS] 🎙️ Orchestrating ElevenLabs Synthesis for: ${text.substring(0, 30)}...`);
         const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}`, {
@@ -316,7 +319,6 @@ const sovereignTTS = async (text: string, voiceId?: string): Promise<Buffer | nu
      console.error('[TTS] ElevenLabs Orchestration Failure:', err);
   }
 
-  // 2. Try Google Cloud TTS (High-Fidelity Fallback)
   try {
     const googleKeyRes = await pool.query("SELECT encrypted_key FROM api_keys_vault WHERE provider = 'google' AND is_active = true LIMIT 1");
     if (googleKeyRes.rows.length > 0) {
@@ -329,7 +331,7 @@ const sovereignTTS = async (text: string, voiceId?: string): Promise<Buffer | nu
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({
            input: { text: text.substring(0, 5000) },
-           voice: { languageCode: 'en-US', name: 'en-US-Studio-O' }, // Studio-grade voices
+           voice: { languageCode: 'en-US', name: 'en-US-Studio-O' }, 
            audioConfig: { audioEncoding: 'MP3', pitch: 0, speakingRate: 1.0 }
          })
        });
@@ -818,7 +820,6 @@ const logSystemActivity = async (userId: number | null, action: string, descript
     const newLog = result.rows[0];
     console.log(`System Activity: ${action} - ${description}`);
     
-    // Broadcast to admins
     io.emit('new_system_activity', { ...newLog, type: 'system_event' });
   } catch (error) {
     console.error('Failed to log system activity:', error);
@@ -862,9 +863,7 @@ const performSovereignSearch = async (query: string, userId: number, socket: any
       }
     }
 
-    // Default Fallback: If no route found or no keys in route, pick any active search from vault
     if (!activeSearch) {
-      // Sovereign: Instead of hardcoding providers, we query for any active search key in the vault
       const searchKeys = await pool.query("SELECT provider, encrypted_key FROM api_keys_vault WHERE is_active = true AND (provider = 'serper' OR provider = 'tavily' OR provider = 'google_search') LIMIT 1");
       if (searchKeys.rows.length > 0) {
         activeSearch = searchKeys.rows[0];
@@ -1030,7 +1029,6 @@ const checkUserQuota = async (userId: number, toolId: string, req?: express.Requ
     const today = new Date().toISOString().split('T')[0];
     const monthStartStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
     
-    // Optimized: Single query for both daily and monthly usage
     const usageRes = await pool.query(`
       SELECT 
         SUM(CASE WHEN usage_date >= $3 THEN usage_count ELSE 0 END) as monthly_total,
@@ -1397,7 +1395,6 @@ async function runDatabaseMigrations() {
 }
 
 async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: any, customLedgerPool?: any) {
-  // Master Sync: Ensure core pools are available for seeding
   if (!pool) {
     console.warn("[InitDB] 🛡️ FATAL: Core pool is missing. Structural audit aborted.");
     return;
@@ -1458,7 +1455,6 @@ async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: an
     }
   }
 
-  // Self-Healing Column Audit
   await ensureColumn(targetPool, 'user_files', 'chat_id', 'INTEGER REFERENCES chats(id) ON DELETE CASCADE');
   await ensureColumn(targetPool, 'users', 'kyc_selfie', 'TEXT');
   await ensureColumn(targetPool, 'users', 'kyc_full_name', 'VARCHAR(255)');
@@ -1730,14 +1726,12 @@ async function proactiveOrchestratorSync() {
       OR (tool_id = 'canvas' AND (primary_model = '' OR primary_model IS NULL OR primary_model LIKE '%gemini-2.5%'))
     `);
     
-    // Also check fallbacks specifically
     await pool.query(`
       UPDATE tool_orchestrator 
       SET fallback1_provider = 'google', fallback1_model = 'gemini-1.5-flash'
       WHERE fallback1_model LIKE '%gemini-2.5%' OR fallback1_model LIKE '%audio-preview%';
     `);
 
-    // Ensure Sovereign Memory has a reliable default to prevent startup breakage
     await pool.query(`
       UPDATE tool_orchestrator 
       SET primary_provider = 'google', primary_model = 'gemini-1.5-flash', is_active = true
@@ -1752,7 +1746,6 @@ async function proactiveOrchestratorSync() {
 async function runSystemMaintenance() {
   console.log('[Maintenance] 🧹 Starting sovereign system maintenance routine...');
   try {
-    // 1. Archive/Prune old usage data (Older than 90 days)
     const pruneUsage = await pool.query(`
       DELETE FROM user_usage 
       WHERE usage_date < CURRENT_DATE - INTERVAL '90 days'
@@ -1775,17 +1768,13 @@ async function runSystemMaintenance() {
 
     console.log(`[Maintenance] Pruned ${pruneUsage.rowCount} usage, ${pruneActivity.rowCount} activity, ${pruneSystemLogs.rowCount} system logs, and ${pruneSecurityAlerts.rowCount} security alerts.`);
 
-    // 2. Clear System Caches & In-Memory Logic
     console.log('[Maintenance] ♻️ Clearing session caches and in-memory optimizations...');
-    // We don't clear userSockets as they are live, but we could prune stale ones if tracked.
-    // Proactive reset of API budgets for all providers
     await pool.query(`
       UPDATE api_keys_vault 
       SET used_today = 0, last_reset_date = CURRENT_DATE 
       WHERE last_reset_date < CURRENT_DATE
     `);
 
-    // 3. Security Guard: Monitor Suspicious Activity
     console.log('[Maintenance] 🛡️ Auditing system for suspicious usage patterns...');
     
     // Pattern A: High-frequency bursts (Users with > 500 actions in the last 24 hours)
@@ -1848,7 +1837,6 @@ async function runSystemMaintenance() {
       }
     }
 
-    // 4. Prune old system records (Older than 30 days for logs, 60 days for alerts)
     const pruneLogs = await pool.query(`
       DELETE FROM system_logs 
       WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'
@@ -1873,16 +1861,18 @@ async function startServer() {
   console.log('[Server] startServer() called. Initializing app...');
   
   const app = express();
+  app.set('trust proxy', 1); 
+  app.use(helmet({
+    contentSecurityPolicy: false, // CSP is handled manually below for platform compatibility
+    crossOriginEmbedderPolicy: false
+  }));
   const httpServer = createServer(app);
   
-  // Initialize Socket.io early
   io = new Server(httpServer, {
-    cors: { origin: "*" }
+    cors: { origin: process.env.APP_URL }
   });
 
-  // --- Middleware ---
   app.use((req, res, next) => {
-    // Highly permissive CSP for AI Studio preview environment
     res.setHeader(
       'Content-Security-Policy',
       "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; connect-src * 'self' 'unsafe-inline' 'unsafe-eval' blob: ws: wss:; frame-ancestors * 'self';"
@@ -1892,7 +1882,6 @@ async function startServer() {
   
   app.use(cors({
     origin: (origin, callback) => {
-      // Allow all origins, including null (for data/file URIs if needed)
       callback(null, true);
     },
     credentials: true,
@@ -1902,6 +1891,37 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  
+  // Sovereign Rate Limiting Engine
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 2000, 
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please slow down.' }
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // 20 attempts per 15 mins (as requested)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Security: Too many auth attempts. Please try again later.' }
+  });
+
+  const chatLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30, // 30 messages per minute (as requested)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many messages. Please wait a moment.' }
+  });
+
+  // Apply selectors
+  app.use('/api/', globalLimiter);
+  app.use('/api/auth/', authLimiter);
+  app.use('/api/chat/', chatLimiter);
+  app.use('/api/messages/', chatLimiter); // Apply to message routes too
 
   app.use((req, res, next) => {
     if (req.url.startsWith('/api')) {
@@ -1910,13 +1930,10 @@ async function startServer() {
     next();
   });
 
-  // Health check early
-  app.get('/api/ping', (req, res) => res.json({ status: 'early_ok', time: new Date().toISOString() }));
+app.get('/api/ping', (req, res) => res.json({ status: 'early_ok', time: new Date().toISOString() }));
 
-  // Global Error Handlers for Sovereignty
   process.on('uncaughtException', (err) => {
     console.error(`[FATAL] Uncaught Exception at ${new Date().toISOString()}:`, err);
-    // Keep server alive if possible in dev
   });
 
   process.on('unhandledRejection', (reason, promise) => {
@@ -1926,23 +1943,18 @@ async function startServer() {
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('YOUR_MIN_64_CHAR')) {
     console.warn(' [WARNING] 🛡️ SYSTEM SECURITY: JWT_SECRET is missing or using placeholder.');
     console.warn(' [NOTICE] Sessions may not be persistent or secure until JWT_SECRET is set in environment.');
-    // Set a runtime fallback to prevent crashes if not set
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'sovereign_fallback_secure_secret_2026_!#@';
   }
   
   try {
-    // 0. Ensure environment variables and databases are ready
     await runDatabaseMigrations();
     
-    // Master Sync: Ensure core orchestrator tools are seeded before processing traffic
     await initDb();
     await monitorDatabases();
     await proactiveOrchestratorSync();
     await syncSystemTemplates();
     await refreshCachedAppName();
     
-    // --- SYSTEM ORCHESTRATION & MAINTENANCE ---
-    // Start maintenance in background to not block gateway boot
     runSystemMaintenance().catch(e => console.error('[Startup] Deferred maintenance failed:', e));
     
     cron.schedule('0 4 1 * *', async () => {
@@ -2436,11 +2448,8 @@ async function startServer() {
 
       if (target_criteria.plan && target_criteria.plan !== 'any') {
         query += ` AND s.plan_idForEmailCampaign = $${paramIndex}`;
-        // Note: The UI will send plan id. I'll fix the logic below to handle the actual criteria.
-        // Actually I should just use the target_criteria directly in building the query.
       }
 
-      // Re-building logic properly
       query = `
         SELECT u.id, u.email, u.name, u.created_at, u.last_login_at,
                s.status as subscription_status, s.plan_id
@@ -2690,7 +2699,6 @@ async function startServer() {
       await ledgerClient.query('COMMIT');
       res.json({ success: true });
 
-      // Send Email
       const userRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [userId]);
       if (userRes.rows.length > 0) {
         const user = userRes.rows[0];
@@ -2748,7 +2756,6 @@ async function startServer() {
   // --- User Profile Routes ---
   app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-      // Strictly using 'pool' for Core DB (Users & Subscriptions)
       const result = await pool.query(`
         SELECT u.id, u.email, u.name, u.avatar, u.role, u.kyc_status, u.custom_instructions, u.language,
                s.status as sub_status, s.billing_period, s.current_period_end, s.last_period_start, s.created_at as sub_created_at,
@@ -2879,7 +2886,6 @@ async function startServer() {
       const encryptedPassword = password ? encrypt(password) : null;
       const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
-      // Upsert logic for registry
       await pool.query(`
         INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -2924,7 +2930,6 @@ async function callAIProvider(
 ) {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
   
-  // Clean individual API key (Remove Bearer prefix and trim whitespace)
   const cleanApiKey = apiKey ? apiKey.trim().replace(/^Bearer\s+/i, '') : '';
   if (!cleanApiKey) throw new Error(`No valid API key provided for ${provider}`);
   const messages: any[] = [];
@@ -2932,12 +2937,10 @@ async function callAIProvider(
     messages.push({ role: 'system', content: systemPrompt });
   }
   
-  // Add history
   history.forEach(msg => {
     messages.push({ role: msg.role, content: msg.content });
   });
 
-     // Handle file data generically for the provider
      let messageContent: any = prompt;
      if (options.fileData && options.fileData.data) {
         const mimeType = options.fileData.type || 'application/octet-stream';
@@ -2963,7 +2966,6 @@ async function callAIProvider(
         }
      }
   
-     // Add current prompt
      messages.push({ role: 'user', content: messageContent });
 
 
@@ -3343,10 +3345,7 @@ async function callAIProvider(
         let finalSys = protocolOverride || systemPrompt;
         
         if (isAudioModel) {
-          // Lyria is extremely sensitive. 
-          // Do NOT use [SYSTEM_DIRECTIVE] or complex markers. 
-          // Use a clean, singular task description to avoid 400 rejection in v1beta.
-          finalSys = ""; // We will put the directive directly into the user message part if needed
+          finalSys = ""; 
         }
         
         const geminiBody: any = {
@@ -3370,7 +3369,6 @@ async function callAIProvider(
               }
               
               if (acc.length > 0 && acc[acc.length - 1].role === role) {
-                // Merge consecutive messages with the same role
                 acc[acc.length - 1].parts = [...acc[acc.length - 1].parts, ...parts];
               } else {
                 acc.push({ role, parts });
@@ -3402,7 +3400,6 @@ async function callAIProvider(
           if (effectiveIncludeSystem) {
              geminiBody.system_instruction = { parts: [{ text: finalSys }] };
           } else if (geminiBody.contents.length > 0) {
-             // Ensure the system directive is MERGED into the first part text if possible
              if (geminiBody.contents[0].parts[0]?.text) {
                 geminiBody.contents[0].parts[0].text = `[SYSTEM_DIRECTIVE]: ${finalSys}\n\n${geminiBody.contents[0].parts[0].text}`;
              } else {
@@ -3418,10 +3415,8 @@ async function callAIProvider(
         let finalContents = geminiBody.contents;
         
         if (isAudioModel) {
-          // Lyria works best with single-turn. Force context to just the last message.
           const lastUserMsg = geminiBody.contents.filter((m: any) => m.role === 'user').pop();
           if (lastUserMsg) {
-             // For audio models, we use a VERY minimal, single-part prompt.
              const audioPrompt = "Generate high-quality orchestral audio. MOOD: Epic. STYLE: Classical.";
              if (lastUserMsg.parts[0]?.text) {
                 lastUserMsg.parts[0].text = `${audioPrompt}\n\n${lastUserMsg.parts[0].text}`;
@@ -3450,13 +3445,11 @@ async function callAIProvider(
             const errorData = await geminiRes.clone().json().catch(() => ({}));
             console.error(`[ContextEngine] Gemini API Error ${geminiRes.status}:`, JSON.stringify(errorData, null, 2));
             
-            // Sovereign Resiliency: Handle 404 Model Not Found for specific API version
             if (geminiRes.status === 404 && ver === 'v1beta' && !verOverride) {
               console.warn(`[Orchestrator] ⚠️ 404 on v1beta for ${modelId}. Attempting fallback to v1...`);
               return await tryGeminiCall('v1', includeSystemInstruction, protocolOverride);
             }
             
-            // Sovereign Resiliency: Handle 400 system_instruction rejection
             if (geminiRes.status === 400 && includeSystemInstruction) {
               console.warn(`[Orchestrator] ⚠️ 400 Error (Potential system_instruction rejection). Attempting fallback to [SYSTEM_DIRECTIVE] pattern...`);
               return await tryGeminiCall(ver, false, protocolOverride);
@@ -3465,27 +3458,23 @@ async function callAIProvider(
             console.error(`[ContextEngine] Failed Body Part:`, bodyStr.substring(0, 1000));
           }
 
-      // If the model doesn't support system_instruction or gives a generic 400
       if (geminiRes.status === 400) {
          const errBody = await geminiRes.clone().json().catch(() => ({}));
          console.warn(`[Orchestrator] ⚠️ Adaptive Fallback Triggered: Model ${modelId} rejected request (400). Error:`, JSON.stringify(errBody));
          
          const originalProtocol = protocolOverride || systemPrompt;
 
-         // Level 1: If system_instruction failed, try moving it to the prompt parts (Level 1)
          if (includeSystemInstruction && originalProtocol) {
            console.log(`[Orchestrator] 🔄 Level 1 Fallback: Moving protocol to prompt for ${modelId}...`);
            return await tryGeminiCall(ver, false, originalProtocol);
          }
          
-         // Level 2: If still failing, use a very minimal English protocol (Level 2)
          if (originalProtocol && originalProtocol.length > 200) {
            console.log(`[Orchestrator] 🔄 Level 2 Fallback: Using minimal technical protocol for ${modelId}...`);
            const minimalProtocol = "Identity: PERPLEXTA Maestro. Role: Professional Orchestra Studio. Task: Process instructions and output EXACTLY one ```audio [URL] ``` block. Do not hallucinate.";
            return await tryGeminiCall(ver, false, minimalProtocol);
          }
 
-         // Level 3: Desperate fallback - strip protocol for the model (Level 3)
          if (protocolOverride || systemPrompt) {
            console.log(`[Orchestrator] 🚨 Level 3 Fallback: Stripping protocol for ${modelId}...`);
            return await tryGeminiCall('v1', false, "");
@@ -3500,10 +3489,8 @@ async function callAIProvider(
         }
       };
 
-      // Use v1beta by default as it is most feature-complete, fallback to v1 if 404
       let response = await tryGeminiCall('v1beta');
       
-      // Fallback to v1 if v1beta is not found for this specific model
       if (response.status === 404) {
         console.log(`[DEBUG] Gemini v1beta 404, trying v1 for model ${modelId}`);
         const fallbackRes = await tryGeminiCall('v1');
@@ -4088,7 +4075,6 @@ User Content: ${content}`;
       const chatId = req.params.id as string;
       const userId = (req as any).user.id;
 
-      // Verify chat belongs to user
       const chatOwnership = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
       if (chatOwnership.rows.length === 0 || chatOwnership.rows[0].user_id !== userId) {
         return res.status(403).json({ error: 'Access Denied' });
@@ -4105,14 +4091,13 @@ User Content: ${content}`;
   app.post("/api/messages/:id/feedback", authenticateToken, async (req, res) => {
     try {
       const messageId = req.params.id;
-      const { feedback } = req.body; // 1 (up), -1 (down), 0 (neutral)
+      const { feedback } = req.body; 
       const userId = (req as any).user.id;
 
       if (![1, -1, 0].includes(feedback)) {
         return res.status(400).json({ error: 'Invalid feedback value' });
       }
 
-      // Verify message belongs to a chat owned by this user
       const messageCheck = await pool.query(`
         SELECT m.id FROM messages m 
         JOIN chats c ON m.chat_id = c.id 
@@ -4156,7 +4141,6 @@ User Content: ${content}`;
       const messageId = req.params.id;
       const userId = (req as any).user.id;
 
-      // Verify message ownership through chat
       const messageCheck = await pool.query(`
         SELECT m.id FROM messages m 
         JOIN chats c ON m.chat_id = c.id 
@@ -4180,11 +4164,9 @@ User Content: ${content}`;
       const { chatId, afterId } = req.params;
       const userId = req.user.id;
 
-      // Verify chat ownership
       const chatCheck = await pool.query('SELECT id FROM chats WHERE id = $1 AND user_id = $2', [chatId, userId]);
       if (chatCheck.rows.length === 0) return res.status(404).json({ error: "Chat not found" });
 
-      // Delete all messages in this chat with ID >= afterId (branching)
       await pool.query('DELETE FROM messages WHERE chat_id = $1 AND id >= $2', [chatId, afterId]);
       res.json({ success: true });
     } catch (error) {
@@ -4233,7 +4215,6 @@ User Content: ${content}`;
       const today = new Date().toISOString().split('T')[0];
       const monthStartStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
-      // Get current subscription limits
       const subRes = await pool.query(`
         SELECT p.limits, p.name_en, p.name_ar, s.status, s.billing_period
         FROM subscriptions s
@@ -4244,7 +4225,6 @@ User Content: ${content}`;
       const planInfo = subRes.rows[0] || { limits: {}, name_en: 'Free Plan' };
       const limits = planInfo.limits || {};
 
-      // Get all tools usage for this user
       const usageRes = await pool.query(`
         SELECT 
           tool_id,
@@ -4263,7 +4243,6 @@ User Content: ${content}`;
         return acc;
       }, {} as Record<string, { daily: number, monthly: number }>);
 
-      // Merge with tools list
       const detailedUsage = tools.map(tool => {
         const usage = usageMap[tool.id] || { daily: 0, monthly: 0 };
         const limit = limits[tool.id];
@@ -4362,7 +4341,6 @@ User Content: ${content}`;
   app.post("/api/memories/prune", authenticateToken, async (req, res) => {
     try {
       const userId = (req as any).user.id;
-      // Delete the 10 oldest memories
       await pool.query(`
         DELETE FROM chat_memories 
         WHERE id IN (
@@ -4387,7 +4365,6 @@ User Content: ${content}`;
     const toolIdStr = tool_id as string;
     const chatIdNum = chat_id ? parseInt(chat_id) : 0;
     
-    // Security: Limit file size to 25MB base64 (~18MB actual)
     if (file_data && file_data.data && file_data.data.length > 25 * 1024 * 1024) {
       throw new Error('File payload too large (Limit: 25MB)');
     }
@@ -4400,7 +4377,6 @@ User Content: ${content}`;
 
     const modelIdStr = model_id as string;
     
-    // Model ID to Tool ID Mapping (Sovereign Routing Strategy)
     let effectiveToolId = toolIdStr;
     if (toolIdStr === 'chat') {
       if (modelIdStr === 'fast') effectiveToolId = 'chat_fast';
@@ -4408,12 +4384,11 @@ User Content: ${content}`;
       else if (modelIdStr === 'thinking') effectiveToolId = 'chat_reasoning';
     }
 
-    // INTERNAL ALIASING: Absolute Sovereign Routing
     let routingSearchId = effectiveToolId;
     if (effectiveToolId === 'sound_studio') routingSearchId = 'canvas';
 
     let finalPrompt = promptStr;
-    const originalUserIntentForSynthesis = promptStr; // Sovereign: Guard original intent for clean memory extraction
+    const originalUserIntentForSynthesis = promptStr; 
     let finalSystemPrompt = systemPromptStr || '';
 
     const [userContextRes, memoryRes, subCountRes, routeResult, historyRes, quota, chatRes] = await Promise.all([
@@ -4869,7 +4844,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
               const msg = err?.message || String(err || '');
               console.error(`[Orchestrator] ❌ Attempt ${attempts}/${maxAttempts} failed: ${msg}`);
               
-              // FASTER FAILOVER: If it's a Quota Error (429), don't retry. Move to next fallback immediately.
               if (msg.includes('429')) {
                  lastError = `Rate limited (429): ${msg}`;
                  throw new Error(lastError); 
@@ -4884,7 +4858,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
           }
         } catch (err: any) {
           lastError = err.message || String(err);
-          // Rule 10.3: Silent Failover. Discretely log the layer transition without interrupting the sovereign experience.
           console.log(`[Orchestrator] 🔄 Layer Transition: Routing via fallback provider (${target.provider}). Error: ${lastError}`);
         }
       }
@@ -5186,7 +5159,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     }
   });
 
-  // --- System Settings Routes ---
   app.get("/api/settings", async (req, res) => {
     console.log('[API] GET /api/settings');
     try {
@@ -5266,7 +5238,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     }
   });
 
-  // --- Economy Settings Routes (Ledger DB) ---
   app.get("/api/admin/economy", authenticateAdmin, async (req, res) => {
     try {
       const result = await ledgerPool.query('SELECT * FROM economy_settings LIMIT 1');
@@ -5312,7 +5283,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     }
   });
 
-  // --- Database Orchestration Routes ---
   app.post("/api/admin/databases/test", authenticateAdmin, async (req, res) => {
     const config = req.body.config || req.body;
     let testPool: any = null;
@@ -5408,7 +5378,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       ]);
 
       if (activate) {
-        console.log(`[Admin] Activating new database connection: ${id}`);
         if (id === 'core' || id === 'ledger') {
           const coreRes = await pool.query("SELECT connection_string FROM db_connections_registry WHERE id = 'core'");
           const ledgerRes = await pool.query("SELECT connection_string FROM db_connections_registry WHERE id = 'ledger'");
@@ -5421,7 +5390,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
             initializeSovereignPools(coreConn, ledgerConn);
             initDb('additive').catch(e => console.error('[Init] Post-activation sync failed:', e));
           } catch (decryptErr) {
-            console.error('[System] Registry decryption failed during activation. Falling back to environment variables.');
             initializeSovereignPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
           }
       }
@@ -5652,7 +5620,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
         WHERE id = (SELECT id FROM system_settings LIMIT 1)
       `, [publishableKey, encryptedSecret, encryptedWebhook, isLiveMode]);
 
-      // Reset stripe client to force reload
       stripeClient = null;
       stripeWebhookSecret = null;
 
@@ -5665,8 +5632,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
 
   app.post("/api/admin/settings/stripe/verify", authenticateAdmin, async (req, res) => {
     try {
-      // Force reload stripe client to use potentially updated but not yet verified keys
-      // Actually, it's better to just try calling getStripe() which will load from DB
       stripeClient = null; 
       stripeWebhookSecret = null;
       
@@ -5680,7 +5645,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       
       if (accounts && accounts.data.length > 0) {
         const account = accounts.data[0];
-        // Update status in DB
         await pool.query(`
           UPDATE system_settings SET 
             stripe_status = 'active',
@@ -5702,7 +5666,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     }
   });
 
-  // --- Plans Routes ---
   app.get("/api/plans", async (req, res) => {
     try {
       const result = await pool.query('SELECT * FROM plans WHERE is_visible = true ORDER BY id ASC');
@@ -5733,7 +5696,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *
       `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_visible, monthly_price, annual_price, color, JSON.stringify(features || []), JSON.stringify(limits || {})]);
       
-      // Forensic Audit
       await pool.query(`
         INSERT INTO system_logs (user_id, action, description, metadata)
         VALUES ($1, 'create_plan', $2, $3)
@@ -5751,7 +5713,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       const { id } = req.params;
       const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_visible, monthly_price, annual_price, color, features, limits } = req.body;
       
-      // Get old plan for audit
       const oldPlan = await pool.query('SELECT * FROM plans WHERE id = $1', [id]);
 
       const result = await pool.query(`
@@ -5765,7 +5726,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
         return res.status(404).json({ error: 'Plan not found' });
       }
 
-      // Forensic Audit
       await pool.query(`
         INSERT INTO system_logs (user_id, action, description, metadata)
         VALUES ($1, 'update_plan', $2, $3)
@@ -5788,7 +5748,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       
       await pool.query('DELETE FROM plans WHERE id = $1', [id]);
       
-      // Forensic Audit
       await pool.query(`
         INSERT INTO system_logs (user_id, action, description, metadata)
         VALUES ($1, 'delete_plan', $2, $3)
@@ -5801,7 +5760,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     }
   });
 
-  // --- Helper: Sovereign Subscription Period Calculator ---
   const calculatePeriodEnd = async (userId: number, billingCycle: 'monthly' | 'annual', client?: any) => {
     const dbClient = client || pool;
     const existingSub = await dbClient.query(
@@ -5811,12 +5769,10 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
 
     let periodStart = new Date();
     let baseDate = new Date();
-    // Strict Logic: If an active plan exists and it's still in the future, we extend from that end date.
-    // If it's expired or doesn't exist, we start from exactly 'now'.
     if (existingSub.rows.length > 0 && existingSub.rows[0].current_period_end) {
       const potentialBase = new Date(existingSub.rows[0].current_period_end);
       if (potentialBase > baseDate) {
-        periodStart = potentialBase; // The new period starts when the old one ends
+        periodStart = potentialBase; 
         baseDate = potentialBase;
         console.log(`[SubscriptionOrchestrator] Extending existing active sub for user ${userId}. Base: ${baseDate.toISOString()}`);
       }
@@ -5850,7 +5806,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
     return monthly * 12 * (1 - discount / 100);
   };
 
-  // --- Subscription Purchase Routes ---
   app.post("/api/subscriptions/pay-with-balance", authenticateToken, async (req, res) => {
     const client = await pool.connect();
     const ledgerClient = await ledgerPool.connect();
@@ -5863,7 +5818,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
         return;
       }
 
-      // 1. Get Plan Details
       const planRes = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
       if (planRes.rows.length === 0) {
         res.status(404).json({ error: 'Plan not found' });
@@ -5872,7 +5826,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       const plan = planRes.rows[0];
       const priceUSD = calculatePlanPrice(plan, billingCycle);
 
-      // Get economy settings for conversion
       const economyRes = await ledgerPool.query('SELECT points_per_dollar FROM economy_settings LIMIT 1');
       const pointsPerDollar = economyRes.rows.length > 0 ? economyRes.rows[0].points_per_dollar : 1000;
       const pricePoints = priceUSD * pointsPerDollar;
@@ -5880,7 +5833,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       await ledgerClient.query('BEGIN');
       await client.query('BEGIN');
 
-      // 2. Check User Balance
       const walletRes = await ledgerClient.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
       if (walletRes.rows.length === 0 || parseFloat(walletRes.rows[0].balance) < pricePoints) {
         await ledgerClient.query('ROLLBACK');
@@ -5891,10 +5843,8 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
 
       const walletId = walletRes.rows[0].id;
 
-      // 3. Deduct Balance
       await ledgerClient.query('UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [pricePoints, walletId]);
       
-      // 4. Record Transaction
       await ledgerClient.query(`
         INSERT INTO ledger_transactions (wallet_id, amount, transaction_type, description, reference_id)
         VALUES ($1, $2, 'subscription', $3, $4)
@@ -5902,7 +5852,6 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
 
       broadcastFinancialLog(walletId, -pricePoints, 'subscription', `Subscription to ${plan.name_en} (${billingCycle})`);
 
-      // 5. Update Subscription in Core DB
       const { periodStart, periodEnd } = await calculatePeriodEnd(userId, billingCycle as any, client);
 
       await client.query(`
@@ -5920,10 +5869,8 @@ ${isSpecializedTool ? `- STRICTLY maintain the protocol for the specialized tool
       await ledgerClient.query('COMMIT');
       await client.query('COMMIT');
 
-      // 6. Immediate In-App Notification
       await sendNotification(userId, 'subscription_activated', 'Subscription Activated', 'تم تفعيل الاشتراك', `Your subscription to ${plan.name_en} is now active.`, `تم تفعيل اشتراكك في باقة ${plan.name_ar} بنجاح.`);
 
-      // 7. Send Smart Email Confirmation
       try {
         const userRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length > 0) {
@@ -6094,7 +6041,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
       [userId]
     );
 
-    // Initial Credit Check
     try {
       const ecoRes = await ledgerPool.query('SELECT welcome_bonus_points FROM economy_settings LIMIT 1');
       const bonus = ecoRes.rows[0]?.welcome_bonus_points || 600;
@@ -6309,7 +6255,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // Retrieval: List Sovereign Files
   app.get("/api/files", authenticateToken, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -6321,7 +6266,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // Deletion: Secure Erasure
   app.delete("/api/files/:id", authenticateToken, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -6357,7 +6301,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // Secure Delivery: Download Route (Verification Required)
   app.get("/api/files/download/:filename", authenticateToken, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -6429,14 +6372,12 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
   ) => {
     if (!chatId || chatId <= 0) return;
     
-    // Safety check: Don't synthesize if turn is essentially empty
     if (!lastTurn.user?.trim() && !lastTurn.assistant?.trim()) return;
 
     console.log(`[ContextEngine] 🚀 Orchestrating Intelligent Synthesis for user ${userId}, chat ${chatId}`);
     
     try {
       const appName = await getAppName('en');
-      // For Synthesis, we use a minimal, clean protocol to avoid 400 errors with large prompts
       const synthesisProtocol = `🛡️ ${appName} CONTEXT SYNTHESIS PROTOCOL\nProprietary system of Viral Link App Ltd.\nLead Developer: Osama Qunaibi.\nGoal: Extract technical facts and summarize conversation.`;
       
       let synthesisProvider: string | null = null;
@@ -6444,7 +6385,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
       let synthesisKey = process.env.GEMINI_API_KEY || '';
 
       try {
-        // Rule 8.2: Query the dedicated Sovereign Memory tool for configuration
         const { rows: toolRows } = await pool.query(
           "SELECT primary_model, primary_provider FROM tool_orchestrator WHERE tool_id = 'sovereign_memory' AND is_active = true LIMIT 1"
         );
@@ -6465,13 +6405,11 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         console.warn("[ContextEngine] DB fetch for synthesis tool failed.");
       }
 
-      // If Orchestrator failed to provide a model, we try to pick ANY active text provider as a last resort
       if (!synthesisModel || !synthesisProvider) {
         const lastResortKey = await pool.query("SELECT provider, encrypted_key FROM api_keys_vault WHERE is_active = true AND provider IN ('google', 'openai', 'anthropic', 'deepseek') LIMIT 1");
         if (lastResortKey.rows.length > 0) {
             synthesisProvider = lastResortKey.rows[0].provider;
             synthesisKey = decrypt(lastResortKey.rows[0].encrypted_key);
-            // Default model mapping for the provider if none specified
             if (synthesisProvider === 'google') synthesisModel = 'gemini-1.5-flash';
             else if (synthesisProvider === 'openai') synthesisModel = 'gpt-4o-mini';
             else if (synthesisProvider === 'anthropic') synthesisModel = 'claude-3-haiku-20240307';
@@ -6479,7 +6417,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         }
       }
 
-      // Check if synthesisKey is valid, if not, try to fallback to any text key
       if (!synthesisKey) {
           const { rows: backupKey } = await pool.query("SELECT encrypted_key FROM api_keys_vault WHERE provider = 'google' LIMIT 1");
           if (backupKey.length > 0) synthesisKey = decrypt(backupKey[0].encrypted_key);
@@ -6498,7 +6435,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         { "facts": [{"fact": "extracted fact", "category": "technical"}], "summary": "new short summary" }
       `;
       
-      // Final Safety check
       if (!synthesisModel || !synthesisProvider) {
           console.error("[ContextEngine] CRITICAL: No active provider found for memory synthesis. Memory ingestion aborted.");
           return;
@@ -6525,20 +6461,16 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
             }
             
             if (data.facts && Array.isArray(data.facts)) {
-              // Rule 8.4: Check for memory saturation and threshold management
               const { rows: countRows } = await pool.query('SELECT COUNT(*) FROM chat_memories WHERE user_id = $1', [userId]);
               const memoryCount = parseInt(countRows[0].count);
 
-              // 45 Threshold: Warning
               if (memoryCount >= 45 && memoryCount < 50) {
                  socket.emit('memory_warning', { count: memoryCount, limit: 50 });
               }
 
-              // 50 Threshold: Auto-Consolidation (Summarize last 10)
               if (memoryCount >= 50) {
                  console.log(`[MemoryEngine] 🚨 Limit (50) reached for user ${userId}. Orchestrating auto-synthesis of legacy records.`);
                  try {
-                     // Fetch 10 oldest records
                      const { rows: oldest } = await pool.query(
                          'SELECT id, fact FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
                          [userId]
@@ -6560,7 +6492,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
                          const newFact = typeof newFactRaw === 'string' ? newFactRaw.trim() : '';
 
                          if (newFact.length > 5) {
-                             // Atomically delete legacy and insert synthesis
                              await pool.query('BEGIN');
                              const idsToDelete = oldest.map(r => r.id);
                              await pool.query('DELETE FROM chat_memories WHERE id = ANY($1)', [idsToDelete]);
@@ -6608,7 +6539,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
 
   app.get("/api/health", async (req, res) => {
     try {
-      // Test the database connections
       const coreResult = await pool.query('SELECT NOW()');
       const ledgerResult = await ledgerPool.query('SELECT NOW()');
       
@@ -6628,7 +6558,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // Email/Password Auth Routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const { email, password, name, ref, language = 'en' } = req.body;
@@ -6773,7 +6702,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
 
       const user = result.rows[0];
       
-      // Check for account suspension
       if (user.status === 'suspended') {
         return res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
       }
@@ -6801,7 +6729,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // OAuth Routes
   app.get("/api/auth/google/url", (req, res) => {
     const { ref, lang, mode, remember } = req.query;
     const redirectUri = getRedirectUri(req);
@@ -6821,7 +6748,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
   });
 
-  // Forgot Password
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
       const { email, language } = req.body;
@@ -7091,7 +7017,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         `);
       }
 
-      // Generate JWT Token
       const token = jwt.sign(
         { id: user.id, email: user.email, role: user.role }, 
         process.env.JWT_SECRET as string, 
@@ -7531,9 +7456,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
   });
 
   // --- User Notifications & Communication ---
-
-
-
   app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
     try {
       const result = await pool.query(`
@@ -7655,7 +7577,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
       try {
         await client.query('BEGIN');
 
-        // 1. Update Role
         if (role) {
           const validRoles = ['user', 'admin', 'support', 'elite'];
           if (!validRoles.includes(role)) throw new Error('Invalid role');
@@ -7670,7 +7591,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
           await client.query('UPDATE users SET role = $1 WHERE id = $2', [role, userId]);
         }
 
-        // 2. Update KYC Verification Status
         if (kyc_status) {
           const validStatuses = ['pending', 'verified', 'rejected', 'none'];
           if (!validStatuses.includes(kyc_status)) throw new Error('Invalid kyc_status');
@@ -7684,9 +7604,7 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
           }
         }
 
-        // 3. Update KYC Requirement Toggle
         if (typeof kyc_required === 'boolean') {
-          // If status is already verified, don't allow turning it back on unless status changes
           const userCheck = await client.query('SELECT kyc_status FROM users WHERE id = $1', [userId]);
           const currentKycStatus = userCheck.rows[0]?.kyc_status;
           
@@ -7694,14 +7612,11 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
           await client.query('UPDATE users SET kyc_required = $1 WHERE id = $2', [finalKycRequired, userId]);
         }
 
-        // 4. Update Account Status (Synchronized across users and subscriptions)
         if (status) {
           if (!['active', 'suspended'].includes(status)) throw new Error('Invalid status');
           
-          // SOVEREIGN Security: Sync status to users table for real-time authentication enforcement
           await client.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, userId]);
           
-          // Sync status to subscriptions table for UI and billing consistency
           const checkSub = await client.query('SELECT 1 FROM subscriptions WHERE user_id = $1', [userId]);
           if (checkSub.rows.length > 0) {
             await client.query('UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2', [status, userId]);
@@ -7719,7 +7634,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
 
         await client.query('COMMIT');
 
-        // Send Emails for KYC status changes
         if (kyc_status) {
           try {
             const userRes = await client.query('SELECT name, email, language FROM users WHERE id = $1', [userId]);
@@ -7786,7 +7700,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         return;
       }
 
-      // Prevent self-demotion
       if (userId.toString() === adminId.toString() && role === 'user') {
         console.warn(`[Admin] Self-demotion blocked for admin ${adminId}`);
         res.status(400).json({ error: 'Cannot demote yourself to prevent lockout' });
@@ -7902,7 +7815,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
 
       console.log(`[Admin] Updating plan for user ${userId} to ${planId}`);
 
-      // Check if plan exists
       const planCheck = await pool.query('SELECT id FROM plans WHERE id = $1', [planId]);
       if (planCheck.rows.length === 0) {
         console.error(`[Admin] Invalid plan ID: ${planId}`);
@@ -7910,10 +7822,7 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         return;
       }
 
-      // Update or Insert subscription 
-      // Note: Admin updates default to 'monthly' logic but we use the helper to maintain baseDate integrity
-      const periodEnd = await calculatePeriodEnd(parseInt(userId), 'annual'); // Admins usually grant long periods, but we'll use annual for helper calc then override if needed.
-      // Override: Admin granted plans actually last 10 years as per policy (or we can just use the helper with a custom cycle if we added it)
+      const periodEnd = await calculatePeriodEnd(parseInt(userId), 'annual'); 
       const adminPeriodEnd = new Date();
       adminPeriodEnd.setFullYear(adminPeriodEnd.getFullYear() + 10);
 
@@ -7963,7 +7872,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
         return;
       }
 
-      // SOVEREIGN persistence fix: Update the users table, not just subscriptions
       await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, userId]);
       await pool.query('UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2', [status, userId]);
       
@@ -8240,9 +8148,8 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     }
   });
 
-  // --- Final Safety Nets & SPA Fallback ---
+  // --- FINAL SAFETY NETS ---
   
-  // API 404 Guard: Ensure no /api request falls through to static assets or Vite
   app.all('/api/*', (req, res) => {
     console.warn(`[API 404] No route matched: ${req.method} ${req.url}`);
     res.status(404).json({ 
@@ -8252,7 +8159,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     });
   });
 
-  // Global Error Handler for API routes
   app.use('/api', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('API Error:', err);
     res.status(err.status || 500).json({ 
@@ -8261,7 +8167,7 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     });
   });
 
-  // --- SOVEREIGN FILE SERVING ---
+  // --- FILE SERVING ---
   const uploadsPath = path.join(process.cwd(), 'uploads');
   if (!existsSync(uploadsPath)) mkdirSync(uploadsPath, { recursive: true });
   app.use('/uploads', express.static(uploadsPath));
@@ -8270,7 +8176,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     const distPath = path.resolve(__dirname, 'dist');
     console.log(`[System] Production Mode: Serving static assets from ${distPath}`);
     
-    // Check if dist exists
     try {
       await fs.access(distPath);
       console.log(`[System] Verification: 'dist' folder found.`);
@@ -8278,7 +8183,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
       console.error(`[System] ⚠️ WARNING: 'dist' folder NOT FOUND at ${distPath}. Have you run 'npm run build'?`);
     }
 
-    // Serve static files first
     app.use(express.static(distPath, {
       index: false,
       maxAge: '1d',
@@ -8289,12 +8193,10 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
       }
     }));
 
-    // Specific catch for missing assets to avoid MIME errors
     app.get(['/assets/*', '/src/*', '/@vite/*', '/@fs/*'], (req, res) => {
       res.status(404).send('Asset not found');
     });
 
-    // Ensure all other routes are handled by index.html (SPA Fallback)
     app.get('*', (req, res) => {
       const indexPath = path.join(distPath, 'index.html');
       res.sendFile(indexPath, (err) => {
@@ -8386,7 +8288,6 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     });
   });
 
-  // Global Error Handler (Multer & System Errors)
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -8408,14 +8309,12 @@ async function ensureWallet(userId: number): Promise<{ id: number; balance: numb
     next();
   });
 
-  // --- FINAL STARTUP: Bound the port only after all routes & socket handlers are ready ---
   const PORT = parseInt(process.env.PORT || "3000", 10);
 
   httpServer.listen(PORT, "0.0.0.0", async () => {
     console.log(`[${new Date().toISOString()}] Project Sovereignty Online.`);
     console.log(`[Server] Gateway listening on http://0.0.0.0:${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
     
-    // Perform Security Sanitization after accepting connections to speed up boot
     await sanitizeEmails().catch(e => console.error('[Startup] Sanitization failed:', e));
   });
 }
