@@ -67,7 +67,7 @@ export async function getUserUsage(userId: string | number) {
     let monthlyUsage = monthlyUsageMap[toolId] || 0;
 
     if (toolId === 'storage_mb') {
-      dailyUsage = storageUsageMB; // Use total storage as "usage"
+      dailyUsage = storageUsageMB;
       monthlyUsage = storageUsageMB; 
     }
 

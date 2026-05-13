@@ -13,9 +13,7 @@ function validateDatabaseUrl(url: string, name: string) {
   }
   const regex = /^postgres(ql)?:\/\//;
   if (!regex.test(url)) {
-    throw new Error(
-      `[DB] Invalid ${name} format. Expected connection string to start with "postgresql://" or "postgres://", but received: "${url.substring(0, 25)}..."`
-    );
+    throw new Error(`[DB] Invalid ${name} format. Expected a valid postgresql:// connection string.`);
   }
   try {
     const urlObj = new URL(url);

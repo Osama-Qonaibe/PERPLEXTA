@@ -36,7 +36,7 @@ export function initSocket(httpServer: HttpServer) {
 
   io.on("connection", (socket) => {
     const user = (socket as any).user;
-    console.log(`[Socket] Secure connection established: ${socket.id} (User: ${user.id})`);
+
     
 
     socket.join(`user_${user.id}`);
@@ -47,7 +47,6 @@ export function initSocket(httpServer: HttpServer) {
         return;
       }
       socket.join(`user_${userId}`);
-      console.log(`[Socket] User ${userId} verified and confirmed in room user_${userId}`);
     });
 
     socket.on("chat_message", async (data: any) => {
@@ -57,7 +56,6 @@ export function initSocket(httpServer: HttpServer) {
     });
 
     socket.on("disconnect", () => {
-      console.log(`[Socket] Disconnected: ${socket.id} (User: ${user.id})`);
     });
   });
 

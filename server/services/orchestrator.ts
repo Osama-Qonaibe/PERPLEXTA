@@ -137,7 +137,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       generatedText = await callAIProvider(target.provider, target.model, apiKey, prompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
       successfulModel = target;
 
-      const estimatedCost = (route.cost_per_usage || 0) / 1000; // Small increment for budget tracking
+      const estimatedCost = (route.cost_per_usage || 0) / 1000;
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
       
       break;
