@@ -3,11 +3,15 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 
 export async function getUserWallet(userId: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
-  const result = await ledgerPool.query('SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1', [userId]);
-  if (result.rows.length === 0) {
-    const newWallet = await ledgerPool.query('INSERT INTO wallets (user_id, balance, points) VALUES ($1, 0, 0) RETURNING id, balance, points, referral_activated', [userId]);
-    return newWallet.rows[0];
-  }
+  
+  // Use ON CONFLICT DO UPDATE to handle race conditions and always return the wallet
+  const result = await ledgerPool.query(`
+    INSERT INTO wallets (user_id, balance, points) 
+    VALUES ($1, 0, 0) 
+    ON CONFLICT (user_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+    RETURNING id, balance, points, referral_activated
+  `, [userId]);
+  
   return result.rows[0];
 }
 

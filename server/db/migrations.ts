@@ -319,6 +319,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         balance DECIMAL(15,4) DEFAULT 0.0000,
         usd_balance DECIMAL(15,4) DEFAULT 0.0000,
         points INTEGER DEFAULT 0,
+        referral_activated BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -379,6 +380,17 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         rejection_reason TEXT,
         processed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'payout_accounts',
+      pool: targetLedgerPool,
+      query: `CREATE TABLE IF NOT EXISTS payout_accounts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER UNIQUE NOT NULL,
+        type VARCHAR(20),
+        details TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
@@ -623,6 +635,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         referral_bonus_points INTEGER DEFAULT 1000,
         min_withdrawal_cents INTEGER DEFAULT 2000,
         conversion_rate DECIMAL(15,6) DEFAULT 0.001,
+        referral_activation_min_deposit DECIMAL(10,2) DEFAULT 10.00,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },

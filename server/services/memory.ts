@@ -12,7 +12,6 @@ export async function getUserMemories(userId: string) {
 export async function addMemory(userId: string, fact: string, category: string = 'general', source: string = 'user', chatId?: number) {
   if (!pool) throw new Error('Database initializing');
   
-  // Check limit (50 memories per user)
   const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
   if (parseInt(countRes.rows[0].count) >= 50) {
     throw new Error('Memory limit reached (50)');
@@ -54,7 +53,6 @@ export async function deleteMemory(id: number, userId: string) {
 
 export async function pruneMemories(userId: string) {
   if (!pool) throw new Error('Database initializing');
-  // Delete 10 oldest ones
   const result = await pool.query(`
     DELETE FROM chat_memories 
     WHERE id IN (
