@@ -32,11 +32,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     jwt.verify(token, jwtSecret, async (err: any, user: any) => {
       if (err) {
-        console.error(`[Auth] JWT Verification Error for ${req.url}:`, err.message);
-        if (err.message === 'jwt malformed') {
-          console.error(`[Auth] Malformed Token Fragment: ${token.substring(0, 15)}... (Total Length: ${token.length})`);
-        }
-        res.status(403).json({ error: 'Forbidden', message: err.message });
+        console.error(`[Auth] JWT Error: ${err.name}`);
+        res.status(403).json({ error: 'Forbidden', message: 'Token verification failed' });
         return;
       }
 
@@ -50,7 +47,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           }
         }
       } catch (checkErr) {
-        console.error('[Auth] Blacklist check failed:', checkErr);
+        console.error('[Auth] Blacklist check failed:', checkErr instanceof Error ? checkErr.message : checkErr);
+        res.status(503).json({ error: 'Service temporarily unavailable' });
+        return;
       }
 
       const userPayload = user as any;
