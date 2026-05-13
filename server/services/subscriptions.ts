@@ -6,15 +6,12 @@ import { io } from '../config/socket.js';
 export async function purchaseSubscription(userId: string, planId: string, billingCycle: 'monthly' | 'annual') {
   if (!pool) throw new Error('Database initializing');
 
-  // 1. Get plan details
   const planRes = await pool.query('SELECT * FROM plans WHERE id = $1 AND is_active = true', [planId]);
   if (planRes.rows.length === 0) throw new Error('Plan not found or inactive');
   const plan = planRes.rows[0];
 
-  // 2. Determine price
   const price = billingCycle === 'annual' ? Number(plan.annual_price) : Number(plan.monthly_price);
   
-  // 3. Deduct from wallet
   try {
     await deductFromWallet(userId, price, 'subscription_payment', `Payment for ${plan.name_en} (${billingCycle})`);
   } catch (err: any) {
@@ -22,7 +19,6 @@ export async function purchaseSubscription(userId: string, planId: string, billi
     throw new Error('Failed to process payment');
   }
 
-  // 4. Update subscription (Core DB)
   try {
     const cycleDays = billingCycle === 'annual' ? 365 : 30;
     const periodEnd = new Date();
@@ -39,7 +35,6 @@ export async function purchaseSubscription(userId: string, planId: string, billi
         updated_at = CURRENT_TIMESTAMP
     `, [userId, planId, billingCycle, periodEnd]);
 
-    // 5. Notify user
     await createNotification(
       userId, 
       'success',
@@ -49,14 +44,12 @@ export async function purchaseSubscription(userId: string, planId: string, billi
       `اشتراكك في باقة ${plan.name_ar} فعال الآن.`
     );
     
-    // Emit real-time update
     if (io) {
       io.to(`user_${userId}`).emit('user_profile_updated');
     }
 
     return { success: true, message: 'Subscription activated' };
   } catch (error) {
-    // 6. COMPENSATION: Refund if DB update fails
     console.error('[SubscriptionService] Core DB update failed, attempting refund:', error);
     try {
       await refundToWallet(userId, price, 'subscription_refund', `Refund due to system error during ${plan.name_en} activation`);

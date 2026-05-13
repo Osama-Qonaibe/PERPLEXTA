@@ -27,7 +27,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true')
   ]);
 
-  // Sovereign Rule: Reject if no active AI providers are configured in the Vault
   if (parseInt(vaultCheck.rows[0].count) === 0) {
     throw new Error(JSON.stringify({
       error: "The intelligence core is currently undergoing a scheduled synchronization. Operations will resume momentarily.",
@@ -54,7 +53,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Unlock limitless intelligence by upgrading your plan or referring a friend to earn points.`;
     const msgAr = `تتطلب هذه العملية عضوية ممتازة: لقد وصلت إلى الحد ال${periodStrAr} المسموح به لهذه الأداة. استمتع بذكاء غير محدود عبر ترقية خطتك أو دعوة صديق للحصول على نقاط مكافأة.`;
     
-    // Forensic Logging for Quota Violation attempts
     await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quota.period} quota (${quota.currentUsage}/${quota.limit})`, { toolIdStr, quota });
 
     throw new Error(JSON.stringify({ 
@@ -75,7 +73,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
-  // Intelligence Ingestion (Search & Memory)
   if (toolIdStr === 'sovereign_search') {
     try {
       const searchResults = await performSovereignSearch(prompt);
@@ -117,7 +114,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   
   for (const target of modelsToTry) {
     try {
-      // Zero-Latency Key Retrieval (0.001ms cache hit)
       const providerId = target.provider.toLowerCase();
       const apiKey = await getProviderKey(providerId);
       if (!apiKey) {
@@ -125,7 +121,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         continue;
       }
 
-      // Budget check (Still needed from DB for accuracy, but we can optimize later)
       const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
       if (budgetRes.rows.length === 0 || !budgetRes.rows[0].is_active) continue;
       
@@ -133,7 +128,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       const dailyBudget = parseFloat(vault.daily_budget || '0');
       const usedToday = parseFloat(vault.used_today || '0');
 
-      // If budget is set and exceeded, skip this provider (it will trigger fallback)
       if (dailyBudget > 0 && usedToday >= dailyBudget) {
         console.warn(`[Orchestrator] Budget exceeded for ${target.provider}. Falling back...`);
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
@@ -143,7 +137,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       generatedText = await callAIProvider(target.provider, target.model, apiKey, prompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
       successfulModel = target;
 
-      // Increment provider usage (approximating cost based on tool cost / 100 as a rough USD proxy if points are 100=$1)
       const estimatedCost = (route.cost_per_usage || 0) / 1000; // Small increment for budget tracking
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
       
@@ -160,15 +153,9 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
 
   await incrementUserUsage(userId, toolIdStr);
   
-  // Log successful high-stakes execution
   if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
      await logSystemActivity(userId, 'SOVEREIGN_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
   }
 
   return { result: generatedText };
-};
-
-export const generateIntelligentContext = async (userId: number, chatId: number, lastTurn: any) => {
-   // Logic for memory synth
-   console.log(`[MemoryEngine] Synthesizing context for chat ${chatId}`);
 };

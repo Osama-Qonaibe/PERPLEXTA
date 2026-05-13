@@ -5,7 +5,6 @@ import { getUserStorageUsage } from './files.js';
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
 
-  // 1. Get Plan & Constraints
   const planRes = await pool.query(`
     SELECT p.id, p.name_en, p.name_ar, p.limits, s.status, s.billing_cycle
     FROM users u
@@ -18,7 +17,6 @@ export async function getUserUsage(userId: string | number) {
   if (planRes.rows.length === 0) throw new Error('Plan not found');
   const plan = planRes.rows[0];
 
-  // 2. Get Daily Usage
   const dailyUsageRes = await pool.query(`
     SELECT tool_id, usage_count
     FROM user_usage
@@ -30,7 +28,6 @@ export async function getUserUsage(userId: string | number) {
     return acc;
   }, {});
 
-  // 3. Get Monthly Usage (Aggregation)
   const monthlyUsageRes = await pool.query(`
     SELECT tool_id, SUM(usage_count) as total
     FROM user_usage
@@ -43,10 +40,8 @@ export async function getUserUsage(userId: string | number) {
     return acc;
   }, {});
 
-  // 4. Get Storage Usage
   const storageUsageMB = await getUserStorageUsage(userId.toString());
 
-  // 5. Combine Tools
   const ALL_TOOLS = [
     'perplexta_analysis', 'legal_analysis', 'notebook', 'image', 'video', 
     'stt', 'tts', 'learning', 'code', 'canvas', 'sovereign_memory', 'storage_mb'
@@ -55,7 +50,6 @@ export async function getUserUsage(userId: string | number) {
   const usageItems = ALL_TOOLS.map(toolId => {
     const limits = plan.limits?.[toolId] || null;
     
-    // Normalize limits
     let dailyLimit = null;
     let monthlyLimit = null;
     
@@ -69,7 +63,6 @@ export async function getUserUsage(userId: string | number) {
       dailyLimit = parseInt(limits);
     }
 
-    // Special handling for storage_mb
     let dailyUsage = dailyUsageMap[toolId] || 0;
     let monthlyUsage = monthlyUsageMap[toolId] || 0;
 
@@ -80,7 +73,7 @@ export async function getUserUsage(userId: string | number) {
 
     return {
       id: toolId,
-      name_en: toolId.replace(/_/g, ' ').toUpperCase(), // Fallback names if translations missing in component
+      name_en: toolId.replace(/_/g, ' ').toUpperCase(),
       name_ar: toolId,
       usage: {
         daily: dailyUsage,
@@ -170,7 +163,6 @@ export async function updateUserProfile(userId: string, data: any) {
   
   await pool.query(query, values);
   
-  // Emit real-time update
   if (io) {
     io.to(`user_${userId}`).emit('user_profile_updated');
   }
