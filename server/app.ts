@@ -15,11 +15,11 @@ app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["*"],
-      scriptSrc: ["*"],
-      styleSrc: ["*"],
-      imgSrc: ["*"],
-      connectSrc: ["*"],
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https:", "wss:", "ws:"],
       frameAncestors: ["*"]
     }
   },
