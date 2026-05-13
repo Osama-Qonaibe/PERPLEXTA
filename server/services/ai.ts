@@ -13,7 +13,7 @@ export async function handleApiError(response: Response, provider: string) {
     } catch (e) {
       errorDetail = await response.text();
     }
-    console.error(`[Orchestrator] ${provider} API Error (${response.status}): ${errorDetail}`);
+    console.error(`[Orchestrator] ${provider} API Error (${response.status}): ${errorDetail.substring(0, 200)}`);
     throw new Error(`Connection to ${provider} failed. Please check your API key and quota.`);
   }
 }
@@ -228,7 +228,7 @@ export async function callAIProvider(
   async function handleResponse(response: Response) {
     if (!response.ok) {
        const text = await response.text();
-       console.error(`[AI Service] Provider Error (${response.status}): ${text}`);
+       console.error(`[AI Service] Provider Error (${response.status}): ${text.substring(0, 200)}`);
        throw new Error('The AI provider encountered an issue. Please try again later or check your subscription balance.');
     }
 

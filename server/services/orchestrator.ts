@@ -81,7 +81,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (searchErr) {
-      // Search ingestion failure handled silently
     }
   }
 
@@ -93,11 +92,9 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (memErr) {
-      // Memory ingestion failure handled silently
     }
   }
 
-  // Ingest global user memories (Sovereign Memory Engine)
   let userMemoriesStr = '';
   try {
     const memoryRes = await pool.query(
@@ -154,7 +151,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       
       break;
     } catch (e) {
-      // Fallback handled silently
     }
   }
 
