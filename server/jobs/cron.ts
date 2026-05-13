@@ -4,12 +4,10 @@ import { pool } from '../db/index.js';
 import { createNotification } from '../services/notifications.js';
 
 export function initCronJobs() {
-  // Daily maintenance at 3 AM
   cron.schedule('0 3 * * *', async () => {
     console.log('[Cron] 🕒 Running daily system maintenance...');
     try {
       await runSystemMaintenance();
-      // Reset API keys usage
       await pool.query('UPDATE api_keys_vault SET used_today = 0, last_reset_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP');
       console.log('[Cron] API keys usage reset completed.');
     } catch (err) {
@@ -17,13 +15,11 @@ export function initCronJobs() {
     }
   });
 
-  // Database monitoring every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     console.log('[Cron] 💓 Running database heartbeat check...');
     await monitorDatabases();
   });
 
-  // Subscription reminders at 3:05 AM
   cron.schedule('5 3 * * *', async () => {
     console.log('[Cron] 🔍 Checking for expiring subscriptions...');
     try {

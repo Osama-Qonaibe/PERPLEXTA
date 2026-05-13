@@ -723,7 +723,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   await targetPool.query(`UPDATE plans SET is_visible = true WHERE is_visible IS NULL`);
 
   const masterAdmin = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '';
-  const adminEmails = [...new Set([masterAdmin, 'qoomre@gmail.com'].filter(Boolean))];
+  const adminEmails = [...new Set([masterAdmin].filter(Boolean))];
 
   for (const email of adminEmails) {
     const adminCheck = await targetPool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -736,7 +736,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       const adminHash = await bcrypt.hash(adminPassword, 10);
       const newAdmin = await targetPool.query(
         `INSERT INTO users (email, name, password_hash, role, status) VALUES ($1, $2, $3, 'admin', 'active') RETURNING id`,
-        [email, email === 'qoomre@gmail.com' ? 'Sovereign Owner' : 'Master Admin', adminHash]
+        [email, 'Master Admin', adminHash]
       );
       const adminId = newAdmin.rows[0].id;
       await targetLedgerPool.query(
