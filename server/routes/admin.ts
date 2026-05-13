@@ -435,7 +435,6 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
     const totalTransactions = await ledgerPool.query('SELECT count(*) FROM ledger_transactions');
     const recentVolume = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '24 hours'");
     
-    // Fetch recent transactions for live registry
     const recentTx = await ledgerPool.query('SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT 50');
     
     let transactions = recentTx.rows;
@@ -533,7 +532,6 @@ router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Add bulk delete support for activities and alerts via ID lists
 router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
   try {
     const { ids, type } = req.body;
@@ -551,7 +549,6 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Financial Purge (Specific for Ledger DB)
 router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   try {
     await ledgerPool.query("DELETE FROM ledger_transactions");
@@ -561,7 +558,6 @@ router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Activity & Security Cleanup
 router.delete("/activity/:id/:type", authenticateAdmin, async (req, res) => {
   try {
     const { id, type } = req.params;
@@ -623,7 +619,6 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
     }
 
     const daysNum = parseInt(days) || 30;
-    // Delete read notifications older than X days
     const result = await pool.query("DELETE FROM notifications WHERE is_read = true AND created_at < now() - interval '1 day' * $1", [daysNum]);
     res.json({ success: true, count: result.rowCount });
   } catch (error) {
@@ -651,7 +646,6 @@ router.delete("/ledger-transactions/:id", authenticateAdmin, async (req, res) =>
   }
 });
 
-// Economy Settings
 router.get("/economy", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate FROM system_settings LIMIT 1');
@@ -761,7 +755,6 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
   }
 });
 
-// API Keys Vault Actions
 router.post("/api-keys", authenticateAdmin, async (req, res) => {
   try {
     const { provider, key, daily_budget = 0, urlKey } = req.body;
@@ -835,7 +828,6 @@ router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
 router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    // Sovereign: We MUST fetch the key from the vault to perform external sync
     const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
     if (keyResult.rows.length === 0) return res.status(404).json({ error: 'Provider key not found' });
     
@@ -853,7 +845,7 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
 
 router.post("/api-keys/:id/sync-usage", authenticateAdmin, async (req, res) => {
   try {
-    const { id } = req.params; // provider
+    const { id } = req.params;
     const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
     if (keyResult.rows.length === 0) return res.status(404).json({ error: 'Key not found' });
     
