@@ -97,10 +97,24 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     }
   }
 
+  // Ingest global user memories (Sovereign Memory Engine)
+  let userMemoriesStr = '';
+  try {
+    const memoryRes = await pool.query(
+      'SELECT fact FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+      [userId]
+    );
+    if (memoryRes.rows.length > 0) {
+      userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
+    }
+  } catch (memErr) {
+    console.error('[Orchestrator] Memory retrieval failed:', memErr);
+  }
+
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONVERSATION CONTEXT SUMMARY:\n${chatRes.rows[0].context_summary}\n` : '';
   
-  const finalSystemPrompt = protocol + contextSummary + "\nTECHNICAL_DIRECTIVE:\n" + (taskDesc || '') + "\n" + (system_prompt || '');
+  const finalSystemPrompt = protocol + userMemoriesStr + contextSummary + "\nTECHNICAL_DIRECTIVE:\n" + (taskDesc || '') + "\n" + (system_prompt || '');
   
   const modelsToTry = [
     { provider: route.primary_provider, model: route.primary_model },

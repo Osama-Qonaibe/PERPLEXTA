@@ -71,6 +71,7 @@ import walletRoutes from './routes/wallet.js';
 import planRoutes from './routes/plans.js';
 import notificationRoutes from './routes/notifications.js';
 import subscriptionRoutes from './routes/subscriptions.js';
+import memoryRoutes from './routes/memory.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
@@ -83,6 +84,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/memories', memoryRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 

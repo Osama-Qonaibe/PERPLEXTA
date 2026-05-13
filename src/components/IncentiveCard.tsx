@@ -120,7 +120,7 @@ export const IncentiveCard: React.FC = () => {
           initial={{ opacity: 0, y: 50, scale: 0.9, x: '-50%' }}
           animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
           exit={{ opacity: 0, scale: 0.9, y: 20, x: '-50%' }}
-          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-3xl border border-gray-200/50 dark:border-gray-800/50 shadow-2xl overflow-hidden ${
+          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-[4px] border border-gray-200/50 dark:border-gray-800/50 shadow-2xl overflow-hidden ${
             theme === 'dark' ? 'bg-[#1a1a1c]/95 backdrop-blur-2xl' : 'bg-white/95 backdrop-blur-2xl'
           }`}
           onClick={(e) => e.stopPropagation()} // Prevent close when clicking the card itself
@@ -137,7 +137,7 @@ export const IncentiveCard: React.FC = () => {
 
           <div className="p-6">
             <div className={`flex items-start gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-14 h-14 rounded-2xl ${content.bg} flex items-center justify-center shrink-0`}>
+              <div className={`w-14 h-14 rounded-[4px] ${content.bg} flex items-center justify-center shrink-0`}>
                 {content.icon}
               </div>
               
@@ -158,7 +158,7 @@ export const IncentiveCard: React.FC = () => {
               </button>
             </div>
 
-            <div className={`mt-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+            <div className={`mt-6 p-4 rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Users size={16} className="text-emerald-500" />
                 <span className="text-[13px] font-bold text-emerald-500 uppercase tracking-wider">
@@ -172,14 +172,14 @@ export const IncentiveCard: React.FC = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button 
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
                   <Share2 size={14} />
                   {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
                 </button>
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all active:scale-95"
                 >
                   {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}

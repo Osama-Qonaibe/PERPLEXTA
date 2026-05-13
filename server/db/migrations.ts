@@ -137,11 +137,24 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     await ensureColumn(pool, 'system_settings', 'referral_bonus_points', 'INTEGER', '1000');
     await ensureColumn(pool, 'system_settings', 'min_withdrawal_cents', 'INTEGER', '2000');
     await ensureColumn(pool, 'system_settings', 'conversion_rate', 'DECIMAL(15,6)', '0.001');
+    await ensureColumn(pool, 'system_settings', 'referral_activation_min_deposit', 'DECIMAL(10,2)', '10.00');
 
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'user_id', 'INTEGER');
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
+
+    await ensureColumn(ledgerPool || pool, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
+
+    await (ledgerPool || pool).query(`
+      CREATE TABLE IF NOT EXISTS payout_accounts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER UNIQUE NOT NULL,
+        type VARCHAR(20),
+        details TEXT, -- Encrypted JSON
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await ensureColumn(pool, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
     await ensureColumn(pool, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
@@ -752,15 +765,15 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
 
   const planCheck = await targetPool.query('SELECT count(*) FROM plans');
   if (parseInt(planCheck.rows[0].count) === 0) {
-    await targetPool.query(`
-      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits)
-      VALUES
-        ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 10, "chat_fast": 20, "image": 2}'),
-        ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_pro": 50, "image": 20, "code": 50}'),
-        ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Sovereign Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_pro": "unlimited", "image": "unlimited", "legal_analysis": "unlimited", "code": "unlimited"}')
-      ON CONFLICT (name_en) DO NOTHING
-    `);
-  }
+      await targetPool.query(`
+        INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits)
+        VALUES
+          ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}'),
+          ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}'),
+          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Sovereign Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
+        ON CONFLICT (name_en) DO NOTHING
+      `);
+    }
 
   const toolCheck = await targetPool.query('SELECT count(*) FROM tool_orchestrator');
   if (parseInt(toolCheck.rows[0].count) === 0) {

@@ -27,7 +27,7 @@ This identity serves as our compass. Every engineering decision—from the "Sile
 All interactive icon buttons must follow this exact structural pattern:
 - **Base**: `bg-transparent border border-transparent transition-all duration-300`
 - **Hover Background**: `hover:bg-gray-50 dark:hover:bg-gray-800`
-- **Rounding**: `rounded-xl`
+- **Rounding**: `rounded-[4px]`
 - **Size**: `w-10 h-10 flex items-center justify-center`
 
 ## 3. The "Emerald Glow" Pattern (Active/Hover States)

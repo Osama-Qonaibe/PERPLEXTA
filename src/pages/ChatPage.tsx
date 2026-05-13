@@ -68,15 +68,15 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           {isMediaUrl ? (
-            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download">
+            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download">
               <Download size={13} />
             </button>
           ) : (
             <>
-              <button onClick={copyToClipboard} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Copy code">
+              <button onClick={copyToClipboard} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Copy code">
                 <Copy size={13} />
               </button>
-              <button onClick={downloadCode} className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download source code">
+              <button onClick={downloadCode} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download source code">
                 <FileText size={13} />
               </button>
             </>
@@ -89,7 +89,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative overflow-hidden bg-[#0a0a0b] border border-gray-800/60 rounded-2xl p-8 flex flex-col items-center gap-6 shadow-2xl"
+          className="relative overflow-hidden bg-[#0a0a0b] border border-gray-800/60 rounded-[4px] p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
           {/* Audio Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
@@ -121,7 +121,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <button 
             onClick={() => downloadFile(codeContent)}
-            className="flex items-center gap-2 px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
+            className="flex items-center gap-2 px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[4px] text-[11px] font-black uppercase tracking-[0.1em] transition-all duration-300 active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
           >
             <Download size={14} />
             {dir === 'rtl' ? 'تنزيل فوري' : 'INSTANT DOWNLOAD'}
@@ -145,7 +145,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
         </motion.div>
       ) : (
-        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl`} {...props}>
+        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px]`} {...props}>
           {isMediaUrl ? (
             codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
               <div className="flex flex-col items-center gap-4 py-8">
@@ -156,7 +156,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
               </div>
             ) : (
-              <img src={codeContent} alt="Generated" className="max-w-full rounded-lg" />
+              <img src={codeContent} alt="Generated" className="max-w-full rounded-[4px]" />
             )
           ) : children}
         </code>
@@ -208,15 +208,15 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
             className="flex items-center gap-2 sm:gap-4 group"
           >
             {step.status === 'completed' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-lg bg-emerald-500/5 flex items-center justify-center text-emerald-500/70">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] bg-emerald-500/5 flex items-center justify-center text-emerald-500/70">
                 <Check size={10} strokeWidth={3} />
               </div>
             ) : step.status === 'processing' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-lg bg-emerald-500/5 flex items-center justify-center">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] bg-emerald-500/5 flex items-center justify-center">
                 <Loader2 size={10} className="animate-spin text-emerald-500/60" style={{ animationDuration: '2s' }} />
               </div>
             ) : (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-lg bg-gray-50 dark:bg-gray-800/10 flex items-center justify-center">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] bg-gray-50 dark:bg-gray-800/10 flex items-center justify-center">
                 <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
               </div>
             )}
@@ -246,11 +246,11 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
     <div className="mt-4" id="citations-container">
       <button 
         onClick={onToggle}
-        className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-transparent border border-gray-100 dark:border-gray-800/60 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group shadow-sm active:scale-95"
+        className="flex items-center gap-2.5 px-4 py-2 rounded-[4px] bg-transparent border border-gray-100 dark:border-gray-800/60 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group shadow-sm active:scale-95"
       >
         <div className="flex -space-x-2 rtl:space-x-reverse">
           {citations.slice(0, 3).map((cite, i) => (
-            <div key={i} className="w-5 h-5 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center overflow-hidden shadow-sm">
+            <div key={i} className="w-5 h-5 rounded-[4px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center overflow-hidden shadow-sm">
                <img 
                  src={getFavicon(cite.url) || ''} 
                  alt="" 
@@ -291,10 +291,10 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
                   href={cite.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/40 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-800/40 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-all group min-w-0"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-[4px] bg-white/40 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-800/40 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-all group min-w-0"
                   title={cite.title}
                 >
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-[9px] font-black flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                  <div className="w-6 h-6 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-[9px] font-black flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                     {cite.index}
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
@@ -336,11 +336,11 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className={`group flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-gray-100/40 dark:border-gray-800/30 hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-all text-start relative overflow-hidden rounded-2xl ${
+            className={`group flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-gray-100/40 dark:border-gray-800/30 hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-all text-start relative overflow-hidden rounded-[4px] ${
               dir === 'rtl' ? 'flex-row' : 'flex-row'
             }`}
           >
-            <div className={`w-8 h-8 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 flex items-center justify-center text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all shrink-0 ${
+            <div className={`w-8 h-8 rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 flex items-center justify-center text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all shrink-0 ${
               dir === 'rtl' ? 'order-first' : 'order-first'
             }`}>
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
@@ -398,7 +398,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             delay: idx * 0.25,
             ease: [0.16, 1, 0.3, 1] 
           }}
-          className={`relative overflow-hidden rounded-[2.5rem] border transition-all duration-700 group ${
+          className={`relative overflow-hidden rounded-[4px] border transition-all duration-700 group ${
             theme === 'dark' 
               ? 'bg-[#121214] border-gray-800/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
               : 'bg-white border-gray-200/60 shadow-none'
@@ -451,7 +451,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                 {isMusicSection ? (
                   <div className="flex flex-col items-center gap-8">
                     {/* Visual Exhibition */}
-                    <div className="relative w-full max-w-3xl aspect-video rounded-3xl overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
+                    <div className="relative w-full max-w-3xl aspect-video rounded-[4px] overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
                       {coverImageUrl ? (
                         <img 
                           src={coverImageUrl} 
@@ -515,7 +515,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                       code: CodeBlock as any,
                       p: 'div',
                       img: ({ node, ...props }: any) => (
-                        <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
+                        <div className="relative w-full aspect-video rounded-[4px] overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-1000 group-hover/video:scale-110" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
                              <div className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-emerald-500 animate-pulse">
@@ -572,14 +572,14 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className={`mt-4 p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
+    className={`mt-4 p-6 rounded-[4px] border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
   >
     <div className="absolute top-0 right-0 p-4 opacity-5">
       <Settings size={64} className="text-emerald-500" />
     </div>
     
     <div className="flex items-start gap-4 relative z-10">
-      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+      <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
         <Settings size={24} className="animate-spin-slow" />
       </div>
       <div className="flex-1">
@@ -631,14 +631,14 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`mt-4 p-5 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
+      className={`mt-4 p-5 rounded-[4px] border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
     >
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <Sparkles size={48} className="text-emerald-500" />
       </div>
       
       <div className="flex items-start gap-4 relative z-10">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
           <Zap size={24} className="animate-pulse" />
         </div>
         <div className="flex-1">
@@ -663,21 +663,21 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
       </div>
 
       {/* Referral Link Area */}
-      <div className="relative z-10 bg-[var(--bg-main)]/50 border border-emerald-500/10 rounded-2xl p-3 flex items-center gap-3">
+      <div className="relative z-10 bg-[var(--bg-main)]/50 border border-emerald-500/10 rounded-[4px] p-3 flex items-center gap-3">
         <div className="flex-1 truncate text-[10px] font-mono text-gray-500 dark:text-gray-400">
           {referralLink}
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={handleCopy}
-            className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-colors"
             title="Copy Link"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
           </button>
           <button 
             onClick={handleShare}
-            className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
+            className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
             title="Share"
           >
             <Share2 size={14} />
@@ -688,13 +688,13 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
           onClick={() => navigate('/subscriptions')}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-[4px] text-[11px] font-black uppercase tracking-wider transition-all shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
         </button>
         <button 
           onClick={() => navigate('/rewards')}
-          className="flex-1 bg-white dark:bg-gray-900 border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-white dark:bg-gray-900 border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-[4px] text-[11px] font-black uppercase tracking-wider transition-all hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
         </button>
@@ -1928,7 +1928,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   key={v.id}
                   onClick={() => setAudioSettings(prev => ({ ...prev, vocalType: v.id }))}
-                  className={`text-[7px] md:text-[9px] font-bold transition-all duration-300 pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-full ${
+                  className={`text-[7px] md:text-[9px] font-bold transition-all duration-300 pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-[4px] ${
                     audioSettings.vocalType === v.id 
                       ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
                       : 'text-gray-400/30 hover:text-gray-200'
@@ -2062,7 +2062,7 @@ export const ChatPage: React.FC = () => {
       {renderAudioSettings()}
       <motion.div 
         transition={springConfig}
-        className={`w-full flex flex-col rounded-xl md:rounded-2xl border box-border min-w-0 transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] ${
+        className={`w-full flex flex-col rounded-[4px] border box-border min-w-0 transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] ${
           isFocused 
             ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
             : ''
@@ -2071,14 +2071,14 @@ export const ChatPage: React.FC = () => {
         {/* Top: File/Image Preview */}
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
-            <div className={`relative group p-1 rounded-xl border transition-all duration-300 ${theme === 'dark' ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`relative group p-1 rounded-[4px] border transition-all duration-300 ${theme === 'dark' ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
               <div className="flex items-center gap-2 px-1.5 py-1 min-w-[120px]">
                 {previewUrl && selectedFile.type.startsWith('image/') ? (
-                  <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                  <div className="w-8 h-8 rounded-[4px] overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                     <img src={previewUrl} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ) : (
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700 text-emerald-400' : 'bg-white text-emerald-500 shadow-sm'}`}>
+                  <div className={`w-8 h-8 rounded-[4px] flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700 text-emerald-400' : 'bg-white text-emerald-500 shadow-sm'}`}>
                     {getFileIcon(selectedFile.type)}
                   </div>
                 )}
@@ -2112,7 +2112,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex-shrink-0 flex items-center">
             <button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl transition-all duration-500 group shadow-none
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] transition-all duration-500 group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
                   : 'hover:bg-emerald-500/5 hover:border-emerald-500/20 active:scale-95'
@@ -2178,7 +2178,7 @@ export const ChatPage: React.FC = () => {
             <button 
               title={dir === 'rtl' ? 'رفع ملف (الحد الأقصى 100 ميجابايت)' : 'Upload File (Max 100MB)'}
               onClick={() => document.getElementById('unified-upload')?.click()}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg md:rounded-xl transition-all duration-300 hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-all duration-300" />
               <Paperclip size={18} className="md:w-5 md:h-5 text-emerald-500 hidden group-hover:block transition-all duration-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
@@ -2191,7 +2191,7 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsAdvancedToolsOpen(!isAdvancedToolsOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg transition-all duration-300 border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[4px] transition-all duration-300 border ${
                   activeDropdown === 'tool'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                     : 'bg-transparent border-transparent text-gray-500 dark:text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'
@@ -2204,7 +2204,7 @@ export const ChatPage: React.FC = () => {
               </button>
               
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-2xl border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[4px] border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
                   <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-gray-500 bg-[var(--bg-primary)]/30`}>
                     {t('tools').toUpperCase()}
                   </div>
@@ -2220,7 +2220,7 @@ export const ChatPage: React.FC = () => {
                           setActiveDropdown('tool');
                           setIsAdvancedToolsOpen(false);
                         }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-[13px] font-bold ${
+                        className={`flex items-center gap-3 px-3 py-2 rounded-[4px] transition-all duration-200 text-[13px] font-bold ${
                           selectedTool === tool.id && activeDropdown === 'tool'
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
                             : 'hover:bg-[var(--bg-primary)] text-gray-400 hover:text-[var(--text-primary)]'
@@ -2250,7 +2250,7 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg transition-all duration-300 border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[4px] transition-all duration-300 border ${
                   activeDropdown === 'model'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                     : 'bg-transparent border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'
@@ -2262,7 +2262,7 @@ export const ChatPage: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
               {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-2xl border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-[4px] border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
                   {models.map((model, idx) => (
                     <button 
                       key={`${model.id}-${idx}`}
@@ -2277,7 +2277,7 @@ export const ChatPage: React.FC = () => {
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-[4px] transition-all text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`${model.color} group-hover:scale-110 transition-transform`}>{model.icon}</span>
@@ -2296,7 +2296,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex items-center flex-shrink-0">
             <button 
               onClick={toggleRecording}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl bg-transparent border border-transparent transition-all duration-300 group ${
+              className={`w-10 h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 group ${
                 isRecording 
                 ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                 : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500'
@@ -2338,8 +2338,8 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col w-full overflow-hidden">
       {showChatLimitWarning && (
-        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
-          <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center flex-shrink-0">
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[4px] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
+          <div className="w-12 h-12 rounded-[4px] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="text-pink-500" size={24} />
           </div>
           <div className={`flex flex-col ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
@@ -2385,7 +2385,7 @@ export const ChatPage: React.FC = () => {
                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
                    animate={{ scale: 1, opacity: 1, y: 0 }}
                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                   className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-3xl w-full max-w-sm p-6 shadow-2xl"
+                   className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] w-full max-w-sm p-6 shadow-2xl"
                 >
                    <h3 className={`text-lg font-black mb-4 uppercase tracking-tighter ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                      {dir === 'rtl' ? 'إعادة تسمية المحادثة' : 'Rename Conversation'}
@@ -2394,20 +2394,20 @@ export const ChatPage: React.FC = () => {
                      type="text" 
                      value={chatRenameTitle} 
                      onChange={(e) => setChatRenameTitle(e.target.value)}
-                     className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl px-4 py-3 outline-none focus:border-emerald-500/50 transition-all font-bold text-sm mb-6"
+                     className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] px-4 py-3 outline-none focus:border-emerald-500/50 transition-all font-bold text-sm mb-6"
                      autoFocus
                      onKeyDown={(e) => e.key === 'Enter' && handleThreadRename()}
                    />
                    <div className="flex gap-3">
                      <button 
                        onClick={() => setIsRenaming(false)}
-                       className="flex-1 py-1.5 rounded-xl text-xs font-bold uppercase text-gray-500 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all"
+                       className="flex-1 py-1.5 rounded-[4px] text-xs font-bold uppercase text-gray-500 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all"
                      >
                        {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                      </button>
                      <button 
                        onClick={handleThreadRename}
-                       className="flex-1 py-1.5 rounded-xl text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
+                       className="flex-1 py-1.5 rounded-[4px] text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
                      >
                        {dir === 'rtl' ? 'حفظ' : 'Save'}
                      </button>
@@ -2431,7 +2431,7 @@ export const ChatPage: React.FC = () => {
                     <button 
                       onClick={() => !isExporting && setIsExportMenuOpen(!isExportMenuOpen)}
                       disabled={isExporting}
-                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-300 group ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-[4px] transition-all duration-300 group ${
                         isExporting
                           ? 'text-emerald-500 bg-emerald-500/10 cursor-wait'
                           : isExportMenuOpen 
@@ -2460,7 +2460,7 @@ export const ChatPage: React.FC = () => {
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
+                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
                         >
                           <div className="p-1.5 space-y-0.5">
                             <button 
@@ -2469,7 +2469,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <Bookmark size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
@@ -2481,7 +2481,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <FolderPlus size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
@@ -2494,7 +2494,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <Pencil size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
@@ -2505,7 +2505,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('pdf')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <FileDown size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
@@ -2514,7 +2514,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('md')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <FileCode size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
@@ -2523,7 +2523,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('docx')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <FileText size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
@@ -2537,7 +2537,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-xl transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-[4px] transition-all group disabled:opacity-50"
                             >
                               <Trash2 size={14} className="group-hover:scale-110 transition-transform" />
                               <span>{dir === 'rtl' ? 'حذف المحادثة' : 'Delete Thread'}</span>
@@ -2550,7 +2550,7 @@ export const ChatPage: React.FC = () => {
                   {messages.some(m => m.is_pinned) && (
                     <button 
                       onClick={() => setShowPinnedModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-all duration-300 border border-emerald-500/10 hover:bg-emerald-500/10"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-all duration-300 border border-emerald-500/10 hover:bg-emerald-500/10"
                     >
                       <Bookmark size={14} />
                       <span className="hidden lg:inline">{dir === 'rtl' ? 'المثبتة' : 'Pinned'}</span>
@@ -2595,13 +2595,13 @@ export const ChatPage: React.FC = () => {
                         setSelectedTool((item as any).toolId);
                         setActiveDropdown('tool');
                       }}
-                      className={`group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-500 text-start relative overflow-hidden ${
+                      className={`group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[4px] border transition-all duration-500 text-start relative overflow-hidden ${
                         theme === 'dark' 
                           ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/40 hover:bg-emerald-500/5' 
                           : 'bg-white border-gray-100 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02]'
                       }`}
                     >
-                      <div className={`w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl flex items-center justify-center transition-all duration-700 relative z-10 ${
+                      <div className={`w-7 h-7 md:w-9 md:h-9 rounded-[4px] flex items-center justify-center transition-all duration-700 relative z-10 ${
                         theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-transparent text-gray-400'
                       } ${item.hoverColor} ${item.dropShadow}`}>
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 18, className: 'md:w-5 md:h-5' } as any)}
@@ -2646,7 +2646,7 @@ export const ChatPage: React.FC = () => {
                       {msg.role === 'user' ? (
                         <div className={`flex flex-col gap-2 w-full ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
                               {msg.file && (
-                                <div className={`mb-1 p-2 rounded-xl border flex items-center gap-3 w-fit ${
+                                <div className={`mb-1 p-2 rounded-[4px] border flex items-center gap-3 w-fit ${
                                   dir === 'rtl' ? 'self-end' : 'self-start'
                                 } ${
                                   theme === 'dark' ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
@@ -2655,11 +2655,11 @@ export const ChatPage: React.FC = () => {
                                     <img 
                                       src={msg.file.preview} 
                                       alt={msg.file.name} 
-                                      className="w-10 h-10 object-cover rounded-lg" 
+                                      className="w-10 h-10 object-cover rounded-[4px]" 
                                       referrerPolicy="no-referrer"
                                     />
                                   ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                    <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                                       {getFileIcon(msg.file.type)}
                                     </div>
                                   )}
@@ -2698,7 +2698,7 @@ export const ChatPage: React.FC = () => {
                                     </button>
                                     <button 
                                       onClick={() => handleEditSubmit(idx)}
-                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors"
                                     >
                                       {dir === 'rtl' ? 'حفظ وإرسال' : 'Save & Send'}
                                     </button>
@@ -2711,7 +2711,7 @@ export const ChatPage: React.FC = () => {
                                     {stripProtocolMarkers(msg.content)}
                                   </h1>
                                   {msg.is_pinned && (
-                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                                       <Pin size={8} className="text-emerald-500" />
                                       <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
                                     </div>
@@ -2721,7 +2721,7 @@ export const ChatPage: React.FC = () => {
                                       setEditingMessageIndex(idx);
                                       setEditValue(msg.content);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 shrink-0"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-[4px] hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 shrink-0"
                                     title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                                   >
                                     <Pencil size={14} />
@@ -2819,7 +2819,7 @@ export const ChatPage: React.FC = () => {
                                   initial={{ opacity: 0, scale: 0.98 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
+                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[4px] border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
                                 >
                                   <img 
                                     {...props} 
@@ -2842,7 +2842,7 @@ export const ChatPage: React.FC = () => {
                                     </div>
                                     <button 
                                       onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
+                                      className="p-2 bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
                                       title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                                     >
                                       <Download size={14} />
@@ -2871,10 +2871,10 @@ export const ChatPage: React.FC = () => {
                               };
 
                               return (
-                                <div className="my-4 relative group inline-block max-w-[85%] md:max-w-md overflow-hidden rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30">
+                                <div className="my-4 relative group inline-block max-w-[85%] md:max-w-md overflow-hidden rounded-[4px] border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30">
                                   <video 
                                     {...props} 
-                                    className="block w-full h-auto rounded-xl" 
+                                    className="block w-full h-auto rounded-[4px]" 
                                     controls 
                                     controlsList="nodownload" // Intercept native download to use our secure one
                                   />
@@ -2889,7 +2889,7 @@ export const ChatPage: React.FC = () => {
                                     </div>
                                     <button 
                                       onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
+                                      className="p-2 bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
                                       title={dir === 'rtl' ? 'تنزيل الفيديو' : 'Download Video'}
                                     >
                                       <Download size={14} />
@@ -2929,13 +2929,13 @@ export const ChatPage: React.FC = () => {
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
                         </button>
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
                         </button>
@@ -2943,21 +2943,21 @@ export const ChatPage: React.FC = () => {
                         <button 
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
                         <button 
                           onClick={() => handleTTS(msg.content)}
                           title={dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Volume2 size={13} />
                         </button>
                         <button 
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
                         </button>
@@ -2967,7 +2967,7 @@ export const ChatPage: React.FC = () => {
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
                           }}
                           title={dir === 'rtl' ? 'نسخ' : 'Copy'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Copy size={13} />
                         </button>
@@ -2982,7 +2982,7 @@ export const ChatPage: React.FC = () => {
                             URL.revokeObjectURL(url);
                           }}
                           title={dir === 'rtl' ? 'تحميل' : 'Download'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Download size={13} />
                         </button>
@@ -3007,7 +3007,7 @@ export const ChatPage: React.FC = () => {
                             }
                           }}
                           title={dir === 'rtl' ? 'مشاركة' : 'Share'}
-                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-all duration-300 ml-1 sm:ml-2"
+                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-all duration-300 ml-1 sm:ml-2"
                         >
                           <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                         </button>
@@ -3015,7 +3015,7 @@ export const ChatPage: React.FC = () => {
                          <div className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
-                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500'}`}
+                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500'}`}
                            >
                              <MoreHorizontal size={14} />
                            </button>
@@ -3026,7 +3026,7 @@ export const ChatPage: React.FC = () => {
                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                  animate={{ opacity: 1, scale: 1, y: 0 }}
                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                 className="absolute bottom-full end-0 mb-2 w-56 p-1 bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl z-50 backdrop-blur-xl"
+                                 className="absolute bottom-full end-0 mb-2 w-56 p-1 bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-[4px] shadow-2xl z-50 backdrop-blur-xl"
                                >
                                  <button 
                                    onClick={async () => {
@@ -3045,7 +3045,7 @@ export const ChatPage: React.FC = () => {
                                      }
                                      setOpenMenuId(null);
                                    }}
-                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
+                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-[4px] transition-colors group"
                                  >
                                    <Bookmark size={15} className="text-gray-400 group-hover:text-emerald-500 transition-colors" />
                                    <span>{dir === 'rtl' ? 'حفظ كاختصار' : 'Save query as shortcut'}</span>
@@ -3064,7 +3064,7 @@ export const ChatPage: React.FC = () => {
                                      }
                                      setOpenMenuId(null);
                                    }}
-                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
+                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-[4px] transition-colors group"
                                  >
                                    <Flag size={15} className="text-gray-400 group-hover:text-amber-500 transition-colors" />
                                    <span>{dir === 'rtl' ? 'إبلاغ' : 'Report'}</span>
@@ -3088,7 +3088,7 @@ export const ChatPage: React.FC = () => {
                                      setOpenMenuId(null);
                                      toast.success(dir === 'rtl' ? 'تم حذف الرسالة' : 'Message deleted');
                                    }}
-                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/5 rounded-lg transition-colors group"
+                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/5 rounded-[4px] transition-colors group"
                                  >
                                    <Trash2 size={15} className="text-rose-400 group-hover:text-rose-500 transition-colors" />
                                    <span>{dir === 'rtl' ? 'حذف' : 'Delete'}</span>
@@ -3113,7 +3113,7 @@ export const ChatPage: React.FC = () => {
                           className="w-full flex items-center gap-2 text-emerald-500/80"
                         >
                           {selectedTool === 'image' || selectedTool === 'video' || selectedTool === 'canvas' ? (
-                            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-xl border border-emerald-500/10">
+                            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-[4px] border border-emerald-500/10">
                               <Brain className="w-4 h-4 text-emerald-500 animate-pulse" />
                               <span className="text-sm font-medium tracking-tight text-emerald-500">
                                 {dir === 'rtl' ? 'جاري التحليل والإنتاج...' : 'Analyzing & Producing...'}
@@ -3163,11 +3163,11 @@ export const ChatPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                     <Bookmark size={20} />
                   </div>
                   <div>
@@ -3179,7 +3179,7 @@ export const ChatPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setShowPinnedModal(false)}
-                  className="w-10 h-10 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400"
+                  className="w-10 h-10 rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400"
                 >
                   <X size={20} />
                 </button>
@@ -3187,7 +3187,7 @@ export const ChatPage: React.FC = () => {
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                  <div key={pIdx} className="group relative p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
+                  <div key={pIdx} className="group relative p-4 rounded-[4px] bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
                          {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة السيادة' : 'Sovereign Answer')}

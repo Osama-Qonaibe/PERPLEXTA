@@ -48,7 +48,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
               key={index}
               to={item.path}
               className={({ isActive }) =>
-                `group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 border border-transparent ${
+                `group flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all duration-300 border border-transparent ${
                   isActive
                     ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                     : `text-gray-400 hover:text-gray-900 dark:hover:text-white ${theme === 'dark' ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'}`
@@ -77,7 +77,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
         <div className="p-4 border-t border-gray-200 dark:border-gray-800/60 mt-auto">
           <NavLink 
             to="/"
-            className={`group flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 border border-transparent ${theme === 'dark' ? 'bg-[#1a1a1c] hover:bg-gray-800/50 border-gray-800/60 hover:border-emerald-500/30' : 'bg-gray-50 hover:bg-white border-gray-200 shadow-sm hover:shadow-md'}`}
+            className={`group flex items-center justify-between px-4 py-3 rounded-[4px] transition-all duration-300 border border-transparent ${theme === 'dark' ? 'bg-[#1a1a1c] hover:bg-gray-800/50 border-gray-800/60 hover:border-emerald-500/30' : 'bg-gray-50 hover:bg-white border-gray-200 shadow-sm hover:shadow-md'}`}
           >
             <div className="flex items-center gap-3">
               <div className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">

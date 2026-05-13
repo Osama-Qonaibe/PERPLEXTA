@@ -246,7 +246,7 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
+              className={`w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
             >
               {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
@@ -262,7 +262,7 @@ export const RewardsPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[4px] border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
                <Landmark size={14} className="text-emerald-500" />
                <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">PLATFORM LEDGER</span>
             </div>
@@ -274,7 +274,7 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* Withdrawable Balance Card */}
-        <div className={`relative overflow-hidden rounded-2xl md:rounded-3xl p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
+        <div className={`relative overflow-hidden rounded-[4px] md:rounded-[4px] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] md:text-[180px] font-bold text-emerald-500/5 select-none pointer-events-none">
             $
           </div>
@@ -286,7 +286,7 @@ export const RewardsPage: React.FC = () => {
             </div>
             <button 
               onClick={() => setIsWithdrawModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] md:rounded-[4px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
             >
               <Wallet size={16} className="md:w-[18px] md:h-[18px]" />
               {t('requestWithdrawal')}
@@ -295,7 +295,7 @@ export const RewardsPage: React.FC = () => {
         </div>
 
         {/* Points Balance Card */}
-        <div className={`relative overflow-hidden rounded-2xl md:rounded-3xl p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
+        <div className={`relative overflow-hidden rounded-[4px] md:rounded-[4px] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none pointer-events-none opacity-5">
             <Gift className="text-rose-500 w-[140px] h-[140px] md:w-[200px] md:h-[200px]" />
           </div>
@@ -310,7 +310,7 @@ export const RewardsPage: React.FC = () => {
             </div>
             <button 
               onClick={() => setIsConvertModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] md:rounded-[4px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
             >
               <Zap size={16} className="md:w-[18px] md:h-[18px]" />
               {t('convertPointsToBalance')}
@@ -324,7 +324,7 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* How it works */}
-        <div className={`rounded-2xl md:rounded-3xl p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+        <div className={`rounded-[4px] md:rounded-[4px] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
           <h3 className="text-lg md:text-xl font-bold text-[var(--text-primary)] mb-6 md:mb-8 text-center">{t('howSystemWorks')}</h3>
           
           <div className="space-y-6 md:space-y-8">
@@ -364,7 +364,7 @@ export const RewardsPage: React.FC = () => {
         </div>
 
         {/* Invite Friends */}
-        <div className={`rounded-2xl md:rounded-3xl p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col`}>
+        <div className={`rounded-[4px] md:rounded-[4px] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col`}>
           <div className="text-center mb-6 md:mb-8">
             <h3 className="text-lg md:text-xl font-bold text-[var(--text-primary)] flex items-center justify-center gap-2">
               {t('inviteFriendsAndEarn')}
@@ -379,12 +379,12 @@ export const RewardsPage: React.FC = () => {
             <div className="space-y-1.5 md:space-y-2">
               <label className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{t('yourReferralLink')}</label>
               <div className="flex items-center gap-2">
-                <div className={`flex-1 p-2.5 md:p-3 rounded-lg md:rounded-xl border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] font-mono text-[11px] md:text-sm overflow-hidden text-ellipsis whitespace-nowrap`}>
+                <div className={`flex-1 p-2.5 md:p-3 rounded-[4px] md:rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] font-mono text-[11px] md:text-sm overflow-hidden text-ellipsis whitespace-nowrap`}>
                   {referralLink}
                 </div>
                 <button 
                   onClick={handleCopy}
-                  className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-lg md:rounded-xl border transition-all duration-300 ${
+                  className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[4px] md:rounded-[4px] border transition-all duration-300 ${
                     copied 
                       ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' 
                       : `bg-[var(--bg-primary)] border-[var(--border-main)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]`
@@ -396,7 +396,7 @@ export const RewardsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className={`flex items-center justify-between p-4 md:p-6 rounded-xl md:rounded-2xl border bg-[var(--bg-primary)] border-[var(--border-main)]`}>
+            <div className={`flex items-center justify-between p-4 md:p-6 rounded-[4px] md:rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)]`}>
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
                   <Gift size={20} className="md:w-6 md:h-6" />
@@ -412,7 +412,7 @@ export const RewardsPage: React.FC = () => {
 
       {/* KYC Verification Card */}
       {contextUser?.kyc_required && contextUser?.kyc_status !== 'verified' && (
-        <div className={`rounded-2xl md:rounded-3xl p-5 md:p-8 border transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
+        <div className={`rounded-[4px] md:rounded-[4px] p-5 md:p-8 border transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
           contextUser?.kyc_status === 'pending' ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' : 
           contextUser?.kyc_status === 'rejected' ? 'bg-red-500/5 border-red-500/20 shadow-red-500/5' : ''
         }`}>
@@ -439,8 +439,8 @@ export const RewardsPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className={`mt-4 md:mt-8 p-4 md:p-6 rounded-xl md:rounded-2xl border flex flex-col md:flex-row items-center gap-4 md:gap-6 max-w-3xl bg-[var(--bg-primary)]/50 border-[var(--border-main)]`}>
-                <div className="flex-shrink-0 p-3 md:p-4 rounded-xl bg-blue-500/10 text-blue-500">
+              <div className={`mt-4 md:mt-8 p-4 md:p-6 rounded-[4px] md:rounded-[4px] border flex flex-col md:flex-row items-center gap-4 md:gap-6 max-w-3xl bg-[var(--bg-primary)]/50 border-[var(--border-main)]`}>
+                <div className="flex-shrink-0 p-3 md:p-4 rounded-[4px] bg-blue-500/10 text-blue-500">
                   <Lock size={20} className="md:w-6 md:h-6" />
                 </div>
                 <div className={`text-[10px] md:text-sm leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
@@ -468,7 +468,7 @@ export const RewardsPage: React.FC = () => {
                   {dir === 'rtl' ? 'تم رفض طلب التحقق' : 'Verification Request Rejected'}
                 </h3>
                 {contextUser?.kyc_rejection_reason && (
-                  <div className={`p-4 rounded-xl border bg-red-500/5 border-red-500/20 text-red-500 text-sm md:text-base font-medium`}>
+                  <div className={`p-4 rounded-[4px] border bg-red-500/5 border-red-500/20 text-red-500 text-sm md:text-base font-medium`}>
                     <p className="text-[10px] uppercase tracking-widest text-red-400 mb-1 font-black">
                       {t('kycRejectionReason')}
                     </p>
@@ -488,7 +488,7 @@ export const RewardsPage: React.FC = () => {
                     setSelfieData(null);
                     setKycFullName('');
                   }}
-                  className="mt-4 px-8 py-3 rounded-xl bg-emerald-500 text-white font-bold text-sm md:text-base hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
+                  className="mt-4 px-8 py-3 rounded-[4px] bg-emerald-500 text-white font-bold text-sm md:text-base hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
                 >
                   <RefreshCw size={18} />
                   {dir === 'rtl' ? 'إعادة المحاولة' : 'Try Again'}
@@ -500,7 +500,7 @@ export const RewardsPage: React.FC = () => {
               {/* Left Side: Info */}
               <div className="flex-1 space-y-4 md:space-y-6">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-[4px] md:rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
                     <ShieldCheck size={20} className="md:w-6 md:h-6" />
                   </div>
                   <div>
@@ -519,7 +519,7 @@ export const RewardsPage: React.FC = () => {
                   {t('kycDescription')}
                 </p>
 
-                <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+                <div className={`p-4 rounded-[4px] border flex items-start gap-3 ${
                   theme === 'dark' ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100'
                 }`}>
                   <Lock className="text-rose-500 mt-0.5 flex-shrink-0" size={16} />
@@ -536,7 +536,7 @@ export const RewardsPage: React.FC = () => {
                   <label className="block text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
                     {t('fullNameAsPerIdUser')}
                   </label>
-                  <div className={`relative flex items-center rounded-xl md:rounded-2xl border transition-all ${
+                  <div className={`relative flex items-center rounded-[4px] md:rounded-[4px] border transition-all ${
                     theme === 'dark' ? 'bg-[#0f0f11] border-gray-800/60 focus-within:border-emerald-500/50' : 'bg-gray-50 border-gray-200 focus-within:border-emerald-500/50'
                   }`}>
                     <input 
@@ -553,10 +553,10 @@ export const RewardsPage: React.FC = () => {
                 <div className="space-y-2">
                   {isCapturing && !selfieCaptured ? (
                     <div className="space-y-2">
-                      <video ref={videoRef} className="w-full rounded-xl md:rounded-2xl bg-black" autoPlay playsInline />
+                      <video ref={videoRef} className="w-full rounded-[4px] md:rounded-[4px] bg-black" autoPlay playsInline />
                       <button 
                         onClick={captureImage}
-                        className="w-full py-2.5 md:py-3 rounded-lg md:rounded-xl bg-emerald-500 text-white font-bold text-xs md:text-base"
+                        className="w-full py-2.5 md:py-3 rounded-[4px] md:rounded-[4px] bg-emerald-500 text-white font-bold text-xs md:text-base"
                       >
                         {t('capture')}
                       </button>
@@ -565,7 +565,7 @@ export const RewardsPage: React.FC = () => {
                     <button 
                       onClick={startCamera}
                       disabled={selfieCaptured}
-                      className={`w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 rounded-xl md:rounded-2xl border-2 border-dashed transition-all duration-300 ${
+                      className={`w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 rounded-[4px] md:rounded-[4px] border-2 border-dashed transition-all duration-300 ${
                         selfieCaptured 
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 cursor-default shadow-sm'
                           : theme === 'dark'
@@ -593,7 +593,7 @@ export const RewardsPage: React.FC = () => {
                 <button 
                   onClick={handleSubmitKYC}
                   disabled={!kycFullName.trim() || !selfieCaptured || isSubmitting}
-                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl font-bold text-xs md:text-base transition-all duration-300 ${
+                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-[4px] font-bold text-xs md:text-base transition-all duration-300 ${
                     !kycFullName.trim() || !selfieCaptured || isSubmitting
                       ? 'opacity-50 cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
                       : theme === 'dark'
@@ -628,7 +628,7 @@ export const RewardsPage: React.FC = () => {
             </div>
           </div>
           
-          <div className={`overflow-hidden rounded-2xl md:rounded-3xl border border-[var(--border-main)] bg-[var(--bg-secondary)]`}>
+          <div className={`overflow-hidden rounded-[4px] md:rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)]`}>
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-[10px] md:text-sm text-left rtl:text-right">
                 <thead className={`text-[9px] md:text-xs uppercase bg-[var(--bg-primary)]/40 text-gray-400`}>
@@ -650,7 +650,7 @@ export const RewardsPage: React.FC = () => {
                     transactions.map((tx) => (
                       <tr key={tx.id} className={`border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors`}>
                         <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] text-xs font-medium ${
                             tx.transaction_type === 'welcome_bonus' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
                           }`}>
                             {tx.transaction_type}
@@ -684,7 +684,7 @@ export const RewardsPage: React.FC = () => {
           />
           
           {/* Modal Content */}
-          <div className={`relative w-full max-w-md rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
+          <div className={`relative w-full max-w-md rounded-[4px] md:rounded-[4px] p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
             
             {/* Header */}
             <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
@@ -699,7 +699,7 @@ export const RewardsPage: React.FC = () => {
               <label className="block text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
                 {t('numberOfPoints')}
               </label>
-              <div className={`relative flex items-center rounded-xl md:rounded-2xl border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
+              <div className={`relative flex items-center rounded-[4px] md:rounded-[4px] border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
                 <input 
                   type="text"
                   value={convertAmount || ''}
@@ -717,14 +717,14 @@ export const RewardsPage: React.FC = () => {
             <div className="flex items-center gap-3 md:gap-4 mt-6 md:mt-8">
               <button 
                 onClick={() => setIsConvertModalOpen(false)}
-                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-all duration-300 text-gray-500 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]/50`}
+                className={`flex-1 py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 text-gray-500 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]/50`}
               >
                 {t('cancel')}
               </button>
               <button 
                 onClick={handleConvertPoints}
                 disabled={isSubmitting}
-                className={`flex-[2] py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-all duration-300 bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-50`}
+                className={`flex-[2] py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-50`}
               >
                 {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : t('confirmConversion')}
               </button>
@@ -744,7 +744,7 @@ export const RewardsPage: React.FC = () => {
           />
           
           {/* Modal Content */}
-          <div className={`relative w-full max-w-md rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
+          <div className={`relative w-full max-w-md rounded-[4px] md:rounded-[4px] p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
             
             {/* Header */}
             <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
@@ -759,7 +759,7 @@ export const RewardsPage: React.FC = () => {
               <label className="block text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
                 {t('withdrawalAmount')}
               </label>
-              <div className={`relative flex items-center rounded-xl md:rounded-2xl border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
+              <div className={`relative flex items-center rounded-[4px] md:rounded-[4px] border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
                 <span className="px-3 md:px-4 text-gray-400 font-bold text-lg md:text-xl">$</span>
                 <input 
                   type="text"
@@ -790,7 +790,7 @@ export const RewardsPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2 md:gap-3">
                 <button
                   onClick={() => setWithdrawMethod('paypal')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[4px] md:rounded-[4px] border transition-all duration-300 ${
                     withdrawMethod === 'paypal'
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
                       : 'border-[var(--border-main)] text-gray-500 hover:border-emerald-500/30 hover:text-emerald-500'
@@ -801,7 +801,7 @@ export const RewardsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setWithdrawMethod('crypto')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[4px] md:rounded-[4px] border transition-all duration-300 ${
                     withdrawMethod === 'crypto'
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
                       : 'border-[var(--border-main)] text-gray-500 hover:border-emerald-500/30 hover:text-emerald-500'
@@ -812,7 +812,7 @@ export const RewardsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setWithdrawMethod('bank')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-lg md:rounded-xl border transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[4px] md:rounded-[4px] border transition-all duration-300 ${
                     withdrawMethod === 'bank'
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
                       : 'border-[var(--border-main)] text-gray-500 hover:border-emerald-500/30 hover:text-emerald-500'
@@ -829,7 +829,7 @@ export const RewardsPage: React.FC = () => {
               <label className="block text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
                 {t('paymentDetails')}
               </label>
-              <div className={`relative flex items-center rounded-xl md:rounded-2xl border transition-all ${
+              <div className={`relative flex items-center rounded-[4px] md:rounded-[4px] border transition-all ${
                 theme === 'dark' ? 'bg-[#0f0f11] border-gray-800/60 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50' : 'bg-gray-50 border-gray-200 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50'
               }`}>
                 <input 
@@ -851,7 +851,7 @@ export const RewardsPage: React.FC = () => {
             <div className="flex items-center gap-3 md:gap-4">
               <button 
                 onClick={() => setIsWithdrawModalOpen(false)}
-                className={`flex-1 py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-all duration-300 ${
+                className={`flex-1 py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 ${
                   theme === 'dark' 
                     ? 'text-gray-400 hover:text-white hover:bg-gray-800/50' 
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -862,7 +862,7 @@ export const RewardsPage: React.FC = () => {
               <button 
                 onClick={handleWithdraw}
                 disabled={isSubmitting}
-                className={`flex-[2] py-3 md:py-4 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all duration-300 ${
+                className={`flex-[2] py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all duration-300 ${
                   theme === 'dark'
                     ? 'bg-white text-gray-900 hover:bg-gray-100'
                     : 'bg-gray-900 text-white hover:bg-gray-800'

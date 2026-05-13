@@ -17,7 +17,7 @@ export const About: React.FC = () => {
         <div className="flex items-center gap-3 md:gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            className={`w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 ${
               theme === 'dark' 
                 ? 'bg-gray-800/30 hover:bg-gray-800 text-gray-400 hover:text-emerald-500 border border-gray-800/40' 
                 : 'bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-emerald-600 border border-gray-200'

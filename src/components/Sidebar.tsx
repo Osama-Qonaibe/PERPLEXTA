@@ -210,7 +210,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     }
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative group`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                       <div className="relative z-10 transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         {React.cloneElement(item.icon as React.ReactElement, { size: 18 } as any)}
                       </div>
@@ -238,7 +238,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     className="flex items-center transition-all duration-300 w-full h-11 overflow-hidden flex-shrink-0 group"
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute top-[3px] left-0 right-0 mx-auto w-10 h-10 rounded-xl transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15`} />
+                      <div className={`absolute top-[3px] left-0 right-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15`} />
                       <Plus size={20} className={`relative z-10 translate-y-[1px] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 text-emerald-500`} />
                     </div>
                     <AnimatePresence mode="wait" initial={false}>
@@ -293,7 +293,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
                             <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                               <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl ${
+                               <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] ${
                                  theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50'
                                }`} />
                               <MessageSquare size={16} className="text-emerald-500 relative z-10" />
@@ -338,7 +338,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                             >
                               <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl transition-colors duration-300 ${
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-colors duration-300 ${
                                   theme === 'dark' ? 'group-hover:bg-gray-800/50' : 'group-hover:bg-gray-50'
                                 }`} />
                                 <MessageSquare size={16} className="relative z-10 transition-colors duration-300 group-hover:text-emerald-500" />
@@ -395,34 +395,17 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
             <div className={`mt-auto pt-4 pb-5 border-t border-[var(--border-main)] space-y-1 flex-shrink-0 relative`} ref={dropdownRef}>
               {user ? (
                 <>
-                  {isDropdownOpen && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-secondary)] border-[var(--border-main)] border rounded-2xl shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
-                    >
-                      <div className="p-2 space-y-1">
-                        <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]`}>
-                          <User size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
-
-                        {!isMobile && (
-                          <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all`}>
-                            <CreditCard size={16} className="flex-shrink-0" />
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-secondary)] border-[var(--border-main)] border rounded-[4px] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
+                      >
+                        <div className="p-2 space-y-1">
+                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                            <User size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -432,113 +415,96 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={elasticSpring}
                                   className="overflow-hidden whitespace-nowrap"
                                 >
-                                  <span className="font-medium text-sm">{t('consumption')}</span>
+                                  <span className="font-medium text-sm">{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
-                        )}
 
-                        <div className={`h-px bg-[var(--border-main)] my-1 mx-2`}></div>
+                          {!isMobile && (
+                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all`}>
+                              <CreditCard size={16} className="flex-shrink-0" />
+                              <AnimatePresence mode="wait" initial={false}>
+                                {isSidebarOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                    transition={elasticSpring}
+                                    className="overflow-hidden whitespace-nowrap"
+                                  >
+                                    <span className="font-medium text-sm">{t('consumption')}</span>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </button>
+                          )}
 
-                        <button onClick={() => { navigate('/settings?tab=preferences'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]`}>
-                          <Settings2 size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('preference') || (dir === 'rtl' ? 'التفضيلات' : 'Preferences')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
+                          <div className={`h-px bg-[var(--border-main)] my-1 mx-2`}></div>
 
-                        <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]`}>
-                          <Wallet size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
+                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                            <Wallet size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  transition={elasticSpring}
+                                  className="overflow-hidden whitespace-nowrap"
+                                >
+                                  <span className="font-medium text-sm">{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
 
-                        <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]`}>
-                          <BrainCircuit size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
+                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                            <BrainCircuit size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  transition={elasticSpring}
+                                  className="overflow-hidden whitespace-nowrap"
+                                  >
+                                  <span className="font-medium text-sm">{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
 
-                        <div className={`h-px bg-[var(--border-main)] my-1 mx-2`}></div>
-
-                        <button onClick={() => { navigate('/settings?tab=shortcuts'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]`}>
-                          <Keyboard size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('shortcuts') || (dir === 'rtl' ? 'الاختصارات' : 'Shortcuts')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
-
-                        <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
-                          <LogOut size={16} className="flex-shrink-0" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            {isSidebarOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={elasticSpring}
-                                className="overflow-hidden whitespace-nowrap"
-                              >
-                                <span className="font-medium text-sm">{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
+                            <LogOut size={16} className="flex-shrink-0" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  transition={elasticSpring}
+                                  className="overflow-hidden whitespace-nowrap"
+                                >
+                                  <span className="font-medium text-sm">{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                     <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)]`}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/30 shadow-[0_0_15px_rgba(0,0,0,0.1)]`}
+                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/30 shadow-[0_0_15px_rgba(0,0,0,0.1)]`}
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'transparent'
                             }}
@@ -590,10 +556,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl transition-colors duration-300 ${
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-colors duration-300 ${
                         theme === 'dark' ? 'group-hover:bg-gray-800/50' : 'group-hover:bg-gray-50'
                       }`} />
-                      <div className={`w-10 h-10 rounded-xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'} flex items-center justify-center flex-shrink-0 relative z-10`}>
+                      <div className={`w-10 h-10 rounded-[4px] ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'} flex items-center justify-center flex-shrink-0 relative z-10`}>
                         <User size={18} className="text-gray-400" />
                       </div>
                     </div>

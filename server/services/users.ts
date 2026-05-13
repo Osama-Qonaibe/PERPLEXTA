@@ -83,7 +83,7 @@ export async function getUserUsage(userId: string | number) {
   };
 
   const planRes = await pool.query(`
-    SELECT p.id, p.name_en, p.name_ar, p.limits, s.status, s.billing_period
+    SELECT p.id, p.name_en, p.name_ar, p.limits, p.color, s.status, s.billing_period, s.current_period_end, s.created_at as subscription_start
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
     LEFT JOIN plans p ON p.id = s.plan_id
@@ -102,7 +102,7 @@ export async function getUserUsage(userId: string | number) {
       plan = { ...plan, ...starterRes.rows[0] };
     } else {
       // Emergency fallback if even Starter is missing
-      plan = { ...plan, limits: {} };
+      plan = { ...plan, name_en: 'Starter', name_ar: 'البداية', limits: {}, color: '#10b981' };
     }
   }
 
@@ -180,8 +180,11 @@ export async function getUserUsage(userId: string | number) {
       name_en: plan.name_en,
       name_ar: plan.name_ar,
       limits: plan.limits,
+      color: plan.color || '#10b981',
       status: plan.status || 'Active',
-      billing_period: plan.billing_period || 'Monthly'
+      billing_period: plan.billing_period || 'Monthly',
+      current_period_end: plan.current_period_end,
+      subscription_start: plan.subscription_start
     },
     usage: usageItems
   };
@@ -205,6 +208,43 @@ export async function getUserProfile(userId: string) {
   const walletRes = await (ledgerPool || pool).query('SELECT balance, points FROM wallets WHERE user_id = $1', [userId]);
   const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
   
+  let subscription = row.plan_id ? {
+    plan_id: row.plan_id,
+    status: row.sub_status,
+    current_period_end: row.current_period_end,
+    plan_name_en: row.plan_name_en,
+    plan_name_ar: row.plan_name_ar,
+    plan_color: row.plan_color,
+    limits: row.limits
+  } : null;
+
+  // Fallback if no subscription found
+  if (!subscription) {
+    const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
+    if (starterRes.rows.length > 0) {
+      const p = starterRes.rows[0];
+      subscription = {
+        plan_id: p.id,
+        status: 'active',
+        current_period_end: null,
+        plan_name_en: p.name_en,
+        plan_name_ar: p.name_ar,
+        plan_color: p.color,
+        limits: p.limits
+      };
+    } else {
+      subscription = {
+        plan_id: 0,
+        status: 'active',
+        current_period_end: null,
+        plan_name_en: 'Starter',
+        plan_name_ar: 'البداية',
+        plan_color: '#10b981',
+        limits: {}
+      };
+    }
+  }
+  
   return {
     id: row.id,
     name: row.name,
@@ -217,15 +257,7 @@ export async function getUserProfile(userId: string) {
     custom_instructions: row.custom_instructions,
     kyc_status: row.kyc_status,
     created_at: row.created_at,
-    subscription: row.plan_id ? {
-      plan_id: row.plan_id,
-      status: row.sub_status,
-      current_period_end: row.current_period_end,
-      plan_name_en: row.plan_name_en,
-      plan_name_ar: row.plan_name_ar,
-      plan_color: row.plan_color,
-      limits: row.limits
-    } : null,
+    subscription,
     balance: wallet.balance,
     points: parseInt(wallet.points)
   };

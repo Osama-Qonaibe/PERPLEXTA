@@ -389,16 +389,16 @@ const CommandCenterView = ({
         {kpis.map((kpi, idx) => (
           <div
             key={idx}
-            className={`p-5 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
+            className={`p-5 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
           >
             <div className="flex justify-between items-start mb-4">
               <div
-                className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                className={`p-2.5 rounded-[4px] bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
               >
                 {kpi.icon}
               </div>
               <span
-                className={`text-sm font-medium px-2 py-1 rounded-lg ${kpi.isPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}
+                className={`text-sm font-medium px-2 py-1 rounded-[4px] ${kpi.isPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}
               >
                 {kpi.trend}
               </span>
@@ -413,7 +413,7 @@ const CommandCenterView = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
-          className={`p-6 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col`}
+          className={`p-6 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -484,7 +484,7 @@ const CommandCenterView = ({
         </div>
 
         <div
-          className={`p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex flex-col`}
+          className={`p-6 rounded-[4px] border border-emerald-500/20 bg-emerald-500/5 flex flex-col`}
         >
           <div className="flex items-center gap-3 mb-6">
             <Activity className="text-emerald-500" size={20} />
@@ -503,7 +503,7 @@ const CommandCenterView = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
-          className={`p-6 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm`}
+          className={`p-6 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -515,7 +515,7 @@ const CommandCenterView = ({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 {activity.length > 0 && (
-                  <div className="ml-2 flex items-center gap-2 bg-gray-500/5 px-2 py-1 rounded-lg border border-gray-500/10">
+                  <div className="ml-2 flex items-center gap-2 bg-gray-500/5 px-2 py-1 rounded-[4px] border border-gray-500/10">
                     <input
                       type="checkbox"
                       checked={
@@ -540,7 +540,7 @@ const CommandCenterView = ({
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.9, x: 20 }}
                     onClick={() => handleBatchDelete("activity")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-95"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-95"
                   >
                     <Trash2 size={12} />
                     {t("deleteSelected")} ({selectedActivityIds.length})
@@ -552,21 +552,21 @@ const CommandCenterView = ({
 
               <button
                 onClick={() => handleBulkDeleteActivity("ai_generation")}
-                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-lg border border-transparent hover:border-emerald-500/10"
+                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
                 title={t("clearAILogs")}
               >
                 <Zap size={14} />
               </button>
               <button
                 onClick={() => handleBulkDeleteActivity("system_event")}
-                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-lg border border-transparent hover:border-emerald-500/10"
+                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
                 title={t("clearSystemLogs")}
               >
                 <Settings size={14} />
               </button>
               <button
                 onClick={() => handleBulkDeleteActivity("log")}
-                className="text-gray-400 hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-lg border border-transparent hover:border-red-500/10"
+                className="text-gray-400 hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-[4px] border border-transparent hover:border-red-500/10"
                 title={t("clearAll")}
               >
                 <Trash2 size={14} />
@@ -606,7 +606,7 @@ const CommandCenterView = ({
               return (
                 <div
                   key={idx}
-                  className={`flex items-start gap-3 group p-2 rounded-xl transition-all border border-transparent ${isSelected ? "bg-emerald-500/5 border-emerald-500/20" : "hover:bg-gray-500/5"}`}
+                  className={`flex items-start gap-3 group p-2 rounded-[4px] transition-all border border-transparent ${isSelected ? "bg-emerald-500/5 border-emerald-500/20" : "hover:bg-gray-500/5"}`}
                 >
                   <div className="pt-1 select-none">
                     <input
@@ -672,7 +672,7 @@ const CommandCenterView = ({
         </div>
 
         <div
-          className={`p-6 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm shadow-red-500/5`}
+          className={`p-6 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm shadow-red-500/5`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -681,7 +681,7 @@ const CommandCenterView = ({
                 {t("securityAlerts")}
               </h2>
               {alerts.length > 0 && (
-                <div className="flex items-center gap-2 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10">
+                <div className="flex items-center gap-2 bg-red-500/5 px-2 py-1 rounded-[4px] border border-red-500/10">
                   <input
                     type="checkbox"
                     checked={
@@ -706,7 +706,7 @@ const CommandCenterView = ({
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.9, x: 20 }}
                     onClick={() => handleBatchDelete("alert")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 active:scale-95"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 active:scale-95"
                   >
                     <Trash2 size={12} />
                     {t("deleteSelected")} ({selectedAlertIds.length})
@@ -718,7 +718,7 @@ const CommandCenterView = ({
 
               <button
                 onClick={handleBulkDeleteAlerts}
-                className="text-gray-400 hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-lg border border-transparent hover:border-red-500/10"
+                className="text-gray-400 hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-[4px] border border-transparent hover:border-red-500/10"
                 title={t("clearAll")}
               >
                 <Trash2 size={16} />
@@ -727,7 +727,7 @@ const CommandCenterView = ({
           </div>
 
           {/* Combined Maintenance Toolkit */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 p-4 rounded-xl bg-gray-500/5 border border-gray-500/10 shadow-inner">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 p-4 rounded-[4px] bg-gray-500/5 border border-gray-500/10 shadow-inner">
             <div className="col-span-full flex items-center justify-between mb-1 px-1">
               <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
                 {t("systemMaintenance")}
@@ -754,7 +754,7 @@ const CommandCenterView = ({
                   console.error("Purge failed", e);
                 }
               }}
-              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all"
+              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-[4px] bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all"
             >
               <Database
                 size={14}
@@ -796,7 +796,7 @@ const CommandCenterView = ({
                   console.error("Pruning failed", e);
                 }
               }}
-              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
+              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-[4px] bg-emerald-500/5 border border-emerald-500/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
             >
               <BellRing
                 size={14}
@@ -825,7 +825,7 @@ const CommandCenterView = ({
                   console.error("Wipe failed", e);
                 }
               }}
-              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
+              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-[4px] bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
             >
               <Shield
                 size={14}
@@ -859,7 +859,7 @@ const CommandCenterView = ({
               return (
                 <div
                   key={idx}
-                  className={`flex items-start gap-3 group p-2 rounded-xl transition-all border border-transparent ${isSelected ? "bg-red-500/5 border-red-500/20" : "hover:bg-gray-500/5"}`}
+                  className={`flex items-start gap-3 group p-2 rounded-[4px] transition-all border border-transparent ${isSelected ? "bg-red-500/5 border-red-500/20" : "hover:bg-gray-500/5"}`}
                 >
                   <div className="pt-1 select-none">
                     <input
@@ -916,7 +916,7 @@ const CommandCenterView = ({
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -1166,7 +1166,7 @@ const DigitalFinancialRadarView = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
-            className={`px-3 py-2 rounded-xl border flex items-center gap-2 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"}`}
+            className={`px-3 py-2 rounded-[4px] border flex items-center gap-2 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"}`}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">
@@ -1180,7 +1180,7 @@ const DigitalFinancialRadarView = ({
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: -20 }}
                 onClick={handleBatchDelete}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
               >
                 <Trash2 size={12} />
                 {t("deleteSelected")} ({selectedTransactionIds.length})
@@ -1189,7 +1189,7 @@ const DigitalFinancialRadarView = ({
           </AnimatePresence>
           <button
             onClick={handleBulkPurge}
-            className="p-1.5 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
+            className="p-1.5 rounded-[4px] text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
             title={t("clearAll")}
           >
             <Shield size={16} />
@@ -1213,13 +1213,13 @@ const DigitalFinancialRadarView = ({
                   ? "بحث في السجلات الفنية..."
                   : "Search financial records...")
               }
-              className={`w-full md:w-80 ${dir === "rtl" ? "pr-10 pl-4" : "pl-10 pr-4"} py-2.5 rounded-xl border text-sm font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-[#1a1a1c]/40 border-gray-800/60 focus:border-emerald-500/50 text-white placeholder:text-gray-600`}
+              className={`w-full md:w-80 ${dir === "rtl" ? "pr-10 pl-4" : "pl-10 pr-4"} py-2.5 rounded-[4px] border text-sm font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-[#1a1a1c]/40 border-gray-800/60 focus:border-emerald-500/50 text-white placeholder:text-gray-600`}
             />
           </div>
           <button
             onClick={fetchData}
             title={language === "ar" ? "تحديث السجل" : "Refresh Log"}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-300 group ${
+            className={`w-10 h-10 flex items-center justify-center rounded-[4px] border transition-all duration-300 group ${
               loading
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
                 : "bg-[#1a1a1c]/40 border-gray-800/60 text-gray-400 hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-500"
@@ -1235,16 +1235,16 @@ const DigitalFinancialRadarView = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 mt-2">
         <div
-          className={`p-5 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
+          className={`p-5 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
         >
           <div className="flex justify-between items-start mb-4">
             <div
-              className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+              className={`p-2.5 rounded-[4px] bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
             >
               <Landmark size={20} />
             </div>
             <span
-              className={`text-sm font-medium px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-500`}
+              className={`text-sm font-medium px-2 py-1 rounded-[4px] bg-emerald-500/10 text-emerald-500`}
             >
               {radarStats?.health_score}%
             </span>
@@ -1258,16 +1258,16 @@ const DigitalFinancialRadarView = ({
         </div>
 
         <div
-          className={`p-5 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
+          className={`p-5 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
         >
           <div className="flex justify-between items-start mb-4">
             <div
-              className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]`}
+              className={`p-2.5 rounded-[4px] bg-[var(--bg-primary)] text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]`}
             >
               <ArrowRightLeft size={20} />
             </div>
             <span
-              className={`text-sm font-medium px-2 py-1 rounded-lg bg-blue-500/10 text-blue-500`}
+              className={`text-sm font-medium px-2 py-1 rounded-[4px] bg-blue-500/10 text-blue-500`}
             >
               +5.2%
             </span>
@@ -1281,16 +1281,16 @@ const DigitalFinancialRadarView = ({
         </div>
 
         <div
-          className={`p-5 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
+          className={`p-5 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
         >
           <div className="flex justify-between items-start mb-4">
             <div
-              className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]`}
+              className={`p-2.5 rounded-[4px] bg-[var(--bg-primary)] text-amber-500 drop-shadow-[0_0_8_rgba(245,158,11,0.4)]`}
             >
               <History size={20} />
             </div>
             <span
-              className={`text-sm font-medium px-2 py-1 rounded-lg bg-amber-500/10 text-amber-500`}
+              className={`text-sm font-medium px-2 py-1 rounded-[4px] bg-amber-500/10 text-amber-500`}
             >
               Live
             </span>
@@ -1304,16 +1304,16 @@ const DigitalFinancialRadarView = ({
         </div>
 
         <div
-          className={`p-5 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
+          className={`p-5 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-all duration-300 hover:shadow-md`}
         >
           <div className="flex justify-between items-start mb-4">
             <div
-              className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]`}
+              className={`p-2.5 rounded-[4px] bg-[var(--bg-primary)] text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]`}
             >
               <Zap size={20} />
             </div>
             <span
-              className={`text-sm font-medium px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500`}
+              className={`text-sm font-medium px-2 py-1 rounded-[4px] bg-purple-500/10 text-purple-500`}
             >
               Syncing
             </span>
@@ -1330,7 +1330,7 @@ const DigitalFinancialRadarView = ({
         <div className="lg:col-span-1 space-y-6">
           {/* Wallet Alerts */}
           <div
-            className={`p-6 rounded-2xl border border-red-500/20 bg-red-500/5`}
+            className={`p-6 rounded-[4px] border border-red-500/20 bg-red-500/5`}
           >
             <h3 className="text-sm font-bold text-red-500 mb-4 flex items-center gap-2 uppercase tracking-widest">
               <AlertCircle size={16} />
@@ -1352,7 +1352,7 @@ const DigitalFinancialRadarView = ({
                 return (
                   <div
                     key={idx}
-                    className={`p-3 rounded-xl border group transition-all bg-[var(--bg-secondary)] border-[var(--border-main)] hover:shadow-md`}
+                    className={`p-3 rounded-[4px] border group transition-all bg-[var(--bg-secondary)] border-[var(--border-main)] hover:shadow-md`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
@@ -1399,7 +1399,7 @@ const DigitalFinancialRadarView = ({
           </div>
 
           <div
-            className={`p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5`}
+            className={`p-6 rounded-[4px] border border-amber-500/20 bg-amber-500/5`}
           >
             <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
               <ShieldAlert size={16} />
@@ -1410,7 +1410,7 @@ const DigitalFinancialRadarView = ({
               {walletDiagnostics.map((diag, idx) => (
                 <div
                   key={idx}
-                  className={`p-4 rounded-xl border animate-in fade-in slide-in-from-right-5 duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm`}
+                  className={`p-4 rounded-[4px] border animate-in fade-in slide-in-from-right-5 duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -1423,7 +1423,7 @@ const DigitalFinancialRadarView = ({
                     </div>
                     <button
                       onClick={() => handleReconcile(diag.user_id)}
-                      className="p-2 hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors border border-transparent hover:border-emerald-500/30"
+                      className="p-2 hover:bg-emerald-500/10 text-emerald-500 rounded-[4px] transition-colors border border-transparent hover:border-emerald-500/30"
                     >
                       <ShieldCheck size={16} />
                     </button>
@@ -1459,7 +1459,7 @@ const DigitalFinancialRadarView = ({
           </div>
 
           <div
-            className={`p-6 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-secondary)]`}
+            className={`p-6 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)]`}
           >
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-4 flex items-center justify-between uppercase tracking-widest">
               <div className="flex items-center gap-2">
@@ -1469,7 +1469,7 @@ const DigitalFinancialRadarView = ({
               <TrendingUp size={14} className="text-emerald-500" />
             </h3>
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-4 rounded-xl bg-emerald-500/5 border border-[var(--border-main)]">
+              <div className="p-4 rounded-[4px] bg-emerald-500/5 border border-[var(--border-main)]">
                 <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold mb-1">
                   {t("todayTx")}
                 </p>
@@ -1477,7 +1477,7 @@ const DigitalFinancialRadarView = ({
                   {financials.length}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-emerald-500/5 border border-[var(--border-main)]">
+              <div className="p-4 rounded-[4px] bg-emerald-500/5 border border-[var(--border-main)]">
                 <p className="text-[10px] uppercase text-[var(--text-secondary)] font-bold mb-1">
                   {t("alertLevel")}
                 </p>
@@ -1519,7 +1519,7 @@ const DigitalFinancialRadarView = ({
         {/* Live Transaction Stream & Historical Audit */}
         <div className="lg:col-span-2">
           <div
-            className={`rounded-2xl border overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}
+            className={`rounded-[4px] border overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}
           >
             <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
               <h3 className="font-bold flex items-center gap-2">
@@ -1588,7 +1588,7 @@ const DigitalFinancialRadarView = ({
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${
+                              className={`w-8 h-8 rounded-[4px] flex items-center justify-center font-bold text-xs uppercase ${
                                 tx.amount > 0
                                   ? "bg-emerald-500/10 text-emerald-500"
                                   : "bg-amber-500/10 text-amber-500"
@@ -1653,7 +1653,7 @@ const DigitalFinancialRadarView = ({
       {toast &&
         createPortal(
           <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
                   ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -2262,7 +2262,7 @@ const ApiKeysVaultView = ({
       {toast &&
         createPortal(
           <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
                   ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -2287,7 +2287,7 @@ const ApiKeysVaultView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
-              className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
+              className={`w-full max-w-md rounded-[4px] shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -2368,7 +2368,7 @@ const ApiKeysVaultView = ({
               >
                 <button
                   onClick={() => setSyncModal(null)}
-                  className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${theme === "dark" ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"}`}
+                  className={`px-5 py-2 rounded-[4px] text-sm font-medium transition-colors ${theme === "dark" ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-600 hover:text-gray-900 hover:bg-gray-200"}`}
                 >
                   {t("close")}
                 </button>
@@ -2378,7 +2378,7 @@ const ApiKeysVaultView = ({
                       showToast(t("toastDbSaveSuccess"), "success");
                       setSyncModal(null);
                     }}
-                    className="px-5 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
+                    className="px-5 py-2 rounded-[4px] text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
                   >
                     {t("saveData")}
                   </button>
@@ -2394,7 +2394,7 @@ const ApiKeysVaultView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
-              className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
+              className={`w-full max-w-sm rounded-[4px] shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
             >
               <div className="p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
@@ -2415,13 +2415,13 @@ const ApiKeysVaultView = ({
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteModal(null)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${theme === "dark" ? "bg-[#0f0f11] text-gray-400 hover:text-white hover:bg-gray-800" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                    className={`flex-1 py-3 rounded-[4px] text-sm font-bold transition-all ${theme === "dark" ? "bg-[#0f0f11] text-gray-400 hover:text-white hover:bg-gray-800" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                   >
                     {t("cancel")}
                   </button>
                   <button
                     onClick={() => handleDeleteKey(deleteModal.providerId)}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+                    className="flex-1 py-3 rounded-[4px] text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
                   >
                     {language === "ar" ? "نعم، احذف" : "Yes, Delete"}
                   </button>
@@ -2437,7 +2437,7 @@ const ApiKeysVaultView = ({
         {providers.map((provider) => (
           <div
             key={provider.id}
-            className={`p-6 rounded-2xl border transition-all duration-300 relative group overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:shadow-lg`}
+            className={`p-6 rounded-[4px] border transition-all duration-300 relative group overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:shadow-lg`}
           >
             {/* Provider Logo Accent (Faded in Background) */}
             <div className="absolute -top-4 -right-4 opacity-5 dark:opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-700">
@@ -2447,7 +2447,7 @@ const ApiKeysVaultView = ({
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl bg-[var(--bg-primary)] flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                  className={`w-10 h-10 rounded-[4px] bg-[var(--bg-primary)] flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
                 >
                   <Key size={20} />
                 </div>
@@ -2458,7 +2458,7 @@ const ApiKeysVaultView = ({
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest border border-emerald-500/20"
+                        className="px-1.5 py-0.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest border border-emerald-500/20"
                       >
                         Trusted
                       </motion.div>
@@ -2488,7 +2488,7 @@ const ApiKeysVaultView = ({
                   href={provider.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-2 rounded-lg border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30`}
+                  className={`p-2 rounded-[4px] border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30`}
                   title={`Go to ${provider.name} Dashboard`}
                 >
                   <ExternalLink size={16} />
@@ -2496,7 +2496,7 @@ const ApiKeysVaultView = ({
                 {(provider.status === "active" || provider.key) && (
                   <button
                     onClick={() => handleDeleteKey(provider.id, provider.name)}
-                    className={`p-2 rounded-lg border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-red-500/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30`}
+                    className={`p-2 rounded-[4px] border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-red-500/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30`}
                     title={t("keyDeleteConfirm").split("?")[0] + "?"}
                   >
                     <Trash2 size={16} />
@@ -2506,7 +2506,7 @@ const ApiKeysVaultView = ({
             </div>
 
             {/* Usage Metrics Section */}
-            <div className="space-y-5 mb-6 p-4 rounded-xl bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50">
+            <div className="space-y-5 mb-6 p-4 rounded-[4px] bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50">
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                   <span className="text-gray-500">{t("utilizationRate")}</span>
@@ -2543,7 +2543,7 @@ const ApiKeysVaultView = ({
                     type="number"
                     placeholder="0.00"
                     defaultValue={provider.budget || ""}
-                    className={`w-full h-9 pl-8 pr-3 text-xs font-mono rounded-lg border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                    className={`w-full h-9 pl-8 pr-3 text-xs font-mono rounded-[4px] border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                     onBlur={async (e) => {
                       const newBudget = parseFloat(e.target.value);
                       if (!isNaN(newBudget) && newBudget !== provider.budget) {
@@ -2587,7 +2587,7 @@ const ApiKeysVaultView = ({
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-main)]/30 mb-4">
               <button
                 onClick={() => handleSyncUsage(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-all active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-[4px] bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-all active:scale-95 group/btn"
                 title={t("syncUsageLimits")}
               >
                 <RefreshCw
@@ -2598,7 +2598,7 @@ const ApiKeysVaultView = ({
               </button>
               <button
                 onClick={() => handleSyncModels(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-all active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-[4px] bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-all active:scale-95 group/btn"
                 title={t("syncModels")}
               >
                 <Cpu
@@ -2625,7 +2625,7 @@ const ApiKeysVaultView = ({
               </div>
 
               <div
-                className={`flex items-center h-11 px-4 rounded-xl border group-focus-within:border-emerald-500/50 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] shadow-inner`}
+                className={`flex items-center h-11 px-4 rounded-[4px] border group-focus-within:border-emerald-500/50 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] shadow-inner`}
               >
                 <input
                   type="password"
@@ -2648,7 +2648,7 @@ const ApiKeysVaultView = ({
                     {t("ollamaUrlLabel") || "Cloud Endpoint URL"}
                   </label>
                   <div
-                    className={`flex items-center h-11 px-4 rounded-xl border bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 transition-all shadow-sm`}
+                    className={`flex items-center h-11 px-4 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 transition-all shadow-sm`}
                   >
                     <input
                       type="text"
@@ -2675,7 +2675,7 @@ const ApiKeysVaultView = ({
                             (provider as any).urlKey,
                           )
                         }
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all group/save"
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all group/save"
                         title={t("saveKeyBtn")}
                       >
                         <Save
@@ -2715,7 +2715,7 @@ const ApiKeysVaultView = ({
                   !provider.key &&
                   (provider.id !== "ollama" || !(provider as any).urlKey)
                 }
-                className={`h-11 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`h-11 rounded-[4px] flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${
                   !provider.key
                     ? "bg-gray-500/5 text-gray-500 cursor-not-allowed border border-transparent"
                     : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
@@ -2733,7 +2733,7 @@ const ApiKeysVaultView = ({
                       : undefined,
                   )
                 }
-                className="h-11 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--bg-primary)] text-emerald-500 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all active:scale-95"
+                className="h-11 rounded-[4px] flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--bg-primary)] text-emerald-500 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all active:scale-95"
               >
                 <FastForward size={14} />{" "}
                 {language === "ar" ? "فحص سريع" : "Quick Scan"}
@@ -2742,7 +2742,7 @@ const ApiKeysVaultView = ({
 
             <button
               onClick={() => handleSyncUsage(provider.id, provider.name)}
-              className={`w-full py-2.5 mt-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all bg-[var(--bg-primary)] border border-[var(--border-main)] text-gray-500 hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-500/5`}
+              className={`w-full py-2.5 mt-2 rounded-[4px] flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all bg-[var(--bg-primary)] border border-[var(--border-main)] text-gray-500 hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-500/5`}
             >
               <Activity size={14} /> {t("syncUsageLimits")}
             </button>
@@ -3159,7 +3159,7 @@ const DatabaseOrchestrationView = ({
     <div className="space-y-4 max-w-6xl mx-auto relative">
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -3184,19 +3184,19 @@ const DatabaseOrchestrationView = ({
           return (
             <div
               key={db.id}
-              className={`p-5 rounded-2xl border flex flex-col gap-4 transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 shadow-sm`}
+              className={`p-5 rounded-[4px] border flex flex-col gap-4 transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 shadow-sm`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-xl border transition-all duration-300 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white border-emerald-100 text-emerald-600"}`}
+                    className={`p-2.5 rounded-[4px] border transition-all duration-300 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white border-emerald-100 text-emerald-600"}`}
                   >
                     <Icon size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
                       {t(db.titleKey)}
-                      <span className="px-1.5 py-0.5 rounded-md bg-gray-500/10 text-gray-500 text-[8px] font-black uppercase border border-gray-500/20">
+                      <span className="px-1.5 py-0.5 rounded-[4px] bg-gray-500/10 text-gray-500 text-[8px] font-black uppercase border border-gray-500/20">
                         {db.id.includes("ledger")
                           ? "Ledger (Financial)"
                           : "Core (Operational)"}
@@ -3230,11 +3230,11 @@ const DatabaseOrchestrationView = ({
                 </div>
               </div>
 
-              <div className="flex p-1.5 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-2xl mb-6 shadow-inner overflow-hidden relative">
+              <div className="flex p-1.5 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] mb-6 shadow-inner overflow-hidden relative">
                 <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
                 <button
                   onClick={() => handleChange(db.id, "type", "cloud")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-500 ease-out relative z-10 ${db.type === "cloud" ? "bg-emerald-500 text-white shadow-[0_4px_15px_rgba(16,185,129,0.4)]" : "text-gray-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-[4px] transition-all duration-500 ease-out relative z-10 ${db.type === "cloud" ? "bg-emerald-500 text-white shadow-[0_4px_15px_rgba(16,185,129,0.4)]" : "text-gray-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"}`}
                 >
                   <Cloud
                     size={14}
@@ -3244,7 +3244,7 @@ const DatabaseOrchestrationView = ({
                 </button>
                 <button
                   onClick={() => handleChange(db.id, "type", "local")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-500 ease-out relative z-10 ${db.type === "local" ? "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.4)]" : "text-gray-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-[4px] transition-all duration-500 ease-out relative z-10 ${db.type === "local" ? "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.4)]" : "text-gray-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"}`}
                 >
                   <Database size={14} /> {t("local")}
                 </button>
@@ -3257,7 +3257,7 @@ const DatabaseOrchestrationView = ({
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.02 }}
-                    className="space-y-4 p-5 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/10 shadow-inner relative overflow-hidden"
+                    className="space-y-4 p-5 rounded-[4px] bg-emerald-500/[0.02] border border-emerald-500/10 shadow-inner relative overflow-hidden"
                   >
                     {db.isTesting && (
                       <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center space-y-3 animate-in fade-in">
@@ -3302,7 +3302,7 @@ const DatabaseOrchestrationView = ({
                     <textarea
                       rows={3}
                       placeholder="postgresql://user:pass@host:port/db"
-                      className={`w-full p-4 rounded-xl border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all shadow-sm leading-relaxed ${db.showConnectionString ? "" : "blur-[3px] select-none"}`}
+                      className={`w-full p-4 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all shadow-sm leading-relaxed ${db.showConnectionString ? "" : "blur-[3px] select-none"}`}
                       value={db.connection_string || ""}
                       onChange={(e) =>
                         handleChange(db.id, "connection_string", e.target.value)
@@ -3321,7 +3321,7 @@ const DatabaseOrchestrationView = ({
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.02 }}
-                    className="space-y-4 p-5 rounded-2xl bg-blue-500/[0.02] border border-blue-500/10 shadow-inner relative overflow-hidden"
+                    className="space-y-4 p-5 rounded-[4px] bg-blue-500/[0.02] border border-blue-500/10 shadow-inner relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                       <Terminal size={40} className="text-blue-500" />
@@ -3333,7 +3333,7 @@ const DatabaseOrchestrationView = ({
                         </label>
                         <input
                           placeholder="localhost"
-                          className="w-full h-9 px-3 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
+                          className="w-full h-9 px-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
                           value={db.host || ""}
                           onChange={(e) =>
                             handleChange(db.id, "host", e.target.value)
@@ -3346,7 +3346,7 @@ const DatabaseOrchestrationView = ({
                         </label>
                         <input
                           placeholder="5432"
-                          className="w-full h-9 px-3 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
+                          className="w-full h-9 px-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
                           value={db.port || ""}
                           onChange={(e) =>
                             handleChange(db.id, "port", e.target.value)
@@ -3359,7 +3359,7 @@ const DatabaseOrchestrationView = ({
                         </label>
                         <input
                           placeholder="postgres"
-                          className="w-full h-9 px-3 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
+                          className="w-full h-9 px-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
                           value={db.username || ""}
                           onChange={(e) =>
                             handleChange(db.id, "username", e.target.value)
@@ -3372,7 +3372,7 @@ const DatabaseOrchestrationView = ({
                         </label>
                         <input
                           placeholder="platform_core"
-                          className="w-full h-9 px-3 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
+                          className="w-full h-9 px-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
                           value={db.db_name || ""}
                           onChange={(e) =>
                             handleChange(db.id, "db_name", e.target.value)
@@ -3404,7 +3404,7 @@ const DatabaseOrchestrationView = ({
                         <input
                           type={db.showPassword ? "text" : "password"}
                           placeholder="••••••••"
-                          className="w-full h-9 px-3 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
+                          className="w-full h-9 px-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-all shadow-sm"
                           value={db.password || ""}
                           onChange={(e) =>
                             handleChange(db.id, "password", e.target.value)
@@ -3416,7 +3416,7 @@ const DatabaseOrchestrationView = ({
                 )}
               </AnimatePresence>
 
-              <div className="col-span-3 h-[52px] flex items-center justify-center border border-dashed border-[var(--border-main)] rounded-xl bg-emerald-500/5">
+              <div className="col-span-3 h-[52px] flex items-center justify-center border border-dashed border-[var(--border-main)] rounded-[4px] bg-emerald-500/5">
                 <span className="text-[10px] text-[var(--text-secondary)] font-mono">
                   {t("cloudAutoScalingEnabled")}
                 </span>
@@ -3426,7 +3426,7 @@ const DatabaseOrchestrationView = ({
                   <button
                     onClick={() => handleTestConnection(db.id)}
                     disabled={db.isTesting}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-all duration-300 font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500 hover:border-emerald-500/30 group`}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-[4px] border transition-all duration-300 font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500 hover:border-emerald-500/30 group`}
                   >
                     {db.isTesting ? (
                       <>
@@ -3445,7 +3445,7 @@ const DatabaseOrchestrationView = ({
                   </button>
                   <button
                     onClick={() => handleSaveConfig(db.id)}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border transition-all duration-300 font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]`}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-[4px] border transition-all duration-300 font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]`}
                   >
                     <Save size={14} className="text-gray-400" />{" "}
                     {t("saveDbConfig")}
@@ -3457,7 +3457,7 @@ const DatabaseOrchestrationView = ({
                     onClick={() => handleRunMigrations(db.id, "scratch")}
                     disabled={isMigrating !== null}
                     title={t("migrateScratchDesc")}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
+                    className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-[4px] border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
                       theme === "dark"
                         ? "border-red-900/40 bg-red-950/20 hover:bg-red-900/30 text-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                         : "border-red-200 bg-red-50 hover:bg-red-100/50 text-red-600 shadow-sm"
@@ -3485,7 +3485,7 @@ const DatabaseOrchestrationView = ({
                     onClick={() => handleRunMigrations(db.id, "additive")}
                     disabled={isMigrating !== null}
                     title={t("migrateAdditiveDesc")}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
+                    className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-[4px] border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
                       theme === "dark"
                         ? "border-emerald-900/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                         : "border-emerald-100 bg-emerald-50 hover:bg-emerald-100/50 text-emerald-600 shadow-sm"
@@ -3516,7 +3516,7 @@ const DatabaseOrchestrationView = ({
                         );
                         if (menu) menu.classList.toggle("hidden");
                       }}
-                      className={`w-full h-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider bg-[var(--bg-primary)] border-[var(--border-main)] text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/5`}
+                      className={`w-full h-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-[4px] border transition-all duration-300 font-bold text-[10px] uppercase tracking-wider bg-[var(--bg-primary)] border-[var(--border-main)] text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/5`}
                     >
                       <History
                         size={16}
@@ -3529,7 +3529,7 @@ const DatabaseOrchestrationView = ({
 
                     <div
                       id={`backup-menu-${db.id}`}
-                      className="hidden absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                      className="hidden absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 duration-300"
                     >
                       <button
                         onClick={() => {
@@ -3538,7 +3538,7 @@ const DatabaseOrchestrationView = ({
                             .getElementById(`backup-menu-${db.id}`)
                             ?.classList.add("hidden");
                         }}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-500/10 text-blue-500 transition-all text-xs font-bold"
+                        className="w-full flex items-center gap-3 p-3 rounded-[4px] hover:bg-blue-500/10 text-blue-500 transition-all text-xs font-bold"
                       >
                         <Download size={16} />{" "}
                         {dir === "rtl"
@@ -3546,7 +3546,7 @@ const DatabaseOrchestrationView = ({
                           : "Export Backup"}
                       </button>
                       <div className="h-px bg-[var(--border-main)] my-1" />
-                      <label className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-500/10 text-emerald-500 transition-all text-xs font-bold cursor-pointer">
+                      <label className="w-full flex items-center gap-3 p-3 rounded-[4px] hover:bg-emerald-500/10 text-emerald-500 transition-all text-xs font-bold cursor-pointer">
                         <Upload size={16} />
                         {dir === "rtl"
                           ? "استيراد نسخة (Import)"
@@ -3564,7 +3564,7 @@ const DatabaseOrchestrationView = ({
 
                 <button
                   onClick={() => handleActivateDatabase(db.id, db.is_active)}
-                  className={`w-full py-4 rounded-2xl border transition-all duration-500 font-bold text-xs flex items-center justify-center gap-3 relative overflow-hidden group ${
+                  className={`w-full py-4 rounded-[4px] border transition-all duration-500 font-bold text-xs flex items-center justify-center gap-3 relative overflow-hidden group ${
                     db.is_active
                       ? theme === "dark"
                         ? "bg-red-500/10 border-red-500/40 text-red-500 hover:bg-red-500/20"
@@ -3848,7 +3848,7 @@ const OrchestratorView = ({
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -3882,7 +3882,7 @@ const OrchestratorView = ({
             return (
               <div
                 key={tool.id}
-                className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 hover:shadow-lg group/tool`}
+                className={`p-6 rounded-[4px] border transition-all duration-300 relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 hover:shadow-lg group/tool`}
               >
                 <div className="absolute -top-6 -right-6 opacity-[0.03] dark:opacity-[0.02] pointer-events-none group-hover/tool:scale-110 transition-transform duration-700">
                   <Icon size={140} />
@@ -3891,7 +3891,7 @@ const OrchestratorView = ({
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-2.5 rounded-xl bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                      className={`p-1.5 rounded-[4px] bg-emerald-500 text-white shadow-[0_4px_10px_rgba(16,185,129,0.3)]`}
                     >
                       <Icon size={20} />
                     </div>
@@ -3940,7 +3940,7 @@ const OrchestratorView = ({
                     <button
                       onClick={() => handleSave(tool.id)}
                       disabled={tool.isSaving}
-                      className={`p-2 rounded-lg transition-all ${tool.isSaving ? "text-emerald-500" : "text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10"}`}
+                      className={`p-2 rounded-[4px] transition-all ${tool.isSaving ? "text-emerald-500" : "text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10"}`}
                     >
                       {tool.isSaving ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -3952,7 +3952,7 @@ const OrchestratorView = ({
                 </div>
 
                 <div className="space-y-6 relative z-10">
-                  <div className="space-y-2.5 p-4 rounded-xl bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
+                  <div className="space-y-2.5 p-4 rounded-[4px] bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
                       {t("costPoints")}
                     </label>
@@ -3963,7 +3963,7 @@ const OrchestratorView = ({
                         onChange={(e) =>
                           handleChange(tool.id, "costPerUsage", e.target.value)
                         }
-                        className={`w-full h-11 px-9 rounded-lg border text-sm font-black focus:outline-none transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-500 focus:ring-1 focus:ring-emerald-500/30`}
+                        className={`w-full h-11 px-9 rounded-[4px] border text-sm font-black focus:outline-none transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-500 focus:ring-1 focus:ring-emerald-500/30`}
                       />
                       <div
                         className={`absolute top-1/2 -translate-y-1/2 px-3 text-emerald-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
@@ -4000,7 +4000,7 @@ const OrchestratorView = ({
                             );
                             handleChange(tool.id, "primaryModel", "");
                           }}
-                          className={`w-full h-10 px-3 rounded-lg border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                          className={`w-full h-10 px-3 rounded-[4px] border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                           dir="ltr"
                         >
                           {renderProviderOptions()}
@@ -4014,7 +4014,7 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-10 px-3 rounded-lg border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                          className={`w-full h-10 px-3 rounded-[4px] border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                           dir="ltr"
                           disabled={!tool.primaryProvider}
                         >
@@ -4055,7 +4055,7 @@ const OrchestratorView = ({
                               );
                               handleChange(tool.id, "fallback1Model", "");
                             }}
-                            className="w-full h-9 px-2 rounded-lg border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
+                            className="w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
                             dir="ltr"
                           >
                             {renderProviderOptions()}
@@ -4069,7 +4069,7 @@ const OrchestratorView = ({
                                 e.target.value,
                               )
                             }
-                            className="w-full h-9 px-2 rounded-lg border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
+                            className="w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
                             dir="ltr"
                             disabled={!tool.fallback1Provider}
                           >
@@ -4105,7 +4105,7 @@ const OrchestratorView = ({
                             );
                             handleChange(tool.id, "fallback2Model", "");
                           }}
-                          className={`w-full h-11 px-3 rounded-xl border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
                           dir={dir}
                         >
                           {renderProviderOptions()}
@@ -4121,7 +4121,7 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-xl border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400" : ""}`}
+                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400" : ""}`}
                           dir={dir}
                           disabled={!tool.fallback2Provider}
                         >
@@ -4155,7 +4155,7 @@ const OrchestratorView = ({
                             );
                             handleChange(tool.id, "fallback3Model", "");
                           }}
-                          className={`w-full h-11 px-3 rounded-xl border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
                           dir={dir}
                         >
                           {renderProviderOptions()}
@@ -4171,7 +4171,7 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-xl border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400" : ""}`}
+                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400" : ""}`}
                           dir={dir}
                           disabled={!tool.fallback3Provider}
                         >
@@ -4432,7 +4432,7 @@ const FinanceVaultView = ({
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -4492,7 +4492,7 @@ const FinanceVaultView = ({
               <button
                 onClick={handleSaveEconomySettings}
                 disabled={isSaving}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-[4px] border transition-all duration-300 ${
                   theme === "dark"
                     ? "bg-[#1a1a1c] border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30"
                     : "bg-white border-gray-200 text-gray-500 hover:text-emerald-600 hover:border-emerald-200"
@@ -4524,7 +4524,7 @@ const FinanceVaultView = ({
                       welcome_bonus_points: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {t("welcomeBonusDesc")}
@@ -4544,7 +4544,7 @@ const FinanceVaultView = ({
                       referral_bonus_points: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {t("referralBonusDesc")}
@@ -4566,7 +4566,7 @@ const FinanceVaultView = ({
                       min_payout_usd: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {language === "ar"
@@ -4590,7 +4590,7 @@ const FinanceVaultView = ({
                       min_deposit_usd: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {language === "ar"
@@ -4611,7 +4611,7 @@ const FinanceVaultView = ({
                   onChange={(e) =>
                     updatePointsPerDollar(Number(e.target.value))
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <div className="mt-3 flex flex-col items-center gap-1">
                   <p className="text-xs text-gray-500 text-center max-w-xs">
@@ -4633,7 +4633,7 @@ const FinanceVaultView = ({
                   step="0.0001"
                   value={economySettings.conversion_rate || 0}
                   onChange={(e) => updateConversionRate(Number(e.target.value))}
-                  className={`w-full max-w-xs h-12 px-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-white" : "bg-gray-50 border-gray-200 text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all`}
                 />
                 <div className="mt-3 flex flex-col items-center gap-1">
                   <p className="text-xs text-gray-500 text-center max-w-xs">
@@ -4657,11 +4657,11 @@ const FinanceVaultView = ({
         {activeTab === "payment_gateways" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div
-              className={`p-6 rounded-2xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
+              className={`p-6 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl bg-[#635BFF]/10 text-[#635BFF]">
+                  <div className="p-3 rounded-[4px] bg-[#635BFF]/10 text-[#635BFF]">
                     <CreditCard size={24} />
                   </div>
                   <div>
@@ -4705,7 +4705,7 @@ const FinanceVaultView = ({
               </div>
 
               <div
-                className={`mb-6 p-4 rounded-xl border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800" : "bg-gray-50 border-gray-100"} flex items-center justify-between`}
+                className={`mb-6 p-4 rounded-[4px] border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800" : "bg-gray-50 border-gray-100"} flex items-center justify-between`}
               >
                 <div>
                   <h4 className="text-sm font-bold mb-1">{t("environment")}</h4>
@@ -4777,7 +4777,7 @@ const FinanceVaultView = ({
                       })
                     }
                     placeholder="pk_test_..."
-                    className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
+                    className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
                     dir="ltr"
                   />
                 </div>
@@ -4795,7 +4795,7 @@ const FinanceVaultView = ({
                       })
                     }
                     placeholder="sk_test_..."
-                    className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
+                    className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
                     dir="ltr"
                   />
                 </div>
@@ -4814,7 +4814,7 @@ const FinanceVaultView = ({
                         })
                       }
                       placeholder="whsec_..."
-                      className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
+                      className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white placeholder:text-gray-700" : "bg-white border-gray-200 placeholder:text-gray-300"}`}
                       dir="ltr"
                     />
                   </div>
@@ -4830,7 +4830,7 @@ const FinanceVaultView = ({
                   <button
                     onClick={handleSaveStripeConfig}
                     disabled={isSaving}
-                    className="flex-1 bg-[#635BFF] hover:bg-[#5249e5] text-white py-3 rounded-xl font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 bg-[#635BFF] hover:bg-[#5249e5] text-white py-3 rounded-[4px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -4843,7 +4843,7 @@ const FinanceVaultView = ({
                   <button
                     onClick={handleVerifyStripeConnection}
                     disabled={isSaving || isVerifyingStripe}
-                    className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    className={`px-6 py-3 rounded-[4px] font-bold transition-all flex items-center justify-center gap-2 ${
                       theme === "dark"
                         ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20"
                         : "bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100"
@@ -5183,7 +5183,7 @@ const PlansSubscriptionsView = ({
       {toast &&
         createPortal(
           <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
                   ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -5208,7 +5208,7 @@ const PlansSubscriptionsView = ({
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`p-6 rounded-2xl border ${theme === "dark" ? "border-gray-800/60 bg-[#111111]" : "border-gray-200 bg-white"} transition-all duration-300 hover:border-gray-700 flex flex-col relative overflow-hidden`}
+            className={`p-6 rounded-[4px] border ${theme === "dark" ? "border-gray-800/60 bg-[#111111]" : "border-gray-200 bg-white"} transition-all duration-300 hover:border-gray-700 flex flex-col relative overflow-hidden`}
           >
             {/* Top Color Accent */}
             <div
@@ -5262,7 +5262,7 @@ const PlansSubscriptionsView = ({
             <div className="flex gap-3">
               <button
                 onClick={() => handleOpenModal(plan)}
-                className={`flex-1 py-2.5 rounded-xl border transition-all font-medium text-sm flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 rounded-[4px] border transition-all font-medium text-sm flex items-center justify-center gap-2 ${
                   theme === "dark"
                     ? "border-gray-800 bg-[#1a1a1c] hover:bg-gray-800 text-gray-300"
                     : "border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-600"
@@ -5272,7 +5272,7 @@ const PlansSubscriptionsView = ({
               </button>
               <button
                 onClick={() => handleDeletePlan(plan.id)}
-                className={`px-4 py-2.5 rounded-xl border transition-all flex items-center justify-center ${
+                className={`px-4 py-2.5 rounded-[4px] border transition-all flex items-center justify-center ${
                   theme === "dark"
                     ? "border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500"
                     : "border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
@@ -5291,7 +5291,7 @@ const PlansSubscriptionsView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
             <div
-              className={`w-full max-w-4xl mt-[80px] mb-8 overflow-y-auto custom-scrollbar rounded-2xl border shadow-2xl ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-white border-gray-200"}`}
+              className={`w-full max-w-4xl mt-[80px] mb-8 overflow-y-auto custom-scrollbar rounded-[4px] border shadow-2xl ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-white border-gray-200"}`}
             >
               {/* Modal Header */}
               <div
@@ -5315,7 +5315,7 @@ const PlansSubscriptionsView = ({
                   <button
                     onClick={handleSavePlan}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-[4px] transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
                   >
                     {isSaving ? (
                       <RefreshCw className="animate-spin" size={18} />
@@ -5327,7 +5327,7 @@ const PlansSubscriptionsView = ({
                   <div className="w-px h-6 bg-gray-800/40" />
                   <button
                     onClick={handleCloseModal}
-                    className={`p-2 rounded-xl transition-colors ${theme === "dark" ? "hover:bg-gray-800 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"}`}
+                    className={`p-2 rounded-[4px] transition-colors ${theme === "dark" ? "hover:bg-gray-800 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"}`}
                   >
                     <X size={20} />
                   </button>
@@ -5349,7 +5349,7 @@ const PlansSubscriptionsView = ({
                             badge: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors appearance-none`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors appearance-none`}
                         dir={dir}
                       >
                         <option value="none">{t("none")}</option>
@@ -5375,7 +5375,7 @@ const PlansSubscriptionsView = ({
                             annualPrice: Number(a.toFixed(2)),
                           });
                         }}
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors text-center`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors text-center`}
                         dir="ltr"
                       />
                     </div>
@@ -5479,7 +5479,7 @@ const PlansSubscriptionsView = ({
                         return (
                           <div
                             key={key}
-                            className={`p-3 rounded-2xl border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-gray-50 border-gray-200"} transition-all duration-300 hover:border-emerald-500/40 group relative overflow-hidden`}
+                            className={`p-3 rounded-[4px] border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-gray-50 border-gray-200"} transition-all duration-300 hover:border-emerald-500/40 group relative overflow-hidden`}
                           >
                             <div className="flex justify-between items-center mb-2 px-1">
                               <span
@@ -5531,7 +5531,7 @@ const PlansSubscriptionsView = ({
                                           isUnlimitedDaily ? "0" : "unlimited",
                                         )
                                       }
-                                      className={`w-full h-10 px-2 rounded-xl border text-center text-sm font-mono focus:outline-none transition-all ${
+                                      className={`w-full h-10 px-2 rounded-[4px] border text-center text-sm font-mono focus:outline-none transition-all ${
                                         isUnlimitedDaily
                                           ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold text-xl"
                                           : theme === "dark"
@@ -5579,7 +5579,7 @@ const PlansSubscriptionsView = ({
                                         isUnlimitedMonthly ? "0" : "unlimited",
                                       )
                                     }
-                                    className={`w-full h-10 px-2 rounded-xl border text-center text-sm font-mono focus:outline-none transition-all ${
+                                    className={`w-full h-10 px-2 rounded-[4px] border text-center text-sm font-mono focus:outline-none transition-all ${
                                       isUnlimitedMonthly
                                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold text-xl"
                                         : theme === "dark"
@@ -5624,7 +5624,7 @@ const PlansSubscriptionsView = ({
                               annualPrice: Number(a.toFixed(2)),
                             });
                           }}
-                          className={`w-full h-11 pl-8 pr-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                          className={`w-full h-11 pl-8 pr-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                           dir="ltr"
                         />
                       </div>
@@ -5653,7 +5653,7 @@ const PlansSubscriptionsView = ({
                               discount: d,
                             });
                           }}
-                          className={`w-full h-11 pl-8 pr-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                          className={`w-full h-11 pl-8 pr-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                           dir="ltr"
                         />
                       </div>
@@ -5683,7 +5683,7 @@ const PlansSubscriptionsView = ({
                             nameEn: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                         dir="ltr"
                       />
                     </div>
@@ -5700,7 +5700,7 @@ const PlansSubscriptionsView = ({
                             nameAr: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                         dir="rtl"
                       />
                     </div>
@@ -5720,7 +5720,7 @@ const PlansSubscriptionsView = ({
                             descEn: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                         dir="ltr"
                       />
                     </div>
@@ -5737,7 +5737,7 @@ const PlansSubscriptionsView = ({
                             descAr: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                        className={`w-full h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                         dir="rtl"
                       />
                     </div>
@@ -5754,7 +5754,7 @@ const PlansSubscriptionsView = ({
                       >
                         <button
                           onClick={() => removeFeature(feature.id)}
-                          className="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors shrink-0"
+                          className="w-11 h-11 rounded-[4px] bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors shrink-0"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -5764,14 +5764,14 @@ const PlansSubscriptionsView = ({
                           onChange={(e) =>
                             updateFeature(feature.id, "textEn", e.target.value)
                           }
-                          className={`flex-1 h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                          className={`flex-1 h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                           dir="ltr"
                         />
                       </div>
                     ))}
                     <button
                       onClick={addFeature}
-                      className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-all"
+                      className="w-full py-3 rounded-[4px] bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-all"
                     >
                       {t("addFeature")}
                     </button>
@@ -5786,7 +5786,7 @@ const PlansSubscriptionsView = ({
                       >
                         <button
                           onClick={() => removeFeature(feature.id)}
-                          className="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors shrink-0"
+                          className="w-11 h-11 rounded-[4px] bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors shrink-0"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -5796,14 +5796,14 @@ const PlansSubscriptionsView = ({
                           onChange={(e) =>
                             updateFeature(feature.id, "textAr", e.target.value)
                           }
-                          className={`flex-1 h-11 px-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
+                          className={`flex-1 h-11 px-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800/80 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-colors`}
                           dir="rtl"
                         />
                       </div>
                     ))}
                     <button
                       onClick={addFeature}
-                      className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-all"
+                      className="w-full py-3 rounded-[4px] bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-all"
                     >
                       {t("addFeature")}
                     </button>
@@ -6416,7 +6416,7 @@ const UserManagementView = ({
     <div className="space-y-6 relative">
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[100] flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -6434,7 +6434,7 @@ const UserManagementView = ({
           <span className="font-medium text-sm">{toast.message}</span>
         </div>
       )}
-      <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-2xl border border-[var(--border-main)] shadow-sm relative overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-[4px] border border-[var(--border-main)] shadow-sm relative overflow-hidden">
         <div className="absolute inset-0 bg-emerald-500/[0.01] pointer-events-none" />
         <div className={`relative w-full lg:w-[450px] flex items-center group`}>
           <div
@@ -6447,7 +6447,7 @@ const UserManagementView = ({
             placeholder={t("searchUsers")}
             value={searchQuery || ""}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full ${dir === "rtl" ? "pr-11 pl-4" : "pl-11 pr-4"} py-3 rounded-xl border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-all ${
+            className={`w-full ${dir === "rtl" ? "pr-11 pl-4" : "pl-11 pr-4"} py-3 rounded-[4px] border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-all ${
               theme === "dark"
                 ? "bg-[#0f0f11] border-gray-800 text-white placeholder-gray-600"
                 : "bg-white border-gray-200 text-gray-900 placeholder-gray-400"
@@ -6459,7 +6459,7 @@ const UserManagementView = ({
             <select
               value={statusFilter || "all"}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-gray-300" : "bg-white border-gray-200 shadow-sm"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-gray-300" : "bg-white border-gray-200 shadow-sm"}`}
             >
               <option value="all">All Status</option>
               <option value="active">{t("active")}</option>
@@ -6474,7 +6474,7 @@ const UserManagementView = ({
             <select
               value={planFilter || "all"}
               onChange={(e) => setPlanFilter(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-gray-300" : "bg-white border-gray-200 shadow-sm"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-gray-300" : "bg-white border-gray-200 shadow-sm"}`}
             >
               <option value="all">All Plans</option>
               {plans.map((p) => (
@@ -6532,7 +6532,7 @@ const UserManagementView = ({
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-20 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)]"
+                  className="text-center py-20 bg-[var(--bg-secondary)] rounded-[4px] border border-[var(--border-main)]"
                 >
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
@@ -6556,7 +6556,7 @@ const UserManagementView = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
-                          <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-emerald-500/50 transition-all">
+                          <div className="w-11 h-11 rounded-[4px] bg-gray-200 dark:bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-emerald-500/50 transition-all">
                             {user.avatar ? (
                               <img
                                 src={user.avatar}
@@ -6590,7 +6590,7 @@ const UserManagementView = ({
                             handleUpdateRole(user.id.toString(), e.target.value)
                           }
                           disabled={isUpdating}
-                          className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border appearance-none w-full text-center focus:outline-none transition-all cursor-pointer ${
+                          className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-[4px] border appearance-none w-full text-center focus:outline-none transition-all cursor-pointer ${
                             user.role === "admin"
                               ? "text-purple-500 border-purple-500/30 bg-purple-500/5"
                               : user.role === "elite"
@@ -6639,7 +6639,7 @@ const UserManagementView = ({
                     </td>
                     <td className="px-5 py-4 border-y border-[var(--border-main)]">
                       <div
-                        className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] border flex items-center justify-center gap-2"
+                        className="px-3 py-1.5 rounded-[4px] text-[10px] font-black uppercase tracking-[0.1em] border flex items-center justify-center gap-2"
                         style={{
                           backgroundColor: `${plan.color}10`,
                           color: plan.color,
@@ -6654,7 +6654,7 @@ const UserManagementView = ({
                     </td>
                     <td className="px-5 py-4 border-y border-[var(--border-main)]">
                       <div
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border ${
+                        className={`px-3 py-1.5 rounded-[4px] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border ${
                           user.kyc_status === "verified"
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : user.kyc_status === "pending"
@@ -6687,21 +6687,21 @@ const UserManagementView = ({
                       >
                         <button
                           onClick={() => handleSendDirectEmail(user.id)}
-                          className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-500/5 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all border border-transparent hover:border-emerald-500/20"
+                          className="w-9 h-9 flex items-center justify-center rounded-[4px] bg-gray-500/5 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all border border-transparent hover:border-emerald-500/20"
                           title={t("sendEmail")}
                         >
                           <Mail size={16} />
                         </button>
                         <button
                           onClick={() => handleViewHistory(user)}
-                          className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-500/5 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all border border-transparent hover:border-amber-500/20"
+                          className="w-9 h-9 flex items-center justify-center rounded-[4px] bg-gray-500/5 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all border border-transparent hover:border-amber-500/20"
                           title="Usage History"
                         >
                           <History size={16} />
                         </button>
                         <button
                           onClick={() => handleViewProfile(user)}
-                          className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 transition-all border border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] group/btn"
+                          className="w-9 h-9 flex items-center justify-center rounded-[4px] bg-emerald-500/10 text-emerald-500 transition-all border border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] group/btn"
                           title={t("viewProfile")}
                         >
                           <Eye
@@ -6718,7 +6718,7 @@ const UserManagementView = ({
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-20 text-gray-500 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)]"
+                  className="text-center py-20 text-gray-500 bg-[var(--bg-secondary)] rounded-[4px] border border-[var(--border-main)]"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <Users size={40} className="text-gray-800/20" />
@@ -6737,12 +6737,12 @@ const UserManagementView = ({
         createPortal(
           <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
             <div
-              className={`relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-3xl shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
+              className={`relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-[4px] shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
             >
               {/* Header */}
               <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+                  <div className="p-3 rounded-[4px] bg-amber-500/10 text-amber-500">
                     <History size={24} />
                   </div>
                   <div>
@@ -6756,7 +6756,7 @@ const UserManagementView = ({
                 </div>
                 <button
                   onClick={() => setIsActivityModalOpen(false)}
-                  className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                  className="p-2 rounded-[4px] text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                 >
                   <X size={20} />
                 </button>
@@ -6776,7 +6776,7 @@ const UserManagementView = ({
                     <p>No activity logs found for this user.</p>
                   </div>
                 ) : (
-                  <div className="min-w-full overflow-hidden border border-gray-100 dark:border-gray-800 rounded-2xl">
+                  <div className="min-w-full overflow-hidden border border-gray-100 dark:border-gray-800 rounded-[4px]">
                     <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                       <thead
                         className={
@@ -6849,13 +6849,13 @@ const UserManagementView = ({
         createPortal(
           <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-              className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-3xl shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
+              className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[4px] shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
             >
               <div className="p-8 border-b border-gray-800/20 flex items-center justify-between bg-gradient-to-br from-[var(--bg-secondary)] via-[var(--bg-secondary)] to-emerald-500/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
                 <div className="flex items-center gap-6 relative z-10">
                   <div
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-all duration-500 group/avatar ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 hover:border-emerald-500/50" : "bg-gray-100 border-white hover:border-emerald-500/50"}`}
+                    className={`w-16 h-16 rounded-[4px] flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-all duration-500 group/avatar ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 hover:border-emerald-500/50" : "bg-gray-100 border-white hover:border-emerald-500/50"}`}
                   >
                     {selectedUser.avatar ? (
                       <img
@@ -6899,7 +6899,7 @@ const UserManagementView = ({
                 </div>
                 <button
                   onClick={() => setIsProfileModalOpen(false)}
-                  className={`p-3 rounded-2xl transition-all duration-300 group/close ${theme === "dark" ? "hover:bg-gray-800 text-gray-500 hover:text-white" : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"}`}
+                  className={`p-3 rounded-[4px] transition-all duration-300 group/close ${theme === "dark" ? "hover:bg-gray-800 text-gray-500 hover:text-white" : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"}`}
                 >
                   <X
                     size={24}
@@ -6914,7 +6914,7 @@ const UserManagementView = ({
                     className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                      <div className="p-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                         <Users size={20} />
                       </div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -6937,7 +6937,7 @@ const UserManagementView = ({
                                 role: e.target.value,
                               })
                             }
-                            className={`w-full h-11 px-4 rounded-xl border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                            className={`w-full h-11 px-4 rounded-[4px] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           >
                             <option value="user">{t("role_user")}</option>
                             <option value="support">{t("role_support")}</option>
@@ -6965,7 +6965,7 @@ const UserManagementView = ({
                                     : null,
                               });
                             }}
-                            className={`w-full h-11 px-4 rounded-xl border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                            className={`w-full h-11 px-4 rounded-[4px] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           >
                             <option value="none">{t("kycNone")}</option>
                             <option value="pending">{t("kycPending")}</option>
@@ -6993,7 +6993,7 @@ const UserManagementView = ({
                                 ? "أدخل سبب الرفض هنا ليظهر للمستخدم..."
                                 : "Enter rejection reason to show to the user..."
                             }
-                            className={`w-full h-20 p-3 rounded-xl border focus:outline-none focus:border-red-500/50 transition-all resize-none text-sm ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                            className={`w-full h-20 p-3 rounded-[4px] border focus:outline-none focus:border-red-500/50 transition-all resize-none text-sm ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           />
                         </div>
                       )}
@@ -7001,7 +7001,7 @@ const UserManagementView = ({
                       {/* Status & KYC Toggles */}
                       <div className="grid grid-cols-2 gap-4">
                         <div
-                          className={`p-3 rounded-xl border flex flex-col gap-2 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
+                          className={`p-3 rounded-[4px] border flex flex-col gap-2 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
                         >
                           <span className="text-[10px] font-bold uppercase text-gray-500">
                             {t("accountStatus")}
@@ -7038,7 +7038,7 @@ const UserManagementView = ({
                           </div>
                         </div>
                         <div
-                          className={`p-3 rounded-xl border flex flex-col gap-2 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
+                          className={`p-3 rounded-[4px] border flex flex-col gap-2 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
                         >
                           <span className="text-[10px] font-bold uppercase text-gray-500">
                             {t("identityVerification")}
@@ -7075,7 +7075,7 @@ const UserManagementView = ({
                       {(selectedUser.kyc_status === "pending" ||
                         selectedUser.kyc_selfie) && (
                         <div
-                          className={`p-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
+                          className={`p-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
                         >
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-[10px] font-bold uppercase text-gray-500">
@@ -7102,7 +7102,7 @@ const UserManagementView = ({
 
                           {selectedUser.kyc_selfie ? (
                             <div className="space-y-3">
-                              <div className="relative rounded-xl overflow-hidden border border-gray-800/60 aspect-video bg-black/20">
+                              <div className="relative rounded-[4px] overflow-hidden border border-gray-800/60 aspect-video bg-black/20">
                                 <img
                                   src={selectedUser.kyc_selfie}
                                   alt="KYC Selfie"
@@ -7167,7 +7167,7 @@ const UserManagementView = ({
                                     }
                                   }
                                 }}
-                                className="w-full py-2.5 rounded-xl border border-red-500/30 text-red-500 text-xs font-bold hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-2.5 rounded-[4px] border border-red-500/30 text-red-500 text-xs font-bold hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
                               >
                                 <Trash2 size={14} />
                                 {dir === "rtl"
@@ -7201,7 +7201,7 @@ const UserManagementView = ({
                         })
                       }
                       disabled={isUpdating}
-                      className="w-full mt-6 py-3 rounded-xl bg-emerald-500 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-6 py-3 rounded-[4px] bg-emerald-500 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUpdating ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -7222,23 +7222,23 @@ const UserManagementView = ({
                   >
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                        <div className="p-2.5 rounded-[4px] bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
                           <Landmark size={20} />
                         </div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
                           {dir === "rtl" ? "قسم المحفظة" : "Ledger Section"}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border-main)] shadow-inner">
+                      <div className="flex items-center gap-2 bg-[var(--bg-secondary)] p-1 rounded-[4px] border border-[var(--border-main)] shadow-inner">
                         <button
                           onClick={() => setLedgerUnit("PTS")}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${ledgerUnit === "PTS" ? "bg-amber-500 text-white shadow-xl shadow-amber-500/30" : "text-gray-500 hover:text-gray-300"}`}
+                          className={`px-4 py-1.5 rounded-[4px] text-[9px] font-black tracking-widest transition-all ${ledgerUnit === "PTS" ? "bg-amber-500 text-white shadow-xl shadow-amber-500/30" : "text-gray-500 hover:text-gray-300"}`}
                         >
                           PTS
                         </button>
                         <button
                           onClick={() => setLedgerUnit("USD")}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all ${ledgerUnit === "USD" ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30" : "text-gray-500 hover:text-gray-300"}`}
+                          className={`px-4 py-1.5 rounded-[4px] text-[9px] font-black tracking-widest transition-all ${ledgerUnit === "USD" ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30" : "text-gray-500 hover:text-gray-300"}`}
                         >
                           USD
                         </button>
@@ -7249,7 +7249,7 @@ const UserManagementView = ({
                       {/* Current Balance Display */}
                       <div className="grid grid-cols-2 gap-3">
                         <div
-                          className={`p-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
+                          className={`p-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
                         >
                           <p className="text-[10px] font-bold text-gray-500 mb-1">
                             {dir === "rtl" ? "النقاط" : "Points"}
@@ -7261,7 +7261,7 @@ const UserManagementView = ({
                           </p>
                         </div>
                         <div
-                          className={`p-3 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
+                          className={`p-3 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"}`}
                         >
                           <p className="text-[10px] font-bold text-gray-500 mb-1">
                             {dir === "rtl" ? "القيمة بالدولار" : "USD Value"}
@@ -7284,7 +7284,7 @@ const UserManagementView = ({
                               value={ledgerAmount}
                               onChange={(e) => setLedgerAmount(e.target.value)}
                               placeholder={dir === "rtl" ? "المبلغ" : "Amount"}
-                              className={`w-full h-11 px-4 rounded-xl border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                              className={`w-full h-11 px-4 rounded-[4px] border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-500">
                               {ledgerUnit}
@@ -7297,7 +7297,7 @@ const UserManagementView = ({
                                 e.target.value as "add" | "deduct",
                               )
                             }
-                            className={`w-32 h-11 px-3 rounded-xl border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                            className={`w-32 h-11 px-3 rounded-[4px] border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           >
                             <option value="add">
                               {dir === "rtl" ? "إيداع" : "Deposit"}
@@ -7316,7 +7316,7 @@ const UserManagementView = ({
                               ? "سبب العملية (إلزامي للتوثيق)"
                               : "Transaction Reason (Required)"
                           }
-                          className={`w-full h-11 px-4 rounded-xl border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full h-11 px-4 rounded-[4px] border focus:outline-none focus:border-emerald-500 transition-colors ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         />
                       </div>
                     </div>
@@ -7381,7 +7381,7 @@ const UserManagementView = ({
                         }
                       }}
                       disabled={isUpdating}
-                      className={`w-full mt-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`w-full mt-6 py-3 rounded-[4px] font-bold text-sm transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${
                         ledgerAction === "add"
                           ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
                           : "bg-amber-600 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_20px_rgba(217,119,6,0.5)]"
@@ -7409,7 +7409,7 @@ const UserManagementView = ({
                     className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                      <div className="p-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
                         <CreditCard size={20} />
                       </div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -7421,7 +7421,7 @@ const UserManagementView = ({
 
                     <div className="flex-1 space-y-6">
                       {/* Current Plan Display */}
-                      <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-800/50 bg-gray-800/20 relative overflow-hidden">
+                      <div className="flex items-center gap-4 p-4 rounded-[4px] border border-gray-800/50 bg-gray-800/20 relative overflow-hidden">
                         <div
                           className="absolute top-0 left-0 w-1 h-full"
                           style={{
@@ -7431,7 +7431,7 @@ const UserManagementView = ({
                           }}
                         ></div>
                         <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                          className="w-12 h-12 rounded-[4px] flex items-center justify-center shrink-0"
                           style={{
                             backgroundColor: `${getPlanDetails(selectedUser.plan_id).color}20`,
                             color: getPlanDetails(selectedUser.plan_id).color,
@@ -7469,7 +7469,7 @@ const UserManagementView = ({
                               plan_id: e.target.value,
                             })
                           }
-                          className={`w-full h-11 px-4 rounded-xl border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full h-11 px-4 rounded-[4px] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         >
                           {plans.map((p) => (
                             <option key={p.id} value={p.id}>
@@ -7487,7 +7487,7 @@ const UserManagementView = ({
                         handleUpdatePlan(selectedUser.id, selectedUser.plan_id)
                       }
                       disabled={isUpdating}
-                      className="w-full mt-6 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-6 py-3 rounded-[4px] bg-blue-600 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUpdating ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -7505,7 +7505,7 @@ const UserManagementView = ({
                     className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-xl bg-pink-500/10 text-pink-500 shadow-[0_0_15px_rgba(219,39,119,0.15)]">
+                      <div className="p-2.5 rounded-[4px] bg-pink-500/10 text-pink-500 shadow-[0_0_15px_rgba(219,39,119,0.15)]">
                         <LifeBuoy size={20} />
                       </div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -7529,7 +7529,7 @@ const UserManagementView = ({
                               ? "أضف ملاحظات حول هذا المستخدم..."
                               : "Add notes about this user..."
                           }
-                          className={`w-full h-24 p-3 rounded-xl border focus:outline-none focus:border-pink-500/50 transition-all resize-none text-sm ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full h-24 p-3 rounded-[4px] border focus:outline-none focus:border-pink-500/50 transition-all resize-none text-sm ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         />
                       </div>
 
@@ -7538,7 +7538,7 @@ const UserManagementView = ({
                         <button
                           onClick={() => handleSendDirectEmail(selectedUser.id)}
                           disabled={isUpdating}
-                          className={`flex items-center gap-2 p-3 rounded-xl border text-[10px] font-bold transition-all disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 hover:border-pink-500/30" : "bg-white border-gray-200 hover:border-pink-500/30"}`}
+                          className={`flex items-center gap-2 p-3 rounded-[4px] border text-[10px] font-bold transition-all disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 hover:border-pink-500/30" : "bg-white border-gray-200 hover:border-pink-500/30"}`}
                         >
                           <Mail size={14} className="text-pink-500" />
                           {dir === "rtl" ? "بريد مباشر" : "Email"}
@@ -7548,7 +7548,7 @@ const UserManagementView = ({
                             handleSendManualNotification(selectedUser.id)
                           }
                           disabled={isUpdating}
-                          className={`flex items-center gap-2 p-3 rounded-xl border text-[10px] font-bold transition-all disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 hover:border-emerald-500/30" : "bg-white border-gray-200 hover:border-emerald-500/30"}`}
+                          className={`flex items-center gap-2 p-3 rounded-[4px] border text-[10px] font-bold transition-all disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-gray-800 hover:border-emerald-500/30" : "bg-white border-gray-200 hover:border-emerald-500/30"}`}
                         >
                           <BellRing size={14} className="text-emerald-500" />
                           {dir === "rtl" ? "إخطار داخلي" : "Manual Alert"}
@@ -7561,7 +7561,7 @@ const UserManagementView = ({
                         handleUpdateSupportNotes(selectedUser.id, supportNotes)
                       }
                       disabled={isUpdating}
-                      className="w-full mt-6 py-3 rounded-xl bg-pink-600 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(219,39,119,0.3)] hover:shadow-[0_0_20px_rgba(219,39,119,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-6 py-3 rounded-[4px] bg-pink-600 text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(219,39,119,0.3)] hover:shadow-[0_0_20px_rgba(219,39,119,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUpdating ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -7583,7 +7583,7 @@ const UserManagementView = ({
                     <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/[0.03] blur-[120px] rounded-full pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                        <div className="p-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                           <Activity size={20} />
                         </div>
                         <h3 className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-400">
@@ -7641,7 +7641,7 @@ const UserManagementView = ({
                           return (
                             <div
                               key={toolKey}
-                              className={`p-4 rounded-xl border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"} transition-all hover:border-emerald-500/30 group`}
+                              className={`p-4 rounded-[4px] border ${theme === "dark" ? "bg-[#0f0f11] border-gray-800" : "bg-white border-gray-200"} transition-all hover:border-emerald-500/30 group`}
                             >
                               <div className="flex items-center justify-between mb-3 px-1">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">
@@ -7728,7 +7728,7 @@ const UserManagementView = ({
               <div className="p-6 border-t border-gray-800/30 flex justify-center bg-gray-800/5">
                 <button
                   onClick={() => setIsProfileModalOpen(false)}
-                  className={`px-12 py-3.5 rounded-xl font-bold transition-all duration-300 flex items-center gap-2 group ${
+                  className={`px-12 py-3.5 rounded-[4px] font-bold transition-all duration-300 flex items-center gap-2 group ${
                     theme === "dark"
                       ? "bg-[#1a1a1c] text-gray-400 hover:text-white border border-gray-800 hover:border-gray-700"
                       : "bg-gray-50 text-gray-500 hover:text-gray-900 border border-gray-200 hover:bg-gray-100"
@@ -8078,7 +8078,7 @@ const SmartEmailHubView = ({
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`p-4 rounded-2xl border flex items-center gap-3 shadow-lg ${
+            className={`p-4 rounded-[4px] border flex items-center gap-3 shadow-lg ${
               status.type === "success"
                 ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
                 : "bg-red-500/10 border-red-500/50 text-red-500"
@@ -8100,7 +8100,7 @@ const SmartEmailHubView = ({
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800/60 pb-4">
         <button
           onClick={() => setActiveTab("settings")}
-          className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
+          className={`px-6 py-2.5 rounded-[4px] font-medium transition-all duration-300 flex items-center gap-2 ${
             activeTab === "settings"
               ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
               : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
@@ -8114,7 +8114,7 @@ const SmartEmailHubView = ({
             setActiveTab("templates");
             setSelectedTemplate(null);
           }}
-          className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
+          className={`px-6 py-2.5 rounded-[4px] font-medium transition-all duration-300 flex items-center gap-2 ${
             activeTab === "templates"
               ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
               : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
@@ -8129,11 +8129,11 @@ const SmartEmailHubView = ({
         {activeTab === "settings" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div
-              className={`p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-gray-50 border-gray-100"}`}
+              className={`p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-gray-50 border-gray-100"}`}
             >
               <div className="flex items-center justify-between gap-3 mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <div className="p-3 rounded-[4px] bg-emerald-500/10 text-emerald-500">
                     <Server size={24} />
                   </div>
                   <div>
@@ -8184,7 +8184,7 @@ const SmartEmailHubView = ({
                     onChange={(e) =>
                       setSettings({ ...settings, mailer_type: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                    className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                   >
                     <option value="smtp">{t("smtp")}</option>
                     <option value="php">{t("phpMail")}</option>
@@ -8208,7 +8208,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="smtp.sendgrid.net"
-                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           dir="ltr"
                         />
                       </div>
@@ -8226,7 +8226,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="587"
-                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           dir="ltr"
                         />
                       </div>
@@ -8245,7 +8245,7 @@ const SmartEmailHubView = ({
                               smtp_encryption: e.target.value,
                             })
                           }
-                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         >
                           <option value="tls">{t("tls")}</option>
                           <option value="ssl">{t("ssl") || "SSL"}</option>
@@ -8269,7 +8269,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="apikey"
-                          className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                          className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                           dir="ltr"
                         />
                       </div>
@@ -8290,7 +8290,7 @@ const SmartEmailHubView = ({
                           })
                         }
                         placeholder="••••••••••••••••"
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                        className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         dir="ltr"
                       />
                     </div>
@@ -8314,7 +8314,7 @@ const SmartEmailHubView = ({
                       placeholder={
                         dir === "rtl" ? "اسم المنصة" : "Platform Name"
                       }
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                      className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                       dir={dir}
                     />
                   </div>
@@ -8332,7 +8332,7 @@ const SmartEmailHubView = ({
                         })
                       }
                       placeholder="noreply@example.com"
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                      className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-left ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                       dir="ltr"
                     />
                   </div>
@@ -8342,7 +8342,7 @@ const SmartEmailHubView = ({
                   <button
                     onClick={handleSaveSettings}
                     disabled={isSavingSettings}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-[4px] font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isSavingSettings ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -8354,7 +8354,7 @@ const SmartEmailHubView = ({
                   <button
                     onClick={handleTestConnection}
                     disabled={isTestingConnection}
-                    className={`px-6 py-3.5 rounded-xl font-bold transition-all border flex items-center justify-center gap-2 disabled:opacity-50 ${theme === "dark" ? "border-gray-700 hover:bg-gray-800 text-white" : "border-gray-200 hover:bg-gray-100 text-gray-900"}`}
+                    className={`px-6 py-3.5 rounded-[4px] font-bold transition-all border flex items-center justify-center gap-2 disabled:opacity-50 ${theme === "dark" ? "border-gray-700 hover:bg-gray-800 text-white" : "border-gray-200 hover:bg-gray-100 text-gray-900"}`}
                   >
                     {isTestingConnection ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -8371,8 +8371,8 @@ const SmartEmailHubView = ({
               <div
                 className={
                   theme === "dark"
-                    ? "p-6 rounded-3xl border bg-[#1a1a1c] border-gray-800/60"
-                    : "p-6 rounded-3xl border bg-white border-gray-200"
+                    ? "p-6 rounded-[4px] border bg-[#1a1a1c] border-gray-800/60"
+                    : "p-6 rounded-[4px] border bg-white border-gray-200"
                 }
               >
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -8382,7 +8382,7 @@ const SmartEmailHubView = ({
                 <p className="text-sm text-gray-500 leading-relaxed mb-4">
                   {t("securityProtocolDesc")}
                 </p>
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 text-sm flex items-start gap-3">
+                <div className="p-4 rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 text-sm flex items-start gap-3">
                   <AlertCircle size={18} className="shrink-0 mt-0.5" />
                   <p>{t("spamWarning")}</p>
                 </div>
@@ -8399,7 +8399,7 @@ const SmartEmailHubView = ({
                 <button
                   onClick={handleImportDefaults}
                   disabled={isImportingDefaults}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 font-medium disabled:opacity-50 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-[4px] border transition-all duration-300 font-medium disabled:opacity-50 ${
                     theme === "dark"
                       ? "border-gray-800 text-gray-400 hover:text-white hover:bg-gray-800"
                       : "border-gray-200 text-gray-600 hover:bg-gray-100"
@@ -8422,7 +8422,7 @@ const SmartEmailHubView = ({
                       body_ar: "",
                     })
                   }
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-[4px] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                 >
                   <Plus size={18} />
                   {t("createNewTemplate")}
@@ -8442,7 +8442,7 @@ const SmartEmailHubView = ({
                 {templates.map((template, index) => (
                   <div
                     key={template.id || template.name || index}
-                    className={`group p-6 rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer relative ${
+                    className={`group p-6 rounded-[4px] border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer relative ${
                       theme === "dark"
                         ? "bg-[#111111] border-gray-800/60 hover:border-emerald-500/30"
                         : "bg-white border-gray-200 hover:border-emerald-500/30"
@@ -8455,19 +8455,19 @@ const SmartEmailHubView = ({
                           e.stopPropagation();
                           handleDeleteTemplate(template.id);
                         }}
-                        className="absolute top-4 right-4 p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                        className="absolute top-4 right-4 p-2 rounded-[4px] bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
                       >
                         <Trash2 size={16} />
                       </button>
                     )}
                     <div className="flex justify-between items-start mb-4">
                       <div
-                        className={`p-3 rounded-xl ${template.type === "system" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}
+                        className={`p-3 rounded-[4px] ${template.type === "system" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}
                       >
                         <Mail size={24} />
                       </div>
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium ${template.type === "system" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}
+                        className={`px-2.5 py-1 rounded-[4px] text-xs font-medium ${template.type === "system" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}
                       >
                         {template.type === "system"
                           ? t("systemTemplates")
@@ -8510,7 +8510,7 @@ const SmartEmailHubView = ({
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={() => setSelectedTemplate(null)}
-                className={`p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center ${
+                className={`p-2.5 rounded-[4px] transition-all duration-300 flex items-center justify-center ${
                   theme === "dark"
                     ? "bg-gray-800/40 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700/50"
                     : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-900 border border-gray-200 shadow-sm"
@@ -8533,7 +8533,7 @@ const SmartEmailHubView = ({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div
-                className={`lg:col-span-2 p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
+                className={`lg:col-span-2 p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
               >
                 <div className="space-y-5">
                   <div>
@@ -8550,7 +8550,7 @@ const SmartEmailHubView = ({
                         })
                       }
                       disabled={selectedTemplate.type === "system"}
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white disabled:opacity-50" : "bg-gray-50 border-gray-200 disabled:opacity-50"}`}
+                      className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white disabled:opacity-50" : "bg-gray-50 border-gray-200 disabled:opacity-50"}`}
                     />
                   </div>
 
@@ -8568,7 +8568,7 @@ const SmartEmailHubView = ({
                             subject_en: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                        className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         dir="ltr"
                       />
                     </div>
@@ -8585,7 +8585,7 @@ const SmartEmailHubView = ({
                             subject_ar: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
+                        className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-white border-gray-200"}`}
                         dir="rtl"
                       />
                     </div>
@@ -8604,7 +8604,7 @@ const SmartEmailHubView = ({
                           body_en: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
                       dir="ltr"
                     />
                   </div>
@@ -8622,7 +8622,7 @@ const SmartEmailHubView = ({
                           body_ar: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
                       dir="rtl"
                     />
                   </div>
@@ -8631,7 +8631,7 @@ const SmartEmailHubView = ({
                     <button
                       onClick={handleSaveTemplate}
                       disabled={isSavingTemplate}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-[4px] font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isSavingTemplate ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -8646,7 +8646,7 @@ const SmartEmailHubView = ({
 
               <div className="space-y-6">
                 <div
-                  className={`p-6 rounded-3xl border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-gray-50 border-gray-100"}`}
+                  className={`p-6 rounded-[4px] border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-gray-50 border-gray-100"}`}
                 >
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <Code2 className="text-emerald-500" size={20} />
@@ -8667,7 +8667,7 @@ const SmartEmailHubView = ({
                       <button
                         key={v}
                         onClick={() => navigator.clipboard.writeText(v)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all hover:border-emerald-500/50 ${theme === "dark" ? "bg-[#111111] border-gray-800" : "bg-white border-gray-200"}`}
+                        className={`w-full flex items-center justify-between p-3 rounded-[4px] border transition-all hover:border-emerald-500/50 ${theme === "dark" ? "bg-[#111111] border-gray-800" : "bg-white border-gray-200"}`}
                       >
                         <span className="font-mono text-sm text-emerald-500">
                           {v}
@@ -8690,7 +8690,7 @@ const SmartEmailHubView = ({
                       emails.
                     </p>
                     <div
-                      className={`p-4 rounded-xl text-xs ${theme === "dark" ? "bg-[#111111] text-gray-400" : "bg-white text-gray-500"}`}
+                      className={`p-4 rounded-[4px] text-xs ${theme === "dark" ? "bg-[#111111] text-gray-400" : "bg-white text-gray-500"}`}
                     >
                       <p>--</p>
                       <p className="font-bold text-emerald-500">
@@ -8854,10 +8854,10 @@ const MassBroadcastView = ({
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          className={`p-5 rounded-2xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"} group transition-all duration-300 hover:border-emerald-500/30`}
+          className={`p-5 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"} group transition-all duration-300 hover:border-emerald-500/30`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all">
+            <div className="p-3 rounded-[4px] bg-emerald-500/10 text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all">
               <Send size={24} />
             </div>
             <div>
@@ -8870,10 +8870,10 @@ const MassBroadcastView = ({
           </div>
         </div>
         <div
-          className={`p-5 rounded-2xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"} group transition-all duration-300 hover:border-blue-500/30`}
+          className={`p-5 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"} group transition-all duration-300 hover:border-blue-500/30`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-all">
+            <div className="p-3 rounded-[4px] bg-blue-500/10 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-all">
               <Users size={24} />
             </div>
             <div>
@@ -8888,10 +8888,10 @@ const MassBroadcastView = ({
           </div>
         </div>
         <div
-          className={`p-5 rounded-2xl border ${theme === "dark" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200 shadow-sm"} group transition-all duration-300`}
+          className={`p-5 rounded-[4px] border ${theme === "dark" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200 shadow-sm"} group transition-all duration-300`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <div className="p-3 rounded-[4px] bg-emerald-500/10 text-emerald-500">
               <Megaphone size={24} className="animate-bounce" />
             </div>
             <div>
@@ -8908,7 +8908,7 @@ const MassBroadcastView = ({
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
                 ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -8933,7 +8933,7 @@ const MassBroadcastView = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"} shadow-2xl shadow-black/5`}
+            className={`p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"} shadow-2xl shadow-black/5`}
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
@@ -8964,7 +8964,7 @@ const MassBroadcastView = ({
                         onClick={() =>
                           setForm({ ...form, broadcast_type: type.id })
                         }
-                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
+                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-[4px] border transition-all duration-300 ${
                           form.broadcast_type === type.id
                             ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/5"
                             : `border-gray-200 dark:border-gray-800 text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 ${theme === "dark" ? "bg-[#1a1a1c]" : "bg-gray-50"}`
@@ -9006,7 +9006,7 @@ const MassBroadcastView = ({
                         onClick={() =>
                           setForm({ ...form, target_group: group.id })
                         }
-                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
+                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-[4px] border transition-all duration-300 ${
                           form.target_group === group.id
                             ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/5"
                             : `border-gray-200 dark:border-gray-800 text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 ${theme === "dark" ? "bg-[#1a1a1c]" : "bg-gray-50"}`
@@ -9049,7 +9049,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_en: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                        className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
                         dir="ltr"
                       />
                     </div>
@@ -9063,7 +9063,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_ar: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                        className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
                         dir="rtl"
                       />
                     </div>
@@ -9082,7 +9082,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_en: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
                     dir="ltr"
                   />
                 </div>
@@ -9096,7 +9096,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_ar: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-800"}`}
                     dir="rtl"
                   />
                 </div>
@@ -9107,7 +9107,7 @@ const MassBroadcastView = ({
               <button
                 onClick={handleSend}
                 disabled={isSending}
-                className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-[4px] font-bold transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {isSending ? (
                   <RefreshCw size={22} className="animate-spin" />
@@ -9135,7 +9135,7 @@ const MassBroadcastView = ({
               </div>
             ) : broadcasts.length === 0 ? (
               <div
-                className={`p-12 rounded-3xl border border-dashed flex flex-col items-center justify-center text-center ${theme === "dark" ? "border-gray-800 bg-[#111111]" : "border-gray-200 bg-gray-50"}`}
+                className={`p-12 rounded-[4px] border border-dashed flex flex-col items-center justify-center text-center ${theme === "dark" ? "border-gray-800 bg-[#111111]" : "border-gray-200 bg-gray-50"}`}
               >
                 <Send
                   className="text-gray-300 dark:text-gray-800 mb-4"
@@ -9154,12 +9154,12 @@ const MassBroadcastView = ({
                 {broadcasts.map((b) => (
                   <div
                     key={b.id}
-                    className={`p-6 rounded-3xl border transition-all duration-300 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/5 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-100 shadow-sm"}`}
+                    className={`p-6 rounded-[4px] border transition-all duration-300 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/5 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`p-2 rounded-xl ${theme === "dark" ? "bg-emerald-500/10" : "bg-emerald-50"}`}
+                          className={`p-2 rounded-[4px] ${theme === "dark" ? "bg-emerald-500/10" : "bg-emerald-50"}`}
                         >
                           {b.broadcast_type === "email" ? (
                             <Mail size={18} className="text-emerald-500" />
@@ -9503,7 +9503,7 @@ const SystemSettingsView = ({
       {toast &&
         createPortal(
           <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
                   ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
@@ -9525,10 +9525,10 @@ const SystemSettingsView = ({
 
       {/* General Settings */}
       <div
-        className={`p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
+        className={`p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+          <div className="p-3 rounded-[4px] bg-emerald-500/10 text-emerald-500">
             <Globe size={24} />
           </div>
           <h2 className="text-xl font-bold">{t("generalSettings")}</h2>
@@ -9544,7 +9544,7 @@ const SystemSettingsView = ({
               value={siteName || ""}
               dir="ltr"
               onChange={(e) => setSiteName(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
             />
           </div>
           <div>
@@ -9556,7 +9556,7 @@ const SystemSettingsView = ({
               value={siteNameAr || ""}
               dir="rtl"
               onChange={(e) => setSiteNameAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
             />
           </div>
           <div>
@@ -9568,7 +9568,7 @@ const SystemSettingsView = ({
               value={siteDescription || ""}
               dir="ltr"
               onChange={(e) => setSiteDescription(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
             />
           </div>
           <div>
@@ -9580,7 +9580,7 @@ const SystemSettingsView = ({
               value={siteDescriptionAr || ""}
               dir="rtl"
               onChange={(e) => setSiteDescriptionAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
             />
           </div>
         </div>
@@ -9588,7 +9588,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveGeneralSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[4px] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -9602,10 +9602,10 @@ const SystemSettingsView = ({
 
       {/* Visual Identity */}
       <div
-        className={`p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
+        className={`p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500">
+          <div className="p-3 rounded-[4px] bg-purple-500/10 text-purple-500">
             <ImageIcon size={24} />
           </div>
           <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
@@ -9614,7 +9614,7 @@ const SystemSettingsView = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Logo Upload */}
           <div
-            className={`p-6 rounded-2xl border border-dashed ${theme === "dark" ? "border-gray-700 bg-[#1a1a1c]" : "border-gray-300 bg-gray-50"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+            className={`p-6 rounded-[4px] border border-dashed ${theme === "dark" ? "border-gray-700 bg-[#1a1a1c]" : "border-gray-300 bg-gray-50"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
             <input
               type="file"
@@ -9627,10 +9627,10 @@ const SystemSettingsView = ({
                 <img
                   src={logoBase64}
                   alt="Logo"
-                  className="w-8 h-8 rounded-lg object-contain"
+                  className="w-8 h-8 rounded-[4px] object-contain"
                 />
               ) : (
-                <div className="bg-pink-600 p-1.5 rounded-lg text-white flex items-center justify-center w-8 h-8">
+                <div className="bg-pink-600 p-1.5 rounded-[4px] text-white flex items-center justify-center w-8 h-8">
                   <svg
                     width="20"
                     height="20"
@@ -9672,7 +9672,7 @@ const SystemSettingsView = ({
 
           {/* Favicon Upload */}
           <div
-            className={`p-6 rounded-2xl border border-dashed ${theme === "dark" ? "border-gray-700 bg-[#1a1a1c]" : "border-gray-300 bg-gray-50"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+            className={`p-6 rounded-[4px] border border-dashed ${theme === "dark" ? "border-gray-700 bg-[#1a1a1c]" : "border-gray-300 bg-gray-50"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
             <input
               type="file"
@@ -9702,7 +9702,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveVisualSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[4px] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -9716,10 +9716,10 @@ const SystemSettingsView = ({
 
       {/* SEO & Meta Tags */}
       <div
-        className={`p-6 md:p-8 rounded-3xl border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
+        className={`p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "bg-[#111111] border-gray-800/60" : "bg-white border-gray-200"}`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+          <div className="p-3 rounded-[4px] bg-blue-500/10 text-blue-500">
             <Search size={24} />
           </div>
           <h2 className="text-xl font-bold">{t("seoFields")}</h2>
@@ -9735,7 +9735,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionEn || ""}
                 onChange={(e) => setSeoDescriptionEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
               />
             </div>
             <div>
@@ -9746,7 +9746,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionAr || ""}
                 onChange={(e) => setSeoDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
               />
             </div>
           </div>
@@ -9759,7 +9759,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsEn || ""}
                 onChange={(e) => setKeywordsEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
               />
             </div>
             <div>
@@ -9770,7 +9770,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsAr || ""}
                 onChange={(e) => setKeywordsAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+                className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
               />
             </div>
           </div>
@@ -9783,7 +9783,7 @@ const SystemSettingsView = ({
               placeholder={t("googleAnalyticsDesc")}
               value={googleAnalyticsId || ""}
               onChange={(e) => setGoogleAnalyticsId(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
+              className={`w-full px-4 py-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-white" : "bg-gray-50 border-gray-200"}`}
             />
           </div>
         </div>
@@ -9791,7 +9791,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveSeoSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[4px] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -10015,7 +10015,7 @@ export const AdminDashboard: React.FC = () => {
           {path !== "dashboard" && (
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className={`p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center ${
+              className={`p-2.5 rounded-[4px] transition-all duration-300 flex items-center justify-center ${
                 theme === "dark"
                   ? "bg-gray-800/40 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/50"
                   : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-900 border border-gray-200 shadow-sm"
@@ -10031,7 +10031,7 @@ export const AdminDashboard: React.FC = () => {
           )}
           <div className="flex items-center gap-4">
             <div
-              className={`p-2.5 rounded-xl ${theme === "dark" ? "bg-emerald-500/10" : "bg-white shadow-sm border border-emerald-500/10"}`}
+              className={`p-2.5 rounded-[4px] ${theme === "dark" ? "bg-emerald-500/10" : "bg-white shadow-sm border border-emerald-500/10"}`}
             >
               {getIcon()}
             </div>
@@ -10050,7 +10050,7 @@ export const AdminDashboard: React.FC = () => {
           {showAddButton && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-[4px] transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
             >
               <Plus size={18} />
               {getAddButtonText()}
@@ -10058,7 +10058,7 @@ export const AdminDashboard: React.FC = () => {
           )}
 
           <div
-            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border ${theme === "dark" ? "bg-gray-800/20 border-gray-800/40" : "bg-white border-gray-200"}`}
+            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-[4px] border ${theme === "dark" ? "bg-gray-800/20 border-gray-800/40" : "bg-white border-gray-200"}`}
           >
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">
