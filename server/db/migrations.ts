@@ -112,6 +112,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     await ensureColumn(pool, 'user_files', 'file_size', 'INTEGER');
     await ensureColumn(pool, 'user_files', 'file_url', 'TEXT');
     await ensureColumn(pool, 'user_files', 'file_content', 'TEXT');
+    await ensureColumn(pool, 'user_files', 'mime_type', 'VARCHAR(100)');
 
     await ensureColumn(pool, 'system_settings', 'seo_description', 'TEXT');
     await ensureColumn(pool, 'system_settings', 'keywords', 'TEXT');
@@ -638,6 +639,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         chat_id INTEGER REFERENCES chats(id) ON DELETE SET NULL,
         file_name VARCHAR(255) NOT NULL,
         file_type VARCHAR(100),
+        mime_type VARCHAR(100),
         file_size INTEGER,
         file_url TEXT,
         file_content TEXT,
