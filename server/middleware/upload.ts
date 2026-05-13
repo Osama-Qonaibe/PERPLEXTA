@@ -17,7 +17,8 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, uniqueSuffix + '-' + sanitizedName);
   }
 });
 
@@ -27,10 +28,10 @@ export const upload = multer({
     fileSize: 100 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
-    const blocked = ['.exe', '.sh', '.php', '.bat', '.cmd', '.js', '.vbs', '.msi'];
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.rtf', '.json', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mp3', '.wav', '.html'];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (blocked.includes(ext)) {
-      return cb(new Error('File type not allowed for security reasons.'));
+    if (!allowedExtensions.includes(ext)) {
+      return cb(new Error('File type not allowed for security reasons. Please use standard document or media formats.'));
     }
     cb(null, true);
   }
@@ -45,7 +46,7 @@ export const handleMulterError = (err: any, req: any, res: any, next: any) => {
       });
     }
     return res.status(400).json({ error: err.message });
-  } else if (err.message === 'File type not allowed for security reasons.') {
+  } else if (err.message.includes('not allowed for security reasons')) {
     return res.status(400).json({ error: err.message });
   }
   next(err);

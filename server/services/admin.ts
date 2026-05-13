@@ -5,7 +5,7 @@ import { tools } from '../config/constants.js';
 
 export async function getDatabaseRegistry() {
   const result = await pool.query('SELECT * FROM db_connections_registry ORDER BY id ASC');
-  return result.rows.map(row => ({
+  return result.rows.map((row: any) => ({
     ...row,
     password: row.password ? decrypt(row.password) : null,
     connection_string: row.connection_string ? decrypt(row.connection_string) : null

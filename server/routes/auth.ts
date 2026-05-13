@@ -21,7 +21,6 @@ setInterval(() => {
 }, 60000);
 
 const getBaseUrl = (req: express.Request) => {
-  // Sovereign: Robust origin detection for proxy/container environments
   const xProto = req.get('x-forwarded-proto');
   const xHost = req.get('x-forwarded-host');
   const host = req.get('host');
@@ -70,7 +69,6 @@ router.post("/signup", authLimiter, async (req, res) => {
 
     const user = result.rows[0];
     
-    // Sovereign: Atomically provision Wallet and Subscription
     await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
     await pool.query(`
       INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
@@ -80,7 +78,6 @@ router.post("/signup", authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
     
-    // Sovereign: Return full profile even on signup for immediate consistency
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
@@ -134,7 +131,6 @@ router.post("/login", authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
     
-    // Sovereign: Return full profile even on login for immediate consistency
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
@@ -167,7 +163,6 @@ router.post("/login", authLimiter, async (req, res) => {
 router.get("/google/url", (req, res) => {
   const { ref, lang, remember, mode } = req.query;
   
-  // Sovereign: Prevent Memory Exhaustion via Map Capping
   if (oauthStateStore.size > 1000) {
     const oldestKey = oauthStateStore.keys().next().value;
     if (oldestKey) oauthStateStore.delete(oldestKey);
@@ -231,13 +226,11 @@ router.get("/google/callback", async (req, res) => {
 
     const lowerEmail = googleUser.email.toLowerCase();
     
-    // Check if user exists (Sovereign: use explicit type casting)
     let result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1::text', [lowerEmail]);
     let user;
 
     if (result.rows.length === 0) {
       const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
-      // Sovereign: Prioritize language from OAuth state during signup
       const finalLang = storedState.lang || 'ar';
       
       const insertResult = await pool.query(
@@ -246,7 +239,6 @@ router.get("/google/callback", async (req, res) => {
       );
       user = insertResult.rows[0];
       
-      // Sovereign: Atomically provision Wallet and Subscription
       await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
       await pool.query(`
         INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
@@ -284,7 +276,6 @@ router.get("/google/callback", async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
     
-    // Sovereign: Return full profile even on OAuth callback for immediate consistency
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
@@ -318,7 +309,6 @@ router.get("/google/callback", async (req, res) => {
     const targetRef = storedState.ref || '/';
     const allowedOrigin = getBaseUrl(req);
     
-    // Sovereign: XSS Hardening - Escape special characters for JS context
     const rawPayload = JSON.stringify({ 
       token, 
       ...userPayload,

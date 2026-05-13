@@ -13,17 +13,18 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["*"],
+      scriptSrc: ["*"],
+      styleSrc: ["*"],
+      imgSrc: ["*"],
+      connectSrc: ["*"],
+      frameAncestors: ["*"]
+    }
+  },
   crossOriginEmbedderPolicy: false
 }));
-
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; connect-src * 'self' 'unsafe-inline' 'unsafe-eval' blob: ws: wss:; frame-ancestors * 'self';"
-  );
-  next();
-});
 
 app.use(cors({
   origin: process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:3000',

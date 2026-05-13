@@ -120,7 +120,6 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
       console.error('[DB] Unexpected error on idle ledger client:', err.message);
     });
 
-    // Test connections immediately
     console.log('[DB] Verifying connectivity...');
     await Promise.all([
       pool.query('SELECT 1'),
@@ -195,7 +194,6 @@ export async function synchronizeSovereignPoolsFromRegistry() {
       return;
     }
 
-    // PRE-FLIGHT CHECK
     console.log('[DB] Verifying registry connection strings...');
     const testCorePool = createInternalPool(coreUrl);
     try {

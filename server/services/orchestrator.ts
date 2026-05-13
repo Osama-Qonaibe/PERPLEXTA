@@ -80,7 +80,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     try {
       const searchResults = await performSovereignSearch(prompt);
       if (searchResults && searchResults.length > 0) {
-        const searchContext = searchResults.map(r => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
+        const searchContext = searchResults.map((r: any) => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
         prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (searchErr) {

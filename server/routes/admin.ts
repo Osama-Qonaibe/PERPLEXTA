@@ -170,7 +170,7 @@ router.get("/users", authenticateAdmin, async (req, res) => {
     const walletRes = await ledgerPool.query('SELECT user_id, balance, points FROM wallets');
     const walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
 
-    const usersWithWallets = result.rows.map(user => {
+    const usersWithWallets = result.rows.map((user: any) => {
       const wallet = walletMap.get(user.id) as any;
       return {
         ...user,
@@ -285,7 +285,7 @@ router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT provider, models FROM api_keys_vault');
     const models: any = {};
-    result.rows.forEach(row => {
+    result.rows.forEach((row: any) => {
       models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
     });
     res.json({ providerModels: models });

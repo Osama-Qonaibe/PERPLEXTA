@@ -9,7 +9,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     
     if (token) {
       token = token.trim();
-      // Remove accidental quotes if wrapped
       if (token.startsWith('"') && token.endsWith('"')) {
         token = token.slice(1, -1);
       }
@@ -62,7 +61,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           return;
         }
 
-        // Update user payload with actual role from DB to ensure real-time accuracy
         userPayload.role = userCheck.rows[0].role;
       } catch (dbErr) {
         console.error('[Security] Failed to verify user status:', dbErr);

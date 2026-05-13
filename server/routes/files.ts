@@ -8,7 +8,7 @@ import { pool } from '../db/index.js';
 
 const router = express.Router();
 
-router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res) => {
+router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
 
@@ -74,7 +74,7 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
   }
 });
 
-router.get("/", authenticateToken, async (req: any, res) => {
+router.get("/", authenticateToken, async (req: any, res: any) => {
   try {
     const files = await getUserFiles(req.user.id);
     res.json(files);

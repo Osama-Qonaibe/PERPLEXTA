@@ -4373,7 +4373,7 @@ const FinanceVaultView = ({
             : "Stripe settings saved successfully",
           "success",
         );
-        setStripeConfig((prev) => ({
+        setStripeConfig((prev: any) => ({
           ...prev,
           secretKey: "",
           webhookSecret: "",
@@ -4727,7 +4727,7 @@ const FinanceVaultView = ({
                   </span>
                   <button
                     onClick={() =>
-                      setStripeConfig((prev) => ({
+                      setStripeConfig((prev: any) => ({
                         ...prev,
                         isLiveMode: !prev.isLiveMode,
                       }))
@@ -5969,15 +5969,15 @@ const UserManagementView = ({
         showToast(`Role updated to ${newRole}`, "success");
 
         // Update the main users list
-        setUsers((prev) =>
-          prev.map((u) =>
+        setUsers((prev: any[]) =>
+          prev.map((u: any) =>
             u.id.toString() === userId.toString() ? { ...u, role: newRole } : u,
           ),
         );
 
         // Update the selected user if it is the one being updated
         if (selectedUser?.id?.toString() === userId.toString()) {
-          setSelectedUser((prev) => (prev ? { ...prev, role: newRole } : null));
+          setSelectedUser((prev: any) => (prev ? { ...prev, role: newRole } : null));
         }
 
         // If it's the current user, refresh their profile

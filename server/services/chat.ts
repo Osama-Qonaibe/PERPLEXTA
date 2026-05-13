@@ -135,7 +135,7 @@ export async function handleChatMessage(socket: any, data: any) {
     console.error('[ChatService] Error:', error);
     // Cleanup placeholder message if it was created
     if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
-      pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch(e => console.error('[ChatService] Placeholder deletion failed:', e));
+      pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[ChatService] Placeholder deletion failed:', e));
     }
     socket.emit('chat_error', { message: error.message || 'Internal server error' });
   }

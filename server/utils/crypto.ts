@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 
-const DEFAULT_KEY = 'sovereign_secure_key_32_chars_!!';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || DEFAULT_KEY; 
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
+if (!ENCRYPTION_KEY) {
+  throw new Error('[FATAL] ENCRYPTION_KEY environment variable is missing.');
+}
 const IV_LENGTH = 16;
 
 function getSecretBuffer(key: string) {
@@ -55,12 +57,5 @@ export function decrypt(text: string): string {
   };
 
   const primaryResult = performDecryption(text, ENCRYPTION_KEY);
-  if (primaryResult !== null) return primaryResult;
-
-  if (ENCRYPTION_KEY !== DEFAULT_KEY) {
-    const fallbackResult = performDecryption(text, DEFAULT_KEY);
-    if (fallbackResult !== null) return fallbackResult;
-  }
-  
-  return text;
+  return primaryResult || text;
 }

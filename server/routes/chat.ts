@@ -40,7 +40,6 @@ router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, re
     await addChatMessage(chatId, role, content, tool);
     res.json({ success: true });
 
-    // Background title generation
     const count = await getMessageCount(chatId);
     if (count === 1 && role === 'user') {
       generateChatTitle(chatId, content);
