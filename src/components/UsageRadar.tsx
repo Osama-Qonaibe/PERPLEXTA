@@ -88,8 +88,12 @@ export const UsageRadar: React.FC = () => {
         <AlertCircle size={40} />
         <p className="font-bold">{error || 'Unknown error occurred'}</p>
         <button 
-          onClick={() => window.location.reload()}
-          className="px-6 py-2 rounded-xl bg-red-500 text-white font-bold text-sm"
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchUsage();
+          }}
+          className="px-6 py-2 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-colors"
         >
           {t('retry') || 'Retry'}
         </button>
