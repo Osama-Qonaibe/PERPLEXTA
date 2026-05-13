@@ -58,7 +58,7 @@ export const SettingsPage: React.FC = () => {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ ...localUser, ...updates })
+        body: JSON.stringify(updates)
       });
       if (res.ok) {
         const updatedUser = await res.json();

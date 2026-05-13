@@ -1,7 +1,7 @@
-import bcrypt from 'bcryptjs';
 import { pool, ledgerPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
+import bcrypt from 'bcrypt';
 
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
@@ -44,16 +44,16 @@ export async function getUserUsage(userId: string | number) {
   const storageUsageMB = await getUserStorageUsage(userId.toString());
 
   const ALL_TOOLS = [
-    'perplexta_analysis', 'legal_analysis', 'notebook', 'image', 'video',
+    'perplexta_analysis', 'legal_analysis', 'notebook', 'image', 'video', 
     'stt', 'tts', 'learning', 'code', 'canvas', 'sovereign_memory', 'storage_mb'
   ];
 
   const usageItems = ALL_TOOLS.map(toolId => {
     const limits = plan.limits?.[toolId] || null;
-
+    
     let dailyLimit = null;
     let monthlyLimit = null;
-
+    
     if (limits === 'unlimited') {
       dailyLimit = null;
       monthlyLimit = null;
@@ -69,15 +69,21 @@ export async function getUserUsage(userId: string | number) {
 
     if (toolId === 'storage_mb') {
       dailyUsage = storageUsageMB;
-      monthlyUsage = storageUsageMB;
+      monthlyUsage = storageUsageMB; 
     }
 
     return {
       id: toolId,
       name_en: toolId.replace(/_/g, ' ').toUpperCase(),
       name_ar: toolId,
-      usage: { daily: dailyUsage, monthly: monthlyUsage },
-      limits: { daily: dailyLimit, monthly: monthlyLimit }
+      usage: {
+        daily: dailyUsage,
+        monthly: monthlyUsage
+      },
+      limits: {
+        daily: dailyLimit,
+        monthly: monthlyLimit
+      }
     };
   });
 
@@ -95,7 +101,7 @@ export async function getUserUsage(userId: string | number) {
 
 export async function getUserProfile(userId: string) {
   if (!pool) throw new Error('Database initializing');
-
+  
   const result = await pool.query(`
     SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at,
            s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color, p.limits
@@ -104,13 +110,13 @@ export async function getUserProfile(userId: string) {
     LEFT JOIN plans p ON s.plan_id = p.id
     WHERE u.id = $1
   `, [userId]);
-
+  
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
-
+  
   const walletRes = await (ledgerPool || pool).query('SELECT balance, points FROM wallets WHERE user_id = $1', [userId]);
   const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
-
+  
   return {
     id: row.id,
     name: row.name,
@@ -139,8 +145,8 @@ export async function getUserProfile(userId: string) {
 
 export async function updateUserProfile(userId: string, data: any) {
   if (!pool) throw new Error('Database initializing');
-
-  const { name, avatar, language, theme, custom_instructions, password } = data;
+  
+  const { name, avatar, language, theme, custom_instructions, password, email } = data;
   const updates: string[] = [];
   const values: any[] = [];
   let idx = 1;
@@ -150,7 +156,9 @@ export async function updateUserProfile(userId: string, data: any) {
   if (language !== undefined) { updates.push(`language = $${idx++}`); values.push(language); }
   if (theme !== undefined) { updates.push(`theme = $${idx++}`); values.push(theme); }
   if (custom_instructions !== undefined) { updates.push(`custom_instructions = $${idx++}`); values.push(custom_instructions); }
-  if (password && password.length >= 8) {
+  if (email !== undefined) { updates.push(`email = $${idx++}`); values.push(email); }
+  
+  if (password !== undefined && password !== '') {
     const hash = await bcrypt.hash(password, 10);
     updates.push(`password_hash = $${idx++}`);
     values.push(hash);
@@ -160,9 +168,9 @@ export async function updateUserProfile(userId: string, data: any) {
 
   values.push(userId);
   const query = `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`;
-
+  
   await pool.query(query, values);
-
+  
   if (io) {
     io.to(`user_${userId}`).emit('user_profile_updated');
   }

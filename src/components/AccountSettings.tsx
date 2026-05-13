@@ -67,6 +67,22 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
   const handleSave = async () => {
     if (!editingField) return;
+    
+    // Email validation
+    if (editingField === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editValue)) {
+        alert(dir === 'rtl' ? 'بريد إلكتروني غير صالح' : 'Invalid email address');
+        return;
+      }
+    }
+
+    // Password validation (min 8 chars)
+    if (editingField === 'password' && editValue.length > 0 && editValue.length < 8) {
+      alert(dir === 'rtl' ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters');
+      return;
+    }
+
     await onUpdate({ [editingField]: editValue });
     setEditingField(null);
   };

@@ -10,6 +10,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
       WITH user_info AS (
         SELECT 
           u.id as user_id,
+          u.role,
           p.limits
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -28,6 +29,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
       )
       SELECT 
         ui.limits,
+        ui.role,
         (SELECT count FROM daily_usage) as daily_count,
         (SELECT count FROM monthly_usage) as monthly_count
       FROM user_info ui
@@ -35,7 +37,11 @@ export async function checkUserQuota(userId: number, toolId: string) {
 
     if (res.rows.length === 0) return { allowed: true };
     
-    const { limits, daily_count, monthly_count } = res.rows[0];
+    const { limits, role, daily_count, monthly_count } = res.rows[0];
+    
+    // Admins bypass all limits
+    if (role === 'admin') return { allowed: true };
+    
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
     
