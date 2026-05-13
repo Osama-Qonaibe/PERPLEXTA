@@ -4,7 +4,7 @@ import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEcon
 
 const router = express.Router();
 
-router.get("/settings", authenticateToken, async (req, res) => {
+router.get("/settings", async (req, res) => {
   try {
     const settings = await getSystemSettings();
     res.json(settings);
@@ -13,7 +13,7 @@ router.get("/settings", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/economy", authenticateToken, async (req, res) => {
+router.get("/economy", async (req, res) => {
   try {
     const economy = await getEconomySettings();
     res.json(economy);

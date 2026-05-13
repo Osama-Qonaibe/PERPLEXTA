@@ -12,7 +12,6 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
     const stripe = await getStripe();
     if (!stripe) return res.status(400).json({ error: 'Payments not configured' });
 
-    // Get plan price from DB
     const planRes = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
     if (planRes.rows.length === 0) return res.status(404).json({ error: 'Plan not found' });
     const plan = planRes.rows[0];
@@ -61,7 +60,7 @@ router.post("/webhook", express.raw({ type: 'application/json' }), async (req, r
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
     console.error(`[Stripe] Webhook signature verification failed: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).send('Webhook signature invalid');
   }
 
   try {
@@ -71,19 +70,14 @@ router.post("/webhook", express.raw({ type: 'application/json' }), async (req, r
         const { userId, planId, billingCycle } = session.metadata;
         if (userId && planId) {
           await activateStripeSubscription(userId, planId, session.subscription, billingCycle || 'monthly');
-          console.log(`[Stripe] Subscription activated for user ${userId}`);
         }
         break;
       }
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as any;
-        // Search for user by subscription ID if possible, but our current schema uses userId as primary
-        // Simplification: In a real app, we'd store stripe_subscription_id and query by it.
-        // For now, if we have metadata:
         const userId = subscription.metadata?.userId;
         if (userId) {
           await cancelSubscription(userId);
-          console.log(`[Stripe] Subscription deleted for user ${userId}`);
         }
         break;
       }
@@ -92,12 +86,11 @@ router.post("/webhook", express.raw({ type: 'application/json' }), async (req, r
         const userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
         if (userId) {
           await cancelSubscription(userId);
-          console.log(`[Stripe] Payment failed for user ${userId}`);
         }
         break;
       }
       default:
-        console.log(`[Stripe] Unhandled event type ${event.type}`);
+        break;
     }
 
     res.json({ received: true });

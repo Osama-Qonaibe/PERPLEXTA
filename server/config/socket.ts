@@ -12,8 +12,9 @@ if (!jwtSecret) {
 export function initSocket(httpServer: HttpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.APP_URL || process.env.VITE_APP_URL || [],
-      methods: ["GET", "POST"]
+      origin: process.env.APP_URL || true,
+      methods: ["GET", "POST"],
+      credentials: true
     }
   });
 

@@ -22,18 +22,18 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https:"],
+      scriptSrc: ["'self'", "https:", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "https:", "wss:", "ws:"],
-      frameAncestors: ["'none'"]
+      connectSrc: ["'self'", "https:", "wss:", "ws:", "*"],
+      frameAncestors: ["'self'"]
     }
   },
   crossOriginEmbedderPolicy: false
 }));
 
 app.use(cors({
-  origin: process.env.APP_URL,
+  origin: process.env.APP_URL || true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
