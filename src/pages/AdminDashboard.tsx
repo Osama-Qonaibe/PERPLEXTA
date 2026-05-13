@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { motion, AnimatePresence } from "motion/react";
+import { sovereignPageTransition } from "../constants/motions";
 import {
   Music,
   Activity,
@@ -1356,7 +1357,7 @@ const DigitalFinancialRadarView = ({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-[4px] ${badgeColor}`}
                       >
                         {typeLabel}
                       </span>
@@ -4470,7 +4471,7 @@ const FinanceVaultView = ({
               <Icon
                 size={16}
                 className={
-                  isActive ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""
+                  isActive ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : ""
                 }
               />
               {tab.label}
@@ -4484,7 +4485,7 @@ const FinanceVaultView = ({
           <div className="space-y-8">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
-                <Star className="text-emerald-500" size={24} />
+                <Star className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   {t("economySettings")}
                 </h3>
@@ -6534,12 +6535,12 @@ const UserManagementView = ({
                   colSpan={6}
                   className="text-center py-20 bg-[var(--bg-secondary)] rounded-[4px] border border-[var(--border-main)]"
                 >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
-                      Syncing Galaxy Users...
-                    </span>
-                  </div>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                        Syncing Galaxy Users...
+                      </span>
+                    </div>
                 </td>
               </tr>
             ) : filteredUsers.length > 0 ? (
@@ -6552,7 +6553,7 @@ const UserManagementView = ({
                     className="group transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:shadow-lg hover:translate-y-[-2px]"
                   >
                     <td
-                      className={`px-5 py-4 rounded-l-2xl border-l border-y border-[var(--border-main)]`}
+                      className={`px-5 py-4 rounded-l-[4px] border-l border-y border-[var(--border-main)]`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
@@ -6911,7 +6912,7 @@ const UserManagementView = ({
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div
-                    className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
+                    className={`p-8 rounded-[4px] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
@@ -7218,7 +7219,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
+                    className={`p-8 rounded-[4px] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-3">
@@ -7406,7 +7407,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
+                    className={`p-8 rounded-[4px] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
@@ -7502,7 +7503,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
+                    className={`p-8 rounded-[4px] border flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-gray-800/60" : "bg-gray-50 border-gray-100 shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-[4px] bg-pink-500/10 text-pink-500 shadow-[0_0_15px_rgba(219,39,119,0.15)]">
@@ -8102,7 +8103,7 @@ const SmartEmailHubView = ({
           onClick={() => setActiveTab("settings")}
           className={`px-6 py-2.5 rounded-[4px] font-medium transition-all duration-300 flex items-center gap-2 ${
             activeTab === "settings"
-              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
           }`}
         >
@@ -8116,7 +8117,7 @@ const SmartEmailHubView = ({
           }}
           className={`px-6 py-2.5 rounded-[4px] font-medium transition-all duration-300 flex items-center gap-2 ${
             activeTab === "templates"
-              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50"
           }`}
         >
@@ -8143,7 +8144,7 @@ const SmartEmailHubView = ({
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-[4px] text-xs font-bold flex items-center gap-1.5 ${
                       settings.status === "active"
                         ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
                         : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
@@ -10004,7 +10005,13 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={sovereignPageTransition}
+      className="flex flex-col w-full"
+    >
       {/* Sticky Admin Header - Elite Command Layer */}
       <div
         className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-all duration-300 ${
@@ -10071,11 +10078,11 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings"].includes(
             path,
           )
             ? ""
-            : `p-6 md:p-8 rounded-[2.5rem] border ${theme === "dark" ? "border-gray-800/60 bg-[#1a1a1c]" : "border-gray-200 bg-white"} shadow-xl`
+            : `p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "border-gray-800/60 bg-[#1a1a1c]" : "border-gray-200 bg-white"} shadow-xl`
         }`}
       >
         {path === "dashboard" ? (
@@ -10132,6 +10139,6 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };

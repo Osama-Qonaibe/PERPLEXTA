@@ -147,61 +147,83 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }).format(amount);
   };
 
+  if (loading && !wallet) {
+    return (
+      <div className="space-y-10 animate-pulse w-full max-w-5xl mx-auto px-6 md:px-12 pt-6">
+        {/* Banking Hero Skeleton - Precision matched to 280px roughly */}
+        <div className={`h-[280px] w-full rounded-[4px] border ${theme === 'dark' ? 'bg-[#0a0a0b] border-gray-800/40' : 'bg-gray-50 border-gray-200'}`} />
+        
+        {/* Transactions Section Skeleton */}
+        <div className={`h-[400px] w-full rounded-[4px] border ${theme === 'dark' ? 'bg-[#0a0a0b] border-gray-800/40' : 'bg-gray-50 border-gray-200'}`} />
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full h-full flex flex-col animate-in fade-in duration-1000 overflow-hidden relative">
+    <div className="w-full h-full flex flex-col overflow-hidden relative">
       {/* Centered Banking Hero Card - High Density Elite */}
       <div className="pt-6 px-6 md:px-12 flex justify-center flex-none">
-        <div className={`relative w-full max-w-5xl p-8 rounded-[4px] border shadow-2xl transition-all duration-700 ${
+        <div className={`relative w-full max-w-5xl p-10 rounded-[4px] border shadow-2xl transition-all duration-700 ${
           theme === 'dark' 
             ? 'bg-[#151517] border-gray-800/80 shadow-black/60' 
             : 'bg-white border-gray-100 shadow-gray-200/20'
         }`}>
-          {/* Top Right "Add Funds" - Refined Class */}
-          <button 
-            onClick={() => setActiveTab('deposit')}
-            className={`absolute top-6 left-8 md:left-auto md:right-8 flex items-center gap-2 px-5 py-1.5 rounded-[4px] border text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
-              theme === 'dark' 
-                ? 'bg-[#1a1a1c] border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30' 
-                : 'bg-white border-gray-200 text-gray-500 hover:text-emerald-600 hover:border-emerald-200'
-            }`}
-          >
-            <Plus size={12} className="opacity-60" />
-            {dir === 'rtl' ? 'إيداع أموال' : 'Inject Capital'}
-          </button>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-20">
-            <div className="flex items-center gap-6">
-              <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)] border border-emerald-500/20">
-                <Wallet size={24} strokeWidth={1} />
-              </div>
-              <div className="space-y-0.5 text-left rtl:text-right">
-                <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.4em]">
-                  {dir === 'rtl' ? 'الرصيد السيادي المتاح' : 'Available Sovereign Liquidity'}
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-medium opacity-40">₪</span>
-                  <span className="text-4xl font-black tracking-tighter text-[var(--text-primary)]">
-                     {wallet ? wallet.balance.toLocaleString(undefined, { 
-                       minimumFractionDigits: 2,
-                       maximumFractionDigits: 2
-                     }) : '9,985.00'}
-                  </span>
-                  <span className="text-sm font-bold opacity-30">ILS</span>
+          <div className="flex flex-col gap-10">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)] border border-emerald-500/30">
+                  <Wallet size={28} strokeWidth={1} />
+                </div>
+                <div className="space-y-1 text-center md:text-left rtl:md:text-right">
+                  <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.4em]">
+                    {dir === 'rtl' ? 'الرصيد السيادي المتاح' : 'Available Sovereign Liquidity'}
+                  </p>
+                  <div className="flex items-baseline justify-center md:justify-start gap-2">
+                    <span className="text-2xl font-medium opacity-40">₪</span>
+                    <span className="text-5xl font-black tracking-tighter text-[var(--text-primary)]">
+                       {wallet ? wallet.balance.toLocaleString(undefined, { 
+                         minimumFractionDigits: 2,
+                         maximumFractionDigits: 2
+                       }) : '9,985.00'}
+                    </span>
+                    <span className="text-base font-bold opacity-30 tracking-widest">ILS</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Action Button - Refined Positioning */}
+              <button 
+                onClick={() => setActiveTab('deposit')}
+                dir={dir}
+                className={`flex items-center gap-3 px-8 py-3 rounded-[4px] border text-[10px] font-black uppercase tracking-[0.3em] transition-all group w-full md:w-auto justify-center ${
+                  theme === 'dark' 
+                    ? 'bg-[#1a1a1c] border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30' 
+                    : 'bg-white border-gray-200 text-gray-500 hover:text-emerald-600 hover:border-emerald-200 shadow-sm'
+                }`}
+              >
+                <Plus size={14} className="text-emerald-500 group-hover:scale-125 transition-transform" />
+                {dir === 'rtl' ? 'إيداع أموال' : 'Deposit Funds'}
+              </button>
             </div>
 
-            <div className="hidden md:flex items-center gap-12 border-l border-gray-800/40 pl-12 rtl:border-l-0 rtl:border-r rtl:pl-0 rtl:pr-12">
-               <div className="space-y-0.5">
-                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{dir === 'rtl' ? 'إجمالي الأرباح' : 'Gross Yield'}</p>
-                  <p className="text-lg font-bold text-emerald-500">₪ 42,910.00</p>
+            {/* Bottom Stats Row */}
+            <div className={`pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t ${theme === 'dark' ? 'border-gray-800/40' : 'border-gray-100'}`}>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'إجمالي الأرباح' : 'Gross Yield'}</p>
+                  <p className="text-xl font-black text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">₪ 42,910.00</p>
                </div>
-               <div className="space-y-0.5">
-                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{dir === 'rtl' ? 'الحالة المالية' : 'Vault Status'}</p>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'الحالة المالية' : 'Vault Status'}</p>
                   <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Secured</p>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Secured</p>
                   </div>
+               </div>
+               <div className="hidden lg:block h-10 w-px bg-gray-200 dark:bg-gray-800/40" />
+               <div className="space-y-1 hidden md:block">
+                  <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'المستوى السيادي' : 'Sovereign tier'}</p>
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Elite Intelligence</p>
                </div>
             </div>
           </div>

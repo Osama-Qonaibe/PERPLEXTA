@@ -8,6 +8,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
 import { motion, AnimatePresence } from 'motion/react';
+import { sovereignPageTransition } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -2336,7 +2337,13 @@ export const ChatPage: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col w-full overflow-hidden">
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={sovereignPageTransition}
+      className="h-full flex flex-col w-full overflow-hidden"
+    >
       {showChatLimitWarning && (
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[4px] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
           <div className="w-12 h-12 rounded-[4px] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
@@ -3203,6 +3210,6 @@ export const ChatPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };

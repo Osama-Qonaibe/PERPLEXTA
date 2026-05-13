@@ -5,6 +5,7 @@ import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { sovereignPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
@@ -19,13 +20,10 @@ export const AdminLayout: React.FC = () => {
         <motion.div
           key={language}
           dir={localDir}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ 
-            duration: 0.3, 
-            ease: "easeOut"
-          }}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={sovereignPageTransition}
           className="flex h-full w-full overflow-hidden relative z-10"
         >
           <AdminSidebar activeLanguage={language} />

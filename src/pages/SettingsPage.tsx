@@ -6,6 +6,7 @@ import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
 import { motion, AnimatePresence } from 'motion/react';
+import { sovereignPageTransition } from '../constants/motions';
 import { 
   User, Settings2, Shield, CreditCard, 
   Wallet, Palette, Keyboard, BrainCircuit, Globe,
@@ -186,8 +187,8 @@ export const SettingsPage: React.FC = () => {
 
   const tabs = [
     { id: 'account', icon: <User size={18} />, label: t('profile') },
-    { id: 'subscription', icon: <CreditCard size={18} />, label: t('consumption') },
-    { id: 'usage', icon: <Wallet size={18} />, label: t('wallet') },
+    { id: 'usage', icon: <Activity size={18} />, label: t('consumption') },
+    { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
     { id: 'memory', icon: <BrainCircuit size={18} />, label: t('memoryCenter') },
   ];
 
@@ -279,20 +280,20 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth ${activeTab === 'usage' ? 'p-0' : 'p-6 md:p-12'}`}>
-          <div className={activeTab === 'usage' ? 'h-full w-full' : 'max-w-5xl mx-auto'}>
+        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-6 md:p-12`}>
+          <div className="max-w-5xl mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                className={activeTab === 'usage' ? 'h-full flex flex-col' : 'space-y-12 pb-12'}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={sovereignPageTransition}
+                className="space-y-12 pb-12 w-full"
               >
               {/* Account Tab */}
               {activeTab === 'account' && localUser && (
-                <div className={`p-8 md:p-12 rounded-[4px] border transition-all duration-500 ${
+                <div className={`p-8 md:p-12 rounded-[4px] border ${
                   theme === 'dark' ? 'bg-[#1a1a1c]/60 border-gray-800/60 shadow-2xl' : 'bg-white border-gray-100 shadow-2xl shadow-gray-200/40'
                 }`}>
                   <AccountSettings 
@@ -303,35 +304,14 @@ export const SettingsPage: React.FC = () => {
                   />
                 </div>
               )}
-
-              {/* Consumption Tab */}
-              {activeTab === 'subscription' && (
-                <div className={`rounded-[4px] border overflow-hidden transition-all duration-500 ${
-                  theme === 'dark' ? 'bg-[#1a1a1c]/40 border-gray-800/60 shadow-2xl' : 'bg-white border-gray-100 shadow-xl'
-                }`}>
-                  <div className={`px-8 pt-8 pb-6 border-b ${theme === 'dark' ? 'border-gray-800/40 bg-gray-900/20' : 'border-gray-50 bg-gray-50/30'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                        <Activity size={24} />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-black tracking-tight">{t('consumptionRadar')}</h2>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-widest opacity-60">
-                          {t('realTimeSync')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 md:p-10">
-                    <UsageRadar />
-                  </div>
-                </div>
+              
+              {/* Usage Tab */}
+              {activeTab === 'usage' && (
+                <UsageRadar />
               )}
-
               
               {/* Wallet Tab */}
-              {activeTab === 'usage' && (
+              {activeTab === 'wallet' && (
                 <WalletSystem theme={theme} dir={dir} />
               )}
 

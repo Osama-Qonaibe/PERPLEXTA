@@ -43,7 +43,7 @@ const CenteredLoader = () => {
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
             className="absolute inset-0 bg-emerald-500 rounded-full blur-[60px]"
           />
-          <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-gray-800/80 flex items-center justify-center shadow-2xl overflow-hidden group">
+          <div className="relative w-24 h-24 rounded-[4px] bg-gradient-to-br from-gray-900 to-black border border-gray-800/80 flex items-center justify-center shadow-2xl overflow-hidden group">
             {siteSettings.logoBase64 ? (
               <img src={siteSettings.logoBase64} alt="Logo" className="w-14 h-14 object-contain" />
             ) : (
@@ -79,7 +79,7 @@ const CenteredLoader = () => {
       </div>
       
       {/* Encryption Tag */}
-      <div className="absolute bottom-10 flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900/30 border border-white/[0.03] backdrop-blur-md">
+      <div className="absolute bottom-10 flex items-center gap-2 px-4 py-2 rounded-[4px] bg-gray-900/30 border border-white/[0.03] backdrop-blur-md">
          <ShieldCheck size={14} className="text-emerald-500" />
          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
             {language === 'ar' ? 'نظام مشفر ومستقر' : 'STABLE ENCRYPTED PROTOCOL'}

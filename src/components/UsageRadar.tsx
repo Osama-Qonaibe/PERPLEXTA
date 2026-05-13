@@ -78,9 +78,16 @@ export const UsageRadar: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black uppercase tracking-widest text-gray-500 animate-pulse">{t('analyzingResources') || 'Analyzing Resources...'}</p>
+      <div className="space-y-10 animate-pulse">
+        {/* Skeleton Header - Precision matched to 412px loaded state */}
+        <div className={`h-[412px] w-full rounded-[4px] border ${theme === 'dark' ? 'bg-[#0a0a0b] border-gray-800/40' : 'bg-gray-50 border-gray-200'}`} />
+        
+        {/* Skeleton Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`h-[156px] rounded-[4px] border ${theme === 'dark' ? 'bg-[#0f0f11] border-gray-800/40' : 'bg-white border-gray-100'}`} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -110,50 +117,64 @@ export const UsageRadar: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      {/* Plan Summary Header */}
-      <div className={`p-8 rounded-[4px] border transition-all duration-500 relative overflow-hidden ${
-        theme === 'dark' ? 'bg-[#0a0a0b] shadow-3xl' : 'bg-gray-50 border-gray-200 shadow-inner'
+      {/* Usage Radar Header - Elite Design (Sovereign Static) */}
+      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[4px] border relative overflow-hidden ${
+        theme === 'dark' ? 'bg-[#0a0a0b] shadow-2xl' : 'bg-white border-gray-100 shadow-xl'
       }`} style={{ borderColor: `${planColor}30` }}>
         
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 blur-[120px] rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: planColor }} />
-        <div className="absolute bottom-0 left-0 w-64 h-64 blur-[120px] rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: planColor }} />
-
-        <div className="flex flex-col md:flex-row gap-8 items-center justify-between relative z-10">
-          <div className="space-y-4 text-center md:text-start">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 opacity-60">
-                {t('activeSubscription') || 'Active Subscription'}
-              </span>
-              <h2 className="text-4xl md:text-6xl font-black transition-all duration-500" style={{ color: planColor, filter: `drop-shadow(0 0 20px ${planColor}40)` }}>
-                {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
-              </h2>
+        {/* Fixed Header Row */}
+        <div className="flex justify-between items-start mb-12">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-[4px] flex items-center justify-center bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+               <Activity size={24} className="animate-pulse" />
             </div>
-
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-white/5 border border-white/10 backdrop-blur-md">
-                <Zap size={14} className="text-amber-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t(data.plan.status.toLowerCase()) || data.plan.status}</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-white/5 border border-white/10 backdrop-blur-md">
-                <Clock size={14} className="text-emerald-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period}</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-white/5 border border-white/10 backdrop-blur-md">
-                <Calendar size={14} className="text-blue-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{startDate} - {renewalDate}</span>
-              </div>
+            <div>
+              <h2 className="text-xl font-black tracking-tight">{t('usageRadar') || (dir === 'rtl' ? 'رادار الاستهلاك' : 'Usage Radar')}</h2>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest opacity-60">
+                {t('realTimeUsageSync') || (dir === 'rtl' ? 'مزامنة لحظية للموارد' : 'Real-time resource synchronization')}
+              </p>
             </div>
           </div>
-          
-          <div className={`w-24 h-24 md:w-32 md:h-32 rounded-[4px] flex items-center justify-center border-2 transition-all duration-700 ${theme === 'dark' ? 'bg-gray-800/20' : 'bg-white shadow-2xl shadow-gray-200'}`} style={{ borderColor: `${planColor}40`, boxShadow: `0 0 40px ${planColor}15` }}>
-            <BarChart3 size={48} style={{ color: planColor }} className="animate-pulse" />
-          </div>
+        </div>
+
+        {/* Plan Info Card - Centered as per image */}
+        <div className={`p-10 rounded-[4px] border border-emerald-500/10 bg-emerald-500/[0.02] flex flex-col items-center relative group`}>
+           {/* Chart Box - Left Aligned */}
+           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[4px] border border-emerald-500/20 flex items-center justify-center bg-black/20 text-emerald-500 group-hover:scale-105 transition-transform duration-700">
+              <BarChart3 size={48} className="drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+           </div>
+
+           <div className="flex flex-col items-center text-center space-y-6">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 opacity-60">
+                  {t('activeSubscription') || 'Active Subscription'}
+                </span>
+                <h3 className="text-5xl md:text-8xl font-black transition-all duration-700 leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
+                  {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
+                </h3>
+              </div>
+
+              {/* Status Badges Row */}
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                 <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-gray-900/60 border border-white/5 backdrop-blur-md">
+                    <Zap size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">{t('active') || 'Active'}</span>
+                 </div>
+                 <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-gray-900/60 border border-white/5 backdrop-blur-md text-gray-400">
+                    <Clock size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">{t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period}</span>
+                 </div>
+                 <div className="flex items-center gap-2 px-4 py-2 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md text-emerald-500">
+                    <Calendar size={12} />
+                    <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
 
       {/* Usage Grids */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
         {data.usage.map((item) => {
           const isDailyUnlimited = item.limits.daily === null;
           const isMonthlyUnlimited = item.limits.monthly === null;
@@ -165,12 +186,10 @@ export const UsageRadar: React.FC = () => {
           const isExpanded = expanded === item.id;
 
           return (
-            <motion.div 
-              key={item.id}
-              layout
-              className={`rounded-[4px] border transition-all duration-300 overflow-hidden ${
+            <div className={`rounded-[4px] min-h-[156px] border transition-colors duration-300 overflow-hidden ${
                 theme === 'dark' ? 'bg-[#0f0f11] border-gray-800/40' : 'bg-white border-gray-100 shadow-sm'
-              } ${isExpanded ? '' : ''}`}
+              }`}
+              key={item.id}
               style={{ borderColor: isExpanded ? `${planColor}40` : undefined, boxShadow: isExpanded ? `0 0 20px ${planColor}05` : 'none' }}
             >
               <div className="p-6">
@@ -202,14 +221,13 @@ export const UsageRadar: React.FC = () => {
                       </span>
                     </div>
                       <div className="h-2.5 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: isDailyUnlimited ? '0%' : `${Math.max(2, dailyPercent)}%` }}
+                        <div 
                           style={{ 
+                            width: isDailyUnlimited ? '0%' : `${Math.max(2, dailyPercent)}%`,
                             backgroundColor: dailyPercent > 90 ? '#ef4444' : planColor, 
                             boxShadow: `0 0 12px ${dailyPercent > 90 ? '#ef4444' : planColor}80` 
                           }}
-                          className="h-full rounded-full transition-all duration-300"
+                          className="h-full rounded-full transition-all duration-700 ease-out"
                         />
                       </div>
                     </div>
@@ -232,15 +250,14 @@ export const UsageRadar: React.FC = () => {
                               </span>
                             </div>
                             <div className="h-2.5 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: isMonthlyUnlimited ? '100%' : `${Math.max(2, monthlyPercent)}%` }}
+                              <div 
                                 style={{ 
+                                  width: isMonthlyUnlimited ? '100%' : `${Math.max(2, monthlyPercent)}%`,
                                   backgroundColor: monthlyPercent > 90 ? '#ef4444' : planColor, 
                                   opacity: 0.8, 
                                   boxShadow: `0 0 15px ${monthlyPercent > 90 ? '#ef4444' : planColor}40` 
                                 }}
-                                className="h-full rounded-full transition-all duration-300"
+                                className="h-full rounded-full transition-all duration-700 ease-out"
                               />
                             </div>
                           </div>
@@ -263,7 +280,7 @@ export const UsageRadar: React.FC = () => {
                   </AnimatePresence>
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>

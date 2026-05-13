@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { sovereignPageTransition } from '../constants/motions';
 import { toast } from 'sonner';
 
 export const ResetPasswordPage: React.FC = () => {
@@ -71,7 +72,14 @@ export const ResetPasswordPage: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[var(--bg-primary)] p-6" dir={dir}>
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={sovereignPageTransition}
+      className="flex items-center justify-center min-h-screen bg-[var(--bg-primary)] p-6" 
+      dir={dir}
+    >
       {/* Background Decorative Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] animate-pulse"></div>
@@ -195,6 +203,6 @@ export const ResetPasswordPage: React.FC = () => {
            Sovereign Secure Auth Core v2.4.0
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };

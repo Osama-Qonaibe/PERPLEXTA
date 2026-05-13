@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sovereignPageTransition, sovereignItemTransition } from '../constants/motions';
 
 export const RewardsPage: React.FC = () => {
   const { t, theme, dir } = useAppContext();
@@ -238,7 +240,13 @@ export const RewardsPage: React.FC = () => {
   const minWithdrawalUSD = (Number(economySettings.min_withdrawal_cents || 0) / 100).toFixed(2);
 
   return (
-    <div className="max-w-5xl mx-auto w-[92%] md:w-[85%] pb-24 space-y-6 md:space-y-10">
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={sovereignPageTransition}
+      className="max-w-5xl mx-auto w-[92%] md:w-[85%] pb-24 space-y-6 md:space-y-10"
+    >
       
       {/* Sticky Header with Back Button - Elite Standard */}
       <div className={`sticky -top-0.5 z-[40] -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
@@ -262,8 +270,17 @@ export const RewardsPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => navigate('/settings')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[4px] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 group`}
+            >
+              <Landmark size={14} className="group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-tighter">
+                {dir === 'rtl' ? 'إيداع أموال / Deposit Funds' : 'Deposit Funds / إيداع أموال'}
+              </span>
+            </button>
             <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[4px] border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-               <Landmark size={14} className="text-emerald-500" />
+               <Landmark size={14} className="text-gray-400" />
                <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">PLATFORM LEDGER</span>
             </div>
           </div>
@@ -877,6 +894,6 @@ export const RewardsPage: React.FC = () => {
         </div>
       )}
 
-    </div>
+    </motion.div>
   );
 };

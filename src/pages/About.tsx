@@ -1,15 +1,22 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { motion } from 'motion/react';
+import { sovereignPageTransition } from '../constants/motions';
 
 export const About: React.FC = () => {
   const { t, dir, theme } = useAppContext();
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-4xl mx-auto px-6 sm:px-8 pb-12">
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={sovereignPageTransition}
+      className="max-w-4xl mx-auto px-6 sm:px-8 pb-12"
+    >
       {/* Sticky Header Section - Elite Standard */}
       <div className={`sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3 mb-8 transition-all duration-300 ${
         theme === 'dark' ? 'bg-[#0f0f11]/95' : 'bg-white/95'
@@ -46,6 +53,6 @@ export const About: React.FC = () => {
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
