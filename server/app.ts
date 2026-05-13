@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { globalLimiter } from './middleware/rateLimit.js';
 
@@ -12,15 +13,20 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"],
+      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https:"],
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "https:", "wss:", "ws:"],
-      frameAncestors: ["*"]
+      frameAncestors: ["'none'"]
     }
   },
   crossOriginEmbedderPolicy: false

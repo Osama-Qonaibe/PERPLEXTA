@@ -53,7 +53,7 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
     const result = await testDatabaseConnection(req.body);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -63,7 +63,7 @@ router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
     await runDatabaseMigrations(type || 'additive');
     res.json({ success: true, message: 'Migrations completed' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Migration failed' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -72,7 +72,7 @@ router.get("/databases/export", authenticateAdmin, async (req, res) => {
     const backup = await exportDatabase(req.query.type as any);
     res.json(backup);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Export failed' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -81,7 +81,7 @@ router.post("/databases/import", authenticateAdmin, async (req, res) => {
     const result = await importDatabase(req.body.backup, req.body.targetType);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Import failed' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -152,10 +152,8 @@ router.delete("/plans/:id", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Admin User Management
 router.get("/users", authenticateAdmin, async (req, res) => {
   try {
-    // Phase 1: Fetch core user data including subscription and kyc info
     const result = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
@@ -166,7 +164,6 @@ router.get("/users", authenticateAdmin, async (req, res) => {
       ORDER BY u.created_at DESC
     `);
     
-    // Phase 2: Fetch wallet data from Ledger DB (Isolated)
     const walletRes = await ledgerPool.query('SELECT user_id, balance, points FROM wallets');
     const walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
 
@@ -208,7 +205,6 @@ router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Orchestrator & Tool Routing
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
@@ -307,15 +303,12 @@ router.post("/broadcasts/send", authenticateAdmin, async (req, res) => {
   try {
     const { title_en, title_ar, content_en, content_ar, type, target_group } = req.body;
     
-    // Log broadcast
     const result = await pool.query(`
       INSERT INTO system_broadcasts (title_en, title_ar, content_en, content_ar, type, target_group, status, sent_count)
       VALUES ($1, $2, $3, $4, $5, $6, 'pending', 0)
       RETURNING id
     `, [title_en, title_ar, content_en, content_ar, type, target_group]);
     
-    // In a real app, this would trigger a background job
-    // For now we just mark it as sent for demo purposes
     await pool.query('UPDATE system_broadcasts SET status = $1, sent_count = $2 WHERE id = $3', ['sent', 1, result.rows[0].id]);
     
     res.json({ success: true, broadcastId: result.rows[0].id });
@@ -351,7 +344,6 @@ router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   }
 });
 
-// User Permissions
 router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -375,6 +367,13 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { role, status, kyc_status, kyc_rejection_reason, kyc_required } = req.body;
     
+    if (role && !['admin', 'user'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (status && !['active', 'suspended', 'pending'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -393,7 +392,6 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
       }
 
-      // If status implies subscription change
       if (status) {
         await client.query(`UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`, [status, id]);
       }
@@ -407,7 +405,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
       client.release();
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Update failed' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -431,7 +429,6 @@ router.get("/users/:id/activity-logs", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Financial Radar & Wallet Diagnostics
 router.get("/financial-radar", authenticateAdmin, async (req, res) => {
   try {
     const totalBalance = await ledgerPool.query('SELECT sum(balance) as total FROM wallets');
@@ -441,7 +438,6 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
     // Fetch recent transactions for live registry
     const recentTx = await ledgerPool.query('SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT 50');
     
-    // Resolve user names if possible
     let transactions = recentTx.rows;
     try {
       const userIds = [...new Set(transactions.map((t: any) => t.user_id))];
@@ -506,7 +502,6 @@ router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
 
 router.get("/wallet-alerts", authenticateAdmin, async (req, res) => {
   try {
-    // High volume or suspicious transactions
     const alerts = await ledgerPool.query(`
       SELECT * FROM ledger_transactions 
       WHERE amount > 1000 OR transaction_type = 'system_adjustment'
@@ -520,15 +515,13 @@ router.get("/wallet-alerts", authenticateAdmin, async (req, res) => {
 
 router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
   try {
-    const { id } = req.params; // Expecting userId
+    const { id } = req.params;
     
-    // 1. Find wallet mapping in Ledger DB
     const walletRes = await ledgerPool.query('SELECT id FROM wallets WHERE user_id = $1', [id]);
     if (walletRes.rows.length === 0) return res.status(404).json({ error: 'Wallet not found' });
     
     const walletId = walletRes.rows[0].id;
 
-    // 2. Recalculate balance from ledger history
     const history = await ledgerPool.query('SELECT sum(amount) as total FROM ledger_transactions WHERE wallet_id = $1 AND status = \'success\'', [walletId]);
     const correctBalance = parseFloat(history.rows[0].total || 0);
     
@@ -640,7 +633,6 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
 
 router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) => {
   try {
-    // This wipes all chat messages - USE WITH CAUTION
     await pool.query("TRUNCATE TABLE messages CASCADE");
     await pool.query("DELETE FROM chats");
     res.json({ success: true, message: 'All AI history and chats cleared' });
@@ -664,7 +656,6 @@ router.get("/economy", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate FROM system_settings LIMIT 1');
     const settings = result.rows[0] || {};
-    // Map backend payout_usd to frontend withdrawal if needed, but we standardized frontend now
     res.json(settings);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -707,14 +698,12 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       min_withdrawal_cents
     ]);
     
-    // Log specialized Finance audit
     await pool.query('INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)', 
       [(req as any).user?.id, 'Update Economy Settings', 'finance', JSON.stringify(req.body)]);
       
     res.json({ success: true, message: 'Finance settings updated successfully' });
   } catch (error) {
-    console.error('[Admin] Economy settings update failed:', error);
-    res.status(500).json({ error: 'Update failed', details: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -722,7 +711,6 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
   try {
     const { secretKey, publishableKey, webhookSecret, isLiveMode } = req.body;
     
-    // Encrypt sensitive keys
     const encryptedSecret = secretKey ? encrypt(secretKey) : null;
     const encryptedWebhook = webhookSecret ? encrypt(webhookSecret) : null;
     
@@ -737,7 +725,6 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
     `, [encryptedSecret, publishableKey, encryptedWebhook, isLiveMode]);
     
-    // Log specialized Finance audit
     await pool.query('INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)', 
       [(req as any).user?.id, 'Update Stripe Settings', 'finance', JSON.stringify({ isLiveMode, publishableKey })]);
       
@@ -759,7 +746,6 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
     const secretKey = decrypt(settings.rows[0].stripe_secret_key);
     const stripe = new Stripe(secretKey, { apiVersion: '2025-01-27.acacia' as any });
     
-    // Use balance.retrieve to verify the key works without needing an account ID
     await stripe.balance.retrieve();
     
     await pool.query(`
@@ -771,8 +757,7 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
       message: 'Verified successfully'
     });
   } catch (error: any) {
-    console.error('[Admin] Stripe verification failed:', error.message);
-    res.status(400).json({ error: error.message || 'Verification failed' });
+    res.status(400).json({ error: 'Verification failed' });
   }
 });
 
@@ -787,7 +772,6 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       finalKey = `${urlKey}:${key}`;
     }
 
-    // 1. Fast Connectivity Check (Pre-flight Bridge)
     const status = await checkProviderStatus(provider, finalKey);
     if (!status.isValid) {
       return res.status(400).json({ 
@@ -798,7 +782,6 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
 
     const encryptedKey = encrypt(finalKey);
     
-    // 2. Persistent Storage (UPSERT)
     await pool.query(`
       INSERT INTO api_keys_vault (provider, encrypted_key, daily_budget, is_active, updated_at)
       VALUES ($1, $2, $3, true, CURRENT_TIMESTAMP)
@@ -809,10 +792,8 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
     `, [provider.toLowerCase(), encryptedKey, daily_budget]);
 
-    // 3. Hot Cache Invalidation (Zero-Latency Prep)
     invalidateVaultCache(provider);
 
-    // 4. Background Sync (Models)
     let syncedCount = 0;
     let syncedModels = [];
     try {
@@ -866,7 +847,7 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
       models: syncResult.models 
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Sync failed' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
