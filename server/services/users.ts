@@ -3,84 +3,83 @@ import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
 import bcrypt from 'bcryptjs';
 
+const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: string, desc_ar: string }> = {
+  'perplexta_analysis': { 
+    name_en: 'Perplexta Analysis', 
+    name_ar: 'تحليل بيربليكستا',
+    desc_en: 'Deep AI-powered research and analysis.',
+    desc_ar: 'بحث وتحليل عميق مدعوم بالذكاء الاصطناعي.'
+  },
+  'legal_analysis': { 
+    name_en: 'Legal Analysis', 
+    name_ar: 'التحليل القانوني',
+    desc_en: 'Specialized legal document review and intelligence.',
+    desc_ar: 'مراجعة الوثائق القانونية المتخصصة والاستخبارات.'
+  },
+  'notebook': { 
+    name_en: 'Sovereign Notebook', 
+    name_ar: 'المفكرة السيادية',
+    desc_en: 'Organize and connect your thoughts with AI.',
+    desc_ar: 'نظم واربط أفكارك بمساعدة الذكاء الاصطناعي.'
+  },
+  'image': { 
+    name_en: 'Image Generation', 
+    name_ar: 'توليد الصور',
+    desc_en: 'Create professional visual assets from text.',
+    desc_ar: 'أنشئ أصولاً بصرية احترافية من النصوص.'
+  },
+  'video': { 
+    name_en: 'Video Generation', 
+    name_ar: 'توليد الفيديو',
+    desc_en: 'Cinematic AI video production from prompts.',
+    desc_ar: 'إنتاج فيديوهات سينمائية من الأوامر النصية.'
+  },
+  'stt': { 
+    name_en: 'Speech-to-Text', 
+    name_ar: 'تحويل الصوت لنص',
+    desc_en: 'High-precision audio transcription.',
+    desc_ar: 'نسخ صوتي بدقة عالية.'
+  },
+  'tts': { 
+    name_en: 'Text-to-Speech', 
+    name_ar: 'تحويل النص لصوت',
+    desc_en: 'Natural-sounding AI voice narration.',
+    desc_ar: 'سرد صوتي طبيعي مدعوم بالذكاء الاصطناعي.'
+  },
+  'learning': { 
+    name_en: 'Deep Learning', 
+    name_ar: 'التعلم العميق',
+    desc_en: 'Accelerated skill acquisition and education.',
+    desc_ar: 'اكتساب المهارات والتعليم المعزز.'
+  },
+  'code': { 
+    name_en: 'Code Engineering', 
+    name_ar: 'هندسة البرمجيات',
+    desc_en: 'Developer-grade coding and debugging.',
+    desc_ar: 'برمجة وتصحيح أخطاء بمستوى المطورين.'
+  },
+  'canvas': { 
+    name_en: 'Creative Canvas', 
+    name_ar: 'اللوحة الإبداعية',
+    desc_en: 'Collaborative AI design and brainstorming.',
+    desc_ar: 'تصميم وعصف ذهني تعاوني بالذكاء الاصطناعي.'
+  },
+  'sovereign_memory': { 
+    name_en: 'Sovereign Memory', 
+    name_ar: 'الذاكرة السيادية',
+    desc_en: 'Persistent AI personalization and context.',
+    desc_ar: 'تخصيص وسياق دائم للذكاء الاصطناعي.'
+  },
+  'storage_mb': { 
+    name_en: 'Vault Storage', 
+    name_ar: 'سعة التخزين',
+    desc_en: 'Secure storage for your intelligence assets.',
+    desc_ar: 'تخزين آمن لأصولك الاستخباراتية.'
+  }
+};
+
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
-
-  // Hardcoded tool info mapping for descriptions and names
-  const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: string, desc_ar: string }> = {
-    'perplexta_analysis': { 
-      name_en: 'Perplexta Analysis', 
-      name_ar: 'تحليل بيربليكستا',
-      desc_en: 'Deep AI-powered research and analysis.',
-      desc_ar: 'بحث وتحليل عميق مدعوم بالذكاء الاصطناعي.'
-    },
-    'legal_analysis': { 
-      name_en: 'Legal Analysis', 
-      name_ar: 'التحليل القانوني',
-      desc_en: 'Specialized legal document review and intelligence.',
-      desc_ar: 'مراجعة الوثائق القانونية المتخصصة والاستخبارات.'
-    },
-    'notebook': { 
-      name_en: 'Sovereign Notebook', 
-      name_ar: 'المفكرة السيادية',
-      desc_en: 'Organize and connect your thoughts with AI.',
-      desc_ar: 'نظم واربط أفكارك بمساعدة الذكاء الاصطناعي.'
-    },
-    'image': { 
-      name_en: 'Image Generation', 
-      name_ar: 'توليد الصور',
-      desc_en: 'Create professional visual assets from text.',
-      desc_ar: 'أنشئ أصولاً بصرية احترافية من النصوص.'
-    },
-    'video': { 
-      name_en: 'Video Generation', 
-      name_ar: 'توليد الفيديو',
-      desc_en: 'Cinematic AI video production from prompts.',
-      desc_ar: 'إنتاج فيديوهات سينمائية من الأوامر النصية.'
-    },
-    'stt': { 
-      name_en: 'Speech-to-Text', 
-      name_ar: 'تحويل الصوت لنص',
-      desc_en: 'High-precision audio transcription.',
-      desc_ar: 'نسخ صوتي بدقة عالية.'
-    },
-    'tts': { 
-      name_en: 'Text-to-Speech', 
-      name_ar: 'تحويل النص لصوت',
-      desc_en: 'Natural-sounding AI voice narration.',
-      desc_ar: 'سرد صوتي طبيعي مدعوم بالذكاء الاصطناعي.'
-    },
-    'learning': { 
-      name_en: 'Deep Learning', 
-      name_ar: 'التعلم العميق',
-      desc_en: 'Accelerated skill acquisition and education.',
-      desc_ar: 'اكتساب المهارات والتعليم المعزز.'
-    },
-    'code': { 
-      name_en: 'Code Engineering', 
-      name_ar: 'هندسة البرمجيات',
-      desc_en: 'Developer-grade coding and debugging.',
-      desc_ar: 'برمجة وتصحيح أخطاء بمستوى المطورين.'
-    },
-    'canvas': { 
-      name_en: 'Creative Canvas', 
-      name_ar: 'اللوحة الإبداعية',
-      desc_en: 'Collaborative AI design and brainstorming.',
-      desc_ar: 'تصميم وعصف ذهني تعاوني بالذكاء الاصطناعي.'
-    },
-    'sovereign_memory': { 
-      name_en: 'Sovereign Memory', 
-      name_ar: 'الذاكرة السيادية',
-      desc_en: 'Persistent AI personalization and context.',
-      desc_ar: 'تخصيص وسياق دائم للذكاء الاصطناعي.'
-    },
-    'storage_mb': { 
-      name_en: 'Vault Storage', 
-      name_ar: 'سعة التخزين',
-      desc_en: 'Secure storage for your intelligence assets.',
-      desc_ar: 'تخزين آمن لأصولك الاستخباراتية.'
-    }
-  };
 
   const planRes = await pool.query(`
     SELECT p.id, p.name_en, p.name_ar, p.limits, p.color, s.status, s.billing_period, s.current_period_end, s.created_at as subscription_start

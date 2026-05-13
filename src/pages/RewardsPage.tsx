@@ -24,7 +24,7 @@ export const RewardsPage: React.FC = () => {
   const [selfieData, setSelfieData] = useState<string | null>(null); // Store base64
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [wallet, setWallet] = useState({ points: 0, balance: 0, usd_balance: 0 });
+  const [wallet, setWallet] = useState({ points: 0, balance: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [referralCount, setReferralCount] = useState(0);
   
@@ -241,7 +241,7 @@ export const RewardsPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const withdrawableUSD = Number(wallet.usd_balance || 0).toFixed(2);
+  const withdrawableUSD = Number(wallet.balance || 0).toFixed(2);
   const estimatedPointsWorth = (Number(wallet.points || 0) * Number(economySettings.conversion_rate || 0)).toFixed(2);
   const minWithdrawalUSD = (Number(economySettings.min_withdrawal_cents || 0) / 100).toFixed(2);
 

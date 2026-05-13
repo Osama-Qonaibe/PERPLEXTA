@@ -1472,7 +1472,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
-      // Sovereign: Comprehensive token discovery (Search URL, Hash Fragment, and LocalStorage)
       const getParam = (name: string) => {
         const searchParams = new URLSearchParams(window.location.search);
         if (searchParams.get(name)) return searchParams.get(name);
@@ -1536,7 +1535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const handleLanguageChange = async (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang); // Note: Unified key 'language' matched with initializer
+    localStorage.setItem('language', lang); 
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1586,12 +1585,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Sovereign Preservation: Prevent accidental exfiltration during pending operations
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isOperationPending) {
         e.preventDefault();
-        e.returnValue = ''; // Standard trigger for confirmation dialog
+        e.returnValue = ''; 
         return '';
       }
     };
@@ -1627,9 +1625,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('app_token', newToken);
       setToken(newToken);
       setUser(info);
-      setIsAuthModalOpen(false); // Close auth modal immediately
+      setIsAuthModalOpen(false); 
       
-      // Sync language if provided in OAuth payload
       if (authLang && (authLang === 'ar' || authLang === 'en')) {
         setLanguage(authLang as any);
         localStorage.setItem('language', authLang);
@@ -1639,12 +1636,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
       
-      // Sovereign: Only redirect if this window is NOT the main app window that was already visible
       setTimeout(() => {
         localStorage.removeItem('app_oauth_syncing');
         
         const currentPath = window.location.pathname;
-        // If we are already on home or chats, just stay there to avoid flickering
         if ((targetRef === '/' || targetRef === '/chats') && (currentPath === '/' || currentPath === '/chats')) {
           return;
         }
@@ -1653,7 +1648,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 600);
     };
 
-    // Parse both search and hash for tokens (Sovereign uses hash for popup redirects)
     const getParam = (name: string) => {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get(name)) return searchParams.get(name);
@@ -1669,7 +1663,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const urlToken = getParam('token');
     const urlUserRaw = getParam('user');
 
-    // Sovereign: Prioritize URL-based authentication signals over existing session data to support seamless redirects/popups
     if (urlToken && urlToken !== token) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
@@ -1678,21 +1671,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (urlUserRaw) {
         try {
           userData = JSON.parse(decodeURIComponent(urlUserRaw));
-          // Synchronize user state immediately from URL payload to minimize UI flickering
           setUser(userData);
         } catch (e) {
           console.error('Failed to parse user from URL', e);
         }
       }
 
-      // If we're in a popup, notify the opener and close
       if (window.opener && window.opener !== window) {
         window.opener.postMessage({ 
           type: 'OAUTH_AUTH_SUCCESS', 
           user: { token: urlToken, ...userData } 
         }, window.location.origin);
         
-        // Also use BroadcastChannel for same-origin robustness
         const authChannel = new BroadcastChannel('app_oauth_channel');
         authChannel.postMessage({ 
           type: 'OAUTH_AUTH_SUCCESS', 
@@ -1701,9 +1691,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         setTimeout(() => window.close(), 500);
       } else {
-        // Not a popup (Redirect Mode): Integrate user data via handleAuthSuccess to ensure full state sync and target redirection
         handleAuthSuccess({ token: urlToken, ...userData });
-        // Clean the URL history to remove sensitive tokens without forcing a reload
         const newUrl = window.location.pathname + (window.location.hash.includes('?') ? window.location.hash.split('?')[0] : window.location.hash);
         window.history.replaceState({}, '', newUrl);
       }
@@ -1732,7 +1720,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (storedToken && userDataJson) {
           try {
             const userData = JSON.parse(userDataJson);
-            // Ensure payload is flattened if it was wrapped by popup logic
             const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
             handleAuthSuccess(processedUser);
             localStorage.removeItem('app_oauth_user');
@@ -1757,7 +1744,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const res = await fetch(url, options);
       if (!res.ok) {
         if (retries > 0 && (res.status >= 500 || res.status === 404)) {
-           // Retry on server errors or initial 404s (startup race)
            await new Promise(r => setTimeout(r, backoff));
            return fetchWithRetry(url, options, retries - 1, backoff * 1.5);
         }
@@ -1780,7 +1766,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('Auth ready took too long, forcing ready state for boot resilience.');
         setIsAuthReady(true);
       }
-    }, 8000); // 8 second safety net
+    }, 8000); 
     return () => clearTimeout(timer);
   }, [isAuthReady]);
 
@@ -1791,13 +1777,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Sovereign: Handle both legacy wrapped and modern flat user response payloads for maximum resilience
       const userProfile = data.user || (data.email ? data : null);
       
       if (userProfile) {
         setUser(userProfile);
-        setBalance(Number(data.points || userProfile.points || 0));
-        setBalanceUSD(Number(data.balance || userProfile.balance || 0));
+        setBalance(Number(userProfile.points || 0));
+        setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
         if (data.economy) setEconomySettings(data.economy);
       }
@@ -1968,7 +1953,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = (forceRedirect = true) => {
-    // Sovereign: Fire and forget logout call to blacklist the token
     if (token) {
       fetch('/api/auth/logout', {
         method: 'POST',
@@ -2217,8 +2201,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const userProfile = data.user || (data.email ? data : null);
         if (userProfile) {
           setUser(userProfile);
-          setBalance(Number(data.points || userProfile.points || 0));
-          setBalanceUSD(Number(data.balance || userProfile.balance || 0));
+          setBalance(Number(userProfile.points || 0));
+          setBalanceUSD(Number(userProfile.balance || 0));
           if (data.economy) {
             setEconomySettings(data.economy);
           }

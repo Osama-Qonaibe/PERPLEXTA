@@ -51,7 +51,7 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
     );
 
     await client.query(
-      'UPDATE wallets SET usd_balance = usd_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [usdAmount, wallet.id]
     );
 
@@ -74,7 +74,7 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
   const wallet = await getUserWallet(userId);
-  if (Number(wallet.usd_balance) < amountUSD) {
+  if (Number(wallet.balance) < amountUSD) {
     throw new Error('Insufficient USD balance');
   }
 
@@ -89,7 +89,7 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
     await client.query('BEGIN');
     
     await client.query(
-      'UPDATE wallets SET usd_balance = usd_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [amountUSD, wallet.id]
     );
 
