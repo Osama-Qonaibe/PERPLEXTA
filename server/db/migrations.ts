@@ -4,7 +4,15 @@ import bcrypt from 'bcryptjs';
 import { pool, ledgerPool, initializeSovereignPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
-export async function runSystemMaintenance() {}
+export async function runSystemMaintenance() {
+  try {
+    if (pool) {
+      await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+    }
+  } catch (e) {
+    console.error('[Maintenance] Token blacklist cleanup failed:', e);
+  }
+}
 
 let io: any;
 export function setIo(socketIo: any) {
@@ -663,6 +671,15 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         details JSONB DEFAULT '{}',
         metadata JSONB DEFAULT '{}',
         ip_address VARCHAR(45),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'token_blacklist',
+      query: `CREATE TABLE IF NOT EXISTS token_blacklist (
+        id SERIAL PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     }

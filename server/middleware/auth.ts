@@ -39,6 +39,20 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         res.status(403).json({ error: 'Forbidden', message: err.message });
         return;
       }
+
+      // Check for blacklisted token
+      try {
+        if (pool) {
+          const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+          if (blacklistCheck.rows.length > 0) {
+            res.status(401).json({ error: 'Unauthorized', message: 'Token has been revoked/logged out' });
+            return;
+          }
+        }
+      } catch (checkErr) {
+        console.error('[Auth] Blacklist check failed:', checkErr);
+      }
+
       const userPayload = user as any;
       
       try {
@@ -67,6 +81,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       }
 
       (req as any).user = userPayload;
+      (req as any).token = token;
       
       if (userPayload && userPayload.id && pool) {
         pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])

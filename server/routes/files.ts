@@ -15,7 +15,6 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     const userId = req.user.id;
     const { originalname, filename, path: filePath, mimetype, size } = req.file;
 
-    // --- Sovereign Storage Quota Enforcement ---
     const [subRes, currentUsage] = await Promise.all([
       pool.query(`
         SELECT p.limits 
@@ -30,8 +29,6 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     const limits = subRes.rows[0]?.limits || {};
     const storageLimit = limits['storage_mb'];
     
-    // storage_mb can be a number or {"daily": ..., "monthly": ...} 
-    // In our case we use 'monthly' field from the UI as the TOTAL quota in MB
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
     
     if (limitMb && limitMb !== 'unlimited') {
@@ -44,7 +41,6 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
         });
       }
     }
-    // --------------------------------------------
 
     let fileType = 'other';
     if (mimetype.startsWith('image/')) fileType = 'image';

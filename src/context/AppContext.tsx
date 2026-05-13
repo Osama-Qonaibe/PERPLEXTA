@@ -1621,7 +1621,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('language', authLang);
       }
       
-      const targetRef = userData.ref || localStorage.getItem('app_ref') || '/';
+      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
+      const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
       
       // Sovereign: Only redirect if this window is NOT the main app window that was already visible
@@ -1634,7 +1635,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return;
         }
         
-        window.location.href = targetRef.startsWith('http') ? targetRef : (targetRef.startsWith('/') ? targetRef : '/' + targetRef);
+        window.location.href = targetRef;
       }, 600);
     };
 
@@ -1953,6 +1954,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = (forceRedirect = true) => {
+    // Sovereign: Fire and forget logout call to blacklist the token
+    if (token) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(e => console.error('API Logout error', e));
+    }
+
     localStorage.removeItem('app_token');
     
     if (socket) {

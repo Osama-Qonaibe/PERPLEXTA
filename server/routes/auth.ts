@@ -7,6 +7,7 @@ import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
 import { authLimiter } from '../middleware/rateLimit.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -182,6 +183,27 @@ router.get("/google/url", (req, res) => {
     state: nonce
   });
   res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+});
+
+router.post("/logout", authenticateToken, async (req: any, res) => {
+  try {
+    const token = req.token;
+    if (token) {
+      const decoded: any = jwt.decode(token);
+      const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
+      await pool.query(
+        'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
+        [token, expiresAt]
+      );
+    }
+    
+    await logSystemActivity(req.user.id, 'logout', 'User logged out', {}, req);
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('[Auth] Logout failed:', error);
+    res.status(500).json({ error: 'Logout failed' });
+  }
 });
 
 router.get("/google/callback", async (req, res) => {
@@ -372,7 +394,8 @@ router.get("/google/callback", async (req, res) => {
               try {
                 const data = JSON.parse('${safePayload}');
                 const allowedOrigin = ${JSON.stringify(allowedOrigin)};
-                const targetRef = ${JSON.stringify(targetRef)};
+                const targetRefRaw = ${JSON.stringify(targetRef)};
+                const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
                 
                 try {
                   localStorage.setItem('app_token', data.token);
@@ -409,7 +432,7 @@ router.get("/google/callback", async (req, res) => {
                     window.close();
                   } else {
                     const currentOrigin = window.location.origin;
-                    window.location.href = targetRef.startsWith('http') ? targetRef : currentOrigin + (targetRef.startsWith('/') ? '' : '/') + targetRef;
+                    window.location.href = currentOrigin + (targetRef.startsWith('/') ? '' : '/') + targetRef;
                   }
                 }, 1500);
               } catch (err) {
