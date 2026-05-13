@@ -24,7 +24,7 @@ export const RewardsPage: React.FC = () => {
   const [selfieData, setSelfieData] = useState<string | null>(null); // Store base64
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [wallet, setWallet] = useState({ balance: 0, usd_balance: 0 });
+  const [wallet, setWallet] = useState({ points: 0, balance: 0, usd_balance: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [referralCount, setReferralCount] = useState(0);
   
@@ -242,7 +242,7 @@ export const RewardsPage: React.FC = () => {
   };
 
   const withdrawableUSD = Number(wallet.usd_balance || 0).toFixed(2);
-  const estimatedPointsWorth = (Number(wallet.balance) * Number(economySettings.conversion_rate || 0)).toFixed(2);
+  const estimatedPointsWorth = (Number(wallet.points || 0) * Number(economySettings.conversion_rate || 0)).toFixed(2);
   const minWithdrawalUSD = (Number(economySettings.min_withdrawal_cents || 0) / 100).toFixed(2);
 
   return (
@@ -327,7 +327,7 @@ export const RewardsPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center gap-0.5 md:gap-1">
               <div className="flex items-baseline gap-1.5 md:gap-2">
                 <span className="text-sm md:text-xl font-bold text-rose-500">PTS</span>
-                <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">{Math.floor(Number(wallet.balance)).toLocaleString()}</span>
+                <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">{Math.floor(Number(wallet.points || 0)).toLocaleString()}</span>
               </div>
               <span className="text-[10px] md:text-sm text-gray-500">≈ ${estimatedPointsWorth}</span>
             </div>
@@ -731,7 +731,7 @@ export const RewardsPage: React.FC = () => {
                 />
               </div>
               <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2">
-                {t('currentBalancePoints').replace('{points}', Math.floor(wallet.balance).toLocaleString())}
+                {t('currentBalancePoints').replace('{points}', Math.floor(wallet.points || 0).toLocaleString())}
               </p>
             </div>
 
