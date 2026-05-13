@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { sovereignPageTransition, sovereignItemTransition } from '../constants/motions';
 
 export const RewardsPage: React.FC = () => {
-  const { t, theme, dir } = useAppContext();
+  const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings } = useAppContext();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
@@ -25,6 +25,9 @@ export const RewardsPage: React.FC = () => {
   const [selfieData, setSelfieData] = useState<string | null>(null); // Store base64
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [wallet, setWallet] = useState({ balance: 0, usd_balance: 0 });
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [referralCount, setReferralCount] = useState(0);
   
   const startCamera = async () => {
     setIsCapturing(true);
@@ -145,7 +148,7 @@ export const RewardsPage: React.FC = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amountUSD: withdrawAmount,
+          amountUSD: Number(withdrawAmount),
           method: withdrawMethod,
           details: paymentDetails
         })
@@ -177,10 +180,6 @@ export const RewardsPage: React.FC = () => {
     }
   };
   
-  const [wallet, setWallet] = useState({ balance: 0, usd_balance: 0 });
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const { token, user: contextUser, setUser, refreshUser, economySettings } = useAppContext();
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -203,13 +202,22 @@ export const RewardsPage: React.FC = () => {
             setWallet(data);
           }
 
-          // Fetch Transactions
-          const transRes = await fetch('/api/transactions', {
+          // Fetch Transactions - Updated endpoint
+          const transRes = await fetch('/api/wallet/history', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (transRes.ok) {
             const data = await transRes.json();
             setTransactions(data);
+          }
+
+          // Fetch Referral Count
+          const refRes = await fetch('/api/wallet/referral-count', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (refRes.ok) {
+            const data = await refRes.json();
+            setReferralCount(data.count);
           }
         }
       } catch (error) {
@@ -420,7 +428,7 @@ export const RewardsPage: React.FC = () => {
                 </div>
                 <span className="font-bold text-xs md:text-base text-[var(--text-primary)]">{t('totalSuccessfulReferralsUser')}</span>
               </div>
-              <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">0</span>
+              <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{referralCount}</span>
             </div>
           </div>
         </div>
