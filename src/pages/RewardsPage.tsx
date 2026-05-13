@@ -13,7 +13,6 @@ export const RewardsPage: React.FC = () => {
   const [convertAmount, setConvertAmount] = useState('10000');
   
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
-  const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState<'paypal' | 'crypto' | 'bank'>('paypal');
   const [paymentDetails, setPaymentDetails] = useState('');
@@ -55,7 +54,6 @@ export const RewardsPage: React.FC = () => {
         setSelfieData(data);
         setSelfieCaptured(true);
         setIsCapturing(false);
-        // Stop stream
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
       }
@@ -507,7 +505,6 @@ export const RewardsPage: React.FC = () => {
                 </p>
                 <button 
                   onClick={() => {
-                    // Reset KYC status locally to allow re-submission
                     setUser({ ...contextUser, kyc_status: 'none' });
                     setSelfieCaptured(false);
                     setSelfieData(null);
