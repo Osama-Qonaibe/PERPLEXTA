@@ -1,7 +1,7 @@
 import { pool, ledgerPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
@@ -86,18 +86,25 @@ export async function getUserUsage(userId: string | number) {
     SELECT p.id, p.name_en, p.name_ar, p.limits, s.status, s.billing_cycle
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
-    CROSS JOIN LATERAL (
-      SELECT * FROM plans 
-      WHERE id = s.plan_id 
-      OR (s.plan_id IS NULL AND name_en = 'Starter')
-      LIMIT 1
-    ) p
+    LEFT JOIN plans p ON p.id = s.plan_id
     WHERE u.id = $1
     LIMIT 1
   `, [userId]);
 
-  if (planRes.rows.length === 0) throw new Error('Plan not found');
-  const plan = planRes.rows[0];
+  if (planRes.rows.length === 0) throw new Error('User profile not found');
+  
+  let plan = planRes.rows[0];
+
+  // If no active plan via subscription, fallback to Starter plan explicitly
+  if (!plan.id) {
+    const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
+    if (starterRes.rows.length > 0) {
+      plan = { ...plan, ...starterRes.rows[0] };
+    } else {
+      // Emergency fallback if even Starter is missing
+      plan = { ...plan, limits: {} };
+    }
+  }
 
   const dailyUsageRes = await pool.query(`
     SELECT tool_id, usage_count
