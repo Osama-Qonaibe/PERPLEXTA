@@ -75,7 +75,7 @@ router.post("/signup", authLimiter, async (req, res) => {
     await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
     await pool.query(`
       INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
-      VALUES ($1, (SELECT id FROM plans WHERE type = 'free' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
+      VALUES ($1, (SELECT id FROM plans WHERE name_en = 'Starter' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
       ON CONFLICT (user_id) DO NOTHING
     `, [user.id]);
 
@@ -265,7 +265,7 @@ router.get("/google/callback", async (req, res) => {
       await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
       await pool.query(`
         INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
-        VALUES ($1, (SELECT id FROM plans WHERE type = 'free' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
+        VALUES ($1, (SELECT id FROM plans WHERE name_en = 'Starter' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
         ON CONFLICT (user_id) DO NOTHING
       `, [user.id]);
 

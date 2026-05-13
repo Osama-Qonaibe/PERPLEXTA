@@ -83,7 +83,7 @@ export async function getUserUsage(userId: string | number) {
   };
 
   const planRes = await pool.query(`
-    SELECT p.id, p.name_en, p.name_ar, p.limits, s.status, s.billing_cycle
+    SELECT p.id, p.name_en, p.name_ar, p.limits, s.status, s.billing_period
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
     LEFT JOIN plans p ON p.id = s.plan_id
@@ -181,7 +181,7 @@ export async function getUserUsage(userId: string | number) {
       name_ar: plan.name_ar,
       limits: plan.limits,
       status: plan.status || 'Active',
-      billing_period: plan.billing_cycle || 'Monthly'
+      billing_period: plan.billing_period || 'Monthly'
     },
     usage: usageItems
   };
