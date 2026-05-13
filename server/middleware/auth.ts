@@ -37,7 +37,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         return;
       }
 
-      // Check for blacklisted token
       try {
         if (pool) {
           const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
