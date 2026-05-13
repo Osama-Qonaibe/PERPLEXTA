@@ -201,7 +201,7 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
     await logSystemActivity(req.user.id, 'logout', 'User logged out', {}, req);
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
-    console.error('[Auth] Logout failed:', error);
+    console.error('[Auth] Logout failed:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: 'Logout failed' });
   }
 });
