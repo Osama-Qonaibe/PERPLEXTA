@@ -458,9 +458,7 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
           user_name: userMap.get(t.user_id) || 'Unknown User'
         }));
       }
-    } catch (uErr) {
-      console.warn('[Admin] Failed to resolve user names for radar:', uErr);
-    }
+    } catch (uErr) {}
 
     res.json({
       stats: {
@@ -498,9 +496,7 @@ router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
           };
         });
       }
-    } catch (uErr) {
-      console.warn('[Admin] Failed to resolve users for anomalies:', uErr);
-    }
+    } catch (uErr) {}
     
     res.json(anomalies);
   } catch (error) {
@@ -805,9 +801,7 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       const syncResult = await syncProviderModelsInternal(provider.toLowerCase(), finalKey);
       syncedCount = syncResult.count;
       syncedModels = syncResult.models;
-    } catch (syncErr) {
-      console.warn(`[Admin] Initial sync for ${provider} failed, but key was saved.`);
-    }
+    } catch (syncErr) {}
 
     res.json({ success: true, count: syncedCount, models: syncedModels, status });
   } catch (error) {

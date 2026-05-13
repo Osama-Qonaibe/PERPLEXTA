@@ -391,7 +391,7 @@ router.get("/google/callback", async (req, res) => {
                 try {
                    window.close();
                 } catch (e) {
-                   console.error('Manual close failed');
+                   
                 }
               };
               
