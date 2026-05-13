@@ -600,6 +600,15 @@ router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.delete("/security-alerts/all", authenticateAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM security_alerts');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Cleanup failed' });
+  }
+});
+
 router.delete("/security-alerts/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -607,15 +616,6 @@ router.delete("/security-alerts/:id", authenticateAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Delete failed' });
-  }
-});
-
-router.delete("/security-alerts/all", authenticateAdmin, async (req, res) => {
-  try {
-    await pool.query('DELETE FROM security_alerts');
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Cleanup failed' });
   }
 });
 

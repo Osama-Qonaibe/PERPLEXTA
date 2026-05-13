@@ -131,6 +131,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     // Ledger alignment
     await ensureColumn(ledgerPool || pool, 'wallets', 'usd_balance', 'DECIMAL(15, 4)', '0.0000');
+    await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'user_id', 'INTEGER');
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'status', 'VARCHAR(20)', "'success'");
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'metadata', 'JSONB', "'{}'");
     await ensureColumn(ledgerPool || pool, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
@@ -145,18 +146,16 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     
     await ensureColumn(pool, 'system_broadcasts', 'admin_id', 'INTEGER');
     await ensureColumn(pool, 'system_broadcasts', 'broadcast_type', 'VARCHAR(50)', "'system'");
-    await ensureColumn(pool, 'system_broadcasts', 'target_group', 'VARCHAR(50)', "'all'");
-    await ensureColumn(pool, 'system_broadcasts', 'status', 'VARCHAR(20)', "'completed'");
     await ensureColumn(pool, 'system_broadcasts', 'type', 'VARCHAR(50)', "'system'");
+    await ensureColumn(pool, 'system_broadcasts', 'target_group', 'VARCHAR(50)', "'all'");
+    await ensureColumn(pool, 'system_broadcasts', 'target_role', 'VARCHAR(20)', "'all'");
+    await ensureColumn(pool, 'system_broadcasts', 'status', 'VARCHAR(20)', "'completed'");
+    await ensureColumn(pool, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
     
     // System logs alignment
     await ensureColumn(pool, 'system_logs', 'type', 'VARCHAR(50)', "'system'");
     await ensureColumn(pool, 'security_alerts', 'type', 'VARCHAR(50)', "'security'");
     await ensureColumn(pool, 'system_logs', 'details', 'JSONB', "'{}'");
-    await ensureColumn(pool, 'system_broadcasts', 'target_role', 'VARCHAR(20)', "'all'");
-
-    await ensureColumn(pool, 'system_broadcasts', 'target_group', 'VARCHAR(20)', "'all'");
-    await ensureColumn(pool, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
     
     // Financial settings extension
     await ensureColumn(pool, 'system_settings', 'points_per_dollar', 'INTEGER', '100');
@@ -245,9 +244,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )` },
     { name: 'wallets', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS wallets (id SERIAL PRIMARY KEY, user_id INTEGER UNIQUE NOT NULL, balance DECIMAL(15, 4) DEFAULT 0.0000, usd_balance DECIMAL(15, 4) DEFAULT 0.0000, points INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'ledger_transactions', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS ledger_transactions (id SERIAL PRIMARY KEY, wallet_id INTEGER REFERENCES wallets(id), amount DECIMAL(15, 4) NOT NULL, transaction_type VARCHAR(50) NOT NULL, status VARCHAR(20) DEFAULT 'success', description TEXT, reference_id VARCHAR(255), metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
+    { name: 'ledger_transactions', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS ledger_transactions (id SERIAL PRIMARY KEY, user_id INTEGER, wallet_id INTEGER REFERENCES wallets(id), amount DECIMAL(15, 4) NOT NULL, transaction_type VARCHAR(50) NOT NULL, status VARCHAR(20) DEFAULT 'success', description TEXT, reference_id VARCHAR(255), metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'referrals', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS referrals (id SERIAL PRIMARY KEY, referrer_id INTEGER NOT NULL, referred_id INTEGER NOT NULL UNIQUE, bonus_points INTEGER DEFAULT 0, status VARCHAR(20) DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'economy_settings', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS economy_settings (id SERIAL PRIMARY KEY, welcome_bonus_points INTEGER DEFAULT 600, referral_bonus_points INTEGER DEFAULT 1000, min_withdrawal_cents INTEGER DEFAULT 2000, points_per_dollar INTEGER DEFAULT 1000, conversion_rate DECIMAL(10, 4) DEFAULT 0.0010, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'kyc_requests', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS kyc_requests (id SERIAL PRIMARY KEY, user_id INTEGER UNIQUE, full_name VARCHAR(255), selfie_url TEXT, status VARCHAR(20) DEFAULT 'pending', rejection_reason TEXT, submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'withdrawal_requests', pool: targetLedgerPool, query: `CREATE TABLE IF NOT EXISTS withdrawal_requests (id SERIAL PRIMARY KEY, user_id INTEGER, amount_cents INTEGER NOT NULL, method VARCHAR(50) NOT NULL, details TEXT, status VARCHAR(20) DEFAULT 'pending', rejection_reason TEXT, processed_at TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'support_tickets', query: `CREATE TABLE IF NOT EXISTS support_tickets (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject VARCHAR(255) NOT NULL, description TEXT NOT NULL, status VARCHAR(20) DEFAULT 'open', priority VARCHAR(20) DEFAULT 'medium', category VARCHAR(50) DEFAULT 'general', assigned_to INTEGER, last_reply_at TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
@@ -272,8 +270,10 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         site_description_ar TEXT DEFAULT 'المنصة الاحترافية النخبوية لاستخراج المنطق والتحليل التقني عبر المنصات في الوقت الفعلي.', 
         logo_url TEXT, 
         favicon_url TEXT, 
-        seo_description TEXT,
-        keywords TEXT,
+        seo_description_en TEXT,
+        seo_description_ar TEXT,
+        keywords_en TEXT,
+        keywords_ar TEXT,
         google_analytics_id VARCHAR(255),
         stripe_status VARCHAR(20) DEFAULT 'pending',
         stripe_last_verified_at TIMESTAMP,
@@ -281,12 +281,20 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         stripe_publishable_key TEXT,
         stripe_webhook_secret TEXT,
         stripe_live_mode BOOLEAN DEFAULT false,
+        points_per_dollar INTEGER DEFAULT 100,
+        min_payout_usd DECIMAL(10, 2) DEFAULT 10.00,
+        min_deposit_usd DECIMAL(10, 2) DEFAULT 5.00,
+        referral_bonus_percent INTEGER DEFAULT 10,
+        welcome_bonus_points INTEGER DEFAULT 600,
+        referral_bonus_points INTEGER DEFAULT 1000,
+        min_withdrawal_cents INTEGER DEFAULT 2000,
+        conversion_rate DECIMAL(15, 6) DEFAULT 0.001,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )` },
-    { name: 'system_broadcasts', query: `CREATE TABLE IF NOT EXISTS system_broadcasts (id SERIAL PRIMARY KEY, admin_id INTEGER REFERENCES users(id), broadcast_type VARCHAR(50) NOT NULL, target_group VARCHAR(50) NOT NULL, title_en VARCHAR(255), title_ar VARCHAR(255), content_en TEXT, content_ar TEXT, status VARCHAR(20) DEFAULT 'completed', sent_count INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
+    { name: 'system_broadcasts', query: `CREATE TABLE IF NOT EXISTS system_broadcasts (id SERIAL PRIMARY KEY, admin_id INTEGER REFERENCES users(id), broadcast_type VARCHAR(50) NOT NULL, type VARCHAR(50) DEFAULT 'system', target_group VARCHAR(50) NOT NULL, target_role VARCHAR(20) DEFAULT 'all', title_en VARCHAR(255), title_ar VARCHAR(255), content_en TEXT, content_ar TEXT, status VARCHAR(20) DEFAULT 'completed', sent_count INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
     { name: 'user_files', query: `CREATE TABLE IF NOT EXISTS user_files (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, chat_id INTEGER REFERENCES chats(id) ON DELETE SET NULL, file_name VARCHAR(255) NOT NULL, file_type VARCHAR(100), file_size INTEGER, file_url TEXT, file_content TEXT, metadata JSONB DEFAULT '{}', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'security_alerts', query: `CREATE TABLE IF NOT EXISTS security_alerts (id SERIAL PRIMARY KEY, user_id INTEGER, alert_type VARCHAR(50), severity VARCHAR(20), description TEXT, metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
-    { name: 'system_logs', query: `CREATE TABLE IF NOT EXISTS system_logs (id SERIAL PRIMARY KEY, user_id INTEGER, action VARCHAR(100), description TEXT, metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` }
+    { name: 'security_alerts', query: `CREATE TABLE IF NOT EXISTS security_alerts (id SERIAL PRIMARY KEY, user_id INTEGER, alert_type VARCHAR(50), type VARCHAR(50) DEFAULT 'security', severity VARCHAR(20), description TEXT, metadata JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` },
+    { name: 'system_logs', query: `CREATE TABLE IF NOT EXISTS system_logs (id SERIAL PRIMARY KEY, user_id INTEGER, action VARCHAR(100), type VARCHAR(50) DEFAULT 'system', description TEXT, metadata JSONB DEFAULT '{}', details JSONB DEFAULT '{}', ip_address VARCHAR(45), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)` }
   ];
 
   for (const table of schema) {
@@ -296,18 +304,20 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
 
   // INDEX PURGE & SYNC (Professional High-Performance Indexing)
   const indexes = [
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_ai_logs_user_id ON ai_logs(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_user_id ON user_activity_logs(user_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_created_at ON user_activity_logs(created_at)` },
-    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_wallet_id ON ledger_transactions(wallet_id)` },
-    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_type ON ledger_transactions(transaction_type)` },
-    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_status ON ledger_transactions(status)` },
-    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_reference ON ledger_transactions(reference_id)` }
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_ai_logs_user_id ON ai_logs(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_user_id ON user_activity_logs(user_id)` },
+      { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_created_at ON user_activity_logs(created_at)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_user_id ON ledger_transactions(user_id)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_wallets_user_id ON wallets(user_id)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_wallet_id ON ledger_transactions(wallet_id)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_type ON ledger_transactions(transaction_type)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_status ON ledger_transactions(status)` },
+      { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_reference ON ledger_transactions(reference_id)` }
   ];
 
   for (const idx of indexes) {
@@ -329,7 +339,12 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   for (const email of adminEmails) {
     const adminCheck = await targetPool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (adminCheck.rows.length === 0) {
-      const adminHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@Secure2026', 10);
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword) {
+        console.error('[CRITICAL] ADMIN_PASSWORD not set. Admin seeding failed.');
+        continue;
+      }
+      const adminHash = await bcrypt.hash(adminPassword, 10);
       const newAdmin = await targetPool.query("INSERT INTO users (email, name, password_hash, role, status) VALUES ($1, $2, $3, 'admin', 'active') RETURNING id", [email, email === 'qoomre@gmail.com' ? 'Sovereign Owner' : 'Master Admin', adminHash]);
       const adminId = newAdmin.rows[0].id;
       await targetLedgerPool.query("INSERT INTO wallets (user_id, balance) VALUES ($1, 10000) ON CONFLICT (user_id) DO NOTHING", [adminId]);

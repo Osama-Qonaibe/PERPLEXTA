@@ -28,8 +28,8 @@ export async function deductFromWallet(userId: string, amount: number, transacti
     );
 
     await client.query(
-      'INSERT INTO ledger_transactions (wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4)',
-      [wallet.id, -amount, transactionType, description]
+      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
+      [userId, wallet.id, -amount, transactionType, description]
     );
 
     await client.query('COMMIT');
@@ -56,8 +56,8 @@ export async function refundToWallet(userId: string, amount: number, transaction
     );
 
     await client.query(
-      'INSERT INTO ledger_transactions (wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4)',
-      [wallet.id, amount, transactionType, description]
+      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
+      [userId, wallet.id, amount, transactionType, description]
     );
 
     await client.query('COMMIT');
