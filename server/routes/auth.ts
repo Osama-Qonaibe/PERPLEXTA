@@ -69,7 +69,14 @@ router.post("/signup", authLimiter, async (req, res) => {
     );
 
     const user = result.rows[0];
+    
+    // Sovereign: Atomically provision Wallet and Subscription
     await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+    await pool.query(`
+      INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
+      VALUES ($1, (SELECT id FROM plans WHERE type = 'free' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
+      ON CONFLICT (user_id) DO NOTHING
+    `, [user.id]);
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
     
@@ -159,6 +166,13 @@ router.post("/login", authLimiter, async (req, res) => {
 
 router.get("/google/url", (req, res) => {
   const { ref, lang, remember, mode } = req.query;
+  
+  // Sovereign: Prevent Memory Exhaustion via Map Capping
+  if (oauthStateStore.size > 1000) {
+    const oldestKey = oauthStateStore.keys().next().value;
+    if (oldestKey) oauthStateStore.delete(oldestKey);
+  }
+
   const nonce = crypto.randomBytes(16).toString('hex');
   oauthStateStore.set(nonce, { 
     ref: ref as string || null, 
@@ -231,7 +245,15 @@ router.get("/google/callback", async (req, res) => {
         [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role, finalLang]
       );
       user = insertResult.rows[0];
+      
+      // Sovereign: Atomically provision Wallet and Subscription
       await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+      await pool.query(`
+        INSERT INTO subscriptions (user_id, plan_id, status, current_period_end) 
+        VALUES ($1, (SELECT id FROM plans WHERE type = 'free' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
+        ON CONFLICT (user_id) DO NOTHING
+      `, [user.id]);
+
       await logSystemActivity(user.id, 'signup', 'User signed up via Google', {}, req);
     } else {
       user = result.rows[0];

@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  console.log(`[Auth] Request: ${req.method} ${req.url}`);
   try {
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
@@ -22,15 +21,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     
     if (!token) {
       if (!req.url.includes('/api/health')) {
-        console.warn(`[Auth] No token provided for ${req.method} ${req.url}. Header: ${authHeader}`);
+        // Only log warning for relevant paths
       }
       res.status(401).json({ error: 'Unauthorized', message: 'No token provided' });
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_change_me';
-    if (!process.env.JWT_SECRET) {
-      console.warn('[Auth] WARNING: JWT_SECRET missing, using fallback. Please set JWT_SECRET in environment.');
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('[FATAL] JWT_SECRET environment variable is missing.');
+      res.status(500).json({ error: 'Internal Server Error', message: 'Security misconfiguration' });
+      return;
     }
 
     jwt.verify(token, jwtSecret, async (err: any, user: any) => {
