@@ -13,7 +13,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", authenticateToken, async (req: any, res) => {
+router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
     const chat = await createChat(req.user.id, req.body.title);
     res.json(chat);

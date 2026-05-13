@@ -20,9 +20,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
     
     if (!token) {
-      if (!req.url.includes('/api/health')) {
-        // Only log warning for relevant paths
-      }
       res.status(401).json({ error: 'Unauthorized', message: 'No token provided' });
       return;
     }

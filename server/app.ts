@@ -35,7 +35,6 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Request Logger
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     console.log(`[API Request] ${req.method} ${req.path}`);
@@ -43,7 +42,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- STATIC ASSETS ---
 const publicPath = path.join(process.cwd(), 'public');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 
@@ -54,7 +52,6 @@ app.use('/api', globalLimiter);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// Registry for routes (we'll add them one by one)
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import adminRoutes from './routes/admin.js';
@@ -74,7 +71,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/user', userRoutes); // Singular alias
+app.use('/api/user', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -94,12 +91,10 @@ if (process.env.NODE_ENV === "production") {
 
 import { globalErrorHandler } from './middleware/error.js';
 
-// --- API 404 HANDLER ---
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
 });
 
-// --- GLOBAL ERROR HANDLER ---
 app.use(globalErrorHandler);
 
 export { app };

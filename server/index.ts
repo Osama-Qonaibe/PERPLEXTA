@@ -41,9 +41,7 @@ async function startServer() {
     });
   } catch (err) {
     console.error('[Server] Critical Startup Warning (Continuing in Degraded Mode):', err);
-    // process.exit(1); // REMOVED to allow recovery via Admin UI
     
-    // Ensure server still starts if possible
     try {
       const httpServer = createServer(app);
       const ioInstance = initSocket(httpServer);
