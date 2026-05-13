@@ -146,16 +146,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     await ensureColumn(ledgerPool || pool, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
 
-    await (ledgerPool || pool).query(`
-      CREATE TABLE IF NOT EXISTS payout_accounts (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE NOT NULL,
-        type VARCHAR(20),
-        details TEXT, -- Encrypted JSON
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
     await ensureColumn(pool, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
     await ensureColumn(pool, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
     await ensureColumn(pool, 'tool_orchestrator', 'fallback_2_provider', 'VARCHAR(50)');
