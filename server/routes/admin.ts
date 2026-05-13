@@ -550,7 +550,9 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
     if (type === 'financial') {
       await ledgerPool.query(`DELETE FROM ledger_transactions WHERE id = ANY($1)`, [ids]);
     } else {
-      const table = type === 'alert' ? 'security_alerts' : 'system_logs';
+      const validTables = { alert: 'security_alerts', log: 'system_logs' };
+      const table = validTables[type as keyof typeof validTables];
+      if (!table) return res.status(400).json({ error: 'Invalid type' });
       await pool.query(`DELETE FROM ${table} WHERE id = ANY($1)`, [ids]);
     }
     res.json({ success: true, count: ids.length });
