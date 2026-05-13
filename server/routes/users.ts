@@ -1,6 +1,9 @@
 import express from 'express';
+import path from 'path';
 import { authenticateToken } from '../middleware/auth.js';
+import { upload, handleMulterError } from '../middleware/upload.js';
 import { getUserProfile, updateUserProfile, getUserUsage } from '../services/users.js';
+import { pool } from '../db/index.js';
 
 const router = express.Router();
 
@@ -48,6 +51,33 @@ router.put("/profile", authenticateToken, async (req: any, res) => {
       return res.status(503).json({ error: 'System is initializing, please try again shortly.' });
     }
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+router.post("/avatar", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file attached' });
+
+    const { mimetype, size, filename } = req.file;
+
+    if (!mimetype.startsWith('image/')) {
+      return res.status(400).json({ error: 'Only image files are allowed' });
+    }
+
+    const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+    if (size > MAX_AVATAR_SIZE) {
+      return res.status(400).json({ error: 'Image exceeds 5MB limit' });
+    }
+
+    const avatarUrl = `/uploads/${filename}`;
+    await pool.query(
+      'UPDATE users SET avatar = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [avatarUrl, req.user.id]
+    );
+
+    res.json({ url: avatarUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Avatar upload failed' });
   }
 });
 
