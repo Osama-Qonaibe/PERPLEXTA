@@ -17,18 +17,11 @@ export const About: React.FC = () => {
       variants={sovereignPageTransition}
       className="max-w-4xl mx-auto px-6 sm:px-8 pb-12"
     >
-      {/* Sticky Header Section - Elite Standard */}
-      <div className={`sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3 mb-8 transition-all duration-300 ${
-        theme === 'dark' ? 'bg-[#0f0f11]/95' : 'bg-white/95'
-      } backdrop-blur-md border-b ${theme === 'dark' ? 'border-gray-800/40' : 'border-gray-100'}`}>
+      <div className={`sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3 mb-8 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
         <div className="flex items-center gap-3 md:gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className={`w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 ${
-              theme === 'dark' 
-                ? 'bg-gray-800/30 hover:bg-gray-800 text-gray-400 hover:text-emerald-500 border border-gray-800/40' 
-                : 'bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-emerald-600 border border-gray-200'
-            }`}
+            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
           >
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -44,7 +37,7 @@ export const About: React.FC = () => {
         </div>
       </div>
 
-      <div className={`p-8 md:p-12 rounded-[2.5rem] border ${theme === 'dark' ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-200'} shadow-xl`}>
+      <div className={`p-8 md:p-12 rounded-[4px] border ${theme === 'dark' ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-200'} shadow-xl`}>
         <div className="prose dark:prose-invert max-w-none">
           <p>
             {dir === 'rtl' 
