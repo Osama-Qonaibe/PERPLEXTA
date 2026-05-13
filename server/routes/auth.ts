@@ -12,7 +12,6 @@ const router = express.Router();
 
 const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, mode?: string, remember?: boolean, expires: number }>();
 
-// Cleanup stale OAuth states every 60 seconds
 setInterval(() => {
   const now = Date.now();
   oauthStateStore.forEach((v, k) => {
@@ -192,7 +191,6 @@ router.get("/google/callback", async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('No code provided');
 
-    // CSRF verification
     const storedState = oauthStateStore.get(state as string);
     if (!storedState || storedState.expires < Date.now()) {
       return res.status(403).send('Invalid or expired auth session');
@@ -251,7 +249,6 @@ router.get("/google/callback", async (req, res) => {
       user = result.rows[0];
       if (user.status === 'suspended') return res.status(403).send('Account suspended');
       
-      // Update info if provider changed or if we have a fresh language preference
       const updates = [];
       const values = [];
       if (user.provider !== 'google') {
@@ -259,11 +256,10 @@ router.get("/google/callback", async (req, res) => {
         values.push('google', googleUser.picture);
       }
       
-      // Sync language from OAuth state to DB if it's different
       if (storedState.lang && storedState.lang !== user.language) {
         updates.push(`language = $${updates.length + 1}`);
         values.push(storedState.lang);
-        user.language = storedState.lang; // Update local object for token payload
+        user.language = storedState.lang; 
       }
 
       if (updates.length > 0) {
@@ -380,7 +376,6 @@ router.get("/google/callback", async (req, res) => {
                 const allowedOrigin = ${JSON.stringify(allowedOrigin)};
                 const targetRef = ${JSON.stringify(targetRef)};
                 
-                // 1. Storage
                 try {
                   localStorage.setItem('app_token', data.token);
                   localStorage.setItem('app_oauth_user', JSON.stringify(data));
@@ -391,7 +386,6 @@ router.get("/google/callback", async (req, res) => {
                   localStorage.setItem('app_oauth_trigger', Date.now().toString());
                 } catch (e) {}
 
-                // 2. Post Message to Opener
                 let isPopup = ${storedState.mode === 'popup' ? 'true' : 'false'};
                 try {
                   if (!isPopup) {
@@ -407,13 +401,11 @@ router.get("/google/callback", async (req, res) => {
                    }
                 }
                 
-                // 3. Broadcast Channel
                 try {
                   const authChannel = new BroadcastChannel('app_oauth_channel');
                   authChannel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
                 } catch (e) {}
 
-                // Final action
                 setTimeout(() => {
                   if (isPopup) {
                     window.close();

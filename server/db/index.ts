@@ -125,7 +125,7 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
       pool.query('SELECT 1'),
       ledgerPool.query('SELECT 1')
     ]);
-    console.log('[DB] ✅ Sovereinty Pools verified and active.');
+    console.log('[DB] Sovereign Pools verified and active.');
 
   } catch (poolCreationError: any) {
     console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
@@ -150,7 +150,7 @@ export async function synchronizeSovereignPoolsFromRegistry() {
       const defaultLedger = process.env.LEDGER_DATABASE_URL || defaultCore;
       
       if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger) {
-        console.log('[DB] 🔄 No active registry overrides. Reverting Sovereign Pools to environment defaults.');
+        console.log('[DB] No active registry overrides. Reverting Sovereign Pools to environment defaults.');
         await initializeSovereignPools(defaultCore, defaultLedger);
       } else {
         console.log('[DB] No overrides found. Already using environment defaults.');
@@ -200,12 +200,12 @@ export async function synchronizeSovereignPoolsFromRegistry() {
       await testCorePool.query('SELECT 1');
       await testCorePool.end();
     } catch (testErr: any) {
-      console.warn(`[DB] ❌ Registry Core DB connection failed: ${testErr.message}. Falling back to environment.`);
+      console.warn(`[DB] Registry Core DB connection failed: ${testErr.message}. Falling back to environment.`);
       await testCorePool.end().catch(() => {});
-      return; // Keep existing ENV pools
+      return;
     }
 
-    console.log('[DB] ✅ Registry connections verified. Swapping pools...');
+    console.log('[DB] Registry connections verified. Swapping pools...');
     await initializeSovereignPools(coreUrl, ledgerUrl || coreUrl);
     console.log('[DB] Sovereign Pools synchronized with active registry configuration.');
   } catch (syncErr: any) {

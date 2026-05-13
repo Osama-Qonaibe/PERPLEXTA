@@ -28,7 +28,7 @@ export const upload = multer({
     fileSize: 100 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.rtf', '.json', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mp3', '.wav', '.html'];
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.rtf', '.json', '.xls', '.xlsx', '.csv', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mp3', '.wav'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (!allowedExtensions.includes(ext)) {
       return cb(new Error('File type not allowed for security reasons. Please use standard document or media formats.'));

@@ -27,7 +27,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:3000',
+  origin: process.env.APP_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
