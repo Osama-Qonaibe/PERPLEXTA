@@ -743,9 +743,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     `);
   }
 
-  await targetPool.query(`DELETE FROM tool_orchestrator WHERE tool_id IN ('sound_studio', 'maps', 'deep_research')`);
-  await targetPool.query(`DELETE FROM user_usage WHERE tool_id IN ('sound_studio', 'maps', 'deep_research')`);
-
   const toolCheck = await targetPool.query('SELECT count(*) FROM tool_orchestrator');
   if (parseInt(toolCheck.rows[0].count) === 0) {
     await targetPool.query(`
