@@ -100,8 +100,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     await ensureColumn(pool, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
     await ensureColumn(pool, 'api_keys_vault', 'last_reset_date', 'DATE', 'CURRENT_DATE');
 
+    await ensureColumn(ledgerPool || pool, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
     await ensureColumn(ledgerPool || pool, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-    await ensureColumn(ledgerPool || pool, 'wallets', 'usd_balance', 'DECIMAL(15,4)', '0.0000');
 
     await ensureColumn(pool, 'subscriptions', 'stripe_customer_id', 'VARCHAR(255)');
     await ensureColumn(pool, 'subscriptions', 'stripe_subscription_id', 'VARCHAR(255)');
@@ -307,7 +307,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         id SERIAL PRIMARY KEY,
         user_id INTEGER UNIQUE NOT NULL,
         balance DECIMAL(15,4) DEFAULT 0.0000,
-        usd_balance DECIMAL(15,4) DEFAULT 0.0000,
         points INTEGER DEFAULT 0,
         referral_activated BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

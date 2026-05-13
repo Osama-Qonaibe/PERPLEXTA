@@ -77,6 +77,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         userPayload.role = userCheck.rows[0].role;
       } catch (dbErr) {
         console.error('[Security] Failed to verify user status:', dbErr);
+        res.status(503).json({ error: 'Service temporarily unavailable' });
+        return;
       }
 
       (req as any).user = userPayload;

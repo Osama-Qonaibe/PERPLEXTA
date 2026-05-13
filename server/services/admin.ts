@@ -165,9 +165,9 @@ export async function getAdminStats() {
     users: parseInt(userCount.rows[0].count),
     activeUsersToday: parseInt(activeToday.rows[0].count),
     chats: parseInt(chatCount.rows[0].count),
-    aiGenerations: parseInt(msgCount.rows[0].count), // Mapping messages to AI generations for simplicity or logic refinement
+    aiGenerations: parseInt(msgCount.rows[0].count),
     activeSubscriptions: parseInt(activeSubCount.rows[0].count),
-    monthlyRevenue: parseFloat(totalRev.rows[0].total || 0), // Mapping to monthly revenue label
+    monthlyRevenue: parseFloat(totalRev.rows[0].total || 0),
     dailyVolume: parseFloat(dailyVolume.rows[0].total || 0),
     systemHealth: 'optimal',
     uptime: process.uptime()
@@ -180,7 +180,6 @@ export async function getServerHealth() {
   const cpus = os.cpus();
   const memory = process.memoryUsage();
   
-  // Basic CPU load calculation (1 min average)
   const load = os.loadavg();
   const cpuCount = cpus.length;
   const cpuLoad = Math.min(100, Math.round((load[0] / cpuCount) * 100));
