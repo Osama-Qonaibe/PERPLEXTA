@@ -4,6 +4,8 @@ import { encrypt, decrypt } from "../utils/crypto.js";
 
 export let pool: any;
 export let ledgerPool: any;
+let currentCoreUrl: string = '';
+let currentLedgerUrl: string = '';
 
 function validateDatabaseUrl(url: string, name: string) {
   if (!url) {
@@ -40,7 +42,7 @@ export function createInternalPool(connectionString: string, max = 1) {
   });
 }
 
-export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
+export async function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
   const redactedUrl = (url: string) => {
     try {
       const u = new URL(url);
@@ -87,6 +89,9 @@ export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
     ? { rejectUnauthorized: false }
     : undefined;
 
+  currentCoreUrl = coreUrl;
+  currentLedgerUrl = finalLedgerUrl;
+
   try {
     pool = new Pool({
       connectionString: coreUrl,
@@ -114,6 +119,15 @@ export function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
     ledgerPool.on('error', (err: any) => {
       console.error('[DB] Unexpected error on idle ledger client:', err.message);
     });
+
+    // Test connections immediately
+    console.log('[DB] Verifying connectivity...');
+    await Promise.all([
+      pool.query('SELECT 1'),
+      ledgerPool.query('SELECT 1')
+    ]);
+    console.log('[DB] ✅ Sovereinty Pools verified and active.');
+
   } catch (poolCreationError: any) {
     console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
     if (process.env.NODE_ENV === 'production') {
@@ -132,7 +146,16 @@ export async function synchronizeSovereignPoolsFromRegistry() {
     const result = await pool.query("SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core', 'ledger')");
     
     if (result.rows.length === 0) {
-      console.log('[DB] No active overrides found in registry. Using environment defaults.');
+      console.log('[DB] No active overrides found in registry. Checking if revert to ENV is needed...');
+      const defaultCore = process.env.DATABASE_URL || '';
+      const defaultLedger = process.env.LEDGER_DATABASE_URL || defaultCore;
+      
+      if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger) {
+        console.log('[DB] 🔄 No active registry overrides. Reverting Sovereign Pools to environment defaults.');
+        await initializeSovereignPools(defaultCore, defaultLedger);
+      } else {
+        console.log('[DB] No overrides found. Already using environment defaults.');
+      }
       return;
     }
 
@@ -141,12 +164,23 @@ export async function synchronizeSovereignPoolsFromRegistry() {
 
     const getUrlFromReg = (reg: any) => {
       if (!reg) return null;
-      if (reg.connection_string) return decrypt(reg.connection_string);
+      if (reg.connection_string) {
+        try {
+          return decrypt(reg.connection_string);
+        } catch (e) {
+          console.error('[DB] Failed to decrypt connection string for', reg.id);
+          return null;
+        }
+      }
       if (reg.host) {
         const u = encodeURIComponent(reg.username || '');
         const p = reg.password ? encodeURIComponent(decrypt(reg.password)) : '';
         const port = reg.port || '5432';
-        return `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
+        let url = `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
+        if (reg.ssl_mode && reg.ssl_mode !== 'disable') {
+          url += `?sslmode=${reg.ssl_mode}`;
+        }
+        return url;
       }
       return null;
     };
@@ -156,7 +190,12 @@ export async function synchronizeSovereignPoolsFromRegistry() {
     
     if (!coreUrl) return;
 
-    // PRE-FLIGHT CHECK: Don't flip the global pool if the new one is invalid
+    if (coreUrl === currentCoreUrl && ledgerUrl === currentLedgerUrl) {
+      console.log('[DB] Synchronized: In-memory pools already match active configuration.');
+      return;
+    }
+
+    // PRE-FLIGHT CHECK
     console.log('[DB] Verifying registry connection strings...');
     const testCorePool = createInternalPool(coreUrl);
     try {

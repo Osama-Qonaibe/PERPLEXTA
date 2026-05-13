@@ -2,21 +2,77 @@ import { pool } from '../db/index.js';
 
 export async function checkUserQuota(userId: number, toolId: string) {
   try {
+    if (!pool) return { allowed: true };
+
+    // Get user subscription or fall back to default plan
+    // Also get daily and monthly usage counts
     const res = await pool.query(`
-      SELECT uu.usage_count, (p.limits->>$2) as limit_val
-      FROM user_usage uu
-      JOIN subscriptions s ON uu.user_id = s.user_id
-      JOIN plans p ON s.plan_id = p.id
-      WHERE uu.user_id = $1 AND uu.tool_id = $2 AND uu.usage_date = CURRENT_DATE
+      WITH user_info AS (
+        SELECT 
+          u.id as user_id,
+          p.limits
+        FROM users u
+        LEFT JOIN subscriptions s ON u.id = s.user_id
+        LEFT JOIN plans p ON (s.plan_id = p.id OR (s.plan_id IS NULL AND p.name_en = 'Starter'))
+        WHERE u.id = $1
+      ),
+      daily_usage AS (
+        SELECT COALESCE(usage_count, 0) as count
+        FROM user_usage
+        WHERE user_id = $1 AND tool_id = $2 AND usage_date = CURRENT_DATE
+      ),
+      monthly_usage AS (
+        SELECT SUM(COALESCE(usage_count, 0)) as count
+        FROM user_usage
+        WHERE user_id = $1 AND tool_id = $2 AND usage_date >= date_trunc('month', CURRENT_DATE)
+      )
+      SELECT 
+        ui.limits,
+        (SELECT count FROM daily_usage) as daily_count,
+        (SELECT count FROM monthly_usage) as monthly_count
+      FROM user_info ui
     `, [userId, toolId]);
 
     if (res.rows.length === 0) return { allowed: true };
     
-    const { usage_count, limit_val } = res.rows[0];
-    if (limit_val === 'unlimited') return { allowed: true };
+    const { limits, daily_count, monthly_count } = res.rows[0];
+    const currentDaily = parseInt(daily_count || '0');
+    const currentMonthly = parseInt(monthly_count || '0');
     
-    const limit = parseInt(limit_val) || 0;
-    return { allowed: usage_count < limit };
+    if (!limits) return { allowed: true };
+    
+    const toolLimit = limits[toolId];
+    if (!toolLimit || toolLimit === 'unlimited') return { allowed: true };
+    
+    // Handle daily limit
+    let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
+    if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
+      const dailyLimit = parseInt(dailyLimitVal);
+      if (!isNaN(dailyLimit) && currentDaily >= dailyLimit) {
+        return { 
+          allowed: false, 
+          limit: dailyLimit, 
+          currentUsage: currentDaily,
+          period: 'daily'
+        };
+      }
+    }
+
+    // Handle monthly limit
+    let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
+    if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
+      const monthlyLimit = parseInt(monthlyLimitVal);
+      if (!isNaN(monthlyLimit) && currentMonthly >= monthlyLimit) {
+        return { 
+          allowed: false, 
+          limit: monthlyLimit, 
+          currentUsage: currentMonthly,
+          period: 'monthly'
+        };
+      }
+    }
+
+    return { allowed: true, currentDaily, currentMonthly };
   } catch (error) {
     console.error('[Quota] Check failed:', error);
     return { allowed: true };

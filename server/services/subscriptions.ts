@@ -1,0 +1,79 @@
+import { pool } from '../db/index.js';
+import { deductFromWallet, refundToWallet } from './wallet.js';
+import { createNotification } from './notifications.js';
+import { io } from '../config/socket.js';
+
+export async function purchaseSubscription(userId: string, planId: string, billingCycle: 'monthly' | 'annual') {
+  if (!pool) throw new Error('Database initializing');
+
+  // 1. Get plan details
+  const planRes = await pool.query('SELECT * FROM plans WHERE id = $1 AND is_active = true', [planId]);
+  if (planRes.rows.length === 0) throw new Error('Plan not found or inactive');
+  const plan = planRes.rows[0];
+
+  // 2. Determine price
+  const price = billingCycle === 'annual' ? Number(plan.annual_price) : Number(plan.monthly_price);
+  
+  // 3. Deduct from wallet
+  try {
+    await deductFromWallet(userId, price, 'subscription_payment', `Payment for ${plan.name_en} (${billingCycle})`);
+  } catch (err: any) {
+    if (err.message === 'Insufficient balance') throw err;
+    throw new Error('Failed to process payment');
+  }
+
+  // 4. Update subscription (Core DB)
+  try {
+    const cycleDays = billingCycle === 'annual' ? 365 : 30;
+    const periodEnd = new Date();
+    periodEnd.setDate(periodEnd.getDate() + cycleDays);
+
+    await pool.query(`
+      INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end)
+      VALUES ($1, $2, 'active', $3, $4)
+      ON CONFLICT (user_id) DO UPDATE SET
+        plan_id = EXCLUDED.plan_id,
+        status = 'active',
+        billing_period = EXCLUDED.billing_period,
+        current_period_end = EXCLUDED.current_period_end,
+        updated_at = CURRENT_TIMESTAMP
+    `, [userId, planId, billingCycle, periodEnd]);
+
+    // 5. Notify user
+    await createNotification(
+      userId, 
+      'success',
+      'Subscription Activated',
+      'تم تفعيل الاشتراك',
+      `Your ${plan.name_en} subscription is now active.`,
+      `اشتراكك في باقة ${plan.name_ar} فعال الآن.`
+    );
+    
+    // Emit real-time update
+    if (io) {
+      io.to(`user_${userId}`).emit('user_profile_updated');
+    }
+
+    return { success: true, message: 'Subscription activated' };
+  } catch (error) {
+    // 6. COMPENSATION: Refund if DB update fails
+    console.error('[SubscriptionService] Core DB update failed, attempting refund:', error);
+    try {
+      await refundToWallet(userId, price, 'subscription_refund', `Refund due to system error during ${plan.name_en} activation`);
+    } catch (refundErr) {
+      console.error('[SubscriptionService] CRITICAL: Refund failed after Core DB error:', refundErr);
+    }
+    throw new Error('Failed to update subscription. Payment was refunded.');
+  }
+}
+
+export async function getSubscriptionStatus(userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query(`
+    SELECT s.*, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.limits, p.color as plan_color
+    FROM subscriptions s
+    JOIN plans p ON s.plan_id = p.id
+    WHERE s.user_id = $1
+  `, [userId]);
+  return result.rows[0] || null;
+}

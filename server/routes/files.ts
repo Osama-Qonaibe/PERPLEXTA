@@ -1,15 +1,12 @@
 import express from 'express';
-import fs from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
-import { pool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
 import { extractTextFromFile } from '../services/extractor.js';
 import { logSystemActivity } from '../services/notifications.js';
+import { getUserFiles, saveFileMetadata, getUserStorageUsage } from '../services/files.js';
+import { pool } from '../db/index.js';
 
 const router = express.Router();
-const uploadDir = path.join(process.cwd(), 'uploads');
 
 router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res) => {
   try {
@@ -17,6 +14,37 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
     const userId = req.user.id;
     const { originalname, filename, path: filePath, mimetype, size } = req.file;
+
+    // --- Sovereign Storage Quota Enforcement ---
+    const [subRes, currentUsage] = await Promise.all([
+      pool.query(`
+        SELECT p.limits 
+        FROM users u
+        LEFT JOIN subscriptions s ON u.id = s.user_id
+        LEFT JOIN plans p ON (s.plan_id = p.id OR (s.plan_id IS NULL AND p.name_en = 'Starter'))
+        WHERE u.id = $1
+      `, [userId]),
+      getUserStorageUsage(userId)
+    ]);
+
+    const limits = subRes.rows[0]?.limits || {};
+    const storageLimit = limits['storage_mb'];
+    
+    // storage_mb can be a number or {"daily": ..., "monthly": ...} 
+    // In our case we use 'monthly' field from the UI as the TOTAL quota in MB
+    let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
+    
+    if (limitMb && limitMb !== 'unlimited') {
+      const limitBytes = parseInt(limitMb) * 1024 * 1024;
+      if (currentUsage + size > limitBytes) {
+        return res.status(402).json({ 
+          error: 'Storage quota exceeded', 
+          message_ar: 'تجاوزت سعة التخزين المسموح بها',
+          limit_mb: limitMb 
+        });
+      }
+    }
+    // --------------------------------------------
 
     let fileType = 'other';
     if (mimetype.startsWith('image/')) fileType = 'image';
@@ -26,17 +54,21 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     else if (mimetype.startsWith('audio/')) fileType = 'audio';
 
     const extractedText = await extractTextFromFile(filePath, mimetype, originalname);
-    const result = await pool.query(
-      `INSERT INTO user_files (user_id, file_name, file_url, file_size, mime_type, file_type, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [userId, originalname, filename, size, mimetype, fileType, JSON.stringify({ 
+    
+    const file = await saveFileMetadata(userId, {
+      file_name: originalname,
+      file_url: filename,
+      file_size: size,
+      mime_type: mimetype,
+      file_type: fileType,
+      metadata: { 
         extractedText: extractedText.substring(0, 5000), 
         isProcessed: extractedText.length > 0
-      })]
-    );
+      }
+    });
 
-    res.status(201).json({ success: true, file: result.rows[0] });
-    await logSystemActivity(userId, 'file_upload', `Uploaded file: ${originalname}`, { fileId: result.rows[0].id }, req);
+    res.status(201).json({ success: true, file });
+    await logSystemActivity(userId, 'file_upload', `Uploaded file: ${originalname}`, { fileId: file.id }, req);
   } catch (error) {
     res.status(500).json({ error: 'Upload failed' });
   }
@@ -44,8 +76,8 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
 router.get("/", authenticateToken, async (req: any, res) => {
   try {
-    const result = await pool.query('SELECT * FROM user_files WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
-    res.json(result.rows);
+    const files = await getUserFiles(req.user.id);
+    res.json(files);
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }

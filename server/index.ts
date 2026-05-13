@@ -40,8 +40,22 @@ async function startServer() {
       console.log(`[Server] 🚀 Sovereign Engine active on port ${PORT}`);
     });
   } catch (err) {
-    console.error('[Server] FATAL Startup Error:', err);
-    process.exit(1);
+    console.error('[Server] Critical Startup Warning (Continuing in Degraded Mode):', err);
+    // process.exit(1); // REMOVED to allow recovery via Admin UI
+    
+    // Ensure server still starts if possible
+    try {
+      const httpServer = createServer(app);
+      const ioInstance = initSocket(httpServer);
+      setIo(ioInstance);
+      initCronJobs();
+      httpServer.listen(PORT, '0.0.0.0', () => {
+        console.log(`[Server] 🚀 Sovereign Engine active (DEGRADED MODE) on port ${PORT}`);
+      });
+    } catch (innerErr) {
+      console.error('[Server] FATAL: Could not even start in Degraded Mode:', innerErr);
+      process.exit(1);
+    }
   }
 }
 

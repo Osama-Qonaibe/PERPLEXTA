@@ -2,7 +2,7 @@ import express from 'express';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { decrypt } from '../utils/crypto.js';
-import { callAIProvider } from './ai.js';
+import { callAIProvider, getProviderKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { extractTextFromFile } from './extractor.js';
@@ -14,29 +14,102 @@ import { CORE_PROTOCOL } from '../config/protocol.js';
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, model_id, chat_id, file_data } = reqBody;
-  const toolIdStr = tool_id as string;
+  let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   
   if (!pool) throw new Error('System still initializing. Please wait.');
   
-  const [routeResult, quota, chatRes] = await Promise.all([
+  const [routeResult, quota, chatRes, userRes, vaultCheck] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
     checkUserQuota(userId, toolIdStr),
-    chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] })
+    chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
+    pool.query('SELECT language FROM users WHERE id = $1', [userId]),
+    pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true')
   ]);
+
+  // Sovereign Rule: Reject if no active AI providers are configured in the Vault
+  if (parseInt(vaultCheck.rows[0].count) === 0) {
+    throw new Error(JSON.stringify({
+      error: "The intelligence core is currently undergoing a scheduled synchronization. Operations will resume momentarily.",
+      error_ar: "نظام الذكاء الاصطناعي يخضع حالياً لمزامنة مبرمجة. ستستأنف العمليات خلال لحظات.",
+      type: "SYSTEM_INACTIVE"
+    }));
+  }
   
-  if (!quota.allowed) throw new Error('Quota exceeded');
-  if (routeResult.rows.length === 0) throw new Error('Tool disabled or unconfigured');
-  
+  if (routeResult.rows.length === 0 || !routeResult.rows[0].primary_provider || !routeResult.rows[0].primary_model) {
+     await logSecurityAlert(userId, 'UNCONFIGURED_TOOL_ACCESS', 'medium', `User attempted to access tool "${toolIdStr}" but it is not yet configured or activated by the Admin.`, { toolId: toolIdStr });
+     throw new Error(JSON.stringify({
+        error: "This specialized service is temporarily unavailable for optimization. Our engineers have been notified.",
+        error_ar: "هذه الخدمة المتخصصة غير متاحة مؤقتاً لأغراض التحسين. تم إخطار مهندسينا بالفعل.",
+        type: "SYSTEM_INACTIVE"
+     }));
+  }
+
   const route = routeResult.rows[0];
-  const appName = getAppName('en');
+  
+  if (!quota.allowed) {
+    const periodStrEn = quota.period === 'daily' ? 'Daily' : 'Monthly';
+    const periodStrAr = quota.period === 'daily' ? 'يومي' : 'شهري';
+    
+    const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Unlock limitless intelligence by upgrading your plan or referring a friend to earn points.`;
+    const msgAr = `تتطلب هذه العملية عضوية ممتازة: لقد وصلت إلى الحد ال${periodStrAr} المسموح به لهذه الأداة. استمتع بذكاء غير محدود عبر ترقية خطتك أو دعوة صديق للحصول على نقاط مكافأة.`;
+    
+    // Forensic Logging for Quota Violation attempts
+    await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quota.period} quota (${quota.currentUsage}/${quota.limit})`, { toolIdStr, quota });
+
+    throw new Error(JSON.stringify({ 
+      error: msgEn, 
+      error_ar: msgAr, 
+      type: 'QUOTA_EXCEEDED',
+      limit: quota.limit, 
+      current: quota.currentUsage, 
+      period: quota.period,
+      cta: {
+        upgrade: true,
+        referral: true
+      }
+    }));
+  }
+  
+  const userLang = userRes.rows[0]?.language || 'ar';
+  const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
-  const finalSystemPrompt = protocol + (system_prompt || '');
+  // Intelligence Ingestion (Search & Memory)
+  if (toolIdStr === 'sovereign_search') {
+    try {
+      const searchResults = await performSovereignSearch(prompt);
+      if (searchResults && searchResults.length > 0) {
+        const searchContext = searchResults.map(r => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
+        prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
+      }
+    } catch (searchErr) {
+      console.warn('[Orchestrator] Search ingestion failed:', searchErr);
+    }
+  }
+
+  if (toolIdStr === 'sovereign_memory') {
+    try {
+      const uMemoryRes = await pool.query('SELECT memory FROM users WHERE id = $1', [userId]);
+      const memory = uMemoryRes.rows[0]?.memory;
+      if (memory) {
+        prompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${prompt}`;
+      }
+    } catch (memErr) {
+      console.warn('[Orchestrator] Memory ingestion failed:', memErr);
+    }
+  }
+
+  const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
+  const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONVERSATION CONTEXT SUMMARY:\n${chatRes.rows[0].context_summary}\n` : '';
+  
+  const finalSystemPrompt = protocol + contextSummary + "\nTECHNICAL_DIRECTIVE:\n" + (taskDesc || '') + "\n" + (system_prompt || '');
   
   const modelsToTry = [
     { provider: route.primary_provider, model: route.primary_model },
-    { provider: route.fallback1_provider, model: route.fallback1_model }
+    { provider: route.fallback_1_provider, model: route.fallback_1_model },
+    { provider: route.fallback_2_provider, model: route.fallback_2_model },
+    { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
   let generatedText = '';
@@ -44,27 +117,55 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   
   for (const target of modelsToTry) {
     try {
-      const keyRes = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [target.provider.toLowerCase()]);
-      if (keyRes.rows.length === 0) continue;
+      // Zero-Latency Key Retrieval (0.001ms cache hit)
+      const providerId = target.provider.toLowerCase();
+      const apiKey = await getProviderKey(providerId);
+      if (!apiKey) {
+        console.warn(`[Orchestrator] Key missing or inactive for ${providerId}`);
+        continue;
+      }
+
+      // Budget check (Still needed from DB for accuracy, but we can optimize later)
+      const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
+      if (budgetRes.rows.length === 0 || !budgetRes.rows[0].is_active) continue;
       
-      const apiKey = decrypt(keyRes.rows[0].encrypted_key);
+      const vault = budgetRes.rows[0];
+      const dailyBudget = parseFloat(vault.daily_budget || '0');
+      const usedToday = parseFloat(vault.used_today || '0');
+
+      // If budget is set and exceeded, skip this provider (it will trigger fallback)
+      if (dailyBudget > 0 && usedToday >= dailyBudget) {
+        console.warn(`[Orchestrator] Budget exceeded for ${target.provider}. Falling back...`);
+        await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
+        continue;
+      }
+      
       generatedText = await callAIProvider(target.provider, target.model, apiKey, prompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
       successfulModel = target;
+
+      // Increment provider usage (approximating cost based on tool cost / 100 as a rough USD proxy if points are 100=$1)
+      const estimatedCost = (route.cost_per_usage || 0) / 1000; // Small increment for budget tracking
+      await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+      
       break;
     } catch (e) {
       console.warn(`[Orchestrator] Fallback triggered due to error: ${e}`);
     }
   }
 
-  if (!generatedText) throw new Error('Generation failed across all models');
+  if (!generatedText) {
+    await logSecurityAlert(userId, 'ORCHESTRATION_FAILURE', 'high', `System failed to generate response across all configured models for tool "${toolIdStr}".`, { toolIdStr, modelsTried: modelsToTry });
+    throw new Error('Intelligence Generation failed across all configured models. Please check your AI API keys and credits in the Admin Dashboard.');
+  }
 
   await incrementUserUsage(userId, toolIdStr);
   
-  return { 
-    result: generatedText, 
-    provider: successfulModel?.provider, 
-    model: successfulModel?.model 
-  };
+  // Log successful high-stakes execution
+  if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
+     await logSystemActivity(userId, 'SOVEREIGN_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
+  }
+
+  return { result: generatedText };
 };
 
 export const generateIntelligentContext = async (userId: number, chatId: number, lastTurn: any) => {

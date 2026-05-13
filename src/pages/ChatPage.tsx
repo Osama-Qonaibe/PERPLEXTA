@@ -1,7 +1,7 @@
 import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink } from 'lucide-react';
+import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import Markdown from 'react-markdown';
@@ -172,6 +172,9 @@ interface Message {
   tool?: string;
   feedback?: number;
   is_pinned?: boolean;
+  is_quota_error?: boolean;
+  is_system_inactive?: boolean;
+  quota_data?: any;
   thinking_steps?: { step: string; status: 'completed' | 'processing' | 'pending' }[];
   citations?: { title: string; url: string; index: number }[];
   follow_ups?: string[];
@@ -447,7 +450,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               <div className="markdown-body prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:mb-4 prose-headings:mt-8">
                 {isMusicSection ? (
                   <div className="flex flex-col items-center gap-8">
-                    {/* Video-like Exhibition */}
+                    {/* Visual Exhibition */}
                     <div className="relative w-full max-w-3xl aspect-video rounded-3xl overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
                       {coverImageUrl ? (
                         <img 
@@ -565,11 +568,146 @@ const stripProtocolMarkers = (text: string) => {
     .trim();
 };
 
+export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr' }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`mt-4 p-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
+  >
+    <div className="absolute top-0 right-0 p-4 opacity-5">
+      <Settings size={64} className="text-emerald-500" />
+    </div>
+    
+    <div className="flex items-start gap-4 relative z-10">
+      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <Settings size={24} className="animate-spin-slow" />
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 font-sans shadow-sm">
+            {dir === 'rtl' ? 'تحديث الأنظمة' : 'System Excellence Protocol'}
+          </span>
+        </div>
+        <p className="text-[15px] font-medium text-gray-800 dark:text-gray-200 leading-relaxed font-sans">
+          {dir === 'rtl' ? data.error_ar : data.error}
+        </p>
+        <p className="text-[11px] text-gray-500 mt-2 font-sans opacity-80">
+          {dir === 'rtl' 
+            ? 'نعمل حالياً على تعزيز كفاءة هذا الموديل لضمان تقديم أعلى مستويات التحليل التقني.' 
+            : 'We are currently enhancing this model\'s efficiency to ensure the highest standards of technical analysis.'}
+        </p>
+      </div>
+    </div>
+  </motion.div>
+);
+
+export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
+  const [copied, setCopied] = useState(false);
+  const referralLink = `${window.location.origin}/?ref=${user?.id || 'elite'}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Sovereign Intelligence',
+          text: dir === 'rtl' ? 'انضم إلي في سوفرين واستخدم الذكاء الاصطناعي الأقوى.' : 'Join me on Sovereign and use the most powerful AI.',
+          url: referralLink,
+        });
+      } catch (err) {
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`mt-4 p-5 rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
+    >
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <Sparkles size={48} className="text-emerald-500" />
+      </div>
+      
+      <div className="flex items-start gap-4 relative z-10">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <Zap size={24} className="animate-pulse" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Premium Upgrade Required</span>
+          </div>
+          <p className="text-[14px] font-bold text-[var(--text-primary)] leading-relaxed mb-1">
+            {dir === 'rtl' ? data.error_ar : data.error}
+          </p>
+          <div className="flex items-center gap-4 mt-3">
+             <div className="flex flex-col">
+               <span className="text-[9px] font-black uppercase text-gray-500 mb-0.5 tracking-tighter">{dir === 'rtl' ? 'الحد المتاح' : 'Available Limit'}</span>
+               <span className="text-xs font-black text-emerald-500">{data.limit}</span>
+             </div>
+             <div className="w-px h-6 bg-gray-200 dark:bg-gray-800" />
+             <div className="flex flex-col">
+               <span className="text-[9px] font-black uppercase text-gray-500 mb-0.5 tracking-tighter">{dir === 'rtl' ? 'المستخدم حالياً' : 'Currently Used'}</span>
+               <span className="text-xs font-black text-gray-900 dark:text-white">{data.current}</span>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Referral Link Area */}
+      <div className="relative z-10 bg-[var(--bg-main)]/50 border border-emerald-500/10 rounded-2xl p-3 flex items-center gap-3">
+        <div className="flex-1 truncate text-[10px] font-mono text-gray-500 dark:text-gray-400">
+          {referralLink}
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleCopy}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-colors"
+            title="Copy Link"
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+          </button>
+          <button 
+            onClick={handleShare}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
+            title="Share"
+          >
+            <Share2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mt-1 relative z-10">
+        <button 
+          onClick={() => navigate('/subscriptions')}
+          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+        >
+          {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
+        </button>
+        <button 
+          onClick={() => navigate('/rewards')}
+          className="flex-1 bg-white dark:bg-gray-900 border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all hover:translate-y-[-2px] active:translate-y-0"
+        >
+          {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
 export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
     installApp, isInstalling, siteSettings, setIsOperationPending, isAuthReady,
-    refreshUser, balanceUSD, economySettings 
+    refreshUser, balanceUSD, economySettings, triggerMemoryNotification
   } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
@@ -642,9 +780,6 @@ export const ChatPage: React.FC = () => {
       document.title = dir === 'rtl' ? (siteSettings?.siteNameAr || 'محادثة السيادة') : (siteSettings?.siteName || 'Sovereign Chat');
     }
   }, [messages, siteSettings, dir]);
-  const [showMemoryNotification, setShowMemoryNotification] = useState(false);
-  const [memoryNotificationType, setMemoryNotificationType] = useState<'success' | 'warning' | 'cleanup' | 'optimization' | 'startup'>('success');
-  const [memoryCustomDesc, setMemoryCustomDesc] = useState<string | undefined>();
   const [showChatLimitWarning, setShowChatLimitWarning] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -1104,8 +1239,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     // Sovereign Memory Protocol: Initial Startup notification
     const timer = setTimeout(() => {
-      setMemoryNotificationType('startup');
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('startup');
     }, 1500); // Slight delay for premium feel
     return () => clearTimeout(timer);
   }, []);
@@ -1113,8 +1247,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     // Notify on tool selection change (excluding default chat)
     if (selectedTool !== 'chat') {
-       setMemoryNotificationType('startup');
-       setShowMemoryNotification(true);
+       triggerMemoryNotification('startup');
     }
   }, [selectedTool]);
 
@@ -1134,8 +1267,7 @@ export const ChatPage: React.FC = () => {
       setChatId(null);
       localStorage.removeItem('last_chat_id');
       // Trigger Sovereign Memory Startup for new chat
-      setMemoryNotificationType('startup');
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('startup');
     }
   }, [routeChatId, token, isAuthReady]);
 
@@ -1275,19 +1407,15 @@ export const ChatPage: React.FC = () => {
     };
 
     const onMemoryExtracted = (data: any) => {
-      setMemoryNotificationType('success');
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('success');
     };
 
     const onMemoryWarning = (data: any) => {
-      setMemoryNotificationType('warning');
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('warning');
     };
 
     const onMemoryCleanup = (data: any) => {
-      setMemoryNotificationType('cleanup');
-      setMemoryCustomDesc(undefined);
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('cleanup');
     };
 
     const onMemoryConsolidation = (data: any) => {
@@ -1296,22 +1424,52 @@ export const ChatPage: React.FC = () => {
         ? `بروتوكول التحسين: تم دمج ${consolidated} سجلات قديمة في ${result} حقائق جوهرية لتحرير المساحة.`
         : `Optimization Protocol: Consolidated ${consolidated} old records into ${result} core facts to free up space.`;
       
-      setMemoryNotificationType('cleanup');
-      setMemoryCustomDesc(desc);
-      setShowMemoryNotification(true);
+      triggerMemoryNotification('cleanup', desc);
     };
 
     const onChatError = (data: any) => {
+      let errorMessage = '';
+      let isQuota = false;
+      let isInactive = false;
+      let quotaData = null;
+
+      try {
+        // Try parsing JSON error (e.g. quota details)
+        const parsed = JSON.parse(data.message);
+        errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
+        if (parsed.type === 'QUOTA_EXCEEDED') {
+          isQuota = true;
+          quotaData = parsed;
+        } else if (parsed.type === 'SYSTEM_INACTIVE') {
+          isInactive = true;
+          quotaData = parsed;
+        }
+      } catch (e) {
+        // Fallback to plain message
+        errorMessage = dir === 'rtl' ? `حدث خطأ: ${data.message}` : `Error: ${data.message}`;
+      }
+
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
-        const errorMessage = dir === 'rtl' ? `حدث خطأ: ${data.message}` : `Error: ${data.message}`;
         
         if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === '') {
-          newMessages[newMessages.length - 1] = { ...lastMessage, content: errorMessage };
+          newMessages[newMessages.length - 1] = { 
+            ...lastMessage, 
+            content: errorMessage,
+            is_quota_error: isQuota,
+            is_system_inactive: isInactive,
+            quota_data: quotaData
+          };
           return newMessages;
         }
-        return [...prev, { role: 'assistant', content: errorMessage }];
+        return [...prev, { 
+          role: 'assistant', 
+          content: errorMessage,
+          is_quota_error: isQuota,
+          is_system_inactive: isInactive,
+          quota_data: quotaData
+        }];
       });
       setIsGenerating(false);
     };
@@ -1877,7 +2035,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const advancedTools = [
-    { id: 'chat', label: t('chat'), icon: <LayoutGrid size={18} />, isNew: false },
+    { id: 'chat', label: t('chat'), icon: <MessageSquare size={18} />, isNew: false },
     { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
     { id: 'video', label: t('video'), icon: <Video size={18} />, isNew: false },
     { id: 'image', label: t('image'), icon: <ImageIcon size={18} />, isNew: false },
@@ -2179,13 +2337,6 @@ export const ChatPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col w-full overflow-hidden">
-      <MemoryNotification 
-        isVisible={showMemoryNotification} 
-        onClose={() => setShowMemoryNotification(false)} 
-        type={memoryNotificationType}
-        customDesc={memoryCustomDesc}
-      />
-      
       {showChatLimitWarning && (
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
           <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center flex-shrink-0">
@@ -2582,6 +2733,10 @@ export const ChatPage: React.FC = () => {
                       <div className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight">
                         {isGenerating && idx === messages.length - 1 && msg.content === '' ? (
                            <ResponseSkeleton dir={dir} />
+                        ) : msg.is_quota_error ? (
+                           <QuotaExceededCard data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
+                        ) : msg.is_system_inactive ? (
+                           <SystemInactiveCard data={msg.quota_data} dir={dir} />
                         ) : (
                           <>
                             {msg.is_pinned && (
@@ -2594,7 +2749,7 @@ export const ChatPage: React.FC = () => {
                               steps={msg.thinking_steps?.map(s => (!isGenerating || idx < messages.indexOf(msg)) ? { ...s, status: 'completed' as const } : s)} 
                               dir={dir} 
                             />
-                            {(msg.tool === 'sound_studio' || msg.tool === 'canvas') ? (
+                            {(msg.tool === 'canvas') ? (
                               <ProductionSuite content={stripProtocolMarkers(msg.content)} dir={dir} theme={theme} />
                             ) : (
                               <Markdown 

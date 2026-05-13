@@ -16,21 +16,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
-  // Track direction flips to prevent jarring layout animations
-  const prevDir = useRef(dir);
-  const [isFlipping, setIsFlipping] = useState(false);
-
-  useEffect(() => {
-    if (prevDir.current !== dir) {
-      setIsFlipping(true);
-      const timer = setTimeout(() => {
-        setIsFlipping(false);
-        prevDir.current = dir;
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [dir]);
-
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [recentChats, setRecentChats] = useState<any[]>([]);
@@ -174,12 +159,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         animate={{ 
           width: isMobile ? (isSidebarOpen ? '280px' : 0) : (isSidebarOpen ? 220 : 80),
           x: isMobile && !isSidebarOpen ? (dir === 'rtl' ? 300 : -300) : 0,
-          opacity: isFlipping ? 0 : (isMobile && !isSidebarOpen ? 0 : 1)
+          opacity: isMobile && !isSidebarOpen ? 0 : 1
         }}
         transition={{ 
-          ...sidebarSpring, 
-          duration: isFlipping ? 0 : sidebarSpring.duration,
-          opacity: { duration: isFlipping ? 0 : 0.2 }
+          ...sidebarSpring
         }}
         className={`fixed ${isMobile ? 'top-0' : 'top-[72px]'} bottom-0 flex flex-col z-[150] select-none border-[var(--border-main)] bg-[var(--bg-primary)] start-0 ${dir === 'rtl' ? 'border-l' : 'border-r'} ${
           isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
@@ -555,9 +538,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                           <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-xl transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/30`}
+                            className={`w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/30 shadow-[0_0_15px_rgba(0,0,0,0.1)]`}
                             style={{ 
-                              borderColor: user.subscription?.plan_id ? (plans.find((p: any) => p.id.toString() === user.subscription?.plan_id.toString())?.color || 'transparent') : 'transparent'
+                              borderColor: user.subscription?.plan_color || 'transparent'
                             }}
                           >
                             {user.avatar ? (
@@ -567,10 +550,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-all ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter leading-none whitespace-nowrap drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">
-                              {user.subscription?.plan_id 
-                                ? (plans.find((p: any) => p.id.toString() === user.subscription?.plan_id.toString())?.name || '')
-                                : ''}
+                            <span 
+                              className="text-[8px] font-black uppercase tracking-tighter leading-none whitespace-nowrap drop-shadow-[0_0_5px_rgba(0,0,0,0.2)]"
+                              style={{ color: user.subscription?.plan_color || '#10b981' }}
+                            >
+                              {user.subscription?.plan_name_en || ''}
                             </span>
                           </div>
                         </div>

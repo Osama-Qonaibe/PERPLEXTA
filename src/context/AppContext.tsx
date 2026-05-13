@@ -94,6 +94,13 @@ interface AppContextType {
   setIsOperationPending: (val: boolean) => void;
   setRememberMe: (val: boolean) => void;
   installApp: () => Promise<void>;
+  memoryNotification: {
+    isVisible: boolean;
+    type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup';
+    desc?: string;
+  };
+  triggerMemoryNotification: (type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup', desc?: string) => void;
+  closeMemoryNotification: () => void;
 }
 
 const translations = {
@@ -130,6 +137,7 @@ const translations = {
     learning: 'التعلم التكيفي',
     code: 'إنشاء كود',
     canvas: 'استوديو الصوت الذكي',
+    storage_mb: 'مساحة التخزين (MB)',
     sovereign_memory: 'الذاكرة الجوهرية',
     newBadge: 'جديد',
     commandCenter: 'مركز القيادة',
@@ -478,6 +486,24 @@ const translations = {
     aiGenerations: 'عمليات التوليد الرقمية',
     systemHealth: 'جاهزية النظام',
     optimal: 'مثالية',
+    activityCleared: 'تم تطهير السجلات بنجاح',
+    alertsCleared: 'تم مسح التنبيهات الأمنية',
+    selectAll: 'تحديد الكل',
+    batchDeleteConfirm: 'هل أنت متأكد من حذف {count} من العناصر المحددة؟',
+    batchDeleteSuccess: 'تم حذف {count} من العناصر بنجاح.',
+    deleteSelected: 'حذف المحدد',
+    systemMaintenance: 'صيانة النظام',
+    pruneSuccess: 'تم تنظيف الإشعارات القديمة بنجاح',
+    clearAllChats: 'تطهير الذاكرة السحابية (المحادثات)',
+    clearAllChatsConfirm: 'تحذير: هذا سيؤدي إلى حذف كافة المحادثات والرسائل من قاعدة البيانات. هل أنت متأكد؟',
+    bulkDeleteActivityConfirm: 'هل أنت متأكد من حذف كافة سجلات {type}؟ لا يمكن التراجع عن هذه الخطوة.',
+    bulkDeleteAlertsConfirm: 'هل أنت متأكد من مسح كافة الإنذارات الأمنية؟ سيتم مسح تاريخ المراقبة بالكامل.',
+    maintenancePruneLegacy: 'مهمة الصيانة: مسح الإشعارات القديمة',
+    maintenanceClearAllNotifs: 'مهمة الصيانة: مسح كافة الإشعارات',
+    clearNotifsConfirm: 'هل أنت متأكد من حذف كافة إشعارات النظام لجميع المستخدمين بشكل نهائي؟',
+    cpuLoad: 'ضغط المعالج (CPU)',
+    memoryAllocation: 'تخصيص الذاكرة',
+    systemLoad: 'حمل النظام',
     engineHealth: 'كفاءة المحرك والبنية التحتية',
     databases: 'قواعد البيانات المتعددة',
     coreDb: 'قاعدة البيانات الأساسية',
@@ -498,7 +524,6 @@ const translations = {
     liveLedgerAudit: 'تدقيق السجل المباشر',
     amountPointsLabel: 'المبلغ (نقطة)',
     typeActionLabel: 'النوع / الإجراء',
-    maintenancePruneLegacy: 'مهمة الصيانة: مسح الإشعارات القديمة',
     quickVelocity: 'الإحصائيات السريعة',
     allBalancesSynced: 'كافة الأرصدة متوافق مع السجل.',
     noFinancialVectors: 'لا توجد حركات مالية مطابقة للفلاتر.',
@@ -725,8 +750,6 @@ const translations = {
     deleteAlertConfirm: 'هل أنت متأكد من حذف هذا التنبيه؟',
     reconcileConfirm: 'بدء عملية مطابقة المحفظة؟ سيتم إعادة معايرة رصيد المستخدم بناءً على المعاملات المسجلة فقط.',
     reconcileSuccess: 'تمت المطابقة بنجاح. تم تحديث الرصيد.',
-    bulkDeleteActivityConfirm: 'هل أنت متأكد من حذف كافة سجلات {type}؟ لا يمكن التراجع عن هذه الخطوة.',
-    bulkDeleteAlertsConfirm: 'هل أنت متأكد من حذف كافة التنبيهات الأمنية؟ لا يمكن التراجع عن هذه الخطوة.',
     syncSuccess: 'تمت المزامنة بنجاح',
     syncError: 'فشل المزامنة',
     syncingData: 'جاري مزامنة البيانات...',
@@ -783,6 +806,7 @@ const translations = {
     learning: 'Adaptive Learning',
     code: 'Code Generation',
     canvas: 'Smart Audio Studio',
+    storage_mb: 'Storage Space (MB)',
     sovereign_memory: 'Core Memory',
     newBadge: 'NEW',
     commandCenter: 'Command Center',
@@ -1380,8 +1404,20 @@ const translations = {
     deleteAlertConfirm: 'Delete this security alert?',
     reconcileConfirm: 'Start wallet reconciliation? This will recalibrate user balance based strictly on ledger transactions.',
     reconcileSuccess: 'Reconciliation successful. Balance updated.',
+    activityCleared: 'Activity logs cleared successfully',
+    alertsCleared: 'Security alerts cleared',
+    selectAll: 'Select All',
+    batchDeleteConfirm: 'Are you sure you want to delete {count} selected items?',
+    batchDeleteSuccess: 'Successfully deleted {count} items.',
+    deleteSelected: 'Delete Selected',
+    systemMaintenance: 'System Maintenance',
+    pruneSuccess: 'System notifications pruned successfully',
     bulkDeleteActivityConfirm: 'Are you sure you want to clear ALL {type} logs? This cannot be undone.',
-    bulkDeleteAlertsConfirm: 'Clear ALL security alerts? This cannot be undone.',
+    bulkDeleteAlertsConfirm: 'Are you sure you want to clear ALL security alerts? This will wipe the monitoring history.',
+    maintenanceClearAllNotifs: 'Maintenance: Wipe All Notifications',
+    clearNotifsConfirm: 'Are you sure you want to permanently delete ALL system notifications for all users?',
+    clearAllChats: 'Purge Cloud Memory (All Chats)',
+    clearAllChatsConfirm: 'WARNING: This will delete ALL chat history and messages from the database. Are you sure?',
     syncSuccess: 'Synchronization Successful',
     syncError: 'Synchronization Failed',
     syncingData: 'Syncing data...',
@@ -1390,6 +1426,9 @@ const translations = {
     saveData: 'Save Data',
     lastSync: 'Last Sync',
     remember_me: 'Remember me',
+    cpuLoad: 'CPU Load',
+    memoryAllocation: 'Memory Allocation',
+    systemLoad: 'System Load',
     mood_epic: 'Epic',
     mood_dramatic: 'Dramatic',
     mood_corporate: 'Corporate',
@@ -1454,6 +1493,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isOperationPending, setIsOperationPending] = useState(false);
+
+  const [memoryNotification, setMemoryNotification] = useState<{
+    isVisible: boolean;
+    type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup';
+    desc?: string;
+  }>({
+    isVisible: false,
+    type: 'success'
+  });
+
+  const triggerMemoryNotification = (type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup', desc?: string) => {
+    setMemoryNotification({
+      isVisible: true,
+      type,
+      desc
+    });
+  };
+
+  const closeMemoryNotification = () => {
+    setMemoryNotification(prev => ({ ...prev, isVisible: false }));
+  };
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     return localStorage.getItem('app_remember_me') === 'true';
   });
@@ -1560,8 +1620,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLanguage(authLang as any);
         localStorage.setItem('language', authLang);
       }
-      
-      toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
       
       const targetRef = userData.ref || localStorage.getItem('app_ref') || '/';
       localStorage.removeItem('app_ref');
@@ -1977,6 +2035,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMilestoneData(data);
     });
 
+    newSocket.on('user_profile_updated', () => {
+      refreshUser();
+    });
+
     newSocket.on('usage_update', (data: { toolId: string; usageCount: number }) => {
       setUser(prev => {
         if (!prev) return prev;
@@ -2239,6 +2301,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             descAr: p.desc_ar || '',
             badge: p.badge || 'none',
             discount: p.discount || 0,
+            isActive: p.is_active ?? true,
             isVisible: p.is_visible ?? true,
             monthlyPrice: parseFloat(p.monthly_price || 0),
             annualPrice: parseFloat(p.annual_price || 0),
@@ -2372,7 +2435,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRememberMe,
       isOperationPending,
       setIsOperationPending,
-      installApp
+      installApp,
+      memoryNotification,
+      triggerMemoryNotification,
+      closeMemoryNotification
     }}>
       {children}
     </AppContext.Provider>

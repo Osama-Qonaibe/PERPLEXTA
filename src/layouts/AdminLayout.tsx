@@ -30,31 +30,17 @@ export const AdminLayout: React.FC = () => {
         >
           <AdminSidebar activeLanguage={language} />
 
-          <AnimatePresence>
-            {isSidebarOpen && isMobile && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-                className="absolute inset-0 z-[140] bg-black/40 backdrop-blur-sm cursor-pointer"
-                onClick={() => setIsSidebarOpen(false)}
-              />
-            )}
-          </AnimatePresence>
-
           <motion.div 
             layout="position"
             initial={false}
             animate={{ 
-              marginLeft: isMobile ? 0 : (localDir === 'rtl' ? 0 : (isSidebarOpen ? 240 : 0)),
-              marginRight: isMobile ? 0 : (localDir === 'rtl' ? (isSidebarOpen ? 240 : 0) : 0),
-              scale: (isMobile && isSidebarOpen) ? 0.94 : 1,
-              borderRadius: (isMobile && isSidebarOpen) ? 32 : 0
+              marginLeft: isMobile ? 0 : (localDir === 'rtl' ? 0 : 240),
+              marginRight: isMobile ? 0 : (localDir === 'rtl' ? 240 : 0),
+              scale: 1,
+              borderRadius: 0
             }}
             transition={{ type: "tween", duration: 0.8, ease: [0.4, 0, 0.2, 1] as any }}
             className={`flex-1 flex flex-col relative min-w-0 overflow-hidden shadow-2xl bg-inherit`}
-            onClick={() => { if(isSidebarOpen) setIsSidebarOpen(false); }}
           >
             <Header activeLanguage={language} />
             <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-none [WebkitOverflowScrolling:touch] bg-inherit">

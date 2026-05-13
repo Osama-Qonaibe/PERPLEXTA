@@ -1,9 +1,9 @@
 {
-  "name": "Perplexta",
-  "short_name": "Perplexta",
+  "name": "Sovereign Platform",
+  "short_name": "Sovereign",
   "description": "A professional elite platform for advanced AI capabilities and technical analysis.",
   "start_url": ".",
-  "display": "browser",
+  "display": "standalone",
   "orientation": "any",
   "background_color": "#0f0f11",
   "theme_color": "#10b981",

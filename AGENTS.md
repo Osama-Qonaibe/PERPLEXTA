@@ -143,11 +143,13 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Rewards Page Optimization:** Performed a surgical overhaul of the Rewards Page for mobile devices. Compacted all card components, optimized typography (reducing $6xl$ to $4xl$ for balance), and refined modal interactivity for handheld precision.
     - **Security & Bug Purge:** Eradicated critical TypeScript errors (TS2769) related to Lucide icon cloning by implementing explicit property interfaces and purging duplicate `className` attributes across the entire codebase.
     - **Structural Integrity:** Resolved JSX structural corruption and duplicate closing tags in high-complexity components (`RewardsPage`, `ChatPage`).
-- **Quota & Subscription Security (Completed Today):**
+- **Quota & Subscription Security (Completed):**
     - **Hard Quota Enforcement:** Implemented strict, audited quota enforcement for all AI tools with immediate blocking and forensic logging for denied access.
+    - **Granular Usage Limits:** Shifted from generic daily limits to tool-specific daily and monthly limits, fully manageable via the Admin Dashboard.
+    - **Professional Quota UI:** Deployed a high-conversion "Quota Exceeded" card in the chat interface. It features dual-language professional messaging (En/Ar) that encourages plan upgrades and friend referrals.
     - **Robust Stripe Webhooks:** Expanded handler to process `customer.subscription.deleted` and `invoice.payment_failed`, ensuring immediate state consistency across databases.
     - **Instant Notification Engine:** Implemented automated system notification dispatch for all major subscription events (Activation, Cancellation, Failure).
-- **Memory & Feedback Surge (Completed Today):**
+- **Memory & Feedback Surge (Completed):**
     - **Sovereign Memory Distillation:** Implemented a dual-threshold saturation control system. The engine now triggers a PROACTIVE WARNING at 45 memory records and executes AUTO-CONSOLIDATION at 50 records, distilling 10 legacy facts into a single high-density synthesis.
     - **RLHF Feedback Engine:** Deployed a surgical user feedback mechanism (Thumbs Up/Down) across the interface. Response quality is now tracked via a persistent `feedback` schema, enabling future high-precision model fine-tuning.
     - **Intelligence Startup Protocol:** Integrated a "Deep Intelligence Activation" notification that signals memory ingestion on boot and tool change. Eradicated the "Silent Ingestion" ambiguity with professional, localized system feedback.
@@ -178,20 +180,30 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Resilient Database Restoration**: Hardened the restoration engine with dynamic table existence verification, session-level trigger suppression, and high-precision ID sequence synchronization.
     - **Dynamic Database Export**: Refactored backup logic to perform full-schema table discovery, ensuring comprehensive backups that adapt to schema evolutions.
     - **Subscription UI Synchronization**: Optimized the frontend toggle to dynamically reflect the actual maximum available savings across all active plans.
-- **Sovereign Systems Completion (Finalized Today):**
-    - **API Keys Vault & Manager:** Fully implemented and secured with AES-256. Zero-latency key retrieval and real-time budget synchronization are now operational.
-    - **AI Orchestrator Engine:** Completed the dynamic routing logic with silent failovers. All dependency on hardcoded models has been eradicated.
-    - **Cron Job Ecosystem:** Fully deployed a high-precision node-cron architecture for daily maintenance, hourly subscription cleanups, and proactive renewal notifications.
+- **Sovereign Systems Stability (Completed Today):**
+    - **Orchestrator Column Synchronization:** Resolved a critical schema mismatch between the frontend and backend. Synchronized field names (`fallback_1_provider` etc.) across `AdminDashboard.tsx` and `admin.ts` routes, ensuring AI tool configurations are persisted correctly.
+    - **High-Precision Model Path Resolution:** Hardened `ai.ts` to automatically handle Gemini model path formation. The system now injects `models/` prefixes dynamically, eradicating `404 (Not Found)` errors during API calls.
+    - **Robust Provider Mapping:** Refactored provider identification logic to be whitespace-agnostic and case-insensitive, ensuring that human-entered data in the Admin Panel doesn't break the routing engine.
+    - **Reactive Tool Activation:** Enhanced the `handleSave` logic in the Admin Dashboard to prevent race conditions during rapid state toggling, ensuring the "Active" status of tools is accurately reflected across the system.
+    - **Backend Logic Refinement:** Fixed structural nesting errors in the AI service provider checks, ensuring clean execution paths for Google, Anthropic, and OpenAI providers.
 - **Sovereign Intelligence Hardening (May 10-11, 2026):**
     - **Intelligence Analyst Mode:** Implemented a localized, high-authority reinforcement protocol (`analysisReinforcement`) for the `perplexta_analysis` tool.
     - **Multimodal Sensory Activation:** Deployed "Sovereign Visual & Audio Sense" using Gemini 1.5 Flash. All uploaded media (Images, Video, Audio) is forensicly analyzed with pre-ingestion extraction for primary models.
-    - **Orchestral Engineering Integration:** Refactored the "Smart Audio Studio" and "Sound Orchestra" with high-precision engineering protocols, enabling forensic acoustic analysis and symphonic design sovereignty.
     - **Advanced File Support:** Integrated `html-to-text` and expanded support for HTML, RTF, JSON, and complex spreadsheets.
-- **Smart Audio Studio & Orchestral Engineering (Completed Today):**
-    - **Sovereign Multimodal Sense:** Refactored the ingestion layer into a high-fidelity multimodal sensory engine, bypassing legacy MIME type rejections by attempting sensory analysis for all media and unknown formats.
-    - **Orchestral Engineering Protocol:** Integrated the "Orchestral Engineering" standard into the core generative protocol for both `sound_studio` and `perplexta_analysis`, enabling forensic acoustic analysis (BPM, Harmonic Key, Spectral Density).
-    - **Enhanced Audio Ingestion:** Optimized `extractTextFromFile` to proactively trigger Multimodal Sensory activation for media files, ensuring elite technical accuracy before model synthesis.
-    - **Status:** **FULLY OPERATIONAL & FORENSICALLY HARDENED**.
+- **Financial Sovereignty & High-Precision Monitoring (Completed Today):**
+    - **Finance Radar Refactoring:** Surgical overhaul of the `AdminDashboard` and its backend foundation. Re-engineered the financial monitoring system to support structured data (Stats + Transactions Registry), resolving critical dashboard crashes.
+    - **Cross-Pool Integrity:** Eradicated insecure cross-pool database joins in the backend. Implemented separate user mapping logic for ledger transactions, ensuring audit logs and diagnostic views remain accurate even across isolated database environments.
+    - **Wallet Diagnostics:** Enhanced auditing tools to automatically resolve user names and emails for orphaned or negative-balance wallets.
+- **Real-time Identity & Profile Synchronization (Completed Today):**
+    - **Socket-Driven Profile Updates:** Engineered a global `user_profile_updated` event listener. Real-time broadcasts now trigger a forced background refresh of the user's local state upon any profile change or subscription activation.
+    - **Unified Payload Sovereignty:** Standardized the return of full user profiles (including detailed subscription plans, colors, and limits) across all authentication routes (Signup, Login, OAuth, and `/me`), eradicating initial-state ambiguity.
+    - **Usage Synchronization:** Linked `UsageRadar` and sidebar indicators to the real-time update engine for instantaneous tool-usage feedback.
+- **Tool Logic Restoration (Completed Today):**
+    - **Smart Audio Studio Restoration:** Re-restored naming sovereignty for the "Smart Audio Studio" tool (`استوديو الصوت الذكي`). Updated all translation keys and `ChatPage` logic (switching from creative to music-centric icons and banners) to honor the tool's specialized identity.
+- **System Hardening & PWA Integrity (Completed Today):**
+    - **Manifest Sovereignty:** Fixed critical PWA `manifest.json` syntax errors by deploying a forensically clean manifest in the `/public` directory.
+    - **Real-time Usage Tracking:** Fully integrated `UsageRadar` with the Socket.io lifecycle for zero-latency monitoring.
+- **Status:** **STABLE / FINANCIAL SOVEREIGNTY SECURED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
 
@@ -200,6 +212,8 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] System Settings Configuration & UI.
 - [x] Sovereign Global Edition AI Operational Constitution embedded in Backend.
 - [x] Hard Quota Enforcement & Forensic Logging.
+- [x] Granular Tool-Specific Daily/Monthly Limits.
+- [x] Professional Quota Error UI with Upgrade/Referral CTAs.
 
 ### 💰 Phase 2: Economy & Subscriptions (Completed)
 - [x] Plans Management (Core DB / UI).
@@ -236,6 +250,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] File Upload UI Workflow: Optimized and streamlined for professional use readiness with 100MB secure limits.
 - [x] Proactive Expiry Monitoring: Automated cron-based renewal reminders and status cleanups.
 - [x] File Upload & Analysis Backend Integration: Professional, secure integration for file ingestion and analysis.
+- [x] Financial Radar & Real-time Profile Synchronization: Forensic monitoring and zero-latency profile state updates.
 
 ### 🛠️ Phase 7: Local Infrastructure & Environment Prep (Active Phase)
 - [ ] Local Server Initialization & Database Mesh check.
@@ -300,12 +315,44 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Directive:** Every developer or AI agent MUST, as an absolute prerequisite to starting any work session, review the **Global Constitution**, the **Sovereign Laws (Section 10)**, and the **Current Project Status (Section 11)**.
 - **Protocol:** "Code first, read later" is a terminal violation. Understanding the mission and the architectural boundaries is the first step of every technical interaction.
 
+## 12. Daily Execution Plan (May 12, 2026) - Architectural Transition Audit
+
+Following the strategic split of `server.ts` into a modular architecture, today is dedicated to ensuring absolute system synchronization and precision.
+
+### 📋 Phase 1: Post-Split Validation (Completed)
+1. **Validation of API Routings & Imports Integrity**: Ensure all split routes are correctly imported and attached in `app.ts`. [COMPLETED]
+2. **Database & Middleware Synchronization**: Verify consistency of shared utilities (db pool, auth middleware) across all service layers. [COMPLETED]
+3. **Circular Dependency & Logic Audit**: Forensic review to prevent import loops between services and routes. [COMPLETED]
+4. **Service-Route Mapping Precision**: Verify that every route correctly invokes its dedicated service with strict error handling. [COMPLETED]
+5. **Real-time Engine Consistency (Socket.io)**: Ensure the split logic doesn't break the unified Socket.io lifecycle. [COMPLETED]
+6. **Codebase Sanitization (Zero-Clutter)**: Purge any vestigial code from the root `server.ts` or temporary backup files. [COMPLETED]
+
+### 📋 Phase 2: Improvement Action Plan (Active Phase)
+1. **تدقيق تكامل المسارات مع الخدمات (Route-Service Decoupling)**: Refactored core routes (Chats, Users, Files, Subscriptions, Wallets) into dedicated service abstractions. [COMPLETED]
+2. **توحيد نظام الاستجابة والأخطاء (Standardized Response Envelope)**: Implemented `globalErrorHandler` middleware for unified JSON error responses across all API endpoints. [COMPLETED]
+3. **فحص تناسق الأرصدة والعمليات (Transactional Integrity Audit)**: Implemented atomic wallet operations with compensating refund logic in subscription workflows to handle cross-DB failures. [COMPLETED]
+4. **التدقيق الأمني على صلاحيات المسؤول (Admin Security Hardening)**: Verified real-time DB-backed role validation in `authenticateAdmin` middleware. [COMPLETED]
+5. **تحسين تسلسل الإقلاع (Optimized Boot Sequence)**: Hardened `initializeSovereignPools` to strictly await connectivity pings before allowing system boot. [COMPLETED]
+6. **توثيق الروابط الديناميكية (Dynamic Migration Mapping)**: Verified defensive schema mapping logic (`ensureColumn`) and automated connection string protection. [COMPLETED]
+7. **تحسين أداء المقبس (Socket.io Context Optimization)**: Consolidated socket lifecycle events and context propagation within service layers. [COMPLETED]
+
+### 💡 Recommendations & Next Steps:
+- **Service Logic Consolidation**: Move remaining inline AI logic (e.g., chat title generation in `routes/chat.ts`) into the `services/chat.ts` layer.
+- **Enhanced Error Boundaries**: Implement a global error-handling middleware specifically for API routes to standardize responses.
+- **Type Safety Hardening**: Expand shared interfaces in a central `types` directory for cross-module consistency.
+- **Frontend Sync**: Verify that the new modular backend endpoints are perfectly consumed by the React frontend without regression.
+
+---
+
 ## 11. Project Status & Final Architectural Decree (May 6, 2026)
 
 ### 🗓️ Project Status: MISSION SUCCESS - Build Succeeded
 The platform has officially cleared all technical hurdles. The application builds successfully, and all core services are operational on the production server. The "Professional Elite" standard has been fully realized.
 
 ### 🚀 Final Achievements (The "Intelligence & Performance" Surge)
+- **Granular Quota Sovereignty (Completed):**
+    - **Precision Enforcement:** Developed a multi-dimensional quota engine that tracks daily and monthly usage per tool.
+    - **High-Conversion Error UI:** Integrated a professional "Quota Exceeded" card within the chat flow, leveraging "Emerald Glow" design and psychological triggers (Upgrade/Referral) to turn friction into growth opportunities.
 - **Memory & Feedback Sovereignty (Completed):**
     - **Neural Distillation Protocol:** Engineered the platform's first autonomous memory optimization layer. Facts are now synthesized dynamically to prevent context overflow while preserving the "Professional Elite" historical depth.
     - **RLHF Implementation:** Deployed a seamless Thumbs Up/Down feedback bar with "Emerald Glow" and "Amber Warmth" logic. This data is now indexed in the core database for performance auditing.

@@ -8,19 +8,37 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
     
-    if (token === 'null' || token === 'undefined') {
+    if (token) {
+      token = token.trim();
+      // Remove accidental quotes if wrapped
+      if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
+      }
+    }
+
+    if (token === 'null' || token === 'undefined' || token === '') {
       token = undefined;
     }
     
     if (!token) {
-      console.warn(`[Auth] No token provided for ${req.method} ${req.url}`);
-      res.status(401).json({ error: 'Unauthorized' });
+      if (!req.url.includes('/api/health')) {
+        console.warn(`[Auth] No token provided for ${req.method} ${req.url}. Header: ${authHeader}`);
+      }
+      res.status(401).json({ error: 'Unauthorized', message: 'No token provided' });
       return;
     }
 
-    jwt.verify(token, process.env.JWT_SECRET as string, async (err: any, user: any) => {
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_change_me';
+    if (!process.env.JWT_SECRET) {
+      console.warn('[Auth] WARNING: JWT_SECRET missing, using fallback. Please set JWT_SECRET in environment.');
+    }
+
+    jwt.verify(token, jwtSecret, async (err: any, user: any) => {
       if (err) {
         console.error(`[Auth] JWT Verification Error for ${req.url}:`, err.message);
+        if (err.message === 'jwt malformed') {
+          console.error(`[Auth] Malformed Token Fragment: ${token.substring(0, 15)}... (Total Length: ${token.length})`);
+        }
         res.status(403).json({ error: 'Forbidden', message: err.message });
         return;
       }

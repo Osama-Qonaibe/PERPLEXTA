@@ -1,13 +1,13 @@
 import express from 'express';
-import { pool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { getUserNotifications, markNotificationsAsRead } from '../services/notifications.js';
 
 const router = express.Router();
 
 router.get("/", authenticateToken, async (req: any, res) => {
   try {
-    const result = await pool.query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [req.user.id]);
-    res.json(result.rows);
+    const notifications = await getUserNotifications(req.user.id);
+    res.json(notifications);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
@@ -15,8 +15,8 @@ router.get("/", authenticateToken, async (req: any, res) => {
 
 router.post("/read-all", authenticateToken, async (req: any, res) => {
   try {
-    await pool.query('UPDATE notifications SET is_read = true WHERE user_id = $1', [req.user.id]);
-    res.json({ success: true });
+    const result = await markNotificationsAsRead(req.user.id);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Update failed' });
   }

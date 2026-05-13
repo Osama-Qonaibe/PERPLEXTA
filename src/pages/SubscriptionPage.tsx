@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { CheckCircle2, MessageSquare, Image as ImageIcon, Video, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2 } from 'lucide-react';
+import { CheckCircle2, MessageSquare, Image as ImageIcon, Video, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -134,16 +134,39 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const LimitItem = ({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: any, color: string }) => {
-    const displayValue = typeof value === 'object' && value !== null ? value.daily : value;
+    // Determine the most relevant display value
+    let daily = null;
+    let monthly = null;
+
+    if (typeof value === 'object' && value !== null) {
+      daily = value.daily;
+      monthly = value.monthly;
+    } else {
+      daily = value;
+    }
+
+    const formatLimit = (v: any) => v === 'unlimited' ? '∞' : (v || 0);
+
     return (
-      <div className={`flex items-center justify-between p-2 rounded-lg border bg-[var(--bg-primary)] border-[var(--border-main)]`}>
-        <div className="flex items-center gap-2">
-          <div className="text-gray-400" style={{ color: color }}>{icon}</div>
-          <span className="text-xs font-medium text-gray-500">{label}</span>
+      <div className={`flex flex-col gap-1 p-2.5 rounded-2xl border bg-[var(--bg-primary)] border-[var(--border-main)] transition-all hover:border-emerald-500/30 group`}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="transition-transform group-hover:scale-110" style={{ color: color }}>{icon}</div>
+          <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 truncate">{label}</span>
         </div>
-        <span className="text-xs font-bold text-gray-900 dark:text-white">
-          {displayValue === 'unlimited' ? '∞' : displayValue}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          {daily !== null && (
+            <div className="flex flex-col">
+              <span className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">{t('daily')}</span>
+              <span className="text-xs font-black text-gray-900 dark:text-white leading-none">{formatLimit(daily)}</span>
+            </div>
+          )}
+          {monthly !== null && monthly !== 0 && (
+            <div className="flex flex-col items-end">
+              <span className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">{t('monthly')}</span>
+              <span className="text-xs font-black text-emerald-500 leading-none">{formatLimit(monthly)}</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -306,8 +329,10 @@ export const SubscriptionPage: React.FC = () => {
               <div className="mt-auto pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-800/60">
                 <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                   <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat')} value={plan.limits.chat} color={plan.color || '#10b981'} />
-                  <LimitItem icon={<ImageIcon size={12} className="md:w-3.5 md:h-3.5" />} label={t('image')} value={plan.limits.image_gen} color={plan.color || '#10b981'} />
-                  <LimitItem icon={<Video size={12} className="md:w-3.5 md:h-3.5" />} label={t('video')} value={plan.limits.video_gen} color={plan.color || '#10b981'} />
+                  <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis')} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
+                  <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('visualGen') || 'Visual Art'} value={plan.limits.image} color={plan.color || '#10b981'} />
+                  <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('codeAnalysis') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
+                  <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb')} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
                   <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('workspace')} value={plan.limits.workspace} color={plan.color || '#10b981'} />
                 </div>
               </div>

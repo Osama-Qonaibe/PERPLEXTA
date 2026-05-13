@@ -6,10 +6,19 @@ import fetch from 'node-fetch';
 import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
-const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, remember?: boolean, expires: number }>();
+const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, mode?: string, remember?: boolean, expires: number }>();
+
+// Cleanup stale OAuth states every 60 seconds
+setInterval(() => {
+  const now = Date.now();
+  oauthStateStore.forEach((v, k) => {
+    if (v.expires < now) oauthStateStore.delete(k);
+  });
+}, 60000);
 
 const getBaseUrl = (req: express.Request) => {
   // Sovereign: Robust origin detection for proxy/container environments
@@ -41,7 +50,7 @@ const getRedirectUri = (req: express.Request) => {
   return `${getBaseUrl(req)}/api/auth/google/callback`;
 };
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, name, language = 'en' } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
@@ -52,7 +61,7 @@ router.post("/signup", async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
-    const role = lowerEmail === 'qoomre@gmail.com' ? 'admin' : 'user';
+    const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
 
     const result = await pool.query(
       `INSERT INTO users (email, name, password_hash, provider, role) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
@@ -63,7 +72,31 @@ router.post("/signup", async (req, res) => {
     await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    
+    // Sovereign: Return full profile even on signup for immediate consistency
+    const fullProfile = await pool.query(`
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status,
+             s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
+      FROM users u
+      LEFT JOIN subscriptions s ON u.id = s.user_id
+      LEFT JOIN plans p ON s.plan_id = p.id
+      WHERE u.id = $1
+    `, [user.id]);
+
+    const profileRow = fullProfile.rows[0];
+    const userPayload = {
+      ...profileRow,
+      subscription: profileRow.plan_id ? {
+        plan_id: profileRow.plan_id,
+        status: profileRow.sub_status,
+        current_period_end: profileRow.current_period_end,
+        plan_name_en: profileRow.plan_name_en,
+        plan_name_ar: profileRow.plan_name_ar,
+        plan_color: profileRow.plan_color
+      } : null
+    };
+
+    res.json({ token, user: userPayload });
 
     await logSystemActivity(user.id, 'signup', 'User signed up', {}, req);
     sendSmartEmail(user.id, user.email, 'welcome_email', { userName: user.name || 'User', baseUrl: getBaseUrl(req) }, language as any).catch(console.error);
@@ -72,7 +105,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const lowerEmail = email.toLowerCase();
@@ -93,7 +126,31 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    
+    // Sovereign: Return full profile even on login for immediate consistency
+    const fullProfile = await pool.query(`
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
+             s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
+      FROM users u
+      LEFT JOIN subscriptions s ON u.id = s.user_id
+      LEFT JOIN plans p ON s.plan_id = p.id
+      WHERE u.id = $1
+    `, [user.id]);
+
+    const profileRow = fullProfile.rows[0];
+    const userPayload = {
+      ...profileRow,
+      subscription: profileRow.plan_id ? {
+        plan_id: profileRow.plan_id,
+        status: profileRow.sub_status,
+        current_period_end: profileRow.current_period_end,
+        plan_name_en: profileRow.plan_name_en,
+        plan_name_ar: profileRow.plan_name_ar,
+        plan_color: profileRow.plan_color
+      } : null
+    };
+
+    res.json({ token, user: userPayload });
     await logSystemActivity(user.id, 'login', 'User logged in', {}, req);
   } catch (error) {
     res.status(500).json({ error: 'Login failed' });
@@ -101,11 +158,12 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/google/url", (req, res) => {
-  const { ref, lang, remember } = req.query;
+  const { ref, lang, remember, mode } = req.query;
   const nonce = crypto.randomBytes(16).toString('hex');
   oauthStateStore.set(nonce, { 
     ref: ref as string || null, 
     lang: lang as string || 'ar', 
+    mode: mode as string || 'popup',
     remember: remember === 'true',
     expires: Date.now() + 600000 
   });
@@ -164,7 +222,7 @@ router.get("/google/callback", async (req, res) => {
     let user;
 
     if (result.rows.length === 0) {
-      const role = lowerEmail === 'qoomre@gmail.com' ? 'admin' : 'user';
+      const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
       // Sovereign: Prioritize language from OAuth state during signup
       const finalLang = storedState.lang || 'ar';
       
@@ -204,6 +262,36 @@ router.get("/google/callback", async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
     
+    // Sovereign: Return full profile even on OAuth callback for immediate consistency
+    const fullProfile = await pool.query(`
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
+             s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
+      FROM users u
+      LEFT JOIN subscriptions s ON u.id = s.user_id
+      LEFT JOIN plans p ON s.plan_id = p.id
+      WHERE u.id = $1
+    `, [user.id]);
+
+    const row = fullProfile.rows[0];
+    const userPayload = {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role,
+      avatar: row.avatar,
+      status: row.status,
+      language: row.language,
+      theme: row.theme,
+      subscription: row.plan_id ? {
+        plan_id: row.plan_id,
+        status: row.sub_status,
+        current_period_end: row.current_period_end,
+        plan_name_en: row.plan_name_en,
+        plan_name_ar: row.plan_name_ar,
+        plan_color: row.plan_color
+      } : null
+    };
+
     const lang = storedState.lang || user.language || 'ar';
     const targetRef = storedState.ref || '/';
     const allowedOrigin = getBaseUrl(req);
@@ -211,11 +299,7 @@ router.get("/google/callback", async (req, res) => {
     // Sovereign: XSS Hardening - Escape special characters for JS context
     const rawPayload = JSON.stringify({ 
       token, 
-      id: user.id, 
-      email: user.email, 
-      name: user.name, 
-      role: user.role, 
-      avatar: user.avatar,
+      ...userPayload,
       lang: lang,
       ref: targetRef,
       remember: !!storedState.remember
@@ -296,9 +380,11 @@ router.get("/google/callback", async (req, res) => {
                 } catch (e) {}
 
                 // 2. Post Message to Opener
-                let isPopup = false;
+                let isPopup = ${storedState.mode === 'popup' ? 'true' : 'false'};
                 try {
-                  isPopup = !!(window.opener && window.opener !== window);
+                  if (!isPopup) {
+                    isPopup = !!(window.opener && window.opener !== window);
+                  }
                 } catch (e) {}
 
                 if (isPopup) {

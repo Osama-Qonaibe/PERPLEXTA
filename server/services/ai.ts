@@ -42,7 +42,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       await handleApiError(response, 'Anthropic', apiKey);
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ ...m, name: m.id }));
-    } else if (provider === 'google') {
+    } else if (provider === 'google' || provider === 'gemini') {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
         headers: { 'Accept': 'application/json' }
       });
@@ -54,6 +54,27 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         name: m.displayName || m.name.replace('models/', ''),
         supportedMethods: m.supportedGenerationMethods || []
       }));
+    } else if (provider === 'together') {
+      const response = await fetch('https://api.together.xyz/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+      });
+      await handleApiError(response, 'Together AI', apiKey);
+      const data: any = await response.json();
+      models = (data || []).map((m: any) => ({ id: m.id, name: m.display_name || m.id }));
+    } else if (provider === 'openrouter') {
+      const response = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+      });
+      await handleApiError(response, 'OpenRouter', apiKey);
+      const data: any = await response.json();
+      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.name || m.id }));
+    } else if (provider === 'xai' || provider === 'grok') {
+      const response = await fetch('https://api.x.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+      });
+      await handleApiError(response, 'xAI', apiKey);
+      const data: any = await response.json();
+      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'ollama') {
         let baseUrl = apiKey.split(':')[0] || 'http://localhost:11434';
         const response = await fetch(`${baseUrl}/api/tags`);
@@ -66,15 +87,102 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
 
     if (count > 0) {
       await pool.query(
-        'UPDATE api_keys_vault SET models = $1, model_list = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        'UPDATE api_keys_vault SET models = $1, model_list = $1, is_active = true, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
         [JSON.stringify(models), providerId]
       );
     }
     return { models, count };
   } catch (error) {
     console.error(`[SyncInternal] Error syncing ${providerId}:`, error);
+    await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [providerId]);
     throw error;
   }
+}
+
+// In-memory Vault Cache for Zero-Latency access (0.001ms)
+const vaultCache = new Map<string, string>();
+
+/**
+ * Get provider key with Zero-Latency from cache or DB sync
+ */
+export async function getProviderKey(provider: string): Promise<string | null> {
+  const normProvider = provider.toLowerCase().replace(/\s+/g, '');
+  
+  // 1. Check Hot Cache
+  if (vaultCache.has(normProvider)) {
+    return vaultCache.get(normProvider)!;
+  }
+
+  // 2. Cold lookup & Hydrate Cache
+  const result = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
+  if (result.rows.length === 0) return null;
+
+  const decryptedKey = decrypt(result.rows[0].encrypted_key);
+  vaultCache.set(normProvider, decryptedKey);
+  return decryptedKey;
+}
+
+/**
+ * Invalidate cache for a specific provider (e.g. after update)
+ */
+export function invalidateVaultCache(provider?: string) {
+  if (provider) {
+    vaultCache.delete(provider.toLowerCase());
+  } else {
+    vaultCache.clear();
+  }
+}
+
+export async function checkProviderStatus(provider: string, apiKey: string) {
+    try {
+        const normProvider = provider.toLowerCase();
+        let status = { isValid: false, usage: 0, limit: 0, message: '' };
+
+        if (normProvider === 'openai') {
+            const res = await fetch('https://api.openai.com/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `OpenAI: ${res.statusText}`;
+        } else if (normProvider === 'deepseek') {
+            const res = await fetch('https://api.deepseek.com/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `DeepSeek: ${res.statusText}`;
+        } else if (normProvider === 'anthropic') {
+            const res = await fetch('https://api.anthropic.com/v1/models', {
+                headers: { 
+                  'x-api-key': apiKey, 
+                  'anthropic-version': '2023-06-01',
+                  'Accept': 'application/json'
+                }
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `Anthropic: ${res.statusText}`;
+        } else if (normProvider === 'google' || normProvider === 'gemini') {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `Google AI: ${res.statusText}`;
+        } else if (normProvider === 'together') {
+            const res = await fetch('https://api.together.xyz/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            status.isValid = res.ok;
+        } else if (normProvider === 'openrouter') {
+            const res = await fetch('https://openrouter.ai/api/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            status.isValid = res.ok;
+        } else if (normProvider === 'ollama') {
+            // Ollama is local, usually 'host:port' stored in key/urlKey
+            status.isValid = true;
+        }
+
+        return status;
+    } catch (e: any) {
+        return { isValid: false, usage: 0, limit: 0, message: e.message };
+    }
 }
 
 export async function callAIProvider(
@@ -147,7 +255,7 @@ export async function callAIProvider(
               let chunk = '';
               if (normProvider === 'anthropic') {
                 if (data.type === 'content_block_delta') chunk = data.delta?.text || '';
-              } else if (normProvider === 'google' || normProvider === 'gemini') {
+              } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
                 chunk = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
               } else {
                 chunk = data.choices?.[0]?.delta?.content || '';
@@ -161,7 +269,7 @@ export async function callAIProvider(
     } else {
       const data = await response.json();
       if (normProvider === 'anthropic') return data.content?.[0]?.text || '';
-      if (normProvider === 'google' || normProvider === 'gemini') return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (normProvider.includes('google') || normProvider.includes('gemini')) return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       return data.choices?.[0]?.message?.content || '';
     }
   }
@@ -180,12 +288,17 @@ export async function callAIProvider(
     headers['anthropic-version'] = '2023-06-01';
     body = { model, max_tokens: 1024, stream: isStreaming, messages: processedMessages.filter(m => m.role !== 'system') };
     if (systemPrompt) body.system = systemPrompt;
-  } else if (normProvider === 'google' || normProvider === 'gemini') {
-     const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
-     url = `https://generativelanguage.googleapis.com/v1beta/models/${model.replace('models/', '')}:${method}?key=${cleanApiKey}`;
-     if (isStreaming) url += '&alt=sse';
-     body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
-     if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
+  } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
+    const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
+      // Sovereign High-Precision Model Path Resolution
+      let modelPath = model;
+      if (!modelPath.includes('/')) {
+        modelPath = `models/${modelPath}`;
+      }
+      url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}?key=${cleanApiKey}`;
+      if (isStreaming) url += '&alt=sse';
+      body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
+      if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   }
 
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });

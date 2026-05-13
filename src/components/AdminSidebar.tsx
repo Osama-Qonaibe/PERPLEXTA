@@ -2,14 +2,13 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Activity, Key, Database, Cpu, Landmark, 
-  CreditCard, Users, Settings, Mail, ArrowRight, 
-  PanelRightClose, PanelLeftClose, Send
+  CreditCard, Users, Settings, Mail, ArrowRight,
+  Send
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { motion, AnimatePresence } from 'motion/react';
 
 export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { t, user, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen } = useAppContext();
+  const { t, user, theme, language: globalLang } = useAppContext();
 
   // Use locked language for stable transitions
   const language = activeLanguage || globalLang;
@@ -20,7 +19,6 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
   const navItems = [
     { icon: <Activity size={18} />, label: t('commandCenter'), path: '/admin/dashboard' },
     ...(!isSupport ? [
-      { icon: <Landmark size={18} />, label: t('financialRadar') || 'الرادار المالي', path: '/admin/radar' },
       { icon: <Key size={18} />, label: t('aiInfrastructure'), path: '/admin/keys' },
       { icon: <Database size={18} />, label: t('dbOrchestration'), path: '/admin/databases' },
       { icon: <Cpu size={18} />, label: t('toolOrchestrator'), path: '/admin/orchestrator' },
@@ -38,17 +36,12 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
   const isMobile = window.innerWidth < 768;
 
   return (
-    <>
-      <aside 
-        className={`fixed top-[72px] bottom-0 h-[calc(100vh-72px)] flex flex-col z-[70] transition-all duration-800 shadow-2xl ${
-          theme === 'dark' ? 'border-gray-800 bg-[#0f0f11]' : 'border-gray-200 bg-white'
-        } ${dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'} ${
-          isSidebarOpen 
-            ? 'translate-x-0' 
-            : dir === 'rtl' ? (isMobile ? 'translate-x-[100%]' : 'translate-x-[240px]') : (isMobile ? '-translate-x-[100%]' : '-translate-x-[240px]')
-        } ${isMobile && !isSidebarOpen ? 'invisible' : 'visible'}`}
-        style={{ width: isMobile ? '68%' : '240px', maxWidth: isMobile ? '260px' : 'none' }}
-      >
+    <aside 
+      className={`fixed top-[72px] bottom-0 h-[calc(100vh-72px)] flex flex-col z-[70] shadow-2xl ${
+        theme === 'dark' ? 'border-gray-800 bg-[#0f0f11]' : 'border-gray-200 bg-white'
+      } ${dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'} translate-x-0 visible`}
+      style={{ width: isMobile ? '68%' : '240px', maxWidth: isMobile ? '260px' : 'none' }}
+    >
         <nav className="flex-1 px-3 space-y-1 pt-[25px] overflow-y-auto custom-scrollbar scroll-smooth">
           {navItems.map((item, index) => (
             <NavLink
@@ -96,6 +89,5 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
           </NavLink>
         </div>
       </aside>
-    </>
-  );
+    );
 };

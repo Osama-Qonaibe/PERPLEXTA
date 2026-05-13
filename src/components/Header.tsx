@@ -3,28 +3,14 @@ import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification } = useAppContext();
   
   // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
-
-  // Track the previous direction to optimize transitions
-  const prevDir = useRef(dir);
-  const [isFlipping, setIsFlipping] = useState(false);
-
-  useEffect(() => {
-    if (prevDir.current !== dir) {
-      setIsFlipping(true);
-      const timer = setTimeout(() => {
-        setIsFlipping(false);
-        prevDir.current = dir;
-      }, 100); // Short window to skip heavy animation during flip
-      return () => clearTimeout(timer);
-    }
-  }, [dir]);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -109,7 +95,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const isMobileView = windowWidth < 1024;
   // Professional Elite Protocol: Only show header menu button if it's the only toggle available
   // (Main sidebar has its own toggle on desktop; admin sidebar does not)
-  const shouldShowMenuButton = !isSidebarOpen && (isAdminPath || isMobileView);
+  const shouldShowMenuButton = !isSidebarOpen && !isAdminPath && isMobileView;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -148,10 +134,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)]`} />
       
       <div className="w-full flex justify-between items-center h-full">
-        {/* Logo and App Name - Parallel to buttons */}
-        <div className="flex items-center h-full px-8 md:px-0">
-          <div className={`flex items-center h-full ${!isFlipping ? 'transition-all duration-300' : ''} ${!isMobileView ? 'min-w-[240px]' : ''}`} style={{ opacity: isFlipping ? 0 : 1 }}>
-              <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 w-full h-full hover:opacity-80 transition-opacity text-[var(--text-primary)]`}>
+        {/* Logo and App Name - Perfectly aligned with Sidebar */}
+        <div className="flex items-center h-full">
+          <div className={`flex items-center h-full transition-all duration-300 ${!isMobileView ? 'min-w-[240px]' : 'w-auto'}`}>
+              <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full hover:opacity-80 transition-opacity text-[var(--text-primary)]`}>
                 <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative group`}>
                   {siteSettings.logoBase64 ? (
                     <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-[var(--border-main)] transition-all duration-300 group-hover:scale-105 relative z-10 flex-shrink-0">
@@ -168,7 +154,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     {t('appName')}
                   </span>
                 ) : null}
-             </NavLink>
+              </NavLink>
           </div>
 
           {shouldShowMenuButton && (
@@ -184,10 +170,24 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           )}
         </div>
 
-        <nav className="flex items-center gap-2" style={{ opacity: isFlipping ? 0 : 1 }}>
-            {chatId && chatTitle && (
-              <div 
-                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-transparent border border-[var(--border-main)]`}
+        {/* Global Notification Area - Parallel and Centered */}
+        <nav className="flex-1 flex items-center justify-center min-w-0 px-4">
+            <AnimatePresence mode="wait">
+              {memoryNotification.isVisible ? (
+                <MemoryNotification 
+                  key="memory-notif"
+                  isVisible={memoryNotification.isVisible}
+                  onClose={closeMemoryNotification}
+                  type={memoryNotification.type}
+                  customDesc={memoryNotification.desc}
+                />
+              ) : chatId && chatTitle ? (
+              <motion.div 
+                key="chat-title"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-transparent border border-[var(--border-main)] max-w-full`}
               >
                 {isEditingTitle ? (
                   <div className="flex items-center gap-1.5 min-w-[200px]">
@@ -209,25 +209,25 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     </div>
                   </div>
                 ) : (
-                  <div className="group flex items-center gap-2">
-                    <h2 className="text-xs font-bold text-gray-500 truncate max-w-[200px]">
+                  <div className="group flex items-center gap-2 overflow-hidden">
+                    <h2 className="text-xs font-bold text-gray-500 truncate">
                       {chatTitle}
                     </h2>
                     <button 
                       onClick={() => { setIsEditingTitle(true); setTempTitle(chatTitle); }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-emerald-500 transition-all font-bold"
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-emerald-500 transition-all font-bold flex-shrink-0"
                     >
                       <Edit2 size={12} />
                     </button>
                   </div>
                 )}
-              </div>
-            )}
-          </nav>
-        </div>
+              </motion.div>
+            ) : null}
+            </AnimatePresence>
+        </nav>
 
         {/* Global Tools Section */}
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0">
            <button 
                 onClick={toggleLanguage}
                 className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 py-2 rounded-xl text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group"
@@ -349,6 +349,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           </div>
         )}
       </div>
-    </header>
-  );
+    </div>
+  </header>
+);
 };

@@ -1,33 +1,114 @@
+import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
 import { executeTaskLogic } from './orchestrator.js';
 import { io } from '../config/socket.js';
+import { callAIProvider } from './ai.js';
+import { decrypt } from '../utils/crypto.js';
+import { getAppName } from './system.js';
+import { CORE_PROTOCOL } from '../config/protocol.js';
+
+export async function createChat(userId: string, title?: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query('INSERT INTO chats (user_id, title) VALUES ($1, $2) RETURNING *', [userId, title || 'New Chat']);
+  return result.rows[0];
+}
+
+export async function getUserChats(userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query('SELECT * FROM chats WHERE user_id = $1 ORDER BY updated_at DESC', [userId]);
+  return result.rows;
+}
+
+export async function getChatMessages(chatId: string, userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  
+  // Security check
+  const chatCheck = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
+  if (chatCheck.rows.length === 0 || chatCheck.rows[0].user_id !== userId) {
+    return null;
+  }
+
+  const result = await pool.query('SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC', [chatId]);
+  return result.rows;
+}
+
+export async function addChatMessage(chatId: string, role: string, content: string, tool?: string) {
+  if (!pool) throw new Error('Database initializing');
+  await pool.query('INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4)', [chatId, role, content, tool]);
+  await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
+  return { success: true };
+}
+
+export async function getMessageCount(chatId: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query('SELECT count(*) FROM messages WHERE chat_id = $1', [chatId]);
+  return parseInt(result.rows[0].count);
+}
+
+export async function deleteUserChat(chatId: string, userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query('DELETE FROM chats WHERE id = $1 AND user_id = $2 RETURNING *', [chatId, userId]);
+  return result.rows.length > 0;
+}
 
 export async function handleChatMessage(socket: any, data: any) {
-  const { chatId, content, toolId, userId } = data;
-  if (!userId) return socket.emit('chat_error', { message: 'Unauthorized' });
+  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data } = data;
+  
+  // 1. Authenticate via token if userId is missing
+  let authenticatedUserId = userId;
+  if (!authenticatedUserId && token) {
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_change_me';
+      const decoded = jwt.verify(token, jwtSecret) as any;
+      authenticatedUserId = decoded.id;
+    } catch (e) {
+      console.error('[ChatService] Token verification failed:', e);
+      return socket.emit('chat_error', { message: 'Unauthorized' });
+    }
+  }
 
+  if (!authenticatedUserId) return socket.emit('chat_error', { message: 'Unauthorized' });
+
+  // 2. Prepare parameters
+  const finalChatId = chatId || chat_id;
+  const finalToolId = toolId || tool_id || 'chat';
+  
+  // Decrypt prompt if coming from data_p
+  let finalPrompt = data.content;
+  if (!finalPrompt && data_p) {
+    finalPrompt = decrypt(data_p);
+  }
+
+  // Decrypt custom instructions if present
+  let customInstructions = '';
+  if (data_s) {
+    customInstructions = decrypt(data_s);
+  }
+
+  let assistantMessageId: number | undefined;
   try {
-    // 1. Prepare assistant message placeholder (User message was already saved by REST API)
     if (!pool) throw new Error('Database not ready');
 
+    // 1. Prepare assistant message placeholder
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
-      [chatId, 'assistant', '', toolId]
+      [finalChatId, 'assistant', '', finalToolId]
     );
-    const assistantMessageId = assistantMsgResult.rows[0].id;
+    assistantMessageId = assistantMsgResult.rows[0].id;
 
-    // 2. Execute logic (this will handle streaming)
-    // We send data to orchestrator. Socket chunks are emitted via the onChunk callback.
+    // 2. Execute logic
     const result = await executeTaskLogic(
       { 
-        tool_id: toolId, 
-        prompt: content, 
-        chat_id: chatId 
+        tool_id: finalToolId, 
+        prompt: finalPrompt, 
+        chat_id: finalChatId,
+        system_prompt: customInstructions,
+        file_data
       }, 
-      userId, 
+      authenticatedUserId, 
       undefined, 
       (chunk) => {
-        socket.emit('chat_chunk', { chunk, chatId, isFinal: false });
+        socket.emit('chat_chunk', { chunk, chatId: finalChatId, isFinal: false });
       },
       socket
     );
@@ -39,19 +120,47 @@ export async function handleChatMessage(socket: any, data: any) {
     );
 
     // 4. Update chat timestamp
-    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
+    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 
     // 5. Signal completion
-    socket.emit('chat_chunk', { chunk: result.result, chatId, isFinal: true });
+    socket.emit('chat_chunk', { chunk: result.result, chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
       result: result.result, 
-      chatId, 
+      chatId: finalChatId, 
       message_id: assistantMessageId,
-      tool: toolId 
+      tool: finalToolId 
     });
 
   } catch (error: any) {
     console.error('[ChatService] Error:', error);
+    // Cleanup placeholder message if it was created
+    if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
+      pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch(e => console.error('[ChatService] Placeholder deletion failed:', e));
+    }
     socket.emit('chat_error', { message: error.message || 'Internal server error' });
+  }
+}
+
+export async function generateChatTitle(chatId: string, firstMessageContent: string) {
+  try {
+    if (!pool) return;
+    const routeResult = await pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', ['perplexta_analysis']);
+    if (routeResult.rows.length === 0) return;
+
+    const route = routeResult.rows[0];
+    const appName = getAppName('en');
+    const systemPrompt = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName) + "\n\nGenerate a professional title for this chat based on the user's first message. Keep it short (max 50 chars).";
+
+    const keyRes = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [route.primary_provider]);
+    if (keyRes.rows.length === 0) return;
+
+    const key = decrypt(keyRes.rows[0].encrypted_key);
+    const title = await callAIProvider(route.primary_provider, route.primary_model, key, firstMessageContent, systemPrompt);
+    
+    if (title) {
+      await pool.query('UPDATE chats SET title = $1 WHERE id = $2', [title.trim().substring(0, 50), chatId]);
+    }
+  } catch (error) {
+    console.error('[ChatService] Title Generation Error:', error);
   }
 }

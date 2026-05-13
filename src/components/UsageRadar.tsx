@@ -31,33 +31,47 @@ interface UsageData {
 }
 
 export const UsageRadar: React.FC = () => {
-  const { t, dir, theme, token } = useAppContext();
+  const { t, dir, theme, token, socket } = useAppContext();
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUsage = async () => {
-      try {
-        const res = await fetch('/api/user/usage', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const usageData = await res.json();
-          setData(usageData);
-        } else {
-          setError('Failed to fetch usage data');
-        }
-      } catch (err) {
-        setError('Connection error');
-      } finally {
-        setLoading(false);
+  const fetchUsage = async () => {
+    try {
+      const res = await fetch('/api/user/usage', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const usageData = await res.json();
+        setData(usageData);
+      } else {
+        setError('Failed to fetch usage data');
       }
-    };
+    } catch (err) {
+      setError('Connection error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (token) fetchUsage();
-  }, [token]);
+
+    if (socket) {
+      const handleUpdate = () => {
+        fetchUsage();
+      };
+      
+      socket.on('user_profile_updated', handleUpdate);
+      socket.on('usage_update', handleUpdate);
+      
+      return () => {
+        socket.off('user_profile_updated', handleUpdate);
+        socket.off('usage_update', handleUpdate);
+      };
+    }
+  }, [token, socket]);
 
   if (loading) {
     return (
@@ -116,6 +130,7 @@ export const UsageRadar: React.FC = () => {
         {data.usage.map((item) => {
           const isDailyUnlimited = item.limits.daily === null;
           const isMonthlyUnlimited = item.limits.monthly === null;
+          const isStorage = item.id === 'storage_mb';
           
           const dailyPercent = isDailyUnlimited ? 0 : Math.min(100, (item.usage.daily / (item.limits.daily || 1)) * 100);
           const monthlyPercent = isMonthlyUnlimited ? 0 : Math.min(100, (item.usage.monthly / (item.limits.monthly || 1)) * 100);
@@ -134,7 +149,7 @@ export const UsageRadar: React.FC = () => {
                 <div className="flex justify-between items-start mb-6">
                   <div className="space-y-1">
                     <h3 className="text-[0.65rem] font-black uppercase tracking-widest text-emerald-500/80">
-                      {dir === 'rtl' ? (item.name_ar || item.id) : (item.name_en || item.id)}
+                      {t(item.id) || (dir === 'rtl' ? (item.name_ar || item.id) : (item.name_en || item.id))}
                     </h3>
                     <p className="text-[10px] text-gray-400 font-medium max-w-[200px] line-clamp-1">
                       {dir === 'rtl' ? item.desc_ar : item.desc_en}
@@ -150,12 +165,12 @@ export const UsageRadar: React.FC = () => {
 
                 {/* Progress bars */}
                 <div className="space-y-6">
-                  {/* Daily Progress */}
+                  {/* Primary Progress */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-                      <span className="text-gray-400">{t('usageToday') || 'Daily usage'}</span>
+                      <span className="text-gray-400">{isStorage ? (t('usageLoad') || 'Capacity') : (t('usageToday') || 'Daily usage')}</span>
                       <span className={dailyPercent > 90 ? 'text-red-500' : 'text-emerald-500'}>
-                        {item.usage.daily} / {isDailyUnlimited ? '∞' : item.limits.daily}
+                        {isStorage ? `${Math.round(item.usage.daily)} MB` : item.usage.daily} / {isDailyUnlimited ? '∞' : (isStorage ? `${item.limits.daily} MB` : item.limits.daily)}
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800/40 rounded-full overflow-hidden">
@@ -177,24 +192,26 @@ export const UsageRadar: React.FC = () => {
                         exit={{ height: 0, opacity: 0 }}
                         className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800/40"
                       >
-                         {/* Monthly Progress */}
-                         <div className="space-y-2">
-                          <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-                            <span className="text-gray-400">{t('usageMonthly') || 'Monthly usage'}</span>
-                            <span className={monthlyPercent > 90 ? 'text-red-500' : 'text-emerald-500'}>
-                              {item.usage.monthly} / {isMonthlyUnlimited ? '∞' : item.limits.monthly}
-                            </span>
+                         {/* Monthly Progress (Skip for Storage) */}
+                         {!isStorage && (
+                           <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
+                              <span className="text-gray-400">{t('usageMonthly') || 'Monthly usage'}</span>
+                              <span className={monthlyPercent > 90 ? 'text-red-500' : 'text-emerald-500'}>
+                                {item.usage.monthly} / {isMonthlyUnlimited ? '∞' : item.limits.monthly}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800/40 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: isMonthlyUnlimited ? '0%' : `${monthlyPercent}%` }}
+                                className={`h-full rounded-full ${
+                                  monthlyPercent > 90 ? 'bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.2)]' : 'bg-emerald-600 shadow-[0_0_10px_rgba(5,150,105,0.3)]'
+                                }`}
+                              />
+                            </div>
                           </div>
-                          <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800/40 rounded-full overflow-hidden">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: isMonthlyUnlimited ? '0%' : `${monthlyPercent}%` }}
-                              className={`h-full rounded-full ${
-                                monthlyPercent > 90 ? 'bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.2)]' : 'bg-emerald-600 shadow-[0_0_10px_rgba(5,150,105,0.3)]'
-                              }`}
-                            />
-                          </div>
-                        </div>
+                         )}
 
                         <div className="grid grid-cols-2 gap-3 pt-2">
                           <div className={`p-4 rounded-2xl flex flex-col items-center justify-center text-center ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>

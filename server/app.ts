@@ -26,9 +26,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: (origin, callback) => {
-    callback(null, true);
-  },
+  origin: process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
@@ -94,10 +92,14 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+import { globalErrorHandler } from './middleware/error.js';
+
 // --- API 404 HANDLER ---
-// Should be AFTER other routes
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
 });
+
+// --- GLOBAL ERROR HANDLER ---
+app.use(globalErrorHandler);
 
 export { app };

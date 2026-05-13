@@ -142,11 +142,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
               <img 
                 src={user.avatar} 
                 alt="Avatar" 
-                className="w-20 h-20 rounded-[1.5rem] object-cover border-2 border-transparent group-hover:border-emerald-500 transition-all duration-300 shadow-lg"
+                className="w-20 h-20 rounded-[1.5rem] object-cover border-4 transition-all duration-300 shadow-xl"
+                style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-20 h-20 rounded-[1.5rem] bg-[var(--bg-primary)] flex items-center justify-center text-gray-400 group-hover:text-emerald-500 transition-all duration-500 border-2 border-transparent group-hover:border-emerald-500">
+              <div 
+                className="w-20 h-20 rounded-[1.5rem] bg-[var(--bg-primary)] flex items-center justify-center text-gray-400 group-hover:text-emerald-500 transition-all duration-500 border-4"
+                style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
+              >
                 {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={28} />}
               </div>
             )}
@@ -156,8 +160,20 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
           </div>
           <div>
             <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">{t('avatar')}</p>
-            <p className="text-sm text-gray-400 max-w-[200px] truncate font-medium">
-              {isUploading ? t('processing') : (user.avatar ? (dir === 'rtl' ? 'صورة مخصصة' : 'Custom Avatar') : t('none'))}
+            <p className="text-sm text-gray-400 max-w-[200px] truncate font-medium flex items-center gap-2">
+              {isUploading ? t('processing') : (
+                <>
+                  {user.subscription?.plan_name_en && (
+                    <span 
+                      className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                      style={{ backgroundColor: `${user.subscription.plan_color}20`, color: user.subscription.plan_color }}
+                    >
+                      {user.subscription.plan_name_en}
+                    </span>
+                  )}
+                  {user.avatar ? (dir === 'rtl' ? 'صورة مخصصة' : 'Custom Avatar') : t('none')}
+                </>
+              )}
             </p>
           </div>
         </div>
