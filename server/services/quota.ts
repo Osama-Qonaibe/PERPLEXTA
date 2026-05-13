@@ -4,8 +4,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
   try {
     if (!pool) return { allowed: true };
 
-    // Get user subscription or fall back to default plan
-    // Also get daily and monthly usage counts
     const res = await pool.query(`
       WITH user_info AS (
         SELECT 
@@ -39,7 +37,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
     
     const { limits, role, daily_count, monthly_count } = res.rows[0];
     
-    // Admins bypass all limits
     if (role === 'admin') return { allowed: true };
     
     const currentDaily = parseInt(daily_count || '0');
@@ -50,7 +47,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
     const toolLimit = limits[toolId];
     if (!toolLimit || toolLimit === 'unlimited') return { allowed: true };
     
-    // Handle daily limit
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
     if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
       const dailyLimit = parseInt(dailyLimitVal);
@@ -64,7 +60,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
       }
     }
 
-    // Handle monthly limit
     let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
     if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
       const monthlyLimit = parseInt(monthlyLimitVal);

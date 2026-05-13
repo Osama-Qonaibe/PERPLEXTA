@@ -98,7 +98,6 @@ export const extractTextFromFile = async (filePath: string, mimeType: string, or
       return dataBuffer.toString();
     }
 
-    // Multimodal Fallback
     if (mimeType.startsWith('image/') || mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
       return await sovereignMultimodalSense(dataBuffer, mimeType, originalName);
     }
