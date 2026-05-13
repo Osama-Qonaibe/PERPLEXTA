@@ -13,7 +13,7 @@ import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
-  let { tool_id, prompt, system_prompt, model_id, chat_id, file_data } = reqBody;
+  let { tool_id, prompt, system_prompt, chat_id, file_data } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   
