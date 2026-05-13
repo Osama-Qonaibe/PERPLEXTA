@@ -81,7 +81,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (searchErr) {
-      console.warn('[Orchestrator] Search ingestion failed:', searchErr);
+      // Search ingestion failure handled silently
     }
   }
 
@@ -93,7 +93,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (memErr) {
-      console.warn('[Orchestrator] Memory ingestion failed:', memErr);
+      // Memory ingestion failure handled silently
     }
   }
 
@@ -117,7 +117,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       const providerId = target.provider.toLowerCase();
       const apiKey = await getProviderKey(providerId);
       if (!apiKey) {
-        console.warn(`[Orchestrator] Key missing or inactive for ${providerId}`);
         continue;
       }
 
@@ -129,7 +128,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       const usedToday = parseFloat(vault.used_today || '0');
 
       if (dailyBudget > 0 && usedToday >= dailyBudget) {
-        console.warn(`[Orchestrator] Budget exceeded for ${target.provider}. Falling back...`);
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
         continue;
       }
@@ -142,7 +140,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       
       break;
     } catch (e) {
-      console.warn(`[Orchestrator] Fallback triggered due to error: ${e}`);
+      // Fallback handled silently
     }
   }
 

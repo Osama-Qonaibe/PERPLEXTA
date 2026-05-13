@@ -43,8 +43,11 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ ...m, name: m.id }));
     } else if (provider === 'google' || provider === 'gemini') {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
-        headers: { 'Accept': 'application/json' }
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
+        headers: { 
+          'Accept': 'application/json',
+          'x-goog-api-key': apiKey
+        }
       });
       await handleApiError(response, 'Google AI');
       const data: any = await response.json();
@@ -154,7 +157,9 @@ export async function checkProviderStatus(provider: string, apiKey: string) {
             status.isValid = res.ok;
             if (!res.ok) status.message = `Anthropic: ${res.statusText}`;
         } else if (normProvider === 'google' || normProvider === 'gemini') {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
+                headers: { 'x-goog-api-key': apiKey }
+            });
             status.isValid = res.ok;
             if (!res.ok) status.message = `Google AI: ${res.statusText}`;
         } else if (normProvider === 'together') {
@@ -283,13 +288,14 @@ export async function callAIProvider(
     if (systemPrompt) body.system = systemPrompt;
   } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
     const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
-      let modelPath = model;
-      if (!modelPath.includes('/')) {
-        modelPath = `models/${modelPath}`;
-      }
-      url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}?key=${cleanApiKey}`;
-      if (isStreaming) url += '&alt=sse';
-      body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
+    let modelPath = model;
+    if (!modelPath.includes('/')) {
+      modelPath = `models/${modelPath}`;
+    }
+    url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}`;
+    if (isStreaming) url += '?alt=sse';
+    headers['x-goog-api-key'] = cleanApiKey;
+    body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
       if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   }
 
