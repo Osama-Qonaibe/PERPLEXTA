@@ -187,6 +187,11 @@ router.post("/users/:id/status", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    
+    if (!['active', 'suspended', 'pending'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
     await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
     res.json({ success: true });
   } catch (error) {
@@ -198,6 +203,11 @@ router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
+    
+    if (!['admin', 'user'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
     await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, id]);
     res.json({ success: true });
   } catch (error) {
