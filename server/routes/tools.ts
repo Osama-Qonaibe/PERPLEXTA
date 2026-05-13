@@ -33,7 +33,12 @@ router.post("/execute-task", authenticateToken, async (req: any, res) => {
       res.end();
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('[ToolsRoute] Error:', error);
+    let userMessage = 'System error occurred. Please try again later.';
+    if (error.message && (error.message.includes('provider') || error.message.includes('quota') || error.message.includes('Unauthorized'))) {
+      userMessage = error.message;
+    }
+    res.status(500).json({ error: userMessage });
   }
 });
 

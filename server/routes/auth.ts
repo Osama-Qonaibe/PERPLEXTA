@@ -11,6 +11,11 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
+}
+
 const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, mode?: string, remember?: boolean, expires: number }>();
 
 setInterval(() => {
@@ -74,7 +79,7 @@ router.post("/signup", authLimiter, async (req, res) => {
       ON CONFLICT (user_id) DO NOTHING
     `, [user.id]);
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status,
@@ -127,7 +132,7 @@ router.post("/login", authLimiter, async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
@@ -290,7 +295,7 @@ router.get("/google/callback", async (req, res) => {
       await logSystemActivity(user.id, 'login', 'User logged in via Google', {}, req);
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,

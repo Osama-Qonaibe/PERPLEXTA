@@ -22,7 +22,6 @@ export async function getUserChats(userId: string) {
 export async function getChatMessages(chatId: string, userId: string) {
   if (!pool) throw new Error('Database initializing');
   
-  // Security check
   const chatCheck = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
   if (chatCheck.rows.length === 0 || chatCheck.rows[0].user_id !== userId) {
     return null;
@@ -54,11 +53,14 @@ export async function deleteUserChat(chatId: string, userId: string) {
 export async function handleChatMessage(socket: any, data: any) {
   const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data } = data;
   
-  // 1. Authenticate via token if userId is missing
   let authenticatedUserId = userId;
   if (!authenticatedUserId && token) {
     try {
-      const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_change_me';
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error('[ChatService] JWT_SECRET is not set');
+        return socket.emit('chat_error', { message: 'Unauthorized' });
+      }
       const decoded = jwt.verify(token, jwtSecret) as any;
       authenticatedUserId = decoded.id;
     } catch (e) {
@@ -69,17 +71,14 @@ export async function handleChatMessage(socket: any, data: any) {
 
   if (!authenticatedUserId) return socket.emit('chat_error', { message: 'Unauthorized' });
 
-  // 2. Prepare parameters
   const finalChatId = chatId || chat_id;
   const finalToolId = toolId || tool_id || 'chat';
   
-  // Decrypt prompt if coming from data_p
   let finalPrompt = data.content;
   if (!finalPrompt && data_p) {
     finalPrompt = decrypt(data_p);
   }
 
-  // Decrypt custom instructions if present
   let customInstructions = '';
   if (data_s) {
     customInstructions = decrypt(data_s);
@@ -89,14 +88,12 @@ export async function handleChatMessage(socket: any, data: any) {
   try {
     if (!pool) throw new Error('Database not ready');
 
-    // 1. Prepare assistant message placeholder
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
       [finalChatId, 'assistant', '', finalToolId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 
-    // 2. Execute logic
     const result = await executeTaskLogic(
       { 
         tool_id: finalToolId, 
@@ -113,16 +110,13 @@ export async function handleChatMessage(socket: any, data: any) {
       socket
     );
 
-    // 3. Update assistant message with final result
     await pool.query(
       'UPDATE messages SET content = $1 WHERE id = $2',
       [result.result, assistantMessageId]
     );
 
-    // 4. Update chat timestamp
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 
-    // 5. Signal completion
     socket.emit('chat_chunk', { chunk: result.result, chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
       result: result.result, 
@@ -133,11 +127,21 @@ export async function handleChatMessage(socket: any, data: any) {
 
   } catch (error: any) {
     console.error('[ChatService] Error:', error);
-    // Cleanup placeholder message if it was created
     if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
       pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[ChatService] Placeholder deletion failed:', e));
     }
-    socket.emit('chat_error', { message: error.message || 'Internal server error' });
+    
+    let userMessage = 'An unexpected system error occurred. Please try again later.';
+    try {
+      const parsed = JSON.parse(error.message);
+      if (parsed.error) userMessage = parsed.error;
+    } catch (e) {
+      if (error.message && (error.message.includes('provider') || error.message.includes('quota') || error.message.includes('Unauthorized'))) {
+        userMessage = error.message;
+      }
+    }
+    
+    socket.emit('chat_error', { message: userMessage });
   }
 }
 
