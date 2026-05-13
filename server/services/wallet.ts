@@ -114,32 +114,6 @@ export async function getReferralCount(userId: string) {
   return parseInt(result.rows[0].count);
 }
 
-export async function getPayoutAccount(userId: string) {
-  if (!ledgerPool) throw new Error('Ledger database not available');
-  const result = await ledgerPool.query('SELECT type, details FROM payout_accounts WHERE user_id = $1', [userId]);
-  if (result.rows.length > 0) {
-    const account = result.rows[0];
-    return {
-      type: account.type,
-      details: JSON.parse(decrypt(account.details))
-    };
-  }
-  return null;
-}
-
-export async function updatePayoutAccount(userId: string, type: string, details: any) {
-  if (!ledgerPool) throw new Error('Ledger database not available');
-  const encryptedDetails = encrypt(JSON.stringify(details));
-  await ledgerPool.query(
-    `INSERT INTO payout_accounts (user_id, type, details, updated_at) 
-     VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-     ON CONFLICT (user_id) DO UPDATE SET 
-     type = EXCLUDED.type, details = EXCLUDED.details, updated_at = CURRENT_TIMESTAMP`,
-    [userId, type, encryptedDetails]
-  );
-  return { success: true };
-}
-
 export async function checkReferralActivation(userId: string) {
   if (!ledgerPool || !pool) return;
   

@@ -30,24 +30,13 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [payoutAccount, setPayoutAccount] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Payout Form States
-  const [payoutType, setPayoutType] = useState('paypal');
-  const [payoutDetails, setPayoutDetails] = useState({
-    email: '',
-    iban: '',
-    swift: '',
-    bankName: '',
-    accountHolder: ''
-  });
-
+  // Payout Form States - Removed as integrated into withdrawal flows if needed or deleted
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchWallet();
-    fetchPayoutAccount();
   }, []);
 
   useEffect(() => {
@@ -82,55 +71,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       console.error('Transactions fetch error', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPayoutAccount = async () => {
-    try {
-      const res = await fetch('/api/wallet/payout-account', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          setPayoutType(data.type);
-          setPayoutDetails(data.details);
-          setPayoutAccount(data);
-        }
-      }
-    } catch (err) {
-      console.error('Payout account fetch error', err);
-    }
-  };
-
-  const handleUpdatePayout = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate encryption processing time for UX
-      await new Promise(r => setTimeout(r, 1500));
-
-      const res = await fetch('/api/wallet/payout-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: payoutType, details: payoutDetails })
-      });
-      if (res.ok) {
-        fetchPayoutAccount();
-        // Return to first tab after success as requested "returns to button page"
-        setTimeout(() => {
-           setActiveTab('transactions');
-           setIsSaving(false);
-        }, 500);
-      } else {
-        setIsSaving(false);
-        alert(t('saveFailed'));
-      }
-    } catch (err) {
-      setIsSaving(false);
-      alert(t('saveFailed'));
     }
   };
 
@@ -239,8 +179,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             { id: 'earnings', label: dir === 'rtl' ? 'الأرباح' : 'Yields' },
             { id: 'transactions', label: dir === 'rtl' ? 'الودائع' : 'Deposits' },
             { id: 'expenses', label: dir === 'rtl' ? 'المشتريات' : 'Terminal' },
-            { id: 'withdrawal', label: dir === 'rtl' ? 'السحوبات' : 'Disbursements' },
-            { id: 'settings', label: dir === 'rtl' ? 'الإعدادات البنكية' : 'Bank Config' }
+            { id: 'withdrawal', label: dir === 'rtl' ? 'السحوبات' : 'Disbursements' }
           ].map((tab) => {
             const active = activeTab === tab.id;
             return (
@@ -271,8 +210,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
         <div className={`h-full w-full rounded-[4px] border overflow-hidden transition-all duration-700 flex flex-col ${
           theme === 'dark' ? 'bg-[#151517] border-gray-800/60' : 'bg-white border-gray-100 shadow-sm shadow-gray-200/40'
         }`}>
-          {activeTab !== 'settings' ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Transactions Section - Full expansion */}
+          <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto no-scrollbar">
                   <table className="w-full text-left border-separate border-spacing-0">
                     <thead className="sticky top-0 z-20">
@@ -345,138 +284,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   </table>
                 </div>
             </div>
-          ) : (
-            <div className="flex-1 flex flex-col p-8 md:p-12 overflow-hidden bg-transparent relative">
-              <div className="max-w-4xl mx-auto w-full h-full flex flex-col items-center">
-                
-                {/* Section Branding */}
-                <div className="text-center space-y-3 mb-10">
-                   <h3 className="text-2xl font-black tracking-tight uppercase">{dir === 'rtl' ? 'تكوين حساب السداد الفني' : 'Payout System Configuration'}</h3>
-                   <div className="flex items-center justify-center gap-3">
-                      <div className="h-px w-8 bg-gray-200 dark:bg-gray-800" />
-                      <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em]">{dir === 'rtl' ? 'يتم تشفير جميع القيود والبيانات تلقائياً' : 'Automated AES-256 Vault Encryption Active'}</p>
-                      <div className="h-px w-8 bg-gray-200 dark:bg-gray-800" />
-                   </div>
-                </div>
-                
-                {/* Selector - Grid Pattern */}
-                <div className="grid grid-cols-3 gap-px bg-gray-200 dark:bg-gray-800 rounded-none w-full max-w-xl mb-12 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-2xl">
-                   {[
-                     { id: 'paypal', label: 'PayPal', icon: <Mail size={14} /> },
-                     { id: 'iban', label: 'Bank IBAN', icon: <Building size={14} /> },
-                     { id: 'swift', label: 'SWIFT/Wire', icon: <Globe size={14} /> }
-                   ].map(m => (
-                     <button 
-                      key={m.id}
-                      onClick={() => setPayoutType(m.id)}
-                      className={`py-4 px-4 flex flex-col items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${
-                        payoutType === m.id 
-                          ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5' 
-                          : `border-transparent ${theme === 'dark' ? 'text-gray-500 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`
-                      }`}
-                     >
-                       {m.icon}
-                       {m.label}
-                     </button>
-                   ))}
-                </div>
-
-                {/* Official Input Protocol */}
-                <div className="flex-1 w-full max-w-2xl space-y-12 flex flex-col justify-center">
-                   <AnimatePresence mode="wait">
-                     <motion.div
-                       key={payoutType}
-                       initial={{ opacity: 0, y: 10 }}
-                       animate={{ opacity: 1, y: 0 }}
-                       exit={{ opacity: 0, y: -10 }}
-                       transition={{ duration: 0.4 }}
-                       className="w-full"
-                     >
-                        {payoutType === 'paypal' ? (
-                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] ml-1 block">{dir === 'rtl' ? 'حساب السداد (PayPal)' : 'OFFICIAL DISBURSEMENT DESTINATION (PAYPAL)'}</label>
-                            <div className="relative group">
-                              <input 
-                                type="email"
-                                value={payoutDetails.email}
-                                onChange={e => setPayoutDetails({...payoutDetails, email: e.target.value})}
-                                placeholder="finance@sovereign-elite.io"
-                                className={`w-full py-4 border-b bg-transparent font-bold text-lg outline-none transition-all ${
-                                  theme === 'dark' ? 'border-gray-800 focus:border-emerald-500' : 'border-gray-200 focus:border-emerald-500'
-                                }`}
-                              />
-                            </div>
-                         </div>
-                       ) : (
-                          <div className="space-y-12 w-full">
-                             <div className="grid grid-cols-2 gap-12">
-                                <div className="space-y-4">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] ml-1 block">{dir === 'rtl' ? 'المعرف البنكي' : 'BANK IDENTIFIER'}</label>
-                                  <input 
-                                    value={payoutDetails.bankName}
-                                    onChange={e => setPayoutDetails({...payoutDetails, bankName: e.target.value})}
-                                    placeholder="CENTRAL SETTLEMENT BANK"
-                                    className={`w-full py-4 border-b bg-transparent font-bold text-sm uppercase tracking-wider outline-none transition-all ${
-                                      theme === 'dark' ? 'border-gray-800 focus:border-emerald-500' : 'border-gray-200 focus:border-emerald-500'
-                                    }`}
-                                  />
-                                </div>
-                                <div className="space-y-4">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] ml-1 block">{dir === 'rtl' ? 'المستفيد المعتمد' : 'VERIFIED HOLDER'}</label>
-                                  <input 
-                                    value={payoutDetails.accountHolder}
-                                    onChange={e => setPayoutDetails({...payoutDetails, accountHolder: e.target.value})}
-                                    placeholder="OFFICIAL ENTITY NAME"
-                                    className={`w-full py-4 border-b bg-transparent font-bold text-sm uppercase tracking-wider outline-none transition-all ${
-                                      theme === 'dark' ? 'border-gray-800 focus:border-emerald-500' : 'border-gray-200 focus:border-emerald-500'
-                                    }`}
-                                  />
-                                </div>
-                             </div>
-                             <div className="space-y-4">
-                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.5em] ml-1 block">{payoutType === 'iban' ? (dir === 'rtl' ? 'رقم الحساب الدولي (IBAN)' : 'IBAN (ISO STANDARD FORMAT)') : (dir === 'rtl' ? 'كود السويفت (SWIFT)' : 'SWIFT / BIC IDENTIFIER')}</label>
-                                <input 
-                                  value={payoutType === 'iban' ? payoutDetails.iban : payoutDetails.swift}
-                                  onChange={e => setPayoutDetails({...payoutDetails, [payoutType === 'iban' ? 'iban' : 'swift']: e.target.value})}
-                                  placeholder="XXXX XXXX XXXX XXXX XXXX"
-                                  className={`w-full py-6 border-b bg-transparent font-black tracking-[0.5em] text-center outline-none transition-all text-xl ${
-                                    theme === 'dark' ? 'border-gray-800 focus:border-emerald-500 text-white' : 'border-gray-200 focus:border-emerald-500 text-gray-900'
-                                  }`}
-                                />
-                             </div>
-                          </div>
-                       )}
-                     </motion.div>
-                   </AnimatePresence>
-                </div>
-
-                {/* Submit Action - Bottom Anchored */}
-                <div className="w-full max-w-xl mt-8">
-                   <button 
-                     onClick={handleUpdatePayout}
-                     disabled={isSaving}
-                     className={`w-full py-4 rounded-[4px] font-black text-[10px] uppercase tracking-[0.4em] transition-all active:scale-[0.98] flex items-center justify-center gap-4 group shadow-xl ${
-                        isSaving 
-                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20'
-                      }`}
-                   >
-                     {isSaving ? (
-                        <>
-                          <Loader2 size={20} className="animate-spin" />
-                          {dir === 'rtl' ? 'جاري تشفير البيانات...' : 'ENCRYPTING DATA RECORDS...'}
-                        </>
-                      ) : (
-                        <>
-                          <ShieldCheck size={20} className="group-hover:scale-110 transition-transform" />
-                          {dir === 'rtl' ? 'تشفير وحفظ بيانات السحب' : 'Commit Secure Payout Record'}
-                        </>
-                      )}
-                   </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

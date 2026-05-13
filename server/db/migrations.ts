@@ -374,17 +374,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'payout_accounts',
-      pool: targetLedgerPool,
-      query: `CREATE TABLE IF NOT EXISTS payout_accounts (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE NOT NULL,
-        type VARCHAR(20),
-        details TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'support_tickets',
       query: `CREATE TABLE IF NOT EXISTS support_tickets (
         id SERIAL PRIMARY KEY,

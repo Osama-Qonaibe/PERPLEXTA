@@ -21,7 +21,7 @@ export const RewardsPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [kycFullName, setKycFullName] = useState('');
   const [selfieCaptured, setSelfieCaptured] = useState(false);
-  const [selfieData, setSelfieData] = useState<string | null>(null); // Store base64
+  const [selfieData, setSelfieData] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [wallet, setWallet] = useState({ points: 0, balance: 0 });
@@ -75,7 +75,6 @@ export const RewardsPage: React.FC = () => {
       });
       
       if (res.ok) {
-        // Refresh user profile to show 'pending' state
         const userRes = await fetch('/api/user/profile', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -115,7 +114,6 @@ export const RewardsPage: React.FC = () => {
         setIsConvertModalOpen(false);
         setConvertAmount('1000');
         
-        // Refresh data
         refreshUser();
         const walletRes = await fetch('/api/wallet', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -157,7 +155,6 @@ export const RewardsPage: React.FC = () => {
         setIsWithdrawModalOpen(false);
         setWithdrawAmount('');
         setPaymentDetails('');
-        // Refresh data
         const walletRes = await fetch('/api/wallet', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -182,16 +179,14 @@ export const RewardsPage: React.FC = () => {
     const fetchData = async () => {
       try {
         if (token) {
-          // Fetch User Profile
           const userRes = await fetch('/api/user/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (userRes.ok) {
             const userData = await userRes.json();
-            setUser(userData); // Update global context
+            setUser(userData);
           }
 
-          // Fetch Wallet
           const walletRes = await fetch('/api/wallet', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -200,7 +195,6 @@ export const RewardsPage: React.FC = () => {
             setWallet(data);
           }
 
-          // Fetch Transactions - Updated endpoint
           const transRes = await fetch('/api/wallet/history', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -209,7 +203,6 @@ export const RewardsPage: React.FC = () => {
             setTransactions(data);
           }
 
-          // Fetch Referral Count
           const refRes = await fetch('/api/wallet/referral-count', {
             headers: { 'Authorization': `Bearer ${token}` }
           });

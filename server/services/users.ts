@@ -93,14 +93,12 @@ export async function getUserUsage(userId: string | number) {
   if (planRes.rows.length === 0) throw new Error('User profile not found');
   
   let plan = planRes.rows[0];
-
-  // If no active plan via subscription, fallback to Starter plan explicitly
+  
   if (!plan.id) {
     const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
     if (starterRes.rows.length > 0) {
       plan = { ...plan, ...starterRes.rows[0] };
     } else {
-      // Emergency fallback if even Starter is missing
       plan = { ...plan, name_en: 'Starter', name_ar: 'البداية', limits: {}, color: '#10b981' };
     }
   }
@@ -216,8 +214,7 @@ export async function getUserProfile(userId: string) {
     plan_color: row.plan_color,
     limits: row.limits
   } : null;
-
-  // Fallback if no subscription found
+  
   if (!subscription) {
     const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
     if (starterRes.rows.length > 0) {
