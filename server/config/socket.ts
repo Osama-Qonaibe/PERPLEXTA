@@ -4,7 +4,10 @@ import jwt from 'jsonwebtoken';
 
 export let io: Server;
 
-const jwtSecret = process.env.JWT_SECRET || 'sovereign-secret-key-2024';
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('[FATAL] JWT_SECRET is not set. Real-time security compromised.');
+}
 
 export function initSocket(httpServer: HttpServer) {
   io = new Server(httpServer, {
@@ -22,7 +25,7 @@ export function initSocket(httpServer: HttpServer) {
       return next(new Error('Authentication error: Token missing'));
     }
 
-    jwt.verify(token, jwtSecret, (err: any, decoded: any) => {
+    jwt.verify(token, jwtSecret!, (err: any, decoded: any) => {
       if (err) {
         return next(new Error('Authentication error: Invalid token'));
       }
