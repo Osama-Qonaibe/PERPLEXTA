@@ -29,12 +29,10 @@ const getBaseUrl = (req: express.Request) => {
   
   const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
   
-  // Prioritize production environment URL if available
   if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
     return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
   }
   
-  // Force HTTPS in production environments if not detected but on a real domain
   let finalProto = protocol;
   if (finalHost && !finalHost.includes('localhost') && !finalHost.includes('127.0.0.1') && !finalHost.includes('0.0.0.0')) {
     finalProto = 'https';
