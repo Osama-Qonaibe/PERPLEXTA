@@ -1,10 +1,10 @@
 import express from 'express';
-import { authenticateAdmin } from '../middleware/auth.js';
+import { authenticateAdmin, authenticateToken } from '../middleware/auth.js';
 import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEconomySettings } from '../services/system.js';
 
 const router = express.Router();
 
-router.get("/settings", async (req, res) => {
+router.get("/settings", authenticateToken, async (req, res) => {
   try {
     const settings = await getSystemSettings();
     res.json(settings);
@@ -13,7 +13,7 @@ router.get("/settings", async (req, res) => {
   }
 });
 
-router.get("/economy", async (req, res) => {
+router.get("/economy", authenticateToken, async (req, res) => {
   try {
     const economy = await getEconomySettings();
     res.json(economy);

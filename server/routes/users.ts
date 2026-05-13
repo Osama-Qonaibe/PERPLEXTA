@@ -9,7 +9,7 @@ router.get("/usage", authenticateToken, async (req: any, res) => {
      const usage = await getUserUsage(req.user.id);
      res.json(usage);
    } catch (error: any) {
-     res.status(500).json({ error: error.message || 'Failed to fetch usage data' });
+     res.status(500).json({ error: 'Failed to fetch usage data' });
    }
 });
 
@@ -19,7 +19,10 @@ router.get("/profile", authenticateToken, async (req: any, res) => {
      if (!profile) return res.status(404).json({ error: 'User not found' });
      res.json(profile);
    } catch (error: any) {
-     res.status(error.message === 'Database initializing' ? 503 : 500).json({ error: error.message || 'Internal Error' });
+     if (error.message === 'Database initializing') {
+       return res.status(503).json({ error: 'System is initializing, please try again shortly.' });
+     }
+     res.status(500).json({ error: 'Internal Error' });
    }
 });
 
@@ -29,7 +32,10 @@ router.get("/me", authenticateToken, async (req: any, res) => {
      if (!profile) return res.status(404).json({ error: 'User not found' });
      res.json(profile);
    } catch (error: any) {
-     res.status(error.message === 'Database initializing' ? 503 : 500).json({ error: error.message || 'Internal Error' });
+     if (error.message === 'Database initializing') {
+       return res.status(503).json({ error: 'System is initializing, please try again shortly.' });
+     }
+     res.status(500).json({ error: 'Internal Error' });
    }
 });
 
@@ -38,7 +44,10 @@ router.put("/profile", authenticateToken, async (req: any, res) => {
     const updated = await updateUserProfile(req.user.id, req.body);
     res.json(updated);
   } catch (error: any) {
-    res.status(error.message === 'Database initializing' ? 503 : 500).json({ error: error.message || 'Failed to update profile' });
+    if (error.message === 'Database initializing') {
+      return res.status(503).json({ error: 'System is initializing, please try again shortly.' });
+    }
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

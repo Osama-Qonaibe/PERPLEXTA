@@ -77,3 +77,58 @@ export async function getSubscriptionStatus(userId: string) {
   `, [userId]);
   return result.rows[0] || null;
 }
+
+export async function activateStripeSubscription(userId: string, planId: string, subscriptionId: string, billingCycle: string) {
+  if (!pool) return;
+  
+  const cycleDays = billingCycle === 'annual' ? 365 : 30;
+  const periodEnd = new Date();
+  periodEnd.setDate(periodEnd.getDate() + cycleDays);
+
+  await pool.query(`
+    INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end)
+    VALUES ($1, $2, 'active', $3, $4)
+    ON CONFLICT (user_id) DO UPDATE SET
+      plan_id = EXCLUDED.plan_id,
+      status = 'active',
+      billing_period = EXCLUDED.billing_period,
+      current_period_end = EXCLUDED.current_period_end,
+      updated_at = CURRENT_TIMESTAMP
+  `, [userId, planId, billingCycle, periodEnd]);
+
+  await createNotification(
+    userId, 
+    'success',
+    'Subscription Activated',
+    'تم تفعيل الاشتراك',
+    `Your subscription has been activated successfully via Stripe.`,
+    `تم تفعيل اشتراكك بنجاح عبر Stripe.`
+  );
+
+  if (io) {
+    io.to(`user_${userId}`).emit('user_profile_updated');
+  }
+}
+
+export async function cancelSubscription(userId: string) {
+  if (!pool) return;
+  
+  await pool.query(`
+    UPDATE subscriptions 
+    SET status = 'canceled', updated_at = CURRENT_TIMESTAMP 
+    WHERE user_id = $1
+  `, [userId]);
+
+  await createNotification(
+    userId, 
+    'warning',
+    'Subscription Canceled',
+    'تم إلغاء الاشتراك',
+    `Your subscription has been canceled or expired.`,
+    `تم إلغاء اشتراكك أو انتهت صلاحيته.`
+  );
+
+  if (io) {
+    io.to(`user_${userId}`).emit('user_profile_updated');
+  }
+}

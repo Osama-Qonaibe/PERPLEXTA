@@ -57,7 +57,7 @@ app.use('/uploads', express.static(uploadsPath));
 
 app.use('/api', globalLimiter);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';

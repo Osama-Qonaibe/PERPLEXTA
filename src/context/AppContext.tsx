@@ -2027,7 +2027,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const socketEndpoint = SOCKET_URL || window.location.origin;
-    const newSocket = io(socketEndpoint, { transports: ['polling', 'websocket'], autoConnect: true });
+    const socketOptions: any = { 
+      transports: ['polling', 'websocket'], 
+      autoConnect: true 
+    };
+
+    if (token) {
+      socketOptions.auth = { token };
+    }
+
+    const newSocket = io(socketEndpoint, socketOptions);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -2064,7 +2073,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       if (newSocket) newSocket.disconnect();
     };
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (socket && socket.connected && user?.id) {
@@ -2258,8 +2267,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const fetchSettingsAndPlans = async () => {
+      const options = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
+      
       try {
-        const settingsData = await fetchWithRetry('/api/settings');
+        const settingsData = await fetchWithRetry('/api/settings', options);
         setSiteSettings({
           siteName: settingsData.site_name_en || '',
           siteNameAr: settingsData.site_name_ar || '',
@@ -2274,18 +2285,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           faviconBase64: settingsData.favicon_url || null
         });
       } catch (err) {
-         console.warn('Optional settings fetch failed:', err);
+         console.warn('Settings fetch failed (likely unauthorized or server starting):', err);
       }
 
       try {
-        const ecoData = await fetchWithRetry('/api/economy', {}, 2, 500);
+        const ecoData = await fetchWithRetry('/api/economy', options, 2, 500);
         setEconomySettings(ecoData);
       } catch (ecoError) {
-        console.log('Optional economy fetch failed (likely transient or initial delay):', ecoError);
+        console.log('Economy fetch failed (likely unauthorized):', ecoError);
       }
 
       try {
-        const plansData = await fetchWithRetry('/api/plans');
+        const plansData = await fetchWithRetry('/api/plans', options);
         const formattedPlans = (plansData || []).map((p: any) => {
           let features = [];
           let limits = {};
@@ -2325,7 +2336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     fetchSettingsAndPlans();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     document.documentElement.dir = dir;

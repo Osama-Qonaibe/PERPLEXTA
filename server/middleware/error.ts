@@ -9,7 +9,9 @@ export function globalErrorHandler(err: AppError, req: Request, res: Response, n
   const message = err.message || 'Internal Server Error';
 
   console.error(`[Error] ${statusCode} - ${message}`);
-  if (err.stack) console.error(err.stack);
+  if (process.env.NODE_ENV !== 'production' && err.stack) {
+    console.error(err.stack);
+  }
 
   res.status(statusCode).json({
     error: message,
