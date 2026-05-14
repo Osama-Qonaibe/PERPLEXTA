@@ -20,11 +20,20 @@ import {
 
 const router = express.Router();
 
+async function auditLog(userId: any, action: string, type: string, details: object) {
+  try {
+    await pool.query(
+      'INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)',
+      [userId, action, type, JSON.stringify(details)]
+    );
+  } catch {}
+}
+
 router.get("/health", authenticateAdmin, async (req, res) => {
   try {
     const health = await getServerHealth();
     res.json(health);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -33,7 +42,7 @@ router.get("/databases/registry", authenticateAdmin, async (req, res) => {
   try {
     const registry = await getDatabaseRegistry();
     res.json(registry);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -43,16 +52,17 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
     const result = await saveDatabaseConfig(req.body);
     res.json(result);
   } catch (error) {
-    console.error('[Admin] Database save error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
+    const { host, port, database, user } = req.body;
+    if (!host || !database) return res.status(400).json({ error: 'host and database are required' });
     const result = await testDatabaseConnection(req.body);
     res.json(result);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -61,8 +71,9 @@ router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
   try {
     const { type } = req.body;
     await runDatabaseMigrations(type || 'additive');
+    await auditLog((req as any).user?.id, 'Run Database Migrations', 'system', { type });
     res.json({ success: true, message: 'Migrations completed' });
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -71,16 +82,20 @@ router.get("/databases/export", authenticateAdmin, async (req, res) => {
   try {
     const backup = await exportDatabase(req.query.type as any);
     res.json(backup);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.post("/databases/import", authenticateAdmin, async (req, res) => {
   try {
-    const result = await importDatabase(req.body.backup, req.body.targetType);
+    const { backup, targetType } = req.body;
+    if (!backup || typeof backup !== 'object') return res.status(400).json({ error: 'Invalid backup payload' });
+    if (!targetType) return res.status(400).json({ error: 'targetType is required' });
+    const result = await importDatabase(backup, targetType);
+    await auditLog((req as any).user?.id, 'Import Database', 'system', { targetType });
     res.json(result);
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -89,7 +104,7 @@ router.get("/api-keys", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT provider, updated_at, daily_budget, used_today, models, is_active FROM api_keys_vault');
     res.json({ keys: result.rows });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -98,7 +113,7 @@ router.post("/orchestrator/init-all", authenticateAdmin, async (req, res) => {
   try {
     const result = await initAllTools();
     res.json(result);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to initialize' });
   }
 });
@@ -107,7 +122,7 @@ router.get("/plans", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM plans ORDER BY monthly_price ASC');
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -115,12 +130,14 @@ router.get("/plans", authenticateAdmin, async (req, res) => {
 router.post("/plans", authenticateAdmin, async (req, res) => {
   try {
     const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits } = req.body;
+    if (!name_en) return res.status(400).json({ error: 'name_en is required' });
     await pool.query(`
       INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits)]);
+    await auditLog((req as any).user?.id, 'Create Plan', 'system', { name_en });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -136,8 +153,9 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
         color = $11, features = $12, limits = $13, updated_at = CURRENT_TIMESTAMP
       WHERE id = $14
     `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), id]);
+    await auditLog((req as any).user?.id, 'Update Plan', 'system', { id, name_en });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -146,8 +164,9 @@ router.delete("/plans/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM plans WHERE id = $1', [id]);
+    await auditLog((req as any).user?.id, 'Delete Plan', 'system', { id });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -178,7 +197,6 @@ router.get("/users", authenticateAdmin, async (req, res) => {
 
     res.json(usersWithWallets);
   } catch (error) {
-    console.error('[Admin] Failed to fetch users:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -193,8 +211,9 @@ router.post("/users/:id/status", authenticateAdmin, async (req, res) => {
     }
 
     await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
+    await auditLog((req as any).user?.id, 'Update User Status', 'system', { targetUser: id, status });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -209,8 +228,9 @@ router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
     }
 
     await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, id]);
+    await auditLog((req as any).user?.id, 'Update User Role', 'system', { targetUser: id, role });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -219,7 +239,7 @@ router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
     res.json({ routes: result.rows, tools: result.rows });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -282,7 +302,6 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
       client.release();
     }
   } catch (error) {
-    console.error('[Admin] Save Route Error:', error);
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -295,7 +314,7 @@ router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
       models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
     });
     res.json({ providerModels: models });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -304,7 +323,7 @@ router.get("/broadcasts", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM system_broadcasts ORDER BY created_at DESC LIMIT 100');
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -312,17 +331,25 @@ router.get("/broadcasts", authenticateAdmin, async (req, res) => {
 router.post("/broadcasts/send", authenticateAdmin, async (req, res) => {
   try {
     const { title_en, title_ar, content_en, content_ar, type, target_group } = req.body;
-    
+    if (!title_en || !content_en) return res.status(400).json({ error: 'title_en and content_en are required' });
+
+    const countRes = await pool.query(
+      target_group === 'all'
+        ? 'SELECT COUNT(*) FROM users WHERE status = $1'
+        : 'SELECT COUNT(*) FROM users u JOIN subscriptions s ON u.id = s.user_id WHERE u.status = $1',
+      ['active']
+    );
+    const sentCount = parseInt(countRes.rows[0].count) || 0;
+
     const result = await pool.query(`
       INSERT INTO system_broadcasts (title_en, title_ar, content_en, content_ar, type, target_group, status, sent_count)
-      VALUES ($1, $2, $3, $4, $5, $6, 'pending', 0)
+      VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7)
       RETURNING id
-    `, [title_en, title_ar, content_en, content_ar, type, target_group]);
+    `, [title_en, title_ar, content_en, content_ar, type, target_group, sentCount]);
     
-    await pool.query('UPDATE system_broadcasts SET status = $1, sent_count = $2 WHERE id = $3', ['sent', 1, result.rows[0].id]);
-    
+    await auditLog((req as any).user?.id, 'Send Broadcast', 'system', { title_en, target_group, sentCount });
     res.json({ success: true, broadcastId: result.rows[0].id });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -331,7 +358,7 @@ router.get("/stats", authenticateAdmin, async (req, res) => {
   try {
     const stats = await getAdminStats();
     res.json(stats);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -340,7 +367,7 @@ router.get("/security-alerts", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM security_alerts ORDER BY created_at DESC LIMIT 50');
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -349,7 +376,7 @@ router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 50');
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -367,7 +394,7 @@ router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     `, [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -383,13 +410,16 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     if (status && !['active', 'suspended', 'pending'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
+    if (kyc_status && !['none', 'pending', 'verified', 'rejected'].includes(kyc_status)) {
+      return res.status(400).json({ error: 'Invalid kyc_status' });
+    }
 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       
       const userUpdates = [];
-      const userValues = [id];
+      const userValues: any[] = [id];
       let valIdx = 2;
 
       if (role) { userUpdates.push(`role = $${valIdx++}`); userValues.push(role); }
@@ -402,11 +432,8 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
       }
 
-      if (status) {
-        await client.query(`UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`, [status, id]);
-      }
-
       await client.query('COMMIT');
+      await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: id, changes: { role, status, kyc_status } });
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -414,7 +441,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     } finally {
       client.release();
     }
-  } catch (error: any) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -424,7 +451,7 @@ router.get("/users/:id/usage", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const result = await pool.query('SELECT * FROM user_usage WHERE user_id = $1 ORDER BY usage_date DESC LIMIT 100', [id]);
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -434,7 +461,7 @@ router.get("/users/:id/activity-logs", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const result = await pool.query('SELECT * FROM system_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100', [id]);
     res.json(result.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -458,7 +485,9 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
           user_name: userMap.get(t.user_id) || 'Unknown User'
         }));
       }
-    } catch (uErr) {}
+    } catch (uErr) {
+      console.error('[Admin] Failed to enrich transactions with user names:', uErr);
+    }
 
     res.json({
       stats: {
@@ -470,16 +499,13 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
       transactions
     });
   } catch (error) {
-    console.error('[Admin] Financial radar error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
   try {
-    const walletData = await ledgerPool.query(`
-      SELECT * FROM wallets WHERE balance < 0
-    `);
+    const walletData = await ledgerPool.query('SELECT * FROM wallets WHERE balance < 0');
     
     let anomalies = walletData.rows;
     
@@ -496,11 +522,12 @@ router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
           };
         });
       }
-    } catch (uErr) {}
+    } catch (uErr) {
+      console.error('[Admin] Failed to enrich wallet anomalies:', uErr);
+    }
     
     res.json(anomalies);
   } catch (error) {
-    console.error('[Admin] Wallet diagnostics error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -513,7 +540,7 @@ router.get("/wallet-alerts", authenticateAdmin, async (req, res) => {
       ORDER BY created_at DESC LIMIT 20
     `);
     res.json(alerts.rows);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -527,13 +554,13 @@ router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
     
     const walletId = walletRes.rows[0].id;
 
-    const history = await ledgerPool.query('SELECT sum(amount) as total FROM ledger_transactions WHERE wallet_id = $1 AND status = \'success\'', [walletId]);
+    const history = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE wallet_id = $1 AND status = 'success'", [walletId]);
     const correctBalance = parseFloat(history.rows[0].total || 0);
     
     await ledgerPool.query('UPDATE wallets SET balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [correctBalance, walletId]);
+    await auditLog((req as any).user?.id, 'Reconcile Wallet', 'finance', { targetUser: id, newBalance: correctBalance });
     res.json({ success: true, new_balance: correctBalance });
   } catch (error) {
-    console.error('[Admin] Reconciliation failed:', error);
     res.status(500).json({ error: 'Reconciliation failed' });
   }
 });
@@ -544,24 +571,31 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'IDs array required' });
     
     if (type === 'financial') {
-      await ledgerPool.query(`DELETE FROM ledger_transactions WHERE id = ANY($1)`, [ids]);
+      await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = ANY($1)', [ids]);
     } else {
-      const validTables = { alert: 'security_alerts', log: 'system_logs' };
-      const table = validTables[type as keyof typeof validTables];
+      const validTables: Record<string, string> = { alert: 'security_alerts', log: 'system_logs' };
+      const table = validTables[type];
       if (!table) return res.status(400).json({ error: 'Invalid type' });
       await pool.query(`DELETE FROM ${table} WHERE id = ANY($1)`, [ids]);
     }
+    await auditLog((req as any).user?.id, 'Batch Delete Activity', 'system', { type, count: ids.length });
     res.json({ success: true, count: ids.length });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Batch delete failed' });
   }
 });
 
 router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   try {
-    await ledgerPool.query("DELETE FROM ledger_transactions");
+    const { confirm } = req.body;
+    if (confirm !== 'DELETE_ALL_TRANSACTIONS') {
+      return res.status(400).json({ error: 'Confirmation required: send confirm = "DELETE_ALL_TRANSACTIONS"' });
+    }
+    const countRes = await ledgerPool.query('SELECT COUNT(*) FROM ledger_transactions');
+    await ledgerPool.query('DELETE FROM ledger_transactions');
+    await auditLog((req as any).user?.id, 'Purge All Financial Transactions', 'finance', { deletedCount: parseInt(countRes.rows[0].count) });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Purge failed' });
   }
 });
@@ -569,10 +603,12 @@ router.delete("/financial/all", authenticateAdmin, async (req, res) => {
 router.delete("/activity/:id/:type", authenticateAdmin, async (req, res) => {
   try {
     const { id, type } = req.params;
-    const table = type === 'alert' ? 'security_alerts' : 'system_logs';
+    const validTables: Record<string, string> = { alert: 'security_alerts', log: 'system_logs' };
+    const table = validTables[type];
+    if (!table) return res.status(400).json({ error: 'Invalid type' });
     await pool.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Delete failed' });
   }
 });
@@ -580,19 +616,26 @@ router.delete("/activity/:id/:type", authenticateAdmin, async (req, res) => {
 router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
   try {
     const { type } = req.params;
+    const adminId = (req as any).user?.id;
+
     if (type === 'ai_generation' || type === 'ai') {
       await pool.query("DELETE FROM system_logs WHERE type = 'ai_generation'");
+      await auditLog(adminId, 'Clear AI Generation Logs', 'system', { type });
     } else if (type === 'system_event' || type === 'system') {
       await pool.query("DELETE FROM system_logs WHERE type != 'ai_generation'");
+      await auditLog(adminId, 'Clear System Event Logs', 'system', { type });
     } else if (type === 'alert') {
-      await pool.query("DELETE FROM security_alerts");
+      await pool.query('DELETE FROM security_alerts');
+      await auditLog(adminId, 'Clear Security Alerts', 'system', { type });
     } else if (type === 'log') {
-      await pool.query("DELETE FROM system_logs");
+      await pool.query('DELETE FROM system_logs');
+      await auditLog(adminId, 'Clear All System Logs', 'system', { type });
     } else {
-      await pool.query("DELETE FROM system_logs");
+      return res.status(400).json({ error: 'Invalid type. Use: ai, system, alert, or log' });
     }
+
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Cleanup failed' });
   }
 });
@@ -600,8 +643,9 @@ router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
 router.delete("/security-alerts/all", authenticateAdmin, async (req, res) => {
   try {
     await pool.query('DELETE FROM security_alerts');
+    await auditLog((req as any).user?.id, 'Clear All Security Alerts', 'system', {});
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Cleanup failed' });
   }
 });
@@ -611,7 +655,7 @@ router.delete("/security-alerts/:id", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     await pool.query('DELETE FROM security_alerts WHERE id = $1', [id]);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Delete failed' });
   }
 });
@@ -622,24 +666,31 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
     const mode = req.query.mode as string;
 
     if (mode === 'all') {
-      const result = await pool.query("DELETE FROM notifications");
+      const result = await pool.query('DELETE FROM notifications');
+      await auditLog((req as any).user?.id, 'Prune All Notifications', 'system', {});
       return res.json({ success: true, count: result.rowCount });
     }
 
     const daysNum = parseInt(days) || 30;
     const result = await pool.query("DELETE FROM notifications WHERE is_read = true AND created_at < now() - interval '1 day' * $1", [daysNum]);
     res.json({ success: true, count: result.rowCount });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Prune failed' });
   }
 });
 
 router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) => {
   try {
-    await pool.query("TRUNCATE TABLE messages CASCADE");
-    await pool.query("DELETE FROM chats");
+    const { confirm } = req.body;
+    if (confirm !== 'DELETE_ALL_CHATS') {
+      return res.status(400).json({ error: 'Confirmation required: send confirm = "DELETE_ALL_CHATS"' });
+    }
+    const countRes = await pool.query('SELECT COUNT(*) FROM chats');
+    await pool.query('TRUNCATE TABLE messages CASCADE');
+    await pool.query('DELETE FROM chats');
+    await auditLog((req as any).user?.id, 'Clear All Chat History', 'system', { deletedChats: parseInt(countRes.rows[0].count) });
     res.json({ success: true, message: 'All AI history and chats cleared' });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
@@ -648,8 +699,9 @@ router.delete("/ledger-transactions/:id", authenticateAdmin, async (req, res) =>
   try {
     const { id } = req.params;
     await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = $1', [id]);
+    await auditLog((req as any).user?.id, 'Delete Ledger Transaction', 'finance', { transactionId: id });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Delete failed' });
   }
 });
@@ -659,7 +711,7 @@ router.get("/economy", authenticateAdmin, async (req, res) => {
     const result = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate FROM system_settings LIMIT 1');
     const settings = result.rows[0] || {};
     res.json(settings);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -679,32 +731,28 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
 
     await pool.query(`
-      UPDATE system_settings SET 
-        points_per_dollar = $1, 
-        min_payout_usd = $2, 
-        min_deposit_usd = $3, 
-        referral_bonus_percent = $4, 
-        welcome_bonus_points = $5, 
-        referral_bonus_points = $6, 
-        conversion_rate = $7,
-        min_withdrawal_cents = $8,
+      INSERT INTO system_settings (
+        points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+      ON CONFLICT DO UPDATE SET
+        points_per_dollar = EXCLUDED.points_per_dollar,
+        min_payout_usd = EXCLUDED.min_payout_usd,
+        min_deposit_usd = EXCLUDED.min_deposit_usd,
+        referral_bonus_percent = EXCLUDED.referral_bonus_percent,
+        welcome_bonus_points = EXCLUDED.welcome_bonus_points,
+        referral_bonus_points = EXCLUDED.referral_bonus_points,
+        conversion_rate = EXCLUDED.conversion_rate,
+        min_withdrawal_cents = EXCLUDED.min_withdrawal_cents,
         updated_at = CURRENT_TIMESTAMP
     `, [
-      points_per_dollar, 
-      min_payout_usd, 
-      min_deposit_usd, 
-      referral_bonus_percent, 
-      welcome_bonus_points, 
-      referral_bonus_points, 
-      conversion_rate,
-      min_withdrawal_cents
+      points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+      welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
     ]);
     
-    await pool.query('INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)', 
-      [(req as any).user?.id, 'Update Economy Settings', 'finance', JSON.stringify(req.body)]);
-      
+    await auditLog((req as any).user?.id, 'Update Economy Settings', 'finance', req.body);
     res.json({ success: true, message: 'Finance settings updated successfully' });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -727,13 +775,10 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
     `, [encryptedSecret, publishableKey, encryptedWebhook, isLiveMode]);
     
-    await pool.query('INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)', 
-      [(req as any).user?.id, 'Update Stripe Settings', 'finance', JSON.stringify({ isLiveMode, publishableKey })]);
-      
+    await auditLog((req as any).user?.id, 'Update Stripe Settings', 'finance', { isLiveMode, publishableKey });
     invalidateStripeClient();
     res.json({ success: true });
   } catch (error) {
-    console.error('[Admin] Stripe settings update failed:', error);
     res.status(500).json({ error: 'Update failed' });
   }
 });
@@ -750,15 +795,9 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
     
     await stripe.balance.retrieve();
     
-    await pool.query(`
-      UPDATE system_settings SET stripe_status = 'verified', stripe_last_verified_at = CURRENT_TIMESTAMP
-    `);
-
-    res.json({ 
-      success: true, 
-      message: 'Verified successfully'
-    });
-  } catch (error: any) {
+    await pool.query('UPDATE system_settings SET stripe_status = $1, stripe_last_verified_at = CURRENT_TIMESTAMP', ['verified']);
+    res.json({ success: true, message: 'Verified successfully' });
+  } catch {
     res.status(400).json({ error: 'Verification failed' });
   }
 });
@@ -796,16 +835,16 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
     invalidateVaultCache(provider);
 
     let syncedCount = 0;
-    let syncedModels = [];
+    let syncedModels: any[] = [];
     try {
       const syncResult = await syncProviderModelsInternal(provider.toLowerCase(), finalKey);
       syncedCount = syncResult.count;
       syncedModels = syncResult.models;
-    } catch (syncErr) {}
+    } catch {}
 
+    await auditLog((req as any).user?.id, 'Save API Key', 'system', { provider: provider.toLowerCase() });
     res.json({ success: true, count: syncedCount, models: syncedModels, status });
   } catch (error) {
-    console.error('[Admin] Save Key failed:', error);
     res.status(500).json({ error: 'Failed to save API key' });
   }
 });
@@ -814,9 +853,10 @@ router.post("/api-keys/:id/budget", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { budget } = req.body;
+    if (budget === undefined || isNaN(Number(budget))) return res.status(400).json({ error: 'Valid budget required' });
     await pool.query('UPDATE api_keys_vault SET daily_budget = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [budget, id]);
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Update failed' });
   }
 });
@@ -825,8 +865,9 @@ router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM api_keys_vault WHERE provider = $1', [id]);
+    await auditLog((req as any).user?.id, 'Delete API Key', 'system', { provider: id });
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Delete failed' });
   }
 });
@@ -839,12 +880,8 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
     
     const decryptedKey = decrypt(keyResult.rows[0].encrypted_key);
     const syncResult = await syncProviderModelsInternal(id, decryptedKey);
-    res.json({ 
-      success: true, 
-      count: syncResult.count, 
-      models: syncResult.models 
-    });
-  } catch (error: any) {
+    res.json({ success: true, count: syncResult.count, models: syncResult.models });
+  } catch {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -859,9 +896,8 @@ router.post("/api-keys/:id/sync-usage", authenticateAdmin, async (req, res) => {
     const status = await checkProviderStatus(id, decryptedKey);
     
     await pool.query('UPDATE api_keys_vault SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [status.isValid, id]);
-    
     res.json({ success: true, status });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Sync failed' });
   }
 });
