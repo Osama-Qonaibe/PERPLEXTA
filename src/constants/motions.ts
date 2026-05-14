@@ -2,7 +2,7 @@ import { Variants } from 'motion/react';
 
 /**
  * Premium Sovereign Page Transition
- * Achieves the "Slow-Motion" elite feel with a subtle upward slide.
+ * Simplified to a fast fade (150ms) for stability and speed.
  */
 export const sovereignPageTransition: Variants = {
   initial: {
@@ -11,28 +11,27 @@ export const sovereignPageTransition: Variants = {
   animate: {
     opacity: 1,
     transition: {
-      duration: 0.4,
-      ease: [0.16, 1, 0.3, 1], 
+      duration: 0.15,
+      ease: "easeOut",
       staggerChildren: 0,
     },
   },
   exit: {
     opacity: 0,
     transition: {
-      duration: 0.2,
-      ease: [0.16, 1, 0.3, 1],
+      duration: 0.15,
+      ease: "easeIn",
     },
   },
 };
 
 export const sovereignItemTransition: Variants = {
-  initial: { opacity: 0, y: 10 },
+  initial: { opacity: 0 },
   animate: { 
     opacity: 1, 
-    y: 0,
     transition: {
-      duration: 0.5,
-      ease: [0.16, 1, 0.3, 1]
+      duration: 0.2,
+      ease: "easeOut"
     }
   }
 };

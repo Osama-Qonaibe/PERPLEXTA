@@ -1,48 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+:root {
+  --bg-base: #09090b;
+  --bg-surface: #111113;
+  --bg-overlay: #18181b;
+  --bg-input: #1c1c1f;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-accent: rgba(16, 185, 129, 0.25);
+  --text-primary: #f9fafb;
+  --text-secondary: #71717a;
+  --text-muted: #3f3f46;
+  --accent: #10b981;
+  --accent-dim: rgba(16, 185, 129, 0.12);
+  --accent-glow: rgba(16, 185, 129, 0.35);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 8px;
+  
+  /* Legacy compatibility / Fallbacks */
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-surface);
+  --text-primary-legacy: var(--text-primary);
+  --text-secondary-legacy: var(--text-secondary);
+  --border-main: var(--border);
+  --accent-emerald: var(--accent);
 }
 
-@keyframes loading {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(250%); }
+@theme {
+  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-numeric: "Inter", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-overlay: var(--bg-overlay);
+  --color-input-bg: var(--bg-input);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  
+  --radius-custom: var(--radius);
+}
+@layer utilities {
+  .btn-primary {
+    @apply bg-accent text-black font-medium transition-all duration-200 active:scale-95;
+    border-radius: var(--radius);
+  }
+  
+  .btn-secondary {
+    @apply bg-surface border border-[var(--border)] text-[var(--text-primary)] font-medium transition-all duration-200 hover:bg-[var(--bg-overlay)] active:scale-95;
+    border-radius: var(--radius);
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] transition-all duration-200 active:scale-95;
+    border-radius: var(--radius);
+  }
+  
+  .btn-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    @apply font-medium transition-all duration-200 hover:bg-[rgba(239,68,68,0.25)] active:scale-95;
+    border-radius: var(--radius);
+  }
 }
 
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
   transition: background-color 0.3s ease;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
 }
 
 body {
   font-family: "Tajawal", sans-serif;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-base);
   color: var(--text-primary);
   overflow-x: hidden;
   overscroll-behavior-y: none;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-:root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #ffffff;
-  --text-primary: #000000;
-  --text-secondary: #52525b;
-  --border-main: #f4f4f5;
-  --accent-emerald: #10b981;
-}
-
 :root.dark {
-  --bg-primary: #0f0f11;
-  --bg-secondary: #1a1a1c;
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --border-main: rgba(31, 41, 55, 0.6);
-  --accent-emerald: #10b981;
   color-scheme: dark;
 }
 
@@ -57,8 +107,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -66,23 +116,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e5e7eb; /* gray-200 */
+  background: rgba(16, 185, 129, 0.4);
   border-radius: 10px;
-  border: 1px solid transparent;
-  background-clip: content-box;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #374151; /* gray-700 */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af; /* gray-400 */
-  background-clip: content-box;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563; /* gray-600 */
+  background: rgba(16, 185, 129, 0.7);
 }
 
 .scrollbar-none {
