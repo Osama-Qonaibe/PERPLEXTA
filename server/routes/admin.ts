@@ -587,10 +587,6 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
 
 router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   try {
-    const { confirm } = req.body;
-    if (confirm !== 'DELETE_ALL_TRANSACTIONS') {
-      return res.status(400).json({ error: 'Confirmation required: send confirm = "DELETE_ALL_TRANSACTIONS"' });
-    }
     const countRes = await ledgerPool.query('SELECT COUNT(*) FROM ledger_transactions');
     await ledgerPool.query('DELETE FROM ledger_transactions');
     await auditLog((req as any).user?.id, 'Purge All Financial Transactions', 'finance', { deletedCount: parseInt(countRes.rows[0].count) });
@@ -681,10 +677,6 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
 
 router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) => {
   try {
-    const { confirm } = req.body;
-    if (confirm !== 'DELETE_ALL_CHATS') {
-      return res.status(400).json({ error: 'Confirmation required: send confirm = "DELETE_ALL_CHATS"' });
-    }
     const countRes = await pool.query('SELECT COUNT(*) FROM chats');
     await pool.query('TRUNCATE TABLE messages CASCADE');
     await pool.query('DELETE FROM chats');
@@ -730,25 +722,37 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
 
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
 
-    await pool.query(`
-      INSERT INTO system_settings (
+    const existing = await pool.query('SELECT id FROM system_settings LIMIT 1');
+
+    if (existing.rows.length > 0) {
+      await pool.query(`
+        UPDATE system_settings SET
+          points_per_dollar = $1,
+          min_payout_usd = $2,
+          min_deposit_usd = $3,
+          referral_bonus_percent = $4,
+          welcome_bonus_points = $5,
+          referral_bonus_points = $6,
+          conversion_rate = $7,
+          min_withdrawal_cents = $8,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $9
+      `, [
         points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-      ON CONFLICT DO UPDATE SET
-        points_per_dollar = EXCLUDED.points_per_dollar,
-        min_payout_usd = EXCLUDED.min_payout_usd,
-        min_deposit_usd = EXCLUDED.min_deposit_usd,
-        referral_bonus_percent = EXCLUDED.referral_bonus_percent,
-        welcome_bonus_points = EXCLUDED.welcome_bonus_points,
-        referral_bonus_points = EXCLUDED.referral_bonus_points,
-        conversion_rate = EXCLUDED.conversion_rate,
-        min_withdrawal_cents = EXCLUDED.min_withdrawal_cents,
-        updated_at = CURRENT_TIMESTAMP
-    `, [
-      points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-      welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-    ]);
+        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
+        existing.rows[0].id
+      ]);
+    } else {
+      await pool.query(`
+        INSERT INTO system_settings (
+          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+      `, [
+        points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+      ]);
+    }
     
     await auditLog((req as any).user?.id, 'Update Economy Settings', 'finance', req.body);
     res.json({ success: true, message: 'Finance settings updated successfully' });
