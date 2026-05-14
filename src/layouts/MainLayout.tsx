@@ -6,17 +6,14 @@ import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 
-const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
-const sidebarSpring = { type: "spring" as const, stiffness: 260, damping: 28 };
-
 export const MainLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
 
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
   
   return (
-    <div className={`flex h-screen w-full overflow-hidden relative theme-transition bg-[var(--bg-primary)] text-[var(--text-primary)]`}>
-      <div className={`absolute inset-0 z-0 bg-[var(--bg-primary)]`} />
+    <div className={`flex h-screen w-full overflow-hidden relative theme-transition bg-[var(--bg-base)] text-[var(--text-primary)]`}>
+      <div className={`absolute inset-0 z-0 bg-[var(--bg-base)]`} />
       
       <div
         dir={localDir}
@@ -30,7 +27,7 @@ export const MainLayout: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: 0.15 }}
               className="absolute inset-0 z-[140] bg-black/40 backdrop-blur-sm cursor-pointer"
               onClick={() => setIsSidebarOpen(false)}
             />
@@ -47,8 +44,9 @@ export const MainLayout: React.FC = () => {
             borderRadius: 0, // Remove border radius animation
           }}
           transition={{ 
-            ...sidebarSpring, 
-            duration: isMobile ? 0.3 : 0.6,
+            type: "tween", 
+            duration: 0.2, 
+            ease: "easeOut" 
           }}
           className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-inherit"
           style={{ paddingLeft: 'unset', paddingRight: 'unset' }}

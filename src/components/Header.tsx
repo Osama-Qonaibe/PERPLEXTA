@@ -140,7 +140,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-opacity group text-[var(--text-primary)]`}>
                 <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {siteSettings.logoBase64 ? (
-                    <div className="w-10 h-10 rounded-[4px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-500 group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                    <div className="w-10 h-10 rounded-[8px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-500 group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
                       <img 
                         src={siteSettings.logoBase64} 
                         alt="Logo" 
@@ -191,7 +191,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className={`hidden md:flex items-center gap-2 px-3 h-8 rounded-[4px] bg-transparent border border-[var(--border-main)] max-w-full`}
+                className={`hidden md:flex items-center gap-2 px-3 h-8 rounded-[8px] bg-transparent border border-[var(--border-main)] max-w-full`}
               >
                 {isEditingTitle ? (
                   <div className="flex items-center gap-1.5 min-w-[200px] h-full">
@@ -234,7 +234,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] active:scale-95 group"
               >
           <Languages size={14} className="sm:size-[15px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
           <span className="hidden sm:inline text-[13px]">{language === 'ar' ? 'English' : 'عربي'}</span>
@@ -243,7 +243,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         
         <button 
           onClick={toggleTheme} 
-          className="flex items-center justify-center w-10 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group shrink-0"
+          className="flex items-center justify-center w-10 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] active:scale-95 group shrink-0"
         >
           {theme === 'dark' ? (
             <Sun size={14} className="sm:size-[16px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(0,0,0,0)] transition-all duration-300" />
@@ -256,9 +256,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           <div className="relative flex items-center h-full" ref={dropdownRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] relative active:scale-95 group shrink-0"
+              className="flex items-center justify-center w-10 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] relative active:scale-95 group shrink-0"
             >
-              <Bell size={16} className={`transition-all duration-300 ${unreadCount > 0 ? "text-emerald-500 animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
+              <Bell size={16} className={`transition-all duration-300 ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
               {unreadCount > 0 && (
                 <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
               )}
@@ -270,7 +270,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className={`absolute top-full mt-2 w-[calc(100vw-32px)] sm:w-80 max-h-[480px] overflow-hidden rounded-[4px] border shadow-2xl z-[60] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'} fixed sm:absolute`}
+                  className={`absolute top-full mt-2 w-[calc(100vw-32px)] sm:w-80 max-h-[480px] overflow-hidden rounded-[8px] border shadow-2xl z-[60] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'} fixed sm:absolute`}
                 >
                   <div className="p-4 border-b border-[var(--border-main)] flex items-center justify-between">
                     <h3 className="font-bold text-sm text-[var(--text-primary)]">{language === 'ar' ? 'الإشعارات' : 'Notifications'}</h3>
@@ -307,7 +307,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           }`}
                           dir={dir}
                         >
-                          <div className={`mt-1 h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0 ${
+                          <div className={`mt-1 h-8 w-8 rounded-[8px] flex items-center justify-center shrink-0 ${
                             !notif.is_read ? 'bg-emerald-500/20 text-emerald-500' : 'bg-[var(--bg-primary)] text-gray-500'
                           }`}>
                             {getNotifIcon(notif.type)}

@@ -13,12 +13,11 @@ export const AdminLayout: React.FC = () => {
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden relative ${theme === 'dark' ? 'bg-[#0f0f11] text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className={`absolute inset-0 z-0 ${theme === 'dark' ? 'bg-[#0f0f11]' : 'bg-gray-50'}`} />
+    <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)]`}>
+      <div className={`absolute inset-0 z-0 bg-[var(--bg-base)]`} />
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={language}
           dir={localDir}
           initial="initial"
           animate="animate"
@@ -28,17 +27,13 @@ export const AdminLayout: React.FC = () => {
         >
           <AdminSidebar activeLanguage={language} />
 
-          <motion.div 
-            layout="position"
-            initial={false}
-            animate={{ 
+          <div 
+            style={{ 
               marginLeft: isMobile ? 0 : (localDir === 'rtl' ? 0 : 240),
               marginRight: isMobile ? 0 : (localDir === 'rtl' ? 240 : 0),
-              scale: 1,
-              borderRadius: 0
+              transition: 'margin 0.2s ease'
             }}
-            transition={{ type: "tween", duration: 0.8, ease: [0.4, 0, 0.2, 1] as any }}
-            className={`flex-1 flex flex-col relative min-w-0 overflow-hidden shadow-2xl bg-inherit`}
+            className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-inherit"
           >
             <Header activeLanguage={language} />
             <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-none [WebkitOverflowScrolling:touch] bg-inherit">
@@ -46,7 +41,7 @@ export const AdminLayout: React.FC = () => {
                 <Outlet />
               </div>
             </main>
-          </motion.div>
+          </div>
         </motion.div>
       </AnimatePresence>
       <AuthModal />
