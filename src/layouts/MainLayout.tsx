@@ -5,6 +5,7 @@ import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { SOVEREIGN_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
@@ -37,16 +38,9 @@ export const MainLayout: React.FC = () => {
           animate={{ 
             paddingInlineStart: isMobile ? 0 : (isSidebarOpen ? 220 : 80),
             paddingInlineEnd: 0,
-            scale: (isMobile && isSidebarOpen) ? 1 : 1, // Remove scaling on mobile
-            x: 0, // Remove shifting on mobile
-            borderRadius: 0, // Remove border radius animation
           }}
-          transition={{ 
-            type: "tween", 
-            duration: 0.2, 
-            ease: "easeOut" 
-          }}
-          className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-inherit"
+          transition={SOVEREIGN_TRANSITION}
+          className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-[var(--bg-base)]"
           style={{ paddingLeft: 'unset', paddingRight: 'unset' }}
           onClick={() => { if(isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
         >

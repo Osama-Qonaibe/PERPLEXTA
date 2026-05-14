@@ -4,10 +4,12 @@ import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClos
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { SOVEREIGN_TRANSITION } from '../constants/motions';
 import { PWAInstall } from './PWAInstall'; 
 const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
-const sidebarSpring = { type: "tween" as const, duration: 0.2, ease: "easeOut" as const };
-const elasticSpring = { type: "tween" as const, duration: 0.2, ease: "easeOut" as const };
+const sidebarSpring = SOVEREIGN_TRANSITION;
+const elasticSpring = SOVEREIGN_TRANSITION;
+const sidebarTransition = SOVEREIGN_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isInstallable, installApp, isInstalling } = useAppContext();
@@ -221,7 +223,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           initial={false}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={{ duration: 0.2 }}
+                          transition={SOVEREIGN_TRANSITION}
                           className={`font-medium text-sm whitespace-nowrap text-[var(--text-secondary)] ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
                         >
                           {item.label}
@@ -247,7 +249,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           initial={false}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={{ duration: 0.2 }}
+                          transition={SOVEREIGN_TRANSITION}
                           className="font-bold text-sm text-emerald-500 whitespace-nowrap"
                         >
                           {t('newChat')}

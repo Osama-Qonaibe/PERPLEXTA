@@ -2,7 +2,7 @@ import { Variants } from 'motion/react';
 
 /**
  * Premium Sovereign Page Transition
- * Simplified to a fast fade (150ms) for stability and speed.
+ * Synchronized to 300ms for a distinctive, elite feel.
  */
 export const sovereignPageTransition: Variants = {
   initial: {
@@ -11,27 +11,37 @@ export const sovereignPageTransition: Variants = {
   animate: {
     opacity: 1,
     transition: {
-      duration: 0.15,
-      ease: "easeOut",
-      staggerChildren: 0,
+      duration: 0.3,
+      ease: [0.23, 1, 0.32, 1] as [number, number, number, number],
+      staggerChildren: 0.05,
     },
   },
   exit: {
     opacity: 0,
     transition: {
-      duration: 0.15,
-      ease: "easeIn",
+      duration: 0.3,
+      ease: [0.23, 1, 0.32, 1] as [number, number, number, number],
     },
   },
 };
 
 export const sovereignItemTransition: Variants = {
-  initial: { opacity: 0 },
+  initial: { opacity: 0, y: 10 },
   animate: { 
     opacity: 1, 
+    y: 0,
     transition: {
-      duration: 0.2,
-      ease: "easeOut"
+      duration: 0.3,
+      ease: [0.23, 1, 0.32, 1] as [number, number, number, number]
     }
   }
+};
+
+/**
+ * Shared Architectural Motion Config
+ */
+export const SOVEREIGN_TRANSITION = { 
+  type: "tween" as const, 
+  duration: 0.3, 
+  ease: [0.23, 1, 0.32, 1] as [number, number, number, number]
 };
