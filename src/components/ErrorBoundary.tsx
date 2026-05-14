@@ -38,19 +38,19 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center p-8 min-h-[200px] bg-[var(--bg-secondary)] border border-red-500/20 rounded-[4px] m-4">
-          <div className="w-12 h-12 rounded-[4px] bg-red-500/10 flex items-center justify-center text-red-500 mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+        <div className="flex flex-col items-center justify-center p-8 min-h-[200px] bg-[var(--bg-secondary)] border border-red-500/20 rounded-[var(--radius)] m-4">
+          <div className="w-12 h-12 rounded-[var(--radius)] bg-red-500/10 flex items-center justify-center text-red-500 mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
             <AlertTriangle size={24} />
           </div>
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2 uppercase tracking-tight">
             {this.props.name ? `${this.props.name} Component Error` : 'Unexpected System Error'}
           </h2>
-          <p className="text-sm text-gray-500 mb-6 text-center max-w-md">
+          <p className="text-sm text-[var(--text-muted)] mb-6 text-center max-w-md">
             The system encountered a processing conflict. Your data remains secure. Please try refreshing or clearing the current task.
           </p>
           <button
             onClick={this.handleReset}
-            className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-white font-bold rounded-[4px] hover:bg-emerald-600 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105"
+            className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-white font-bold rounded-[var(--radius)] hover:bg-emerald-600 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105"
           >
             <RefreshCw size={16} />
             <span>ACTIVATE RECOVERY</span>

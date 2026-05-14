@@ -94,13 +94,13 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in relative">
       <div 
-        className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[4px]`}
+        className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
         style={{ top: stickyOffset }}
       >
         <div className="flex flex-row items-center justify-between gap-4 mb-4">
           <div className="hidden sm:block">
             <h2 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 text-[var(--text-primary)]">{t('memoryCenter')}</h2>
-            <p className="text-[11px] md:text-sm text-gray-500 font-medium opacity-70">
+            <p className="text-[11px] md:text-sm text-[var(--text-secondary)] font-medium opacity-70">
               {dir === 'rtl' 
                 ? 'الحقائق والتفضيلات التي تعلمها المساعد عنك.' 
                 : 'Facts and preferences the assistant has learned about you.'}
@@ -108,7 +108,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[4px] transition-all duration-300 font-bold text-xs md:text-sm shadow-xl shadow-emerald-500/20 group w-full sm:w-auto ml-auto"
+            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-all duration-300 font-bold text-xs md:text-sm shadow-xl shadow-emerald-500/20 group w-full sm:w-auto ml-auto"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
             {t('addFact')}
@@ -121,10 +121,10 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[4px] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-500 border ${
+              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-500 border ${
                 filterCategory === cat.id
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-[var(--text-primary)] hover:border-emerald-500/30'
+                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-emerald-500/30'
               }`}
             >
               {cat.label}
@@ -133,21 +133,21 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
         </div>
 
         {/* Memory Capacity Indicator */}
-        <div className={`p-4 md:p-6 rounded-[4px] border transition-all duration-300 ${
+        <div className={`p-4 md:p-6 rounded-[var(--radius)] border transition-all duration-300 ${
           isLimitReached 
             ? 'bg-amber-500/5 border-amber-500/30'
             : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm'
         }`}>
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2.5 md:gap-3">
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[4px] flex items-center justify-center ${
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center ${
                 isLimitReached ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'
               }`}>
                 <BrainCircuit size={16} className="md:w-5 md:h-5" />
               </div>
               <div>
                 <h3 className="font-bold text-xs md:text-sm text-[var(--text-primary)]">{t('memoryCapacity')}</h3>
-                <p className="text-[9px] md:text-[10px] text-gray-500">
+                <p className="text-[9px] md:text-[10px] text-[var(--text-muted)]">
                   {memoryCount} / {MEMORY_LIMIT} {dir === 'rtl' ? 'حقائق' : 'facts'}
                 </p>
               </div>
@@ -157,7 +157,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               <button 
                 onClick={handlePrune}
                 disabled={isPruning}
-                className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-[4px] transition-all text-[10px] md:text-xs font-bold border border-amber-500/20"
+                className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-[var(--radius)] transition-all text-[10px] md:text-xs font-bold border border-amber-500/20"
               >
                 {isPruning ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 {t('prune')}
@@ -188,7 +188,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
       </div>
 
       {/* Auto-update Indicator */}
-      <div className={`p-3 md:p-4 rounded-[4px] border flex items-start gap-2.5 md:gap-3 bg-emerald-500/5 border-emerald-500/20`}>
+      <div className={`p-3 md:p-4 rounded-[var(--radius)] border flex items-start gap-2.5 md:gap-3 bg-emerald-500/5 border-emerald-500/20`}>
         <Info className="text-emerald-500 shrink-0 mt-0.5" size={16} />
         <p className="text-[10px] md:text-xs text-emerald-600/80 leading-relaxed font-medium">
           {dir === 'rtl' 
@@ -199,16 +199,16 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
 
 
       {isAdding && (
-        <div className={`p-6 rounded-[4px] border animate-in slide-in-from-top-2 duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+        <div className={`p-6 rounded-[var(--radius)] border animate-in slide-in-from-top-2 duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 px-1">
+              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1.5 px-1">
                 {t('category') || (dir === 'rtl' ? 'التصنيف' : 'Category')}
               </label>
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className={`w-full p-2.5 rounded-[4px] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
               >
                 {categories.filter(c => c.id !== 'all').map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -220,20 +220,20 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder={dir === 'rtl' ? 'ما الذي يجب أن يتذكره المساعد؟' : 'What should the assistant remember?'}
-            className={`w-full p-4 rounded-[4px] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
             autoFocus
           />
           <div className="flex justify-end gap-3">
             <button 
               onClick={() => { setIsAdding(false); setNewValue(''); }}
-              className="px-6 py-2 rounded-[4px] text-sm font-medium text-gray-500 hover:bg-[var(--bg-primary)] transition-colors"
+              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] transition-colors"
             >
               {t('cancel')}
             </button>
             <button 
               onClick={handleSaveNew}
               disabled={!newValue.trim()}
-              className="px-6 py-2 rounded-[4px] text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
             >
               {t('save')}
             </button>
@@ -244,15 +244,15 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
-          <p className="text-sm text-gray-500 animate-pulse">{t('loadingMemory')}</p>
+          <p className="text-sm text-[var(--text-muted)] animate-pulse">{t('loadingMemory')}</p>
         </div>
       ) : filteredMemories.length === 0 ? (
-        <div className={`p-12 rounded-[4px] border border-dashed flex flex-col items-center justify-center text-center border-[var(--border-main)] bg-[var(--bg-secondary)]/30`}>
+        <div className={`p-12 rounded-[var(--radius)] border border-dashed flex flex-col items-center justify-center text-center border-[var(--border-main)] bg-[var(--bg-secondary)]/30`}>
           <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
             <BrainCircuit size={40} className="text-emerald-500/50" />
           </div>
           <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">{t('noResults')}</h3>
-          <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
+          <p className="text-sm text-[var(--text-secondary)] max-w-sm leading-relaxed">
             {dir === 'rtl' 
               ? 'لا توجد حقائق في هذا التصنيف حالياً.' 
               : 'No facts found in this category yet.'}
@@ -263,7 +263,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           {filteredMemories.map((memory) => (
             <div 
               key={memory.id} 
-              className={`group p-6 rounded-[4px] border transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-emerald-500/5`}
+              className={`group p-6 rounded-[var(--radius)] border transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-emerald-500/5`}
             >
               {editingId === memory.id ? (
                 <div className="space-y-4">
@@ -272,7 +272,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
-                        className={`w-full p-2.5 rounded-[4px] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                       >
                         {categories.filter(c => c.id !== 'all').map(cat => (
                           <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -283,13 +283,13 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className={`w-full p-4 rounded-[4px] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                     autoFocus
                   />
                   <div className="flex justify-end gap-3 pt-2">
                     <button 
                       onClick={() => setEditingId(null)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs font-bold transition-all duration-300 text-gray-500 hover:bg-[var(--bg-primary)]`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] text-xs font-bold transition-all duration-300 text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]`}
                     >
                       <X size={14} />
                       {t('cancel')}
@@ -297,7 +297,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                     <button 
                       onClick={() => handleSaveEdit(memory.id)}
                       disabled={!editValue.trim()}
-                      className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[4px] transition-all duration-300 text-xs font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-all duration-300 text-xs font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                     >
                       <Save size={14} />
                       {t('save')}
@@ -319,14 +319,14 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                           {dir === 'rtl' ? 'تعلم آلي' : 'AI Learned'}
                         </span>
                       )}
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[var(--bg-primary)] text-gray-400`}>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[var(--bg-primary)] text-[var(--text-muted)]`}>
                         {categories.find(c => c.id === memory.category)?.label || memory.category}
                       </span>
                     </div>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-primary)]" dir="auto">
                       {memory.fact}
                     </p>
-                    <p className="text-[10px] text-gray-500 mt-3 flex items-center gap-1.5">
+                    <p className="text-[10px] text-[var(--text-muted)] mt-3 flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-emerald-500" />
                       {new Date(memory.created_at).toLocaleString(dir === 'rtl' ? 'ar-EG' : 'en-US', { 
                         year: 'numeric', 
@@ -350,14 +350,14 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                         setEditValue(memory.fact);
                         setEditCategory(memory.category);
                       }}
-                      className="p-2.5 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
                       title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                     >
                       <Edit2 size={18} />
                     </button>
                     <button 
                       onClick={() => onDelete(memory.id)}
-                      className="p-2.5 rounded-[4px] text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
                       title={dir === 'rtl' ? 'حذف' : 'Delete'}
                     >
                       <Trash2 size={18} />

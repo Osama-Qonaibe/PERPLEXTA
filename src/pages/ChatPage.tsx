@@ -17,13 +17,13 @@ const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-all duration-700">
     <div className="flex items-center gap-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse" />
-      <div className="h-1.5 w-32 bg-gray-200/50 dark:bg-gray-800/40 rounded-full" />
+      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
+      <div className="h-1.5 w-32 bg-[var(--bg-overlay)] rounded-full" />
     </div>
     <div className="space-y-3">
-      <div className="h-2 w-full bg-gray-200/50 dark:bg-gray-800/20 rounded-full" />
-      <div className="h-2 w-[85%] bg-gray-200/50 dark:bg-gray-800/20 rounded-full" />
-      <div className="h-2 w-[60%] bg-gray-200/50 dark:bg-gray-800/10 rounded-full" />
+      <div className="h-2 w-full bg-[var(--bg-overlay)] rounded-full" />
+      <div className="h-2 w-[85%] bg-[var(--bg-overlay)] rounded-full" />
+      <div className="h-2 w-[60%] bg-[var(--bg-overlay)] rounded-full" />
     </div>
   </div>
 );
@@ -195,7 +195,7 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
     <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3" id="thinking-steps-container">
       <div className="flex items-center gap-2 mb-2 sm:mb-4 opacity-70">
          <div className="w-1 h-3 sm:w-1.5 sm:h-4 bg-emerald-500/60 rounded-full" />
-         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
            {dir === 'rtl' ? 'مراحل التحليل والبحث' : 'ANALYSIS & RESEARCH PHASES'}
          </span>
       </div>
@@ -217,11 +217,11 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
                 <Loader2 size={10} className="animate-spin text-emerald-500/60" style={{ animationDuration: '2s' }} />
               </div>
             ) : (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] bg-gray-50 dark:bg-gray-800/10 flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center">
+                <div className="w-1 h-1 rounded-full bg-[var(--text-muted)]" />
               </div>
             )}
-            <span className={`text-[10px] sm:text-[12px] font-medium ${step.status === 'completed' ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400/60'} transition-colors truncate`}>
+            <span className={`text-[10px] sm:text-[12px] font-medium ${step.status === 'completed' ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]/60'} transition-colors truncate`}>
               {step.step}
             </span>
           </motion.div>
@@ -407,7 +407,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
         >
           {/* Executive Header */}
           <div className={`px-8 py-6 border-b flex items-center justify-between ${
-            theme === 'dark' ? 'border-gray-800/80 bg-gray-900/40' : 'border-gray-100 bg-white'
+            theme === 'dark' ? 'border-[var(--border)] bg-[var(--bg-surface)]' : 'border-[var(--border)] bg-[var(--bg-base)]'
           }`}>
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -418,7 +418,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-0.5 glow-emerald">
                   {dir === 'rtl' ? 'مرحلة الإنتاج السيادي' : 'SOVEREIGN PRODUCTION PHASE'} {idx + 1}
                 </span>
-                <h3 className="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">
+                <h3 className="text-xl font-black tracking-tight text-[var(--text-primary)] uppercase">
                   {(section.title as string).replace(/[#\d\.\[\]]/g, '').trim()}
                 </h3>
               </div>
@@ -2065,7 +2065,7 @@ export const ChatPage: React.FC = () => {
       {renderAudioSettings()}
       <motion.div 
         transition={springConfig}
-        className={`w-full flex flex-col rounded-[4px] border box-border min-w-0 transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] ${
+        className={`w-full flex flex-col rounded-[var(--radius)] border box-border min-w-0 transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] ${
           isFocused 
             ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
             : ''
@@ -2074,22 +2074,22 @@ export const ChatPage: React.FC = () => {
         {/* Top: File/Image Preview */}
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
-            <div className={`relative group p-1 rounded-[4px] border transition-all duration-300 ${theme === 'dark' ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`relative group p-1 rounded-[var(--radius)] border transition-all duration-300 bg-[var(--bg-overlay)] border-[var(--border)]`}>
               <div className="flex items-center gap-2 px-1.5 py-1 min-w-[120px]">
                 {previewUrl && selectedFile.type.startsWith('image/') ? (
-                  <div className="w-8 h-8 rounded-[4px] overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                  <div className="w-8 h-8 rounded-[var(--radius)] overflow-hidden border border-[var(--border)] bg-[var(--bg-base)]">
                     <img src={previewUrl} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ) : (
-                  <div className={`w-8 h-8 rounded-[4px] flex items-center justify-center ${theme === 'dark' ? 'bg-gray-700 text-emerald-400' : 'bg-white text-emerald-500 shadow-sm'}`}>
+                  <div className={`w-8 h-8 rounded-[var(--radius)] flex items-center justify-center bg-[var(--bg-base)] text-emerald-500 shadow-sm`}>
                     {getFileIcon(selectedFile.type)}
                   </div>
                 )}
                 <div className="flex flex-col min-w-0 pr-6">
-                  <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
+                  <span className="text-[10px] font-bold text-[var(--text-primary)] truncate max-w-[100px]">
                     {selectedFile.name}
                   </span>
-                  <span className="text-[8px] text-gray-500 dark:text-gray-500 uppercase font-black tracking-tight">
+                  <span className="text-[8px] text-[var(--text-muted)] uppercase font-black tracking-tight">
                     {(Number(selectedFile.size || 0) / 1024).toFixed(1)} KB
                   </span>
                 </div>
@@ -2115,7 +2115,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex-shrink-0 flex items-center">
             <button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] transition-all duration-500 group shadow-none
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-500 group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
                   : 'hover:bg-emerald-500/5 hover:border-emerald-500/20 active:scale-95'
@@ -2181,7 +2181,7 @@ export const ChatPage: React.FC = () => {
             <button 
               title={dir === 'rtl' ? 'رفع ملف (الحد الأقصى 100 ميجابايت)' : 'Upload File (Max 100MB)'}
               onClick={() => document.getElementById('unified-upload')?.click()}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-all duration-300" />
               <Paperclip size={18} className="md:w-5 md:h-5 text-emerald-500 hidden group-hover:block transition-all duration-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
@@ -2194,10 +2194,10 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsAdvancedToolsOpen(!isAdvancedToolsOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[4px] transition-all duration-300 border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[var(--radius)] transition-all duration-300 border ${
                   activeDropdown === 'tool'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                    : 'bg-transparent border-transparent text-gray-500 dark:text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'
+                    : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5'
                 }`}
               >
                 <span className={activeDropdown === 'tool' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
@@ -2207,8 +2207,8 @@ export const ChatPage: React.FC = () => {
               </button>
               
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[4px] border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-                  <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-gray-500 bg-[var(--bg-primary)]/30`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[var(--radius)] border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+                  <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
@@ -2223,10 +2223,10 @@ export const ChatPage: React.FC = () => {
                           setActiveDropdown('tool');
                           setIsAdvancedToolsOpen(false);
                         }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-[4px] transition-all duration-200 text-[13px] font-bold ${
+                        className={`flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] transition-all duration-200 text-[13px] font-bold ${
                           selectedTool === tool.id && activeDropdown === 'tool'
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                            : 'hover:bg-[var(--bg-primary)] text-gray-400 hover:text-[var(--text-primary)]'
+                            : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
                         <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400 dark:text-gray-500/50'}>
@@ -2253,10 +2253,10 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[4px] transition-all duration-300 border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[var(--radius)] transition-all duration-300 border ${
                   activeDropdown === 'model'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                    : 'bg-transparent border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'
+                    : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
                 }`}
               >
                 <span className={activeDropdown === 'model' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
@@ -2280,7 +2280,7 @@ export const ChatPage: React.FC = () => {
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-[4px] transition-all text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-[var(--radius)] transition-all text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`${model.color} group-hover:scale-110 transition-transform`}>{model.icon}</span>
@@ -2299,10 +2299,10 @@ export const ChatPage: React.FC = () => {
           <div className="flex items-center flex-shrink-0">
             <button 
               onClick={toggleRecording}
-              className={`w-10 h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 group ${
+              className={`w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent transition-all duration-300 group ${
                 isRecording 
                 ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500'
+                : 'hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500'
               }`}
               title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل' : 'بدأ التسجيل الصوتي') : (isRecording ? 'Stop Recording' : 'Start Voice Input')}
             >
@@ -2348,8 +2348,8 @@ export const ChatPage: React.FC = () => {
         className="h-full flex flex-col w-full overflow-hidden"
       >
       {showChatLimitWarning && (
-        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[4px] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
-          <div className="w-12 h-12 rounded-[4px] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
+          <div className="w-12 h-12 rounded-[var(--radius)] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="text-pink-500" size={24} />
           </div>
           <div className={`flex flex-col ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
@@ -2391,38 +2391,38 @@ export const ChatPage: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
               >
-                <motion.div 
-                   initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                   className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] w-full max-w-sm p-6 shadow-2xl"
-                >
-                   <h3 className={`text-lg font-black mb-4 uppercase tracking-tighter ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                     {dir === 'rtl' ? 'إعادة تسمية المحادثة' : 'Rename Conversation'}
-                   </h3>
-                   <input 
-                     type="text" 
-                     value={chatRenameTitle} 
-                     onChange={(e) => setChatRenameTitle(e.target.value)}
-                     className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] px-4 py-3 outline-none focus:border-emerald-500/50 transition-all font-bold text-sm mb-6"
-                     autoFocus
-                     onKeyDown={(e) => e.key === 'Enter' && handleThreadRename()}
-                   />
-                   <div className="flex gap-3">
-                     <button 
-                       onClick={() => setIsRenaming(false)}
-                       className="flex-1 py-1.5 rounded-[4px] text-xs font-bold uppercase text-gray-500 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all"
-                     >
-                       {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
-                     </button>
-                     <button 
-                       onClick={handleThreadRename}
-                       className="flex-1 py-1.5 rounded-[4px] text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
-                     >
-                       {dir === 'rtl' ? 'حفظ' : 'Save'}
-                     </button>
-                   </div>
-                </motion.div>
+            <motion.div 
+               initial={{ scale: 0.9, opacity: 0, y: 20 }}
+               animate={{ scale: 1, opacity: 1, y: 0 }}
+               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-[var(--radius)] w-full max-w-sm p-6 shadow-2xl"
+            >
+               <h3 className={`text-lg font-black mb-4 uppercase tracking-tighter ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                 {dir === 'rtl' ? 'إعادة تسمية المحادثة' : 'Rename Conversation'}
+               </h3>
+               <input 
+                 type="text" 
+                 value={chatRenameTitle} 
+                 onChange={(e) => setChatRenameTitle(e.target.value)}
+                 className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[var(--radius)] px-4 py-3 outline-none focus:border-emerald-500/50 transition-all font-bold text-sm mb-6 text-[var(--text-primary)]"
+                 autoFocus
+                 onKeyDown={(e) => e.key === 'Enter' && handleThreadRename()}
+               />
+               <div className="flex gap-3">
+                 <button 
+                   onClick={() => setIsRenaming(false)}
+                   className="flex-1 py-1.5 rounded-[var(--radius)] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all border border-[var(--border)]"
+                 >
+                   {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                 </button>
+                 <button 
+                   onClick={handleThreadRename}
+                   className="flex-1 py-1.5 rounded-[var(--radius)] text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
+                 >
+                   {dir === 'rtl' ? 'حفظ' : 'Save'}
+                 </button>
+               </div>
+            </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -2432,7 +2432,7 @@ export const ChatPage: React.FC = () => {
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
-                  <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 truncate max-w-[120px] md:max-w-[300px]">
+                  <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 truncate max-w-[120px] md:max-w-[300px] font-mono">
                     {dir === 'rtl' ? 'نشط' : 'Active'}
                   </h2>
                </div>
@@ -2441,12 +2441,12 @@ export const ChatPage: React.FC = () => {
                     <button 
                       onClick={() => !isExporting && setIsExportMenuOpen(!isExportMenuOpen)}
                       disabled={isExporting}
-                      className={`w-8 h-8 flex items-center justify-center rounded-[4px] transition-all duration-300 group ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 group ${
                         isExporting
                           ? 'text-emerald-500 bg-emerald-500/10 cursor-wait'
                           : isExportMenuOpen 
                             ? 'text-emerald-500 bg-emerald-500/10' 
-                            : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                            : 'text-gray-400 hover:bg-[var(--bg-overlay)]'
                       }`}
                       title={dir === 'rtl' ? 'خيارات المحادثة' : 'Thread Options'}
                     >
@@ -2470,7 +2470,7 @@ export const ChatPage: React.FC = () => {
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
+                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[var(--radius)] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
                         >
                           <div className="p-1.5 space-y-0.5">
                             <button 
@@ -2479,7 +2479,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <Bookmark size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
@@ -2491,12 +2491,12 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <FolderPlus size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
                             </button>
-
+ 
                             <button 
                               onClick={() => {
                                 setIsRenaming(true);
@@ -2504,50 +2504,50 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <Pencil size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
                             </button>
-
+ 
                             <div className="my-1.5 mx-2 h-px bg-[var(--border-main)]/50" />
-
+ 
                             <button 
                               onClick={() => handleExportChat('pdf')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <FileDown size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
                             </button>
-
+ 
                             <button 
                               onClick={() => handleExportChat('md')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <FileCode size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
                             </button>
-
+ 
                             <button 
                               onClick={() => handleExportChat('docx')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <FileText size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
                             </button>
-
+ 
                             <div className="my-1.5 mx-2 h-px bg-[var(--border-main)]/50" />
-
+ 
                             <button 
                               onClick={() => {
                                 handleThreadDelete();
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-[4px] transition-all group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-[var(--radius)] transition-all group disabled:opacity-50"
                             >
                               <Trash2 size={14} className="group-hover:scale-110 transition-transform" />
                               <span>{dir === 'rtl' ? 'حذف المحادثة' : 'Delete Thread'}</span>
@@ -2560,7 +2560,7 @@ export const ChatPage: React.FC = () => {
                   {messages.some(m => m.is_pinned) && (
                     <button 
                       onClick={() => setShowPinnedModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-all duration-300 border border-emerald-500/10 hover:bg-emerald-500/10"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-all duration-300 border border-emerald-500/10 hover:bg-emerald-500/10"
                     >
                       <Bookmark size={14} />
                       <span className="hidden lg:inline">{dir === 'rtl' ? 'المثبتة' : 'Pinned'}</span>
@@ -2605,19 +2605,13 @@ export const ChatPage: React.FC = () => {
                         setSelectedTool((item as any).toolId);
                         setActiveDropdown('tool');
                       }}
-                      className={`group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[4px] border transition-all duration-500 text-start relative overflow-hidden ${
-                        theme === 'dark' 
-                          ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/40 hover:bg-emerald-500/5' 
-                          : 'bg-white border-gray-100 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02]'
-                      }`}
+                      className={`group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-all duration-500 text-start relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/5`}
                     >
-                      <div className={`w-7 h-7 md:w-9 md:h-9 rounded-[4px] flex items-center justify-center transition-all duration-700 relative z-10 ${
-                        theme === 'dark' ? 'bg-gray-800/50 text-gray-400' : 'bg-transparent text-gray-400'
-                      } ${item.hoverColor} ${item.dropShadow}`}>
+                      <div className={`w-7 h-7 md:w-9 md:h-9 rounded-[var(--radius)] flex items-center justify-center transition-all duration-700 relative z-10 bg-[var(--bg-overlay)] text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 18, className: 'md:w-5 md:h-5' } as any)}
                       </div>
                       <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
-                        <span className={`text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-colors truncate w-full ${theme === 'dark' ? 'text-gray-100 group-hover:text-emerald-500' : 'text-gray-900 group-hover:text-emerald-600'}`}>
+                        <span className={`text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-colors truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500`}>
                           {item.label}
                         </span>
                         <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 transition-opacity truncate w-full">
@@ -2656,26 +2650,24 @@ export const ChatPage: React.FC = () => {
                       {msg.role === 'user' ? (
                         <div className={`flex flex-col gap-2 w-full ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
                               {msg.file && (
-                                <div className={`mb-1 p-2 rounded-[4px] border flex items-center gap-3 w-fit ${
+                                <div className={`mb-1 p-2 rounded-[var(--radius)] border flex items-center gap-3 w-fit ${
                                   dir === 'rtl' ? 'self-end' : 'self-start'
-                                } ${
-                                  theme === 'dark' ? 'bg-gray-900/50 border-gray-700' : 'bg-white border-gray-200'
-                                }`}>
+                                } bg-[var(--bg-secondary)] border-[var(--border)]`}>
                                   {msg.file.type.startsWith('image/') ? (
                                     <img 
                                       src={msg.file.preview} 
                                       alt={msg.file.name} 
-                                      className="w-10 h-10 object-cover rounded-[4px]" 
+                                      className="w-10 h-10 object-cover rounded-[var(--radius)]" 
                                       referrerPolicy="no-referrer"
                                     />
                                   ) : (
-                                    <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                    <div className="w-10 h-10 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                                       {getFileIcon(msg.file.type)}
                                     </div>
                                   )}
                                   <div className="flex flex-col min-w-0 pe-2">
-                                    <span className="text-[11px] font-bold truncate max-w-[150px] dark:text-gray-200">{msg.file.name}</span>
-                                    <span className="text-[9px] text-gray-500 font-black uppercase tracking-tighter">
+                                    <span className="text-[11px] font-bold truncate max-w-[150px] text-[var(--text-primary)]">{msg.file.name}</span>
+                                    <span className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-tighter">
                                       {msg.file.type.split('/')[1] || 'FILE'}
                                     </span>
                                   </div>
@@ -2708,7 +2700,7 @@ export const ChatPage: React.FC = () => {
                                     </button>
                                     <button 
                                       onClick={() => handleEditSubmit(idx)}
-                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors"
+                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-colors"
                                     >
                                       {dir === 'rtl' ? 'حفظ وإرسال' : 'Save & Send'}
                                     </button>
@@ -2721,7 +2713,7 @@ export const ChatPage: React.FC = () => {
                                     {stripProtocolMarkers(msg.content)}
                                   </h1>
                                   {msg.is_pinned && (
-                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-[var(--radius)] border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                                       <Pin size={8} className="text-emerald-500" />
                                       <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
                                     </div>
@@ -2731,7 +2723,7 @@ export const ChatPage: React.FC = () => {
                                       setEditingMessageIndex(idx);
                                       setEditValue(msg.content);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-[4px] hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 shrink-0"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-[var(--radius)] hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 shrink-0"
                                     title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                                   >
                                     <Pencil size={14} />
@@ -2829,7 +2821,7 @@ export const ChatPage: React.FC = () => {
                                   initial={{ opacity: 0, scale: 0.98 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[4px] border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
+                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
                                 >
                                   <img 
                                     {...props} 
@@ -2852,7 +2844,7 @@ export const ChatPage: React.FC = () => {
                                     </div>
                                     <button 
                                       onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
+                                      className="p-2 bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
                                       title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                                     >
                                       <Download size={14} />
@@ -2881,10 +2873,10 @@ export const ChatPage: React.FC = () => {
                               };
 
                               return (
-                                <div className="my-4 relative group inline-block max-w-[85%] md:max-w-md overflow-hidden rounded-[4px] border border-gray-200/50 dark:border-gray-700/50 shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30">
+                                <div className="my-4 relative group inline-block max-w-[85%] md:max-w-md overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30">
                                   <video 
                                     {...props} 
-                                    className="block w-full h-auto rounded-[4px]" 
+                                    className="block w-full h-auto rounded-[var(--radius)]" 
                                     controls 
                                     controlsList="nodownload" // Intercept native download to use our secure one
                                   />
@@ -2899,7 +2891,7 @@ export const ChatPage: React.FC = () => {
                                     </div>
                                     <button 
                                       onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-[4px] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
+                                      className="p-2 bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
                                       title={dir === 'rtl' ? 'تنزيل الفيديو' : 'Download Video'}
                                     >
                                       <Download size={14} />
@@ -2939,13 +2931,13 @@ export const ChatPage: React.FC = () => {
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
                         </button>
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
                         </button>
@@ -2953,21 +2945,21 @@ export const ChatPage: React.FC = () => {
                         <button 
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
                         <button 
                           onClick={() => handleTTS(msg.content)}
                           title={dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Volume2 size={13} />
                         </button>
                         <button 
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
                         </button>
@@ -2977,7 +2969,7 @@ export const ChatPage: React.FC = () => {
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
                           }}
                           title={dir === 'rtl' ? 'نسخ' : 'Copy'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Copy size={13} />
                         </button>
@@ -2992,7 +2984,7 @@ export const ChatPage: React.FC = () => {
                             URL.revokeObjectURL(url);
                           }}
                           title={dir === 'rtl' ? 'تحميل' : 'Download'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                         >
                           <Download size={13} />
                         </button>
@@ -3017,7 +3009,7 @@ export const ChatPage: React.FC = () => {
                             }
                           }}
                           title={dir === 'rtl' ? 'مشاركة' : 'Share'}
-                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-all duration-300 ml-1 sm:ml-2"
+                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-all duration-300 ml-1 sm:ml-2"
                         >
                           <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                         </button>
@@ -3025,7 +3017,7 @@ export const ChatPage: React.FC = () => {
                          <div className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
-                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500'}`}
+                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500'}`}
                            >
                              <MoreHorizontal size={14} />
                            </button>
@@ -3036,7 +3028,7 @@ export const ChatPage: React.FC = () => {
                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                  animate={{ opacity: 1, scale: 1, y: 0 }}
                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                 className="absolute bottom-full end-0 mb-2 w-56 p-1 bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-[4px] shadow-2xl z-50 backdrop-blur-xl"
+                                 className="absolute bottom-full end-0 mb-2 w-56 p-1 bg-[var(--bg-base)] border border-[var(--border)] rounded-[var(--radius)] shadow-2xl z-50 backdrop-blur-xl"
                                >
                                  <button 
                                    onClick={async () => {
@@ -3123,7 +3115,7 @@ export const ChatPage: React.FC = () => {
                           className="w-full flex items-center gap-2 text-emerald-500/80"
                         >
                           {selectedTool === 'image' || selectedTool === 'video' || selectedTool === 'canvas' ? (
-                            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-[4px] border border-emerald-500/10">
+                            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-[var(--radius)] border border-emerald-500/10">
                               <Brain className="w-4 h-4 text-emerald-500 animate-pulse" />
                               <span className="text-sm font-medium tracking-tight text-emerald-500">
                                 {dir === 'rtl' ? 'جاري التحليل والإنتاج...' : 'Analyzing & Producing...'}
@@ -3173,23 +3165,23 @@ export const ChatPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-[var(--radius)] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <div className="w-10 h-10 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                     <Bookmark size={20} />
                   </div>
                   <div>
                     <h2 className="text-sm font-black uppercase tracking-widest">{dir === 'rtl' ? 'الرسائل المثبتة' : 'Pinned Messages'}</h2>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter mt-0.5">
+                    <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-tighter mt-0.5">
                        {messages.filter(m => m.is_pinned).length} {dir === 'rtl' ? 'رسائل محفوظة' : 'saved messages'}
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowPinnedModal(false)}
-                  className="w-10 h-10 rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400"
+                  className="w-10 h-10 rounded-[var(--radius)] hover:bg-[var(--bg-overlay)] flex items-center justify-center text-[var(--text-secondary)]"
                 >
                   <X size={20} />
                 </button>
@@ -3197,7 +3189,7 @@ export const ChatPage: React.FC = () => {
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                  <div key={pIdx} className="group relative p-4 rounded-[4px] bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
+                  <div key={pIdx} className="group relative p-4 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
                          {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة السيادة' : 'Sovereign Answer')}

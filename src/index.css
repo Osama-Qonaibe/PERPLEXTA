@@ -79,23 +79,29 @@
   }
 }
 
+/* Cinematic Theme Transition Protocol */
 *,
 *::before,
 *::after {
-  transition-property: background-color, border-color, color, box-shadow, opacity;
-  transition-duration: var(--theme-transition-duration);
-  transition-timing-function: var(--theme-transition-easing);
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+  transition-duration: 400ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Exempt specific UI elements that require instant or unique response */
 *:where(
-  [class*="transition"],
-  [class*="animate"],
-  [class*="duration"],
+  [class*="transition-"], 
+  [class*="animate-"],
+  [class*="duration-"],
   svg,
   svg *,
   canvas,
   video,
-  img
+  img,
+  iframe,
+  .no-transition,
+  input,
+  textarea
 ) {
   transition-property: revert;
   transition-duration: revert;
@@ -105,6 +111,7 @@
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+  background-color: var(--bg-base);
 }
 
 body {
@@ -113,23 +120,56 @@ body {
   color: var(--text-primary);
   overflow-x: hidden;
   overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  /* === LIGHT THEME - Professional Elite === */
+  --bg-base: #ffffff;
+  --bg-surface: #f8fafc;
+  --bg-overlay: rgba(15, 23, 42, 0.04);
+  --bg-input: #f1f5f9;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-accent: rgba(16, 185, 129, 0.25);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent: #10b981;
+  --accent-dim: rgba(16, 185, 129, 0.1);
+  --accent-glow: rgba(16, 185, 129, 0.2);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 8px;
+
+  /* Legacy Mapping */
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-surface);
+  --text-primary-legacy: var(--text-primary);
+  --text-secondary-legacy: var(--text-secondary);
+  --border-main: var(--border);
+  --accent-emerald: var(--accent);
+  
+  --theme-transition-duration: 400ms;
+  --theme-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root.dark {
-  --bg-base: #09090b;
-  --bg-surface: #111113;
-  --bg-overlay: #18181b;
-  --bg-input: #1c1c1f;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-accent: rgba(16, 185, 129, 0.25);
-  --text-primary: #f9fafb;
-  --text-secondary: #71717a;
-  --text-muted: #3f3f46;
+  /* === DARK THEME - Immersive Sovereign === */
+  --bg-base: #0a0a0b;
+  --bg-surface: #141416;
+  --bg-overlay: rgba(255, 255, 255, 0.03);
+  --bg-input: #1a1a1c;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(16, 185, 129, 0.2);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
   --accent: #10b981;
   --accent-dim: rgba(16, 185, 129, 0.12);
-  --accent-glow: rgba(16, 185, 129, 0.35);
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --accent-glow: rgba(16, 185, 129, 0.3);
+  --danger: #f43f5e;
+  --warning: #fbbf24;
   color-scheme: dark;
 }
 

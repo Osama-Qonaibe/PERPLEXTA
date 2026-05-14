@@ -120,13 +120,11 @@ export const IncentiveCard: React.FC = () => {
           initial={{ opacity: 0, y: 50, scale: 0.9, x: '-50%' }}
           animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
           exit={{ opacity: 0, scale: 0.9, y: 20, x: '-50%' }}
-          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-[4px] border border-gray-200/50 dark:border-gray-800/50 shadow-2xl overflow-hidden ${
-            theme === 'dark' ? 'bg-[#1a1a1c]/95 backdrop-blur-2xl' : 'bg-white/95 backdrop-blur-2xl'
-          }`}
+          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-[var(--radius)] border border-[var(--border-main)] shadow-2xl overflow-hidden bg-[var(--bg-secondary)]/95 backdrop-blur-2xl`}
           onClick={(e) => e.stopPropagation()} // Prevent close when clicking the card itself
         >
           {/* Progress Bar (Header) */}
-          <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800/50">
+          <div className="h-1.5 w-full bg-[var(--bg-primary)]">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
@@ -137,49 +135,49 @@ export const IncentiveCard: React.FC = () => {
 
           <div className="p-6">
             <div className={`flex items-start gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-14 h-14 rounded-[4px] ${content.bg} flex items-center justify-center shrink-0`}>
+              <div className={`w-14 h-14 rounded-[var(--radius)] ${content.bg} flex items-center justify-center shrink-0`}>
                 {content.icon}
               </div>
               
               <div className={`flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                <h3 className="text-gray-900 dark:text-white font-bold text-lg tracking-tight">
+                <h3 className="text-[var(--text-primary)] font-bold text-lg tracking-tight">
                   {content.title}
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 leading-relaxed">
+                <p className="text-[var(--text-secondary)] text-sm mt-1 leading-relaxed">
                   {content.desc}
                 </p>
               </div>
 
               <button 
                 onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className={`mt-6 p-4 rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+            <div className={`mt-6 p-4 rounded-[var(--radius)] bg-[var(--bg-primary)] border border-[var(--border-main)] ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <Users size={16} className="text-emerald-500" />
                 <span className="text-[13px] font-bold text-emerald-500 uppercase tracking-wider">
                   {t('rewardFriends')}
                 </span>
               </div>
-              <p className="text-gray-600 dark:text-gray-300 text-[13px] leading-snug">
+              <p className="text-[var(--text-secondary)] text-[13px] leading-snug">
                 {t('quotaMilestoneIncentive')}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button 
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
                   <Share2 size={14} />
                   {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
                 </button>
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs font-bold transition-all active:scale-95"
                 >
                   {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}
@@ -188,8 +186,8 @@ export const IncentiveCard: React.FC = () => {
             </div>
 
             <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
-              <MousePointer2 size={12} className="text-gray-400" />
-              <span className="text-[10px] text-gray-400 italic">
+              <MousePointer2 size={12} className="text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)] italic">
                 {dir === 'rtl' ? 'حرك الماوس أو اضغط للإخفاء' : 'Move mouse or click to dismiss'}
               </span>
             </div>

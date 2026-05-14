@@ -37,9 +37,9 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
 
   return (
     <aside 
-      className={`fixed top-[72px] bottom-0 h-[calc(100vh-72px)] flex flex-col z-[70] shadow-2xl ${
-        theme === 'dark' ? 'border-gray-800 bg-[#0f0f11]' : 'border-gray-200 bg-white'
-      } ${dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'} translate-x-0 visible`}
+      className={`fixed top-[72px] bottom-0 h-[calc(100vh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
+        dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'
+      } translate-x-0 visible transition-colors duration-[var(--theme-transition-duration)]`}
       style={{ width: isMobile ? '68%' : '240px', maxWidth: isMobile ? '260px' : 'none' }}
     >
         <nav className="flex-1 px-3 space-y-1 pt-[25px] overflow-y-auto custom-scrollbar scroll-smooth">
@@ -48,23 +48,23 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
               key={index}
               to={item.path}
               className={({ isActive }) =>
-                `group flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all duration-300 border border-transparent ${
-                  isActive
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
-                    : `text-gray-400 hover:text-gray-900 dark:hover:text-white ${theme === 'dark' ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'}`
-                }`
-              }
+              `group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] border border-transparent ${
+                isActive
+                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
+              }`
+            }
             >
               {({ isActive }) => (
                 <>
-                  <div className={`transition-all duration-300 ${
+                  <div className={`transition-all duration-[var(--theme-transition-duration)] ${
                     isActive 
                       ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                      : 'group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      : 'text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                   }`}>
                     {item.icon}
                   </div>
-                  <span className={`font-medium text-sm transition-colors duration-300 ${isActive ? 'text-emerald-500' : ''}`}>
+                  <span className={`font-medium text-sm transition-colors duration-[var(--theme-transition-duration)] ${isActive ? 'text-emerald-500' : ''}`}>
                     {item.label}
                   </span>
                 </>
@@ -74,18 +74,18 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
         </nav>
 
         {/* Bottom Navigation Lock */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800/60 mt-auto">
+        <div className="p-4 border-t border-[var(--border)] mt-auto transition-colors duration-[var(--theme-transition-duration)]">
           <NavLink 
             to="/"
-            className={`group flex items-center justify-between px-4 py-3 rounded-[4px] transition-all duration-300 border border-transparent ${theme === 'dark' ? 'bg-[#1a1a1c] hover:bg-gray-800/50 border-gray-800/60 hover:border-emerald-500/30' : 'bg-gray-50 hover:bg-white border-gray-200 shadow-sm hover:shadow-md'}`}
+            className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-emerald-500/30 shadow-sm hover:shadow-md"
           >
             <div className="flex items-center gap-3">
-              <div className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+              <div className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-[var(--theme-transition-duration)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
                 <ArrowRight size={18} className={dir === 'rtl' ? 'rotate-180' : ''} />
               </div>
-              <span className={`font-bold text-sm ${theme === 'dark' ? 'text-gray-400 group-hover:text-white' : 'text-gray-500 group-hover:text-gray-900'}`}>{t('home')}</span>
+              <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]">{t('home')}</span>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-[var(--theme-transition-duration)] shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
           </NavLink>
         </div>
       </aside>

@@ -130,7 +130,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-all duration-300 flex items-center bg-[var(--bg-primary)]`}>
+    <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-all duration-300 flex items-center bg-[var(--bg-base)]`}>
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)]`} />
       
       <div className="w-full flex justify-between items-center h-full">
@@ -188,9 +188,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               ) : chatId && chatTitle ? (
               <motion.div 
                 key="chat-title"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className={`hidden md:flex items-center gap-2 px-3 h-8 rounded-[8px] bg-transparent border border-[var(--border-main)] max-w-full`}
               >
                 {isEditingTitle ? (

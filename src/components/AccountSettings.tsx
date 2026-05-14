@@ -123,19 +123,19 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
     const isEditing = editingField === field;
 
     return (
-      <div className="flex flex-col md:flex-row md:items-center justify-between py-10 border-b border-[var(--border-main)] group gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between py-10 border-b border-[var(--border-main)] group gap-4">
         <div className="flex items-center gap-6 flex-1">
-          <div className="p-3 rounded-[4px] bg-[var(--bg-primary)] text-gray-400 group-hover:text-emerald-500 transition-all duration-300 shrink-0">
+          <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-300 shrink-0">
             {React.cloneElement(icon as React.ReactElement<{ size?: number; className?: string }>, { size: 20 })}
           </div>
           <div className="flex-1 w-full">
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{label}</p>
+            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{label}</p>
             {isEditing ? (
               multiline ? (
                 <textarea
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full p-4 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] min-h-[120px] text-sm"
+                  className="w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] min-h-[120px] text-sm"
                   autoFocus
                 />
               ) : (
@@ -143,7 +143,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   type={type}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full max-w-md p-3 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full max-w-md p-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                   autoFocus
                 />
               )
@@ -159,13 +159,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             <div className="flex gap-2">
               <button 
                 onClick={handleSave}
-                className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-[4px] transition-all hover:scale-110 active:scale-95"
+                className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-[var(--radius)] transition-all hover:scale-110 active:scale-95"
               >
                 <Check size={20} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
               </button>
               <button 
                 onClick={() => setEditingField(null)}
-                className="p-2 text-red-500 hover:bg-red-500/10 rounded-[4px] transition-all hover:scale-110 active:scale-95"
+                className="p-2 text-red-500 hover:bg-red-500/10 rounded-[var(--radius)] transition-all hover:scale-110 active:scale-95"
               >
                 <X size={20} />
               </button>
@@ -173,7 +173,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
           ) : (
             <button 
               onClick={() => handleStartEdit(field, field === 'password' ? '' : value)}
-              className="text-emerald-500 hover:text-emerald-600 text-[11px] md:text-sm font-black flex items-center gap-2 transition-all px-4 py-2 rounded-[4px] bg-transparent hover:bg-emerald-500/10"
+              className="text-emerald-500 hover:text-emerald-600 text-[11px] md:text-sm font-black flex items-center gap-2 transition-all px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-emerald-500/10"
             >
               <Edit2 size={16} />
               {t('edit').toUpperCase()}
@@ -196,15 +196,15 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   return (
     <div className="space-y-8 animate-fade-in relative">
       {/* Category Tabs */}
-      <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[4px] border border-[var(--border-main)] max-w-fit mx-auto md:mx-0">
+      <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[var(--radius)] border border-[var(--border-main)] max-w-fit mx-auto md:mx-0">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveCategory(item.id as any)}
-            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-500 rounded-[4px] ${
+            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-500 rounded-[var(--radius)] ${
               activeCategory === item.id 
                 ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-lg' 
-                : 'text-gray-500 hover:text-gray-400 hover:bg-white/5'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/5'
             }`}
           >
             {item.icon}
@@ -237,31 +237,31 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <img 
                       src={user.avatar} 
                       alt="Avatar" 
-                      className="w-20 h-20 rounded-[4px] object-cover border-4 transition-all duration-300 shadow-xl"
+                      className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-all duration-300 shadow-xl"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div 
-                      className="w-20 h-20 rounded-[4px] bg-[var(--bg-primary)] flex items-center justify-center text-gray-400 group-hover:text-emerald-500 transition-all duration-500 border-4"
+                      className="w-20 h-20 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-500 border-4"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                     >
                       {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={28} />}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 p-2 bg-emerald-500 rounded-[4px] text-white shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-all" onClick={() => fileInputRef.current?.click()}>
+                  <div className="absolute -bottom-1 -right-1 p-2 bg-emerald-500 rounded-[var(--radius)] text-white shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-all" onClick={() => fileInputRef.current?.click()}>
                     {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('avatar')}</p>
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('avatar')}</p>
                   <div className="flex items-center gap-3">
                     {user.subscription?.plan_name_en && (
                       <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                         {user.subscription.plan_name_en}
                       </span>
                     )}
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                    <span className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest">
                        {user.kyc_status === 'verified' ? <Check size={14} className="inline text-blue-500 mr-1" /> : null}
                        ID_{user.id?.toString().slice(-4)}
                     </span>
@@ -271,7 +271,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="text-emerald-500 hover:text-emerald-600 text-sm font-black flex items-center gap-2 transition-all px-4 py-2 rounded-[4px] bg-transparent hover:bg-emerald-500/10"
+                className="text-emerald-500 hover:text-emerald-600 text-sm font-black flex items-center gap-2 transition-all px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-emerald-500/10"
               >
                 {t('edit').toUpperCase()}
               </button>
@@ -283,12 +283,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
             <div className="flex items-center justify-between py-10 border-b border-[var(--border-main)]">
               <div className="flex items-center gap-6">
-                <div className="p-3 rounded-[4px] bg-[var(--bg-primary)] text-gray-400">
+                <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-[var(--text-muted)]">
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('kycStatus')}</p>
-                  <p className={`font-black text-sm tracking-widest uppercase flex items-center gap-2 ${user.kyc_status === 'verified' ? 'text-emerald-500' : 'text-gray-400'}`}>
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('kycStatus')}</p>
+                  <p className={`font-black text-sm tracking-widest uppercase flex items-center gap-2 ${user.kyc_status === 'verified' ? 'text-emerald-500' : 'text-[var(--text-primary)]'}`}>
                     {kycStatus}
                     {user.kyc_status === 'verified' && <Check size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
                   </p>
@@ -298,11 +298,11 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
             <div className="flex items-center justify-between py-10 border-b border-[var(--border-main)]">
               <div className="flex items-center gap-6">
-                <div className="p-3 rounded-[4px] bg-[var(--bg-primary)] text-gray-400">
+                <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-[var(--text-muted)]">
                   <CreditCard size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('currentPlan')}</p>
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('currentPlan')}</p>
                   <p className="font-black text-sm tracking-[0.2em] text-emerald-500 uppercase flex items-center gap-2 shadow-emerald-500/10">
                     {planName}
                     {user.subscription?.status === 'active' && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
@@ -321,14 +321,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             exit={{ opacity: 0, x: 20 }}
             className="space-y-2"
           >
-            <div className="p-8 rounded-[4px] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-500">
+            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-500">
               <div className="flex items-start gap-6">
-                <div className="p-5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
+                <div className="p-5 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500 shadow-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
                   <Sparkles size={32} className="drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                 </div>
                 <div className="space-y-3">
                   <h3 className="text-xl font-black tracking-tight text-emerald-500 uppercase">{dir === 'rtl' ? 'معايرة الذكاء السيادي' : 'Sovereign Intelligence'}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed font-medium max-w-lg">
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium max-w-lg">
                     {dir === 'rtl' 
                       ? 'قم بتخصيص كيفية تفاعل المساعد معك بناءً على هويتك المهنية وأسلوب الردود المفضل لديك لضمان تجربة استخباراتية فائقة.' 
                       : 'Customize how the assistant interacts based on your professional identity and preferred response style for a superior intelligence experience.'}
@@ -340,7 +340,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             {renderEditableField(t('professionalIdentity'), 'custom_instructions', user.custom_instructions || '', <Briefcase size={20} />, 'text', true)}
 
             <div className="py-8">
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                 <Zap size={14} className="text-amber-500" />
                 {t('eliteResponseStyles').toUpperCase()}
               </p>
@@ -351,7 +351,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <button
                       key={preset.id}
                       onClick={() => handlePresetSelect(preset)}
-                      className={`p-5 rounded-[4px] border transition-all duration-500 text-start group relative overflow-hidden ${
+                      className={`p-5 rounded-[var(--radius)] border transition-all duration-500 text-start group relative overflow-hidden ${
                         active 
                           ? 'border-emerald-500 bg-emerald-500/[0.03] shadow-lg shadow-emerald-500/5' 
                           : 'border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/5'
@@ -364,13 +364,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                       )}
                       
                       <div className="flex items-center gap-4 mb-2 relative z-10">
-                        <div className={`p-2.5 rounded-[4px] transition-colors ${
-                          active ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-primary)] text-gray-400 group-hover:text-emerald-500'
+                        <div className={`p-2.5 rounded-[var(--radius)] transition-colors ${
+                          active ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-primary)] text-[var(--text-muted)] group-hover:text-emerald-500'
                         }`}>
                             {preset.icon}
                         </div>
                         <div>
-                          <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 transition-all ${active ? 'text-emerald-500 opacity-100' : 'text-gray-500 opacity-50'}`}>
+                          <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 transition-all ${active ? 'text-emerald-500 opacity-100' : 'text-[var(--text-muted)] opacity-50'}`}>
                             {active ? t('activeNow') : (dir === 'rtl' ? 'أسلوب متاح' : 'Style Preset')}
                           </p>
                           <h4 className={`font-black text-sm transition-colors ${
@@ -380,7 +380,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                           </h4>
                         </div>
                       </div>
-                      <p className="text-[11px] text-gray-500 font-medium leading-relaxed relative z-10">
+                      <p className="text-[11px] text-[var(--text-secondary)] font-medium leading-relaxed relative z-10">
                         {dir === 'rtl' ? preset.desc_ar : preset.desc_en}
                       </p>
                     </button>
@@ -402,24 +402,24 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             {/* Language Selection */}
             <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
                <div className="flex items-center gap-6">
-                  <div className="p-3 rounded-[4px] bg-[var(--bg-primary)] text-gray-400 group-hover:text-emerald-500 transition-all duration-300">
+                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-300">
                     <Languages size={20} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('languagePreference') || 'Platform Language'}</p>
+                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('languagePreference') || 'Platform Language'}</p>
                     <p className="font-bold text-base text-[var(--text-primary)]">{language === 'ar' ? 'العربية' : 'English'}</p>
                   </div>
                </div>
-               <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[4px] border border-[var(--border-main)]">
+               <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[var(--radius)] border border-[var(--border-main)]">
                   <button 
                     onClick={() => setLanguage('ar')}
-                    className={`px-4 py-2 rounded-[4px] text-[10px] font-black uppercase tracking-widest transition-all ${language === 'ar' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-gray-500 hover:text-gray-200'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${language === 'ar' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-[var(--text-muted)] hover:text-gray-200'}`}
                   >
                     العربية
                   </button>
                   <button 
                     onClick={() => setLanguage('en')}
-                    className={`px-4 py-2 rounded-[4px] text-[10px] font-black uppercase tracking-widest transition-all ${language === 'en' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-gray-500 hover:text-gray-200'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${language === 'en' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-[var(--text-muted)] hover:text-gray-200'}`}
                   >
                     English
                   </button>
@@ -429,40 +429,40 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             {/* Theme Selection */}
             <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
                <div className="flex items-center gap-6">
-                  <div className="p-3 rounded-[4px] bg-[var(--bg-primary)] text-gray-400 group-hover:text-amber-500 transition-all duration-300">
+                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-[var(--text-muted)] group-hover:text-amber-500 transition-all duration-300">
                     <Monitor size={20} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{t('themePreference')}</p>
+                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('themePreference')}</p>
                     <p className="font-bold text-base text-[var(--text-primary)] uppercase">{theme}</p>
                   </div>
                </div>
-               <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[4px] border border-[var(--border-main)]">
+               <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[var(--radius)] border border-[var(--border-main)]">
                   <button 
                     onClick={() => setTheme('light')}
-                    className={`px-4 py-2 rounded-[4px] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'light' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/40' : 'text-gray-500 hover:text-gray-200'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'light' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/40' : 'text-[var(--text-muted)] hover:text-gray-200'}`}
                   >
                     Light
                   </button>
                   <button 
                     onClick={() => setTheme('dark')}
-                    className={`px-4 py-2 rounded-[4px] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-gray-800 text-white shadow-lg shadow-black/40' : 'text-gray-500 hover:text-gray-200'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-gray-800 text-white shadow-lg shadow-black/40' : 'text-[var(--text-muted)] hover:text-gray-200'}`}
                   >
                     Dark
                   </button>
                </div>
             </div>
 
-            <div className="p-8 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-primary)] mt-12">
+            <div className="p-8 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-primary)] mt-12">
                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                  <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
                      <Target size={24} />
                   </div>
                   <div className="space-y-2">
                      <h4 className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">
                         {dir === 'rtl' ? 'تزامن التفضيلات عالمياً' : 'Global Preference Sync'}
                      </h4>
-                     <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                     <p className="text-[11px] text-[var(--text-secondary)] font-medium leading-relaxed">
                         {dir === 'rtl' 
                           ? 'يتم تخزين جميع تفضيلاتك وتهيئة الذكاء بشكل آمن في السحابة ومزامنتها عبر جميع أجهزتك.' 
                           : 'All your preferences and intelligence calibrations are stored securely in the cloud and synced across all your devices.'}

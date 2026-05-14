@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { PWAInstall } from './PWAInstall'; 
 const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
-const sidebarSpring = { type: "tween" as const, duration: 0.8, ease: [0.4, 0, 0.2, 1] as any };
+const sidebarSpring = { type: "tween" as const, duration: 0.2, ease: "easeOut" as const };
 const elasticSpring = { type: "tween" as const, duration: 0.2, ease: "easeOut" as const };
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         transition={{ 
           ...sidebarSpring
         }}
-        className={`fixed ${isMobile ? 'top-0' : 'top-[72px]'} bottom-0 flex flex-col z-[150] select-none border-[var(--border-main)] bg-[var(--bg-primary)] start-0 ${dir === 'rtl' ? 'border-l' : 'border-r'} ${
+        className={`fixed ${isMobile ? 'top-0' : 'top-[72px]'} bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 ${dir === 'rtl' ? 'border-l' : 'border-r'} ${
           isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
         }`}
         style={{ contain: 'layout' }}
@@ -210,7 +210,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     }
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative group`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                       <div className="relative z-10 transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         {React.cloneElement(item.icon as React.ReactElement, { size: 18 } as any)}
                       </div>
@@ -238,7 +238,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     className="flex items-center transition-all duration-300 w-full h-11 overflow-hidden flex-shrink-0 group"
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute top-[3px] left-0 right-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15`} />
+                      <div className={`absolute top-[3px] left-0 right-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15`} />
                       <Plus size={20} className={`relative z-10 translate-y-[1px] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 text-emerald-500`} />
                     </div>
                     <AnimatePresence mode="wait" initial={false}>
@@ -293,8 +293,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
                             <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                               <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] ${
-                                 theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50'
+                               <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] ${
+                                 theme === 'dark' ? 'bg-[var(--bg-overlay)]' : 'bg-[var(--bg-surface)]'
                                }`} />
                               <MessageSquare size={16} className="text-emerald-500 relative z-10" />
                             </div>
@@ -338,8 +338,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                             >
                               <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-colors duration-300 ${
-                                  theme === 'dark' ? 'group-hover:bg-gray-800/50' : 'group-hover:bg-gray-50'
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-colors duration-300 ${
+                                  theme === 'dark' ? 'group-hover:bg-[var(--bg-overlay)]' : 'group-hover:bg-[var(--bg-surface)]'
                                 }`} />
                                 <MessageSquare size={16} className="relative z-10 transition-colors duration-300 group-hover:text-emerald-500" />
                               </div>
@@ -401,10 +401,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-secondary)] border-[var(--border-main)] border rounded-[4px] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
+                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-[var(--radius)] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
                       >
                         <div className="p-2 space-y-1">
-                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <User size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -422,7 +422,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           </button>
 
                           {!isMobile && (
-                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all`}>
+                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all`}>
                               <CreditCard size={16} className="flex-shrink-0" />
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
@@ -440,9 +440,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </button>
                           )}
 
-                          <div className={`h-px bg-[var(--border-main)] my-1 mx-2`}></div>
+                          <div className={`h-px bg-[var(--border)] my-1 mx-2`}></div>
 
-                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <Wallet size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -459,7 +459,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <BrainCircuit size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -476,7 +476,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
+                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
                             <LogOut size={16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -502,11 +502,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
+                            className={`w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
                             style={{ 
-                              borderColor: user.subscription?.plan_color || 'var(--border-main)'
+                              borderColor: user.subscription?.plan_color || 'var(--border)'
                             }}
                           >
                             {user.avatar ? (
@@ -556,10 +556,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-colors duration-300 ${
-                        theme === 'dark' ? 'group-hover:bg-gray-800/50' : 'group-hover:bg-gray-50'
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-colors duration-300 ${
+                        theme === 'dark' ? 'group-hover:bg-[var(--bg-overlay)]' : 'group-hover:bg-[var(--bg-surface)]'
                       }`} />
-                      <div className={`w-10 h-10 rounded-[4px] ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'} flex items-center justify-center flex-shrink-0 relative z-10`}>
+                      <div className={`w-10 h-10 rounded-[var(--radius)] ${theme === 'dark' ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'} flex items-center justify-center flex-shrink-0 relative z-10`}>
                         <User size={18} className="text-gray-400" />
                       </div>
                     </div>

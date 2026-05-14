@@ -12,9 +12,7 @@ export const MainLayout: React.FC = () => {
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
   
   return (
-    <div className={`flex h-screen w-full overflow-hidden relative theme-transition bg-[var(--bg-base)] text-[var(--text-primary)]`}>
-      <div className={`absolute inset-0 z-0 bg-[var(--bg-base)]`} />
-      
+    <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]`}>
       <div
         dir={localDir}
         className="flex h-full w-full overflow-hidden relative z-10"

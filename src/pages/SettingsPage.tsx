@@ -195,19 +195,19 @@ export const SettingsPage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className={`h-screen w-full flex flex-col md:flex-row overflow-hidden ${theme === 'dark' ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-900'}`}>
+    <div className={`h-screen w-full flex flex-col md:flex-row overflow-hidden bg-[var(--bg-base)] text-[var(--text-primary)]`}>
       
       {/* Sidebar Navigation - Elite Standard */}
-      <div className={`w-full md:w-60 border-b md:border-b-0 border-gray-200 dark:border-gray-800/60 flex flex-col h-[280px] md:h-screen relative ${
+      <div className={`w-full md:w-60 border-b md:border-b-0 border-[var(--border)] flex flex-col h-[280px] md:h-screen relative ${
         dir === 'rtl' ? 'md:border-l' : 'md:border-r'
-      } ${theme === 'dark' ? 'bg-[#1a1a1c]/30' : 'bg-gray-50/40'}`}>
+      } ${theme === 'dark' ? 'bg-[#1a1a1c]/30' : 'bg-[var(--bg-surface)]/40'}`}>
         
         {/* Sidebar Header - Height matched with content header (h-20) */}
-        <div className="h-20 px-6 border-b border-gray-200/50 dark:border-gray-800/40 flex items-center">
+        <div className="h-20 px-6 border-b border-[var(--border)]/50 flex items-center">
            <div className="flex items-center gap-3">
               <button 
                 onClick={() => navigate('/')} 
-                className="w-10 h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-emerald-500/10 text-gray-500 hover:text-emerald-500 transition-all duration-300 group"
+                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 group"
               >
                 {dir === 'rtl' ? <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> : <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}
               </button>
@@ -216,15 +216,15 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Sidebar Tabs - Scrollable Area */}
-        <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-1.5">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-1.5 font-inter">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[4px] transition-all duration-500 group relative overflow-hidden ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-500 group relative overflow-hidden ${
                 activeTab === tab.id 
-                  ? (theme === 'dark' ? 'text-emerald-500' : 'bg-white text-emerald-600 shadow-xl shadow-emerald-500/5 border border-emerald-100')
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                  ? (theme === 'dark' ? 'text-emerald-500' : 'bg-[var(--bg-base)] text-emerald-600 shadow-xl shadow-emerald-500/5 border border-emerald-100')
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/50 dark:hover:bg-white/5'
               }`}
             >
               <AnimatePresence>
@@ -252,10 +252,10 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Sidebar Footer - Permanent Anchor */}
-        <div className="p-4 border-t border-gray-200/50 dark:border-gray-800/40">
+        <div className="p-4 border-t border-[var(--border)]/50">
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[4px] text-red-500 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20 group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20 group"
           >
             <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
             <span className="font-bold text-sm tracking-tight">{t('logout')}</span>
@@ -267,15 +267,15 @@ export const SettingsPage: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Sticky Page Header */}
         <div className={`sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-all duration-300 flex-none ${
-          theme === 'dark' ? 'bg-[#0f0f11]/80 border-gray-800/40' : 'bg-white/80 border-gray-100'
+          theme === 'dark' ? 'bg-[var(--bg-base)]/80 border-[var(--border)]/40' : 'bg-[var(--bg-base)]/80 border-gray-100'
         }`}>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}
             </div>
             <div className="flex flex-col">
               <h1 className="text-2xl font-black tracking-tight">{tabs.find(t => t.id === activeTab)?.label}</h1>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 opacity-60">{t('appName')} Command / {activeTab}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-60">{t('appName')} Command / {activeTab}</span>
             </div>
           </div>
         </div>
@@ -293,8 +293,8 @@ export const SettingsPage: React.FC = () => {
               >
               {/* Account Tab */}
               {activeTab === 'account' && localUser && (
-                <div className={`p-8 md:p-12 rounded-[4px] border ${
-                  theme === 'dark' ? 'bg-[#1a1a1c]/60 border-gray-800/60 shadow-2xl' : 'bg-white border-gray-100 shadow-2xl shadow-gray-200/40'
+                <div className={`p-8 md:p-12 rounded-[var(--radius)] border ${
+                  theme === 'dark' ? 'bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-2xl' : 'bg-[var(--bg-base)] border-gray-100 shadow-2xl shadow-gray-200/40'
                 }`}>
                   <AccountSettings 
                     user={localUser} 

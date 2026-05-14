@@ -103,7 +103,7 @@ export const AuthModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-[4px] shadow-2xl border bg-[var(--bg-secondary)] border-[var(--border-main)] overflow-hidden mx-auto`}
+            className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-[var(--radius)] shadow-2xl border bg-[var(--bg-surface)] border-[var(--border)] overflow-hidden mx-auto`}
             dir={dir}
             onClick={(e) => e.stopPropagation()}
           >
@@ -112,7 +112,7 @@ export const AuthModal: React.FC = () => {
             
             <button 
               onClick={handleClose}
-              className={`absolute top-3 right-3 md:top-4 md:right-4 text-gray-500 hover:text-[var(--text-primary)] transition-colors p-2 hover:bg-[var(--bg-primary)] rounded-[4px] z-20`}
+              className={`absolute top-3 right-3 md:top-4 md:right-4 text-gray-500 hover:text-[var(--text-primary)] transition-colors p-2 hover:bg-[var(--bg-overlay)] rounded-[var(--radius)] z-20`}
               style={dir === 'rtl' ? { left: '1rem', right: 'auto' } : {}}
             >
               <X size={18} />
@@ -128,12 +128,12 @@ export const AuthModal: React.FC = () => {
             </div>
 
         {error && (
-          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-[4px] bg-red-500/10 border border-red-500/20 text-red-500 text-[12px] md:text-sm text-center">
+          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-[var(--radius)] bg-red-500/10 border border-red-500/20 text-red-500 text-[12px] md:text-sm text-center">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[12px] md:text-sm text-center">
+          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[12px] md:text-sm text-center">
             {success}
           </div>
         )}
@@ -152,7 +152,7 @@ export const AuthModal: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full py-2 md:py-2.5 rounded-[4px] border outline-none transition-all duration-300 bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                 placeholder="name@example.com"
                 dir="ltr"
               />
@@ -173,7 +173,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[4px] border outline-none transition-all duration-300 bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -192,7 +192,7 @@ export const AuthModal: React.FC = () => {
                           localStorage.setItem('app_remember_me', e.target.checked ? 'true' : 'false');
                         }}
                       />
-                      <div className="w-5 h-5 rounded border border-[var(--border-main)] bg-[var(--bg-primary)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all duration-200"></div>
+                      <div className="w-5 h-5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all duration-200"></div>
                       <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
@@ -228,7 +228,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[4px] border outline-none transition-all duration-300 bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -241,7 +241,7 @@ export const AuthModal: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 md:py-3.5 mt-1 bg-pink-600 hover:bg-pink-500 text-white rounded-[4px] font-bold transition-all shadow-lg shadow-pink-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
+            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[var(--radius)] font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
           >
             {isLoading ? (
               <>
@@ -270,7 +270,7 @@ export const AuthModal: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={loginWithGoogle}
               type="button"
-              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[4px] border transition-all bg-[var(--bg-primary)] border-[var(--border-main)] hover:bg-[var(--bg-secondary)] hover:border-emerald-500/30 text-[var(--text-primary)] shadow-xl text-sm md:text-base group active:scale-95`}
+              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[var(--radius)] border transition-all bg-[var(--bg-base)] border-[var(--border)] hover:bg-[var(--bg-surface)] hover:border-emerald-500/30 text-[var(--text-primary)] shadow-xl text-sm md:text-base group active:scale-95`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-all">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

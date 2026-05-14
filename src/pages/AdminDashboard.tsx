@@ -915,15 +915,11 @@ const CommandCenterView = ({
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-all duration-[var(--theme-transition-duration)] animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
+              ? "bg-[var(--bg-surface)] border border-emerald-500/30 text-emerald-500"
+              : "bg-[var(--bg-surface)] border border-red-500/30 text-red-500"
+          } border`}
         >
           {toast.type === "success" ? (
             <CheckCircle size={20} />
@@ -1165,7 +1161,7 @@ const DigitalFinancialRadarView = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
-            className={`px-3 py-2 rounded-[4px] border flex items-center gap-2 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-200 shadow-sm"}`}
+            className={`px-3 py-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] flex items-center gap-2 transition-all duration-[var(--theme-transition-duration)]`}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">
@@ -1212,7 +1208,7 @@ const DigitalFinancialRadarView = ({
                   ? "بحث في السجلات الفنية..."
                   : "Search financial records...")
               }
-              className={`w-full md:w-80 ${dir === "rtl" ? "pr-10 pl-4" : "pl-10 pr-4"} py-2.5 rounded-[4px] border text-sm font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-[#1a1a1c]/40 border-gray-800/60 focus:border-emerald-500/50 text-white placeholder:text-gray-600`}
+              className={`w-full md:w-80 ${dir === "rtl" ? "pr-10 pl-4" : "pl-10 pr-4"} py-2.5 rounded-[var(--radius)] border text-sm font-medium transition-all duration-[var(--theme-transition-duration)] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-[var(--bg-overlay)] border-[var(--border)] focus:border-emerald-500/50 text-[var(--text-primary)] placeholder:text-[var(--text-muted)]`}
             />
           </div>
           <button
@@ -1533,7 +1529,7 @@ const DigitalFinancialRadarView = ({
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left rtl:text-right">
                 <thead
-                  className={`text-[10px] uppercase font-bold ${theme === "dark" ? "bg-[#0f0f11] text-gray-500" : "bg-gray-50 text-gray-400"}`}
+                  className={`text-[10px] uppercase font-bold transition-all duration-[var(--theme-transition-duration)] ${theme === "dark" ? "bg-[var(--bg-surface)] text-gray-500" : "bg-gray-50 text-gray-400"}`}
                 >
                   <tr>
                     <th scope="col" className="px-6 py-4">
@@ -2286,7 +2282,7 @@ const ApiKeysVaultView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
-              className={`w-full max-w-md rounded-[4px] shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
+              className={`w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden bg-[var(--bg-surface)] border border-[var(--border)] transition-all duration-[var(--theme-transition-duration)]`}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -2363,7 +2359,7 @@ const ApiKeysVaultView = ({
               </div>
 
               <div
-                className={`p-4 border-t flex justify-end gap-3 ${theme === "dark" ? "border-gray-800/60 bg-[#0f0f11]/50" : "border-gray-100 bg-gray-50"}`}
+                className={`p-4 border-t flex justify-end gap-3 border-[var(--border)] bg-[var(--bg-base)]/50 transition-all duration-[var(--theme-transition-duration)]`}
               >
                 <button
                   onClick={() => setSyncModal(null)}
@@ -2393,7 +2389,7 @@ const ApiKeysVaultView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div
-              className={`w-full max-w-sm rounded-[4px] shadow-2xl overflow-hidden ${theme === "dark" ? "bg-[#1a1a1c] border border-gray-800/60" : "bg-white border border-gray-100"}`}
+              className={`w-full max-w-sm rounded-[var(--radius)] shadow-2xl overflow-hidden bg-[var(--bg-surface)] border border-[var(--border)] transition-all duration-[var(--theme-transition-duration)]`}
             >
               <div className="p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
@@ -2414,7 +2410,7 @@ const ApiKeysVaultView = ({
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteModal(null)}
-                    className={`flex-1 py-3 rounded-[4px] text-sm font-bold transition-all ${theme === "dark" ? "bg-[#0f0f11] text-gray-400 hover:text-white hover:bg-gray-800" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                    className={`flex-1 py-3 rounded-[var(--radius)] text-sm font-bold transition-all duration-[var(--theme-transition-duration)] ${theme === "dark" ? "bg-[var(--bg-surface)] text-gray-400 hover:text-white hover:bg-gray-800" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                   >
                     {t("cancel")}
                   </button>
@@ -3155,18 +3151,14 @@ const DatabaseOrchestrationView = ({
   };
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto relative">
+    <div className="space-y-4 max-w-6xl mx-auto relative transition-all duration-[var(--theme-transition-duration)]">
       {toast && (
         <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[4px] shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-all duration-[var(--theme-transition-duration)] animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
+              ? "bg-[var(--bg-surface)] border border-emerald-500/30 text-emerald-500"
+              : "bg-[var(--bg-surface)] border border-red-500/30 text-red-500"
+          } border`}
         >
           {toast.type === "success" ? (
             <CheckCircle size={20} />
@@ -3188,7 +3180,7 @@ const DatabaseOrchestrationView = ({
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-[4px] border transition-all duration-300 ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white border-emerald-100 text-emerald-600"}`}
+                    className={`p-2.5 rounded-[var(--radius)] border transition-all duration-[var(--theme-transition-duration)] ${theme === "dark" ? "bg-[var(--bg-surface)] border-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white border-emerald-100 text-emerald-600"}`}
                   >
                     <Icon size={20} />
                   </div>
@@ -4120,7 +4112,7 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400" : ""}`}
+                          className={`w-full h-11 px-3 rounded-[var(--radius)] border text-sm focus:outline-none appearance-none transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-primary)] ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400" : ""}`}
                           dir={dir}
                           disabled={!tool.fallback2Provider}
                         >
@@ -4170,7 +4162,7 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"} ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400" : ""}`}
+                          className={`w-full h-11 px-3 rounded-[var(--radius)] border text-sm focus:outline-none appearance-none transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-primary)] ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400" : ""}`}
                           dir={dir}
                           disabled={!tool.fallback3Provider}
                         >
@@ -6736,7 +6728,7 @@ const UserManagementView = ({
         createPortal(
           <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
             <div
-              className={`relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-[4px] shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
+              className={`relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-[var(--radius)] shadow-2xl flex flex-col transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
             >
               {/* Header */}
               <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -6848,13 +6840,13 @@ const UserManagementView = ({
         createPortal(
           <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-              className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[4px] shadow-2xl flex flex-col ${theme === "dark" ? "bg-[#0f0f11] border border-gray-800/60" : "bg-white border border-gray-200"}`}
+              className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[var(--radius)] shadow-2xl flex flex-col transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
             >
               <div className="p-8 border-b border-gray-800/20 flex items-center justify-between bg-gradient-to-br from-[var(--bg-secondary)] via-[var(--bg-secondary)] to-emerald-500/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
                 <div className="flex items-center gap-6 relative z-10">
                   <div
-                    className={`w-16 h-16 rounded-[4px] flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-all duration-500 group/avatar ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 hover:border-emerald-500/50" : "bg-gray-100 border-white hover:border-emerald-500/50"}`}
+                    className={`w-16 h-16 rounded-[var(--radius)] flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-all duration-[var(--theme-transition-duration)] group/avatar ${theme === "dark" ? "bg-[var(--bg-surface)] border-gray-800 hover:border-emerald-500/50" : "bg-gray-100 border-white hover:border-emerald-500/50"}`}
                   >
                     {selectedUser.avatar ? (
                       <img
@@ -10014,19 +10006,15 @@ export const AdminDashboard: React.FC = () => {
     >
       {/* Sticky Admin Header - Elite Command Layer */}
       <div
-        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-all duration-300 ${
-          theme === "dark" ? "bg-[#0f0f11]/95" : "bg-gray-50/95"
-        } backdrop-blur-md border-b ${theme === "dark" ? "border-gray-800/40" : "border-gray-200"} flex items-center justify-between`}
+        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-all duration-[var(--theme-transition-duration)] ${
+          theme === "dark" ? "bg-[var(--bg-base)]/95" : "bg-[var(--bg-surface)]/95"
+        } backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between`}
       >
         <div className="flex items-center gap-4">
           {path !== "dashboard" && (
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className={`p-2.5 rounded-[4px] transition-all duration-300 flex items-center justify-center ${
-                theme === "dark"
-                  ? "bg-gray-800/40 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/50"
-                  : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-900 border border-gray-200 shadow-sm"
-              }`}
+              className="p-2.5 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
               title={t("back")}
             >
               {dir === "rtl" ? (
@@ -10038,15 +10026,15 @@ export const AdminDashboard: React.FC = () => {
           )}
           <div className="flex items-center gap-4">
             <div
-              className={`p-2.5 rounded-[4px] ${theme === "dark" ? "bg-emerald-500/10" : "bg-white shadow-sm border border-emerald-500/10"}`}
+              className="p-2.5 rounded-[var(--radius)] bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-all duration-[var(--theme-transition-duration)]"
             >
               {getIcon()}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-colors">
                 {getTitle()}
               </h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 opacity-60">
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1 opacity-60">
                 {getSubTitle()}
               </p>
             </div>
@@ -10065,10 +10053,10 @@ export const AdminDashboard: React.FC = () => {
           )}
 
           <div
-            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-[4px] border ${theme === "dark" ? "bg-gray-800/20 border-gray-800/40" : "bg-white border-gray-200"}`}
+            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-[var(--theme-transition-duration)]"
           >
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">
+            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-tighter">
               Live Monitor
             </span>
           </div>
@@ -10077,12 +10065,12 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Main Content Area */}
       <div
-        className={`relative ${
+        className={`relative transition-all duration-[var(--theme-transition-duration)] ${
           ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings"].includes(
             path,
           )
             ? ""
-            : `p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "border-gray-800/60 bg-[#1a1a1c]" : "border-gray-200 bg-white"} shadow-xl`
+            : `p-6 md:p-8 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl`
         }`}
       >
         <ErrorBoundary name="Admin Command Panels">
