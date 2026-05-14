@@ -624,7 +624,7 @@ const CommandCenterView = ({
                     />
                   </div>
                   <div
-                    className={`mt-0.5 p-1.5 rounded-full shrink-0 ${
+                    className={`mt-0.5 p-1.5 rounded-[4px] shrink-0 ${
                       log.type === "ai_generation"
                         ? "bg-blue-500/20 text-blue-500"
                         : "bg-emerald-500/20 text-emerald-500"
@@ -876,13 +876,11 @@ const CommandCenterView = ({
                       className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500 cursor-pointer accent-red-500"
                     />
                   </div>
-                  <div
-                    className={`mt-0.5 p-1.5 rounded-full shrink-0 ${
+                  <div className={`mt-0.5 p-1.5 rounded-[4px] shrink-0 ${
                       alert.severity === "high" || alert.severity === "critical"
                         ? "bg-red-500/20 text-red-500"
                         : "bg-amber-500/20 text-amber-500"
-                    }`}
-                  >
+                    }`}>
                     <AlertCircle size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1415,7 +1413,7 @@ const DigitalFinancialRadarView = ({
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xs font-bold uppercase">
+                      <div className="w-8 h-8 rounded-[4px] bg-red-500/10 flex items-center justify-center text-red-500 text-xs font-bold uppercase">
                         {diag.user?.name?.substring(0, 2)}
                       </div>
                       <span className="text-sm font-bold">

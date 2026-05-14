@@ -14,7 +14,7 @@ const CORE_TABLES = [
 const LEDGER_TABLES = ['wallets', 'ledger_transactions'];
 
 export async function getDatabaseRegistry() {
-  const result = await pool.query('SELECT id, type, host, port, db_name, username, ssl_mode, pool_size, is_active, updated_at FROM db_connections_registry ORDER BY id ASC');
+  const result = await pool.query('SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry ORDER BY id ASC');
   return result.rows;
 }
 

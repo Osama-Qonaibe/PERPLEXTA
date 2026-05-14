@@ -504,15 +504,15 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                           <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/30 shadow-[0_0_15px_rgba(0,0,0,0.1)]`}
+                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:scale-105`}
                             style={{ 
-                              borderColor: user.subscription?.plan_color || 'transparent'
+                              borderColor: user.subscription?.plan_color || 'var(--border-main)'
                             }}
                           >
                             {user.avatar ? (
                               <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <User size={20} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300" />
+                              <User size={20} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-all ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>

@@ -140,7 +140,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full hover:opacity-80 transition-opacity text-[var(--text-primary)]`}>
                 <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative group`}>
                   {siteSettings.logoBase64 ? (
-                    <div className="w-10 h-10 rounded-[4px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-300 group-hover:scale-105 relative z-10 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-[4px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-500 group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                       <img 
                         src={siteSettings.logoBase64} 
                         alt="Logo" 
@@ -303,7 +303,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           }`}
                           dir={dir}
                         >
-                          <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                          <div className={`mt-1 h-8 w-8 rounded-[4px] flex items-center justify-center shrink-0 ${
                             !notif.is_read ? 'bg-emerald-500/20 text-emerald-500' : 'bg-[var(--bg-primary)] text-gray-500'
                           }`}>
                             {getNotifIcon(notif.type)}

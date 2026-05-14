@@ -260,7 +260,7 @@ export const RewardsPage: React.FC = () => {
             <div className="flex items-center gap-2 md:gap-3">
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white uppercase">{t('rewards')}</h1>
               {contextUser?.kyc_status === 'verified' && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                   <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{t('verified')}</span>
                 </div>
@@ -346,7 +346,7 @@ export const RewardsPage: React.FC = () => {
           <div className="space-y-6 md:space-y-8">
             {/* Step 1 */}
             <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
                 1
               </div>
               <div>
@@ -357,7 +357,7 @@ export const RewardsPage: React.FC = () => {
             
             {/* Step 2 */}
             <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
                 2
               </div>
               <div>
@@ -368,7 +368,7 @@ export const RewardsPage: React.FC = () => {
 
             {/* Step 3 */}
             <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
                 3
               </div>
               <div>
@@ -414,7 +414,7 @@ export const RewardsPage: React.FC = () => {
 
             <div className={`flex items-center justify-between p-4 md:p-6 rounded-[4px] md:rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)]`}>
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[4px] bg-rose-500/10 flex items-center justify-center text-rose-500">
                   <Gift size={20} className="md:w-6 md:h-6" />
                 </div>
                 <span className="font-bold text-xs md:text-base text-[var(--text-primary)]">{t('totalSuccessfulReferralsUser')}</span>
@@ -436,10 +436,10 @@ export const RewardsPage: React.FC = () => {
           {contextUser?.kyc_status === 'pending' ? (
             <div className="flex flex-col items-center text-center py-6 md:py-10 space-y-4 md:space-y-6">
               <div className="relative">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-[4px] bg-emerald-500/10 flex items-center justify-center animate-pulse">
                   <ShieldCheck size={40} className="md:w-[48px] md:h-[48px] text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
                 </div>
-                <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white dark:bg-[#1a1a1c] border-[3px] md:border-4 border-emerald-50 dark:border-[#0f0f11] flex items-center justify-center">
+                <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-white dark:bg-[#1a1a1c] border-[3px] md:border-4 border-emerald-50 dark:border-[#0f0f11] flex items-center justify-center">
                   <Clock size={16} className="text-amber-500" />
                 </div>
               </div>
@@ -474,7 +474,7 @@ export const RewardsPage: React.FC = () => {
           ) : contextUser?.kyc_status === 'rejected' ? (
             <div className="flex flex-col items-center text-center py-6 md:py-10 space-y-4 md:space-y-6">
               <div className="relative">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-red-500/10 flex items-center justify-center">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-[4px] bg-red-500/10 flex items-center justify-center">
                   <XCircle size={40} className="md:w-[48px] md:h-[48px] text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
                 </div>
               </div>
