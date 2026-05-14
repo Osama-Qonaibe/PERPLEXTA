@@ -21,13 +21,15 @@
   --warning: #d97706;
   --radius: 8px;
 
-  /* Legacy compatibility / Fallbacks */
   --bg-primary: var(--bg-base);
   --bg-secondary: var(--bg-surface);
   --text-primary-legacy: var(--text-primary);
   --text-secondary-legacy: var(--text-secondary);
   --border-main: var(--border);
   --accent-emerald: var(--accent);
+
+  --theme-transition-duration: 300ms;
+  --theme-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme {
@@ -51,6 +53,7 @@
   
   --radius-custom: var(--radius);
 }
+
 @layer utilities {
   .btn-primary {
     @apply bg-accent text-black font-medium transition-all duration-200 active:scale-95;
@@ -76,10 +79,32 @@
   }
 }
 
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--theme-transition-duration);
+  transition-timing-function: var(--theme-transition-easing);
+}
+
+*:where(
+  [class*="transition"],
+  [class*="animate"],
+  [class*="duration"],
+  svg,
+  svg *,
+  canvas,
+  video,
+  img
+) {
+  transition-property: revert;
+  transition-duration: revert;
+  transition-timing-function: revert;
+}
+
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
-  transition: background-color 0.3s ease;
 }
 
 body {
@@ -88,7 +113,6 @@ body {
   color: var(--text-primary);
   overflow-x: hidden;
   overscroll-behavior-y: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 :root.dark {
@@ -110,9 +134,11 @@ body {
 }
 
 .theme-transition {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing),
+              color var(--theme-transition-duration) var(--theme-transition-easing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-easing);
 }
-
 
 .custom-scrollbar {
   scroll-behavior: smooth;
