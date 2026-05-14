@@ -6,7 +6,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   try {
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
-    
+
     if (token) {
       token = token.trim();
       if (token.startsWith('"') && token.endsWith('"')) {
@@ -17,7 +17,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     if (token === 'null' || token === 'undefined' || token === '') {
       token = undefined;
     }
-    
+
     if (!token) {
       res.status(401).json({ error: 'Unauthorized', message: 'No token provided' });
       return;
@@ -38,12 +38,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       }
 
       try {
-        if (pool) {
-          const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
-          if (blacklistCheck.rows.length > 0) {
-            res.status(401).json({ error: 'Unauthorized', message: 'Token has been revoked/logged out' });
-            return;
-          }
+        const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+        if (blacklistCheck.rows.length > 0) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Token has been revoked/logged out' });
+          return;
         }
       } catch (checkErr) {
         console.error('[Auth] Blacklist check failed:', checkErr instanceof Error ? checkErr.message : checkErr);
@@ -52,13 +50,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       }
 
       const userPayload = user as any;
-      
+
       try {
-        if (!pool) {
-          (req as any).user = userPayload;
-          next();
-          return;
-        }
         const userCheck = await pool.query('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
         if (userCheck.rows.length === 0) {
           res.status(401).json({ error: 'User not found' });
@@ -66,9 +59,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         }
 
         if (userCheck.rows[0].status === 'suspended') {
-          res.status(403).json({ 
-            error: 'Account Suspended', 
-            message: 'Your account has been suspended by the administration. Please contact support.' 
+          res.status(403).json({
+            error: 'Account Suspended',
+            message: 'Your account has been suspended by the administration. Please contact support.'
           });
           return;
         }
@@ -82,12 +75,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       (req as any).user = userPayload;
       (req as any).token = token;
-      
-      if (userPayload && userPayload.id && pool) {
-        pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
-          .catch((e: any) => console.error('Error updating last_active_at:', e));
-      }
-      
+
+      pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
+        .catch((e: any) => console.error('Error updating last_active_at:', e));
+
       next();
     });
   } catch (error) {
@@ -99,10 +90,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 export const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   authenticateToken(req, res, () => {
     const userPayload = (req as any).user;
-    if (userPayload && userPayload.role === 'admin') {
-      next();
-    } else {
+    if (!userPayload || userPayload.role !== 'admin') {
       res.status(403).json({ error: 'Admin access required' });
+      return;
     }
+    next();
   });
 };
