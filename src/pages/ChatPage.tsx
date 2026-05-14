@@ -704,6 +704,8 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
   );
 };
 
+import { ErrorBoundary } from '../components/ErrorBoundary';
+
 export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
@@ -2337,13 +2339,14 @@ export const ChatPage: React.FC = () => {
   );
 
   return (
-    <motion.div 
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={sovereignPageTransition}
-      className="h-full flex flex-col w-full overflow-hidden"
-    >
+    <ErrorBoundary name="Chat Intelligence Engine">
+      <motion.div 
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={sovereignPageTransition}
+        className="h-full flex flex-col w-full overflow-hidden"
+      >
       {showChatLimitWarning && (
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[4px] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
           <div className="w-12 h-12 rounded-[4px] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
@@ -3210,6 +3213,7 @@ export const ChatPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </ErrorBoundary>
   );
 };

@@ -14,6 +14,7 @@ import { About } from './pages/About';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { IncentiveCard } from './components/IncentiveCard';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ShieldCheck } from 'lucide-react';
@@ -158,7 +159,8 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <PWAWrapper>
+        <ErrorBoundary name="Sovereign Core Runtime">
+          <PWAWrapper>
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<ChatPage />} />
@@ -195,7 +197,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </PWAWrapper>
-      </BrowserRouter>
-    </AppProvider>
-  );
+      </ErrorBoundary>
+    </BrowserRouter>
+  </AppProvider>
+);
 }

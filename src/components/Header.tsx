@@ -137,10 +137,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         {/* Logo and App Name - Perfectly aligned with Sidebar */}
         <div className="flex items-center h-full">
           <div className={`flex items-center h-full transition-all duration-300 ${!isMobileView ? 'min-w-[240px]' : 'w-auto'}`}>
-              <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full hover:opacity-80 transition-opacity text-[var(--text-primary)]`}>
-                <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative group`}>
+              <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-opacity group text-[var(--text-primary)]`}>
+                <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {siteSettings.logoBase64 ? (
-                    <div className="w-10 h-10 rounded-[4px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-500 group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                    <div className="w-10 h-10 rounded-[4px] overflow-hidden border-2 border-[var(--border-main)] transition-all duration-500 group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
                       <img 
                         src={siteSettings.logoBase64} 
                         alt="Logo" 
@@ -148,9 +148,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       />
                     </div>
                   ) : null}
+                  {/* Subtle Glow Underlay */}
+                  <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-all duration-500 rounded-full blur-2xl -z-10" />
                 </div>
                 {!isMobileView ? (
-                  <span className={`text-lg font-bold tracking-tighter font-mono whitespace-nowrap overflow-hidden pe-4 text-[var(--text-primary)]`}>
+                  <span className={`text-[17px] font-bold tracking-tight font-sans whitespace-nowrap overflow-hidden px-1 text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors duration-300`}>
                     {t('appName')}
                   </span>
                 ) : null}
@@ -171,26 +173,28 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         </div>
 
         {/* Global Notification Area - Parallel and Centered */}
-        <nav className="flex-1 flex items-center justify-center min-w-0 px-4">
+        <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full">
             <AnimatePresence mode="wait">
               {memoryNotification.isVisible ? (
-                <MemoryNotification 
-                  key="memory-notif"
-                  isVisible={memoryNotification.isVisible}
-                  onClose={closeMemoryNotification}
-                  type={memoryNotification.type}
-                  customDesc={memoryNotification.desc}
-                />
+                <div className="flex items-center justify-center h-full">
+                  <MemoryNotification 
+                    key="memory-notif"
+                    isVisible={memoryNotification.isVisible}
+                    onClose={closeMemoryNotification}
+                    type={memoryNotification.type}
+                    customDesc={memoryNotification.desc}
+                  />
+                </div>
               ) : chatId && chatTitle ? (
               <motion.div 
                 key="chat-title"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-transparent border border-[var(--border-main)] max-w-full`}
+                className={`hidden md:flex items-center gap-2 px-3 h-8 rounded-[4px] bg-transparent border border-[var(--border-main)] max-w-full`}
               >
                 {isEditingTitle ? (
-                  <div className="flex items-center gap-1.5 min-w-[200px]">
+                  <div className="flex items-center gap-1.5 min-w-[200px] h-full">
                     <input
                       type="text"
                       autoFocus
@@ -200,17 +204,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         if (e.key === 'Enter') handleRename();
                         if (e.key === 'Escape') setIsEditingTitle(false);
                       }}
-                      className="bg-transparent text-sm font-bold outline-none text-[var(--text-primary)] w-full"
+                      className="bg-transparent text-[11px] font-bold outline-none text-[var(--text-primary)] w-full h-full"
                     />
-                    <div className="flex items-center">
+                    <div className="flex items-center h-full">
                       <button onClick={handleRename} className="p-1 hover:text-emerald-500 transition-colors">
                          <Check size={14} />
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="group flex items-center gap-2 overflow-hidden">
-                    <h2 className="text-xs font-bold text-gray-500 truncate">
+                  <div className="group flex items-center gap-2 overflow-hidden h-full">
+                    <h2 className="text-[11px] font-bold text-gray-500 truncate lowercase tracking-tight">
                       {chatTitle}
                     </h2>
                     <button 
@@ -227,10 +231,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         </nav>
 
         {/* Global Tools Section */}
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 py-2 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group"
               >
           <Languages size={14} className="sm:size-[15px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
           <span className="hidden sm:inline text-[13px]">{language === 'ar' ? 'English' : 'عربي'}</span>
@@ -239,20 +243,20 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         
         <button 
           onClick={toggleTheme} 
-          className="p-1.5 sm:p-2 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group"
+          className="flex items-center justify-center w-10 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] active:scale-95 group shrink-0"
         >
           {theme === 'dark' ? (
-            <Sun size={14} className="sm:size-[16px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+            <Sun size={14} className="sm:size-[16px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(0,0,0,0)] transition-all duration-300" />
           ) : (
-            <Moon size={14} className="sm:size-[16px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+            <Moon size={14} className="sm:size-[16px] text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(0,0,0,0)] transition-all duration-300" />
           )}
         </button>
 
         {user && (
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative flex items-center h-full" ref={dropdownRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="p-2 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] relative active:scale-95 group"
+              className="flex items-center justify-center w-10 h-10 rounded-[4px] text-[var(--text-primary)] transition-all hover:bg-gray-50 dark:hover:bg-gray-800 border border-[var(--border-main)] relative active:scale-95 group shrink-0"
             >
               <Bell size={16} className={`transition-all duration-300 ${unreadCount > 0 ? "text-emerald-500 animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
               {unreadCount > 0 && (

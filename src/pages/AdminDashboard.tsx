@@ -9805,6 +9805,8 @@ const SystemSettingsView = ({
   );
 };
 
+import { ErrorBoundary } from '../components/ErrorBoundary';
+
 export const AdminDashboard: React.FC = () => {
   const {
     t,
@@ -10083,59 +10085,61 @@ export const AdminDashboard: React.FC = () => {
             : `p-6 md:p-8 rounded-[4px] border ${theme === "dark" ? "border-gray-800/60 bg-[#1a1a1c]" : "border-gray-200 bg-white"} shadow-xl`
         }`}
       >
-        {path === "dashboard" ? (
-          <CommandCenterView theme={theme} t={t} />
-        ) : path === "keys" ? (
-          <ApiKeysVaultView
-            theme={theme}
-            t={t}
-            dir={dir}
-            providerModels={providerModels}
-            setProviderModels={setProviderModels}
-          />
-        ) : path === "databases" ? (
-          <DatabaseOrchestrationView
-            theme={theme}
-            t={t}
-            dir={dir}
-            language={language}
-          />
-        ) : path === "orchestrator" ? (
-          <OrchestratorView
-            theme={theme}
-            t={t}
-            dir={dir}
-            providerModels={providerModels}
-          />
-        ) : path === "finance" ? (
-          <FinanceVaultView theme={theme} t={t} dir={dir} />
-        ) : path === "plans" ? (
-          <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
-        ) : path === "users" ? (
-          <UserManagementView theme={theme} t={t} dir={dir} />
-        ) : path === "emails" ? (
-          <SmartEmailHubView theme={theme} t={t} dir={dir} />
-        ) : path === "broadcast" ? (
-          <MassBroadcastView
-            theme={theme}
-            t={t}
-            dir={dir}
-            language={language}
-          />
-        ) : path === "settings" ? (
-          <SystemSettingsView theme={theme} t={t} dir={dir} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-            <div className="mb-6 opacity-50">{getIcon()}</div>
-            <p className="text-lg font-medium">
-              This section is currently under construction.
-            </p>
-            <p className="text-sm mt-2">
-              We are building the {getTitle()} module according to the AGENTS.md
-              architecture.
-            </p>
-          </div>
-        )}
+        <ErrorBoundary name="Admin Command Panels">
+          {path === "dashboard" ? (
+            <CommandCenterView theme={theme} t={t} />
+          ) : path === "keys" ? (
+            <ApiKeysVaultView
+              theme={theme}
+              t={t}
+              dir={dir}
+              providerModels={providerModels}
+              setProviderModels={setProviderModels}
+            />
+          ) : path === "databases" ? (
+            <DatabaseOrchestrationView
+              theme={theme}
+              t={t}
+              dir={dir}
+              language={language}
+            />
+          ) : path === "orchestrator" ? (
+            <OrchestratorView
+              theme={theme}
+              t={t}
+              dir={dir}
+              providerModels={providerModels}
+            />
+          ) : path === "finance" ? (
+            <FinanceVaultView theme={theme} t={t} dir={dir} />
+          ) : path === "plans" ? (
+            <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
+          ) : path === "users" ? (
+            <UserManagementView theme={theme} t={t} dir={dir} />
+          ) : path === "emails" ? (
+            <SmartEmailHubView theme={theme} t={t} dir={dir} />
+          ) : path === "broadcast" ? (
+            <MassBroadcastView
+              theme={theme}
+              t={t}
+              dir={dir}
+              language={language}
+            />
+          ) : path === "settings" ? (
+            <SystemSettingsView theme={theme} t={t} dir={dir} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <div className="mb-6 opacity-50">{getIcon()}</div>
+              <p className="text-lg font-medium">
+                This section is currently under construction.
+              </p>
+              <p className="text-sm mt-2">
+                We are building the {getTitle()} module according to the AGENTS.md
+                architecture.
+              </p>
+            </div>
+          )}
+        </ErrorBoundary>
       </div>
     </motion.div>
   );

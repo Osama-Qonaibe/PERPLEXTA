@@ -504,7 +504,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                           <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:scale-105`}
+                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-500 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'var(--border-main)'
                             }}
