@@ -1,0 +1,28 @@
+/* Cinematic Transitions */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+  transition-duration: var(--ms-duration);
+  transition-timing-function: var(--ms-easing);
+}
+
+/* Exempt specific UI elements */
+*:where(
+  [class*="transition-"], 
+  [class*="animate-"],
+  [class*="duration-"],
+  svg,
+  svg *,
+  canvas,
+  video,
+  img,
+  iframe,
+  .no-transition,
+  input,
+  textarea
+) {
+  transition-property: revert;
+  transition-duration: revert;
+  transition-timing-function: revert;
+}

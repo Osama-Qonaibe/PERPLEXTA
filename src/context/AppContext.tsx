@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
-import { API_BASE_URL, SOCKET_URL } from '../constants';
+import { API_BASE_URL, SOCKET_URL } from '../constants/config';
 
 type Language = 'ar' | 'en';
 type Theme = 'dark' | 'light';
@@ -197,6 +197,11 @@ const translations = {
     shortcuts: 'الاختصارات',
     wallet: 'المحفظة',
     memoryCenter: 'ذاكرة المساعد',
+    toolOrchestrator: 'تنسيق الأدوات',
+    syncModels: 'مزامنة النماذج',
+    syncingModels: 'جاري المزامنة...',
+    syncSuccess: 'تمت المزامنة بنجاح',
+    syncError: 'فشلت المزامنة',
     all: 'الكل',
     personal: 'شخصي',
     technical: 'تقني',
@@ -212,7 +217,6 @@ const translations = {
     userManagement: 'المستخدمين',
     systemSettings: 'إعدادات النظام',
     smartEmailHub: 'البريد الذكي',
-    toolOrchestrator: 'الأوركسترا',
     paymentGateways: 'بوابات الدفع',
     withdrawals: 'طلبات السحب',
     kycRequests: 'طلبات التوثيق',
@@ -559,7 +563,6 @@ const translations = {
     costPoints: 'التكلفة (نقاط)',
     utilizationRate: 'معدل الاستهلاك',
     enterKeyPlaceholder: 'أدخل رمز الوصول هنا...',
-    syncModels: 'مزامنة أحدث النماذج',
     saveKeyBtn: 'اعتماد المفتاح',
     syncUsageLimits: 'مزامنة حدود الحصص',
     ollamaUrlLabel: 'رابط الاتصال السحابي (Endpoint URL)',
@@ -757,8 +760,6 @@ const translations = {
     deleteAlertConfirm: 'هل أنت متأكد من حذف هذا التنبيه؟',
     reconcileConfirm: 'بدء عملية مطابقة المحفظة؟ سيتم إعادة معايرة رصيد المستخدم بناءً على المعاملات المسجلة فقط.',
     reconcileSuccess: 'تمت المطابقة بنجاح. تم تحديث الرصيد.',
-    syncSuccess: 'تمت المزامنة بنجاح',
-    syncError: 'فشل المزامنة',
     syncingData: 'جاري مزامنة البيانات...',
     syncModelsFound: 'تم العثور على {count} نموذج للمزود {provider}',
     syncUsageStats: 'الاستهلاك: ${used} من ميزانية ${total}',
@@ -873,6 +874,11 @@ const translations = {
     saveFailed: 'Failed to save',
     wallet: 'Wallet',
     memoryCenter: 'Memory Center',
+    toolOrchestrator: 'Tool Orchestrator',
+    syncModels: 'Sync Models',
+    syncingModels: 'Syncing Models...',
+    syncSuccess: 'Sync Successful',
+    syncError: 'Sync Failed',
     all: 'All',
     personal: 'Personal',
     technical: 'Technical',
@@ -890,7 +896,6 @@ const translations = {
     userManagement: 'User Management',
     systemSettings: 'System Settings',
     smartEmailHub: 'Smart Email Hub',
-    toolOrchestrator: 'Tool Orchestrator',
     paymentGateways: 'Payment Gateways',
     withdrawals: 'Withdrawals',
     kycRequests: 'KYC Requests',
@@ -1205,7 +1210,6 @@ const translations = {
     fallbackProtocol: 'Fallback Protocol',
     costPoints: 'Cost (Points)',
     enterKeyPlaceholder: 'Enter key here...',
-    syncModels: 'Sync Models',
     saveKeyBtn: 'Save Key',
     syncUsageLimits: 'Sync Usage Limits',
     ollamaUrlLabel: 'Ollama Cloud Hub Endpoint',
@@ -1432,8 +1436,6 @@ const translations = {
     clearNotifsConfirm: 'Are you sure you want to permanently delete ALL system notifications for all users?',
     clearAllChats: 'Purge Cloud Memory (All Chats)',
     clearAllChatsConfirm: 'WARNING: This will delete ALL chat history and messages from the database. Are you sure?',
-    syncSuccess: 'Synchronization Successful',
-    syncError: 'Synchronization Failed',
     syncingData: 'Syncing data...',
     syncModelsFound: 'Found {count} models for {provider}',
     syncUsageStats: 'Usage: ${used} of ${total} budget',
@@ -1466,7 +1468,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'ar'; } catch (e) { return 'ar'; }
   });
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      return (localStorage.getItem('theme') as Theme) || 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  });
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
@@ -1547,9 +1555,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const handleThemeChange = async (newTheme: Theme) => {
-    setTheme('dark');
-    localStorage.setItem('theme', 'dark');
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
   };
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -1940,33 +1947,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = (forceRedirect = true) => {
+    // 1. Force UI into loading/reset state immediately to prevent "stale state" crashes in sub-components
+    setIsAuthReady(false);
+    setIsAuthModalOpen(false);
+
+    // 2. Clear Token from local storage first to prevent auto-login on refresh
+    localStorage.removeItem('app_token');
+    
+    // 3. API logout (Fire and forget, but keep it clean)
     if (token) {
-      fetch('/api/auth/logout', {
+      fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       }).catch(e => console.error('API Logout error', e));
     }
 
-    localStorage.removeItem('app_token');
-    
+    // 4. Force Disconnect Socket and Null it out to stop all real-time events
     if (socket) {
       try {
         socket.disconnect();
       } catch (e) {
         console.error('Socket disconnect error during logout', e);
       }
+      setSocket(null);
     }
     
+    // 5. Clear ALL sensitive state variants
     setToken(null);
     setUser(null);
     setBalance(0);
     setBalanceUSD(0);
     setNotifications([]);
+    setMilestoneData(null);
     
+    // 6. Pre-emptive small delay to let React states settle before the hard redirect
+    // Use window.location.replace to eliminate the legacy session from history
     if (forceRedirect) {
       setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+        window.location.replace('/');
+      }, 50);
     }
   };
 
@@ -2327,6 +2346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.dir = dir;
     document.documentElement.lang = language;
     localStorage.setItem('language', language);
+    
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
@@ -2334,7 +2354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       document.documentElement.classList.remove('dark');
       document.documentElement.classList.add('light');
     }
-    try { localStorage.setItem('theme', theme); } catch(e) {}
+    localStorage.setItem('theme', theme);
   }, [language, theme, dir]);
 
 

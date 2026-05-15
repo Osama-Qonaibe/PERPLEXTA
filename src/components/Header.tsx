@@ -211,7 +211,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   </div>
                 ) : (
                   <div className="group flex items-center gap-2 overflow-hidden h-full">
-                    <h2 className="text-[11px] font-bold text-[var(--text-muted)] truncate lowercase tracking-tight transition-all duration-[var(--theme-transition-duration)]">
+                    <h2 className="text-[11px] font-bold text-[var(--text-muted)] truncate lowercase tracking-tight transition-all duration-[var(--ms-duration)]">
                       {chatTitle}
                     </h2>
                     <button 
@@ -230,21 +230,33 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         {/* Global Tools Section */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
            <button 
-                onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] active:scale-95 group"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 active:scale-95 group shrink-0"
+                aria-label={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               >
-          <Languages size={14} className="sm:size-[15px] text-[var(--text-secondary)] group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-[var(--theme-transition-duration)]" />
-          <span className="hidden sm:inline text-[13px]">{language === 'ar' ? 'English' : 'عربي'}</span>
-          <span className="sm:hidden uppercase">{language === 'ar' ? 'EN' : 'AR'}</span>
+                {theme === 'dark' ? (
+                  <Sun size={18} className="text-gray-400 group-hover:text-amber-500 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all duration-300" />
+                ) : (
+                  <Moon size={18} className="text-gray-400 group-hover:text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.6)] transition-all duration-300" />
+                )}
+              </button>
+
+           <button 
+                onClick={toggleLanguage}
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 active:scale-95 group"
+              >
+          <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+          <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-colors duration-300">{language === 'ar' ? 'English' : 'عربي'}</span>
+          <span className="sm:hidden uppercase text-gray-500 group-hover:text-emerald-500 transition-colors duration-300">{language === 'ar' ? 'EN' : 'AR'}</span>
         </button>
         
         {user && (
           <div className="relative flex items-center h-full" ref={dropdownRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] relative active:scale-95 group shrink-0"
+              className="flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 relative active:scale-95 group shrink-0"
             >
-              <Bell size={16} className={`transition-all duration-[var(--theme-transition-duration)] ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-[var(--text-secondary)] group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
+              <Bell size={16} className={`transition-all duration-300 ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
               {unreadCount > 0 && (
                 <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
               )}
@@ -302,11 +314,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                             <h4 className={`text-xs font-bold transition-all ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-muted)]'}`}>
                               {language === 'ar' ? notif.title_ar : notif.title_en}
                             </h4>
-                            <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed transition-all duration-[var(--theme-transition-duration)]">
+                            <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed transition-all duration-[var(--ms-duration)]">
                               {language === 'ar' ? notif.message_ar : notif.message_en}
                             </p>
                             <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] transition-all duration-[var(--theme-transition-duration)]">
+                              <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] transition-all duration-[var(--ms-duration)]">
                                 <Clock size={10} />
                                 <span>{new Date(notif.created_at).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
@@ -321,7 +333,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         </div>
                       ))
                     ) : (
-                      <div className="py-12 flex flex-col items-center justify-center text-[var(--text-muted)] opacity-30 transition-all duration-[var(--theme-transition-duration)]">
+                      <div className="py-12 flex flex-col items-center justify-center text-[var(--text-muted)] opacity-30 transition-all duration-[var(--ms-duration)]">
                         <Bell size={32} className="mb-2" />
                         <span className="text-xs">{language === 'ar' ? 'لا توجد إشعارات' : 'No notifications'}</span>
                       </div>
@@ -329,7 +341,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   </div>
                   
                   <div className="p-3 border-t border-[var(--border-main)] text-center">
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium transition-all duration-[var(--theme-transition-duration)]">
+                    <span className="text-[10px] text-[var(--text-muted)] font-medium transition-all duration-[var(--ms-duration)]">
                       {language === 'ar' ? 'البروتوكول الصامت للمنصة' : 'Silent Platform Protocol'}
                     </span>
                   </div>

@@ -9844,6 +9844,8 @@ export const AdminDashboard: React.FC = () => {
     type: "success" | "error";
   } | null>(null);
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -9861,6 +9863,30 @@ export const AdminDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching models:", error);
+    }
+  };
+
+  const syncAllModels = async () => {
+    if (!token || isSyncing) return;
+    setIsSyncing(true);
+    setIsOperationPending(true);
+    try {
+      const res = await fetch("/api/admin/orchestrator/sync-all", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        showToast(t("syncSuccess"), "success");
+        await fetchProviderModels();
+      } else {
+        showToast(t("syncError"), "error");
+      }
+    } catch (error) {
+      console.error("Error syncing models:", error);
+      showToast(t("syncError"), "error");
+    } finally {
+      setIsSyncing(false);
+      setIsOperationPending(false);
     }
   };
 
@@ -9973,6 +9999,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Determine if the "Add" button should be shown
   const showAddButton = ["plans", "broadcast"].includes(path);
+  const showSyncButton = path === "orchestrator";
 
   const getAddButtonText = () => {
     switch (path) {
@@ -9980,6 +10007,8 @@ export const AdminDashboard: React.FC = () => {
         return t("addNewPlan");
       case "broadcast":
         return t("newBroadcast");
+      case "orchestrator":
+        return isSyncing ? t("syncingModels") : t("syncModels");
       default:
         return t("add");
     }
@@ -9992,6 +10021,9 @@ export const AdminDashboard: React.FC = () => {
         break;
       case "broadcast":
         window.dispatchEvent(new CustomEvent("admin-add-broadcast"));
+        break;
+      case "orchestrator":
+        syncAllModels();
         break;
       default:
         break;
@@ -10044,12 +10076,19 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {showAddButton && (
+          {(showAddButton || showSyncButton) && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-[4px] transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
+              disabled={isSyncing}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-[4px] transition-all duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
             >
-              <Plus size={18} />
+              {isSyncing ? (
+                <RefreshCw size={18} className="animate-spin" />
+              ) : showSyncButton ? (
+                <RefreshCw size={18} />
+              ) : (
+                <Plus size={18} />
+              )}
               {getAddButtonText()}
             </button>
           )}

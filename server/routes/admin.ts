@@ -319,6 +319,28 @@ router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.post("/orchestrator/sync-all", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT provider, encrypted_key FROM api_keys_vault WHERE is_active = true');
+    const syncResults = [];
+    
+    for (const row of result.rows) {
+      try {
+        const decryptedKey = decrypt(row.encrypted_key);
+        const syncResult = await syncProviderModelsInternal(row.provider, decryptedKey);
+        syncResults.push({ provider: row.provider, success: true, count: syncResult.count });
+      } catch (err) {
+        syncResults.push({ provider: row.provider, success: false, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    
+    await auditLog((req as any).user?.id, 'Global Sync AI Models', 'system', { results: syncResults });
+    res.json({ success: true, results: syncResults });
+  } catch (error) {
+    res.status(500).json({ error: 'Global sync failed' });
+  }
+});
+
 router.get("/broadcasts", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM system_broadcasts ORDER BY created_at DESC LIMIT 100');

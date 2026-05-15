@@ -34,10 +34,16 @@ router.post("/execute-task", authenticateToken, async (req: any, res) => {
     }
   } catch (error: any) {
     console.error('[ToolsRoute] Error:', error);
-    let userMessage = 'System error occurred. Please try again later.';
-    if (error.message && (error.message.includes('provider') || error.message.includes('quota') || error.message.includes('Unauthorized'))) {
-      userMessage = error.message;
-    }
+    let userMessage = error.message || 'System error occurred. Please try again later.';
+    
+    // Check if it is a JSON error from orchestrator (e.g. QUOTA_EXCEEDED)
+    try {
+      const parsed = JSON.parse(error.message);
+      if (parsed.error || parsed.error_ar) {
+        return res.status(500).json(parsed);
+      }
+    } catch (e) {}
+
     res.status(500).json({ error: userMessage });
   }
 });

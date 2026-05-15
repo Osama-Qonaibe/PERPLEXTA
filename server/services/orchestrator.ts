@@ -150,7 +150,8 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
       
       break;
-    } catch (e) {
+    } catch (e: any) {
+       console.error(`[Orchestrator] Failed attempt with ${target.provider}/${target.model}:`, e.message);
     }
   }
 

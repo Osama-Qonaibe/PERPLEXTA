@@ -1,0 +1,40 @@
+:root {
+  /* Majestic Motion - Global Transition Tokens */
+  --ms-duration: 600ms;
+  --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Monochrome/Emerald Design System - Light Mode */
+  --bg-base: #ffffff;
+  --bg-surface: #f9fafb;
+  --bg-input: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --border-subtle: #e5e7eb;
+  
+  /* Brand Constants */
+  --accent-emerald: #10b981;
+  --accent-glow: rgba(16, 185, 129, 0.5);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 8px;
+
+  /* Legacy Mapping */
+  --bg-overlay: rgba(0, 0, 0, 0.05);
+  --border-main: var(--border-subtle);
+
+  color-scheme: light dark;
+}
+
+.dark {
+    /* Monochrome/Emerald Design System - Dark Mode (Sovereign) */
+    --bg-base: #0f0f11;
+    --bg-surface: #1a1a1c;
+    --bg-input: #1e1e20;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --bg-overlay: rgba(255, 255, 255, 0.05);
+    --border-main: var(--border-subtle);
+}

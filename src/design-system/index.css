@@ -1,0 +1,60 @@
+@import "./tokens.css";
+@import "./typography.css";
+@import "./animations.css";
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Color Mapping to Variable Tokens */
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-input: var(--bg-input);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-border-main: var(--border-subtle);
+  --color-accent: var(--accent-emerald);
+  --color-accent-glow: var(--accent-glow);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  
+  --radius-custom: var(--radius);
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply bg-accent text-black font-medium transition-all active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-secondary {
+    @apply bg-surface border border-border-main text-primary font-medium transition-all hover:bg-input active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-secondary hover:text-primary hover:bg-input transition-all active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    @apply font-medium transition-all hover:bg-[rgba(239,68,68,0.2)] active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+}
