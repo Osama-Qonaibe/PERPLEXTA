@@ -3,15 +3,14 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  padding?: boolean;
+  onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = '', padding = true }) => {
-  return (
-    <div
-      className={`bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius)] ${padding ? 'p-4' : ''} ${className}`}
-    >
-      {children}
-    </div>
-  );
-};
+export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => (
+  <div
+    className={`bg-[var(--bg-surface,#1a1a1a)] border border-[var(--border,#2a2a2a)] rounded-lg p-4 ${onClick ? 'cursor-pointer hover:border-emerald-500/30 transition-all duration-600' : ''} ${className}`}
+    onClick={onClick}
+  >
+    {children}
+  </div>
+);
