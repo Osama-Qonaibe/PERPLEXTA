@@ -87,13 +87,19 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const authenticate = authenticateToken;
+
+export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
+  const userPayload = (req as any).user;
+  if (!userPayload || userPayload.role !== 'admin') {
+    res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  next();
+};
+
 export const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   authenticateToken(req, res, () => {
-    const userPayload = (req as any).user;
-    if (!userPayload || userPayload.role !== 'admin') {
-      res.status(403).json({ error: 'Admin access required' });
-      return;
-    }
-    next();
+    adminOnly(req, res, next);
   });
 };
