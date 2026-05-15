@@ -1,20 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useSettings } from '../context/SettingsContext';
-import { useUI } from '../context/UIContext';
+import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, dir: globalDir, t } = useTheme();
-  const { user, token } = useAuth();
-  const { siteSettings, notifications, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications } = useSettings();
-  const { isSidebarOpen, setIsSidebarOpen, memoryNotification, closeMemoryNotification } = useUI();
-  
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification } = useAppContext();
   
   // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
@@ -236,10 +228,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         </nav>
 
         {/* Global Tools Section */}
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-4 md:px-6 shrink-0 h-full">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-2 sm:px-2 md:px-3 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] active:scale-95 group"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[8px] text-[var(--text-primary)] transition-all hover:bg-[var(--bg-overlay)] border border-[var(--border-main)] active:scale-95 group"
               >
           <Languages size={14} className="sm:size-[15px] text-[var(--text-secondary)] group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-[var(--theme-transition-duration)]" />
           <span className="hidden sm:inline text-[13px]">{language === 'ar' ? 'English' : 'عربي'}</span>

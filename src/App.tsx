@@ -1,9 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
-import { useAuth } from './context/AuthContext';
-import { useTheme } from './context/ThemeContext';
-import { useSettings } from './context/SettingsContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AppProvider, useAppContext } from './context/AppContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ChatPage } from './pages/ChatPage';
@@ -11,21 +8,19 @@ import { RewardsPage } from './pages/RewardsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminDashboard } from './pages/AdminDashboard';
-import { MaintenancePage } from './pages/MaintenancePage';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { About } from './pages/About';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { IncentiveCard } from './components/shared/IncentiveCard';
-import { GoogleAnalytics } from './components/shared/GoogleAnalytics';
-import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { IncentiveCard } from './components/IncentiveCard';
+import { GoogleAnalytics } from './components/GoogleAnalytics';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ShieldCheck } from 'lucide-react';
 
 const CenteredLoader = () => {
-  const { siteSettings } = useSettings();
-  const { language } = useTheme();
+  const { siteSettings, language } = useAppContext();
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
 
   return (
@@ -96,34 +91,21 @@ const CenteredLoader = () => {
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthReady } = useAuth();
-  const { siteSettings } = useSettings();
-  const location = useLocation();
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+  const { user, isAuthReady } = useAppContext();
   
   if (!isAuthReady) {
     return <CenteredLoader />;
   }
-
-  const isAdmin = user && (['admin'].includes(user.role || '') || (adminEmail && user.email === adminEmail));
-  const isSupport = user && ['support'].includes(user.role || '');
-  const isPrivileged = isAdmin || isSupport;
-
-  if (siteSettings.maintenanceMode && !isPrivileged) {
-    return <MaintenancePage />;
-  }
   
   if (!user) {
-    const fromPath = (location as any).pathname || "/";
-    return <Navigate to="/" state={{ from: { pathname: fromPath } }} replace />;
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthReady } = useAuth();
-  const location = useLocation();
+  const { user, isAuthReady } = useAppContext();
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
   
   if (!isAuthReady) {
@@ -133,11 +115,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const isAdmin = user && (['admin'].includes(user.role || '') || (adminEmail && user.email === adminEmail));
   const isSupport = user && ['support'].includes(user.role || '');
   
-  if (!user) {
-     const fromPath = (location as any).pathname || "/";
-     return <Navigate to="/" state={{ from: { pathname: fromPath } }} replace />;
-  }
-
   if (!isAdmin && !isSupport) {
     return <Navigate to="/" replace />;
   }
@@ -146,12 +123,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthReady, user } = useAuth();
-  const { siteSettings } = useSettings();
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-  const isAdmin = user && (['admin'].includes(user.role || '') || (adminEmail && user.email === adminEmail));
-  const isSupport = user && ['support'].includes(user.role || '');
-  const isPrivileged = isAdmin || isSupport;
+  const { theme, isAuthReady } = useAppContext();
 
   return (
     <Suspense fallback={<CenteredLoader />}>
@@ -169,20 +141,16 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         {!isAuthReady && <CenteredLoader key="global-loader" />}
       </AnimatePresence>
       
-      {siteSettings.maintenanceMode && !isPrivileged ? (
-        <MaintenancePage />
-      ) : (
-        <motion.div 
-          animate={{ 
-            opacity: isAuthReady ? 1 : 0,
-            scale: isAuthReady ? 1 : 0.99
-          }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className={!isAuthReady ? 'hidden' : 'block'}
-        >
-          {children}
-        </motion.div>
-      )}
+      <motion.div 
+        animate={{ 
+          opacity: isAuthReady ? 1 : 0,
+          scale: isAuthReady ? 1 : 0.99
+        }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className={!isAuthReady ? 'hidden' : 'block'}
+      >
+        {children}
+      </motion.div>
     </Suspense>
   );
 };

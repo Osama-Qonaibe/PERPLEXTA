@@ -3,16 +3,12 @@ import { Outlet } from 'react-router-dom';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
-import { useTheme } from '../context/ThemeContext';
-import { useUI } from '../context/UIContext';
-import { useSettings } from '../context/SettingsContext';
-import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { sovereignPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
-  const { theme, dir: globalDir, language } = useTheme();
-  const { isSidebarOpen, setIsSidebarOpen, isMobile, isInstallable } = useUI();
+  const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
 
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
 

@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Share2, Copy, Check, X, Megaphone, Users, ArrowUpRight, MousePointer2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useUI } from '../../context/UIContext';
-import { useSettings } from '../../context/SettingsContext';
+import { useAppContext } from '../context/AppContext';
 
 export const IncentiveCard: React.FC = () => {
-  const { user } = useAuth();
-  const { theme, dir, t } = useTheme();
-  const { siteSettings, milestoneData, setMilestoneData } = useSettings();
+  const { dir, t, user, milestoneData, setMilestoneData, theme, siteSettings } = useAppContext();
   const [copied, setCopied] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 

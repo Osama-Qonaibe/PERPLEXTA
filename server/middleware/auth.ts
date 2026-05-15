@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { pool, safeQuery } from '../db/index.js';
+import { pool } from '../db/index.js';
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -38,7 +38,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       }
 
       try {
-        const blacklistCheck = await safeQuery('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+        const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
         if (blacklistCheck.rows.length > 0) {
           res.status(401).json({ error: 'Unauthorized', message: 'Token has been revoked/logged out' });
           return;
@@ -52,7 +52,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       const userPayload = user as any;
 
       try {
-        const userCheck = await safeQuery('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
+        const userCheck = await pool.query('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
         if (userCheck.rows.length === 0) {
           res.status(401).json({ error: 'User not found' });
           return;
@@ -76,7 +76,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       (req as any).user = userPayload;
       (req as any).token = token;
 
-      safeQuery('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
+      pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
         .catch((e: any) => console.error('Error updating last_active_at:', e));
 
       next();

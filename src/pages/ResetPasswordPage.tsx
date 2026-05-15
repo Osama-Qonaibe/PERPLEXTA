@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { sovereignPageTransition } from '../constants/motions';
 import { toast } from 'sonner';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 export const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t, language } = useTheme();
+  const { t, language } = useAppContext();
   const token = searchParams.get('token');
   const email = searchParams.get('email');
   const dir = language === 'ar' ? 'rtl' : 'ltr';

@@ -3,11 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useSettings } from '../context/SettingsContext';
-import { useSocket } from '../context/SocketContext';
-import { useUI } from '../context/UIContext';
+import { useAppContext } from '../context/AppContext';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
@@ -15,18 +11,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { sovereignPageTransition } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-
-// Custom hook for responsive behavior
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-};
 
 const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
 
@@ -45,7 +29,7 @@ const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
 );
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
-  const { dir } = useTheme();
+  const { dir } = useAppContext();
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : 'text';
   const codeContent = String(children).trim();
@@ -215,7 +199,7 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
            {dir === 'rtl' ? 'مراحل التحليل والبحث' : 'ANALYSIS & RESEARCH PHASES'}
          </span>
       </div>
-      <div className="space-y-1 sm:space-y-2 ps-1.5 sm:ps-5 border-s-2 border-emerald-500/10 ml-0.5 sm:ml-2">
+      <div className="space-y-1 sm:space-y-2 ps-2.5 sm:ps-5 border-s-2 border-emerald-500/10 ml-0.5 sm:ml-2">
         {steps.map((step, idx) => (
           <motion.div 
             initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
@@ -373,7 +357,6 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
 };
 
 const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' | 'rtl'; theme: string }) => {
-  const isMobile = useIsMobile();
   // Parsing the structured output based on the SOVEREIGN CREATIVE PRODUCTION PROTOCOL
   const sections: { title: string; body: string; id: string }[] = [];
   
@@ -401,7 +384,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
   }
 
   return (
-    <div className="flex flex-col gap-6 md:gap-10 py-2 md:py-4 w-full">
+    <div className="flex flex-col gap-10 py-4 w-full">
       {sections.map((section, idx) => {
         const isMusicSection = section.title.includes('المقطع الموسيقي') || section.title.toLowerCase().includes('sonic') || section.title.toLowerCase().includes('orchestra');
         
@@ -423,19 +406,19 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
           }`}
         >
           {/* Executive Header */}
-          <div className={`px-4 md:px-8 py-4 md:py-6 border-b flex items-center justify-between ${
+          <div className={`px-8 py-6 border-b flex items-center justify-between ${
             theme === 'dark' ? 'border-[var(--border)] bg-[var(--bg-surface)]' : 'border-[var(--border)] bg-[var(--bg-base)]'
           }`}>
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-20" />
-                <div className="relative w-1.5 md:w-2 h-6 md:h-8 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+                <div className="relative w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-emerald-500 mb-0.5 glow-emerald">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-0.5 glow-emerald">
                   {dir === 'rtl' ? 'مرحلة الإنتاج السيادي' : 'SOVEREIGN PRODUCTION PHASE'} {idx + 1}
                 </span>
-                <h3 className="text-md md:text-xl font-black tracking-tight text-[var(--text-primary)] uppercase">
+                <h3 className="text-xl font-black tracking-tight text-[var(--text-primary)] uppercase">
                   {(section.title as string).replace(/[#\d\.\[\]]/g, '').trim()}
                 </h3>
               </div>
@@ -464,10 +447,10 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
           </div>
 
             {/* Content Area */}
-            <div className={`p-4 md:p-10 text-[13px] md:text-base ${isMusicSection ? 'text-center' : ''}`}>
+            <div className={`p-8 md:p-10 text-[13px] md:text-base ${isMusicSection ? 'text-center' : ''}`}>
               <div className="markdown-body prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:mb-4 prose-headings:mt-8">
                 {isMusicSection ? (
-                  <div className="flex flex-col items-center gap-6 md:gap-8">
+                  <div className="flex flex-col items-center gap-8">
                     {/* Visual Exhibition */}
                     <div className="relative w-full max-w-3xl aspect-video rounded-[4px] overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
                       {coverImageUrl ? (
@@ -479,36 +462,36 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
-                           <Music className="text-[var(--text-primary)]" size={isMobile ? 60 : 120} />
+                           <Music className="text-[var(--text-primary)]" size={120} />
                         </div>
                       )}
                       
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 md:gap-4">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                          <motion.div 
                            animate={{ scale: [1, 1.1, 1] }}
                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                           className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.3)]"
+                           className="w-24 h-24 rounded-full bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.3)]"
                          >
-                           <Play size={isMobile ? 24 : 40} className="ml-1" />
+                           <Play size={40} className="ml-1" />
                          </motion.div>
-                         <div className="text-center px-4 md:px-6">
-                            <h4 className="text-sm md:text-xl font-black text-white tracking-widest uppercase mb-1 drop-shadow-md">
+                         <div className="text-center px-6">
+                            <h4 className="text-xl font-black text-white tracking-widest uppercase mb-1 drop-shadow-md">
                               {dir === 'rtl' ? 'تحفة الأوركسترا السيادية' : 'SOVEREIGN ORCHESTRA MASTERPIECE'}
                             </h4>
-                            <p className="text-[8px] md:text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase">
+                            <p className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase">
                               {dir === 'rtl' ? 'جودة استوديو 24 بت' : '24-BIT STUDIO QUALITY'}
                             </p>
                          </div>
                       </div>
 
                       {/* Visualizer bars */}
-                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-12 flex items-end justify-center gap-1 md:gap-1.5 px-4 md:px-10 pb-2 md:pb-4 opacity-50">
-                        {Array.from({ length: isMobile ? 20 : 40 }).map((_, i) => (
+                      <div className="absolute bottom-0 left-0 w-full h-12 flex items-end justify-center gap-1.5 px-10 pb-4 opacity-50">
+                        {Array.from({ length: 40 }).map((_, i) => (
                            <motion.div 
                              key={i}
-                             animate={{ height: [4, Math.random() * (isMobile ? 12 : 24) + 4, 4] }}
+                             animate={{ height: [4, Math.random() * 24 + 4, 4] }}
                              transition={{ duration: 0.5 + Math.random(), repeat: Infinity }}
-                             className="w-0.5 md:w-1 bg-emerald-500/60 rounded-full"
+                             className="w-1 bg-emerald-500/60 rounded-full"
                            />
                         ))}
                       </div>
@@ -536,11 +519,11 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                         <div className="relative w-full aspect-video rounded-[4px] overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-1000 group-hover/video:scale-110" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                             <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-emerald-500 animate-pulse">
-                               <Music size={isMobile ? 32 : 40} />
+                             <div className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-emerald-500 animate-pulse">
+                               <Music size={40} />
                              </div>
                           </div>
-                          <div className="absolute top-2 md:top-4 right-2 md:right-4 px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[8px] md:text-[10px] font-bold text-white uppercase tracking-widest">
+                          <div className="absolute top-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest">
                             {dir === 'rtl' ? 'عرض فني سيادي' : 'SOVEREIGN ART VIEW'}
                           </div>
                         </div>
@@ -721,14 +704,14 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
   );
 };
 
-import { ErrorBoundary } from '../components/shared/ErrorBoundary';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const ChatPage: React.FC = () => {
-  const { user, token, setShowAuthModal: setIsAuthModalOpen, setIsOperationPending, isAuthReady, fetchUserProfile: refreshUser, balanceUSD } = useAuth();
-  const { theme, dir, t } = useTheme();
-  const { siteSettings, economySettings } = useSettings();
-  const { isMobile, isInstallable, installApp, isInstalling, triggerMemoryNotification } = useUI();
-  const { socket } = useSocket();
+  const { 
+    t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
+    installApp, isInstalling, siteSettings, setIsOperationPending, isAuthReady,
+    refreshUser, balanceUSD, economySettings, triggerMemoryNotification
+  } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState(() => {
@@ -2079,7 +2062,7 @@ export const ChatPage: React.FC = () => {
 
 
   const renderInputArea = () => (
-    <div className="w-full flex flex-col box-border min-w-0 px-4 md:px-6 max-w-4xl mx-auto">
+    <div className="w-full flex flex-col box-border min-w-0 px-8 md:px-6 max-w-4xl mx-auto">
       {renderVideoSettings()}
       {renderImageSettings()}
       {renderAudioSettings()}
@@ -2449,7 +2432,7 @@ export const ChatPage: React.FC = () => {
 
           {messages.length > 0 && (
             <div className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]">
-              <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-4 md:px-6 py-3">
+              <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
                   <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 truncate max-w-[120px] md:max-w-[300px] font-mono">
@@ -2599,16 +2582,16 @@ export const ChatPage: React.FC = () => {
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-               className="flex-1 flex flex-col items-center justify-center min-h-full py-8 md:py-12 overflow-hidden select-none w-full"
+               className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
             >
-              <div className="w-full max-w-4xl px-4 md:px-6 flex flex-col items-center">
+              <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
                 <h1 
-                  className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-4 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
+                  className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
                 >
                   {t('howCanIHelp')}
                 </h1>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
                   {suggestions.map((item, idx) => (
                     <button
                       key={idx}
@@ -2644,7 +2627,7 @@ export const ChatPage: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-4 md:px-6"
+              className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6"
             >
               {messages.map((msg, idx) => {
                 return (

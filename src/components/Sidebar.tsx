@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useSettings } from '../context/SettingsContext';
-import { useUI } from '../context/UIContext';
+import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { SOVEREIGN_TRANSITION } from '../constants/motions';
@@ -15,10 +12,7 @@ const elasticSpring = SOVEREIGN_TRANSITION;
 const sidebarTransition = SOVEREIGN_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { t, theme, dir: globalDir, language: globalLang } = useTheme();
-  const { isSidebarOpen, setIsSidebarOpen, isMobile, isInstallable, installApp, isInstalling } = useUI();
-  const { user, token, logout, setShowAuthModal } = useAuth();
-  const { siteSettings, plans } = useSettings();
+  const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isInstallable, installApp, isInstalling } = useAppContext();
   
   // Use locked language for stable transitions
   const language = activeLanguage || globalLang;
@@ -125,7 +119,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   const navItems: { icon: React.ReactNode, label: string, path: string, className?: string }[] = [];
 
-  navItems.push({ icon: <CreditCard size={18} />, label: t('subscription'), path: '/subscription' });
+  if (!isMobile) {
+    navItems.push({ icon: <CreditCard size={18} />, label: t('subscription'), path: '/subscription' });
+  }
 
   if (user) {
     navItems.unshift({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
@@ -559,7 +555,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               ) : (
                   <div 
                     className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)]`}
-                    onClick={() => setShowAuthModal(true)}
+                    onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                       <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] group-hover:bg-[var(--bg-overlay)]`} />

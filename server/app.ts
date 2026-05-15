@@ -55,19 +55,13 @@ const uploadsPath = path.join(process.cwd(), 'uploads');
 app.use(express.static(publicPath));
 app.use('/uploads', express.static(uploadsPath));
 
-// Ensure manifest.json and other files in public are served correctly 
-// before the SPA fallback
-app.get('/manifest.json', (req, res) => {
-  res.sendFile(path.join(publicPath, 'manifest.json'));
-});
-
 app.use('/api', globalLimiter);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
-import adminRoutes from './routes/admin/index.js';
+import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import paymentRoutes from './routes/payments.js';
 import toolRoutes from './routes/tools.js';
