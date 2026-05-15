@@ -1,10 +1,11 @@
 import { toast } from 'sonner';
+import { useAppContext } from '../context/AppContext';
 
 export const useToast = () => {
-  const success = (message: string) => toast.success(message);
-  const error = (message: string) => toast.error(message);
-  const warning = (message: string) => toast.warning(message);
-  const info = (message: string) => toast.info(message);
-
-  return { success, error, warning, info };
+  const { dir } = useAppContext();
+  return {
+    success: (msgAr: string, msgEn?: string) => toast.success(dir === 'rtl' ? msgAr : (msgEn || msgAr)),
+    error: (msgAr: string, msgEn?: string) => toast.error(dir === 'rtl' ? msgAr : (msgEn || msgAr)),
+    info: (msgAr: string, msgEn?: string) => toast.info(dir === 'rtl' ? msgAr : (msgEn || msgAr)),
+  };
 };

@@ -1,27 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
-import type { AIProviderConfig } from '../types';
 
 export const useAdminData = () => {
   const { token } = useAppContext();
-  const [providerModels, setProviderModels] = useState<AIProviderConfig[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const fetchProviders = async () => {
-    if (!token) return;
-    setIsLoading(true);
+  const fetchAdmin = useCallback(async <T>(endpoint: string): Promise<T | null> => {
+    if (!token) return null;
+    setLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/orchestrator/providers', {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (data.success) setProviderModels(data.providers ?? []);
+      return res.ok ? await res.json() : null;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }, [token]);
 
-  useEffect(() => { fetchProviders(); }, [token]);
+  const postAdmin = useCallback(async <T>(endpoint: string, body: unknown): Promise<T | null> => {
+    if (!token) return null;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body)
+    });
+    return res.ok ? await res.json() : null;
+  }, [token]);
 
-  return { providerModels, setProviderModels, isLoading, fetchProviders };
+  return { fetchAdmin, postAdmin, loading };
 };

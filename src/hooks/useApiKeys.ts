@@ -1,50 +1,41 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useToast } from './useToast';
 
 export const useApiKeys = () => {
   const { token } = useAppContext();
-  const toast = useToast();
-  const [keys, setKeys] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const fetchKeys = async () => {
-    if (!token) return;
-    setIsLoading(true);
+  const fetchKeys = useCallback(async () => {
+    if (!token) return [];
+    setLoading(true);
     try {
-      const res = await fetch('/api/v1/admin/keys', {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch('/api/admin/keys', {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (data.success) setKeys(data.keys ?? {});
-    } catch {
-      toast.error('Failed to fetch API keys');
+      return res.ok ? await res.json() : [];
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }, [token]);
 
-  const saveKey = async (provider: string, key: string) => {
-    try {
-      const res = await fetch('/api/v1/admin/keys', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ provider, key }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setKeys(prev => ({ ...prev, [provider]: key }));
-        toast.success('Key saved');
-      } else {
-        toast.error(data.error ?? 'Save failed');
-      }
-    } catch {
-      toast.error('Save failed');
-    }
-  };
+  const saveKey = useCallback(async (provider: string, key: string, budget?: number) => {
+    if (!token) return false;
+    const res = await fetch('/api/admin/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ provider, api_key: key, daily_budget: budget })
+    });
+    return res.ok;
+  }, [token]);
 
-  return { keys, isLoading, fetchKeys, saveKey };
+  const deleteKey = useCallback(async (provider: string) => {
+    if (!token) return false;
+    const res = await fetch(`/api/admin/keys/${provider}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.ok;
+  }, [token]);
+
+  return { fetchKeys, saveKey, deleteKey, loading };
 };
