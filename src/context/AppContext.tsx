@@ -885,6 +885,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           keywordsEn: settingsData.keywords_en || '',
           keywordsAr: settingsData.keywords_ar || '',
           googleAnalyticsId: settingsData.google_analytics_id || '',
+          maintenanceMode: !!settingsData.maintenance_mode,
+          registrationEnabled: !!settingsData.registration_enabled,
           logoBase64: settingsData.logo_url || null,
           faviconBase64: settingsData.favicon_url || null
         });
