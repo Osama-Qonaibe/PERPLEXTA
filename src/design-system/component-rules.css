@@ -1,0 +1,46 @@
+/*
+  COMPONENT RULES — الحكم الأعلى لكل مكون في المشروع
+  لا يُسمح باستخدام قيم مباشرة خارج هذه المتغيرات
+*/
+
+@layer utilities {
+  /* ── Backgrounds ─────────────────────────────── */
+  .bg-page    { background-color: var(--bg-base); }
+  .bg-card    { background-color: var(--bg-surface); }
+  .bg-input   { background-color: var(--bg-input); }
+
+  /* ── Borders ─────────────────────────────────── */
+  .border-main   { border-color: var(--border); }
+  .border-accent { border-color: var(--border-accent); }
+
+  /* ── Text ────────────────────────────────────── */
+  .text-primary   { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted     { color: var(--text-muted); }
+
+  /* ── Accent ──────────────────────────────────── */
+  .text-accent { color: var(--accent); }
+  .bg-accent   { background-color: var(--accent); }
+  .bg-accent-dim { background-color: var(--accent-dim); }
+
+  /* ── Radius ──────────────────────────────────── */
+  .rounded-card    { border-radius: var(--radius); }
+  .rounded-toolbar { border-radius: 4px; }
+
+  /* ── Status ──────────────────────────────────── */
+  .text-danger  { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+  .bg-danger    { background-color: var(--danger); }
+  .bg-warning   { background-color: var(--warning); }
+
+  /* ── Glow Effect ─────────────────────────────── */
+  .glow-accent {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+  }
+
+  /* ── Transitions (يُطبَّق تلقائياً من index.css على كل العناصر) ── */
+  .transition-theme {
+    transition-duration: var(--theme-transition-duration);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+}
