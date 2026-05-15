@@ -1,3 +1,5 @@
+export type Theme = 'dark' | 'light';
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastOptions {

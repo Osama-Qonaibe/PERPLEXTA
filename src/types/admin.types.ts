@@ -1,3 +1,17 @@
+export interface SiteSettings {
+  siteName: string;
+  siteNameAr: string;
+  siteDescription: string;
+  siteDescriptionAr: string;
+  logoBase64: string | null;
+  faviconBase64: string | null;
+  seoDescriptionEn: string;
+  seoDescriptionAr: string;
+  keywordsEn: string;
+  keywordsAr: string;
+  googleAnalyticsId: string;
+}
+
 export interface AdminStats {
   total_users: number;
   active_users_today: number;
