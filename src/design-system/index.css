@@ -6,6 +6,7 @@
 @import "./typography.css";
 @import "./animations.css";
 @import "./scrollbar.css";
+@import "./component-rules.css";
 
 *,
 *::before,
