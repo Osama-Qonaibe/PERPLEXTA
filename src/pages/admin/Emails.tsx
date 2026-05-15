@@ -10,9 +10,9 @@ import { useTheme } from "../../context/ThemeContext";
 import { useSettings } from "../../context/SettingsContext";
 import { useUI } from "../../context/UIContext";
 
-interface SmartEmailHubProps {}
+interface EmailsProps {}
 
-export const SmartEmailHub: React.FC<SmartEmailHubProps> = () => {
+export const Emails: React.FC<EmailsProps> = () => {
   const { theme, t, dir, language } = useTheme();
   const [activeTab, setActiveTab] = useState<"settings" | "templates">("settings");
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);

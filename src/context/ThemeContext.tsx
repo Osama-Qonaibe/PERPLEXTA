@@ -1,6 +1,43 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Language, Theme } from '../types/user.types';
-import { translations } from '../constants/translations';
+
+// Sovereign Inline Translation Engine
+const translations: Record<string, any> = {
+  ar: {
+    howCanIHelp: "كيف يمكنني مساعدتك اليوم؟",
+    subscription: "الاشتراك",
+    settings: "الإعدادات",
+    rewards: "المكافآت",
+    verified: "موثق",
+    add: "إضافة",
+    back: "العودة",
+    annual: "سنوي",
+    monthly: "شهري",
+    logout: "تسجيل الخروج",
+    rewards_redeem: "استبدال المكافآت",
+    rewards_balance: "رصيد المكافآت",
+    referral_code: "كود الإحالة",
+    copy: "نسخ",
+    copied: "تم النسخ!"
+  },
+  en: {
+    howCanIHelp: "How can I help you today?",
+    subscription: "Subscription",
+    settings: "Settings",
+    rewards: "Rewards",
+    verified: "Verified",
+    add: "Add",
+    back: "Back",
+    annual: "Annual",
+    monthly: "Monthly",
+    logout: "Logout",
+    rewards_redeem: "Redeem Rewards",
+    rewards_balance: "Rewards Balance",
+    referral_code: "Referral Code",
+    copy: "Copy",
+    copied: "Copied!"
+  }
+};
 
 interface ThemeContextType {
   language: Language;

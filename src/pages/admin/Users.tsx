@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { 
-  Users, Search, ChevronDown, Star, Eye, Mail, History, 
+  Users as UsersIcon, Search, ChevronDown, Star, Eye, Mail, History, 
   X, Camera, Save, RefreshCw, Landmark, CreditCard, 
   LifeBuoy, Sparkles, Zap, Activity, AlertCircle, CheckCircle2,
   BellRing, ShieldCheck, Trash2
@@ -19,9 +19,9 @@ const ALL_TOOLS = [
   "code", "canvas", "storage_mb"
 ];
 
-interface UserManagementProps {}
+interface UsersProps {}
 
-export const UserManagement: React.FC<UserManagementProps> = () => {
+export const Users: React.FC<UsersProps> = () => {
   const { theme, t, dir, language } = useTheme();
   const { token, user: currentUser, fetchUserProfile: refreshUser } = useAuth();
   const { plans } = useSettings();
@@ -558,7 +558,7 @@ export const UserManagement: React.FC<UserManagementProps> = () => {
                             {user.avatar ? (
                               <img src={user.avatar} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <Users size={20} className="text-gray-500" />
+                              <UsersIcon size={20} className="text-gray-500" />
                             )}
                           </div>
                           {user.subscription_status === "active" && (
@@ -630,7 +630,7 @@ export const UserManagement: React.FC<UserManagementProps> = () => {
               <tr>
                 <td colSpan={6} className="text-center py-20 text-gray-500">
                   <div className="flex flex-col items-center gap-3">
-                    <Users size={40} className="text-gray-800/20" />
+                    <UsersIcon size={40} className="text-gray-800/20" />
                     <span className="text-xs font-bold uppercase tracking-widest opacity-50">No explorers found in this sector</span>
                   </div>
                 </td>
@@ -709,7 +709,7 @@ export const UserManagement: React.FC<UserManagementProps> = () => {
                     {selectedUser.avatar ? (
                       <img src={selectedUser.avatar} alt="" className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
                     ) : (
-                      <Users size={32} className="text-gray-500" />
+                      <UsersIcon size={32} className="text-gray-500" />
                     )}
                   </div>
                   <div>
@@ -734,7 +734,7 @@ export const UserManagement: React.FC<UserManagementProps> = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className={`p-8 rounded-[4px] border flex flex-col h-full bg-[#161618] border-gray-800/60`}>
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"><Users size={20} /></div>
+                      <div className="p-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]"><UsersIcon size={20} /></div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{t("identitySection")}</h3>
                     </div>
                     <div className="flex-1 space-y-5">

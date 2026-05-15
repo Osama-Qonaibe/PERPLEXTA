@@ -1,9 +1,9 @@
 import express from 'express';
-import globalRouter from './admin/global.js';
-import infraRouter from './admin/infra.js';
-import orchestratorRouter from './admin/orchestrator.js';
-import economyRouter from './admin/economy.js';
-import usersRouter from './admin/users.js';
+import globalRouter from './global.js';
+import infraRouter from './infra.js';
+import orchestratorRouter from './orchestrator.js';
+import economyRouter from './economy.js';
+import usersRouter from './users.js';
 
 const router = express.Router();
 

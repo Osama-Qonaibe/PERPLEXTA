@@ -4,10 +4,8 @@ import { ThemeProvider, useTheme } from './ThemeContext';
 import { SocketProvider, useSocket } from './SocketContext';
 import { SettingsProvider, useSettings } from './SettingsContext';
 import { UIProvider, useUI } from './UIContext';
-import { AppContextType } from '../types/context.types';
-
 // Create a bridge context for backward compatibility
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const AppContext = createContext<any>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (

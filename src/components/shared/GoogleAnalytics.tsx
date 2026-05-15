@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
 
 export const GoogleAnalytics = () => {
   const { siteSettings } = useSettings();

@@ -12,7 +12,7 @@ import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { toast } from "../../components/ui/Toast";
 
-export const DatabaseOrchestration: React.FC = () => {
+export const Databases: React.FC = () => {
   const { token } = useAuth();
   const { theme, t, dir, language } = useTheme();
   const { socket } = useSocket();

@@ -1,8 +1,0 @@
-{
-  "name": "Perplexta Sovereign",
-  "description": "The Sovereign AI Platform for professional elite technical analysis and multimodal intelligence.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}

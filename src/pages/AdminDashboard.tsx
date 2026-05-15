@@ -13,7 +13,7 @@ import {
   Cpu,
   Landmark,
   CreditCard,
-  Users,
+  Users as UsersIcon,
   Settings,
   Mail,
   Plus,
@@ -23,17 +23,17 @@ import {
   Send,
 } from "lucide-react";
 
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ErrorBoundary } from '../components/shared/ErrorBoundary';
 import { CommandCenter } from './admin/CommandCenter';
 import { ApiKeysVault } from './admin/ApiKeysVault';
-import { DatabaseOrchestration } from './admin/DatabaseOrchestration';
+import { Databases } from './admin/Databases';
 import { Orchestrator } from './admin/Orchestrator';
 import { FinanceVault } from './admin/FinanceVault';
-import { DigitalFinancialRadar } from './admin/DigitalFinancialRadar';
-import { PlansSubscriptions } from './admin/PlansSubscriptions';
-import { UserManagement } from './admin/UserManagement';
-import { SmartEmailHub } from './admin/SmartEmailHub';
-import { MassBroadcast } from './admin/MassBroadcast';
+import { FinancialRadar } from './admin/FinancialRadar';
+import { Plans } from './admin/Plans';
+import { Users } from './admin/Users';
+import { Emails } from './admin/Emails';
+import { Broadcast } from './admin/Broadcast';
 import { SystemSettings } from './admin/SystemSettings';
 
 export const AdminDashboard: React.FC = () => {
@@ -179,7 +179,7 @@ export const AdminDashboard: React.FC = () => {
       case "plans":
         return <CreditCard size={28} className={iconClass} />;
       case "users":
-        return <Users size={28} className={iconClass} />;
+        return <UsersIcon size={28} className={iconClass} />;
       case "emails":
         return <Mail size={28} className={iconClass} />;
       case "broadcast":
@@ -297,14 +297,14 @@ export const AdminDashboard: React.FC = () => {
           {path === "dashboard" ? (
             <CommandCenter />
           ) : path === "radar" ? (
-            <DigitalFinancialRadar />
+            <FinancialRadar />
           ) : path === "keys" ? (
             <ApiKeysVault
               providerModels={providerModels}
               setProviderModels={setProviderModels}
             />
           ) : path === "databases" ? (
-            <DatabaseOrchestration />
+            <Databases />
           ) : path === "orchestrator" ? (
             <Orchestrator
               providerModels={providerModels}
@@ -312,13 +312,13 @@ export const AdminDashboard: React.FC = () => {
           ) : path === "finance" ? (
             <FinanceVault />
           ) : path === "plans" ? (
-            <PlansSubscriptions />
+            <Plans />
           ) : path === "users" ? (
-            <UserManagement />
+            <Users />
           ) : path === "emails" ? (
-            <SmartEmailHub />
+            <Emails />
           ) : path === "broadcast" ? (
-            <MassBroadcast />
+            <Broadcast />
           ) : path === "settings" ? (
             <SystemSettings />
           ) : (

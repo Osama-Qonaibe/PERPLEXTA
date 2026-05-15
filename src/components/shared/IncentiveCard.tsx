@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Share2, Copy, Check, X, Megaphone, Users, ArrowUpRight, MousePointer2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useUI } from '../context/UIContext';
-import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useUI } from '../../context/UIContext';
+import { useSettings } from '../../context/SettingsContext';
 
 export const IncentiveCard: React.FC = () => {
   const { user } = useAuth();

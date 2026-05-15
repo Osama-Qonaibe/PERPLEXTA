@@ -8,9 +8,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
-interface MassBroadcastProps {}
+interface BroadcastProps {}
 
-export const MassBroadcast: React.FC<MassBroadcastProps> = () => {
+export const Broadcast: React.FC<BroadcastProps> = () => {
   const { theme, t, dir, language } = useTheme();
   const { token } = useAuth();
   const [broadcasts, setBroadcasts] = useState<any[]>([]);

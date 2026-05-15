@@ -16,6 +16,18 @@ import { sovereignPageTransition } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
+// Custom hook for responsive behavior
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
 const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
 
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
@@ -361,6 +373,7 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
 };
 
 const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' | 'rtl'; theme: string }) => {
+  const isMobile = useIsMobile();
   // Parsing the structured output based on the SOVEREIGN CREATIVE PRODUCTION PROTOCOL
   const sections: { title: string; body: string; id: string }[] = [];
   
@@ -708,7 +721,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
   );
 };
 
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ErrorBoundary } from '../components/shared/ErrorBoundary';
 
 export const ChatPage: React.FC = () => {
   const { user, token, setShowAuthModal: setIsAuthModalOpen, setIsOperationPending, isAuthReady, fetchUserProfile: refreshUser, balanceUSD } = useAuth();

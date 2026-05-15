@@ -11,9 +11,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useSocket } from "../../context/SocketContext";
 
-interface DigitalFinancialRadarProps {}
+interface FinancialRadarProps {}
 
-export const DigitalFinancialRadar: React.FC<DigitalFinancialRadarProps> = () => {
+export const FinancialRadar: React.FC<FinancialRadarProps> = () => {
   const { theme, t } = useTheme();
   const { token } = useAuth();
   const { language, dir } = useTheme();

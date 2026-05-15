@@ -17,9 +17,9 @@ const ALL_TOOLS = [
   "code", "canvas", "storage_mb"
 ];
 
-interface PlansSubscriptionsProps {}
+interface PlansProps {}
 
-export const PlansSubscriptions: React.FC<PlansSubscriptionsProps> = () => {
+export const Plans: React.FC<PlansProps> = () => {
   const { token } = useAuth();
   const { theme, t, dir, language } = useTheme();
   const { setIsOperationPending } = useUI();
