@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSettings } from '../context/SettingsContext';
+import { useUI } from '../context/UIContext';
 import { CheckCircle2, MessageSquare, Image as ImageIcon, Video, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { sovereignPageTransition } from '../constants/motions';
@@ -13,14 +16,11 @@ const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export const SubscriptionPage: React.FC = () => {
-  const { t, theme, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile } = useAppContext();
+  const { user, balance, balanceUSD, fetchUserProfile, payWithBalance, stripeCheckout, setShowAuthModal } = useAuth();
+  const { t, theme, dir } = useTheme();
+  const { plans } = useSettings();
+  const { isMobile } = useUI();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isMobile) {
-      navigate('/');
-    }
-  }, [isMobile, navigate]);
 
   const [billingCycle, setBillingCycle] = React.useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = React.useState<string | null>(null);
@@ -74,7 +74,7 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const handleUpgrade = async (planId: string) => {
-    if (!user) { setIsAuthModalOpen(true); return; }
+    if (!user) { setShowAuthModal(true); return; }
     const plan = plans.find(p => p.id === planId);
     if (user?.subscription?.plan_id?.toString() === planId.toString()) return;
     setSelectedPlanForModal(plan);
@@ -85,7 +85,7 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   const handlePayWithBalance = async (planId: string) => {
-    if (!user) { setIsAuthModalOpen(true); return; }
+    if (!user) { setShowAuthModal(true); return; }
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
     setSelectedPlanForModal(plan);
@@ -100,7 +100,7 @@ export const SubscriptionPage: React.FC = () => {
     const res = await payWithBalance(confirmingPlan.id, billingCycle);
     if (res.success) {
       setConfirmingPlan(null);
-      await refreshUser();
+      await fetchUserProfile();
       setResultModal('success');
     } else {
       alert(res.error || 'Error');
@@ -150,26 +150,26 @@ export const SubscriptionPage: React.FC = () => {
       variants={sovereignPageTransition}
       className="max-w-6xl mx-auto px-4 pb-12"
     >
-      <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]">
+      <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] sm:-mx-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500 flex-shrink-0"
             >
-              {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {dir === 'rtl' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
-            <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('subscription')}</h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
-                {dir === 'rtl' ? 'اختر الخطة المثالية لاحتياجاتك' : 'CHOOSE YOUR PERFORMANCE TIER'}
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase truncate">{t('subscription')}</h1>
+              <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-60 truncate">
+                {dir === 'rtl' ? 'اختر الخطة المثالية' : 'CHOOSE YOUR PERFORMANCE TIER'}
               </p>
             </div>
           </div>
-          <div className="p-1.5 rounded-[4px] flex items-center shadow-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]">
+          <div className="p-1 rounded-[4px] flex items-center shadow-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] w-fit">
             <button 
               onClick={() => setBillingCycle('monthly')}
-              className={`px-5 md:px-7 py-2 rounded-[4px] text-xs font-black uppercase tracking-widest transition-all duration-500 ${
+              className={`px-3 md:px-7 py-1.5 md:py-2 rounded-[4px] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-500 ${
                 billingCycle === 'monthly' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-gray-500 hover:text-emerald-500'
@@ -179,7 +179,7 @@ export const SubscriptionPage: React.FC = () => {
             </button>
             <button 
               onClick={() => setBillingCycle('annual')}
-              className={`px-5 md:px-7 py-2 rounded-[4px] text-xs font-black uppercase tracking-widest transition-all duration-500 ${
+              className={`px-3 md:px-7 py-1.5 md:py-2 rounded-[4px] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-500 ${
                 billingCycle === 'annual' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-gray-500 hover:text-emerald-500'
@@ -187,7 +187,7 @@ export const SubscriptionPage: React.FC = () => {
             >
               {t('annual')}
               {Math.max(...plans.map(p => getSavingPercentage(p)), 0) > 0 && (
-                <span className="ml-1.5 text-[9px] opacity-70">(-{Math.max(...plans.map(p => getSavingPercentage(p)), 0)}%)</span>
+                <span className="ml-1 text-[8px] opacity-70">(-{Math.max(...plans.map(p => getSavingPercentage(p)), 0)}%)</span>
               )}
             </button>
           </div>

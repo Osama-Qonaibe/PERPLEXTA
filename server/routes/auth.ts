@@ -115,28 +115,52 @@ router.post("/signup", authLimiter, async (req, res) => {
 
 router.post("/login", authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, remember } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
     const lowerEmail = email.toLowerCase();
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1::text', [lowerEmail]);
-    if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+    
+    // Security: Use generic error message for invalid credentials to prevent email enumeration
+    const genericError = 'Invalid email or password';
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: genericError });
+    }
 
     const user = result.rows[0];
-    if (user.status === 'suspended') return res.status(403).json({ error: 'Account suspended' });
+    
+    if (user.status === 'suspended') {
+      return res.status(403).json({ error: 'Account suspended. Please contact support.' });
+    }
 
     if (!user.password_hash) {
       if (user.provider === 'google') {
-        return res.status(401).json({ error: 'Please login using Google' });
+        return res.status(401).json({ error: 'This account was created using Google. Please log in with Google.' });
       }
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: genericError });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: genericError });
+    }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
+    // Update last_active_at
+    await pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+
+    const expiresIn = remember ? '30d' : '7d';
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role }, 
+      jwtSecret, 
+      { expiresIn }
+    );
     
     const fullProfile = await pool.query(`
-      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.kyc_status,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -157,10 +181,16 @@ router.post("/login", authLimiter, async (req, res) => {
       } : null
     };
 
-    res.json({ token, user: userPayload });
-    await logSystemActivity(user.id, 'login', 'User logged in', {}, req);
+    res.json({ 
+      token, 
+      user: userPayload,
+      message: 'Login successful'
+    });
+
+    await logSystemActivity(user.id, 'login', 'User logged in via email/password', { ip: req.ip }, req);
   } catch (error) {
-    res.status(500).json({ error: 'Login failed' });
+    console.error('[Auth] Login Error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred during login' });
   }
 });
 

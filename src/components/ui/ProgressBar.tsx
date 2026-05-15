@@ -2,39 +2,32 @@ import React from 'react';
 
 interface ProgressBarProps {
   value: number;
-  max?: number;
-  showLabel?: boolean;
+  max: number;
+  color?: string;
   className?: string;
-  color?: 'emerald' | 'red' | 'yellow' | 'blue';
+  showLabel?: boolean;
+  label?: string;
 }
 
-export function ProgressBar({
-  value,
-  max = 100,
-  showLabel = false,
-  className = '',
-  color = 'emerald',
-}: ProgressBarProps) {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
-
-  const colors: Record<string, string> = {
-    emerald: 'bg-emerald-500',
-    red: 'bg-red-500',
-    yellow: 'bg-yellow-500',
-    blue: 'bg-blue-500',
-  };
+export const ProgressBar: React.FC<ProgressBarProps> = ({ 
+  value, max, color = 'bg-emerald-500', className = '', showLabel = false, label 
+}) => {
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
   return (
-    <div className={`w-full ${className}`}>
-      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${colors[color]} transition-all duration-[600ms] cubic-bezier-[0.22,1,0.36,1]`}
-          style={{ width: `${pct}%` }}
+    <div className={`space-y-1.5 ${className}`}>
+      {(showLabel || label) && (
+        <div className="flex justify-between text-xs font-medium text-gray-400">
+          <span>{label}</span>
+          <span>{Math.round(percentage)}%</span>
+        </div>
+      )}
+      <div className="h-1.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${color} transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]`}
+          style={{ width: `${percentage}%` }}
         />
       </div>
-      {showLabel && (
-        <span className="text-xs text-gray-500 mt-1">{Math.round(pct)}%</span>
-      )}
     </div>
   );
-}
+};

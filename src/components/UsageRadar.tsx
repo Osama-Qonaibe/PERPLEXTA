@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSocket } from '../context/SocketContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Clock, Zap, AlertCircle, ChevronDown, ChevronUp, BarChart3, Database, Calendar } from 'lucide-react';
 
@@ -34,7 +36,9 @@ interface UsageData {
 }
 
 export const UsageRadar: React.FC = () => {
-  const { t, dir, theme, token, socket, language } = useAppContext();
+  const { token } = useAuth();
+  const { t, dir, theme, language } = useTheme();
+  const { socket } = useSocket();
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

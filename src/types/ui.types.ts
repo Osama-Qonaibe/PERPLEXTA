@@ -1,37 +1,29 @@
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type MemoryNotificationType = 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup';
 
-export interface ToastMessage {
-  id?: string;
-  message: string;
-  type: ToastType;
-  duration?: number;
+export interface MemoryNotification {
+  isVisible: boolean;
+  type: MemoryNotificationType;
+  desc?: string;
 }
 
-export type Direction = 'ltr' | 'rtl';
-export type Language = 'ar' | 'en';
-export type Theme = 'dark' | 'light';
-
-export interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
-  children: React.ReactNode;
-}
-
-export interface ConfirmOptions {
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: 'danger' | 'warning' | 'info';
+export interface MilestoneData {
+  count: number;
+  total: number;
+  description_en: string;
+  description_ar: string;
 }
 
 export interface SiteSettings {
   siteName: string;
   siteNameAr: string;
-  logoBase64?: string;
-  primaryColor?: string;
-  supportEmail?: string;
-  maintenanceMode?: boolean;
+  siteDescription: string;
+  siteDescriptionAr: string;
+  logoBase64: string | null;
+  faviconBase64: string | null;
+  seoDescriptionEn: string;
+  seoDescriptionAr: string;
+  keywordsEn: string;
+  keywordsAr: string;
+  googleAnalyticsId: string;
+  maintenanceMode: boolean;
 }

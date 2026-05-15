@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Sparkles, Languages, Monitor, Briefcase, Zap, Target, BookOpen, Code2, LayoutGrid } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useUI } from '../context/UIContext';
+import { useSettings } from '../context/SettingsContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AccountSettingsProps {
@@ -16,7 +19,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const [isUploading, setIsUploading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'profile' | 'intelligence' | 'preferences'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t, token, setIsOperationPending, language, setLanguage, setTheme } = useAppContext();
+  const { token } = useAuth();
+  const { t, language, setLanguage, setTheme } = useTheme();
+  const { setIsOperationPending } = useUI();
 
   useEffect(() => {
     setIsOperationPending(isUploading || editingField !== null);

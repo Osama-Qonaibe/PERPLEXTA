@@ -21,9 +21,9 @@ export default defineConfig(({ mode }) => {
           navigateFallbackDenylist: [/^\/api/],
         },
         manifest: {
-          name: 'Perplexta',
-          short_name: 'Perplexta',
-          description: 'A professional elite platform for advanced AI capabilities and technical analysis.',
+          name: 'Perplexta Sovereign',
+          short_name: 'Sovereign',
+          description: 'The Sovereign AI Platform for professional elite technical analysis and multimodal intelligence.',
           theme_color: '#10b981',
           background_color: '#0f0f11',
           display: 'standalone',

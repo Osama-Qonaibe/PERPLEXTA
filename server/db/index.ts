@@ -51,24 +51,35 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
     }
   };
 
-  console.log(`[DB] initializing Sovereign Pools...`);
-  if (coreUrl) console.log(`[DB] Core Target: ${redactedUrl(coreUrl)}`);
+  console.log(`[DB] 🛡️ Initializing Sovereign Pools...`);
   
-  if (!coreUrl) {
-    console.warn('[DB] ⚠️ DATABASE_URL is missing. Operating in Degraded Mode (No DB).');
+  const finalCoreUrl = coreUrl || process.env.DATABASE_URL || '';
+  const finalLedgerUrl = ledgerUrl || process.env.LEDGER_DATABASE_URL || finalCoreUrl;
+
+  if (!finalCoreUrl) {
+    console.error('[DB] ❌ FATAL: DATABASE_URL is missing.');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DATABASE_URL environment variable is required in production.');
+    }
+    console.warn('[DB] ⚠️ Operating in Degraded Mode (No DB). Features will be limited.');
     pool = null;
     ledgerPool = null;
     return;
   }
 
-  const finalLedgerUrl = ledgerUrl || coreUrl;
+  console.log(`[DB] 📍 Core Target: ${redactedUrl(finalCoreUrl)}`);
+  if (finalLedgerUrl === finalCoreUrl) {
+    console.log(`[DB] 📍 Ledger Target: [Shared with Core]`);
+  } else {
+    console.log(`[DB] 📍 Ledger Target: ${redactedUrl(finalLedgerUrl)}`);
+  }
   
   try {
-    validateDatabaseUrl(coreUrl, 'DATABASE_URL');
+    validateDatabaseUrl(finalCoreUrl, 'DATABASE_URL');
     validateDatabaseUrl(finalLedgerUrl, 'LEDGER_DATABASE_URL');
   } catch (validationError: any) {
-    console.error(`[DB] Validation Failed: ${validationError.message}`);
-    if (process.env.NODE_ENV === 'production' && coreUrl) {
+    console.error(`[DB] ❌ Validation Failed: ${validationError.message}`);
+    if (process.env.NODE_ENV === 'production') {
       throw validationError;
     }
     pool = null;
@@ -76,27 +87,29 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
     return;
   }
 
+  // Gracefully close existing pools if they exist (HMR/Reload support)
   if (pool) {
-    pool.end().catch((err: any) => console.error('[DB] Error closing old core pool:', err));
+    console.log('[DB] Closing existing core pool...');
+    await pool.end().catch((err: any) => console.error('[DB] Error closing old core pool:', err));
   }
   if (ledgerPool) {
-    ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
+    console.log('[DB] Closing existing ledger pool...');
+    await ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
   }
 
-  const sslConfig = process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
-    ? { rejectUnauthorized: false }
-    : undefined;
+  const sslConfig = getSslConfig();
 
-  currentCoreUrl = coreUrl;
+  currentCoreUrl = finalCoreUrl;
   currentLedgerUrl = finalLedgerUrl;
 
   try {
     pool = new Pool({
-      connectionString: coreUrl,
+      connectionString: finalCoreUrl,
       ssl: sslConfig,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 15000,
+      keepAlive: true,
     });
 
     ledgerPool = new Pool({
@@ -105,33 +118,71 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 15000,
+      keepAlive: true,
     });
 
-    pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));
-    ledgerPool.on('connect', () => console.log('[DB] Ledger PostgreSQL connected successfully.'));
+    pool.on('connect', () => console.log('[DB] ✅ Core PostgreSQL connected.'));
+    ledgerPool.on('connect', () => console.log('[DB] ✅ Ledger PostgreSQL connected.'));
     
     pool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle core client:', err.message);
+      if (err.message && err.message.includes('Connection terminated unexpectedly')) {
+        console.warn('[DB] ⚠️ Idle core client connection closed by server.');
+        return;
+      }
+      console.error('[DB] ❌ Unexpected error on core pool:', err.message);
     });
 
     ledgerPool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle ledger client:', err.message);
+      if (err.message && err.message.includes('Connection terminated unexpectedly')) {
+        console.warn('[DB] ⚠️ Idle ledger client connection closed by server.');
+        return;
+      }
+      console.error('[DB] ❌ Unexpected error on ledger pool:', err.message);
     });
 
-    console.log('[DB] Verifying connectivity...');
+    console.log('[DB] 🛰️ Verifying connectivity...');
     await Promise.all([
       pool.query('SELECT 1'),
       ledgerPool.query('SELECT 1')
     ]);
-    console.log('[DB] Sovereign Pools verified and active.');
+    console.log('[DB] ✨ Sovereign Pools verified and active.');
 
   } catch (poolCreationError: any) {
-    console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
+    console.error('[DB] ❌ Critical error during Pool activation:', poolCreationError.message);
     if (process.env.NODE_ENV === 'production') {
       throw poolCreationError;
     }
     pool = null;
     ledgerPool = null;
+  }
+}
+
+export async function safeQuery(queryText: string, params: any[] = [], isLedger: boolean = false) {
+  const targetPool = isLedger ? ledgerPool : pool;
+  if (!targetPool) {
+    throw new Error('[DB] Database pool is not initialized');
+  }
+
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      return await targetPool.query(queryText, params);
+    } catch (err: any) {
+      const isConnectionError = err.message && (
+        err.message.includes('Connection terminated unexpectedly') || 
+        err.message.includes('client has been closed') ||
+        err.message.includes('terminating connection due to administrator command')
+      );
+
+      if (isConnectionError && retries > 1) {
+        console.warn(`[DB] Connection lost during query. Retrying... (${retries - 1} left)`);
+        retries--;
+        // Small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      throw err;
+    }
   }
 }
 

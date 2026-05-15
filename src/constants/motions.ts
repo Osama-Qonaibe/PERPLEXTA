@@ -1,7 +1,13 @@
 import { Variants } from 'motion/react';
 
+/**
+ * Premium Sovereign Page Transition
+ * Synchronized to 400ms for a distinctive, elite feel.
+ */
 export const sovereignPageTransition: Variants = {
-  initial: { opacity: 0 },
+  initial: {
+    opacity: 0,
+  },
   animate: {
     opacity: 1,
     transition: {
@@ -21,20 +27,20 @@ export const sovereignPageTransition: Variants = {
 
 export const sovereignItemTransition: Variants = {
   initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
+  animate: { 
+    opacity: 1, 
     transition: {
       duration: 0.6,
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-    },
-  },
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
+    }
+  }
 };
 
-export const SOVEREIGN_TRANSITION = {
-  type: 'tween' as const,
-  duration: 0.6,
-  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+/**
+ * Shared Architectural Motion Config
+ */
+export const SOVEREIGN_TRANSITION = { 
+  type: "tween" as const, 
+  duration: 0.6, 
+  ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
 };
-
-export const SOVEREIGN_EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
-export const SOVEREIGN_DURATION = 0.6;

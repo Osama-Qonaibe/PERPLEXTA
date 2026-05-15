@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrainCircuit, X } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
+import { useUI } from '../context/UIContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface MemoryNotificationProps {
@@ -11,7 +12,8 @@ interface MemoryNotificationProps {
 }
 
 export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisible, onClose, type = 'success', customDesc }) => {
-  const { dir, theme, isMobile } = useAppContext();
+  const { dir, theme } = useTheme();
+  const { isMobile } = useUI();
 
   useEffect(() => {
     if (isVisible) {

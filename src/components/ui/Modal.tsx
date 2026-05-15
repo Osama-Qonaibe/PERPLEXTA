@@ -1,69 +1,53 @@
-import React, { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { X } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md', className = '' }: ModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-
-  const sizes: Record<string, string> = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-2xl',
-  };
-
+export const Modal: React.FC<ModalProps> = ({ 
+  isOpen, onClose, title, children, className = '', maxWidth = 'max-w-2xl' 
+}) => {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           />
           <motion.div
-            className={`relative bg-[#111] border border-gray-800 rounded-[8px] w-full ${sizes[size]} ${className}`}
-            initial={{ scale: 0.95, opacity: 0, y: 8 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 8 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className={`relative w-full ${maxWidth} bg-[#141416] border border-gray-800 rounded-lg shadow-2xl overflow-hidden ${className}`}
           >
             {title && (
-              <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                <h2 className="text-sm font-semibold text-gray-100">{title}</h2>
-                <button
+              <div className="flex items-center justify-between p-6 border-b border-gray-800">
+                <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+                <button 
                   onClick={onClose}
-                  className="text-gray-500 hover:text-gray-300 transition-colors duration-[600ms] p-1 rounded-[4px] hover:bg-gray-800"
-                  aria-label="Close"
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition-all"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                  <X size={20} />
                 </button>
               </div>
             )}
-            <div className="p-4">{children}</div>
+            <div className="p-6">
+              {children}
+            </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
-}
+};

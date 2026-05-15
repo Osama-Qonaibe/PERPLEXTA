@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSettings } from '../context/SettingsContext';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { sovereignPageTransition, sovereignItemTransition } from '../constants/motions';
 
 export const RewardsPage: React.FC = () => {
-  const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings } = useAppContext();
+  const { user: contextUser, setUser, fetchUserProfile: refreshUser, token } = useAuth();
+  const { theme, dir, t } = useTheme();
+  const { economySettings } = useSettings();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
@@ -248,40 +252,36 @@ export const RewardsPage: React.FC = () => {
     >
       
       {/* Sticky Header with Back Button - Elite Standard */}
-      <div className={`sticky -top-0.5 z-[40] -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
+      <div className={`sticky -top-0.5 z-[40] -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] sm:-mx-8`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className={`w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500 flex-shrink-0`}
             >
-              {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {dir === 'rtl' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
-            <div className="flex items-center gap-2 md:gap-3">
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('rewards')}</h1>
+            <div className="flex items-center gap-1.5 md:gap-3 min-w-0">
+              <h1 className="text-lg md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase truncate">{t('rewards')}</h1>
               {contextUser?.kyc_status === 'verified' && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                  <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{t('verified')}</span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex-shrink-0">
+                  <CheckCircle2 size={10} className="md:w-3.5 md:h-3.5" />
+                  <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest hidden xs:inline">{t('verified')}</span>
                 </div>
               )}
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <button 
               onClick={() => navigate('/settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 group`}
+              className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 group`}
             >
-              <Landmark size={14} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-tighter">
-                {dir === 'rtl' ? 'إيداع أموال / Deposit Funds' : 'Deposit Funds / إيداع أموال'}
+              <Landmark size={12} className="md:w-[14px] md:h-[14px]" />
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">
+                {dir === 'rtl' ? 'إيداع' : 'Deposit'}
               </span>
             </button>
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-               <Landmark size={14} className="text-[var(--text-muted)]" />
-               <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-tighter">PLATFORM LEDGER</span>
-            </div>
           </div>
         </div>
       </div>

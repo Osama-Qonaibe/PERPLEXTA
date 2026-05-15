@@ -1,50 +1,58 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { SOCKET_URL } from '../constants';
+import { useAuth } from './AuthContext';
 
 interface SocketContextType {
   socket: Socket | null;
 }
 
-export const SocketContext = createContext<SocketContextType | null>(null);
+const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
-export function useSocketContext() {
-  const ctx = useContext(SocketContext);
-  if (!ctx) throw new Error('useSocketContext must be used within SocketContext');
-  return ctx;
-}
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
-export function SocketProvider({ token, children }: { token: string | null; children: React.ReactNode }) {
+export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     if (!token) {
-      socketRef.current?.disconnect();
-      socketRef.current = null;
-      setSocket(null);
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
       return;
     }
 
-    const s = io(SOCKET_URL || window.location.origin, {
-      auth: { token },
-      transports: ['websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
+    const socketEndpoint = SOCKET_URL || window.location.origin;
+    const socketOptions: any = { 
+      transports: ['polling', 'websocket'], 
+      autoConnect: true,
+      auth: { token }
+    };
+
+    const newSocket = io(socketEndpoint, socketOptions);
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      if (user?.id) {
+        newSocket.emit('register_user', user.id);
+      }
     });
 
-    socketRef.current = s;
-    setSocket(s);
-
     return () => {
-      s.disconnect();
-      socketRef.current = null;
+      newSocket.disconnect();
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   return (
     <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );
-}
+};
+
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (context === undefined) throw new Error('useSocket must be used within a SocketProvider');
+  return context;
+};

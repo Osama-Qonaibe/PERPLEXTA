@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-type Language = 'ar' | 'en';
-type Theme = 'dark' | 'light';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Language, Theme } from '../types/user.types';
+import { translations } from '../constants/translations';
 
 interface ThemeContextType {
   language: Language;
@@ -9,66 +8,64 @@ interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   dir: 'rtl' | 'ltr';
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: (isOpen: boolean) => void;
-  isMobile: boolean;
+  t: (key: string, params?: Record<string, any>) => string;
 }
 
-export const ThemeContext = createContext<ThemeContextType | null>(null);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function useThemeContext() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useThemeContext must be used within ThemeContext');
-  return ctx;
-}
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      return (localStorage.getItem('language') as Language) || 'ar';
+    } catch (e) {
+      return 'ar';
+    }
+  });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(
-    () => (localStorage.getItem('language') as Language) || 'ar'
-  );
-  const [theme, setThemeState] = useState<Theme>(
-    () => (localStorage.getItem('theme') as Theme) || 'dark'
-  );
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  const setLanguage = (lang: Language) => {
-    localStorage.setItem('language', lang);
-    setLanguageState(lang);
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  };
-
-  const setTheme = (t: Theme) => {
-    localStorage.setItem('theme', t);
-    setThemeState(t);
-    document.documentElement.setAttribute('data-theme', t);
-  };
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      return (localStorage.getItem('theme') as Theme) || 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  });
 
   useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    localStorage.setItem('language', language);
+    localStorage.setItem('theme', theme);
     document.documentElement.lang = language;
-    document.documentElement.setAttribute('data-theme', theme);
-  }, []);
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [language, theme]);
+
+  const dir = useMemo(() => language === 'ar' ? 'rtl' : 'ltr', [language]);
+
+  const t = (key: string, params?: Record<string, any>) => {
+    const langSet = translations[language] as any;
+    let text = langSet[key] || key;
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        text = text.replace(`{${k}}`, v);
+      });
+    }
+    return text;
+  };
 
   return (
-    <ThemeContext.Provider
-      value={{
-        language, setLanguage,
-        theme, setTheme,
-        dir: language === 'ar' ? 'rtl' : 'ltr',
-        isSidebarOpen, setIsSidebarOpen,
-        isMobile,
-      }}
-    >
+    <ThemeContext.Provider value={{
+      language, setLanguage, theme, setTheme, dir, t
+    }}>
       {children}
     </ThemeContext.Provider>
   );
-}
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
+  return context;
+};

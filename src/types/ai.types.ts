@@ -1,38 +1,30 @@
-export type MessageRole = 'user' | 'assistant' | 'system';
-
-export interface ChatMessage {
-  id?: string;
-  role: MessageRole;
-  content: string;
-  toolId?: string;
-  feedback?: 'up' | 'down' | null;
-  createdAt?: string;
-}
-
-export interface Conversation {
-  id: string;
-  title: string;
-  titleAr?: string;
-  toolId?: string;
-  createdAt: string;
-  updatedAt: string;
-  messageCount?: number;
-}
-
-export interface AiTool {
+export interface AIModel {
   id: string;
   name: string;
-  nameAr?: string;
-  description?: string;
-  descriptionAr?: string;
-  icon?: string;
-  isActive: boolean;
-  category?: string;
+  provider: string;
+  active: boolean;
+  is_reasoning?: boolean;
 }
 
-export interface StreamChunk {
-  type: 'chunk' | 'done' | 'error';
-  content?: string;
-  messageId?: string;
-  error?: string;
+export interface AITool {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  description_en: string;
+  description_ar: string;
+  task_description: string;
+  icon: string;
+  primary_model: string;
+  fallback_1_model?: string;
+  fallback_2_model?: string;
+  active: boolean;
+  is_premium: boolean;
+  daily_limit?: number;
+  monthly_limit?: number;
+}
+
+export interface AIProvider {
+  id: string;
+  name: string;
+  models: AIModel[];
 }

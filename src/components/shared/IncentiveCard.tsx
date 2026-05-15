@@ -1,1 +1,0 @@
-export { IncentiveCard } from '../IncentiveCard';

@@ -5,10 +5,12 @@ import {
   CreditCard, Users, Settings, Mail, ArrowRight,
   Send
 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { t, user, theme, language: globalLang } = useAppContext();
+  const { t, theme, language: globalLang } = useTheme();
+  const { user } = useAuth();
 
   // Use locked language for stable transitions
   const language = activeLanguage || globalLang;

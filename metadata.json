@@ -1,6 +1,6 @@
 {
-  "name": "Remix: Perplexta",
-  "description": "A professional elite platform for advanced multimodal AI capabilities and deep forensic technical analysis.",
+  "name": "Perplexta Sovereign",
+  "description": "The Sovereign AI Platform for professional elite technical analysis and multimodal intelligence.",
   "requestFramePermissions": [
     "camera",
     "microphone"

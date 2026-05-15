@@ -1,12 +1,12 @@
 import React from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 import { sovereignPageTransition } from '../constants/motions';
 
 export const About: React.FC = () => {
-  const { t, dir, theme } = useAppContext();
+  const { t, dir, theme } = useTheme();
   const navigate = useNavigate();
 
   return (

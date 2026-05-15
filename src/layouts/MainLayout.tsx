@@ -3,19 +3,20 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useUI } from '../context/UIContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { SOVEREIGN_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
-  const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
-
-  const localDir = language === 'ar' ? 'rtl' : 'ltr';
+  const { theme, dir, language } = useTheme();
+  const { isSidebarOpen, setIsSidebarOpen, isMobile } = useUI();
   
   return (
     <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]`}>
       <div
-        dir={localDir}
+        dir={dir}
         className="flex h-full w-full overflow-hidden relative z-10"
       >
         <Sidebar activeLanguage={language} />

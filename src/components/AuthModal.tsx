@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const AuthModal: React.FC = () => {
-  const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe } = useAppContext();
+  const { showAuthModal, setShowAuthModal, loginWithGoogle, login, signup, rememberMe, setRememberMe } = useAuth();
+  const { t, theme, dir } = useTheme();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const ref = searchParams.get('ref') || undefined;
   
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
@@ -18,10 +22,10 @@ export const AuthModal: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  if (!isAuthModalOpen) return null;
+  if (!showAuthModal) return null;
 
   const handleClose = () => {
-    setIsAuthModalOpen(false);
+    setShowAuthModal(false);
     // Reset state
     setMode('login');
     setEmail('');
@@ -75,7 +79,13 @@ export const AuthModal: React.FC = () => {
         }
       } else {
         const result = await login(email, password);
-        if (!result.success) {
+        if (result.success) {
+          const locationState = location.state as { from?: { pathname: string } } | null;
+          const from = locationState?.from?.pathname || '/';
+          if (from !== '/') {
+            navigate(from, { replace: true });
+          }
+        } else {
           setError(result.error || 'Login failed');
         }
       }
@@ -88,7 +98,7 @@ export const AuthModal: React.FC = () => {
 
   return (
     <AnimatePresence>
-      {isAuthModalOpen && (
+      {showAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0 }}

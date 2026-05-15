@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useSettings } from '../context/SettingsContext';
 
 export const GoogleAnalytics = () => {
-  const { siteSettings } = useAppContext();
+  const { siteSettings } = useSettings();
   const gaId = siteSettings?.googleAnalyticsId;
 
   useEffect(() => {

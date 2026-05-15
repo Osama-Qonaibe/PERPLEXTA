@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Download, CheckCircle2, X } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
+import { useUI } from '../context/UIContext';
 
 export const PWAInstall: React.FC<{ isSidebarOpen: boolean }> = ({ isSidebarOpen }) => {
-  const { language, isInstallable, installApp, isInstalling } = useAppContext();
+  const { language } = useTheme();
+  const { isInstallable, installApp, isInstalling } = useUI();
   const [showBanner, setShowBanner] = React.useState(true);
   const [isInstalled, setIsInstalled] = React.useState(false);
 

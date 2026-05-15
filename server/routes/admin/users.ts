@@ -1,105 +1,100 @@
-import { Router } from 'express';
-import { adminOnly } from '../../middleware/adminOnly';
-import { auth } from '../../middleware/auth';
-import pool from '../../config/database';
+import express from 'express';
+import { pool } from '../../db/index.js';
+import { authenticateAdmin } from '../../middleware/auth.js';
+import { auditLog } from '../../utils/logger.js';
 
-const router = Router();
+const router = express.Router();
 
-router.use(auth, adminOnly);
-
-router.get('/', async (req, res) => {
-  const { search, page = '1', limit = '20' } = req.query as Record<string, string>;
-  const offset = (Number(page) - 1) * Number(limit);
+router.get("/users", authenticateAdmin, async (req, res) => {
   try {
-    const where = search
-      ? `WHERE u.name ILIKE $3 OR u.email ILIKE $3`
-      : '';
-    const params = search
-      ? [Number(limit), offset, `%${search}%`]
-      : [Number(limit), offset];
-    const result = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_login,
-              s.plan_id, s.status as sub_status
-       FROM users u
-       LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-       ${where}
-       ORDER BY u.created_at DESC
-       LIMIT $1 OFFSET $2`,
-      params
-    );
-    const countResult = await pool.query(
-      `SELECT COUNT(*) FROM users u ${where}`,
-      search ? [`%${search}%`] : []
-    );
-    res.json({
-      success: true,
-      users: result.rows,
-      total: Number(countResult.rows[0].count),
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+    const result = await pool.query(`
+      SELECT id, name, email, role, status, created_at, last_login_at 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
+router.post("/users/:id/status", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT u.*, s.plan_id, s.status as sub_status, s.current_period_end
-       FROM users u
-       LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-       WHERE u.id = $1`,
-      [id]
-    );
-    if (!result.rows[0]) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, user: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch user' });
-  }
-});
-
-router.patch('/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body as { status: 'active' | 'suspended' };
-  if (!['active', 'suspended'].includes(status)) {
-    return res.status(400).json({ success: false, message: 'Invalid status' });
-  }
-  try {
+    const { id } = req.params;
+    const { status } = req.body;
     await pool.query('UPDATE users SET status = $1 WHERE id = $2', [status, id]);
+    await auditLog((req as any).user?.id, 'Update User Status', 'users', { targetUser: id, status });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update status' });
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
-router.patch('/:id/kyc', async (req, res) => {
-  const { id } = req.params;
-  const { action, reason } = req.body as { action: 'approve' | 'reject'; reason?: string };
+router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
   try {
-    const status = action === 'approve' ? 'verified' : 'rejected';
-    await pool.query(
-      'UPDATE users SET kyc_status = $1, kyc_rejection_reason = $2 WHERE id = $3',
-      [status, reason ?? null, id]
-    );
+    const { id } = req.params;
+    const { role } = req.body;
+    await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
+    await auditLog((req as any).user?.id, 'Update User Role', 'users', { targetUser: id, role });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to update KYC' });
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
-router.patch('/:id/plan', async (req, res) => {
-  const { id } = req.params;
-  const { planId } = req.body as { planId: string };
+router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
-    await pool.query(
-      `INSERT INTO subscriptions (user_id, plan_id, status, created_at, current_period_end)
-       VALUES ($1, $2, 'active', NOW(), NOW() + INTERVAL '30 days')
-       ON CONFLICT (user_id) DO UPDATE SET plan_id = $2, status = 'active', updated_at = NOW()`,
-      [id, planId]
-    );
+    const { id } = req.params;
+    const result = await pool.query('SELECT permissions FROM users WHERE id = $1', [id]);
+    res.json(result.rows[0]?.permissions || {});
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permissions } = req.body;
+    await pool.query('UPDATE users SET permissions = $1 WHERE id = $2', [JSON.stringify(permissions), id]);
+    await auditLog((req as any).user?.id, 'Update User Permissions', 'users', { targetUser: id, permissions });
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to change plan' });
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.get("/users/:id/usage", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT quota_used, quota_limit FROM users WHERE id = $1', [id]);
+    res.json(result.rows[0] || { quota_used: 0, quota_limit: 100 });
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.get("/users/:id/activity-logs", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM system_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [id]);
+    res.json(result.rows);
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.get("/users/count", authenticateAdmin, async (req, res) => {
+  try {
+    const { group } = req.query;
+    let query = 'SELECT COUNT(*) FROM users';
+    if (group === 'pro_only') query += " WHERE role = 'admin' OR role = 'support'"; // Simplified for demo
+    else if (group === 'free_only') query += " WHERE role = 'user'";
+    
+    const result = await pool.query(query);
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch {
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 

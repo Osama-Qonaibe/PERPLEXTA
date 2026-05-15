@@ -1,75 +1,39 @@
+/* Cinematic Transitions and Majestic Motion */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+  transition-duration: 600ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Exempt specific UI elements from global transition */
+*:where(
+  [class*="transition-"], 
+  [class*="animate-"],
+  [class*="duration-"],
+  svg,
+  svg *,
+  canvas,
+  video,
+  img,
+  iframe,
+  .no-transition,
+  input,
+  textarea
+) {
+  transition-property: revert;
+  transition-duration: revert;
+  transition-timing-function: revert;
+}
+
 @layer utilities {
-  .sovereign-transition {
-    transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
-    transition-duration: var(--theme-transition-duration);
-    transition-timing-function: var(--theme-transition-easing);
+  .animate-fade-in {
+    animation: fadeIn 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
+}
 
-  .emerald-glow {
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
-  }
-
-  .btn-primary {
-    @apply bg-accent text-black font-medium transition-all duration-200 active:scale-95;
-    border-radius: var(--radius);
-  }
-
-  .btn-secondary {
-    @apply border font-medium transition-all duration-200 active:scale-95;
-    background-color: var(--bg-surface);
-    border-color: var(--border);
-    color: var(--text-primary);
-    border-radius: var(--radius);
-  }
-
-  .btn-ghost {
-    @apply bg-transparent font-medium transition-all duration-200 active:scale-95;
-    color: var(--text-secondary);
-    border-radius: var(--radius);
-  }
-
-  .btn-ghost:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-overlay);
-  }
-
-  .btn-danger {
-    background-color: rgba(244, 63, 94, 0.15);
-    color: var(--danger);
-    border: 1px solid rgba(244, 63, 94, 0.25);
-    @apply font-medium transition-all duration-200 active:scale-95;
-    border-radius: var(--radius);
-  }
-
-  .btn-danger:hover {
-    background-color: rgba(244, 63, 94, 0.25);
-  }
-
-  .btn-toolbar {
-    @apply bg-transparent border border-transparent transition-all duration-300;
-    @apply w-10 h-10 flex items-center justify-center;
-    border-radius: 4px;
-  }
-
-  .btn-toolbar:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
-  .card-sovereign {
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-  }
-
-  .input-sovereign {
-    background-color: var(--bg-input);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    border-radius: var(--radius);
-  }
-
-  .input-sovereign:focus {
-    border-color: var(--border-accent);
-    outline: none;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

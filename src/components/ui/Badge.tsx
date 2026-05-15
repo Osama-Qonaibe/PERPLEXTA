@@ -2,30 +2,23 @@ import React from 'react';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
-  size?: 'sm' | 'md';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline';
   className?: string;
 }
 
-export function Badge({ children, variant = 'default', size = 'sm', className = '' }: BadgeProps) {
-  const variants: Record<string, string> = {
-    default: 'bg-gray-800 text-gray-300 border-gray-700',
-    success: 'bg-emerald-900/40 text-emerald-400 border-emerald-800',
-    warning: 'bg-yellow-900/40 text-yellow-400 border-yellow-800',
-    danger: 'bg-red-900/40 text-red-400 border-red-800',
-    info: 'bg-blue-900/40 text-blue-400 border-blue-800',
-  };
-
-  const sizes: Record<string, string> = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
+export const Badge: React.FC<BadgeProps> = ({ children, variant = 'primary', className = '' }) => {
+  const variants = {
+    primary: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    secondary: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    success: 'bg-green-500/10 text-green-500 border-green-500/20',
+    warning: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    danger: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+    outline: 'bg-transparent border border-gray-800 text-gray-400'
   };
 
   return (
-    <span
-      className={`inline-flex items-center border rounded-full font-medium ${variants[variant]} ${sizes[size]} ${className}`}
-    >
+    <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-[4px] border ${variants[variant]} ${className}`}>
       {children}
     </span>
   );
-}
+};

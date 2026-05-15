@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface Memory {
   id: number;
@@ -34,7 +34,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   theme,
   stickyOffset = 0
 }) => {
-  const { t } = useAppContext();
+  const { t } = useTheme();
   const [isAdding, setIsAdding] = useState(false);
   const [newValue, setNewValue] = useState('');
   const [newCategory, setNewCategory] = useState('general');

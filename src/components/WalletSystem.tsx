@@ -7,7 +7,8 @@ import {
   Plus, Copy, ExternalLink, Check, ShieldCheck,
   Smartphone, Building, Mail, Globe, Save, Loader2
 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface Transaction {
   id: number;
@@ -25,7 +26,8 @@ interface WalletData {
 }
 
 export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ theme, dir }) => {
-  const { t, token } = useAppContext();
+  const { t } = useTheme();
+  const { token } = useAuth();
   const [activeTab, setActiveTab ] = useState('transactions');
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
