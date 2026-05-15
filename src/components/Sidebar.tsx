@@ -146,7 +146,15 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }
 
   const handleNewChat = () => {
-    navigate('/chat');
+    const isAlreadyAtNewChat = window.location.pathname === '/';
+    
+    if (isAlreadyAtNewChat) {
+      // Sovereign: Silent fail if already at base. No movement allowed.
+      if (isMobile) setIsSidebarOpen(false);
+      return;
+    }
+
+    navigate('/');
     window.dispatchEvent(new Event('clear-chat'));
     if (isMobile) {
       setIsSidebarOpen(false);
@@ -178,7 +186,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           `}
           title={isSidebarOpen ? (language === 'ar' ? 'تصغير' : 'Collapse') : (language === 'ar' ? 'توسيع' : 'Expand')}
         >
-          <div className="text-gray-400/80 transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]">
+          <div className="text-[var(--text-secondary)] transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]">
             {isSidebarOpen ? (
               dir === 'rtl' ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />
             ) : (
@@ -239,9 +247,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     onClick={handleNewChat}
                     className="flex items-center transition-all duration-300 w-full h-11 overflow-hidden flex-shrink-0 group"
                   >
-                    <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute top-[3px] left-0 right-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15`} />
-                      <Plus size={20} className={`relative z-10 translate-y-[1px] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 text-emerald-500`} />
+                    <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
+                      <div className={`absolute inset-0 m-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-300 bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15 top-0 bottom-0 left-0 right-0`} />
+                      <Plus size={20} className={`relative z-10 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 text-emerald-500 pointer-events-none`} />
                     </div>
                     <AnimatePresence mode="wait" initial={false}>
                       {isSidebarOpen && (
@@ -269,7 +277,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={elasticSpring}
-                      className="flex-1 text-[10px] font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap truncate text-start"
+                      className="flex-1 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap truncate text-start transition-colors duration-[var(--theme-transition-duration)]"
                     >
                       {dir === 'rtl' ? 'المحادثات السابقة' : 'Recent Chats'}
                     </motion.h3>
@@ -283,21 +291,15 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 <div className="min-h-[200px]">
                   {recentChats.length > 0 && (
                     <div className="space-y-1">
-                    {recentChats.map((chat) => (
+                        {recentChats.map((chat) => (
                       <div
                         key={chat.id}
-                        className={`flex items-center w-full h-11 overflow-hidden flex-shrink-0 ${
-                          theme === 'dark' 
-                            ? 'text-gray-400 hover:text-white' 
-                            : 'text-gray-500 hover:text-gray-900'
-                        } group relative`}
+                        className={`flex items-center w-full h-11 overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)] group relative`}
                       >
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
                             <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                               <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] ${
-                                 theme === 'dark' ? 'bg-[var(--bg-overlay)]' : 'bg-[var(--bg-surface)]'
-                               }`} />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-overlay)] transition-all duration-[var(--theme-transition-duration)]`} />
                               <MessageSquare size={16} className="text-emerald-500 relative z-10" />
                             </div>
                             <div className="flex-1 flex items-center gap-1 min-w-0">
@@ -309,7 +311,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   if (e.key === 'Enter') handleRename(chat.id);
                                   if (e.key === 'Escape') setEditingChatId(null);
                                 }}
-                                className="bg-gray-800 text-white text-xs px-2 py-1 rounded w-full outline-none border border-emerald-500/30 min-w-0"
+                                className="bg-[var(--bg-input)] text-[var(--text-primary)] text-xs px-2 py-1 rounded w-full outline-none border border-[var(--border-accent)] min-w-0 transition-all duration-[var(--theme-transition-duration)]"
                                 autoFocus
                               />
                               <div className="flex items-center">
@@ -322,7 +324,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 </button>
                                 <button 
                                   onClick={() => setEditingChatId(null)}
-                                  className="p-1 text-gray-500 hover:text-gray-400 transition-colors"
+                                  className="p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-all duration-[var(--theme-transition-duration)]"
                                   title={t('cancel')}
                                 >
                                   <X size={14} />
@@ -340,19 +342,17 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                             >
                               <div className="w-[80px] h-full flex-shrink-0 flex items-center justify-center relative">
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-colors duration-300 ${
-                                  theme === 'dark' ? 'group-hover:bg-[var(--bg-overlay)]' : 'group-hover:bg-[var(--bg-surface)]'
-                                }`} />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] group-hover:bg-[var(--bg-overlay)]`} />
                                 <MessageSquare size={16} className="relative z-10 transition-colors duration-300 group-hover:text-emerald-500" />
                               </div>
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
                                   <motion.span
-                                    initial={false}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={elasticSpring}
-                                    className={`font-bold text-[13px] truncate whitespace-nowrap text-start ${theme === 'dark' ? 'text-white' : 'text-gray-900'} ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className={`font-bold text-[13px] truncate whitespace-nowrap text-start text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)] ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
                                   >
                                     {chat.title}
                                   </motion.span>
@@ -400,13 +400,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   <AnimatePresence>
                     {isDropdownOpen && (
                       <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-[var(--radius)] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
                       >
                         <div className="p-2 space-y-1">
-                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <User size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -429,11 +429,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
                                   <motion.div
-                                    initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                    transition={elasticSpring}
-                                    className="overflow-hidden whitespace-nowrap"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden whitespace-nowrap text-start"
                                   >
                                     <span className="font-medium text-sm">{t('consumption')}</span>
                                   </motion.div>
@@ -444,7 +444,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <div className={`h-px bg-[var(--border)] my-1 mx-2`}></div>
 
-                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <Wallet size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -461,16 +461,16 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <BrainCircuit size={16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-colors" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
-                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                  transition={elasticSpring}
-                                  className="overflow-hidden whitespace-nowrap"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden whitespace-nowrap text-start"
                                   >
                                   <span className="font-medium text-sm">{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
                                 </motion.div>
@@ -478,16 +478,16 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
+                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-[var(--text-secondary)] hover:text-pink-500 hover:bg-pink-500/10 transition-all`}>
                             <LogOut size={16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
-                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                  transition={elasticSpring}
-                                  className="overflow-hidden whitespace-nowrap"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden whitespace-nowrap text-start"
                                 >
                                   <span className="font-medium text-sm">{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
                                 </motion.div>
@@ -500,7 +500,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </AnimatePresence>
                     <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)]`}
+                      className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)]`}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
@@ -514,7 +514,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             {user.avatar ? (
                               <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <User size={20} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                              <User size={20} className="text-[var(--text-secondary)] group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-all ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -530,13 +530,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <AnimatePresence mode="wait" initial={false}>
                           {isSidebarOpen && (
                             <motion.div 
-                              initial={false}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={elasticSpring}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
                               className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                             >
-                              <span className={`font-bold text-[13px] truncate whitespace-nowrap leading-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.name}</span>
+                              <span className={`font-bold text-[13px] truncate whitespace-nowrap leading-tight text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)]`}>{user.name}</span>
                               <span className="text-[10px] text-emerald-500/80 truncate whitespace-nowrap uppercase tracking-widest font-black leading-tight mt-0.5">
                                 {t(`role_${(user.role || 'user').toLowerCase()}`) || (user.subscription?.plan_id 
                                   ? (plans.find((p: any) => p.id.toString() === user.subscription?.plan_id.toString())?.name || t('activePlan'))
@@ -554,29 +554,27 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 </>
               ) : (
                   <div 
-                    className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                    className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)]`}
                     onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-colors duration-300 ${
-                        theme === 'dark' ? 'group-hover:bg-[var(--bg-overlay)]' : 'group-hover:bg-[var(--bg-surface)]'
-                      }`} />
-                      <div className={`w-10 h-10 rounded-[var(--radius)] ${theme === 'dark' ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'} flex items-center justify-center flex-shrink-0 relative z-10`}>
-                        <User size={18} className="text-gray-400" />
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] group-hover:bg-[var(--bg-overlay)]`} />
+                      <div className={`w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-all duration-[var(--theme-transition-duration)]`}>
+                        <User size={18} className="text-[var(--text-secondary)]" />
                       </div>
                     </div>
                     <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-2' : 'pl-2'} justify-center`}>
                       <AnimatePresence mode="wait">
                         {isSidebarOpen && (
                           <motion.div 
-                            initial={{ opacity: 0, scale: 0.85 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.85 }}
-                            transition={elasticSpring}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
                             className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                           >
-                            <span className="text-[10px] text-gray-500 truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
-                            <span className={`font-bold text-sm truncate whitespace-nowrap ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t('login')}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
+                            <span className={`font-bold text-sm truncate whitespace-nowrap text-[var(--text-primary)] transition-all duration-[var(--theme-transition-duration)]`}>{t('login')}</span>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -591,21 +589,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   {isSidebarOpen && (
                     <motion.div 
                       key="legal-footer"
-                      initial={{ opacity: 0, filter: 'blur(4px)', y: 2 }}
-                      animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-                      exit={{ opacity: 0, filter: 'blur(4px)', y: 2 }}
-                      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4 }}
                       className="flex items-center justify-between gap-1 opacity-30 hover:opacity-100 transition-all duration-700 pointer-events-auto"
                     >
-                      <NavLink to="/terms" className="text-[6.5px] font-black text-gray-500 hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
+                      <NavLink to="/terms" className="text-[6.5px] font-black text-[var(--text-muted)] hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
                         {t('termsOfUse')}
                       </NavLink>
-                      <span className="w-0.5 h-0.5 rounded-full bg-gray-800 flex-shrink-0" />
-                      <NavLink to="/privacy" className="text-[6.5px] font-black text-gray-500 hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
+                      <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />
+                      <NavLink to="/privacy" className="text-[6.5px] font-black text-[var(--text-muted)] hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
                         {t('privacyPolicy')}
                       </NavLink>
-                      <span className="w-0.5 h-0.5 rounded-full bg-gray-800 flex-shrink-0" />
-                      <NavLink to="/about" className="text-[6.5px] font-black text-gray-500 hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
+                      <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />
+                      <NavLink to="/about" className="text-[6.5px] font-black text-[var(--text-muted)] hover:text-emerald-500 transition-colors uppercase tracking-[0.08em] whitespace-nowrap">
                         {language === 'ar' ? 'عن المنصة' : 'About'}
                       </NavLink>
                     </motion.div>

@@ -40,12 +40,16 @@ export const MainLayout: React.FC = () => {
             paddingInlineEnd: 0,
           }}
           transition={SOVEREIGN_TRANSITION}
-          className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-[var(--bg-base)]"
-          style={{ paddingLeft: 'unset', paddingRight: 'unset' }}
+          className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden"
+          style={{ 
+            paddingLeft: 'unset', 
+            paddingRight: 'unset',
+            willChange: 'padding-inline-start'
+          }}
           onClick={() => { if(isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
         >
           <Header activeLanguage={language} />
-          <main className="flex-1 overflow-y-auto scrollbar-none relative pt-[72px]">
+          <main className="flex-1 overflow-y-auto scrollbar-none relative pt-[72px] bg-[var(--bg-base)] transition-colors duration-[var(--theme-transition-duration)]">
             <div className="h-full w-full">
               <Outlet />
             </div>

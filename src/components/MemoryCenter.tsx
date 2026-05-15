@@ -92,7 +92,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-fade-in relative">
+    <div className="space-y-4 md:space-y-6 relative">
       <div 
         className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
         style={{ top: stickyOffset }}
@@ -121,10 +121,10 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-500 border ${
+              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-600 border ${
                 filterCategory === cat.id
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-emerald-500/30'
+                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-emerald-500/30'
               }`}
             >
               {cat.label}

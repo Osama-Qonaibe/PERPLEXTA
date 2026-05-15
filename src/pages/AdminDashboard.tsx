@@ -332,7 +332,7 @@ const CommandCenterView = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <RefreshCw size={40} className="text-emerald-500 animate-spin" />
-        <p className="text-gray-500 dark:text-gray-400 font-medium">
+        <p className="text-[var(--text-secondary)] font-medium">
           {t("loadingCommandCenter")}
         </p>
       </div>
@@ -404,7 +404,7 @@ const CommandCenterView = ({
                 {kpi.trend}
               </span>
             </div>
-            <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
+            <h3 className="text-[var(--text-secondary)] text-sm font-medium mb-1 transition-colors duration-[var(--theme-transition-duration)]">
               {kpi.title}
             </h3>
             <p className="text-2xl font-bold">{kpi.value}</p>
@@ -429,12 +429,12 @@ const CommandCenterView = ({
           <div className="flex-1 space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
-                <span className="text-gray-500">{t("cpuLoad")}</span>
+                <span className="text-[var(--text-muted)]">{t("cpuLoad")}</span>
                 <span className="text-emerald-500">
                   {serverHealth?.cpu || 0}%
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.cpu || 0}%` }}
@@ -444,12 +444,12 @@ const CommandCenterView = ({
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
-                <span className="text-gray-500">{t("memoryAllocation")}</span>
+                <span className="text-[var(--text-muted)]">{t("memoryAllocation")}</span>
                 <span className="text-emerald-500">
                   {serverHealth?.memory?.used || 0}MB
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.memory?.percent || 0}%` }}
@@ -459,14 +459,14 @@ const CommandCenterView = ({
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
-                <span className="text-gray-500">{t("systemLoad")}</span>
+                <span className="text-[var(--text-muted)]">{t("systemLoad")}</span>
                 <span className="text-emerald-500">
                   {serverHealth?.load
                     ? serverHealth.load[0].toFixed(2)
                     : "0.00"}
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{
@@ -477,7 +477,7 @@ const CommandCenterView = ({
               </div>
             </div>
             <div className="pt-2 flex justify-center">
-              <p className="text-[10px] text-gray-500/60 font-medium uppercase tracking-tighter">
+              <p className="text-[10px] text-[var(--text-muted)]/60 font-medium uppercase tracking-tighter">
                 {t("serverMonitoringActive")}
               </p>
             </div>
@@ -516,7 +516,7 @@ const CommandCenterView = ({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 {activity.length > 0 && (
-                  <div className="ml-2 flex items-center gap-2 bg-gray-500/5 px-2 py-1 rounded-[4px] border border-gray-500/10">
+                  <div className="ml-2 flex items-center gap-2 bg-[var(--bg-overlay)] px-2 py-1 rounded-[4px] border border-[var(--border-main)]">
                     <input
                       type="checkbox"
                       checked={
@@ -524,9 +524,9 @@ const CommandCenterView = ({
                         selectedActivityIds.length === activity.length
                       }
                       onChange={() => handleSelectAll("activity")}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                      className="w-3.5 h-3.5 rounded border-[var(--border)] text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
                     />
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">
+                    <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
                       {t("selectAll") || "الكل"}
                     </span>
                   </div>
@@ -549,25 +549,25 @@ const CommandCenterView = ({
                 )}
               </AnimatePresence>
 
-              <div className="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-1" />
+              <div className="w-px h-4 bg-[var(--border)] mx-1" />
 
               <button
                 onClick={() => handleBulkDeleteActivity("ai_generation")}
-                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
+                className="text-[var(--text-muted)] hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
                 title={t("clearAILogs")}
               >
                 <Zap size={14} />
               </button>
               <button
                 onClick={() => handleBulkDeleteActivity("system_event")}
-                className="text-gray-400 hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
+                className="text-[var(--text-muted)] hover:text-emerald-500 transition-all p-1.5 hover:bg-emerald-500/5 rounded-[4px] border border-transparent hover:border-emerald-500/10"
                 title={t("clearSystemLogs")}
               >
                 <Settings size={14} />
               </button>
               <button
                 onClick={() => handleBulkDeleteActivity("log")}
-                className="text-gray-400 hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-[4px] border border-transparent hover:border-red-500/10"
+                className="text-[var(--text-muted)] hover:text-red-500 transition-all p-1.5 hover:bg-red-500/5 rounded-[4px] border border-transparent hover:border-red-500/10"
                 title={t("clearAll")}
               >
                 <Trash2 size={14} />
@@ -637,13 +637,13 @@ const CommandCenterView = ({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug truncate">
+                    <p className="text-sm font-medium text-[var(--text-primary)] leading-snug truncate">
                       <span className="text-emerald-500 font-bold">
                         {log.user_name || t("systemUser")}
                       </span>{" "}
                       {translateAction(log.action)}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-[var(--text-secondary)] mt-1 transition-all duration-[var(--theme-transition-duration)]">
                       {getTimeAgo(log.created_at)}
                       {log.detail &&
                       !log.detail.includes("-") &&
@@ -4083,8 +4083,8 @@ const OrchestratorView = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2.5 pt-4 border-t border-[var(--border-main)]/30">
-                    <div className="flex items-center gap-4">
+                  <div className="grid grid-cols-1 gap-2 pt-4 border-t border-[var(--border-main)]/30">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="flex-1">
                         <select
                           value={tool.fallback2Provider || ""}
@@ -4096,8 +4096,8 @@ const OrchestratorView = ({
                             );
                             handleChange(tool.id, "fallback2Model", "");
                           }}
-                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
-                          dir={dir}
+                          className="w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-all"
+                          dir="ltr"
                         >
                           {renderProviderOptions()}
                         </select>
@@ -4112,8 +4112,8 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-[var(--radius)] border text-sm focus:outline-none appearance-none transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-primary)] ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400" : ""}`}
-                          dir={dir}
+                          className={`w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-all ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400 font-bold" : ""}`}
+                          dir="ltr"
                           disabled={!tool.fallback2Provider}
                         >
                           {renderModelOptions(tool.fallback2Provider)}
@@ -4134,7 +4134,7 @@ const OrchestratorView = ({
                     </div>
 
                     {/* Fallback 3 */}
-                    <div className="flex items-center gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="flex-1">
                         <select
                           value={tool.fallback3Provider || ""}
@@ -4146,8 +4146,8 @@ const OrchestratorView = ({
                             );
                             handleChange(tool.id, "fallback3Model", "");
                           }}
-                          className={`w-full h-11 px-3 rounded-[4px] border text-sm focus:outline-none appearance-none transition-colors ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800 text-gray-300" : "bg-gray-50 border-gray-200 text-gray-900"}`}
-                          dir={dir}
+                          className="w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-all"
+                          dir="ltr"
                         >
                           {renderProviderOptions()}
                         </select>
@@ -4162,8 +4162,8 @@ const OrchestratorView = ({
                               e.target.value,
                             )
                           }
-                          className={`w-full h-11 px-3 rounded-[var(--radius)] border text-sm focus:outline-none appearance-none transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-primary)] ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400" : ""}`}
-                          dir={dir}
+                          className={`w-full h-9 px-2 rounded-[4px] border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-all ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400 font-bold" : ""}`}
+                          dir="ltr"
                           disabled={!tool.fallback3Provider}
                         >
                           {renderModelOptions(tool.fallback3Provider)}
@@ -6482,51 +6482,53 @@ const UserManagementView = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full border-separate border-spacing-y-3">
-          <thead>
-            <tr className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+      <div className="overflow-x-auto custom-scrollbar rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
+        <table className="w-full text-sm text-left rtl:text-right">
+          <thead
+            className={`text-[10px] uppercase font-black tracking-widest transition-all duration-[var(--theme-transition-duration)] ${theme === "dark" ? "bg-[var(--bg-surface)] text-gray-500" : "bg-gray-50 text-gray-400"}`}
+          >
+            <tr>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
               >
                 {t("userName")}
               </th>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
               >
                 {t("role")}
               </th>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
               >
                 {t("plan")}
               </th>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
               >
                 {t("kycStatus")}
               </th>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-right" : "text-left"}`}
               >
                 {t("joinedAt")}
               </th>
               <th
-                className={`px-5 py-4 ${dir === "rtl" ? "text-left" : "text-right"}`}
+                className={`px-6 py-4 ${dir === "rtl" ? "text-left" : "text-right"}`}
               >
                 {t("actions")}
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-800/30">
             {loading ? (
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-20 bg-[var(--bg-secondary)] rounded-[4px] border border-[var(--border-main)]"
+                  className="text-center py-24"
                 >
                     <div className="flex flex-col items-center gap-4">
-                      <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                      <div className="w-12 h-12 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
                       <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         Syncing Galaxy Users...
                       </span>
@@ -6540,10 +6542,10 @@ const UserManagementView = ({
                 return (
                   <tr
                     key={user.id}
-                    className="group transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:shadow-lg hover:translate-y-[-2px]"
+                    className="group transition-all duration-300 hover:bg-gray-800/10"
                   >
                     <td
-                      className={`px-5 py-4 rounded-l-[4px] border-l border-y border-[var(--border-main)]`}
+                      className="px-6 py-4"
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
@@ -6573,8 +6575,8 @@ const UserManagementView = ({
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-y border-[var(--border-main)]">
-                      <div className="relative min-w-[100px]">
+                    <td className="px-6 py-4">
+                      <div className="relative min-w-[110px]">
                         <select
                           value={user.role || "user"}
                           onChange={(e) =>
@@ -6628,7 +6630,7 @@ const UserManagementView = ({
                         />
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-y border-[var(--border-main)]">
+                    <td className="px-6 py-4">
                       <div
                         className="px-3 py-1.5 rounded-[4px] text-[10px] font-black uppercase tracking-[0.1em] border flex items-center justify-center gap-2"
                         style={{
@@ -6643,7 +6645,7 @@ const UserManagementView = ({
                           : plan.name_en || plan.nameEn}
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-y border-[var(--border-main)]">
+                    <td className="px-6 py-4">
                       <div
                         className={`px-3 py-1.5 rounded-[4px] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border ${
                           user.kyc_status === "verified"
@@ -6667,11 +6669,11 @@ const UserManagementView = ({
                               : t("kycNone")}
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-y border-[var(--border-main)] text-[11px] font-mono text-gray-500">
+                    <td className="px-6 py-4 text-[11px] font-mono text-gray-500">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td
-                      className={`px-5 py-4 rounded-r-2xl border-r border-y border-[var(--border-main)]`}
+                      className="px-6 py-4"
                     >
                       <div
                         className={`flex items-center gap-1.5 ${dir === "rtl" ? "justify-start" : "justify-end"}`}
@@ -6709,7 +6711,7 @@ const UserManagementView = ({
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-20 text-gray-500 bg-[var(--bg-secondary)] rounded-[4px] border border-[var(--border-main)]"
+                  className="text-center py-20 text-gray-500"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <Users size={40} className="text-gray-800/20" />
@@ -6771,23 +6773,23 @@ const UserManagementView = ({
                     <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                       <thead
                         className={
-                          theme === "dark" ? "bg-[#151515]" : "bg-gray-50"
+                          theme === "dark" ? "bg-[var(--bg-surface)]" : "bg-gray-50"
                         }
                       >
                         <tr>
-                          <th className="px-6 py-4 text-left font-serif italic text-[11px] opacity-50 uppercase tracking-widest">
+                          <th className="px-6 py-4 text-left font-black text-[10px] text-gray-500 uppercase tracking-widest">
                             Tool / Action
                           </th>
-                          <th className="px-6 py-4 text-left font-serif italic text-[11px] opacity-50 uppercase tracking-widest">
+                          <th className="px-6 py-4 text-left font-black text-[10px] text-gray-500 uppercase tracking-widest">
                             Consumed
                           </th>
-                          <th className="px-6 py-4 text-left font-serif italic text-[11px] opacity-50 uppercase tracking-widest">
+                          <th className="px-6 py-4 text-left font-black text-[10px] text-gray-500 uppercase tracking-widest">
                             Status
                           </th>
-                          <th className="px-6 py-4 text-left font-serif italic text-[11px] opacity-50 uppercase tracking-widest">
+                          <th className="px-6 py-4 text-left font-black text-[10px] text-gray-500 uppercase tracking-widest">
                             Type
                           </th>
-                          <th className="px-6 py-4 text-left font-serif italic text-[11px] opacity-50 uppercase tracking-widest">
+                          <th className="px-6 py-4 text-left font-black text-[10px] text-gray-500 uppercase tracking-widest">
                             Timestamp
                           </th>
                         </tr>

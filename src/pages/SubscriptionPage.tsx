@@ -160,7 +160,7 @@ export const SubscriptionPage: React.FC = () => {
               {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
             <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white uppercase">{t('subscription')}</h1>
+              <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('subscription')}</h1>
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
                 {dir === 'rtl' ? 'اختر الخطة المثالية لاحتياجاتك' : 'CHOOSE YOUR PERFORMANCE TIER'}
               </p>
@@ -391,19 +391,19 @@ export const SubscriptionPage: React.FC = () => {
                   {resultModal === 'success' ? t('subscriptionSuccessDesc') : t('insufficientBalanceDesc')}
                 </p>
                 {resultModal === 'insufficient' && (
-                  <div className={`p-4 rounded-[4px] mb-6 flex items-center justify-between ${theme === 'dark' ? 'bg-[#1a1a1c]' : 'bg-gray-50'}`}>
+                  <div className="p-4 rounded-[4px] mb-6 flex items-center justify-between bg-[var(--bg-overlay)]">
                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
                       <Wallet size={14} />
                       {t('currentBalance')}
                     </div>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">${Number(balanceUSD || 0).toFixed(2)}</span>
+                    <span className="text-lg font-bold text-[var(--text-primary)]">${Number(balanceUSD || 0).toFixed(2)}</span>
                   </div>
                 )}
-                <div className={`p-6 rounded-[4px] mb-8 border ${theme === 'dark' ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-gray-50 border-gray-100'}`}>
+                <div className="p-6 rounded-[4px] mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 text-start">
                     {t('yourReferralLink')}
                   </p>
-                  <div className={`flex items-center gap-2 p-2 rounded-[4px] border ${theme === 'dark' ? 'bg-[#0f0f11] border-gray-800' : 'bg-white border-gray-200'}`}>
+                  <div className="flex items-center gap-2 p-2 rounded-[4px] border bg-[var(--bg-base)] border-[var(--border)]">
                     <button 
                       onClick={handleCopyLink}
                       className="shrink-0 w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 text-white"
@@ -427,7 +427,7 @@ export const SubscriptionPage: React.FC = () => {
                   </button>
                   <button 
                     onClick={() => setResultModal(null)}
-                    className={`flex-1 py-4 rounded-[4px] font-bold text-sm transition-all duration-300 border ${theme === 'dark' ? 'bg-[#1a1a1c] border-gray-800 text-gray-400 hover:bg-gray-800' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    className="flex-1 py-4 rounded-[4px] font-bold text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
                   >
                     {t('close')}
                   </button>

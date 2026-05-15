@@ -200,7 +200,7 @@ export const SettingsPage: React.FC = () => {
       {/* Sidebar Navigation - Elite Standard */}
       <div className={`w-full md:w-60 border-b md:border-b-0 border-[var(--border)] flex flex-col h-[280px] md:h-screen relative ${
         dir === 'rtl' ? 'md:border-l' : 'md:border-r'
-      } ${theme === 'dark' ? 'bg-[#1a1a1c]/30' : 'bg-[var(--bg-surface)]/40'}`}>
+      } border-[var(--border)] bg-[#1a1a1c]/30`}>
         
         {/* Sidebar Header - Height matched with content header (h-20) */}
         <div className="h-20 px-6 border-b border-[var(--border)]/50 flex items-center">
@@ -221,30 +221,31 @@ export const SettingsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-500 group relative overflow-hidden ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-600 group relative overflow-hidden ${
                 activeTab === tab.id 
-                  ? (theme === 'dark' ? 'text-emerald-500' : 'bg-[var(--bg-base)] text-emerald-600 shadow-xl shadow-emerald-500/5 border border-emerald-100')
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/50 dark:hover:bg-white/5'
+                  ? 'text-emerald-500'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5'
               }`}
             >
               <AnimatePresence>
                 {activeTab === tab.id && (
                   <motion.div 
                     layoutId="activeTabGlow"
-                    className="absolute inset-0 bg-emerald-500/5 dark:bg-emerald-500/[0.03]"
+                    className="absolute inset-0 bg-emerald-500/[0.03]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                   />
                 )}
               </AnimatePresence>
 
-              <span className={`shrink-0 transition-all duration-500 relative z-10 ${
+              <span className={`shrink-0 transition-all duration-600 relative z-10 ${
                 activeTab === tab.id ? 'scale-110 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'group-hover:text-emerald-500'
               }`}>
                  {tab.icon}
               </span>
-              <span className={`font-bold text-sm tracking-tight relative z-10 transition-all duration-300 ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
+              <span className={`font-bold text-sm tracking-tight relative z-10 transition-all duration-600 ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
                 {tab.label}
               </span>
             </button>
@@ -266,9 +267,7 @@ export const SettingsPage: React.FC = () => {
       {/* Content Area - With Sticky Header */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Sticky Page Header */}
-        <div className={`sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-all duration-300 flex-none ${
-          theme === 'dark' ? 'bg-[var(--bg-base)]/80 border-[var(--border)]/40' : 'bg-[var(--bg-base)]/80 border-gray-100'
-        }`}>
+        <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-all duration-300 flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}
@@ -293,9 +292,7 @@ export const SettingsPage: React.FC = () => {
               >
               {/* Account Tab */}
               {activeTab === 'account' && localUser && (
-                <div className={`p-8 md:p-12 rounded-[var(--radius)] border ${
-                  theme === 'dark' ? 'bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-2xl' : 'bg-[var(--bg-base)] border-gray-100 shadow-2xl shadow-gray-200/40'
-                }`}>
+                <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-2xl">
                   <AccountSettings 
                     user={localUser} 
                     onUpdate={handleUpdateProfile} 

@@ -200,7 +200,7 @@ export const UsageRadar: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setExpanded(isExpanded ? null : item.id)}
-                    className={`p-2 rounded-[var(--radius)] transition-all ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-[var(--bg-overlay)]'}`}
+                    className="p-2 rounded-[var(--radius)] transition-all hover:bg-white/5"
                   >
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
@@ -260,12 +260,12 @@ export const UsageRadar: React.FC = () => {
                          )}
 
                         <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div className={`p-4 rounded-[var(--radius)] flex flex-col items-center justify-center text-center ${theme === 'dark' ? 'bg-white/5' : 'bg-[var(--bg-surface)]'}`}>
+                          <div className="p-4 rounded-[var(--radius)] flex flex-col items-center justify-center text-center bg-white/5">
                             <Database size={14} className="text-gray-400 mb-2" />
                             <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{t('resourceId') || 'ID'}</span>
                             <span className="text-xs font-bold font-mono" style={{ color: planColor }}>{item.id}</span>
                           </div>
-                          <div className={`p-4 rounded-[var(--radius)] flex flex-col items-center justify-center text-center ${theme === 'dark' ? 'bg-white/5' : 'bg-[var(--bg-surface)]'}`}>
+                          <div className="p-4 rounded-[var(--radius)] flex flex-col items-center justify-center text-center bg-white/5">
                             <Clock size={14} className="text-gray-400 mb-2" />
                             <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{t('renewal') || 'Renewal'}</span>
                             <span className="text-xs font-bold text-[var(--text-muted)]">{renewalDate}</span>
@@ -282,9 +282,7 @@ export const UsageRadar: React.FC = () => {
       </div>
 
       {/* Info Section */}
-      <div className={`p-8 rounded-[var(--radius)] border transition-all duration-300 ${
-        theme === 'dark' ? 'bg-gray-800/10' : 'bg-[var(--bg-surface)]/50'
-      }`} style={{ borderColor: `${planColor}20` }}>
+      <div className="p-8 rounded-[var(--radius)] border transition-all duration-300 bg-gray-800/10" style={{ borderColor: `${planColor}20` }}>
         <div className="flex gap-4 items-start">
           <div className="w-10 h-10 shrink-0 rounded-[var(--radius)] flex items-center justify-center" style={{ backgroundColor: `${planColor}20`, color: planColor }}>
             <AlertCircle size={20} />

@@ -132,7 +132,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         position="top-center" 
         richColors 
         closeButton 
-        theme={theme === 'dark' ? 'dark' : 'light'}
+        theme="dark"
         expand={false}
       />
       <IncentiveCard />

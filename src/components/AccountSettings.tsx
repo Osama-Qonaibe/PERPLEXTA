@@ -194,14 +194,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const planName = user.subscription ? (dir === 'rtl' ? user.subscription.plan_name_ar || user.subscription.plan_name_en : user.subscription.plan_name_en) : t('freeOnly');
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
+    <div className="space-y-8 relative">
       {/* Category Tabs */}
       <div className="flex gap-2 p-1 bg-[var(--bg-primary)] rounded-[var(--radius)] border border-[var(--border-main)] max-w-fit mx-auto md:mx-0">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveCategory(item.id as any)}
-            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-500 rounded-[var(--radius)] ${
+            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-600 rounded-[var(--radius)] ${
               activeCategory === item.id 
                 ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-lg' 
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/5'
@@ -217,9 +217,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
         {activeCategory === 'profile' && (
           <motion.div
             key="profile"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-1"
           >
              {/* Avatar Section */}
@@ -237,13 +238,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <img 
                       src={user.avatar} 
                       alt="Avatar" 
-                      className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-all duration-300 shadow-xl"
+                      className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-all duration-600 shadow-xl"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div 
-                      className="w-20 h-20 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-500 border-4"
+                      className="w-20 h-20 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-600 border-4"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                     >
                       {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={28} />}
@@ -316,12 +317,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
         {activeCategory === 'intelligence' && (
           <motion.div
             key="intelligence"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-2"
           >
-            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-500">
+            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-600">
               <div className="flex items-start gap-6">
                 <div className="p-5 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500 shadow-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
                   <Sparkles size={32} className="drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
@@ -351,16 +353,21 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <button
                       key={preset.id}
                       onClick={() => handlePresetSelect(preset)}
-                      className={`p-5 rounded-[var(--radius)] border transition-all duration-500 text-start group relative overflow-hidden ${
+                      className={`p-5 rounded-[var(--radius)] border transition-all duration-600 text-start group relative overflow-hidden ${
                         active 
                           ? 'border-emerald-500 bg-emerald-500/[0.03] shadow-lg shadow-emerald-500/5' 
                           : 'border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/5'
                       }`}
                     >
                       {active && (
-                        <div className="absolute top-0 right-0 p-2 text-emerald-500 animate-in fade-in zoom-in duration-500">
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                          className="absolute top-0 right-0 p-2 text-emerald-500"
+                        >
                           <Check size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                        </div>
+                        </motion.div>
                       )}
                       
                       <div className="flex items-center gap-4 mb-2 relative z-10">
@@ -394,9 +401,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
         {activeCategory === 'preferences' && (
           <motion.div
             key="preferences"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-1"
           >
             {/* Language Selection */}
@@ -446,7 +454,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   </button>
                   <button 
                     onClick={() => setTheme('dark')}
-                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-gray-800 text-white shadow-lg shadow-black/40' : 'text-[var(--text-muted)] hover:text-gray-200'}`}
+                    className="px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all bg-gray-800 text-white shadow-lg shadow-black/40"
                   >
                     Dark
                   </button>

@@ -298,14 +298,14 @@ export const RewardsPage: React.FC = () => {
             <h3 className="text-[11px] md:text-base text-[var(--text-secondary)] font-medium uppercase tracking-wider">{t('withdrawableBalance')}</h3>
             <div className="flex items-baseline justify-center gap-1.5 md:gap-2">
               <span className="text-sm md:text-xl font-bold text-emerald-500">USD</span>
-              <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">${withdrawableUSD}</span>
+              <span className="text-4xl md:text-6xl font-bold text-white tracking-tight">${withdrawableUSD}</span>
             </div>
             <button 
               onClick={() => setIsWithdrawModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-white text-xs md:text-base font-bold transition-all duration-300 group"
             >
-              <Wallet size={16} className="md:w-[18px] md:h-[18px]" />
-              {t('requestWithdrawal')}
+              <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
+              <span className="text-white">{t('requestWithdrawal')}</span>
             </button>
           </div>
         </div>
@@ -320,16 +320,16 @@ export const RewardsPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center gap-0.5 md:gap-1">
               <div className="flex items-baseline gap-1.5 md:gap-2">
                 <span className="text-sm md:text-xl font-bold text-rose-500">PTS</span>
-                <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">{Math.floor(Number(wallet.points || 0)).toLocaleString()}</span>
+                <span className="text-4xl md:text-6xl font-bold text-white tracking-tight">{Math.floor(Number(wallet.points || 0)).toLocaleString()}</span>
               </div>
-              <span className="text-[10px] md:text-sm text-[var(--text-secondary)]">≈ ${estimatedPointsWorth}</span>
+              <span className="text-[10px] md:text-sm text-slate-400">≈ ${estimatedPointsWorth}</span>
             </div>
             <button 
               onClick={() => setIsConvertModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-medium transition-all duration-300"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-white text-xs md:text-base font-bold transition-all duration-300 group"
             >
-              <Zap size={16} className="md:w-[18px] md:h-[18px]" />
-              {t('convertPointsToBalance')}
+              <Zap size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
+              <span className="text-white">{t('convertPointsToBalance')}</span>
             </button>
           </div>
         </div>
@@ -340,86 +340,86 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* How it works */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-          <h3 className="text-lg md:text-xl font-bold text-[var(--text-primary)] mb-6 md:mb-8 text-center">{t('howSystemWorks')}</h3>
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-all duration-300 hover:border-emerald-500/20`}>
+          <h3 className="text-lg md:text-xl font-bold text-emerald-500 mb-6 md:mb-8 text-center drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">{t('howSystemWorks')}</h3>
           
           <div className="space-y-6 md:space-y-8">
             {/* Step 1 */}
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+            <div className="flex items-start gap-3 md:gap-4 group">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 1
               </div>
               <div>
-                <h4 className="font-bold text-[var(--text-primary)] text-base md:text-lg">{t('shareYourLink')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1">{t('shareYourLinkDesc')}</p>
+                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('shareYourLink')}</h4>
+                <p className="text-[11px] md:text-sm text-slate-200 mt-0.5 md:mt-1 font-medium leading-relaxed">{t('shareYourLinkDesc')}</p>
               </div>
             </div>
             
             {/* Step 2 */}
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+            <div className="flex items-start gap-3 md:gap-4 group">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 2
               </div>
               <div>
-                <h4 className="font-bold text-[var(--text-primary)] text-base md:text-lg">{t('registration')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1">{formatTranslation('registrationDesc')}</p>
+                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('registration')}</h4>
+                <p className="text-[11px] md:text-sm text-slate-200 mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('registrationDesc')}</p>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)] text-sm md:text-lg font-bold">
+            <div className="flex items-start gap-3 md:gap-4 group">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 3
               </div>
               <div>
-                <h4 className="font-bold text-[var(--text-primary)] text-base md:text-lg">{t('activationAndProfit')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1">{formatTranslation('activationAndProfitDesc')}</p>
+                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('activationAndProfit')}</h4>
+                <p className="text-[11px] md:text-sm text-slate-200 mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('activationAndProfitDesc')}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Invite Friends */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col`}>
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-all duration-300 hover:border-emerald-500/20`}>
           <div className="text-center mb-6 md:mb-8">
-            <h3 className="text-lg md:text-xl font-bold text-[var(--text-primary)] flex items-center justify-center gap-2">
+            <h3 className="text-lg md:text-xl font-bold text-emerald-500 flex items-center justify-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
               {t('inviteFriendsAndEarn')}
-              <Zap className="text-rose-500" size={18} />
+              <Zap className="text-rose-500 animate-pulse" size={18} />
             </h3>
-            <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-1.5 md:mt-2 max-w-sm mx-auto">
+            <p className="text-[11px] md:text-sm text-slate-100 mt-1.5 md:mt-2 max-w-sm mx-auto font-medium leading-relaxed">
               {formatTranslation('inviteFriendsDesc')}
             </p>
           </div>
 
           <div className="mt-auto space-y-4 md:space-y-6">
             <div className="space-y-1.5 md:space-y-2">
-              <label className="text-xs md:text-sm text-[var(--text-secondary)]">{t('yourReferralLink')}</label>
+              <label className="text-xs md:text-sm text-slate-300 font-bold uppercase tracking-widest">{t('yourReferralLink')}</label>
               <div className="flex items-center gap-2">
-                <div className={`flex-1 p-2.5 md:p-3 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] font-mono text-[11px] md:text-sm overflow-hidden text-ellipsis whitespace-nowrap`}>
+                <div className="flex-1 p-2.5 md:p-3 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-400 font-mono text-[11px] md:text-xs overflow-hidden text-ellipsis whitespace-nowrap shadow-inner">
                   {referralLink}
                 </div>
                 <button 
                   onClick={handleCopy}
                   className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-all duration-300 ${
                     copied 
-                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500' 
-                      : `bg-[var(--bg-primary)] border-[var(--border-main)] hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]`
+                      ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] px-6' 
+                      : `bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20`
                   }`}
                 >
                   {copied ? <Check size={16} /> : <Copy size={16} />}
-                  <span className="hidden sm:inline text-xs md:text-sm">{copied ? t('copied') : t('copy')}</span>
+                  <span className="hidden sm:inline text-xs md:text-sm font-bold">{copied ? t('copied') : t('copy')}</span>
                 </button>
               </div>
             </div>
 
-            <div className={`flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)]`}>
+            <div className={`flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-rose-500/20 transition-all`}>
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-rose-500/10 flex items-center justify-center text-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
                   <Gift size={20} className="md:w-6 md:h-6" />
                 </div>
-                <span className="font-bold text-xs md:text-base text-[var(--text-primary)]">{t('totalSuccessfulReferralsUser')}</span>
+                <span className="font-bold text-xs md:text-base text-white uppercase tracking-tight">{t('totalSuccessfulReferralsUser')}</span>
               </div>
-              <span className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{referralCount}</span>
+              <span className="text-2xl md:text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{referralCount}</span>
             </div>
           </div>
         </div>
@@ -632,8 +632,8 @@ export const RewardsPage: React.FC = () => {
         <div className="md:col-span-2">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
-              <History className="text-[var(--text-muted)] md:w-5 md:h-5" size={18} />
-              <h3 className="text-base md:text-lg font-bold text-[var(--text-primary)]">{t('transactionHistory')}</h3>
+              <History className="text-emerald-500 md:w-5 md:h-5" size={18} />
+              <h3 className="text-base md:text-lg font-bold text-emerald-500">{t('transactionHistory')}</h3>
             </div>
           </div>
           

@@ -176,7 +176,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-all duration-500 relative group overflow-hidden ${
+                className={`px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-all duration-600 relative group overflow-hidden ${
                   active 
                     ? 'text-emerald-500' 
                     : `text-[var(--text-muted)] hover:text-[var(--text-primary)]`
@@ -187,6 +187,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                    <motion.div 
                      layoutId="activeTabGlow"
                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
+                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                    />
                 )}
               </button>

@@ -65,19 +65,19 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       <div className="flex items-center justify-between px-4 py-2 bg-transparent border-none">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lang === 'audio' ? 'Sovereign Audio Slate' : lang}</span>
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Sovereign Audio Slate' : lang}</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           {isMediaUrl ? (
-            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download">
+            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-[4px] text-[var(--text-muted)] hover:text-emerald-500 transition-colors duration-300 hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
               <Download size={13} />
             </button>
           ) : (
             <>
-              <button onClick={copyToClipboard} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Copy code">
+              <button onClick={copyToClipboard} className="p-1.5 rounded-[4px] text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 hover:bg-[var(--bg-overlay)] active:scale-95" title="Copy code">
                 <Copy size={13} />
               </button>
-              <button onClick={downloadCode} className="p-1.5 rounded-[4px] text-gray-400 hover:text-emerald-500 transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95" title="Download source code">
+              <button onClick={downloadCode} className="p-1.5 rounded-[4px] text-[var(--text-muted)] hover:text-emerald-500 transition-colors duration-300 hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
                 <FileText size={13} />
               </button>
             </>
@@ -87,10 +87,10 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       
       {lang === 'audio' ? (
         <motion.div 
-          initial={{ opacity: 0, scale: 0.98, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative overflow-hidden bg-[#0a0a0b] border border-gray-800/60 rounded-[4px] p-8 flex flex-col items-center gap-6 shadow-2xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, ease: "linear" }}
+          className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-[4px] p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
           {/* Audio Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
@@ -109,7 +109,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <div className="text-center space-y-1">
             <h3 className="text-xs font-black text-emerald-500 tracking-[0.2em] uppercase">Sovereign Orchestra Master</h3>
-            <p className="text-[10px] text-gray-500 font-medium tracking-widest leading-none">
+            <p className="text-[10px] text-[var(--text-secondary)] font-medium tracking-widest leading-none">
               {dir === 'rtl' ? 'الإنتاج الأوركسترالي الحصري' : 'EXCLUSIVE ORCHESTRAL PRODUCTION'}
             </p>
           </div>
@@ -130,18 +130,18 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           
           <div className="flex items-center gap-8 pt-2">
             <div className="flex flex-col items-center gap-1">
-               <span className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter">Bitrate</span>
-               <span className="text-[10px] font-mono text-gray-400">320kbps</span>
+               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Bitrate</span>
+               <span className="text-[10px] font-mono text-[var(--text-secondary)]">320kbps</span>
             </div>
-            <div className="w-px h-6 bg-gray-800/50" />
+            <div className="w-px h-6 bg-[var(--border)]" />
             <div className="flex flex-col items-center gap-1">
-               <span className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter">Sample Rate</span>
-               <span className="text-[10px] font-mono text-gray-400">48kHz</span>
+               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Sample Rate</span>
+               <span className="text-[10px] font-mono text-[var(--text-secondary)]">48kHz</span>
             </div>
-            <div className="w-px h-6 bg-gray-800/50" />
+            <div className="w-px h-6 bg-[var(--border)]" />
             <div className="flex flex-col items-center gap-1">
-               <span className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter">Encoding</span>
-               <span className="text-[10px] font-mono text-gray-400">Direct</span>
+               <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Encoding</span>
+               <span className="text-[10px] font-mono text-[var(--text-secondary)]">Direct</span>
             </div>
           </div>
         </motion.div>
@@ -247,11 +247,11 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
     <div className="mt-4" id="citations-container">
       <button 
         onClick={onToggle}
-        className="flex items-center gap-2.5 px-4 py-2 rounded-[4px] bg-transparent border border-gray-100 dark:border-gray-800/60 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group shadow-sm active:scale-95"
+        className="flex items-center gap-2.5 px-4 py-2 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group shadow-sm active:scale-95"
       >
         <div className="flex -space-x-2 rtl:space-x-reverse">
           {citations.slice(0, 3).map((cite, i) => (
-            <div key={i} className="w-5 h-5 rounded-[4px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center overflow-hidden shadow-sm">
+            <div key={i} className="w-5 h-5 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm">
                <img 
                  src={getFavicon(cite.url) || ''} 
                  alt="" 
@@ -261,13 +261,13 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
             </div>
           ))}
         </div>
-        <div className="w-px h-3 bg-gray-200 dark:bg-gray-700 mx-0.5" />
-        <span className="text-[11px] font-black text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-colors uppercase tracking-wider">
+        <div className="w-px h-3 bg-[var(--border)] mx-0.5" />
+        <span className="text-[11px] font-black text-[var(--text-secondary)] group-hover:text-emerald-500 transition-colors uppercase tracking-wider">
           {citations.length} {dir === 'rtl' ? 'مصادر موثقة' : 'Verified Sources'}
         </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          className="text-gray-400 group-hover:text-emerald-500 transition-colors"
+          className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-colors"
         >
           <Plus size={12} strokeWidth={3} />
         </motion.div>
@@ -292,24 +292,24 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
                   href={cite.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-[4px] bg-white/40 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-800/40 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-all group min-w-0"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-all group min-w-0"
                   title={cite.title}
                 >
                   <div className="w-6 h-6 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-[9px] font-black flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                     {cite.index}
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 truncate group-hover:text-emerald-500 transition-colors">
+                    <span className="text-[11px] font-bold text-[var(--text-primary)] truncate group-hover:text-emerald-500 transition-colors">
                       {cite.title}
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <img src={getFavicon(cite.url) || ''} alt="" className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 transition-opacity" />
-                      <span className="text-[9px] text-gray-400 truncate font-medium">
+                      <span className="text-[9px] text-[var(--text-muted)] truncate font-medium">
                         {cite.url.replace(/^https?:\/\//, '').split('/')[0]}
                       </span>
                     </div>
                   </div>
-                  <ExternalLink size={11} className="text-gray-300 group-hover:text-emerald-500 transition-colors shrink-0 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-transform" />
+                  <ExternalLink size={11} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-colors shrink-0 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-transform" />
                 </motion.a>
               ))}
             </div>
@@ -324,7 +324,7 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
   if (!followUps || followUps.length === 0) return null;
 
   return (
-    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800/20" id="follow-ups-container">
+    <div className="mt-8 pt-6 border-t border-[var(--border-main)]" id="follow-ups-container">
       <div className="flex items-center gap-2 mb-4 px-0">
         <Sparkles size={14} className="text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500">
@@ -337,16 +337,16 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className={`group flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-gray-100/40 dark:border-gray-800/30 hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-all text-start relative overflow-hidden rounded-[4px] ${
+            className={`group flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-all text-start relative overflow-hidden rounded-[4px] ${
               dir === 'rtl' ? 'flex-row' : 'flex-row'
             }`}
           >
-            <div className={`w-8 h-8 rounded-[4px] bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/50 flex items-center justify-center text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all shrink-0 ${
+            <div className={`w-8 h-8 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all shrink-0 ${
               dir === 'rtl' ? 'order-first' : 'order-first'
             }`}>
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
             </div>
-            <span className="text-[12px] sm:text-[13px] font-bold text-gray-700 dark:text-gray-300 group-hover:text-emerald-500 transition-colors flex-1 min-w-0 leading-tight">
+            <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors flex-1 min-w-0 leading-tight">
               {q}
             </span>
           </button>
@@ -401,8 +401,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
           }}
           className={`relative overflow-hidden rounded-[4px] border transition-all duration-700 group ${
             theme === 'dark' 
-              ? 'bg-[#121214] border-gray-800/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
-              : 'bg-white border-gray-200/60 shadow-none'
+              ? 'bg-[#121214] border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
+              : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
           }`}
         >
           {/* Executive Header */}
@@ -426,7 +426,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             
             <div className="hidden md:flex items-center gap-4">
                <div className="flex flex-col items-end">
-                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                 <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
                    {dir === 'rtl' ? 'حالة التشفير' : 'ENCRYPTION STATUS'}
                  </span>
                   <div className="flex items-center gap-2">
@@ -436,12 +436,12 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                    </span>
                  </div>
                </div>
-               <div className="w-px h-8 bg-gray-200 dark:bg-gray-800" />
+               <div className="w-px h-8 bg-[var(--border)]" />
                <div className="flex flex-col items-end">
-                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                 <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
                    {dir === 'rtl' ? 'دقة الإخراج' : 'OUTPUT PRECISION'}
                  </span>
-                 <span className="text-[10px] font-black text-gray-900 dark:text-white">99.8%</span>
+                 <span className="text-[10px] font-black text-[var(--text-primary)]">99.8%</span>
                </div>
             </div>
           </div>
@@ -462,7 +462,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
-                           <Music className="text-gray-800" size={120} />
+                           <Music className="text-[var(--text-primary)]" size={120} />
                         </div>
                       )}
                       
@@ -550,8 +550,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
         transition={{ delay: 1 }}
         className="flex flex-col items-center justify-center gap-3 pt-6 pb-12"
       >
-        <div className="h-px w-24 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-800 to-transparent" />
-        <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
+        <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
+        <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
           <LayoutGrid size={12} className="text-emerald-500" />
           {dir === 'rtl' ? 'تم توليد الحزمة عبر محرك السيادة الإبداعي' : 'GENERATED VIA SOVEREIGN CREATIVE ENGINE'}
         </div>
@@ -571,8 +571,8 @@ const stripProtocolMarkers = (text: string) => {
 
 export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr' }) => (
   <motion.div 
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
     className={`mt-4 p-6 rounded-[4px] border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
   >
     <div className="absolute top-0 right-0 p-4 opacity-5">
@@ -589,10 +589,10 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
             {dir === 'rtl' ? 'تحديث الأنظمة' : 'System Excellence Protocol'}
           </span>
         </div>
-        <p className="text-[15px] font-medium text-gray-800 dark:text-gray-200 leading-relaxed font-sans">
+        <p className="text-[15px] font-medium text-[var(--text-primary)] leading-relaxed font-sans">
           {dir === 'rtl' ? data.error_ar : data.error}
         </p>
-        <p className="text-[11px] text-gray-500 mt-2 font-sans opacity-80">
+        <p className="text-[11px] text-[var(--text-muted)] mt-2 font-sans opacity-80">
           {dir === 'rtl' 
             ? 'نعمل حالياً على تعزيز كفاءة هذا الموديل لضمان تقديم أعلى مستويات التحليل التقني.' 
             : 'We are currently enhancing this model\'s efficiency to ensure the highest standards of technical analysis.'}
@@ -651,21 +651,21 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
           </p>
           <div className="flex items-center gap-4 mt-3">
              <div className="flex flex-col">
-               <span className="text-[9px] font-black uppercase text-gray-500 mb-0.5 tracking-tighter">{dir === 'rtl' ? 'الحد المتاح' : 'Available Limit'}</span>
+               <span className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-0.5 tracking-tighter">{dir === 'rtl' ? 'الحد المتاح' : 'Available Limit'}</span>
                <span className="text-xs font-black text-emerald-500">{data.limit}</span>
              </div>
-             <div className="w-px h-6 bg-gray-200 dark:bg-gray-800" />
+             <div className="w-px h-6 bg-[var(--border)]" />
              <div className="flex flex-col">
-               <span className="text-[9px] font-black uppercase text-gray-500 mb-0.5 tracking-tighter">{dir === 'rtl' ? 'المستخدم حالياً' : 'Currently Used'}</span>
-               <span className="text-xs font-black text-gray-900 dark:text-white">{data.current}</span>
+               <span className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-0.5 tracking-tighter">{dir === 'rtl' ? 'المستخدم حالياً' : 'Currently Used'}</span>
+               <span className="text-xs font-black text-[var(--text-primary)]">{data.current}</span>
              </div>
           </div>
         </div>
       </div>
 
       {/* Referral Link Area */}
-      <div className="relative z-10 bg-[var(--bg-main)]/50 border border-emerald-500/10 rounded-[4px] p-3 flex items-center gap-3">
-        <div className="flex-1 truncate text-[10px] font-mono text-gray-500 dark:text-gray-400">
+      <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-[4px] p-3 flex items-center gap-3">
+        <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
           {referralLink}
         </div>
         <div className="flex items-center gap-2">
@@ -695,7 +695,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
         </button>
         <button 
           onClick={() => navigate('/rewards')}
-          className="flex-1 bg-white dark:bg-gray-900 border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-[4px] text-[11px] font-black uppercase tracking-wider transition-all hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-[var(--bg-surface)] border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-[4px] text-[11px] font-black uppercase tracking-wider transition-all hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
         </button>
@@ -1531,7 +1531,10 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     const handleClearChat = () => {
-      setMessages([]);
+      setMessages(prev => {
+        if (prev.length === 0 && !chatId) return prev;
+        return [];
+      });
       setChatId(null);
     };
     
@@ -1821,7 +1824,7 @@ export const ChatPage: React.FC = () => {
                   className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-all duration-300 pointer-events-auto cursor-pointer ${
                     imageSettings.quality === q 
                       ? 'text-emerald-500 underline underline-offset-4 decoration-2 scale-105' 
-                      : 'text-gray-400/30 hover:text-gray-200'
+                      : 'text-[var(--text-muted)]/30 hover:text-[var(--text-primary)]'
                   }`}
                 >
                   {q}
@@ -2026,7 +2029,7 @@ export const ChatPage: React.FC = () => {
                 max="15" 
                 value={videoSettings.duration} 
                 onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full h-0.5 bg-gray-200/5 dark:bg-gray-800/5 rounded-full appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-all pointer-events-auto"
+                className="w-full h-0.5 bg-[var(--bg-overlay)] rounded-full appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-all pointer-events-auto"
               />
             </div>
 
@@ -2162,7 +2165,7 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               placeholder={t('askAssistant')}
-              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-sm sm:text-[17px] font-medium placeholder:text-gray-500 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
+              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-sm sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
               dir="auto"
               rows={1}
               style={{ minHeight: '32px', maxHeight: '200px' }}
@@ -2229,7 +2232,7 @@ export const ChatPage: React.FC = () => {
                             : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400 dark:text-gray-500/50'}>
+                        <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-[var(--text-muted)]'}>
                           {tool.icon}
                         </span>
                         <div className="flex items-center justify-between flex-1 min-w-0">
@@ -2322,7 +2325,7 @@ export const ChatPage: React.FC = () => {
         </div>
       </motion.div>
       
-      <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-gray-400/80 dark:text-gray-600/80 px-8 line-clamp-1 md:line-clamp-none">
+      <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">
         {dir === 'rtl' ? (
           <>
             <span className="md:hidden">{t('appName')} قد يخطئ. فدقق.</span>
@@ -2348,7 +2351,7 @@ export const ChatPage: React.FC = () => {
         className="h-full flex flex-col w-full overflow-hidden"
       >
       {showChatLimitWarning && (
-        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
           <div className="w-12 h-12 rounded-[var(--radius)] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="text-pink-500" size={24} />
           </div>
@@ -2356,14 +2359,14 @@ export const ChatPage: React.FC = () => {
             <span className="text-pink-500 font-bold text-sm">
               {dir === 'rtl' ? 'تنبيه: حد الرسائل' : 'Warning: Chat Limit'}
             </span>
-            <span className="text-gray-500 text-xs font-medium max-w-[250px] leading-relaxed">
+            <span className="text-[var(--text-secondary)] text-xs font-medium max-w-[250px] leading-relaxed">
               {dir === 'rtl' 
                 ? 'لقد وصلت إلى حد 50 رسالة. تم حذف الرسائل القديمة لإدارة المساحة.' 
                 : 'You have reached the 50-message limit. Older messages have been pruned to manage space.'}
             </span>
             <button 
               onClick={() => setShowChatLimitWarning(false)}
-              className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-pink-500 transition-colors"
+              className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-pink-500 transition-colors"
             >
               {dir === 'rtl' ? 'إغلاق' : 'Dismiss'}
             </button>
@@ -2392,9 +2395,9 @@ export const ChatPage: React.FC = () => {
                 className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
               >
             <motion.div 
-               initial={{ scale: 0.9, opacity: 0, y: 20 }}
-               animate={{ scale: 1, opacity: 1, y: 0 }}
-               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
                className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-[var(--radius)] w-full max-w-sm p-6 shadow-2xl"
             >
                <h3 className={`text-lg font-black mb-4 uppercase tracking-tighter ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
@@ -2467,9 +2470,9 @@ export const ChatPage: React.FC = () => {
                     <AnimatePresence>
                       {isExportMenuOpen && (
                         <motion.div 
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
                           className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[var(--radius)] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
                         >
                           <div className="p-1.5 space-y-0.5">
@@ -2570,33 +2573,25 @@ export const ChatPage: React.FC = () => {
               </div>
             </div>
           )}
-          <div id="chat-messages-container" className={`flex-1 ${messages.length === 0 ? 'overflow-hidden' : 'overflow-y-auto'} scrollbar-none pb-24 pt-4 custom-scrollbar w-full overflow-anchor-none`}>
-          <AnimatePresence mode="popLayout">
+          <div id="chat-messages-container" className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col">
+          <AnimatePresence mode="wait">
           {messages.length === 0 ? (
             <motion.div 
-              key="welcome"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col items-center justify-center h-full py-6 overflow-hidden select-none"
+               key="welcome"
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+               className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
             >
               <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
-                <motion.h1 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase"
+                <h1 
+                  className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
                 >
                   {t('howCanIHelp')}
-                </motion.h1>
+                </h1>
                 
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full"
-                >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
                   {suggestions.map((item, idx) => (
                     <button
                       key={idx}
@@ -2605,44 +2600,46 @@ export const ChatPage: React.FC = () => {
                         setSelectedTool((item as any).toolId);
                         setActiveDropdown('tool');
                       }}
-                      className={`group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-all duration-500 text-start relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/5`}
+                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-all duration-300 text-start relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
                     >
                       <div className={`w-7 h-7 md:w-9 md:h-9 rounded-[var(--radius)] flex items-center justify-center transition-all duration-700 relative z-10 bg-[var(--bg-overlay)] text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 18, className: 'md:w-5 md:h-5' } as any)}
                       </div>
                       <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
-                        <span className={`text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-colors truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500`}>
+                        <span className="text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-colors truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500">
                           {item.label}
                         </span>
-                        <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 transition-opacity truncate w-full">
+                        <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 group-hover:text-emerald-500/70 transition-all truncate w-full">
                           {item.desc}
                         </span>
                       </div>
-                      {/* Interactive background glow */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                      <div className="absolute -inset-px rounded-[var(--radius)] border border-emerald-500/0 group-hover:border-emerald-500/10 transition-colors pointer-events-none" />
                     </button>
                   ))}
-                </motion.div>
+                </div>
               </div>
             </motion.div>
           ) : (
             <motion.div 
               key="chat"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6"
             >
               {messages.map((msg, idx) => {
                 return (
                   <motion.div 
-                    key={idx} 
+                    key={msg.id || idx} 
                     id={`message-${idx}`}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ 
-                      duration: 0.4, 
-                      ease: "easeOut"
+                      duration: 0.2, 
+                      ease: "linear"
                     }}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
                   >
@@ -2789,7 +2786,7 @@ export const ChatPage: React.FC = () => {
                                         </div>
                                       );
                                     }
-                                    return <div className="last:mb-0 mb-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{children}</div>;
+                                    return <div className="last:mb-0 mb-3 text-sm leading-relaxed text-[var(--text-primary)]">{children}</div>;
                                   },
                                   h1: ({ children }) => <h1 className="text-md md:text-xl font-black text-emerald-500 mb-3 mt-5 uppercase tracking-wider border-b border-emerald-500/10 pb-1.5">{children}</h1>,
                                   h2: ({ children }) => <h2 className="text-sm md:text-lg font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
@@ -2818,10 +2815,10 @@ export const ChatPage: React.FC = () => {
 
                               return (
                                 <motion.div 
-                                  initial={{ opacity: 0, scale: 0.98 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-all duration-500 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ duration: 0.5 }}
+                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-all duration-300 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
                                 >
                                   <img 
                                     {...props} 
@@ -2924,28 +2921,28 @@ export const ChatPage: React.FC = () => {
                   {/* Sovereign Message Toolbar - Optimized Bottom Layout */}
                   {(!isGenerating || idx < messages.length - 1) && msg.role === 'assistant' && (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100/30 dark:border-gray-800/20 px-0"
                     >
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
                         </button>
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
                         </button>
-                        <div className="w-px h-3 sm:h-4 bg-gray-100 dark:bg-gray-800/50 mx-0.5 sm:mx-1" />
+                        <div className="w-px h-3 sm:h-4 bg-[var(--border)] mx-0.5 sm:mx-1" />
                         <button 
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border transition-all duration-300 ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
@@ -2959,7 +2956,7 @@ export const ChatPage: React.FC = () => {
                         <button 
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
                         </button>
@@ -3017,7 +3014,7 @@ export const ChatPage: React.FC = () => {
                          <div className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
-                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500'}`}
+                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-all duration-300 ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500'}`}
                            >
                              <MoreHorizontal size={14} />
                            </button>
@@ -3025,9 +3022,9 @@ export const ChatPage: React.FC = () => {
                            <AnimatePresence>
                              {openMenuId === (msg.id?.toString() || idx.toString()) && (
                                <motion.div 
-                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                 initial={{ opacity: 0 }}
+                                 animate={{ opacity: 1 }}
+                                 exit={{ opacity: 0 }}
                                  className="absolute bottom-full end-0 mb-2 w-56 p-1 bg-[var(--bg-base)] border border-[var(--border)] rounded-[var(--radius)] shadow-2xl z-50 backdrop-blur-xl"
                                >
                                  <button 

@@ -244,7 +244,7 @@ const translations = {
     password: 'كلمة المرور',
     confirmPassword: 'تأكيد كلمة المرور',
     processing: 'جاري المعالجة',
-    continueWithGoogle: 'المتابعة باستخدام جوجل',
+    continueWithGoogle: 'المتابعة باستخدام قوقل',
     noAccount: 'ليس لديك حساب؟',
     haveAccount: 'لديك حساب بالفعل؟',
     createAccount: 'إنشاء حساب جديد',
@@ -1466,9 +1466,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'ar'; } catch (e) { return 'ar'; }
   });
-  const [theme, setTheme] = useState<Theme>(() => {
-    try { return (localStorage.getItem('theme') as Theme) || 'dark'; } catch (e) { return 'dark'; }
-  });
+  const [theme, setTheme] = useState<Theme>('dark');
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
@@ -1550,19 +1548,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleThemeChange = async (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    if (token) {
-      try {
-        await fetch('/api/user/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ theme: newTheme })
-        });
-      } catch (e) {
-        console.error('Failed to sync theme to server', e);
-      }
-    }
+    setTheme('dark');
+    localStorage.setItem('theme', 'dark');
   };
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
