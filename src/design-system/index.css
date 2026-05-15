@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
+
+@import "./tokens.css";
+@import "./typography.css";
+@import "./animations.css";
+@import "./scrollbar.css";
+
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+  transition-duration: 600ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*:where(
+  [class*="transition-"],
+  [class*="animate-"],
+  [class*="duration-"],
+  svg,
+  svg *,
+  canvas,
+  video,
+  img,
+  iframe,
+  .no-transition,
+  input,
+  textarea
+) {
+  transition-property: revert;
+  transition-duration: revert;
+  transition-timing-function: revert;
+}

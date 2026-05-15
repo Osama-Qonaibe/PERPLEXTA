@@ -1,0 +1,25 @@
+body {
+  font-family: "Tajawal", sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.font-numeric {
+  font-family: "Inter", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-code {
+  font-family: "Inter", ui-monospace, monospace;
+}
