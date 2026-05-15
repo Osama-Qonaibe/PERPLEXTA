@@ -61,7 +61,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
-import adminRoutes from './routes/admin/index.js';
+import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import paymentRoutes from './routes/payments.js';
 import toolRoutes from './routes/tools.js';

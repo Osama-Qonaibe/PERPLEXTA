@@ -78,27 +78,6 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       await handleApiError(response, 'xAI');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
-    } else if (provider === 'mistral') {
-      const response = await fetch('https://api.mistral.ai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-      });
-      await handleApiError(response, 'Mistral');
-      const data: any = await response.json();
-      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
-    } else if (provider === 'deepseek') {
-      const response = await fetch('https://api.deepseek.com/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-      });
-      await handleApiError(response, 'DeepSeek');
-      const data: any = await response.json();
-      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
-    } else if (provider === 'groq') {
-      const response = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-      });
-      await handleApiError(response, 'Groq');
-      const data: any = await response.json();
-      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'ollama') {
         let baseUrl = apiKey.split(':')[0] || 'http://localhost:11434';
         const response = await fetch(`${baseUrl}/api/tags`);
@@ -134,21 +113,11 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   }
 
   const result = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
-  
-  let key: string | null = null;
-  if (result.rows.length > 0) {
-    key = decrypt(result.rows[0].encrypted_key);
-  }
+  if (result.rows.length === 0) return null;
 
-  // Fallback for Google/Gemini if no key in vault
-  if (!key && (normProvider.includes('google') || normProvider.includes('gemini'))) {
-    key = process.env.GEMINI_API_KEY || null;
-  }
-
-  if (key) {
-    vaultCache.set(normProvider, key);
-  }
-  return key;
+  const decryptedKey = decrypt(result.rows[0].encrypted_key);
+  vaultCache.set(normProvider, decryptedKey);
+  return decryptedKey;
 }
 
 
@@ -307,15 +276,8 @@ export async function callAIProvider(
   let headers: any = { 'Content-Type': 'application/json' };
   let body: any = {};
 
-  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'mistral' || normProvider === 'groq' || normProvider === 'xai' || normProvider === 'grok') {
-    if (normProvider === 'openai') url = 'https://api.openai.com/v1/chat/completions';
-    else if (normProvider === 'deepseek') url = 'https://api.deepseek.com/chat/completions';
-    else if (normProvider === 'together') url = 'https://api.together.xyz/v1/chat/completions';
-    else if (normProvider === 'openrouter') url = 'https://openrouter.ai/api/v1/chat/completions';
-    else if (normProvider === 'mistral') url = 'https://api.mistral.ai/v1/chat/completions';
-    else if (normProvider === 'groq') url = 'https://api.groq.com/openai/v1/chat/completions';
-    else if (normProvider === 'xai' || normProvider === 'grok') url = 'https://api.x.ai/v1/chat/completions';
-    
+  if (normProvider === 'openai' || normProvider === 'deepseek') {
+    url = normProvider === 'openai' ? 'https://api.openai.com/v1/chat/completions' : 'https://api.deepseek.com/chat/completions';
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
     body = { model, messages: processedMessages, stream: isStreaming };
   } else if (normProvider === 'anthropic') {
@@ -326,24 +288,15 @@ export async function callAIProvider(
     if (systemPrompt) body.system = systemPrompt;
   } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
     const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
-    let modelPath = model.trim().replace(/^\/+|\/+$/g, '');
+    let modelPath = model;
     if (!modelPath.includes('/')) {
       modelPath = `models/${modelPath}`;
     }
     url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}`;
     if (isStreaming) url += '?alt=sse';
     headers['x-goog-api-key'] = cleanApiKey;
-    body = { 
-      contents: processedMessages
-        .filter(m => m.role !== 'system')
-        .map(m => ({ 
-          role: m.role === 'assistant' ? 'model' : 'user', 
-          parts: Array.isArray(m.content) 
-            ? m.content.map((c: any) => ({ text: c.text || String(c) })) 
-            : [{ text: String(m.content) }] 
-        })) 
-    };
-    if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
+    body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
+      if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   }
 
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });

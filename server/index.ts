@@ -1,4 +1,4 @@
-import './config/env.js';
+import 'dotenv/config';
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';

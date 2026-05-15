@@ -1,8 +1,0 @@
-import { toast as sonnerToast } from 'sonner';
-
-export const Toast = {
-  success: (msg: string) => sonnerToast.success(msg),
-  error: (msg: string) => sonnerToast.error(msg),
-  info: (msg: string) => sonnerToast.info(msg),
-  warning: (msg: string) => sonnerToast.warning(msg),
-};

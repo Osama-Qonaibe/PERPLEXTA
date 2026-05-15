@@ -1,1 +1,171 @@
-@import "./design-system/index.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Majestic Motion - Global Transition Tokens */
+  --ms-duration: 600ms;
+  --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Monochrome/Emerald Design System - Light Mode */
+  --bg-base: #ffffff;
+  --bg-surface: #f9fafb;
+  --bg-input: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --border-subtle: #e5e7eb;
+  
+  /* Brand Constants */
+  --accent-emerald: #10b981;
+  --accent-glow: rgba(16, 185, 129, 0.5);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 8px;
+
+  /* Legacy Mapping */
+  --bg-overlay: rgba(0, 0, 0, 0.05);
+  --border-main: var(--border-subtle);
+
+  color-scheme: light dark;
+}
+
+.dark {
+    /* Monochrome/Emerald Design System - Dark Mode (Sovereign) */
+    --bg-base: #0f0f11;
+    --bg-surface: #1a1a1c;
+    --bg-input: #1e1e20;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --bg-overlay: rgba(255, 255, 255, 0.05);
+    --border-main: var(--border-subtle);
+}
+
+@theme {
+  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Color Mapping to Variable Tokens */
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-input: var(--bg-input);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-border-main: var(--border-subtle);
+  --color-accent: var(--accent-emerald);
+  --color-accent-glow: var(--accent-glow);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  
+  --radius-custom: var(--radius);
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply bg-accent text-black font-medium transition-all active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-secondary {
+    @apply bg-surface border border-border-main text-primary font-medium transition-all hover:bg-input active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-secondary hover:text-primary hover:bg-input transition-all active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+  
+  .btn-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    @apply font-medium transition-all hover:bg-[rgba(239,68,68,0.2)] active:scale-95;
+    transition-duration: var(--ms-duration);
+    transition-timing-function: var(--ms-easing);
+    border-radius: var(--radius);
+  }
+}
+
+/* Cinematic Transitions */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+  transition-duration: var(--ms-duration);
+  transition-timing-function: var(--ms-easing);
+}
+
+/* Exempt specific UI elements */
+*:where(
+  [class*="transition-"], 
+  [class*="animate-"],
+  [class*="duration-"],
+  svg,
+  svg *,
+  canvas,
+  video,
+  img,
+  iframe,
+  .no-transition,
+  input,
+  textarea
+) {
+  transition-property: revert;
+  transition-duration: revert;
+  transition-timing-function: revert;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body {
+  font-family: "Tajawal", sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.4);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
