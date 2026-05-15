@@ -146,7 +146,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
         </motion.div>
       ) : (
-        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px]`} {...props}>
+        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-dropdown)] border border-[var(--border-main)] rounded-[4px]`} {...props}>
           {isMediaUrl ? (
             codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
               <div className="flex flex-col items-center gap-4 py-8">
@@ -2068,7 +2068,7 @@ export const ChatPage: React.FC = () => {
       {renderAudioSettings()}
       <motion.div 
         transition={springConfig}
-        className={`w-full flex flex-col rounded-[var(--radius)] border box-border min-w-0 transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] ${
+        className={`w-full flex flex-col rounded-[var(--radius)] border box-border min-w-0 transition-all duration-500 bg-[var(--bg-dropdown)] border-[var(--border-main)] ${
           isFocused 
             ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
             : ''
@@ -2210,8 +2210,8 @@ export const ChatPage: React.FC = () => {
               </button>
               
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[var(--radius)] border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-                  <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[var(--radius)] border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
+                  <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-surface)]`}>
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
@@ -2268,7 +2268,7 @@ export const ChatPage: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
               {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-[4px] border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-[4px] border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
                   {models.map((model, idx) => (
                     <button 
                       key={`${model.id}-${idx}`}
@@ -2351,7 +2351,7 @@ export const ChatPage: React.FC = () => {
         className="h-full flex flex-col w-full overflow-hidden"
       >
       {showChatLimitWarning && (
-        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in duration-500 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
+        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in duration-500 border bg-[var(--bg-dropdown)] border-pink-500/30 shadow-pink-500/10`}>
           <div className="w-12 h-12 rounded-[var(--radius)] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="text-pink-500" size={24} />
           </div>
@@ -2473,7 +2473,7 @@ export const ChatPage: React.FC = () => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[var(--radius)] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
+                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-dropdown)] border border-[var(--border-main)] rounded-[var(--radius)] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
                         >
                           <div className="p-1.5 space-y-0.5">
                             <button 
@@ -2600,7 +2600,7 @@ export const ChatPage: React.FC = () => {
                         setSelectedTool((item as any).toolId);
                         setActiveDropdown('tool');
                       }}
-                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-all duration-300 text-start relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
+                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-all duration-300 text-start relative overflow-hidden bg-[var(--bg-dropdown)] border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
                     >
                       <div className={`w-7 h-7 md:w-9 md:h-9 rounded-[var(--radius)] flex items-center justify-center transition-all duration-700 relative z-10 bg-[var(--bg-overlay)] text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 18, className: 'md:w-5 md:h-5' } as any)}
@@ -2649,7 +2649,7 @@ export const ChatPage: React.FC = () => {
                               {msg.file && (
                                 <div className={`mb-1 p-2 rounded-[var(--radius)] border flex items-center gap-3 w-fit ${
                                   dir === 'rtl' ? 'self-end' : 'self-start'
-                                } bg-[var(--bg-secondary)] border-[var(--border)]`}>
+                                } bg-[var(--bg-dropdown)] border-[var(--border)]`}>
                                   {msg.file.type.startsWith('image/') ? (
                                     <img 
                                       src={msg.file.preview} 
@@ -3186,7 +3186,7 @@ export const ChatPage: React.FC = () => {
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                  <div key={pIdx} className="group relative p-4 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
+                  <div key={pIdx} className="group relative p-4 rounded-[var(--radius)] bg-[var(--bg-dropdown)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
                          {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة السيادة' : 'Sovereign Answer')}

@@ -21,14 +21,4 @@ router.use("/emails", emailsRouter);
 router.use("/maintenance", maintenanceRouter);
 router.use("/plans", plansRouter);
 
-// Special case for backward compatibility or paths that don't fit the prefix
-// Since statsRouter is at "/", it handles its own prefixes like /stats, /health etc.
-// But some routers like keysRouter were mapped to /api-keys.
-// Wait, if I mount keysRouter at "/api-keys", then inside keys.ts, router.get("/") becomes /api-keys.
-// Let's check keys.ts content.
-/*
-router.get("/", async (req, res) => { ... GET /api/admin/api-keys
-*/
-// Correct.
-
 export default router;

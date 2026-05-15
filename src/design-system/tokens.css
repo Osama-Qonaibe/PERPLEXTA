@@ -4,6 +4,7 @@
 
   --bg-base: #ffffff;
   --bg-surface: #f9fafb;
+  --bg-secondary: #f9fafb;
   --bg-input: #f3f4f6;
   --bg-dropdown: #ffffff;
   --text-primary: #111827;
@@ -28,6 +29,7 @@
 .dark {
   --bg-base: #0f0f11;
   --bg-surface: #1a1a1c;
+  --bg-secondary: #1a1a1c;
   --bg-input: #1e1e20;
   --bg-dropdown: #1a1a1c;
   --text-primary: #f8fafc;
