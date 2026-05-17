@@ -13,7 +13,7 @@ export const MainLayout: React.FC = () => {
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
   
   return (
-    <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]`}>
+    <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme`}>
       <div
         dir={localDir}
         className="flex h-full w-full overflow-hidden relative z-10"
@@ -26,8 +26,8 @@ export const MainLayout: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="absolute inset-0 z-[140] bg-black/40 backdrop-blur-sm cursor-pointer"
+              transition={{ duration: 1.1, ease: [0.6, 0.01, 0, 1] }}
+              className="absolute inset-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
@@ -49,7 +49,7 @@ export const MainLayout: React.FC = () => {
           onClick={() => { if(isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
         >
           <Header activeLanguage={language} />
-          <main className="flex-1 overflow-y-auto scrollbar-none relative pt-[72px] bg-[var(--bg-base)] transition-colors duration-[var(--theme-transition-duration)]">
+          <main className="flex-1 overflow-y-auto scrollbar-none relative pt-[72px] bg-[var(--bg-base)] transition-theme">
             <div className="h-full w-full">
               <Outlet />
             </div>

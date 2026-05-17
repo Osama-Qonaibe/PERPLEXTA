@@ -906,4 +906,31 @@ router.post("/api-keys/:id/sync-usage", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { key, urlKey } = req.body;
+    
+    let keyToTest = key;
+    if (keyToTest) {
+      if (id.toLowerCase() === 'ollama' && urlKey) {
+        keyToTest = `${urlKey}:${keyToTest}`;
+      }
+    } else {
+      // Fallback to saved key
+      const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
+      if (keyResult.rows.length > 0) {
+        keyToTest = decrypt(keyResult.rows[0].encrypted_key);
+      }
+    }
+
+    if (!keyToTest) return res.status(400).json({ error: 'No key provided for testing' });
+    
+    const status = await checkProviderStatus(id, keyToTest);
+    res.json({ success: true, status });
+  } catch (error) {
+    res.status(500).json({ error: 'Test failed' });
+  }
+});
+
 export default router;

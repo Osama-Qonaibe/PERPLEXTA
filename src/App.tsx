@@ -27,7 +27,9 @@ const CenteredLoader = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0b]"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f0f11]"
     >
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
@@ -44,7 +46,7 @@ const CenteredLoader = () => {
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
             className="absolute inset-0 bg-emerald-500 rounded-full blur-[60px]"
           />
-          <div className="relative w-24 h-24 rounded-[4px] bg-gradient-to-br from-gray-900 to-black border border-gray-800/80 flex items-center justify-center shadow-2xl overflow-hidden group">
+          <div className="relative w-24 h-24 rounded-[var(--radius)] bg-gradient-to-br from-gray-900 to-black border border-[var(--border-main)]/80 flex items-center justify-center shadow-2xl overflow-hidden group">
             {siteSettings.logoBase64 ? (
               <img src={siteSettings.logoBase64} alt="Logo" className="w-14 h-14 object-contain" />
             ) : (
@@ -80,7 +82,7 @@ const CenteredLoader = () => {
       </div>
       
       {/* Encryption Tag */}
-      <div className="absolute bottom-10 flex items-center gap-2 px-4 py-2 rounded-[4px] bg-gray-900/30 border border-white/[0.03] backdrop-blur-md">
+      <div className="absolute bottom-10 flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/30 border border-white/[0.03] backdrop-blur-md">
          <ShieldCheck size={14} className="text-emerald-500" />
          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
             {language === 'ar' ? 'نظام مشفر ومستقر' : 'STABLE ENCRYPTED PROTOCOL'}
@@ -132,7 +134,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         position="top-center" 
         richColors 
         closeButton 
-        theme="dark"
+        theme={theme === 'dark' ? 'dark' : 'light'}
         expand={false}
       />
       <IncentiveCard />
@@ -143,11 +145,10 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       
       <motion.div 
         animate={{ 
-          opacity: isAuthReady ? 1 : 0,
-          scale: isAuthReady ? 1 : 0.99
+          opacity: isAuthReady ? 1 : 0
         }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className={!isAuthReady ? 'hidden' : 'block'}
+        transition={{ duration: 1.1, ease: [0.6, 0.01, 0, 1] }}
+        className={!isAuthReady ? 'hidden' : 'block h-full w-full'}
       >
         {children}
       </motion.div>

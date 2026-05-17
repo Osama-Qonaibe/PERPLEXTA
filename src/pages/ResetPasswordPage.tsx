@@ -92,7 +92,7 @@ export const ResetPasswordPage: React.FC = () => {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8">
-           <div className="inline-flex items-center justify-center w-16 h-16 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+           <div className="inline-flex items-center justify-center w-16 h-16 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
               <ShieldCheck size={32} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
            </div>
            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
@@ -109,7 +109,7 @@ export const ResetPasswordPage: React.FC = () => {
               key="success"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="p-8 rounded-[4px] border bg-emerald-500/5 border-emerald-500/20 text-center space-y-4"
+              className="p-8 rounded-[var(--radius)] border bg-emerald-500/5 border-emerald-500/20 text-center space-y-4"
             >
                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                  <CheckCircle2 size={24} className="text-black" />
@@ -125,7 +125,7 @@ export const ResetPasswordPage: React.FC = () => {
               key="form"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-8 rounded-[4px] shadow-2xl border bg-[var(--bg-secondary)] border-[var(--border-main)] relative overflow-hidden group"
+              className="p-8 rounded-[var(--radius)] shadow-2xl border bg-[var(--bg-secondary)] border-[var(--border-main)] relative overflow-hidden group"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
               
@@ -142,7 +142,7 @@ export const ResetPasswordPage: React.FC = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -159,7 +159,7 @@ export const ResetPasswordPage: React.FC = () => {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -172,7 +172,7 @@ export const ResetPasswordPage: React.FC = () => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-[4px] flex items-center gap-2"
+                      className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-[var(--radius)] flex items-center gap-2"
                     >
                       <AlertCircle size={14} />
                       {error}
@@ -183,7 +183,7 @@ export const ResetPasswordPage: React.FC = () => {
                 <button 
                   type="submit" 
                   disabled={isLoading} 
-                  className="w-full h-12 bg-emerald-500 text-black rounded-[4px] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
+                  className="w-full h-12 bg-emerald-500 text-black rounded-[var(--radius)] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

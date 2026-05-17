@@ -138,7 +138,7 @@ export const UsageRadar: React.FC = () => {
         {/* Plan Info Card - Centered as per image */}
         <div className={`p-10 rounded-[var(--radius)] border border-emerald-500/10 bg-emerald-500/[0.02] flex flex-col items-center relative group`}>
            {/* Chart Box - Left Aligned */}
-           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[var(--radius)] border border-emerald-500/20 flex items-center justify-center bg-black/20 text-emerald-500 group-hover:scale-105 transition-transform duration-700">
+           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[var(--radius)] border border-emerald-500/20 flex items-center justify-center bg-black/20 text-emerald-500 group-hover:scale-105 transition-transform duration-300">
               <BarChart3 size={48} className="drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
            </div>
 
@@ -147,7 +147,7 @@ export const UsageRadar: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-60">
                   {t('activeSubscription') || 'Active Subscription'}
                 </span>
-                <h3 className="text-5xl md:text-8xl font-black transition-all duration-700 leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
+                <h3 className="text-5xl md:text-8xl font-black transition-all duration-300 leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
                   {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
                 </h3>
               </div>
@@ -223,7 +223,7 @@ export const UsageRadar: React.FC = () => {
                             backgroundColor: dailyPercent > 90 ? '#ef4444' : planColor, 
                             boxShadow: `0 0 12px ${dailyPercent > 90 ? '#ef4444' : planColor}80` 
                           }}
-                          className="h-full rounded-full transition-all duration-700 ease-out"
+                          className="h-full rounded-full transition-all duration-300 ease-out"
                         />
                       </div>
                     </div>
@@ -234,7 +234,7 @@ export const UsageRadar: React.FC = () => {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800/40"
+                        className="space-y-4 pt-4 border-t border-[var(--border-main)] dark:border-[var(--border-main)]/40"
                       >
                          {/* Monthly Progress (Skip for Storage) */}
                          {!isStorage && (
@@ -253,7 +253,7 @@ export const UsageRadar: React.FC = () => {
                                   opacity: 0.8, 
                                   boxShadow: `0 0 15px ${monthlyPercent > 90 ? '#ef4444' : planColor}40` 
                                 }}
-                                className="h-full rounded-full transition-all duration-700 ease-out"
+                                className="h-full rounded-full transition-all duration-300 ease-out"
                               />
                             </div>
                           </div>
@@ -282,7 +282,7 @@ export const UsageRadar: React.FC = () => {
       </div>
 
       {/* Info Section */}
-      <div className="p-8 rounded-[var(--radius)] border transition-all duration-300 bg-gray-800/10" style={{ borderColor: `${planColor}20` }}>
+      <div className="p-8 rounded-[var(--radius)] border transition-all duration-300 bg-[var(--bg-secondary)]/10" style={{ borderColor: `${planColor}20` }}>
         <div className="flex gap-4 items-start">
           <div className="w-10 h-10 shrink-0 rounded-[var(--radius)] flex items-center justify-center" style={{ backgroundColor: `${planColor}20`, color: planColor }}>
             <AlertCircle size={20} />

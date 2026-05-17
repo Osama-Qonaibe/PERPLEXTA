@@ -221,7 +221,7 @@ export const SettingsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-600 group relative overflow-hidden ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-300 group relative overflow-hidden ${
                 activeTab === tab.id 
                   ? 'text-emerald-500'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5'
@@ -235,17 +235,17 @@ export const SettingsPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   />
                 )}
               </AnimatePresence>
 
-              <span className={`shrink-0 transition-all duration-600 relative z-10 ${
+              <span className={`shrink-0 transition-all duration-300 relative z-10 ${
                 activeTab === tab.id ? 'scale-110 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'group-hover:text-emerald-500'
               }`}>
                  {tab.icon}
               </span>
-              <span className={`font-bold text-sm tracking-tight relative z-10 transition-all duration-600 ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
+              <span className={`font-bold text-sm tracking-tight relative z-10 transition-all duration-300 ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
                 {tab.label}
               </span>
             </button>

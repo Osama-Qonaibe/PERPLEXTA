@@ -176,7 +176,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-all duration-600 relative group overflow-hidden ${
+                className={`px-8 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-all duration-300 relative group overflow-hidden ${
                   active 
                     ? 'text-emerald-500' 
                     : `text-[var(--text-muted)] hover:text-[var(--text-primary)]`
@@ -187,7 +187,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                    <motion.div 
                      layoutId="activeTabGlow"
                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
-                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                    />
                 )}
               </button>
@@ -227,7 +227,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         <tr>
                           <td colSpan={4} className="h-96">
                              <div className="flex flex-col items-center justify-center p-20 text-center opacity-40">
-                               <div className="w-20 h-20 rounded-full bg-gray-500/5 flex items-center justify-center mb-6">
+                               <div className="w-20 h-20 rounded-full bg-[var(--bg-secondary)]0/5 flex items-center justify-center mb-6">
                                   <History size={40} />
                                 </div>
                                <p className="text-[11px] font-black uppercase tracking-[0.6em]">{dir === 'rtl' ? 'لا توجد بيانات مسجلة في هذا القسم' : 'NO RECORDED DATA IN THIS SECTOR'}</p>

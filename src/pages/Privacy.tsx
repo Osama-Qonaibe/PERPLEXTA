@@ -21,7 +21,7 @@ export const Privacy: React.FC = () => {
         <div className="flex items-center gap-3 md:gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
+            className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
           >
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -37,7 +37,7 @@ export const Privacy: React.FC = () => {
         </div>
       </div>
 
-      <div className={`p-8 md:p-12 rounded-[4px] border ${theme === 'dark' ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-200'} shadow-xl`}>
+      <div className={`p-8 md:p-12 rounded-[var(--radius)] border ${theme === 'dark' ? 'bg-[#1a1a1c] border-[var(--border-main)]' : 'bg-white border-[var(--border-main)]'} shadow-xl`}>
         <div className="prose dark:prose-invert max-w-none">
           <p>This is a placeholder for the Privacy Policy. Please update this content with your legal agreements regarding data protection.</p>
         </div>

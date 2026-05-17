@@ -121,7 +121,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-600 border ${
+              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 border ${
                 filterCategory === cat.id
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                   : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-emerald-500/30'
@@ -167,7 +167,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
 
           <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all duration-1000 ease-out rounded-full ${
+              className={`h-full transition-all duration-300 ease-out rounded-full ${
                 isLimitReached ? 'bg-amber-500' : 'bg-emerald-500'
               }`}
               style={{ width: `${usagePercentage}%` }}

@@ -27,7 +27,7 @@ export const PWAInstall: React.FC<{ isSidebarOpen: boolean }> = ({ isSidebarOpen
         exit={{ opacity: 0, scale: 0.95 }}
         className="px-4 pb-4 mt-4"
       >
-        <div className="relative overflow-hidden rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/5 p-4 group transition-all duration-500 hover:border-emerald-500/40">
+        <div className="relative overflow-hidden rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/5 p-4 group transition-all duration-300 hover:border-emerald-500/40">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-emerald-500">
@@ -63,7 +63,7 @@ export const PWAInstall: React.FC<{ isSidebarOpen: boolean }> = ({ isSidebarOpen
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
                   >
                     <Download size={14} />
                   </motion.div>

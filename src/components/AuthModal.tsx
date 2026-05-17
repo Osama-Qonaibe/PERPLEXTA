@@ -102,7 +102,7 @@ export const AuthModal: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+            transition={{ type: "spring", duration: 0.3, bounce: 0.3 }}
             className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-[var(--radius)] shadow-2xl border bg-[var(--bg-surface)] border-[var(--border)] overflow-hidden mx-auto`}
             dir={dir}
             onClick={(e) => e.stopPropagation()}
@@ -192,7 +192,7 @@ export const AuthModal: React.FC = () => {
                           localStorage.setItem('app_remember_me', e.target.checked ? 'true' : 'false');
                         }}
                       />
-                      <div className="w-5 h-5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all duration-200"></div>
+                      <div className="w-5 h-5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all duration-300"></div>
                       <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
@@ -260,9 +260,9 @@ export const AuthModal: React.FC = () => {
         {mode !== 'forgot-password' && (
           <>
             <div className="mt-5 md:mt-6 flex items-center gap-4">
-              <div className="flex-grow border-t border-gray-800/60"></div>
+              <div className="flex-grow border-t border-[var(--border-main)]"></div>
               <span className="flex-shrink-0 text-[10px] md:text-xs font-bold text-gray-600 uppercase tracking-widest">{t('or') || 'OR'}</span>
-              <div className="flex-grow border-t border-gray-800/60"></div>
+              <div className="flex-grow border-t border-[var(--border-main)]"></div>
             </div>
 
             <motion.button
@@ -270,7 +270,7 @@ export const AuthModal: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={loginWithGoogle}
               type="button"
-              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[var(--radius)] border transition-all bg-[#0f0f11] border-gray-800 hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
+              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[var(--radius)] border transition-all bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-all">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

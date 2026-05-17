@@ -56,7 +56,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-[400px] bg-[var(--bg-secondary)]/90 backdrop-blur-xl border border-[var(--border)] rounded-[var(--radius)] shadow-2xl p-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-8 duration-500">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-[400px] bg-[var(--bg-secondary)]/90 backdrop-blur-xl border border-[var(--border)] rounded-[var(--radius)] shadow-2xl p-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
         <div className={`w-9 h-9 rounded-[var(--radius)] ${current.bg} flex items-center justify-center flex-shrink-0`}>
           <BrainCircuit className={current.color} size={20} />
         </div>

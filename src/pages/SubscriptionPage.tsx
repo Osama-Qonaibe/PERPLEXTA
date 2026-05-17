@@ -119,7 +119,7 @@ export const SubscriptionPage: React.FC = () => {
     }
     const formatLimit = (v: any) => v === 'unlimited' ? '∞' : (v || 0);
     return (
-      <div className="flex flex-col gap-1 p-2.5 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-all hover:border-emerald-500/30 group">
+      <div className="flex flex-col gap-1 p-2.5 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-all hover:border-emerald-500/30 group">
         <div className="flex items-center gap-2 mb-1">
           <div className="transition-transform group-hover:scale-110" style={{ color: color }}>{icon}</div>
           <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 truncate">{label}</span>
@@ -155,7 +155,7 @@ export const SubscriptionPage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
+              className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
             >
               {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
@@ -166,10 +166,10 @@ export const SubscriptionPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="p-1.5 rounded-[4px] flex items-center shadow-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]">
+          <div className="p-1.5 rounded-[var(--radius)] flex items-center shadow-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]">
             <button 
               onClick={() => setBillingCycle('monthly')}
-              className={`px-5 md:px-7 py-2 rounded-[4px] text-xs font-black uppercase tracking-widest transition-all duration-500 ${
+              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                 billingCycle === 'monthly' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-gray-500 hover:text-emerald-500'
@@ -179,7 +179,7 @@ export const SubscriptionPage: React.FC = () => {
             </button>
             <button 
               onClick={() => setBillingCycle('annual')}
-              className={`px-5 md:px-7 py-2 rounded-[4px] text-xs font-black uppercase tracking-widest transition-all duration-500 ${
+              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                 billingCycle === 'annual' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-gray-500 hover:text-emerald-500'
@@ -198,13 +198,13 @@ export const SubscriptionPage: React.FC = () => {
         {visiblePlans.map((plan) => (
           <div 
             key={plan.id} 
-            className={`relative rounded-[4px] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
+            className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
               user?.subscription?.plan_id?.toString() === plan.id.toString() 
                 ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
                 : 'hover:border-emerald-500/30'
             }`}
           >
-            <div className="absolute inset-0 rounded-[4px] bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-500 pointer-events-none" />
+            <div className="absolute inset-0 rounded-[var(--radius)] bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-300 pointer-events-none" />
             <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-all duration-300 group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
             {plan.badge !== 'none' && (
               <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
@@ -237,7 +237,7 @@ export const SubscriptionPage: React.FC = () => {
               <button 
                 onClick={() => handleUpgrade(plan.id)}
                 disabled={loading !== null || user?.subscription?.plan_id?.toString() === plan.id.toString()}
-                className={`py-2 md:py-3 rounded-[4px] text-white font-bold text-xs md:text-sm transition-all duration-500 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
+                className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
                 style={{ 
                   backgroundColor: plan.color || '#10b981', 
                   boxShadow: user?.subscription?.plan_id?.toString() === plan.id.toString() ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
@@ -251,7 +251,7 @@ export const SubscriptionPage: React.FC = () => {
               <button 
                 onClick={() => handlePayWithBalance(plan.id)}
                 disabled={loading !== null || user?.subscription?.plan_id?.toString() === plan.id.toString()}
-                className={`py-2 md:py-3 rounded-[4px] font-bold text-xs md:text-sm transition-all duration-500 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
+                className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
                 style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: user?.subscription?.plan_id?.toString() === plan.id.toString() ? 0.8 : 1 }}
               >
                 {user?.subscription?.plan_id?.toString() === plan.id.toString() ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
@@ -270,7 +270,7 @@ export const SubscriptionPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-auto pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-800/60">
+            <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
               <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                 <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat')} value={plan.limits.chat} color={plan.color || '#10b981'} />
                 <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis')} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
@@ -295,11 +295,11 @@ export const SubscriptionPage: React.FC = () => {
               />
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-md rounded-[4px] shadow-2xl overflow-hidden border bg-[var(--bg-secondary)] border-[var(--border-main)]"
+                className="relative w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden border bg-[var(--bg-secondary)] border-[var(--border-main)]"
               >
                 <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-[4px] bg-emerald-500/10 text-emerald-500"><Wallet size={20} /></div>
+                    <div className="p-2 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500"><Wallet size={20} /></div>
                     <h3 className="text-lg font-bold">{t('confirmSubscription')}</h3>
                   </div>
                   <button onClick={() => setConfirmingPlan(null)} disabled={loading !== null} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
@@ -310,7 +310,7 @@ export const SubscriptionPage: React.FC = () => {
                   <p className="text-sm text-gray-500 leading-relaxed">
                     {t('confirmSubscriptionDesc').replace('{plan}', dir === 'rtl' ? confirmingPlan.nameAr : confirmingPlan.nameEn)}
                   </p>
-                  <div className="p-4 rounded-[4px] space-y-3 bg-[var(--bg-primary)]">
+                  <div className="p-4 rounded-[var(--radius)] space-y-3 bg-[var(--bg-primary)]">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-500">{t('currentBalance')}</span>
                       <span className="font-bold text-[var(--text-primary)]">${Number(balanceUSD || 0).toFixed(2)}</span>
@@ -327,7 +327,7 @@ export const SubscriptionPage: React.FC = () => {
                     </div>
                   </div>
                   {balanceUSD - getDisplayPrice(confirmingPlan, billingCycle) < 0 && (
-                    <div className="flex items-start gap-3 p-4 rounded-[4px] bg-red-500/10 border border-red-500/20 text-red-500">
+                    <div className="flex items-start gap-3 p-4 rounded-[var(--radius)] bg-red-500/10 border border-red-500/20 text-red-500">
                       <AlertCircle size={18} className="shrink-0 mt-0.5" />
                       <p className="text-xs font-medium">{t('insufficientBalance')}</p>
                     </div>
@@ -336,14 +336,14 @@ export const SubscriptionPage: React.FC = () => {
                 <div className="p-6 bg-[var(--bg-primary)]/50 flex gap-3">
                   <button 
                     onClick={() => setConfirmingPlan(null)} disabled={loading !== null}
-                    className="flex-1 py-3 rounded-[4px] font-bold text-sm transition-all duration-300 border bg-[var(--bg-secondary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    className="flex-1 py-3 rounded-[var(--radius)] font-bold text-sm transition-all duration-300 border bg-[var(--bg-secondary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     {t('cancel')}
                   </button>
                   <button 
                     onClick={executePayment}
                     disabled={loading !== null || balanceUSD - getDisplayPrice(confirmingPlan, billingCycle) < 0}
-                    className="flex-1 py-3 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all duration-300 shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all duration-300 shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                     {t('confirmAndActivate')}
@@ -366,7 +366,7 @@ export const SubscriptionPage: React.FC = () => {
               />
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                className="relative w-full max-w-md rounded-[4px] shadow-2xl overflow-hidden border p-8 text-center bg-[var(--bg-secondary)] border-[var(--border-main)]"
+                className="relative w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden border p-8 text-center bg-[var(--bg-secondary)] border-[var(--border-main)]"
               >
                 <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: selectedPlanForModal?.color || '#10b981' }}></div>
                 <button onClick={() => setResultModal(null)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
@@ -374,7 +374,7 @@ export const SubscriptionPage: React.FC = () => {
                 </button>
                 <div className="flex justify-center mb-8">
                   <div 
-                    className="w-20 h-20 rounded-[4px] flex items-center justify-center"
+                    className="w-20 h-20 rounded-[var(--radius)] flex items-center justify-center"
                     style={{ backgroundColor: `${selectedPlanForModal?.color || '#10b981'}15`, color: selectedPlanForModal?.color || '#10b981' }}
                   >
                     {resultModal === 'success' ? (
@@ -391,7 +391,7 @@ export const SubscriptionPage: React.FC = () => {
                   {resultModal === 'success' ? t('subscriptionSuccessDesc') : t('insufficientBalanceDesc')}
                 </p>
                 {resultModal === 'insufficient' && (
-                  <div className="p-4 rounded-[4px] mb-6 flex items-center justify-between bg-[var(--bg-overlay)]">
+                  <div className="p-4 rounded-[var(--radius)] mb-6 flex items-center justify-between bg-[var(--bg-overlay)]">
                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
                       <Wallet size={14} />
                       {t('currentBalance')}
@@ -399,14 +399,14 @@ export const SubscriptionPage: React.FC = () => {
                     <span className="text-lg font-bold text-[var(--text-primary)]">${Number(balanceUSD || 0).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="p-6 rounded-[4px] mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
+                <div className="p-6 rounded-[var(--radius)] mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 text-start">
                     {t('yourReferralLink')}
                   </p>
-                  <div className="flex items-center gap-2 p-2 rounded-[4px] border bg-[var(--bg-base)] border-[var(--border)]">
+                  <div className="flex items-center gap-2 p-2 rounded-[var(--radius)] border bg-[var(--bg-base)] border-[var(--border)]">
                     <button 
                       onClick={handleCopyLink}
-                      className="shrink-0 w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 text-white"
+                      className="shrink-0 w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 text-white"
                       style={{ backgroundColor: copied ? '#10b981' : selectedPlanForModal?.color || '#10b981' }}
                     >
                       {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
@@ -416,19 +416,19 @@ export const SubscriptionPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={handleShare}
-                    className="flex-1 py-4 rounded-[4px] text-white font-bold text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={handleShare}
+                      className="flex-1 py-4 rounded-[var(--radius)] text-white font-bold text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: selectedPlanForModal?.color || '#10b981', boxShadow: `0 10px 20px -5px ${(selectedPlanForModal?.color || '#10b981')}40` }}
                   >
                     <Share2 size={18} />
                     {t('shareWithFriends')}
                   </button>
-                  <button 
-                    onClick={() => setResultModal(null)}
-                    className="flex-1 py-4 rounded-[4px] font-bold text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
-                  >
+                    <button 
+                      onClick={() => setResultModal(null)}
+                      className="flex-1 py-4 rounded-[var(--radius)] font-bold text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
+                    >
                     {t('close')}
                   </button>
                 </div>

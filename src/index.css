@@ -4,62 +4,89 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Majestic Motion - Global Transition Tokens */
-  --ms-duration: 600ms;
+  /* Motion Parameters */
+  --ms-duration: 300ms;
   --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --theme-transition-duration: 300ms;
 
-  /* Monochrome/Emerald Design System - Light Mode */
+  /* Architectural Variables - Light Mode (White Paper) */
   --bg-base: #ffffff;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-dropdown: #ffffff;
+  --bg-hover: #f3f4f6;
   --bg-surface: #f9fafb;
   --bg-input: #f3f4f6;
+  
   --text-primary: #111827;
   --text-secondary: #4b5563;
   --text-muted: #9ca3af;
+  
   --border-subtle: #e5e7eb;
+  --border-main: var(--border-subtle);
+  --border-sovereign: #e5e7eb;
+  --border: var(--border-subtle);
+  --border-accent: #10b981;
   
   /* Brand Constants */
   --accent-emerald: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.5);
   --danger: #ef4444;
   --warning: #f59e0b;
-  --radius: 8px;
+  --radius: 12px;
 
-  /* Legacy Mapping */
-  --bg-overlay: rgba(0, 0, 0, 0.05);
-  --border-main: var(--border-subtle);
-
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 .dark {
-    /* Monochrome/Emerald Design System - Dark Mode (Sovereign) */
+    /* Architectural Variables - Dark Mode (Sovereign Deep) */
     --bg-base: #0f0f11;
+    --bg-primary: #0f0f11;
+    --bg-secondary: #1a1a1c;
+    --bg-dropdown: #1a1a1c;
+    --bg-hover: #1e1e20;
     --bg-surface: #1a1a1c;
     --bg-input: #1e1e20;
+
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --text-muted: #64748b;
-    --border-subtle: rgba(255, 255, 255, 0.1);
+
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --border-main: rgba(255, 255, 255, 0.06);
+    --border-sovereign: rgba(255, 255, 255, 0.08);
+    --border: var(--border-main);
+    --border-accent: #10b981;
+
     --bg-overlay: rgba(255, 255, 255, 0.05);
-    --border-main: var(--border-subtle);
+
+    color-scheme: dark;
 }
 
 @theme {
-  --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: "Tajawal", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
-  /* Color Mapping to Variable Tokens */
+  /* Direct Variable Mapping */
   --color-base: var(--bg-base);
   --color-surface: var(--bg-surface);
   --color-input: var(--bg-input);
   --color-primary: var(--text-primary);
   --color-secondary: var(--text-secondary);
   --color-muted: var(--text-muted);
-  --color-border-main: var(--border-subtle);
+  --color-border-main: var(--border-main);
   --color-accent: var(--accent-emerald);
   --color-accent-glow: var(--accent-glow);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  
+  /* Sovereign Colors */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-dropdown: var(--bg-dropdown);
+  --color-bg-hover: var(--bg-hover);
+  --color-border-sovereign: var(--border-sovereign);
+  --color-border-accent: var(--border-accent);
   
   --radius-custom: var(--radius);
 }
@@ -97,33 +124,71 @@
   }
 }
 
-/* Cinematic Transitions */
-*,
-*::before,
-*::after {
+/* Standard Interactive Transitions (300ms) */
+.transition-sovereign {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
-  transition-duration: var(--ms-duration);
+  transition-duration: 300ms;
   transition-timing-function: var(--ms-easing);
 }
 
-/* Exempt specific UI elements */
-*:where(
-  [class*="transition-"], 
-  [class*="animate-"],
-  [class*="duration-"],
-  svg,
-  svg *,
-  canvas,
-  video,
-  img,
-  iframe,
-  .no-transition,
-  input,
-  textarea
-) {
-  transition-property: revert;
-  transition-duration: revert;
-  transition-timing-function: revert;
+/* Theme-Specific Transitions (300ms) - Targeted to prevent layout shift */
+.transition-theme {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color;
+  transition-duration: var(--theme-transition-duration);
+  transition-timing-function: var(--ms-easing);
+}
+
+/* High-Speed Actions (150ms) */
+.transition-fast {
+  transition-property: all;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Emerald Glow Pattern */
+.emerald-glow {
+  color: #10b981;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+}
+
+.emerald-glow-hover:hover {
+  color: #10b981;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+}
+.emerald-glow-hover {
+  transition: all 300ms var(--ms-easing);
+}
+
+/* Sovereign Icon Button Pattern */
+.btn-icon-sovereign {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  transition: all var(--theme-transition-duration) var(--ms-easing);
+  color: #9ca3af; /* gray-400 */
+  flex-shrink: 0;
+}
+
+.btn-icon-sovereign:hover {
+  background-color: var(--bg-hover);
+  color: #10b981;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+}
+
+.dark .btn-icon-sovereign:hover {
+  background-color: rgba(31, 41, 55, 1); /* gray-800 */
+}
+
+/* Vertical Separator */
+.separator-v {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-sovereign);
 }
 
 html {

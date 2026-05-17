@@ -428,7 +428,7 @@ export const RewardsPage: React.FC = () => {
 
       {/* KYC Verification Card */}
       {contextUser?.kyc_required && contextUser?.kyc_status !== 'verified' && (
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border transition-all duration-500 bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
           contextUser?.kyc_status === 'pending' ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' : 
           contextUser?.kyc_status === 'rejected' ? 'bg-red-500/5 border-red-500/20 shadow-red-500/5' : ''
         }`}>

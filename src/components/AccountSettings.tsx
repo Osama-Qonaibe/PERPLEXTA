@@ -201,7 +201,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
           <button
             key={item.id}
             onClick={() => setActiveCategory(item.id as any)}
-            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-600 rounded-[var(--radius)] ${
+            className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 rounded-[var(--radius)] ${
               activeCategory === item.id 
                 ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-lg' 
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/5'
@@ -220,7 +220,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-1"
           >
              {/* Avatar Section */}
@@ -238,13 +238,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <img 
                       src={user.avatar} 
                       alt="Avatar" 
-                      className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-all duration-600 shadow-xl"
+                      className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-all duration-300 shadow-xl"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div 
-                      className="w-20 h-20 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-600 border-4"
+                      className="w-20 h-20 rounded-[var(--radius)] bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-300 border-4"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                     >
                       {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={28} />}
@@ -320,10 +320,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-2"
           >
-            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-600">
+            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-300">
               <div className="flex items-start gap-6">
                 <div className="p-5 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500 shadow-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
                   <Sparkles size={32} className="drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
@@ -353,7 +353,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <button
                       key={preset.id}
                       onClick={() => handlePresetSelect(preset)}
-                      className={`p-5 rounded-[var(--radius)] border transition-all duration-600 text-start group relative overflow-hidden ${
+                      className={`p-5 rounded-[var(--radius)] border transition-all duration-300 text-start group relative overflow-hidden ${
                         active 
                           ? 'border-emerald-500 bg-emerald-500/[0.03] shadow-lg shadow-emerald-500/5' 
                           : 'border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/5'
@@ -363,7 +363,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                         <motion.div 
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                           className="absolute top-0 right-0 p-2 text-emerald-500"
                         >
                           <Check size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
@@ -404,7 +404,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-1"
           >
             {/* Language Selection */}
@@ -454,7 +454,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   </button>
                   <button 
                     onClick={() => setTheme('dark')}
-                    className="px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all bg-gray-800 text-white shadow-lg shadow-black/40"
+                    className="px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all bg-[var(--bg-secondary)] text-white shadow-lg shadow-black/40"
                   >
                     Dark
                   </button>

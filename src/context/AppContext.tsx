@@ -1502,6 +1502,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const bootStartTime = useRef(Date.now());
+  const MIN_BOOT_TIME = 1200; // 1.2s for high-end feel
+
+  const completeBoot = (force = false) => {
+    const elapsed = Date.now() - bootStartTime.current;
+    const remaining = force ? 0 : Math.max(0, MIN_BOOT_TIME - elapsed);
+    setTimeout(() => setIsAuthReady(true), remaining);
+  };
   const [balance, setBalance] = useState<number>(0);
   const [balanceUSD, setBalanceUSD] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -1756,7 +1764,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const timer = setTimeout(() => {
       if (!isAuthReady) {
         console.warn('Auth ready took too long, forcing ready state for boot resilience.');
-        setIsAuthReady(true);
+        completeBoot(true);
       }
     }, 8000); 
     return () => clearTimeout(timer);
@@ -1778,13 +1786,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (userProfile.language) setLanguage(userProfile.language as Language);
         if (data.economy) setEconomySettings(data.economy);
       }
-      setIsAuthReady(true);
+      completeBoot();
     } catch (err) {
       console.error('Profile fetch error:', err);
       if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
         logout(false);
       }
-      setIsAuthReady(true);
+      completeBoot();
     }
   };
 
@@ -1815,7 +1823,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         socket.connect();
       }
     } else {
-      setIsAuthReady(true);
+      completeBoot();
     }
   }, [token, socket]);
 
