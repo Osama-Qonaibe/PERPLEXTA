@@ -10,7 +10,7 @@ router.get("/settings", async (req, res) => {
     res.json(settings);
   } catch (error: any) {
     console.error('[Settings] getSystemSettings failed:', error);
-    res.status(500).json({ error: 'Internal Error', detail: error?.message || String(error) });
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
@@ -20,7 +20,7 @@ router.get("/economy", async (req, res) => {
     res.json(economy);
   } catch (error: any) {
     console.error('[Economy] getEconomySettings failed:', error);
-    res.status(500).json({ error: 'Internal Error', detail: error?.message || String(error) });
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
@@ -30,7 +30,7 @@ router.post("/admin/settings", authenticateAdmin, async (req, res) => {
     res.json(result);
   } catch (error: any) {
     console.error('[Settings] updateSystemSettings failed:', error);
-    res.status(500).json({ error: 'Internal Error', detail: error?.message || String(error) });
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
@@ -40,7 +40,7 @@ router.post("/admin/economy", authenticateAdmin, async (req, res) => {
     res.json(result);
   } catch (error: any) {
     console.error('[Economy] updateEconomySettings failed:', error);
-    res.status(500).json({ error: 'Internal Error', detail: error?.message || String(error) });
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
