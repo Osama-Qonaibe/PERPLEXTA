@@ -4,6 +4,7 @@
 
 ![Stack](https://img.shields.io/badge/Stack-React%20%2B%20Node.js%20%2B%20PostgreSQL-10b981?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Full--Stack-3178c6?style=flat-square)
+![Audit](https://img.shields.io/badge/Audit-9.3%2F10-10b981?style=flat-square)
 ![License](https://img.shields.io/badge/License-Private-red?style=flat-square)
 
 ---
@@ -18,6 +19,7 @@ PERPLEXTA is a multi-tool AI platform that allows users to interact with multipl
 - Dual-language interface (Arabic / English) with full RTL support
 - Subscription-based access control with Stripe integration
 - Internal wallet system with points, referrals, and withdrawals
+- KYC verification pipeline with synchronized dual-DB updates
 - Admin dashboard for full platform control
 
 ---
@@ -35,7 +37,7 @@ PERPLEXTA is a multi-tool AI platform that allows users to interact with multipl
 | AI | Multi-provider via dynamic Orchestrator |
 | Scheduler | node-cron |
 | Containers | Docker + docker-compose |
-| Security | Helmet, CORS, express-rate-limit, bcryptjs, AES-256 |
+| Security | Helmet CSP (nonce-based), CORS, express-rate-limit, bcryptjs, AES-256-CBC |
 
 ---
 
@@ -47,10 +49,10 @@ The platform uses two isolated PostgreSQL databases:
 
 | Database | Purpose | Tables |
 |----------|---------|--------|
-| **Core DB** | Users, chats, subscriptions, settings, notifications | 27 tables |
-| **Ledger DB** | Wallets, transactions, referrals, KYC, withdrawals | 11 tables |
+| **Core DB** | Users, chats, subscriptions, settings, notifications | 31 tables |
+| **Ledger DB** | Wallets, transactions, referrals, KYC, economy, withdrawals | 13 tables |
 
-This isolation ensures that **no financial operation can be corrupted by application-level bugs** in the core system. Cross-database referential integrity is enforced at the application layer.
+This isolation ensures that **no financial operation can be corrupted by application-level bugs** in the core system. Cross-database referential integrity is enforced at the application layer via dedicated service functions.
 
 ### AI Orchestrator
 
@@ -60,15 +62,19 @@ Every AI tool is configured in the `tool_orchestrator` table with:
 - Per-tool daily budget enforcement
 - Automatic failover with full logging
 
+### Financial Sovereignty
+
+All economy settings (conversion rates, bonus points, withdrawal minimums) live exclusively in `economy_settings` in the Ledger DB. The Core DB holds no financial constants. All wallet operations use `SELECT ... FOR UPDATE` row-level locking to prevent race conditions.
+
 ---
 
 ## Database Schema
 
-### Core DB (27 tables)
+### Core DB (31 tables)
 
 `users` · `chats` · `messages` · `api_keys_vault` · `tool_orchestrator` · `plans` · `subscriptions` · `user_usage` · `notifications` · `chat_memories` · `email_templates` · `email_settings` · `campaigns` · `ai_logs` · `message_reports` · `user_shortcuts` · `task_logs` · `user_activity_logs` · `system_settings` · `system_broadcasts` · `user_files` · `security_alerts` · `system_logs` · `token_blacklist` · `password_resets` · `support_tickets` · `support_ticket_replies` · `oauth_states` · `plan_features_history` · `migration_history` · `db_connections_registry`
 
-### Ledger DB (11 tables)
+### Ledger DB (13 tables)
 
 `wallets` · `ledger_transactions` · `referrals` · `referral_tree` · `kyc_requests` · `withdrawal_requests` · `payout_accounts` · `economy_settings` · `user_usage_logs` · `coupons` · `coupon_usages` · `stripe_events` · `deposit_requests`
 
@@ -79,6 +85,7 @@ Every AI tool is configured in the `tool_orchestrator` table with:
 - Node.js >= 18
 - PostgreSQL >= 14 (two separate databases)
 - A valid `JWT_SECRET` (min 32 chars)
+- A valid `ENCRYPTION_KEY` (32-char hex, used for AES-256 encryption)
 - At least one AI provider API key configured via the Admin Dashboard
 
 ---
@@ -95,7 +102,7 @@ Copy `.env.example` to `.env` and fill in all required values.
 | `ENCRYPTION_KEY` | ✅ | AES-256 key for encrypting stored secrets (32 chars hex) |
 | `APP_URL` | ✅ | Full public URL of the app (e.g. `https://yourdomain.com`) |
 | `ADMIN_EMAIL` | ✅ | Email address of the master admin account |
-| `ADMIN_PASSWORD` | ✅ | Initial password for the admin account (set strong password) |
+| `ADMIN_PASSWORD` | ✅ | Initial password for the admin account (use a strong password) |
 | `GOOGLE_CLIENT_ID` | ⚠️ | Required only if Google OAuth is enabled |
 | `GOOGLE_CLIENT_SECRET` | ⚠️ | Required only if Google OAuth is enabled |
 | `CORS_ALLOWED_ORIGINS` | ⚠️ | Comma-separated list of allowed origins in production |
@@ -104,7 +111,7 @@ Copy `.env.example` to `.env` and fill in all required values.
 | `VITE_APP_URL` | optional | Frontend base URL override |
 | `VITE_ADMIN_EMAIL` | optional | Admin email override for frontend |
 
-> **Security:** Never commit real secrets to version control. All AI provider API keys and Stripe keys are stored encrypted in the database and managed via the Admin Dashboard — not in `.env`.
+> **Security:** Never commit real secrets to version control. All AI provider API keys and Stripe keys are stored **encrypted (AES-256-CBC)** in the database and managed exclusively via the Admin Dashboard — not in `.env`.
 
 ---
 
@@ -123,7 +130,8 @@ The server automatically runs all database migrations on startup. On first run i
 1. Create all required tables across both databases
 2. Seed default plans (Starter, Pro, Elite)
 3. Seed default AI tools in the orchestrator
-4. Create the admin account from `ADMIN_EMAIL` + `ADMIN_PASSWORD`
+4. Seed economy settings in Ledger DB
+5. Create the admin account from `ADMIN_EMAIL` + `ADMIN_PASSWORD`
 
 ---
 
@@ -139,7 +147,7 @@ The `docker-compose.yml` includes the full environment: app server, Core DB, and
 
 ## Migration System
 
-Migrations are versioned and tracked in the `migration_history` table. Each migration runs exactly once.
+Migrations are versioned and tracked in the `migration_history` table. Each migration runs **exactly once** and is wrapped in a full `BEGIN / COMMIT / ROLLBACK` transaction.
 
 | Version | Description |
 |---------|-------------|
@@ -147,11 +155,12 @@ Migrations are versioned and tracked in the `migration_history` table. Each migr
 | `v2_additive_columns` | Idempotent column additions |
 | `v3_ledger_schema_v1` | Initial Ledger DB schema |
 | `v4_registry_seed` | Database connections registry seeding |
-| `v5_orchestrator_cleanup` | Legacy column cleanup |
+| `v5_orchestrator_cleanup` | Legacy duplicate column cleanup |
 | `v6_coupon_system_expansion` | Coupon usage tracking |
 | `v7_finance_expansion` | Deposit requests + plan history |
 | `v8_security_hardening` | Stripe key encryption transition |
 | `v9_security_janitor` | Final sweep for unencrypted keys |
+| `v10_economy_refactor` | Remove redundant economy columns from Core DB; Ledger DB is sole source of truth |
 
 ---
 
@@ -160,8 +169,8 @@ Migrations are versioned and tracked in the `migration_history` table. Each migr
 | Method | Flow |
 |--------|------|
 | Email / Password | bcryptjs (cost 10) · JWT (7d) · Token Blacklist on logout |
-| Google OAuth 2.0 | CSRF-protected state token · Popup or redirect mode |
-| Password Reset | Time-limited token (1h) · Deleted immediately on use · Per-email rate limit |
+| Google OAuth 2.0 | CSRF-protected state nonce · Popup or redirect mode · XSS-safe HTML callback |
+| Password Reset | Time-limited token (1h) · Deleted **immediately on use** · Per-email rate limit (2 min cooldown) |
 
 All authenticated requests pass through two checks:
 1. Token is not in the `token_blacklist` table
@@ -183,11 +192,12 @@ Plan limits are enforced per-tool, per-day via the `user_usage` table. Limits ar
 
 ## Wallet & Economy
 
-- Users earn **points** via referrals and bonuses
+- Users earn **points** via referrals and platform bonuses
 - Points can be converted to **USD balance** at a configurable rate
 - USD balance can be used to pay for subscriptions or withdrawn
 - All financial operations use `SELECT ... FOR UPDATE` to prevent race conditions
-- Economy settings (rates, minimums) are stored in `economy_settings` in the Ledger DB
+- Economy settings (rates, minimums, bonuses) are stored **exclusively** in `economy_settings` in the Ledger DB
+- Economy settings are cached in-memory (1-minute TTL) to reduce DB load
 
 ---
 
@@ -195,8 +205,16 @@ Plan limits are enforced per-tool, per-day via the `user_usage` table. Limits ar
 
 - Multi-level referral tree tracked in `referral_tree`
 - Referrer earns a configurable bonus percentage
-- Referral activation requires a minimum deposit (configurable)
+- Referral activation requires a minimum deposit (configurable in `economy_settings`)
 - Referral status tracked separately in `referrals` table
+
+---
+
+## KYC System
+
+- Users submit identity documents via the KYC flow
+- Admin reviews and approves/rejects via the Admin Dashboard
+- Approval triggers `syncKYCStatus()` which atomically updates both Core DB (`users.kyc_status`) and Ledger DB (`kyc_requests.status`) in a single transaction
 
 ---
 
@@ -204,24 +222,26 @@ Plan limits are enforced per-tool, per-day via the `user_usage` table. Limits ar
 
 | Measure | Implementation |
 |---------|---------------|
-| Rate Limiting | Global (300/15min) · Auth (20/15min) · Chat (30/min) · Forgot Password (5/hour) |
-| JWT | Signed with `JWT_SECRET` · Blacklisted on logout |
+| Rate Limiting | Global (300/15min) · Auth (20/15min) · Chat (30/min) · Forgot Password (5/hour) · Per-email cooldown (2 min) |
+| JWT | Signed HS256 · Blacklisted on logout · 7-day expiry |
 | Password Hashing | bcryptjs, cost factor 10 |
-| Secret Encryption | AES-256-CBC for all API keys and DB credentials |
+| Secret Encryption | AES-256-CBC for all API keys, DB credentials, and Stripe keys |
 | CORS | Restricted to `APP_URL` + `CORS_ALLOWED_ORIGINS` in production |
-| CSP | Helmet with nonce-based script/style policy |
+| CSP | Helmet · nonce-based `scriptSrc` and `styleSrc` · no `unsafe-inline` or `unsafe-eval` |
 | SQL Injection | Fully parameterized queries throughout |
 | XSS | HTML escaping on all server-rendered content |
 | Prompt Injection | Input sanitization on all AI prompts |
+| OAuth CSRF | Cryptographic state nonce stored in DB with 10-minute expiry |
+| Open Redirect | `targetRef` validated to start with `/` and not `//` |
 
 ---
 
 ## Cron Jobs
 
 | Job | Schedule | Action |
-|-----|----------|--------|
-| System Maintenance | Daily 03:00 | Clean expired tokens, resets, oauth states, old logs. Update expired subscriptions. Reset AI daily budgets. |
-| DB Heartbeat | Every 5 minutes | Monitor all registered database connections |
+|-----|----------|---------|
+| System Maintenance | Daily 03:00 | Clean expired tokens, password resets, oauth states, AI logs (>30d), activity logs (>30d). Mark subscriptions `expired`. |
+| DB Heartbeat | Every 5 min | Monitor all registered DB connections with concurrency guard |
 | Subscription Expiry | Daily 03:05 | Notify users 3 days before subscription renewal |
 
 ---
@@ -238,7 +258,7 @@ Features:
 - Email template editor + SMTP configuration
 - Broadcast notifications to all users
 - Financial overview (wallets, withdrawals, deposits)
-- KYC verification queue
+- KYC verification queue with atomic dual-DB sync
 - Security alerts log
 - Database connection manager (live swap without restart)
 
@@ -250,11 +270,11 @@ Features:
 perplexta/
 ├── server/
 │   ├── config/         # Socket.IO, protocol constants
-│   ├── db/             # Pool initialization, migrations, schema
-│   ├── middleware/      # Auth, rate limiting, error handler
-│   ├── routes/         # Express route handlers
-│   ├── services/       # Business logic (AI, wallet, email, quota...)
-│   └── utils/          # Crypto, helpers
+│   ├── db/             # Pool initialization, migrations, schema (v1→v10)
+│   ├── middleware/     # Auth, rate limiting, error handler
+│   ├── routes/         # Express route handlers (14 routers)
+│   ├── services/       # Business logic (AI, wallet, kyc, email, quota)
+│   └── utils/          # Crypto (AES-256), helpers
 ├── src/
 │   ├── components/     # React UI components
 │   ├── pages/          # Route-level page components
