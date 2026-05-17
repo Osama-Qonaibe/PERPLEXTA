@@ -25,8 +25,8 @@ app.use(helmet({
       scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
       styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com"],
-      connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       frameAncestors: ["'self'"]
     }
   },
@@ -41,10 +41,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    // In production, strictly enforce allowed origins. In dev, allow all.
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
