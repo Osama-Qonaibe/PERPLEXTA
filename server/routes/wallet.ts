@@ -56,7 +56,9 @@ router.get("/referral-count", authenticateToken, async (req: any, res) => {
 router.get("/history", authenticateToken, async (req: any, res) => {
   try {
     const type = req.query.type as string || 'all';
-    const history = await getTransactionHistory(req.user.id, type);
+    const limit = parseInt(req.query.limit as string) || 100;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const history = await getTransactionHistory(req.user.id, type, limit, offset);
     res.json(history);
   } catch (error: any) {
     console.error('[Wallet] History Error:', error);

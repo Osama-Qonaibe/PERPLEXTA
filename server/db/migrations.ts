@@ -271,18 +271,25 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     // MIGRATION: Cleanup Duplicate Columns
     await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async () => {
-      const dropColumns = [
-        'fallback1_provider', 'fallback1_model',
-        'fallback2_provider', 'fallback2_model',
-        'fallback3_provider', 'fallback3_model'
-      ];
-      for (const col of dropColumns) {
-        await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
-      }
-      
-      const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
-      for (const constr of dropUsageConstraints) {
-        await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
+      await client.query('BEGIN');
+      try {
+        const dropColumns = [
+          'fallback1_provider', 'fallback1_model',
+          'fallback2_provider', 'fallback2_model',
+          'fallback3_provider', 'fallback3_model'
+        ];
+        for (const col of dropColumns) {
+          await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
+        }
+        
+        const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
+        for (const constr of dropUsageConstraints) {
+          await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
+        }
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
       }
     });
 
@@ -425,7 +432,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         if (updateNeeded) {
           const fields = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
           const values = Object.values(updates);
-          await client.query(`UPDATE system_settings SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ${row.id}`, values);
+          const idParamIdx = values.length + 1;
+          values.push(row.id);
+          await client.query(`UPDATE system_settings SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
         }
       }
     });

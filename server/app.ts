@@ -23,9 +23,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https:"],
+      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "https:", "wss:", "ws:"],
+      connectSrc: ["'self'", "wss:", "ws:"],
       frameAncestors: ["'self'"]
     }
   },

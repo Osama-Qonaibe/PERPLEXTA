@@ -36,7 +36,7 @@ async function getEconomySettings() {
   return {};
 }
 
-export async function getTransactionHistory(userId: string, type: string) {
+export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   let query = 'SELECT * FROM ledger_transactions WHERE user_id = $1';
   const params: any[] = [userId];
@@ -46,7 +46,11 @@ export async function getTransactionHistory(userId: string, type: string) {
     params.push(type);
   }
 
-  query += ' ORDER BY created_at DESC LIMIT 100';
+  const limitIdx = params.length + 1;
+  const offsetIdx = params.length + 2;
+  query += ` ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
+  params.push(limit, offset);
+  
   const result = await ledgerPool.query(query, params);
   return result.rows;
 }
@@ -231,12 +235,21 @@ export async function refundToWallet(userId: string, amount: number, transaction
 
     let walletId: number;
     if (walletRes.rows.length === 0) {
-      // Must ensure user exists and create wallet
-      const wallet = await getUserWallet(userId);
-      walletId = wallet.id;
-      // Re-lock purely for safety in transaction lifecycle
-      const reLock = await client.query('SELECT id FROM wallets WHERE id = $1 FOR UPDATE', [walletId]);
-      walletId = reLock.rows[0].id;
+      // Create wallet inside transaction to maintain atomicity and isolation
+      const createRes = await client.query(`
+        INSERT INTO wallets (user_id, balance, points) 
+        VALUES ($1, 0, 0) 
+        ON CONFLICT (user_id) DO NOTHING
+        RETURNING id
+      `, [userId]);
+      
+      if (createRes.rows.length > 0) {
+        walletId = createRes.rows[0].id;
+      } else {
+        // Conflict occurred but row exists now, fetch it with lock
+        const reFetch = await client.query('SELECT id FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+        walletId = reFetch.rows[0].id;
+      }
     } else {
       walletId = walletRes.rows[0].id;
     }

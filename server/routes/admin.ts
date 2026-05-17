@@ -434,6 +434,15 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
       }
 
+      // Sync KYC status to Ledger DB if changed
+      if (kyc_status) {
+        const ledgerTarget = ledgerPool || pool;
+        await ledgerTarget.query(
+          'UPDATE kyc_requests SET status = $1, rejection_reason = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3',
+          [kyc_status, kyc_rejection_reason || null, id]
+        );
+      }
+
       await client.query('COMMIT');
       await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: id, changes: { role, status, kyc_status } });
       res.json({ success: true });
