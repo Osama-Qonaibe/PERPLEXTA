@@ -19,19 +19,22 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com"],
-      connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      frameAncestors: ["'self'"]
-    }
-  },
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: false
 }));
+
+app.use((req, res, next) => {
+  const nonce = res.locals.nonce;
+  res.setHeader('Content-Security-Policy', [
+    `default-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `img-src 'self' data: blob: https://*.stripe.com https://*.googleapis.com https://www.transparenttextures.com`,
+    `font-src 'self' https://fonts.gstatic.com data:`,
+    `connect-src 'self' wss: ws: https://*.googleapis.com https://api.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://fonts.gstatic.com https://fonts.googleapis.com`,
+    `frame-ancestors 'self'`
+  ].join('; '));
+  next();
+});
 
 app.use(cors({
   origin: (origin, callback) => {
