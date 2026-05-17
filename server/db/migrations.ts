@@ -7,17 +7,29 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 export async function runSystemMaintenance() {
   try {
     if (pool) {
+      // 1. Cleanup expired tokens
       await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+      
+      // 2. Cleanup expired password resets
       await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
+      
+      // 3. Cleanup old activity logs (keep 30 days)
       await pool.query("DELETE FROM user_activity_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      
+      // 4. Update expired subscriptions
       await pool.query(`
         UPDATE subscriptions 
         SET status = 'expired', updated_at = CURRENT_TIMESTAMP 
         WHERE current_period_end < CURRENT_TIMESTAMP 
         AND status = 'active'
       `);
+
+      // 5. Cleanup expired OAuth states
       await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
+
+      // 6. Cleanup old AI logs (keep 30 days)
       await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+
       console.log('[Maintenance] Daily system cleanup completed successfully.');
     }
   } catch (e: any) {
@@ -81,6 +93,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   }
   
   try {
+    // 1. Migration History Table (Initialize if not exists)
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
         id SERIAL PRIMARY KEY,
@@ -104,6 +117,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await client.query('DELETE FROM migration_history');
     }
 
+    // 2. Base Registry Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS db_connections_registry (
         id VARCHAR(50) PRIMARY KEY,
@@ -125,6 +139,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
+    // Helper to run a versioned migration
     const runVersioned = async (name: string, description: string, fn: (tx?: any, ledgerTx?: any) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
@@ -146,10 +161,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     };
 
+    // MIGRATION: Core Schema v1
     await runVersioned('v1_core_schema', 'Initial core database schema', async (tx, ledgerTx) => {
       await initDb(type, tx, ledgerTx);
     });
 
+    // MIGRATION: Additive Columns v2
     await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async (tx) => {
       await ensureColumn(tx, 'users', 'last_active_at', 'TIMESTAMP');
       await ensureColumn(tx, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
@@ -191,8 +208,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'stripe_publishable_key', 'TEXT');
       await ensureColumn(tx, 'system_settings', 'stripe_webhook_secret', 'TEXT');
       await ensureColumn(tx, 'system_settings', 'stripe_live_mode', 'BOOLEAN', 'false');
-      await ensureColumn(tx, 'system_settings', 'seo_description_en', 'TEXT');
-      await ensureColumn(tx, 'system_settings', 'seo_description_ar', 'TEXT');
 
       await ensureColumn(tx, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
       await ensureColumn(tx, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
@@ -213,39 +228,45 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_logs', 'details', 'JSONB', `'{}'`);
       await ensureColumn(tx, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
 
-      await tx.query(`SELECT 1`);
+      await tx.query(`SELECT 1`); // Placeholder
     });
 
+    // MIGRATION: Ledger Schema v3 (Isolated Transaction)
     await runVersioned('v3_ledger_schema_v1', 'Initial Ledger DB schema and hardened transactions', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
+      
       await ensureColumn(ledgerTarget, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
       await ensureColumn(ledgerTarget, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
       await ensureColumn(ledgerTarget, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
+      
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'user_id', 'INTEGER');
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
     });
 
+    // MIGRATION: Database Registry Seed
     await runVersioned('v4_registry_seed', 'Seeding database connections', async (tx) => {
       const coreUrl = process.env.DATABASE_URL;
       const ledgerUrl = process.env.LEDGER_DATABASE_URL;
+
       if (coreUrl) {
-        const coreEncrypted = encrypt(coreUrl);
-        await tx.query(
-          `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('core', 'core', $1, true) ON CONFLICT (id) DO NOTHING`,
-          [coreEncrypted]
-        );
+          const coreEncrypted = encrypt(coreUrl);
+          await tx.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('core', 'core', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [coreEncrypted]
+          );
       }
       if (ledgerUrl) {
-        const ledgerEncrypted = encrypt(ledgerUrl);
-        await tx.query(
-          `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('ledger', 'ledger', $1, true) ON CONFLICT (id) DO NOTHING`,
-          [ledgerEncrypted]
-        );
+          const ledgerEncrypted = encrypt(ledgerUrl);
+          await tx.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('ledger', 'ledger', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [ledgerEncrypted]
+          );
       }
     });
 
+    // MIGRATION: Cleanup Duplicate Columns
     await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async (tx) => {
       const dropColumns = [
         'fallback1_provider', 'fallback1_model',
@@ -255,12 +276,14 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       for (const col of dropColumns) {
         await tx.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
       }
+      
       const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
       for (const constr of dropUsageConstraints) {
         await tx.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
       }
     });
 
+    // MIGRATION: Coupon System Expansion v6
     await runVersioned('v6_coupon_system_expansion', 'Adding detailed coupon tracking', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       await ensureColumn(ledgerTarget, 'coupons', 'usage_limit', 'INTEGER', '0');
@@ -268,17 +291,23 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(ledgerTarget, 'coupons', 'is_active', 'BOOLEAN', 'true');
     });
 
+    // MIGRATION: Finance & History Expansion v7
     await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async (tx, ledgerTx) => {
+      // Logic handled in initDb for fresh installs, additive logic here if needed for existing ones
       await tx.query(`SELECT 1`);
     });
 
+    // MIGRATION: Security Hardening (Stripe Key Encryption) v8
     await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async (tx) => {
       const { encrypt } = await import('../utils/crypto.js');
       const settingsRes = await tx.query('SELECT id, stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings');
+      
       const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+      
       for (const row of settingsRes.rows) {
         let needsUpdate = false;
         const updates: any = {};
+
         const keysToCheck = ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'];
         for (const key of keysToCheck) {
           const val = row[key];
@@ -287,17 +316,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             needsUpdate = true;
           }
         }
+
         if (needsUpdate) {
           const fieldsArray = Object.keys(updates);
           const fieldsSql = fieldsArray.map((k, i) => `${k} = $${i + 1}`).join(', ');
           const values = Object.values(updates);
           values.push(row.id);
           const idParamIdx = values.length;
+          
           await tx.query(`UPDATE system_settings SET ${fieldsSql}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
         }
       }
     });
 
+    // MIGRATION: Economy settings refactor v10
     await runVersioned('v10_economy_refactor', 'Removing redundant economy columns from system_settings and ensuring Ledger DB as source of truth', async (tx, ledgerTx) => {
       const dropCols = [
         'points_per_dollar', 'min_payout_usd', 'min_deposit_usd', 
@@ -307,8 +339,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       for (const col of dropCols) {
         await tx.query(`ALTER TABLE system_settings DROP COLUMN IF EXISTS "${col}"`);
       }
+      
       const ledgerTarget = ledgerTx || tx;
       await ensureColumn(ledgerTarget, 'economy_settings', 'referral_activation_min_deposit', 'NUMERIC(10, 2)', "'10.00'");
+      
       console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB and ensured Ledger DB schema.');
     });
 
@@ -325,7 +359,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: any, customLedgerPool?: any) {
   if (!pool) return;
   const targetPool = customPool || pool;
-  const targetLedgerPool = customLedgerPool || (ledgerPool || targetPool);
+  const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
 
   const schema = [
     {
@@ -352,6 +386,25 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         provider VARCHAR(50) DEFAULT 'local',
         avatar TEXT
+      )`
+    },
+    {
+      name: 'password_resets',
+      query: `CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'token_blacklist',
+      query: `CREATE TABLE IF NOT EXISTS token_blacklist (
+        id SERIAL PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -818,8 +871,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         favicon_url TEXT,
         site_description_en TEXT,
         site_description_ar TEXT,
-        seo_description_en TEXT,
-        seo_description_ar TEXT,
         keywords_en TEXT,
         keywords_ar TEXT,
         google_analytics_id VARCHAR(100),
@@ -896,31 +947,12 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'token_blacklist',
-      query: `CREATE TABLE IF NOT EXISTS token_blacklist (
-        id SERIAL PRIMARY KEY,
-        token TEXT UNIQUE NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'oauth_states',
       query: `CREATE TABLE IF NOT EXISTS oauth_states (
         id SERIAL PRIMARY KEY,
         state VARCHAR(255) UNIQUE NOT NULL,
         provider VARCHAR(50) NOT NULL,
         redirect_url TEXT,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
-      name: 'password_resets',
-      query: `CREATE TABLE IF NOT EXISTS password_resets (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        token VARCHAR(255) NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -1044,6 +1076,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     await idx.pool.query(idx.query);
   }
 
+  // Relations & FKs
   const relations = [
     { pool: targetPool, query: `ALTER TABLE campaigns DROP CONSTRAINT IF EXISTS campaigns_template_id_fkey` },
     { pool: targetPool, query: `ALTER TABLE campaigns ADD CONSTRAINT campaigns_template_id_fkey FOREIGN KEY (template_id) REFERENCES email_templates(id)` },
@@ -1085,16 +1118,17 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     );
   }
 
+  // Seed economy_settings in Ledger DB if empty
   try {
     const ecoCheck = await targetLedgerPool.query('SELECT count(*) FROM economy_settings');
     if (parseInt(ecoCheck.rows[0].count) === 0) {
-      await targetLedgerPool.query(`
-        INSERT INTO economy_settings (
-          welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, 
-          points_per_dollar, conversion_rate, referral_bonus_percent, 
-          min_payout_usd, min_deposit_usd
-        ) VALUES (600, 1000, 1000, 1000, 0.001, 10, 10, 5)
-      `);
+        await targetLedgerPool.query(`
+            INSERT INTO economy_settings (
+              welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, 
+              points_per_dollar, conversion_rate, referral_bonus_percent, 
+              min_payout_usd, min_deposit_usd
+            ) VALUES (600, 1000, 1000, 1000, 0.001, 10, 10, 5)
+        `);
     }
   } catch (ecoErr) {
     console.warn('[Migrations] Skipping economy_settings seed:', ecoErr);
@@ -1127,29 +1161,30 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     } else {
       const user = adminCheck.rows[0];
       await targetPool.query(`UPDATE users SET role = 'admin' WHERE email = $1`, [email]);
+      
       const adminPassword = process.env.ADMIN_PASSWORD;
       if (adminPassword && user.password_hash) {
-        const isMatch = await bcrypt.compare(adminPassword, user.password_hash);
-        if (!isMatch) {
-          console.log(`[Migrations] Updating admin password hash for: ${email}`);
-          const newHash = await bcrypt.hash(adminPassword, 10);
-          await targetPool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
-        }
+          const isMatch = await bcrypt.compare(adminPassword, user.password_hash);
+          if (!isMatch) {
+              console.log(`[Migrations] Updating admin password hash for: ${email}`);
+              const newHash = await bcrypt.hash(adminPassword, 10);
+              await targetPool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
+          }
       }
     }
   }
 
   const planCheck = await targetPool.query('SELECT count(*) FROM plans');
   if (parseInt(planCheck.rows[0].count) === 0) {
-    await targetPool.query(`
-      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits)
-      VALUES
-        ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}'),
-        ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}'),
-        ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Sovereign Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
-      ON CONFLICT (name_en) DO NOTHING
-    `);
-  }
+      await targetPool.query(`
+        INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits)
+        VALUES
+          ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}'),
+          ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}'),
+          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Sovereign Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
+        ON CONFLICT (name_en) DO NOTHING
+      `);
+    }
 
   const toolCheck = await targetPool.query('SELECT count(*) FROM tool_orchestrator');
   if (parseInt(toolCheck.rows[0].count) === 0) {
@@ -1190,6 +1225,7 @@ export async function monitorDatabases() {
       let isAlive = false;
       const connectionString = reg.connection_string ? decrypt(reg.connection_string) : '';
       if (!connectionString.startsWith('postgres')) continue;
+
       const TestPool = createInternalPool(connectionString);
       try {
         await TestPool.query('SELECT 1');
@@ -1199,6 +1235,7 @@ export async function monitorDatabases() {
       } finally {
         await TestPool.end();
       }
+
       await pool.query(
         `UPDATE db_connections_registry SET status = $1, last_checked_at = CURRENT_TIMESTAMP WHERE id = $2`,
         [isAlive ? 'healthy' : 'down', reg.id]

@@ -9,7 +9,7 @@ import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {

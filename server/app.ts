@@ -19,30 +19,33 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
+      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com"],
+      connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      frameAncestors: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
 }));
 
-app.use((req, res, next) => {
-  const nonce = res.locals.nonce;
-  res.setHeader('Content-Security-Policy', [
-    `default-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com`,
-    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-    `img-src 'self' data: blob: https://*.stripe.com https://*.googleapis.com https://www.transparenttextures.com`,
-    `font-src 'self' https://fonts.gstatic.com data:`,
-    `connect-src 'self' wss: ws: https://*.googleapis.com https://api.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://fonts.gstatic.com https://fonts.googleapis.com`,
-    `frame-ancestors 'self'`
-  ].join('; '));
-  next();
-});
+const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const allowedOrigins = [
+  process.env.APP_URL,
+  ...envOrigins
+].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
-    const allowedOrigins = [process.env.APP_URL, ...envOrigins].filter(Boolean) as string[];
-    if (allowedOrigins.includes(origin)) {
+    
+    // In production, strictly enforce allowed origins. In dev, allow all.
+    if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));

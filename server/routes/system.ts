@@ -8,8 +8,7 @@ router.get("/settings", async (req, res) => {
   try {
     const settings = await getSystemSettings();
     res.json(settings);
-  } catch (error: any) {
-    console.error('[Settings] getSystemSettings failed:', error);
+  } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -18,8 +17,7 @@ router.get("/economy", async (req, res) => {
   try {
     const economy = await getEconomySettings();
     res.json(economy);
-  } catch (error: any) {
-    console.error('[Economy] getEconomySettings failed:', error);
+  } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -28,8 +26,7 @@ router.post("/admin/settings", authenticateAdmin, async (req, res) => {
   try {
     const result = await updateSystemSettings(req.body);
     res.json(result);
-  } catch (error: any) {
-    console.error('[Settings] updateSystemSettings failed:', error);
+  } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -38,8 +35,7 @@ router.post("/admin/economy", authenticateAdmin, async (req, res) => {
   try {
     const result = await updateEconomySettings(req.body);
     res.json(result);
-  } catch (error: any) {
-    console.error('[Economy] updateEconomySettings failed:', error);
+  } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
