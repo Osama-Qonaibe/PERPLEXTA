@@ -1,8 +1,9 @@
 import { ledgerPool, pool } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
-export async function getUserWallet(userId: string) {
-  if (!ledgerPool || !pool) throw new Error('Database not available');
+export async function getUserWallet(userId: string, txClient?: any) {
+  const targetLedger = txClient || ledgerPool;
+  if (!targetLedger || !pool) throw new Error('Database not available');
   
   // Referential Integrity: Verify user exists in Core DB first
   const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
@@ -10,7 +11,13 @@ export async function getUserWallet(userId: string) {
     throw new Error(`Integrity Error: User ${userId} does not exist in Core DB`);
   }
   
-  const result = await ledgerPool.query(`
+  // Explicitly check for existence and lock if in transaction to avoid deadlocks/race conditions
+  if (txClient) {
+    const existing = await txClient.query('SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+    if (existing.rows.length > 0) return existing.rows[0];
+  }
+
+  const result = await targetLedger.query(`
     INSERT INTO wallets (user_id, balance, points) 
     VALUES ($1, 0, 0) 
     ON CONFLICT (user_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
@@ -20,39 +27,72 @@ export async function getUserWallet(userId: string) {
   return result.rows[0];
 }
 
-async function getEconomySettings() {
+let economyCache: any = null;
+let lastCacheUpdate = 0;
+const CACHE_TTL = 60 * 1000; // 1 minute
+
+export async function getEconomySettings() {
+  if (economyCache && (Date.now() - lastCacheUpdate < CACHE_TTL)) {
+    return economyCache;
+  }
+
+  let settings: any = {};
+  
   // Prefer Ledger DB for financial constants (Sovereign approach)
   if (ledgerPool) {
     const res = await ledgerPool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM economy_settings LIMIT 1');
-    if (res.rows.length > 0) return res.rows[0];
+    if (res.rows.length > 0) {
+      settings = res.rows[0];
+    }
   }
   
-  // Fallback to system_settings in Core DB
+  // Fallback to system_settings in Core DB and merge
   if (pool) {
     const res = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM system_settings LIMIT 1');
-    return res.rows[0] || {};
+    if (res.rows.length > 0) {
+      settings = { ...res.rows[0], ...settings };
+    }
   }
   
-  return {};
+  economyCache = settings;
+  lastCacheUpdate = Date.now();
+  return settings;
+}
+
+export function clearEconomyCache() {
+  economyCache = null;
+  lastCacheUpdate = 0;
 }
 
 export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
-  let query = 'SELECT * FROM ledger_transactions WHERE user_id = $1';
+  
+  let baseQuery = 'FROM ledger_transactions WHERE user_id = $1';
   const params: any[] = [userId];
 
   if (type !== 'all') {
-    query += ' AND transaction_type = $2';
+    baseQuery += ' AND transaction_type = $2';
     params.push(type);
   }
 
+  // Get total count first
+  const countRes = await ledgerPool.query(`SELECT COUNT(*) as total ${baseQuery}`, params);
+  const total = parseInt(countRes.rows[0].total || '0');
+
   const limitIdx = params.length + 1;
   const offsetIdx = params.length + 2;
-  query += ` ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
-  params.push(limit, offset);
+  const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
   
-  const result = await ledgerPool.query(query, params);
-  return result.rows;
+  const finalParams = [...params, limit, offset];
+  const result = await ledgerPool.query(dataQuery, finalParams);
+  
+  return {
+    transactions: result.rows,
+    total,
+    hasMore: offset + result.rows.length < total,
+    limit,
+    offset
+  };
 }
 
 export async function convertPointsToBalance(userId: string, amountPoints: number) {
@@ -227,32 +267,9 @@ export async function refundToWallet(userId: string, amount: number, transaction
   try {
     await client.query('BEGIN');
     
-    // Lock wallet to prevent race conditions during refund
-    let walletRes = await client.query(
-      'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
-      [userId]
-    );
-
-    let walletId: number;
-    if (walletRes.rows.length === 0) {
-      // Create wallet inside transaction to maintain atomicity and isolation
-      const createRes = await client.query(`
-        INSERT INTO wallets (user_id, balance, points) 
-        VALUES ($1, 0, 0) 
-        ON CONFLICT (user_id) DO NOTHING
-        RETURNING id
-      `, [userId]);
-      
-      if (createRes.rows.length > 0) {
-        walletId = createRes.rows[0].id;
-      } else {
-        // Conflict occurred but row exists now, fetch it with lock
-        const reFetch = await client.query('SELECT id FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
-        walletId = reFetch.rows[0].id;
-      }
-    } else {
-      walletId = walletRes.rows[0].id;
-    }
+    // Transaction-Safe wallet acquisition with lock
+    const wallet = await getUserWallet(userId, client);
+    const walletId = wallet.id;
     
     const result = await client.query(
       'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance',

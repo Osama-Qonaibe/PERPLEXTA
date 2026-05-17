@@ -27,6 +27,9 @@ export const RewardsPage: React.FC = () => {
   const [wallet, setWallet] = useState({ points: 0, balance: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [referralCount, setReferralCount] = useState(0);
+  const [txOffset, setTxOffset] = useState(0);
+  const [hasMoreTx, setHasMoreTx] = useState(true);
+  const TX_LIMIT = 20;
   
   const startCamera = async () => {
     setIsCapturing(true);
@@ -195,12 +198,18 @@ export const RewardsPage: React.FC = () => {
             setWallet(data);
           }
 
-          const transRes = await fetch('/api/wallet/history', {
+          const transRes = await fetch(`/api/wallet/history?limit=${TX_LIMIT}&offset=${txOffset}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (transRes.ok) {
             const data = await transRes.json();
-            setTransactions(data);
+            const newTransactions = Array.isArray(data) ? data : (data.transactions || []);
+            if (txOffset === 0) {
+              setTransactions(newTransactions);
+            } else {
+              setTransactions(prev => [...prev, ...newTransactions]);
+            }
+            if (newTransactions.length < TX_LIMIT || (data.hasMore === false)) setHasMoreTx(false);
           }
 
           const refRes = await fetch('/api/wallet/referral-count', {
@@ -216,7 +225,7 @@ export const RewardsPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [token]);
+  }, [token, txOffset]);
 
   const formatTranslation = (key: string) => {
     let text = t(key);
@@ -656,24 +665,39 @@ export const RewardsPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    transactions.map((tx) => (
-                      <tr key={tx.id} className={`border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors`}>
-                        <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius)] text-xs font-medium ${
-                            tx.transaction_type === 'welcome_bonus' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
-                          }`}>
-                            {tx.transaction_type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-[var(--text-primary)] whitespace-nowrap">
-                          {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toLocaleString()} PTS
-                        </td>
-                        <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">{tx.description}</td>
-                        <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">
-                          {new Date(tx.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))
+                    <>
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className={`border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors`}>
+                          <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius)] text-xs font-medium ${
+                              tx.transaction_type === 'welcome_bonus' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
+                            }`}>
+                              {tx.transaction_type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-[var(--text-primary)] whitespace-nowrap">
+                            {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toLocaleString()} PTS
+                          </td>
+                          <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">{tx.description}</td>
+                          <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">
+                            {new Date(tx.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                      {hasMoreTx && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 text-center">
+                            <button 
+                              onClick={() => setTxOffset(prev => prev + TX_LIMIT)}
+                              className="text-emerald-500 hover:text-emerald-400 font-bold flex items-center gap-2 mx-auto transition-all"
+                            >
+                              <RefreshCw size={14} className={isSubmitting ? "animate-spin" : ""} />
+                              {t('loadMore')}
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>

@@ -123,26 +123,27 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     `);
 
     // Helper to run a versioned migration
-    const runVersioned = async (name: string, description: string, fn: () => Promise<void>) => {
+    const runVersioned = async (name: string, description: string, fn: (tx?: any) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
         console.log(`[Migrations] Applying ${name}: ${description}...`);
-        await fn();
-        await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
-        console.log(`[Migrations] Successfully applied ${name}.`);
+        await client.query('BEGIN');
+        try {
+          await fn(client);
+          await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
+          await client.query('COMMIT');
+          console.log(`[Migrations] Successfully applied ${name}.`);
+        } catch (e) {
+          await client.query('ROLLBACK');
+          console.error(`[Migrations] Failed to apply ${name}:`, e);
+          throw e;
+        }
       }
     };
 
     // MIGRATION: Core Schema v1
     await runVersioned('v1_core_schema', 'Initial core database schema', async () => {
-      await client.query('BEGIN');
-      try {
-        await initDb(type, client);
-        await client.query('COMMIT');
-      } catch (e) {
-        await client.query('ROLLBACK');
-        throw e;
-      }
+      await initDb(type, client);
     });
 
     // MIGRATION: Additive Columns v2
@@ -271,25 +272,18 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     // MIGRATION: Cleanup Duplicate Columns
     await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async () => {
-      await client.query('BEGIN');
-      try {
-        const dropColumns = [
-          'fallback1_provider', 'fallback1_model',
-          'fallback2_provider', 'fallback2_model',
-          'fallback3_provider', 'fallback3_model'
-        ];
-        for (const col of dropColumns) {
-          await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
-        }
-        
-        const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
-        for (const constr of dropUsageConstraints) {
-          await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
-        }
-        await client.query('COMMIT');
-      } catch (e) {
-        await client.query('ROLLBACK');
-        throw e;
+      const dropColumns = [
+        'fallback1_provider', 'fallback1_model',
+        'fallback2_provider', 'fallback2_model',
+        'fallback3_provider', 'fallback3_model'
+      ];
+      for (const col of dropColumns) {
+        await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
+      }
+      
+      const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
+      for (const constr of dropUsageConstraints) {
+        await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
       }
     });
 
@@ -430,11 +424,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
 
         if (updateNeeded) {
-          const fields = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
+          const fieldsArray = Object.keys(updates);
+          const fieldsSql = fieldsArray.map((k, i) => `${k} = $${i + 1}`).join(', ');
           const values = Object.values(updates);
-          const idParamIdx = values.length + 1;
           values.push(row.id);
-          await client.query(`UPDATE system_settings SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
+          const idParamIdx = values.length;
+          
+          await client.query(`UPDATE system_settings SET ${fieldsSql}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
         }
       }
     });
@@ -1048,34 +1044,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'coupon_usages',
-      pool: targetLedgerPool,
-      query: `CREATE TABLE IF NOT EXISTS coupon_usages (
-        id SERIAL PRIMARY KEY,
-        coupon_id INTEGER REFERENCES coupons(id),
-        user_id INTEGER NOT NULL,
-        transaction_id INTEGER,
-        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
-      name: 'deposit_requests',
-      pool: targetLedgerPool,
-      query: `CREATE TABLE IF NOT EXISTS deposit_requests (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        amount NUMERIC(15, 2) NOT NULL,
-        currency VARCHAR(10) DEFAULT 'USD',
-        method VARCHAR(50) NOT NULL,
-        proof_url TEXT,
-        status VARCHAR(20) DEFAULT 'pending',
-        rejection_reason TEXT,
-        admin_id INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'plan_features_history',
       query: `CREATE TABLE IF NOT EXISTS plan_features_history (
         id SERIAL PRIMARY KEY,
@@ -1101,8 +1069,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS chat_memories_pkey ON chat_memories(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS chats_pkey ON chats(id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_key ON coupons(code)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS coupons_pkey ON coupons(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_key ON coupons(code)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS coupons_pkey ON coupons(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS db_connections_registry_pkey ON db_connections_registry(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS email_settings_pkey ON email_settings(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS email_templates_name_key ON email_templates(name)` },
@@ -1117,8 +1085,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS plans_pkey ON plans(id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS security_alerts_pkey ON security_alerts(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_pkey ON stripe_events(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_stripe_event_id_key ON stripe_events(stripe_event_id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_pkey ON stripe_events(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_stripe_event_id_key ON stripe_events(stripe_event_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_pkey ON subscriptions(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_user_id_key ON subscriptions(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS support_ticket_replies_pkey ON support_ticket_replies(id)` },

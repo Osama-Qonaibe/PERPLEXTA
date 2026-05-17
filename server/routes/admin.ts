@@ -434,13 +434,10 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
       }
 
-      // Sync KYC status to Ledger DB if changed
+      // Sync KYC status to Ledger DB (using centralized service for total synchronization)
       if (kyc_status) {
-        const ledgerTarget = ledgerPool || pool;
-        await ledgerTarget.query(
-          'UPDATE kyc_requests SET status = $1, rejection_reason = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3',
-          [kyc_status, kyc_rejection_reason || null, id]
-        );
+        const { syncKYCStatus } = await import('../services/kyc.js');
+        await syncKYCStatus(id, kyc_status, kyc_rejection_reason || null);
       }
 
       await client.query('COMMIT');
@@ -711,8 +708,8 @@ router.delete("/ledger-transactions/:id", authenticateAdmin, async (req, res) =>
 
 router.get("/economy", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate FROM system_settings LIMIT 1');
-    const settings = result.rows[0] || {};
+    const { getEconomySettings } = await import('../services/wallet.js');
+    const settings = await getEconomySettings();
     res.json(settings);
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -765,41 +762,43 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       ]);
     }
     
-    // Sync with Ledger DB economy_settings
+    // Sync with Ledger DB economy_settings (Source of Truth)
+    const ledgerTarget = ledgerPool || pool;
     try {
-      if (ledgerPool) {
-        const ledgerCheck = await ledgerPool.query('SELECT count(*) FROM economy_settings');
-        if (parseInt(ledgerCheck.rows[0].count) > 0) {
-          await ledgerPool.query(`
-            UPDATE economy_settings SET
-              points_per_dollar = $1,
-              min_payout_usd = $2,
-              min_deposit_usd = $3,
-              referral_bonus_percent = $4,
-              welcome_bonus_points = $5,
-              referral_bonus_points = $6,
-              conversion_rate = $7,
-              min_withdrawal_cents = $8,
-              updated_at = CURRENT_TIMESTAMP
-          `, [
+      const ledgerCheck = await ledgerTarget.query('SELECT count(*) FROM economy_settings');
+      if (parseInt(ledgerCheck.rows[0].count) > 0) {
+        await ledgerTarget.query(`
+          UPDATE economy_settings SET
+            points_per_dollar = $1,
+            min_payout_usd = $2,
+            min_deposit_usd = $3,
+            referral_bonus_percent = $4,
+            welcome_bonus_points = $5,
+            referral_bonus_points = $6,
+            conversion_rate = $7,
+            min_withdrawal_cents = $8,
+            updated_at = CURRENT_TIMESTAMP
+        `, [
+          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+        ]);
+      } else {
+        await ledgerTarget.query(`
+          INSERT INTO economy_settings (
             points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
             welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-          ]);
-        } else {
-          await ledgerPool.query(`
-            INSERT INTO economy_settings (
-              points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-              welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          `, [
-            points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-          ]);
-        }
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [
+          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+        ]);
       }
     } catch (ledgerErr) {
       console.warn('[Admin] Failed to sync economy settings to Ledger:', ledgerErr);
     }
+
+    const { clearEconomyCache } = await import('../services/wallet.js');
+    clearEconomyCache();
     
     await auditLog((req as any).user?.id, 'Update Economy Settings', 'finance', req.body);
     res.json({ success: true, message: 'Finance settings updated successfully' });

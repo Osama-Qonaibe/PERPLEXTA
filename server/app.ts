@@ -24,8 +24,9 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
       styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "wss:", "ws:"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com"],
+      connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameAncestors: ["'self'"]
     }
   },
