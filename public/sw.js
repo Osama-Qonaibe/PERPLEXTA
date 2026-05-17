@@ -1,34 +1,37 @@
-const CACHE_NAME = 'perplexta-v1';
+const CACHE_NAME = 'perplexta-v2';
+const SELF_ORIGIN = self.location.origin;
 
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
 });
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  
-  // Bypass Service Worker for API requests and socket.io
-  if (url.pathname.startsWith('/api/') || url.pathname.includes('socket.io')) {
-    return; // Returning here allows the browser to handle the fetch normally
+
+  if (url.origin !== SELF_ORIGIN) {
+    return;
   }
 
-  // Simple network-first for HTML, others can be cached or network-led
+  if (url.pathname.startsWith('/api/') || url.pathname.includes('socket.io')) {
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/');
-      })
+      fetch(event.request).catch(() => caches.match('/'))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
