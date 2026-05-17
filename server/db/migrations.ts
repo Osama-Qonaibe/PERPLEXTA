@@ -364,6 +364,72 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
+    // MIGRATION: Security Hardening (Stripe Key Encryption) v8
+    await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async () => {
+      const { encrypt } = await import('../utils/crypto.js');
+      const settingsRes = await client.query('SELECT stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings LIMIT 1');
+      if (settingsRes.rows.length > 0) {
+        const row = settingsRes.rows[0];
+        const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+        
+        let needsUpdate = false;
+        let encryptedSecret = row.stripe_secret_key;
+        let encryptedPublishable = row.stripe_publishable_key;
+        let encryptedWebhook = row.stripe_webhook_secret;
+
+        if (row.stripe_secret_key && !encryptionPattern.test(row.stripe_secret_key)) {
+          encryptedSecret = encrypt(row.stripe_secret_key);
+          needsUpdate = true;
+        }
+        if (row.stripe_publishable_key && !encryptionPattern.test(row.stripe_publishable_key)) {
+          encryptedPublishable = encrypt(row.stripe_publishable_key);
+          needsUpdate = true;
+        }
+        if (row.stripe_webhook_secret && !encryptionPattern.test(row.stripe_webhook_secret)) {
+          encryptedWebhook = encrypt(row.stripe_webhook_secret);
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          await client.query(`
+            UPDATE system_settings SET 
+              stripe_secret_key = $1, 
+              stripe_publishable_key = $2, 
+              stripe_webhook_secret = $3,
+              updated_at = CURRENT_TIMESTAMP
+          `, [encryptedSecret, encryptedPublishable, encryptedWebhook]);
+          console.log('[Migrations] Security: Stripe keys successfully transitioned to encrypted state.');
+        }
+      }
+    });
+
+    // MIGRATION: Security Janitor v9 - Catching missed keys
+    await runVersioned('v9_security_janitor', 'Final sweep for unencrypted sensitive keys', async () => {
+      const { encrypt } = await import('../utils/crypto.js');
+      const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+      
+      const res = await client.query('SELECT id, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret FROM system_settings');
+      for (const row of res.rows) {
+        let updateNeeded = false;
+        const updates: any = {};
+        
+        const keysToCheck = ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'];
+        for (const key of keysToCheck) {
+          const val = row[key];
+          if (val && val.trim() !== '' && !encryptionPattern.test(val)) {
+            updates[key] = encrypt(val);
+            updateNeeded = true;
+          }
+        }
+
+        if (updateNeeded) {
+          const fields = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
+          const values = Object.values(updates);
+          await client.query(`UPDATE system_settings SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ${row.id}`, values);
+        }
+      }
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);

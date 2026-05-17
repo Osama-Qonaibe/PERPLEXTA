@@ -803,25 +803,37 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
   try {
     const { secretKey, publishableKey, webhookSecret, isLiveMode } = req.body;
     
-    const encryptedSecret = secretKey ? encrypt(secretKey) : null;
-    const encryptedPublishable = publishableKey ? encrypt(publishableKey) : null;
-    const encryptedWebhook = webhookSecret ? encrypt(webhookSecret) : null;
-    
-    await pool.query(`
-      UPDATE system_settings SET 
-        stripe_secret_key = $1, 
-        stripe_publishable_key = $2, 
-        stripe_webhook_secret = $3, 
-        stripe_live_mode = $4,
-        stripe_status = 'verified',
-        stripe_last_verified_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
-    `, [encryptedSecret, encryptedPublishable, encryptedWebhook, isLiveMode]);
+    // Build query dynamically to avoid overwriting existing keys if not provided
+    let query = 'UPDATE system_settings SET updated_at = CURRENT_TIMESTAMP';
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (publishableKey !== undefined && publishableKey !== '') {
+      query += `, stripe_publishable_key = $${paramCount++}`;
+      params.push(encrypt(publishableKey));
+    }
+    if (secretKey !== undefined && secretKey !== '') {
+      query += `, stripe_secret_key = $${paramCount++}`;
+      params.push(encrypt(secretKey));
+    }
+    if (webhookSecret !== undefined && webhookSecret !== '') {
+      query += `, stripe_webhook_secret = $${paramCount++}`;
+      params.push(encrypt(webhookSecret));
+    }
+    if (isLiveMode !== undefined) {
+      query += `, stripe_live_mode = $${paramCount++}`;
+      params.push(isLiveMode);
+    }
+
+    query += `, stripe_status = 'verified', stripe_last_verified_at = CURRENT_TIMESTAMP`;
+
+    await pool.query(query, params);
     
     await auditLog((req as any).user?.id, 'Update Stripe Settings', 'finance', { isLiveMode, publishableKey: '***' });
     invalidateStripeClient();
     res.json({ success: true });
   } catch (error) {
+    console.error('[Admin] Stripe settings update failed:', error);
     res.status(500).json({ error: 'Update failed' });
   }
 });

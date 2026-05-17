@@ -75,6 +75,8 @@ export async function checkUserQuota(userId: number, toolId: string) {
 
     return { allowed: true, currentDaily, currentMonthly };
   } catch (error) {
+    // FAIL-OPEN: If database check fails, we allow the usage to prevent blocking users 
+    // during infrastructure hiccups. This prioritizes Premium UX over strict billing enforcement.
     console.error('[Quota] Check failed:', error);
     return { allowed: true };
   }

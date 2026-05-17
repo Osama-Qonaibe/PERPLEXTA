@@ -17,6 +17,15 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   
+  // Simple sanitization to prevent prompt injection by neutralizing internal markers
+  const sanitizePrompt = (p: string) => {
+    if (!p) return p;
+    // Replace markers that could be used for hijacking context
+    return p.replace(/(SYSTEM[ _]MEMORY[ _]INGESTION|LIVE[ _]WEB[ _]CONTEXT|USER[ _]PROMPT|TECHNICAL[ _]DIRECTIVE|ASSISTANT[ _]MEMORY[ _]RECORDS|CONVERSATION[ _]CONTEXT[ _]SUMMARY):/gi, '[CLEANED_MARKER]');
+  };
+
+  prompt = sanitizePrompt(prompt);
+  
   if (!pool) throw new Error('System still initializing. Please wait.');
   
   const [routeResult, quota, chatRes, userRes, vaultCheck] = await Promise.all([
@@ -81,6 +90,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (searchErr) {
+      console.error('[Orchestrator] Sovereign Search failed:', searchErr);
     }
   }
 
@@ -92,6 +102,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         prompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${prompt}`;
       }
     } catch (memErr) {
+      console.error('[Orchestrator] Sovereign Memory ingestion failed:', memErr);
     }
   }
 
@@ -151,6 +162,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       
       break;
     } catch (e) {
+      console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, e);
     }
   }
 

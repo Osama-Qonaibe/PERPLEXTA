@@ -353,41 +353,144 @@ router.get("/google/callback", async (req, res) => {
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+          <style nonce="${res.locals.nonce}">
+            :root {
+              --radius-xl: 32px;
+              --radius-lg: 20px;
+              --radius-md: 12px;
+              --radius-sm: 6px;
+              --emerald-500: #10b981;
+              --bg-dark: #09090b;
+              --bg-panel: rgba(17, 17, 19, 0.9);
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes emeraldPulse { 
+              0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+              70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+              100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            }
+            
+            body { 
+              background: var(--bg-dark); 
+              color: white; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              height: 100vh; 
+              margin: 0; 
+              font-family: 'Tajawal', sans-serif; 
+              overflow: hidden;
+              direction: ${lang === 'ar' ? 'rtl' : 'ltr'};
+            }
+            .auth-card {
+              text-align: center; 
+              padding: clamp(2rem, 8vw, 3.5rem); 
+              background: var(--bg-panel); 
+              border: 1px solid rgba(16, 185, 129, 0.25); 
+              border-radius: var(--radius-xl); 
+              backdrop-filter: blur(20px); 
+              box-shadow: 0 30px 60px rgba(0,0,0,0.7); 
+              max-width: 90%; 
+              width: 440px; 
+              animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+              position: relative;
+            }
+            .spinner-container {
+              position: relative; 
+              width: 90px; 
+              height: 90px; 
+              margin: 0 auto clamp(1.5rem, 5vw, 2rem);
+            }
+            .spinner-bg {
+              position: absolute; 
+              inset: 0; 
+              border: 5px solid rgba(16, 185, 129, 0.08); 
+              border-radius: 50%;
+            }
+            .spinner-active {
+              position: absolute; 
+              inset: 0; 
+              border: 5px solid transparent; 
+              border-top-color: var(--emerald-500); 
+              border-radius: 50%; 
+              animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+              filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+            }
+            .spinner-icon {
+              position: absolute; 
+              inset: 0; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+              animation: emeraldPulse 2s infinite;
+              border-radius: 50%;
+            }
+            .title {
+              color: white; 
+              margin: 0 0 1rem 0; 
+              font-size: clamp(1.5rem, 6vw, 1.875rem); 
+              font-weight: 700;
+              letter-spacing: -0.025em;
+              text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+            .description {
+              color: #a1a1aa; 
+              margin: 0 0 clamp(1.5rem, 6vw, 2.5rem) 0; 
+              font-size: clamp(1rem, 3.5vw, 1.125rem); 
+              line-height: 1.6;
+              font-weight: 400;
+            }
+            .btn {
+              background: #10b981; 
+              color: white; 
+              border: none; 
+              padding: 1rem 2.5rem; 
+              border-radius: var(--radius-sm); 
+              font-weight: 700; 
+              cursor: pointer; 
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+              font-family: inherit; 
+              font-size: 1.125rem; 
+              box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+              width: 100%;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .btn:hover { 
+              transform: translateY(-3px); 
+              box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6); 
+              filter: brightness(1.1); 
+              background: #10b981;
+            }
+            .btn:active {
+              transform: translateY(-1px);
+            }
+          </style>
         </head>
-        <body style="background: #0f0f11; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Tajawal', sans-serif; overflow: hidden;">
-          <div style="text-align: center; padding: clamp(20px, 5vw, 40px); background: rgba(26, 26, 28, 0.8); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-large, 16px); backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 90%; width: 400px; animation: fadeIn 0.5s ease-out;">
-            <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 24px;">
-              <div style="position: absolute; inset: 0; border: 4px solid rgba(16, 185, 129, 0.1); border-radius: 50%;"></div>
-              <div style="position: absolute; inset: 0; border: 4px solid transparent; border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <body>
+          <div class="auth-card">
+            <div class="spinner-container">
+              <div class="spinner-bg"></div>
+              <div class="spinner-active"></div>
+              <div class="spinner-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
               </div>
             </div>
-            <h2 style="color: white; margin: 0 0 12px 0; font-size: clamp(1.25rem, 5vw, 1.5rem); font-weight: 700;">
+            <h2 class="title">
               ${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}
             </h2>
-            <p style="color: #9ca3af; margin: 0 0 24px 0; font-size: clamp(0.875rem, 3vw, 1rem); line-height: 1.6;">
+            <p class="description">
               ${lang === 'ar' ? 'تمت مزامنة بياناتك بأمان. يمكنك الآن إغلاق هذه النافذة والعودة للمنصة.' : 'Session secured. You can now close this window and return to the platform.'}
             </p>
-            <button id="closeBtn" style="background: #10b981; color: white; border: none; padding: 12px 32px; border-radius: var(--radius-small, 4px); font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <button id="closeBtn" class="btn">
               ${lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue'}
             </button>
           </div>
           
-          <style nonce="${res.locals.nonce}">
-            :root {
-              --radius-large: 16px;
-              --radius-small: 4px;
-            }
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-            body { direction: ${lang === 'ar' ? 'rtl' : 'ltr'}; }
-            #closeBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4); filter: brightness(1.1); }
-          </style>
-
           <script nonce="${res.locals.nonce}">
             (function() {
               const closeBtn = document.getElementById('closeBtn');
