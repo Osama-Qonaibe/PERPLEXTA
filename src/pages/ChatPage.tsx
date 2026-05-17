@@ -69,15 +69,15 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-theme">
           {isMediaUrl ? (
-            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
+            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
               <Download size={13} />
             </button>
           ) : (
             <>
-              <button onClick={copyToClipboard} className="w-9 h-9 flex items-center justify-center rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Copy code">
+              <button onClick={copyToClipboard} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Copy code">
                 <Copy size={14} />
               </button>
-              <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
+              <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
                 <FileText size={14} />
               </button>
             </>
@@ -90,7 +90,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-[var(--radius)] p-8 flex flex-col items-center gap-6 shadow-2xl"
+          className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
           {/* Audio Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
@@ -122,7 +122,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <button 
             onClick={() => downloadFile(codeContent)}
-            className="flex items-center gap-2 px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
+            className="flex items-center gap-2 px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-sm text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
           >
             <Download size={14} />
             {dir === 'rtl' ? 'تنزيل فوري' : 'INSTANT DOWNLOAD'}
@@ -146,7 +146,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
         </motion.div>
       ) : (
-        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[var(--radius)]`} {...props}>
+        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md`} {...props}>
           {isMediaUrl ? (
             codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
               <div className="flex flex-col items-center gap-4 py-8">
@@ -157,7 +157,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
               </div>
             ) : (
-              <img src={codeContent} alt="Generated" className="max-w-full rounded-[var(--radius)]" />
+              <img src={codeContent} alt="Generated" className="max-w-full rounded-md" />
             )
           ) : children}
         </code>
@@ -209,15 +209,15 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
             className="flex items-center gap-2 sm:gap-4 group"
           >
             {step.status === 'completed' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[var(--radius)] bg-emerald-500/5 flex items-center justify-center text-emerald-500/70">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-emerald-500/5 flex items-center justify-center text-emerald-500/70">
                 <Check size={10} strokeWidth={3} />
               </div>
             ) : step.status === 'processing' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[var(--radius)] bg-emerald-500/5 flex items-center justify-center">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-emerald-500/5 flex items-center justify-center">
                 <Loader2 size={10} className="animate-spin text-emerald-500/60" style={{ animationDuration: '2s' }} />
               </div>
             ) : (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[var(--radius)] bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center">
                 <div className="w-1 h-1 rounded-full bg-[var(--text-muted)]" />
               </div>
             )}
@@ -247,11 +247,11 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
     <div className="mt-4" id="citations-container">
       <button 
         onClick={onToggle}
-        className="flex items-center gap-2.5 px-4 py-2 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-theme group shadow-sm active:scale-95"
+        className="flex items-center gap-2.5 px-4 py-2 rounded-md bg-transparent border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-theme group shadow-sm active:scale-95"
       >
         <div className="flex -space-x-2 rtl:space-x-reverse">
           {citations.slice(0, 3).map((cite, i) => (
-            <div key={i} className="w-5 h-5 rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm">
+            <div key={i} className="w-5 h-5 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm">
                <img 
                  src={getFavicon(cite.url) || ''} 
                  alt="" 
@@ -292,10 +292,10 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
                   href={cite.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-theme group min-w-0"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-md bg-[var(--bg-overlay)] border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] hover:shadow-lg hover:shadow-emerald-500/5 transition-theme group min-w-0"
                   title={cite.title}
                 >
-                  <div className="w-6 h-6 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-[9px] font-black flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-theme">
+                  <div className="w-6 h-6 rounded-sm bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-[9px] font-black flex-shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-theme">
                     {cite.index}
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
@@ -337,11 +337,11 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className={`flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-theme text-start relative overflow-hidden rounded-[var(--radius)] ${
+            className={`flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-theme text-start relative overflow-hidden rounded-md ${
               dir === 'rtl' ? 'flex-row' : 'flex-row'
             }`}
           >
-            <div className={`w-8 h-8 rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 ${
+            <div className={`w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 ${
               dir === 'rtl' ? 'order-first' : 'order-first'
             }`}>
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
@@ -399,7 +399,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             delay: idx * 0.1,
             ease: [0.22, 1, 0.36, 1] 
           }}
-          className={`relative overflow-hidden rounded-[var(--radius)] border transition-theme group ${
+          className={`relative overflow-hidden rounded-lg border transition-theme group ${
             theme === 'dark' 
               ? 'bg-[#121214] border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
               : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
@@ -452,7 +452,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                 {isMusicSection ? (
                   <div className="flex flex-col items-center gap-8">
                     {/* Visual Exhibition */}
-                    <div className="relative w-full max-w-3xl aspect-video rounded-[var(--radius)] overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
+                    <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
                       {coverImageUrl ? (
                         <img 
                           src={coverImageUrl} 
@@ -516,7 +516,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                       code: CodeBlock as any,
                       p: 'div',
                       img: ({ node, ...props }: any) => (
-                        <div className="relative w-full aspect-video rounded-[var(--radius)] overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-300 group-hover/video:scale-110" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
                              <div className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-emerald-500 animate-pulse">
@@ -574,14 +574,14 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-    className={`mt-4 p-6 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
+    className={`mt-4 p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
   >
     <div className="absolute top-0 right-0 p-4 opacity-5">
       <Settings size={64} className="text-emerald-500" />
     </div>
     
     <div className="flex items-start gap-4 relative z-10">
-      <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+      <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
         <Settings size={24} className="animate-spin-slow" />
       </div>
       <div className="flex-1">
@@ -633,14 +633,14 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`mt-4 p-5 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
+      className={`mt-4 p-5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
     >
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <Sparkles size={48} className="text-emerald-500" />
       </div>
       
       <div className="flex items-start gap-4 relative z-10">
-        <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
           <Zap size={24} className="animate-pulse" />
         </div>
         <div className="flex-1">
@@ -665,21 +665,21 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
       </div>
 
       {/* Referral Link Area */}
-      <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-[var(--radius)] p-3 flex items-center gap-3">
+      <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-md p-3 flex items-center gap-3">
         <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
           {referralLink}
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={handleCopy}
-            className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme"
+            className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme"
             title="Copy Link"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
           <button 
             onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
+            className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
             title="Share"
           >
             <Share2 size={16} />
@@ -690,13 +690,13 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
           onClick={() => navigate('/subscriptions')}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-[var(--radius)] text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
         </button>
         <button 
           onClick={() => navigate('/rewards')}
-          className="flex-1 bg-[var(--bg-surface)] border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-[var(--radius)] text-[11px] font-black uppercase tracking-wider transition-theme hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-[var(--bg-surface)] border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
         </button>
@@ -2080,7 +2080,7 @@ export const ChatPage: React.FC = () => {
       {renderAudioSettings()}
       <motion.div 
         transition={springConfig}
-        className={`w-full flex flex-col rounded-[var(--radius)] border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
+        className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
           isFocused 
             ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
             : ''
@@ -2089,14 +2089,14 @@ export const ChatPage: React.FC = () => {
         {/* Top: File/Image Preview */}
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
-            <div className={`relative group p-1 rounded-[var(--radius)] border transition-theme bg-transparent border-[var(--border)]`}>
+            <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)]`}>
               <div className="flex items-center gap-2 px-1.5 py-1 min-w-[120px]">
                 {previewUrl && selectedFile.type.startsWith('image/') ? (
-                  <div className="w-8 h-8 rounded-[var(--radius)] overflow-hidden border border-[var(--border)] bg-[var(--bg-base)]">
+                  <div className="w-8 h-8 rounded-sm overflow-hidden border border-[var(--border)] bg-[var(--bg-base)]">
                     <img src={previewUrl} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ) : (
-                  <div className={`w-8 h-8 rounded-[var(--radius)] flex items-center justify-center bg-[var(--bg-base)] text-emerald-500 shadow-sm`}>
+                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center bg-[var(--bg-base)] text-emerald-500 shadow-sm`}>
                     {getFileIcon(selectedFile.type)}
                   </div>
                 )}
@@ -2130,7 +2130,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex-shrink-0 flex items-center">
             <button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme group shadow-none
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
                   : 'hover:bg-emerald-500/5 hover:border-emerald-500/20 active:scale-95'
@@ -2196,7 +2196,7 @@ export const ChatPage: React.FC = () => {
             <button 
               title={dir === 'rtl' ? 'رفع ملف (الحد الأقصى 100 ميجابايت)' : 'Upload File (Max 100MB)'}
               onClick={() => document.getElementById('unified-upload')?.click()}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-theme" />
               <Paperclip size={18} className="md:w-5 md:h-5 text-emerald-500 hidden group-hover:block transition-theme drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
@@ -2209,7 +2209,7 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsAdvancedToolsOpen(!isAdvancedToolsOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[var(--radius)] transition-theme border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
                   activeDropdown === 'tool'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                     : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5'
@@ -2222,7 +2222,7 @@ export const ChatPage: React.FC = () => {
               </button>
               
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-[var(--radius)] border shadow-2xl flex flex-col z-50 overflow-hidden bg-transparent border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-50 overflow-hidden bg-transparent border-[var(--border-main)]`}>
                   <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
                     {t('tools').toUpperCase()}
                   </div>
@@ -2238,7 +2238,7 @@ export const ChatPage: React.FC = () => {
                           setActiveDropdown('tool');
                           setIsAdvancedToolsOpen(false);
                         }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] transition-theme text-[13px] font-bold ${
+                        className={`flex items-center gap-3 px-3 py-2 rounded-sm transition-theme text-[13px] font-bold ${
                           selectedTool === tool.id && activeDropdown === 'tool'
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
                             : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -2268,7 +2268,7 @@ export const ChatPage: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-[var(--radius)] transition-theme border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
                   activeDropdown === 'model'
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                     : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
@@ -2280,7 +2280,7 @@ export const ChatPage: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
               {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-[var(--radius)] border shadow-2xl flex flex-col gap-0.5 z-50 bg-transparent border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-50 bg-transparent border-[var(--border-main)]`}>
                   {models.map((model, idx) => (
                     <button 
                       key={`${model.id}-${idx}`}
@@ -2295,7 +2295,7 @@ export const ChatPage: React.FC = () => {
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-[var(--radius)] transition-theme text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`${model.color} group-hover:scale-110 transition-transform`}>{model.icon}</span>
@@ -2314,7 +2314,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex items-center flex-shrink-0">
             <button 
               onClick={toggleRecording}
-              className={`w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent transition-theme group ${
+              className={`w-10 h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent transition-theme group ${
                 isRecording 
                 ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                 : 'hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500'
@@ -2410,7 +2410,7 @@ export const ChatPage: React.FC = () => {
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
-               className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-[var(--radius)] w-full max-w-sm p-6 shadow-2xl"
+               className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-lg w-full max-w-sm p-6 shadow-2xl"
             >
                <h3 className={`text-lg font-black mb-4 uppercase tracking-tighter ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                  {dir === 'rtl' ? 'إعادة تسمية المحادثة' : 'Rename Conversation'}
@@ -2419,20 +2419,20 @@ export const ChatPage: React.FC = () => {
                  type="text" 
                  value={chatRenameTitle} 
                  onChange={(e) => setChatRenameTitle(e.target.value)}
-                 className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[var(--radius)] px-4 py-3 outline-none focus:border-emerald-500/50 transition-theme font-bold text-sm mb-6 text-[var(--text-primary)]"
+                 className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-sm px-4 py-3 outline-none focus:border-emerald-500/50 transition-theme font-bold text-sm mb-6 text-[var(--text-primary)]"
                  autoFocus
                  onKeyDown={(e) => e.key === 'Enter' && handleThreadRename()}
                />
                <div className="flex gap-3">
                  <button 
                    onClick={() => setIsRenaming(false)}
-                   className="flex-1 py-1.5 rounded-[var(--radius)] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-theme border border-[var(--border)]"
+                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-theme border border-[var(--border)]"
                  >
                    {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                  </button>
                  <button 
                    onClick={handleThreadRename}
-                   className="flex-1 py-1.5 rounded-[var(--radius)] text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
+                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
                  >
                    {dir === 'rtl' ? 'حفظ' : 'Save'}
                  </button>
@@ -2456,7 +2456,7 @@ export const ChatPage: React.FC = () => {
                     <button 
                       onClick={() => !isExporting && setIsExportMenuOpen(!isExportMenuOpen)}
                       disabled={isExporting}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme group ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme group ${
                         isExporting
                           ? 'text-emerald-500 bg-emerald-500/10 cursor-wait'
                           : isExportMenuOpen 
@@ -2485,7 +2485,7 @@ export const ChatPage: React.FC = () => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[var(--radius)] shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
+                          className={`absolute top-full mt-2 ${dir === 'rtl' ? 'left-0' : 'right-0'} w-56 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg shadow-2xl overflow-hidden z-50 backdrop-blur-xl`}
                         >
                           <div className="p-1.5 space-y-0.5">
                             <button 
@@ -2494,7 +2494,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <Bookmark size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
@@ -2506,7 +2506,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <FolderPlus size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
@@ -2519,7 +2519,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <Pencil size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
@@ -2530,7 +2530,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('pdf')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <FileDown size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
@@ -2539,7 +2539,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('md')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <FileCode size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
@@ -2548,7 +2548,7 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('docx')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <FileText size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
@@ -2562,7 +2562,7 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-[var(--radius)] transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-pink-500 hover:bg-pink-500/5 rounded-sm transition-theme group disabled:opacity-50"
                             >
                               <Trash2 size={14} className="group-hover:scale-110 transition-transform" />
                               <span>{dir === 'rtl' ? 'حذف المحادثة' : 'Delete Thread'}</span>
@@ -2575,7 +2575,7 @@ export const ChatPage: React.FC = () => {
                   {messages.some(m => m.is_pinned) && (
                     <button 
                       onClick={() => setShowPinnedModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-theme border border-emerald-500/10 hover:bg-emerald-500/10"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-theme border border-emerald-500/10 hover:bg-emerald-500/10"
                     >
                       <Bookmark size={14} />
                       <span className="hidden lg:inline">{dir === 'rtl' ? 'المثبتة' : 'Pinned'}</span>
@@ -2613,9 +2613,9 @@ export const ChatPage: React.FC = () => {
                         setSelectedTool((item as any).toolId);
                         setActiveDropdown('tool');
                       }}
-                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-[var(--radius)] border transition-theme text-start relative overflow-hidden bg-transparent border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
+                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-md border transition-theme text-start relative overflow-hidden bg-transparent border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
                     >
-                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme relative z-10 bg-transparent text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
+                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-sm flex items-center justify-center transition-theme relative z-10 bg-transparent text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 20, className: 'md:w-5 md:h-5' } as any)}
                       </div>
                       <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
@@ -2627,7 +2627,7 @@ export const ChatPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute -inset-px rounded-[var(--radius)] border border-emerald-500/0 group-hover:border-emerald-500/10 transition-theme pointer-events-none" />
+                      <div className="absolute -inset-px rounded-md border border-emerald-500/0 group-hover:border-emerald-500/10 transition-theme pointer-events-none" />
                     </button>
                   ))}
                 </div>
@@ -2709,7 +2709,7 @@ export const ChatPage: React.FC = () => {
                                     {stripProtocolMarkers(msg.content)}
                                   </h1>
                                   {msg.is_pinned && (
-                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-[var(--radius)] border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-sm border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                                       <Pin size={8} className="text-emerald-500" />
                                       <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
                                     </div>
@@ -2719,7 +2719,7 @@ export const ChatPage: React.FC = () => {
                                       setEditingMessageIndex(idx);
                                       setEditValue(msg.content);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 transition-theme p-1.5 rounded-[var(--radius)] hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 shrink-0"
+                                    className="opacity-0 group-hover:opacity-100 transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 shrink-0"
                                     title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                                   >
                                     <Pencil size={14} />
@@ -2927,13 +2927,13 @@ export const ChatPage: React.FC = () => {
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
                         </button>
                         <button 
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
                         </button>
@@ -2941,21 +2941,21 @@ export const ChatPage: React.FC = () => {
                         <button 
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
                         <button 
                           onClick={() => handleTTS(msg.content)}
                           title={dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Volume2 size={13} />
                         </button>
                         <button 
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
                         </button>
@@ -2965,7 +2965,7 @@ export const ChatPage: React.FC = () => {
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
                           }}
                           title={dir === 'rtl' ? 'نسخ' : 'Copy'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Copy size={13} />
                         </button>
@@ -2980,7 +2980,7 @@ export const ChatPage: React.FC = () => {
                             URL.revokeObjectURL(url);
                           }}
                           title={dir === 'rtl' ? 'تحميل' : 'Download'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Download size={13} />
                         </button>
@@ -3163,11 +3163,11 @@ export const ChatPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-[var(--radius)] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
+              className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <div className="w-10 h-10 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                     <Bookmark size={20} />
                   </div>
                   <div>
@@ -3179,7 +3179,7 @@ export const ChatPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setShowPinnedModal(false)}
-                  className="w-10 h-10 rounded-[var(--radius)] hover:bg-[var(--bg-overlay)] flex items-center justify-center text-[var(--text-secondary)]"
+                  className="w-10 h-10 rounded-sm hover:bg-[var(--bg-overlay)] flex items-center justify-center text-[var(--text-secondary)]"
                 >
                   <X size={20} />
                 </button>
@@ -3187,7 +3187,7 @@ export const ChatPage: React.FC = () => {
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                  <div key={pIdx} className="group relative p-4 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
+                  <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
                          {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة السيادة' : 'Sovereign Answer')}

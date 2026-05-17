@@ -219,7 +219,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     }
                   >
                     <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative group`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                       <div className="relative z-10 transition-theme group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 20 : 18 } as any)}
                       </div>
@@ -247,7 +247,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     className={`flex items-center transition-theme w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 group`}
                   >
                     <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
-                      <div className={`absolute inset-0 m-auto w-10 h-10 rounded-[var(--radius)] transition-theme bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15 top-0 bottom-0 left-0 right-0`} />
+                      <div className={`absolute inset-0 m-auto w-10 h-10 rounded-sm transition-theme bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15 top-0 bottom-0 left-0 right-0`} />
                       <Plus size={isMobile ? 22 : 20} className={`relative z-10 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme text-emerald-500 pointer-events-none`} />
                     </div>
                     <AnimatePresence mode="wait" initial={false}>
@@ -298,7 +298,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
                             <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-overlay)] transition-theme`} />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm bg-[var(--bg-overlay)] transition-theme`} />
                               <MessageSquare size={isMobile ? 18 : 16} className="text-emerald-500 relative z-10" />
                             </div>
                             <div className="flex-1 flex items-center gap-1 min-w-0">
@@ -341,7 +341,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                             >
                               <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-theme group-hover:bg-[var(--bg-overlay)]`} />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-[var(--bg-overlay)]`} />
                                 <MessageSquare size={isMobile ? 18 : 16} className="relative z-10 transition-theme group-hover:text-emerald-500" />
                               </div>
                               <AnimatePresence mode="wait" initial={false}>
@@ -401,10 +401,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-[var(--radius)] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
+                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-lg shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
                       >
                         <div className={`p-2 ${isMobile ? 'space-y-2' : 'space-y-1'}`}>
-                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[var(--radius)] transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <User size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -422,7 +422,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           </button>
 
                           {!isMobile && (
-                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-theme`}>
+                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-theme`}>
                               <CreditCard size={16} className="flex-shrink-0" />
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
@@ -442,7 +442,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <div className={`h-px bg-[var(--border)] my-1 mx-2 transition-theme`}></div>
 
-                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[var(--radius)] transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <Wallet size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -459,7 +459,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[var(--radius)] transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
+                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
                             <BrainCircuit size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -476,7 +476,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[var(--radius)] text-[var(--text-secondary)] hover:text-pink-500 hover:bg-pink-500/10 transition-theme`}>
+                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md text-[var(--text-secondary)] hover:text-pink-500 hover:bg-pink-500/10 transition-theme`}>
                             <LogOut size={isMobile ? 18 : 16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -502,9 +502,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-16' : 'w-[80px]'} ${isMobile ? 'h-13' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
+                            className={`w-10 h-10 rounded-sm bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'var(--border)'
                             }}
@@ -556,8 +556,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[var(--radius)] transition-theme group-hover:bg-[var(--bg-overlay)]`} />
-                      <div className={`w-10 h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme`}>
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-[var(--bg-overlay)]`} />
+                      <div className={`w-10 h-10 rounded-sm bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme`}>
                         <User size={18} className="text-[var(--text-secondary)]" />
                       </div>
                     </div>

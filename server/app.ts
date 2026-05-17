@@ -22,10 +22,10 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https:", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "https:", "wss:", "ws:", "*"],
+      connectSrc: ["'self'", "https:", "wss:", "ws:"],
       frameAncestors: ["'self'"]
     }
   },
@@ -80,7 +80,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/user', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);

@@ -259,7 +259,9 @@ export async function callAIProvider(
                 chunk = data.choices?.[0]?.delta?.content || '';
               }
               if (chunk) { resultText += chunk; onChunk(chunk); }
-            } catch (e) {}
+            } catch (e) {
+              console.warn('[AI Streaming] Failed to parse SSE chunk:', e);
+            }
           }
         }
       }

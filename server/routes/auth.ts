@@ -378,13 +378,13 @@ router.get("/google/callback", async (req, res) => {
             </button>
           </div>
           
-          <style>
+          <style nonce="${res.locals.nonce}">
             @keyframes spin { to { transform: rotate(360deg); } }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
             body { direction: ${lang === 'ar' ? 'rtl' : 'ltr'}; }
           </style>
 
-          <script>
+          <script nonce="${res.locals.nonce}">
             (function() {
               const closeBtn = document.getElementById('closeBtn');
               const closeAction = () => {
@@ -453,6 +453,77 @@ router.get("/google/callback", async (req, res) => {
   } catch (error) {
     console.error('[GoogleAuth] Callback Error:', error);
     res.status(500).send('Authentication processing failed');
+  }
+});
+
+router.post("/forgot-password", authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const userCheck = await pool.query('SELECT id, name FROM users WHERE email = $1', [email]);
+    if (userCheck.rows.length === 0) {
+      return res.json({ success: true, message: 'If an account exists, a reset link will be sent.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600000); // 1 hour
+
+    await pool.query(
+      'INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, $3)',
+      [email, token, expires]
+    );
+
+    const resetLink = `${req.get('origin')}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    
+    await sendSmartEmail(userCheck.rows[0].id, email, 'password_reset', {
+      userName: userCheck.rows[0].name,
+      actionUrl: resetLink
+    });
+
+    res.json({ success: true, message: 'Reset link sent successfully.' });
+  } catch (error) {
+    console.error('[Auth] Forgot Password Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post("/reset-password", authLimiter, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Missing token or password' });
+
+    await client.query('BEGIN');
+
+    const resetCheck = await client.query(
+      'SELECT email FROM password_resets WHERE token = $1 AND expires_at > CURRENT_TIMESTAMP',
+      [token]
+    );
+
+    if (resetCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    const email = resetCheck.rows[0].email;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await client.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2',
+      [hashedPassword, email]
+    );
+
+    await client.query('DELETE FROM password_resets WHERE token = $1', [token]);
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Password has been reset successfully.' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[Auth] Reset Password Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 

@@ -26,7 +26,9 @@ async function auditLog(userId: any, action: string, type: string, details: obje
       'INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)',
       [userId, action, type, JSON.stringify(details)]
     );
-  } catch {}
+  } catch (error) {
+    console.error('[AuditLog] Failed to record activity:', error);
+  }
 }
 
 router.get("/health", authenticateAdmin, async (req, res) => {
@@ -844,7 +846,9 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       const syncResult = await syncProviderModelsInternal(provider.toLowerCase(), finalKey);
       syncedCount = syncResult.count;
       syncedModels = syncResult.models;
-    } catch {}
+    } catch (syncErr) {
+      console.error('[Admin] Post-save model sync failed:', syncErr);
+    }
 
     await auditLog((req as any).user?.id, 'Save API Key', 'system', { provider: provider.toLowerCase() });
     res.json({ success: true, count: syncedCount, models: syncedModels, status });

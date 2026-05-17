@@ -4,5 +4,6 @@ dist/
 coverage/
 .DS_Store
 *.log
+audit.txt
 .env*
 !.env.example

@@ -78,7 +78,11 @@ export async function testDatabaseConnection(config: any) {
   } catch (e: any) {
     return { success: false, error: e.message };
   } finally {
-    try { await testPool.end(); } catch {}
+    try { 
+      await testPool.end(); 
+    } catch (err) {
+      console.warn('[AdminService] Soft-failed to close test pool:', err);
+    }
   }
 }
 
