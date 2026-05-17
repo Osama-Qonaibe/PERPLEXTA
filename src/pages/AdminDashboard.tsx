@@ -76,6 +76,7 @@ import {
   Scale,
   Megaphone,
   FastForward,
+  UserPlus,
 } from "lucide-react";
 
 // --- Command Center View ---
@@ -4291,6 +4292,7 @@ const FinanceVaultView = ({
     points_per_dollar: 1000,
     conversion_rate: 0.001,
     referral_bonus_percent: 10,
+    referral_activation_min_deposit: 10,
   });
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -4656,6 +4658,30 @@ const FinanceVaultView = ({
                   {language === "ar"
                     ? "أقل مبلغ يمكن للمستخدم إيداعه."
                     : "Minimum amount a user can deposit."}
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
+                  {language === "ar"
+                    ? "تفعيل الإحالة عند إيداع ($)"
+                    : "Referral Activation Deposit ($)"}
+                </label>
+                <input
+                  type="number"
+                  value={economySettings.referral_activation_min_deposit || 0}
+                  onChange={(e) =>
+                    setEconomySettings({
+                      ...economySettings,
+                      referral_activation_min_deposit: Number(e.target.value),
+                    })
+                  }
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                />
+                <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
+                  {language === "ar"
+                    ? "المبلغ الذي يجب على الشخص المُحال إيداعه لتفعيل مكافأة الإحالة."
+                    : "Amount the referred user must deposit to activate referral rewards."}
                 </p>
               </div>
             </div>
@@ -5899,6 +5925,15 @@ const UserManagementView = ({
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user",
+    initialBalance: "0",
+    initialPoints: "0",
+  });
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
   const [toast, setToast] = useState<{
@@ -6149,6 +6184,7 @@ const UserManagementView = ({
     amount: number,
     reason: string,
     type: "add" | "deduct",
+    unit: "PTS" | "USD" = "PTS",
   ) => {
     setIsUpdating(true);
     try {
@@ -6158,20 +6194,27 @@ const UserManagementView = ({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount, reason, type }),
+        body: JSON.stringify({ amount, reason, type, unit }),
       });
       if (res.ok) {
         const data = await res.json();
-        showToast("Balance adjusted successfully", "success");
+        showToast(
+          dir === "rtl" ? "تم تعديل الرصيد بنجاح" : "Balance adjusted successfully",
+          "success",
+        );
         setUsers((prev) =>
           prev.map((u) =>
             u.id.toString() === userId.toString()
-              ? { ...u, balance: data.newBalance }
+              ? { ...u, balance: data.newBalance, points: data.newPoints }
               : u,
           ),
         );
         if (selectedUser?.id?.toString() === userId.toString())
-          setSelectedUser({ ...selectedUser, balance: data.newBalance });
+          setSelectedUser({
+            ...selectedUser,
+            balance: data.newBalance,
+            points: data.newPoints,
+          });
       } else {
         const err = await res.json();
         showToast(err.error || "Failed to adjust balance", "error");
@@ -6404,6 +6447,81 @@ const UserManagementView = ({
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      showToast("Name, email and password are required", "error");
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newUser),
+      });
+      if (res.ok) {
+        showToast("User created successfully", "success");
+        setIsCreateUserModalOpen(false);
+        setNewUser({
+          name: "",
+          email: "",
+          password: "",
+          role: "user",
+          initialBalance: "0",
+          initialPoints: "0",
+        });
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to create user", "error");
+      }
+    } catch (error) {
+      showToast("Connection error", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === currentUser?.id?.toString()) {
+      showToast("Cannot delete yourself", "error");
+      return;
+    }
+
+    if (
+      !confirm(
+        dir === "rtl"
+          ? "هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف جميع بياناته ومحفظته نهائياً."
+          : "Are you sure you want to delete this user? All their data and wallet will be permanently removed.",
+      )
+    )
+      return;
+
+    setIsUpdating(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        showToast("User deleted successfully", "success");
+        setUsers((prev) =>
+          prev.filter((u) => u.id.toString() !== userId.toString()),
+        );
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to delete user", "error");
+      }
+    } catch (error) {
+      showToast("Connection error", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const getPlanDetails = (planId: any) => {
     if (!planId)
       return plans[0] || { color: "transparent", nameAr: "", nameEn: "" };
@@ -6515,6 +6633,13 @@ const UserManagementView = ({
           />
         </div>
         <div className="flex gap-3 w-full lg:w-auto">
+          <button
+            onClick={() => setIsCreateUserModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-3 rounded-md bg-emerald-500 text-white font-bold text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-theme"
+          >
+            <UserPlus size={16} />
+            {t("addExplorer")}
+          </button>
           <div className="relative flex-1 lg:flex-none min-w-[140px]">
             <select
               value={statusFilter || "all"}
@@ -6683,6 +6808,16 @@ const UserManagementView = ({
                             {t("role_support")}
                           </option>
                           <option
+                            value="elite"
+                            className={
+                              theme === "dark"
+                                ? "bg-[#0f0f11] text-white"
+                                : "bg-white text-black"
+                            }
+                          >
+                            {t("role_elite")}
+                          </option>
+                          <option
                             value="admin"
                             className={
                               theme === "dark"
@@ -6771,6 +6906,16 @@ const UserManagementView = ({
                             className="group-hover/btn:scale-110 transition-transform"
                           />
                         </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id.toString())}
+                          className="w-9 h-9 flex items-center justify-center rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-theme border border-red-500/30 hover:shadow-[0_0_15px_rgba(239,68,68,0.3)] group/del"
+                          title={dir === "rtl" ? "حذف" : "Delete"}
+                        >
+                          <Trash2
+                            size={16}
+                            className="group-hover/del:scale-110 transition-transform"
+                          />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -6794,6 +6939,109 @@ const UserManagementView = ({
           </tbody>
         </table>
       </div>
+      {isCreateUserModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div
+              className={`relative w-full max-w-md overflow-hidden rounded-lg shadow-2xl flex flex-col transition-theme bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
+            >
+              <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
+                <div className="flex items-center gap-3 text-emerald-500">
+                  <UserPlus size={24} />
+                  <h3 className="text-xl font-black tracking-tight">
+                    {dir === "rtl" ? "إضافة مستكشف جديد" : "New Explorer Registry"}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsCreateUserModalOpen(false)}
+                  className="p-2 rounded-md text-gray-400 hover:bg-[var(--bg-secondary)] transition-theme"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-gray-500">
+                    {t("userName")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-gray-500">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-gray-500">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-gray-500">
+                      Role
+                    </label>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    >
+                      <option value="user">{t("role_user")}</option>
+                      <option value="support">{t("role_support")}</option>
+                      <option value="elite">{t("role_elite")}</option>
+                      <option value="admin">{t("role_admin")}</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-gray-500">
+                      Initial Points
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.initialPoints}
+                      onChange={(e) => setNewUser({ ...newUser, initialPoints: e.target.value })}
+                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-[var(--bg-secondary)]/30 border-t border-[var(--border-main)]">
+                <button
+                  onClick={handleCreateUser}
+                  disabled={isUpdating}
+                  className="w-full py-3 rounded-md bg-emerald-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
+                >
+                  {isUpdating ? (
+                    <RefreshCw size={18} className="animate-spin" />
+                  ) : (
+                    <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
+                  )}
+                  {dir === "rtl" ? "تسجيل العضو" : "Register Explorer"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       {isActivityModalOpen &&
         selectedUser &&
         createPortal(
@@ -7003,6 +7251,7 @@ const UserManagementView = ({
                           >
                             <option value="user">{t("role_user")}</option>
                             <option value="support">{t("role_support")}</option>
+                            <option value="elite">{t("role_elite")}</option>
                             <option value="admin">{t("role_admin")}</option>
                           </select>
                         </div>
@@ -7431,12 +7680,12 @@ const UserManagementView = ({
                               : `Are you sure you want to execute a ${ledgerAction === "add" ? "deposit" : "withdrawal"} of ${ledgerAmount} ${ledgerUnit}?`,
                           )
                         ) {
-                          const finalAmount = amount;
                           await handleUpdateBalance(
                             selectedUser.id,
-                            finalAmount,
+                            amount,
                             ledgerReason,
                             ledgerAction,
+                            ledgerUnit,
                           );
                           setLedgerAmount("");
                           setLedgerReason("");

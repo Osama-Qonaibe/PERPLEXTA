@@ -60,12 +60,14 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
 
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
-    const { host, port, database, user } = req.body;
-    if (!host || !database) return res.status(400).json({ error: 'host and database are required' });
+    const config = req.body.config || req.body;
+    if (!config.host && !config.connection_string && !config.connectionString) {
+      return res.status(400).json({ error: 'Host or connection string is required' });
+    }
     const result = await testDatabaseConnection(req.body);
     res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
@@ -178,15 +180,23 @@ router.get("/users", authenticateAdmin, async (req, res) => {
     const result = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
-        u.kyc_status, u.kyc_required,
-        s.plan_id, s.status as subscription_status, s.current_period_end
+        u.kyc_status, u.kyc_required, u.support_notes, u.kyc_rejection_reason,
+        s.plan_id, s.status as subscription_status, s.current_period_end,
+        p.name_en as plan_name
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
+      LEFT JOIN plans p ON s.plan_id = p.id
       ORDER BY u.created_at DESC
     `);
     
-    const walletRes = await ledgerPool.query('SELECT user_id, balance, points FROM wallets');
-    const walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
+    let walletMap = new Map();
+    try {
+      const targetLedger = ledgerPool || pool;
+      const walletRes = await targetLedger.query('SELECT user_id, balance, points FROM wallets');
+      walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
+    } catch (e) {
+      console.error('[Admin] Failed to fetch wallets for user list:', e);
+    }
 
     const usersWithWallets = result.rows.map((user: any) => {
       const wallet = walletMap.get(user.id) as any;
@@ -199,11 +209,12 @@ router.get("/users", authenticateAdmin, async (req, res) => {
 
     res.json(usersWithWallets);
   } catch (error) {
+    console.error('[Admin] Failed to fetch users:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-router.post("/users/:id/status", authenticateAdmin, async (req, res) => {
+router.patch("/users/:id/status", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -220,12 +231,12 @@ router.post("/users/:id/status", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/users/:id/role", authenticateAdmin, async (req, res) => {
+router.patch("/users/:id/role", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
     
-    if (!['admin', 'user'].includes(role)) {
+    if (!['admin', 'user', 'support', 'elite'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
@@ -383,6 +394,90 @@ router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.post("/users", authenticateAdmin, async (req, res) => {
+  try {
+    const { name, email, password, role = 'user', balance = 0, points = 0 } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email and password are required' });
+    }
+
+    const check = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (check.rows.length > 0) return res.status(400).json({ error: 'Email already exists' });
+
+    const bcrypt = await import('bcryptjs');
+    const hash = await bcrypt.default.hash(password, 10);
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const newUser = await client.query(
+        `INSERT INTO users (name, email, password_hash, role, status) VALUES ($1, $2, $3, $4, 'active') RETURNING id`,
+        [name, email, hash, role]
+      );
+      const userId = newUser.rows[0].id;
+
+      const ledgerTarget = ledgerPool || pool;
+      await ledgerTarget.query(
+        `INSERT INTO wallets (user_id, balance, points) VALUES ($1, $2, $3)`,
+        [userId, balance, points]
+      );
+
+      await client.query('COMMIT');
+      await auditLog((req as any).user?.id, 'Create User Manually', 'system', { targetUser: userId, email });
+      res.json({ success: true, userId });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[Admin] Create user failed:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+router.delete("/users/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = (req as any).user?.id;
+
+    if (id === adminId?.toString()) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Cascade delete is handled by DB for chats, messages, user_files, etc.
+      // But wallets/ledger might be in another DB
+      if (ledgerPool && ledgerPool !== pool) {
+        await ledgerPool.query('DELETE FROM wallets WHERE user_id = $1', [id]);
+        await ledgerPool.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id, id]);
+      } else {
+        await client.query('DELETE FROM wallets WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id, id]);
+      }
+
+      await client.query('DELETE FROM users WHERE id = $1', [id]);
+
+      await client.query('COMMIT');
+      await auditLog(adminId, 'Delete User', 'system', { targetUser: id });
+      res.json({ success: true });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[Admin] Delete user failed:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -406,7 +501,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { role, status, kyc_status, kyc_rejection_reason, kyc_required } = req.body;
     
-    if (role && !['admin', 'user'].includes(role)) {
+    if (role && !['admin', 'user', 'support', 'elite'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
     if (status && !['active', 'suspended', 'pending'].includes(status)) {
@@ -434,7 +529,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
       }
 
-      // Sync KYC status to Ledger DB (using centralized service for total synchronization)
+      // Sync KYC status to Ledger DB
       if (kyc_status) {
         const { syncKYCStatus } = await import('../services/kyc.js');
         await syncKYCStatus(id, kyc_status, kyc_rejection_reason || null);
@@ -451,6 +546,130 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     }
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.patch("/users/:id/kyc-status", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kyc_required } = req.body;
+    await pool.query('UPDATE users SET kyc_required = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [kyc_required, id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to update KYC status' });
+  }
+});
+
+router.patch("/users/:id/kyc-verification", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kyc_status, rejection_reason } = req.body;
+    
+    const { syncKYCStatus } = await import('../services/kyc.js');
+    await syncKYCStatus(id, kyc_status, rejection_reason || null);
+    
+    await pool.query(`
+      UPDATE users SET 
+        kyc_status = $1, 
+        kyc_rejection_reason = $2, 
+        kyc_required = CASE WHEN $1 = 'verified' THEN false ELSE kyc_required END,
+        updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $3
+    `, [kyc_status, rejection_reason || null, id]);
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to update verification status' });
+  }
+});
+
+router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, reason, type, unit } = req.body;
+    
+    const target = (unit === 'PTS' || unit === 'points') ? 'points' : 'balance';
+    const { adjustWalletBalance } = await import('../services/wallet.js');
+    const result = await adjustWalletBalance(id, amount, type, reason || 'Admin adjustment', target);
+    
+    await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: id, amount, type, unit, reason });
+    res.json({ success: true, newBalance: result.newBalance, newPoints: result.newPoints });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to adjust balance' });
+  }
+});
+
+router.patch("/users/:id/support-notes", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    await pool.query('UPDATE users SET support_notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [notes, id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to update support notes' });
+  }
+});
+
+router.post("/users/:id/send-email", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject, body } = req.body;
+    
+    const userRes = await pool.query('SELECT email FROM users WHERE id = $1', [id]);
+    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    // For now, we log the email request. In a real system, you'd use a mail service.
+    await auditLog((req as any).user?.id, 'Send Manual Email', 'communication', { 
+      targetUser: id, 
+      targetEmail: userRes.rows[0].email,
+      subject 
+    });
+    
+    console.log(`[Admin Email] To: ${userRes.rows[0].email}, Subject: ${subject}`);
+    
+    res.json({ success: true, message: 'Email sent (simulated)' });
+  } catch {
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+router.post("/users/:id/notify", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { titleEn, titleAr, messageEn, messageAr, type } = req.body;
+    
+    await pool.query(`
+      INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [id, titleEn, titleAr, messageEn, messageAr, type || 'system']);
+    
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to send notification' });
+  }
+});
+
+router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { planId } = req.body;
+    
+    const planRes = await pool.query('SELECT id FROM plans WHERE id = $1', [planId]);
+    if (planRes.rows.length === 0) return res.status(400).json({ error: 'Invalid plan ID' });
+
+    await pool.query(`
+      INSERT INTO subscriptions (user_id, plan_id, status, updated_at)
+      VALUES ($1, $2, 'active', CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id) DO UPDATE SET 
+        plan_id = EXCLUDED.plan_id,
+        status = 'active',
+        updated_at = CURRENT_TIMESTAMP
+    `, [id, planId]);
+    
+    await auditLog((req as any).user?.id, 'Update User Plan', 'system', { targetUser: id, planId });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update subscription' });
   }
 });
 
@@ -725,7 +944,8 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       referral_bonus_percent = 10, 
       welcome_bonus_points = 600, 
       referral_bonus_points = 1000, 
-      conversion_rate = 0.001 
+      conversion_rate = 0.001,
+      referral_activation_min_deposit = 10
     } = req.body;
 
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
@@ -736,29 +956,33 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       const ledgerCheck = await ledgerTarget.query('SELECT count(*) FROM economy_settings');
       if (parseInt(ledgerCheck.rows[0].count) > 0) {
         await ledgerTarget.query(`
-          UPDATE economy_settings SET
-            points_per_dollar = $1,
-            min_payout_usd = $2,
-            min_deposit_usd = $3,
+          UPDATE economy_settings SET 
+            points_per_dollar = $1, 
+            min_payout_usd = $2, 
+            min_deposit_usd = $3, 
             referral_bonus_percent = $4,
-            welcome_bonus_points = $5,
-            referral_bonus_points = $6,
-            conversion_rate = $7,
+            welcome_bonus_points = $5, 
+            referral_bonus_points = $6, 
+            conversion_rate = $7, 
             min_withdrawal_cents = $8,
+            referral_activation_min_deposit = $9,
             updated_at = CURRENT_TIMESTAMP
         `, [
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
+          referral_activation_min_deposit
         ]);
       } else {
         await ledgerTarget.query(`
           INSERT INTO economy_settings (
             points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
+            referral_activation_min_deposit
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `, [
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
+          referral_activation_min_deposit
         ]);
       }
     } catch (ledgerErr) {

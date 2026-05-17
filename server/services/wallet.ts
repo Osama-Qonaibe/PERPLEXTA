@@ -40,7 +40,7 @@ export async function getEconomySettings() {
   
   // Ledger DB is the absolute Source of Truth for financial constants
   const ledgerTarget = ledgerPool || pool;
-  const res = await ledgerTarget.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM economy_settings LIMIT 1');
+  const res = await ledgerTarget.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, referral_activation_min_deposit FROM economy_settings LIMIT 1');
   
   if (res.rows.length > 0) {
     settings = res.rows[0];
@@ -54,13 +54,39 @@ export async function getEconomySettings() {
       welcome_bonus_points: 600,
       referral_bonus_points: 1000,
       conversion_rate: 0.001,
-      min_withdrawal_cents: 1000
+      min_withdrawal_cents: 1000,
+      referral_activation_min_deposit: 10
     };
   }
   
   economyCache = settings;
   lastCacheUpdate = Date.now();
   return settings;
+}
+
+export async function updateEconomySettings(settings: any) {
+  const { 
+    points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+    welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
+    referral_activation_min_deposit
+  } = settings;
+  
+  const ledgerTarget = ledgerPool || pool;
+  await ledgerTarget.query(`
+    UPDATE economy_settings SET 
+      points_per_dollar = $1, min_payout_usd = $2, min_deposit_usd = $3, 
+      referral_bonus_percent = $4, welcome_bonus_points = $5, 
+      referral_bonus_points = $6, min_withdrawal_cents = $7, 
+      conversion_rate = $8, referral_activation_min_deposit = $9,
+      updated_at = CURRENT_TIMESTAMP
+  `, [
+    points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+    welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
+    referral_activation_min_deposit
+  ]);
+  
+  clearEconomyCache();
+  return { success: true };
 }
 
 export function clearEconomyCache() {
@@ -287,6 +313,40 @@ export async function refundToWallet(userId: string, amount: number, transaction
 
     await client.query('COMMIT');
     return result.rows[0].balance;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function adjustWalletBalance(userId: string, amount: number, type: 'credit' | 'debit' | 'add' | 'deduct', reason: string, target: 'balance' | 'points' = 'balance') {
+  if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const client = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+    const wallet = await getUserWallet(userId, client);
+    const isCredit = type === 'credit' || type === 'add';
+    const finalAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
+
+    const column = target === 'points' ? 'points' : 'balance';
+    const result = await client.query(
+      `UPDATE wallets SET ${column} = ${column} + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance, points`,
+      [finalAmount, wallet.id]
+    );
+
+    await client.query(
+      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
+    );
+
+    await client.query('COMMIT');
+    return { 
+      newBalance: result.rows[0].balance,
+      newPoints: result.rows[0].points
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

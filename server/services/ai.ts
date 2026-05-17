@@ -196,6 +196,28 @@ export async function callAIProvider(
   const cleanApiKey = apiKey ? apiKey.trim() : '';
   if (!cleanApiKey) throw new Error(`No valid API key provided for ${provider}`);
 
+  // Strip provider prefix if present (e.g., "google/gemini-1.5-pro" -> "gemini-1.5-pro")
+  let cleanModel = model;
+  if (cleanModel.includes('/') && !cleanModel.startsWith('models/')) {
+    const parts = cleanModel.split('/');
+    if (parts[0].toLowerCase() === normProvider || parts[0].toLowerCase() === 'google' || parts[0].toLowerCase() === 'openai') {
+      cleanModel = parts.slice(1).join('/');
+    }
+  }
+
+  // Model Aliases/Fallbacks for known deprecated/restricted names
+  if (normProvider === 'google' || normProvider.includes('gemini')) {
+    const modelLower = cleanModel.toLowerCase();
+    if (modelLower.includes('gemini-2.0-flash')) {
+      // Default to the most stable production 2.0 flash name if possible, or fallback
+      cleanModel = 'gemini-1.5-flash'; 
+    } else if (modelLower === 'gemini-1.5-pro' || modelLower === 'gemini-pro') {
+      cleanModel = 'gemini-1.5-pro-latest';
+    } else if (modelLower === 'gemini-1.5-flash' || modelLower === 'gemini-flash') {
+      cleanModel = 'gemini-1.5-flash-latest';
+    }
+  }
+
   const messages: any[] = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   history.forEach(msg => messages.push({ role: msg.role, content: msg.content }));
@@ -227,9 +249,15 @@ export async function callAIProvider(
 
   async function handleResponse(response: Response) {
     if (!response.ok) {
-       const text = await response.text();
-       console.error(`[AI Service] Provider Error (${response.status}): ${text.substring(0, 200)}`);
-       throw new Error('The AI provider encountered an issue. Please try again later or check your subscription balance.');
+       let errorText = '';
+       try {
+         const errorJson = await response.json();
+         errorText = JSON.stringify(errorJson);
+       } catch (e) {
+         errorText = await response.text();
+       }
+       console.error(`[AI Service] Provider Error (${response.status}) for ${normProvider}/${cleanModel}: ${errorText.substring(0, 300)}`);
+       throw new Error(`The AI provider encountered an issue (${response.status}). Please check your API keys or fallback to another model.`);
     }
 
     if (isStreaming && response.body) {
@@ -260,7 +288,7 @@ export async function callAIProvider(
               }
               if (chunk) { resultText += chunk; onChunk(chunk); }
             } catch (e) {
-              console.warn('[AI Streaming] Failed to parse SSE chunk:', e);
+              // Ignore parse errors for partial chunks
             }
           }
         }
@@ -269,7 +297,11 @@ export async function callAIProvider(
     } else {
       const data = await response.json();
       if (normProvider === 'anthropic') return data.content?.[0]?.text || '';
-      if (normProvider.includes('google') || normProvider.includes('gemini')) return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (normProvider.includes('google') || normProvider.includes('gemini')) {
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text && data.error) throw new Error(`Google AI Error: ${data.error.message || 'Unknown error'}`);
+        return text || '';
+      }
       return data.choices?.[0]?.message?.content || '';
     }
   }
@@ -278,27 +310,46 @@ export async function callAIProvider(
   let headers: any = { 'Content-Type': 'application/json' };
   let body: any = {};
 
-  if (normProvider === 'openai' || normProvider === 'deepseek') {
-    url = normProvider === 'openai' ? 'https://api.openai.com/v1/chat/completions' : 'https://api.deepseek.com/chat/completions';
+  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok') {
+    if (normProvider === 'openai') url = 'https://api.openai.com/v1/chat/completions';
+    else if (normProvider === 'deepseek') url = 'https://api.deepseek.com/chat/completions';
+    else if (normProvider === 'together') url = 'https://api.together.xyz/v1/chat/completions';
+    else if (normProvider === 'openrouter') url = 'https://openrouter.ai/api/v1/chat/completions';
+    else if (normProvider === 'xai' || normProvider === 'grok') url = 'https://api.x.ai/v1/chat/completions';
+    
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
-    body = { model, messages: processedMessages, stream: isStreaming };
+    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
   } else if (normProvider === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
     headers['x-api-key'] = cleanApiKey;
     headers['anthropic-version'] = '2023-06-01';
-    body = { model, max_tokens: 1024, stream: isStreaming, messages: processedMessages.filter(m => m.role !== 'system') };
+    body = { model: cleanModel, max_tokens: 4096, stream: isStreaming, messages: processedMessages.filter(m => m.role !== 'system') };
     if (systemPrompt) body.system = systemPrompt;
   } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
     const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
-    let modelPath = model;
-    if (!modelPath.includes('/')) {
+    let modelPath = cleanModel;
+    if (!modelPath.startsWith('models/')) {
       modelPath = `models/${modelPath}`;
     }
     url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}`;
     if (isStreaming) url += '?alt=sse';
     headers['x-goog-api-key'] = cleanApiKey;
-    body = { contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text })) : [{ text: String(m.content) }] })) };
-      if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
+    body = { 
+      contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ 
+        role: m.role === 'assistant' ? 'model' : 'user', 
+        parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text || c.data })) : [{ text: String(m.content) }] 
+      })) 
+    };
+    if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
+  } else if (normProvider === 'ollama') {
+    const baseUrl = cleanApiKey.includes('http') ? cleanApiKey : 'http://localhost:11434';
+    url = `${baseUrl}/api/chat`;
+    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
+  } else {
+    // Default to OpenAI-style for unknown providers
+    url = `${cleanApiKey.startsWith('http') ? cleanApiKey : 'https://api.openai.com/v1'}/chat/completions`;
+    headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
   }
 
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });

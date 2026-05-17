@@ -43,7 +43,7 @@ export function setIo(socketIo: any) {
 }
 
 export async function ensureColumn(poolObj: any, tableName: string, columnName: string, type: string, defaultVal?: any) {
-  const isClient = poolObj.query && typeof poolObj.connect !== 'function';
+  const isClient = !!poolObj.release;
   const client = isClient ? poolObj : await poolObj.connect();
   
   try {
@@ -80,6 +80,17 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
   if (!pool) return;
   const client = await pool.connect();
+  let ledgerClient: any = null;
+  
+  if (ledgerPool && ledgerPool !== pool) {
+    try {
+      ledgerClient = await ledgerPool.connect();
+      console.log('[Migrations] Connecting to secondary Ledger DB for dual-path synchronization...');
+    } catch (e) {
+      console.warn('[Migrations] Failed to connect to secondary Ledger DB. Falling back to Core for ledger tables.');
+      ledgerClient = null;
+    }
+  }
   
   try {
     // 1. Migration History Table (Initialize if not exists)
@@ -96,6 +107,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       const tables = ['db_connections_registry', 'users', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
       for (const t of tables) {
         await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+      }
+      if (ledgerClient) {
+        const ledgerTables = ['wallets', 'ledger_transactions', 'referrals', 'referral_tree', 'kyc_requests', 'withdrawal_requests', 'payout_accounts', 'economy_settings', 'coupon_usages', 'deposit_requests', 'coupons', 'stripe_events'];
+        for (const t of ledgerTables) {
+          await ledgerClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+        }
       }
       await client.query('DELETE FROM migration_history');
     }
@@ -123,18 +140,21 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     `);
 
     // Helper to run a versioned migration
-    const runVersioned = async (name: string, description: string, fn: (tx?: any) => Promise<void>) => {
+    const runVersioned = async (name: string, description: string, fn: (tx?: any, ledgerTx?: any) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
         console.log(`[Migrations] Applying ${name}: ${description}...`);
         await client.query('BEGIN');
+        if (ledgerClient) await ledgerClient.query('BEGIN');
         try {
-          await fn(client);
+          await fn(client, ledgerClient);
           await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
           await client.query('COMMIT');
+          if (ledgerClient) await ledgerClient.query('COMMIT');
           console.log(`[Migrations] Successfully applied ${name}.`);
         } catch (e) {
           await client.query('ROLLBACK');
+          if (ledgerClient) await ledgerClient.query('ROLLBACK');
           console.error(`[Migrations] Failed to apply ${name}:`, e);
           throw e;
         }
@@ -142,128 +162,104 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     };
 
     // MIGRATION: Core Schema v1
-    await runVersioned('v1_core_schema', 'Initial core database schema', async () => {
-      await initDb(type, client);
+    await runVersioned('v1_core_schema', 'Initial core database schema', async (tx, ledgerTx) => {
+      await initDb(type, tx, ledgerTx);
     });
 
     // MIGRATION: Additive Columns v2
-    await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async () => {
-      await ensureColumn(client, 'users', 'last_active_at', 'TIMESTAMP');
-      await ensureColumn(client, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
-      await ensureColumn(client, 'users', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-      await ensureColumn(client, 'users', 'referred_by', 'INTEGER');
-      await ensureColumn(client, 'users', 'kyc_submitted_at', 'TIMESTAMP');
-      await ensureColumn(client, 'users', 'kyc_rejection_reason', 'TEXT');
-      await ensureColumn(client, 'users', 'memory', 'TEXT');
-      await ensureColumn(client, 'users', 'support_notes', 'TEXT');
-      await ensureColumn(client, 'users', 'password_hash', 'TEXT');
-      await ensureColumn(client, 'users', 'status', 'VARCHAR(20)', `'active'`);
+    await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async (tx) => {
+      await ensureColumn(tx, 'users', 'last_active_at', 'TIMESTAMP');
+      await ensureColumn(tx, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
+      await ensureColumn(tx, 'users', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(tx, 'users', 'referred_by', 'INTEGER');
+      await ensureColumn(tx, 'users', 'kyc_submitted_at', 'TIMESTAMP');
+      await ensureColumn(tx, 'users', 'kyc_rejection_reason', 'TEXT');
+      await ensureColumn(tx, 'users', 'memory', 'TEXT');
+      await ensureColumn(tx, 'users', 'support_notes', 'TEXT');
+      await ensureColumn(tx, 'users', 'password_hash', 'TEXT');
+      await ensureColumn(tx, 'users', 'status', 'VARCHAR(20)', `'active'`);
 
-      await ensureColumn(client, 'chats', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-      await ensureColumn(client, 'chats', 'context_summary', 'TEXT');
+      await ensureColumn(tx, 'chats', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(tx, 'chats', 'context_summary', 'TEXT');
 
-      await ensureColumn(client, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
-      await ensureColumn(client, 'messages', 'citations', 'JSONB', `'[]'`);
-      await ensureColumn(client, 'messages', 'follow_ups', 'JSONB', `'[]'`);
-      await ensureColumn(client, 'messages', 'feedback', 'SMALLINT', '0');
+      await ensureColumn(tx, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'citations', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'follow_ups', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'feedback', 'SMALLINT', '0');
 
-      await ensureColumn(client, 'api_keys_vault', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-      await ensureColumn(client, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
-      await ensureColumn(client, 'api_keys_vault', 'last_reset_date', 'DATE', 'CURRENT_DATE');
+      await ensureColumn(tx, 'api_keys_vault', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(tx, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'api_keys_vault', 'last_reset_date', 'DATE', 'CURRENT_DATE');
 
-      await ensureColumn(client, 'subscriptions', 'stripe_customer_id', 'VARCHAR(255)');
-      await ensureColumn(client, 'subscriptions', 'stripe_subscription_id', 'VARCHAR(255)');
-      await ensureColumn(client, 'subscriptions', 'billing_period', 'VARCHAR(20)', `'monthly'`);
-      await ensureColumn(client, 'subscriptions', 'last_period_start', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(tx, 'subscriptions', 'stripe_customer_id', 'VARCHAR(255)');
+      await ensureColumn(tx, 'subscriptions', 'stripe_subscription_id', 'VARCHAR(255)');
+      await ensureColumn(tx, 'subscriptions', 'billing_period', 'VARCHAR(20)', `'monthly'`);
+      await ensureColumn(tx, 'subscriptions', 'last_period_start', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
 
-      await ensureColumn(client, 'user_files', 'file_type', 'VARCHAR(100)');
-      await ensureColumn(client, 'user_files', 'file_size', 'INTEGER');
-      await ensureColumn(client, 'user_files', 'file_url', 'TEXT');
-      await ensureColumn(client, 'user_files', 'file_content', 'TEXT');
-      await ensureColumn(client, 'user_files', 'mime_type', 'VARCHAR(100)');
+      await ensureColumn(tx, 'user_files', 'file_type', 'VARCHAR(100)');
+      await ensureColumn(tx, 'user_files', 'file_size', 'INTEGER');
+      await ensureColumn(tx, 'user_files', 'file_url', 'TEXT');
+      await ensureColumn(tx, 'user_files', 'file_content', 'TEXT');
+      await ensureColumn(tx, 'user_files', 'mime_type', 'VARCHAR(100)');
 
-      await ensureColumn(client, 'system_settings', 'stripe_status', 'VARCHAR(20)', `'pending'`);
-      await ensureColumn(client, 'system_settings', 'stripe_last_verified_at', 'TIMESTAMP');
-      await ensureColumn(client, 'system_settings', 'stripe_secret_key', 'TEXT');
-      await ensureColumn(client, 'system_settings', 'stripe_publishable_key', 'TEXT');
-      await ensureColumn(client, 'system_settings', 'stripe_webhook_secret', 'TEXT');
-      await ensureColumn(client, 'system_settings', 'stripe_live_mode', 'BOOLEAN', 'false');
+      await ensureColumn(tx, 'system_settings', 'stripe_status', 'VARCHAR(20)', `'pending'`);
+      await ensureColumn(tx, 'system_settings', 'stripe_last_verified_at', 'TIMESTAMP');
+      await ensureColumn(tx, 'system_settings', 'stripe_secret_key', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'stripe_publishable_key', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'stripe_webhook_secret', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'stripe_live_mode', 'BOOLEAN', 'false');
 
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_2_provider', 'VARCHAR(50)');
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_2_model', 'VARCHAR(255)');
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_3_provider', 'VARCHAR(50)');
-      await ensureColumn(client, 'tool_orchestrator', 'fallback_3_model', 'VARCHAR(255)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_2_provider', 'VARCHAR(50)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_2_model', 'VARCHAR(255)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_3_provider', 'VARCHAR(50)');
+      await ensureColumn(tx, 'tool_orchestrator', 'fallback_3_model', 'VARCHAR(255)');
 
-      await ensureColumn(client, 'system_broadcasts', 'admin_id', 'INTEGER');
-      await ensureColumn(client, 'system_broadcasts', 'broadcast_type', 'VARCHAR(50)', `'system'`);
-      await ensureColumn(client, 'system_broadcasts', 'type', 'VARCHAR(50)', `'system'`);
-      await ensureColumn(client, 'system_broadcasts', 'target_group', 'VARCHAR(50)', `'all'`);
-      await ensureColumn(client, 'system_broadcasts', 'target_role', 'VARCHAR(20)', `'all'`);
-      await ensureColumn(client, 'system_broadcasts', 'status', 'VARCHAR(20)', `'completed'`);
-      await ensureColumn(client, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
+      await ensureColumn(tx, 'system_broadcasts', 'admin_id', 'INTEGER');
+      await ensureColumn(tx, 'system_broadcasts', 'broadcast_type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(tx, 'system_broadcasts', 'type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(tx, 'system_broadcasts', 'target_group', 'VARCHAR(50)', `'all'`);
+      await ensureColumn(tx, 'system_broadcasts', 'target_role', 'VARCHAR(20)', `'all'`);
+      await ensureColumn(tx, 'system_broadcasts', 'status', 'VARCHAR(20)', `'completed'`);
+      await ensureColumn(tx, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
 
-      await ensureColumn(client, 'system_logs', 'type', 'VARCHAR(50)', `'system'`);
-      await ensureColumn(client, 'system_logs', 'details', 'JSONB', `'{}'`);
-      await ensureColumn(client, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
+      await ensureColumn(tx, 'system_logs', 'type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(tx, 'system_logs', 'details', 'JSONB', `'{}'`);
+      await ensureColumn(tx, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
 
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS password_resets (
-          id SERIAL PRIMARY KEY,
-          email VARCHAR(255) NOT NULL,
-          token VARCHAR(255) NOT NULL,
-          expires_at TIMESTAMP NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ON CONFLICT DO NOTHING
-      `).catch(() => {}); // Already exists or schema managed
+      await tx.query(`SELECT 1`); // Placeholder
     });
 
     // MIGRATION: Ledger Schema v3 (Isolated Transaction)
-    await runVersioned('v3_ledger_schema_v1', 'Initial Ledger DB schema and hardened transactions', async () => {
-      const ledgerTarget = ledgerPool || pool;
-      const isExternal = !!ledgerPool;
-      let ledgerClient: any = ledgerTarget;
+    await runVersioned('v3_ledger_schema_v1', 'Initial Ledger DB schema and hardened transactions', async (tx, ledgerTx) => {
+      const ledgerTarget = ledgerTx || tx;
       
-      if (isExternal) {
-        ledgerClient = await ledgerPool.connect();
-        await ledgerClient.query('BEGIN');
-      }
-
-      try {
-        await ensureColumn(ledgerClient, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
-        await ensureColumn(ledgerClient, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-        await ensureColumn(ledgerClient, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
-        
-        await ensureColumn(ledgerClient, 'ledger_transactions', 'user_id', 'INTEGER');
-        await ensureColumn(ledgerClient, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
-        await ensureColumn(ledgerClient, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
-        await ensureColumn(ledgerClient, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
-
-        if (isExternal) await ledgerClient.query('COMMIT');
-      } catch (e) {
-        if (isExternal) await ledgerClient.query('ROLLBACK');
-        throw e;
-      } finally {
-        if (isExternal) ledgerClient.release();
-      }
+      await ensureColumn(ledgerTarget, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
+      await ensureColumn(ledgerTarget, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(ledgerTarget, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
+      
+      await ensureColumn(ledgerTarget, 'ledger_transactions', 'user_id', 'INTEGER');
+      await ensureColumn(ledgerTarget, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
+      await ensureColumn(ledgerTarget, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
+      await ensureColumn(ledgerTarget, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
     });
 
     // MIGRATION: Database Registry Seed
-    await runVersioned('v4_registry_seed', 'Seeding database connections', async () => {
+    await runVersioned('v4_registry_seed', 'Seeding database connections', async (tx) => {
       const coreUrl = process.env.DATABASE_URL;
       const ledgerUrl = process.env.LEDGER_DATABASE_URL;
 
       if (coreUrl) {
           const coreEncrypted = encrypt(coreUrl);
-          await client.query(
+          await tx.query(
             `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('core', 'core', $1, true) ON CONFLICT (id) DO NOTHING`,
             [coreEncrypted]
           );
       }
       if (ledgerUrl) {
           const ledgerEncrypted = encrypt(ledgerUrl);
-          await client.query(
+          await tx.query(
             `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('ledger', 'ledger', $1, true) ON CONFLICT (id) DO NOTHING`,
             [ledgerEncrypted]
           );
@@ -271,181 +267,83 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     // MIGRATION: Cleanup Duplicate Columns
-    await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async () => {
+    await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async (tx) => {
       const dropColumns = [
         'fallback1_provider', 'fallback1_model',
         'fallback2_provider', 'fallback2_model',
         'fallback3_provider', 'fallback3_model'
       ];
       for (const col of dropColumns) {
-        await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
+        await tx.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
       }
       
       const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
       for (const constr of dropUsageConstraints) {
-        await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
+        await tx.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
       }
     });
 
     // MIGRATION: Coupon System Expansion v6
-    await runVersioned('v6_coupon_system_expansion', 'Adding detailed coupon tracking', async () => {
-      const ledgerTarget = ledgerPool || pool;
-      const isExternal = !!ledgerPool;
-      let ledgerClient: any = ledgerTarget;
-      
-      if (isExternal) {
-        ledgerClient = await ledgerPool.connect();
-        await ledgerClient.query('BEGIN');
-      }
-
-      try {
-        await ledgerClient.query(`
-          CREATE TABLE IF NOT EXISTS coupon_usages (
-            id SERIAL PRIMARY KEY,
-            coupon_id INTEGER REFERENCES coupons(id) ON DELETE CASCADE,
-            user_id INTEGER NOT NULL,
-            transaction_id INTEGER,
-            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        if (isExternal) await ledgerClient.query('COMMIT');
-      } catch (e) {
-        if (isExternal) await ledgerClient.query('ROLLBACK');
-        throw e;
-      } finally {
-        if (isExternal) ledgerClient.release();
-      }
+    await runVersioned('v6_coupon_system_expansion', 'Adding detailed coupon tracking', async (tx, ledgerTx) => {
+      const ledgerTarget = ledgerTx || tx;
+      await ensureColumn(ledgerTarget, 'coupons', 'usage_limit', 'INTEGER', '0');
+      await ensureColumn(ledgerTarget, 'coupons', 'usage_count', 'INTEGER', '0');
+      await ensureColumn(ledgerTarget, 'coupons', 'is_active', 'BOOLEAN', 'true');
     });
 
     // MIGRATION: Finance & History Expansion v7
-    await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async () => {
-      const ledgerTarget = ledgerPool || pool;
-      const isExternal = !!ledgerPool;
-      let ledgerClient: any = ledgerTarget;
-      
-      if (isExternal) {
-        ledgerClient = await ledgerPool.connect();
-        await ledgerClient.query('BEGIN');
-      }
-
-      try {
-        await ledgerClient.query(`
-          CREATE TABLE IF NOT EXISTS deposit_requests (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            amount NUMERIC(15, 2) NOT NULL,
-            currency VARCHAR(10) DEFAULT 'USD',
-            method VARCHAR(50) NOT NULL,
-            proof_url TEXT,
-            status VARCHAR(20) DEFAULT 'pending',
-            rejection_reason TEXT,
-            admin_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        
-        // Plan History in Core pool
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS plan_features_history (
-            id SERIAL PRIMARY KEY,
-            plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
-            admin_id INTEGER,
-            change_log JSONB,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        if (isExternal) await ledgerClient.query('COMMIT');
-      } catch (e) {
-        if (isExternal) await ledgerClient.query('ROLLBACK');
-        throw e;
-      } finally {
-        if (isExternal) ledgerClient.release();
-      }
+    await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async (tx, ledgerTx) => {
+      // Logic handled in initDb for fresh installs, additive logic here if needed for existing ones
+      await tx.query(`SELECT 1`);
     });
 
     // MIGRATION: Security Hardening (Stripe Key Encryption) v8
-    await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async () => {
+    await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async (tx) => {
       const { encrypt } = await import('../utils/crypto.js');
-      const settingsRes = await client.query('SELECT stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings LIMIT 1');
-      if (settingsRes.rows.length > 0) {
-        const row = settingsRes.rows[0];
-        const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
-        
-        let needsUpdate = false;
-        let encryptedSecret = row.stripe_secret_key;
-        let encryptedPublishable = row.stripe_publishable_key;
-        let encryptedWebhook = row.stripe_webhook_secret;
-
-        if (row.stripe_secret_key && !encryptionPattern.test(row.stripe_secret_key)) {
-          encryptedSecret = encrypt(row.stripe_secret_key);
-          needsUpdate = true;
-        }
-        if (row.stripe_publishable_key && !encryptionPattern.test(row.stripe_publishable_key)) {
-          encryptedPublishable = encrypt(row.stripe_publishable_key);
-          needsUpdate = true;
-        }
-        if (row.stripe_webhook_secret && !encryptionPattern.test(row.stripe_webhook_secret)) {
-          encryptedWebhook = encrypt(row.stripe_webhook_secret);
-          needsUpdate = true;
-        }
-
-        if (needsUpdate) {
-          await client.query(`
-            UPDATE system_settings SET 
-              stripe_secret_key = $1, 
-              stripe_publishable_key = $2, 
-              stripe_webhook_secret = $3,
-              updated_at = CURRENT_TIMESTAMP
-          `, [encryptedSecret, encryptedPublishable, encryptedWebhook]);
-          console.log('[Migrations] Security: Stripe keys successfully transitioned to encrypted state.');
-        }
-      }
-    });
-
-    // MIGRATION: Security Janitor v9 - Catching missed keys
-    await runVersioned('v9_security_janitor', 'Final sweep for unencrypted sensitive keys', async () => {
-      const { encrypt } = await import('../utils/crypto.js');
+      const settingsRes = await tx.query('SELECT id, stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings');
+      
       const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
       
-      const res = await client.query('SELECT id, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret FROM system_settings');
-      for (const row of res.rows) {
-        let updateNeeded = false;
+      for (const row of settingsRes.rows) {
+        let needsUpdate = false;
         const updates: any = {};
-        
+
         const keysToCheck = ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'];
         for (const key of keysToCheck) {
           const val = row[key];
           if (val && val.trim() !== '' && !encryptionPattern.test(val)) {
             updates[key] = encrypt(val);
-            updateNeeded = true;
+            needsUpdate = true;
           }
         }
 
-        if (updateNeeded) {
+        if (needsUpdate) {
           const fieldsArray = Object.keys(updates);
           const fieldsSql = fieldsArray.map((k, i) => `${k} = $${i + 1}`).join(', ');
           const values = Object.values(updates);
           values.push(row.id);
           const idParamIdx = values.length;
           
-          await client.query(`UPDATE system_settings SET ${fieldsSql}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
+          await tx.query(`UPDATE system_settings SET ${fieldsSql}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
         }
       }
     });
 
     // MIGRATION: Economy settings refactor v10
-    await runVersioned('v10_economy_refactor', 'Removing redundant economy columns from system_settings and ensuring Ledger DB as source of truth', async () => {
+    await runVersioned('v10_economy_refactor', 'Removing redundant economy columns from system_settings and ensuring Ledger DB as source of truth', async (tx, ledgerTx) => {
       const dropCols = [
         'points_per_dollar', 'min_payout_usd', 'min_deposit_usd', 
         'referral_bonus_percent', 'welcome_bonus_points', 'referral_bonus_points', 
         'conversion_rate', 'min_withdrawal_cents', 'referral_activation_min_deposit'
       ];
       for (const col of dropCols) {
-        await client.query(`ALTER TABLE system_settings DROP COLUMN IF EXISTS "${col}"`);
+        await tx.query(`ALTER TABLE system_settings DROP COLUMN IF EXISTS "${col}"`);
       }
-      console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB system_settings.');
+      
+      const ledgerTarget = ledgerTx || tx;
+      await ensureColumn(ledgerTarget, 'economy_settings', 'referral_activation_min_deposit', 'NUMERIC(10, 2)', "'10.00'");
+      
+      console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB and ensured Ledger DB schema.');
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -454,13 +352,14 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     if (process.env.NODE_ENV === 'production') throw error;
   } finally {
     client.release();
+    if (ledgerClient) ledgerClient.release();
   }
 }
 
 export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: any, customLedgerPool?: any) {
   if (!pool) return;
   const targetPool = customPool || pool;
-  const targetLedgerPool = customLedgerPool || (ledgerPool || pool);
+  const targetLedgerPool = customLedgerPool || (ledgerPool || targetPool);
 
   const schema = [
     {
@@ -672,7 +571,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         referral_bonus_percent INTEGER DEFAULT 10,
         min_payout_usd NUMERIC(10, 2) DEFAULT '10.00',
-        min_deposit_usd NUMERIC(10, 2) DEFAULT '5.00'
+        min_deposit_usd NUMERIC(10, 2) DEFAULT '5.00',
+        referral_activation_min_deposit NUMERIC(10, 2) DEFAULT '10.00'
       )`
     },
     {
@@ -1048,10 +948,48 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
+      name: 'password_resets',
+      query: `CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'coupon_usages',
+      pool: targetLedgerPool,
+      query: `CREATE TABLE IF NOT EXISTS coupon_usages (
+        id SERIAL PRIMARY KEY,
+        coupon_id INTEGER,
+        user_id INTEGER NOT NULL,
+        transaction_id INTEGER,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'deposit_requests',
+      pool: targetLedgerPool,
+      query: `CREATE TABLE IF NOT EXISTS deposit_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        amount NUMERIC(15, 2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'USD',
+        method VARCHAR(50) NOT NULL,
+        proof_url TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        rejection_reason TEXT,
+        admin_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
       name: 'plan_features_history',
       query: `CREATE TABLE IF NOT EXISTS plan_features_history (
         id SERIAL PRIMARY KEY,
-        plan_id INTEGER REFERENCES plans(id),
+        plan_id INTEGER,
         admin_id INTEGER,
         change_log JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1091,6 +1029,14 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS security_alerts_pkey ON security_alerts(id)` },
     { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_pkey ON stripe_events(id)` },
     { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_stripe_event_id_key ON stripe_events(stripe_event_id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS kyc_requests_pkey ON kyc_requests(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS withdrawal_requests_pkey ON withdrawal_requests(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS payout_accounts_pkey ON payout_accounts(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS economy_settings_pkey ON economy_settings(id)` },
+    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_kyc_user_id ON kyc_requests(user_id)` },
+    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_withdrawal_user_id ON withdrawal_requests(user_id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS coupon_usages_pkey ON coupon_usages(id)` },
+    { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS deposit_requests_pkey ON deposit_requests(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_pkey ON subscriptions(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_user_id_key ON subscriptions(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS support_ticket_replies_pkey ON support_ticket_replies(id)` },
@@ -1153,7 +1099,11 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_referred_by_fkey` },
     { pool: targetPool, query: `ALTER TABLE users ADD CONSTRAINT users_referred_by_fkey FOREIGN KEY (referred_by) REFERENCES users(id)` },
     { pool: targetLedgerPool, query: `ALTER TABLE ledger_transactions DROP CONSTRAINT IF EXISTS ledger_transactions_wallet_id_fkey` },
-    { pool: targetLedgerPool, query: `ALTER TABLE ledger_transactions ADD CONSTRAINT ledger_transactions_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id)` }
+    { pool: targetLedgerPool, query: `ALTER TABLE ledger_transactions ADD CONSTRAINT ledger_transactions_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id)` },
+    { pool: targetLedgerPool, query: `ALTER TABLE coupon_usages DROP CONSTRAINT IF EXISTS coupon_usages_coupon_id_fkey` },
+    { pool: targetLedgerPool, query: `ALTER TABLE coupon_usages ADD CONSTRAINT coupon_usages_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE` },
+    { pool: targetPool, query: `ALTER TABLE plan_features_history DROP CONSTRAINT IF EXISTS plan_features_history_plan_id_fkey` },
+    { pool: targetPool, query: `ALTER TABLE plan_features_history ADD CONSTRAINT plan_features_history_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE` }
   ];
 
   for (const rel of relations) {
@@ -1241,22 +1191,22 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     await targetPool.query(`
       INSERT INTO tool_orchestrator (tool_id, primary_provider, primary_model, task_description, task_description_ar, cost_per_usage)
       VALUES
-        ('chat', '', '', 'General purpose AI assistant', 'المساعد الذكي العام والقوي في المحادثة.', 10),
-        ('chat_fast', '', '', 'High-speed technical chat', 'دردشة تقنية سريعة', 5),
-        ('chat_pro', '', '', 'Advanced technical reasoning assistant', 'مساعد استنتاجي تقني متقدم', 25),
-        ('chat_reasoning', '', '', 'Complex reasoning engine', 'محرك تفكير معقد', 50),
-        ('perplexta_analysis', '', '', 'Deep digital analysis and technical search', 'البحث التقني والتحليل الرقمي العميق', 15),
-        ('image', '', '', 'High-quality image generation', 'توليد صور بجودة عالية', 30),
-        ('video', '', '', 'High-fidelity video generation', 'توليد فيديو عالي الدقة', 100),
-        ('tts', '', '', 'Natural voice synthesis', 'توليد صوتي طبيعي', 10),
-        ('stt', '', '', 'High-accuracy speech recognition', 'تحويل الكلام إلى نص عالي الدقة', 5),
-        ('legal_analysis', '', '', 'Legal document analysis', 'تحليل الوثائق القانونية', 40),
-        ('learning', '', '', 'Adaptive learning system', 'نظام تعلم متكيف', 20),
-        ('code', '', '', 'Elite engineering workstation', 'بيئة هندسة برمجيات', 20),
-        ('canvas', '', '', 'Multi-modal Studio and canvas', 'استوديو الإنتاج المتعدد واللوحة الذكية', 25),
-        ('notebook', '', '', 'Research notebook assistant', 'دفتر أبحاث ذكي', 30),
-        ('sovereign_memory', '', '', 'System intelligence memory', 'ذاكرة ذكاء النظام', 5),
-        ('sovereign_search', '', '', 'Live web intelligence search', 'بحث ذكي حي على الويب', 10)
+        ('chat', '', '', 'Elite strategic assistant for professional discourse and general logic.', 'مساعد استراتيجي نخبوي للنقاش المهني والمنطق العام.', 10),
+        ('chat_fast', '', '', 'High-speed technical intelligence agent for quick insights.', 'عميل ذكاء تقني سريع للاستفسارات الفورية.', 5),
+        ('chat_pro', '', '', 'Advanced sovereign reasoning engine for deep technical problem solving.', 'محرك استنتاج سيادي متقدم لحل المشكلات التقنية العميقة.', 25),
+        ('chat_reasoning', '', '', 'Complex multi-step reasoning protocol for high-stakes intelligence.', 'بروتوكول تفكير معقد متعدد الخطوات للمهام فائقة الأهمية.', 50),
+        ('perplexta_analysis', '', '', 'Professional technical synthesis and deep digital strategic search.', 'البحث الاستراتيجي الرقمي العميق والتحليل التقني المهني.', 15),
+        ('image', '', '', 'High-precision visual synthesis engine for professional assets.', 'محرك توليد بصري عالي الدقة للأصول المهنية.', 30),
+        ('video', '', '', 'Global standard video generation and cinematic synthesis.', 'توليد فيديو بمعايير عالمية وتوليد سينمائي متقدم.', 100),
+        ('tts', '', '', 'Elite natural acoustic synthesis and voice engineering.', 'توليد صوتي طبيعي متطور وهندسة صوتية نخبوية.', 10),
+        ('stt', '', '', 'High-fidelity acoustic transcription and linguistic extraction.', 'تحويل صوتي عالي الدقة واستخراج لغوي متقن.', 5),
+        ('legal_analysis', '', '', 'Sovereign professional document auditing and legal synthesis.', 'تدقيق الوثائق المهنية السيادية والتركيب القانوني.', 40),
+        ('learning', '', '', 'Professional cognitive adaptation and tailored learning systems.', 'التكيف المعرفي المهني وأنظمة التعلم المخصصة.', 20),
+        ('code', '', '', 'Master-level software engineering workstation and logic constructor.', 'محطة عمل هندسة البرمجيات وبناء المنطق البرمجي المتقدم.', 20),
+        ('canvas', '', '', 'Sovereign creative studio and multi-modal design canvas.', 'استوديو الإبداع السيادي ولوحة التصميم متعددة الوسائط.', 25),
+        ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
+        ('sovereign_memory', '', '', 'Unified system intelligence and long-term memory synthesis.', 'ذاكرة النظام الموحدة وتركيب المعارف طويلة الأمد.', 5),
+        ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
       ON CONFLICT (tool_id) DO NOTHING
     `);
   }

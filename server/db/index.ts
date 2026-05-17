@@ -94,17 +94,17 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
     pool = new Pool({
       connectionString: coreUrl,
       ssl: sslConfig,
-      max: 20,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 15000,
+      connectionTimeoutMillis: 20000,
     });
 
     ledgerPool = new Pool({
       connectionString: finalLedgerUrl,
       ssl: sslConfig,
-      max: 20,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 15000,
+      connectionTimeoutMillis: 20000,
     });
 
     pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));

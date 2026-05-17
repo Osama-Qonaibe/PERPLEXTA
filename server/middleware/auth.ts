@@ -52,13 +52,14 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       const userPayload = user as any;
 
       try {
-        const userCheck = await pool.query('SELECT status, role FROM users WHERE id = $1', [userPayload.id]);
+        const userCheck = await pool.query('SELECT status, role, last_active_at FROM users WHERE id = $1', [userPayload.id]);
         if (userCheck.rows.length === 0) {
           res.status(401).json({ error: 'User not found' });
           return;
         }
 
-        if (userCheck.rows[0].status === 'suspended') {
+        const userData = userCheck.rows[0];
+        if (userData.status === 'suspended') {
           res.status(403).json({
             error: 'Account Suspended',
             message: 'Your account has been suspended by the administration. Please contact support.'
@@ -66,7 +67,14 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           return;
         }
 
-        userPayload.role = userCheck.rows[0].role;
+        userPayload.role = userData.role;
+
+        const lastActive = userData.last_active_at ? new Date(userData.last_active_at).getTime() : 0;
+        const now = Date.now();
+        if (now - lastActive > 5 * 60 * 1000) {
+          pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
+            .catch((e: any) => console.error('Error updating last_active_at:', e));
+        }
       } catch (dbErr) {
         console.error('[Security] Failed to verify user status:', dbErr);
         res.status(503).json({ error: 'Service temporarily unavailable' });
@@ -75,10 +83,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       (req as any).user = userPayload;
       (req as any).token = token;
-
-      pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
-        .catch((e: any) => console.error('Error updating last_active_at:', e));
-
       next();
     });
   } catch (error) {

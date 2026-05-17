@@ -209,7 +209,6 @@ const translations = {
     loadingMemory: 'جاري تحميل الذاكرة...',
     noResults: 'لا توجد نتائج',
     memoryLimitReached: 'لقد وصلت إلى الحد الأقصى للذاكرة (50). يرجى حذف بعض الحقائق القديمة أولاً.',
-    userManagement: 'المستخدمين',
     systemSettings: 'إعدادات النظام',
     smartEmailHub: 'البريد الذكي',
     toolOrchestrator: 'الأوركسترا',
@@ -444,7 +443,11 @@ const translations = {
     notVerifiedKYC: 'حساب غير موثق',
     role_admin: 'مدير نظام',
     role_support: 'دعم فني',
-    role_user: 'مستخدم',
+    role_elite: 'مستكشف إيليت',
+    role_user: 'مستكشف',
+    userManagement: 'إدارة المستكشفين',
+    addExplorer: 'إضافة مستكشف',
+    deleteUser: 'حذف مستخدم',
     ai: 'الذكاء الاصطناعي',
     system: 'النظام',
     walletAlerts: 'تنبيهات المحفظة',
@@ -887,7 +890,6 @@ const translations = {
     memoryLimitReached: 'You have reached the memory limit (50). Please delete some old facts first.',
     shortcuts: 'Shortcuts',
     plansSubscriptions: 'Plans & Subscriptions',
-    userManagement: 'User Management',
     systemSettings: 'System Settings',
     smartEmailHub: 'Smart Email Hub',
     toolOrchestrator: 'Tool Orchestrator',
@@ -897,7 +899,11 @@ const translations = {
     ledger: 'Ledger',
     role_admin: 'Admin',
     role_support: 'Support',
-    role_user: 'User',
+    role_elite: 'Elite Explorer',
+    role_user: 'Explorer',
+    userManagement: 'User Management',
+    addExplorer: 'Add Explorer',
+    deleteUser: 'Delete User',
     ai: 'AI',
     system: 'System',
     walletAlerts: 'Wallet Alerts',
@@ -1476,27 +1482,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
-      const getParam = (name: string) => {
-        const searchParams = new URLSearchParams(window.location.search);
-        if (searchParams.get(name)) return searchParams.get(name);
-        const hash = window.location.hash;
-        if (hash.includes('?')) {
-          const hashQueryParams = new URLSearchParams(hash.split('?')[1]);
-          return hashQueryParams.get(name);
-        }
-        return null;
-      };
-
-      const fromUrl = getParam('token');
-      if (fromUrl) {
-        localStorage.setItem('app_token', fromUrl);
-        return fromUrl;
-      }
+      // ONLY recover from localStorage on init. 
+      // URL token logic moved to useEffect to prevent session corruption on non-auth pages.
       const rawToken = localStorage.getItem('app_token');
-      if (rawToken === 'null' || rawToken === 'undefined') return null;
+      if (!rawToken || rawToken === 'null' || rawToken === 'undefined' || rawToken === '') return null;
       return rawToken;
     } catch (e) {
-      console.warn('Failed to parse token from URL or storage', e);
+      console.warn('Failed to parse token from storage', e);
       return null;
     }
   });
@@ -1540,7 +1532,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMemoryNotification(prev => ({ ...prev, isVisible: false }));
   };
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
-    return localStorage.getItem('app_remember_me') === 'true';
+    return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
   });
   
   const dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -1663,7 +1655,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const urlToken = getParam('token');
     const urlUserRaw = getParam('user');
 
-    if (urlToken && urlToken !== token) {
+    // Only ingest token from URL if we are NOT on a sensitive page like reset-password 
+    // AND if we don't already have a valid token or this is an explicit auth callback.
+    const isSensitivePage = window.location.pathname.includes('reset-password');
+
+    if (urlToken && !isSensitivePage && urlToken !== token) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
       
@@ -1770,8 +1766,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearTimeout(timer);
   }, [isAuthReady]);
 
-  const fetchUserProfile = async () => {
-    if (!token) return;
+  const fetchUserProfile = async (retryCount = 0) => {
+    if (!token) {
+      completeBoot();
+      return;
+    }
+    
     try {
       const data = await fetchWithRetry(`/api/user/me?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1785,14 +1785,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
         if (data.economy) setEconomySettings(data.economy);
+        completeBoot();
+      } else {
+        console.warn('Profile fetch returned no user data');
+        completeBoot();
       }
-      completeBoot();
     } catch (err) {
-      console.error('Profile fetch error:', err);
-      if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
-        logout(false);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      
+      // If it's a 401 on initial boot, maybe the DB or server is warming up. Retry once.
+      if ((errMsg.includes('401') || errMsg.includes('403')) && retryCount < 1) {
+        console.warn('Initial auth 401 detected, retrying once in 1.5s...');
+        setTimeout(() => fetchUserProfile(retryCount + 1), 1500);
+        return;
       }
-      completeBoot();
+
+      console.error('Profile fetch error:', errMsg);
+      
+      if (errMsg.includes('401') || errMsg.includes('403')) {
+        // Only logout if we've already tried retrying or it's a definitive fail
+        logout(false);
+      } else {
+        completeBoot();
+      }
     }
   };
 
@@ -1809,21 +1824,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const profileFetched = useRef(false);
   useEffect(() => {
-    fetch(`/api/economy`)
-      .then(res => res.json())
-      .then(data => data && data.points_per_dollar && setEconomySettings(data))
-      .catch(() => {});
+    // Reset fetched status if token is cleared so we can fetch again on next login
+    if (!token) {
+      profileFetched.current = false;
+      completeBoot();
+      return;
+    }
 
-    if (token) {
+    // Only fetch once per token change/mount
+    if (!profileFetched.current) {
+      profileFetched.current = true;
+      
+      // Fetch economic settings (public)
+      fetch(`/api/economy`)
+        .then(res => res.json())
+        .then(data => data && data.points_per_dollar && setEconomySettings(data))
+        .catch(() => {});
+
       fetchUserProfile();
       fetchBalance();
-      if (socket && !socket.connected) {
-        socket.auth = { token };
-        socket.connect();
-      }
-    } else {
-      completeBoot();
+    }
+    
+    if (socket && !socket.connected) {
+      socket.auth = { token };
+      socket.connect();
     }
   }, [token, socket]);
 

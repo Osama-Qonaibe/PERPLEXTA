@@ -1219,32 +1219,47 @@ export const ChatPage: React.FC = () => {
     
     typewriterInterval.current = setInterval(() => {
       if (streamingBuffer.current.length > 0) {
-        const pullAmount = Math.max(1, Math.ceil(streamingBuffer.current.length / 20));
+        // Meticulous precision: smaller, more consistent chunks for better typewriter feel
+        const pullAmount = Math.max(1, Math.min(3, Math.ceil(streamingBuffer.current.length / 15)));
         const chunk = streamingBuffer.current.substring(0, pullAmount);
         streamingBuffer.current = streamingBuffer.current.substring(pullAmount);
         
         setMessages(prev => {
           const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            newMessages[newMessages.length - 1] = {
+          const lastIdx = newMessages.length - 1;
+          const lastMessage = newMessages[lastIdx];
+          
+          if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.is_quota_error && !lastMessage.is_system_inactive) {
+            newMessages[lastIdx] = {
               ...lastMessage,
-              content: lastMessage.content + chunk
+              content: lastMessage.content + chunk,
+              is_streaming: true
             };
-          } else {
-            newMessages.push({ role: 'assistant', content: chunk });
+            return newMessages;
+          } else if (lastIdx === -1 || (lastMessage && lastMessage.role === 'user')) {
+            newMessages.push({ role: 'assistant', content: chunk, is_streaming: true });
+            return newMessages;
           }
-          return newMessages;
+          return prev;
         });
       } else if (!isGeneratingRef.current) {
+        // Stop interval when buffer is empty and generation is done
         if (typewriterInterval.current) {
           clearInterval(typewriterInterval.current);
           typewriterInterval.current = null;
-          // Sovereign: contextual continuity via manual observation.
-          // scrollToLastInteraction();
+          
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastIdx = newMessages.length - 1;
+            if (lastIdx >= 0 && newMessages[lastIdx].role === 'assistant') {
+              newMessages[lastIdx] = { ...newMessages[lastIdx], is_streaming: false };
+              return newMessages;
+            }
+            return prev;
+          });
         }
       }
-    }, 30);
+    }, 25);
   };
 
   useEffect(() => {
@@ -1357,38 +1372,20 @@ export const ChatPage: React.FC = () => {
 
     const onChatChunk = (data: any) => {
       if (data.isFinal) {
-        // Immediate Sovereign Finalization for binary/complex assets
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            newMessages[newMessages.length - 1] = {
-              ...lastMessage,
-              content: data.chunk
-            };
-          } else {
-            newMessages.push({ role: 'assistant', content: data.chunk });
-          }
-          return newMessages;
-        });
-        setIsGenerating(false);
-        streamingBuffer.current = '';
+        // For final data, we just append to buffer and let typewriter finish
+        streamingBuffer.current += data.chunk || '';
       } else {
         streamingBuffer.current += data.chunk;
-        
-        // Sovereign: Efficient real-time streaming update
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            newMessages[newMessages.length - 1] = {
-              ...lastMessage,
-              content: streamingBuffer.current
-            };
-          }
-          return newMessages;
-        });
       }
+      
+      // Ensure the assistant message exists to start receiving chunks
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (!lastMessage || lastMessage.role !== 'assistant') {
+          return [...prev, { role: 'assistant', content: '', is_streaming: true }];
+        }
+        return prev;
+      });
     };
 
     const onChatResponse = async (data: any) => {
@@ -2754,7 +2751,13 @@ export const ChatPage: React.FC = () => {
                                 remarkPlugins={[remarkGfm]} 
                                 components={{ 
                                   code: CodeBlock,
-                                  p: ({ children }) => {
+                                  p: ({ children, node }: any) => {
+                                    const isLastMessage = idx === messages.length - 1;
+                                    const isStreamingActive = isLastMessage && msg.is_streaming;
+                                    
+                                    // Identify if this is precisely the last paragraph in the markdown output
+                                    const isLastParagraph = node && node.parent && node.parent.children[node.parent.children.length - 1] === node;
+
                                     if (typeof children === 'string' || (Array.isArray(children) && children.every(c => typeof c === 'string'))) {
                                       const text = Array.isArray(children) ? children.join('') : children;
                                       const parts = text.split(/(\[\d+\])/g);
@@ -2782,10 +2785,30 @@ export const ChatPage: React.FC = () => {
                                             }
                                             return part;
                                           })}
+                                          {isStreamingActive && isLastParagraph && (
+                                            <motion.span
+                                              initial={{ opacity: 0 }}
+                                              animate={{ opacity: [0, 1, 0.5, 1, 0] }}
+                                              transition={{ repeat: Infinity, duration: 0.6, ease: "linear" }}
+                                              className="inline-block w-[2px] h-[1.1em] ml-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.9)] align-middle"
+                                            />
+                                          )}
                                         </div>
                                       );
                                     }
-                                    return <div className="last:mb-0 mb-3 text-sm leading-relaxed text-[var(--text-primary)]">{children}</div>;
+                                    return (
+                                      <div className="last:mb-0 mb-3 text-sm leading-relaxed text-[var(--text-primary)]">
+                                        {children}
+                                        {isStreamingActive && isLastParagraph && (
+                                          <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: [0, 1, 0.5, 1, 0] }}
+                                            transition={{ repeat: Infinity, duration: 0.6, ease: "linear" }}
+                                            className="inline-block w-[2px] h-[1.1em] ml-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.9)] align-middle"
+                                          />
+                                        )}
+                                      </div>
+                                    );
                                   },
                                   h1: ({ children }) => <h1 className="text-md md:text-xl font-black text-emerald-500 mb-3 mt-5 uppercase tracking-wider border-b border-emerald-500/10 pb-1.5">{children}</h1>,
                                   h2: ({ children }) => <h2 className="text-sm md:text-lg font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">

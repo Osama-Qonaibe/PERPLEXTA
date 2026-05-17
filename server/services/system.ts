@@ -1,5 +1,8 @@
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
+import { getEconomySettings, updateEconomySettings } from './wallet.js';
+
+export { getEconomySettings, updateEconomySettings };
 
 let cachedAppNameEn = '';
 let cachedAppNameAr = '';
@@ -56,45 +59,6 @@ export async function updateSystemSettings(settings: any) {
   ]);
   
   await refreshCachedAppName();
-  return { success: true };
-}
-
-export async function getEconomySettings() {
-  const result = await pool.query(`
-    SELECT 
-      points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-      welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate
-    FROM system_settings LIMIT 1
-  `);
-  return result.rows[0] || {
-    points_per_dollar: 100,
-    min_payout_usd: 10,
-    min_deposit_usd: 5,
-    referral_bonus_percent: 10,
-    welcome_bonus_points: 600,
-    referral_bonus_points: 1000,
-    min_withdrawal_cents: 2000,
-    conversion_rate: 0.001
-  };
-}
-
-export async function updateEconomySettings(settings: any) {
-  const { 
-    points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-    welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate
-  } = settings;
-  
-  await pool.query(`
-    UPDATE system_settings SET 
-      points_per_dollar = $1, min_payout_usd = $2, min_deposit_usd = $3, 
-      referral_bonus_percent = $4, welcome_bonus_points = $5, 
-      referral_bonus_points = $6, min_withdrawal_cents = $7, 
-      conversion_rate = $8, updated_at = CURRENT_TIMESTAMP
-  `, [
-    points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-    welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate
-  ]);
-  
   return { success: true };
 }
 

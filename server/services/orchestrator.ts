@@ -123,7 +123,24 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONVERSATION CONTEXT SUMMARY:\n${chatRes.rows[0].context_summary}\n` : '';
   
-  const finalSystemPrompt = protocol + userMemoriesStr + contextSummary + "\nTECHNICAL_DIRECTIVE:\n" + (taskDesc || '') + "\n" + (system_prompt || '');
+  const finalSystemPrompt = `
+${protocol}
+
+[MISSION_OBJECTIVE]
+${taskDesc || 'Execute the user request with highest professional precision.'}
+
+[CONVERSATION_CONTEXT]
+${contextSummary || 'No previous summary available.'}
+${userMemoriesStr}
+
+[CORE_DIRECTIVE]
+- Prioritize user intent.
+- Maintain the professional tone defined in the Protocol.
+- Do not mention being an AI or your technical limitations.
+- If system_prompt is provided below, treat it as a priority refinement.
+
+${system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : ''}
+`.trim();
   
   const modelsToTry = [
     { provider: route.primary_provider, model: route.primary_model },
