@@ -2,7 +2,13 @@ import { ledgerPool, pool } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
 export async function getUserWallet(userId: string) {
-  if (!ledgerPool) throw new Error('Ledger database not available');
+  if (!ledgerPool || !pool) throw new Error('Database not available');
+  
+  // Referential Integrity: Verify user exists in Core DB first
+  const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+  if (userCheck.rows.length === 0) {
+    throw new Error(`Integrity Error: User ${userId} does not exist in Core DB`);
+  }
   
   const result = await ledgerPool.query(`
     INSERT INTO wallets (user_id, balance, points) 
@@ -12,6 +18,22 @@ export async function getUserWallet(userId: string) {
   `, [userId]);
   
   return result.rows[0];
+}
+
+async function getEconomySettings() {
+  // Prefer Ledger DB for financial constants (Sovereign approach)
+  if (ledgerPool) {
+    const res = await ledgerPool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM economy_settings LIMIT 1');
+    if (res.rows.length > 0) return res.rows[0];
+  }
+  
+  // Fallback to system_settings in Core DB
+  if (pool) {
+    const res = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM system_settings LIMIT 1');
+    return res.rows[0] || {};
+  }
+  
+  return {};
 }
 
 export async function getTransactionHistory(userId: string, type: string) {
@@ -37,8 +59,8 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
     throw new Error('Insufficient points');
   }
 
-  const settings = await pool.query('SELECT conversion_rate FROM system_settings LIMIT 1');
-  const rate = parseFloat(settings.rows[0]?.conversion_rate || '0.001'); 
+  const settings = await getEconomySettings();
+  const rate = parseFloat(settings.conversion_rate || '0.001'); 
   const usdAmount = amountPoints * rate;
 
   const client = await ledgerPool.connect();
@@ -78,8 +100,8 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
     throw new Error('Insufficient USD balance');
   }
 
-  const settings = await pool.query('SELECT min_withdrawal_cents FROM system_settings LIMIT 1');
-  const minCents = settings.rows[0]?.min_withdrawal_cents || 2000;
+  const settings = await getEconomySettings();
+  const minCents = settings.min_withdrawal_cents || 2000;
   if (amountUSD * 100 < minCents) {
     throw new Error(`Minimum withdrawal is $${(minCents / 100).toFixed(2)}`);
   }
@@ -120,8 +142,8 @@ export async function checkReferralActivation(userId: string) {
   const wallet = await getUserWallet(userId);
   if (wallet.referral_activated) return;
 
-  const settings = await pool.query('SELECT referral_activation_min_deposit FROM system_settings LIMIT 1');
-  const minDeposit = settings.rows[0]?.referral_activation_min_deposit || 10;
+  const settings = await getEconomySettings();
+  const minDeposit = settings.referral_activation_min_deposit || 10;
 
   const depositResult = await ledgerPool.query(
     "SELECT SUM(amount) as total FROM ledger_transactions WHERE user_id = $1 AND (transaction_type = 'deposit' OR transaction_type = 'add_funds') AND status = 'success'",

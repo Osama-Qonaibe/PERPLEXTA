@@ -256,9 +256,9 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
       for (const route of rawRoutes) {
         const { 
           tool_id, primary_provider, primary_model, 
-          fallback1_provider, fallback1_model, 
-          fallback2_provider, fallback2_model,
-          fallback3_provider, fallback3_model,
+          fallback_1_provider, fallback_1_model, 
+          fallback_2_provider, fallback_2_model,
+          fallback_3_provider, fallback_3_model,
           is_active, cost_per_usage 
         } = route;
         
@@ -288,9 +288,9 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
         `, [
           tool_id, 
           primary_provider || '', primary_model || '', 
-          fallback1_provider || '', fallback1_model || '', 
-          fallback2_provider || '', fallback2_model || '',
-          fallback3_provider || '', fallback3_model || '',
+          fallback_1_provider || '', fallback_1_model || '', 
+          fallback_2_provider || '', fallback_2_model || '',
+          fallback_3_provider || '', fallback_3_model || '',
           is_active !== undefined ? is_active : true, 
           cost_per_usage || 10
         ]);
@@ -756,6 +756,42 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       ]);
     }
     
+    // Sync with Ledger DB economy_settings
+    try {
+      if (ledgerPool) {
+        const ledgerCheck = await ledgerPool.query('SELECT count(*) FROM economy_settings');
+        if (parseInt(ledgerCheck.rows[0].count) > 0) {
+          await ledgerPool.query(`
+            UPDATE economy_settings SET
+              points_per_dollar = $1,
+              min_payout_usd = $2,
+              min_deposit_usd = $3,
+              referral_bonus_percent = $4,
+              welcome_bonus_points = $5,
+              referral_bonus_points = $6,
+              conversion_rate = $7,
+              min_withdrawal_cents = $8,
+              updated_at = CURRENT_TIMESTAMP
+          `, [
+            points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+          ]);
+        } else {
+          await ledgerPool.query(`
+            INSERT INTO economy_settings (
+              points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+              welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `, [
+            points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
+          ]);
+        }
+      }
+    } catch (ledgerErr) {
+      console.warn('[Admin] Failed to sync economy settings to Ledger:', ledgerErr);
+    }
+    
     await auditLog((req as any).user?.id, 'Update Economy Settings', 'finance', req.body);
     res.json({ success: true, message: 'Finance settings updated successfully' });
   } catch {
@@ -768,6 +804,7 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
     const { secretKey, publishableKey, webhookSecret, isLiveMode } = req.body;
     
     const encryptedSecret = secretKey ? encrypt(secretKey) : null;
+    const encryptedPublishable = publishableKey ? encrypt(publishableKey) : null;
     const encryptedWebhook = webhookSecret ? encrypt(webhookSecret) : null;
     
     await pool.query(`
@@ -779,9 +816,9 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
         stripe_status = 'verified',
         stripe_last_verified_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
-    `, [encryptedSecret, publishableKey, encryptedWebhook, isLiveMode]);
+    `, [encryptedSecret, encryptedPublishable, encryptedWebhook, isLiveMode]);
     
-    await auditLog((req as any).user?.id, 'Update Stripe Settings', 'finance', { isLiveMode, publishableKey });
+    await auditLog((req as any).user?.id, 'Update Stripe Settings', 'finance', { isLiveMode, publishableKey: '***' });
     invalidateStripeClient();
     res.json({ success: true });
   } catch (error) {

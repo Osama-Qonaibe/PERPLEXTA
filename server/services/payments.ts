@@ -9,10 +9,20 @@ export async function getStripe(): Promise<Stripe | null> {
   if (stripeClient) return stripeClient;
 
   try {
+    // 1. Try Database (Dynamic Config)
     const settings = await pool.query('SELECT stripe_secret_key, stripe_webhook_secret FROM system_settings LIMIT 1');
     if (settings.rows.length > 0 && settings.rows[0].stripe_secret_key) {
       stripeClient = new Stripe(decrypt(settings.rows[0].stripe_secret_key), { apiVersion: '2025-01-27.acacia' as any });
       stripeWebhookSecret = settings.rows[0].stripe_webhook_secret ? decrypt(settings.rows[0].stripe_webhook_secret) : null;
+      return stripeClient;
+    }
+
+    // 2. Fallback to Environment Variables (Static Config)
+    const envKey = process.env.STRIPE_SECRET_KEY;
+    if (envKey && !envKey.includes('placeholder')) {
+      stripeClient = new Stripe(envKey, { apiVersion: '2025-01-27.acacia' as any });
+      stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || null;
+      console.log('[Stripe] Using environment variables for configuration');
       return stripeClient;
     }
   } catch (e) {

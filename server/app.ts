@@ -23,7 +23,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "https:", "wss:", "ws:"],
       frameAncestors: ["'self'"]
@@ -32,15 +32,29 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+const allowedOrigins = [
+  process.env.APP_URL,
+  'https://ais-dev-mrbhxkve7xoff5xgw5b35t-315908805121.europe-west1.run.app',
+  'https://ais-pre-mrbhxkve7xoff5xgw5b35t-315908805121.europe-west1.run.app'
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: process.env.APP_URL || true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.use((req, res, next) => {
   if (process.env.NODE_ENV !== 'production' && req.path.startsWith('/api/')) {

@@ -24,6 +24,12 @@ export async function runSystemMaintenance() {
         AND status = 'active'
       `);
 
+      // 5. Cleanup expired OAuth states
+      await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
+
+      // 6. Cleanup old AI logs (keep 30 days)
+      await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+
       console.log('[Maintenance] Daily system cleanup completed successfully.');
     }
   } catch (e: any) {
@@ -76,9 +82,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   const client = await pool.connect();
   
   try {
-    await client.query('BEGIN');
-
-    // 1. Migration History Table
+    // 1. Migration History Table (Initialize if not exists)
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
         id SERIAL PRIMARY KEY,
@@ -89,7 +93,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     if (type === 'scratch') {
       console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
-      const tables = ['db_connections_registry', 'users', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies'];
+      const tables = ['db_connections_registry', 'users', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
       for (const t of tables) {
         await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
       }
@@ -118,121 +122,250 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
-    // 3. Run versioned migrations here if needed
-    // For now we use the monolithic initDb but wrapped in this transaction
-    await initDb(type, client);
+    // Helper to run a versioned migration
+    const runVersioned = async (name: string, description: string, fn: () => Promise<void>) => {
+      const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
+      if (check.rows.length === 0) {
+        console.log(`[Migrations] Applying ${name}: ${description}...`);
+        await fn();
+        await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
+        console.log(`[Migrations] Successfully applied ${name}.`);
+      }
+    };
 
-    // 4. Record Base Migration
-    await client.query(`INSERT INTO migration_history (migration_name) VALUES ($1) ON CONFLICT (migration_name) DO NOTHING`, ['v1_core_schema']);
+    // MIGRATION: Core Schema v1
+    await runVersioned('v1_core_schema', 'Initial core database schema', async () => {
+      await client.query('BEGIN');
+      try {
+        await initDb(type, client);
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      }
+    });
 
-    // 5. Additive Columns (Idempotent)
-    await ensureColumn(client, 'users', 'last_active_at', 'TIMESTAMP');
-    await ensureColumn(client, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
-    await ensureColumn(client, 'users', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-    await ensureColumn(client, 'users', 'referred_by', 'INTEGER');
-    await ensureColumn(client, 'users', 'kyc_submitted_at', 'TIMESTAMP');
-    await ensureColumn(client, 'users', 'kyc_rejection_reason', 'TEXT');
-    await ensureColumn(client, 'users', 'memory', 'TEXT');
-    await ensureColumn(client, 'users', 'support_notes', 'TEXT');
-    await ensureColumn(client, 'users', 'password_hash', 'TEXT');
-    await ensureColumn(client, 'users', 'status', 'VARCHAR(20)', `'active'`);
+    // MIGRATION: Additive Columns v2
+    await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async () => {
+      await ensureColumn(client, 'users', 'last_active_at', 'TIMESTAMP');
+      await ensureColumn(client, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
+      await ensureColumn(client, 'users', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(client, 'users', 'referred_by', 'INTEGER');
+      await ensureColumn(client, 'users', 'kyc_submitted_at', 'TIMESTAMP');
+      await ensureColumn(client, 'users', 'kyc_rejection_reason', 'TEXT');
+      await ensureColumn(client, 'users', 'memory', 'TEXT');
+      await ensureColumn(client, 'users', 'support_notes', 'TEXT');
+      await ensureColumn(client, 'users', 'password_hash', 'TEXT');
+      await ensureColumn(client, 'users', 'status', 'VARCHAR(20)', `'active'`);
 
-    await ensureColumn(client, 'chats', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-    await ensureColumn(client, 'chats', 'context_summary', 'TEXT');
+      await ensureColumn(client, 'chats', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(client, 'chats', 'context_summary', 'TEXT');
 
-    await ensureColumn(client, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
-    await ensureColumn(client, 'messages', 'citations', 'JSONB', `'[]'`);
-    await ensureColumn(client, 'messages', 'follow_ups', 'JSONB', `'[]'`);
-    await ensureColumn(client, 'messages', 'feedback', 'SMALLINT', '0');
+      await ensureColumn(client, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
+      await ensureColumn(client, 'messages', 'citations', 'JSONB', `'[]'`);
+      await ensureColumn(client, 'messages', 'follow_ups', 'JSONB', `'[]'`);
+      await ensureColumn(client, 'messages', 'feedback', 'SMALLINT', '0');
 
-    await ensureColumn(client, 'api_keys_vault', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
-    await ensureColumn(client, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
-    await ensureColumn(client, 'api_keys_vault', 'last_reset_date', 'DATE', 'CURRENT_DATE');
+      await ensureColumn(client, 'api_keys_vault', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(client, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
+      await ensureColumn(client, 'api_keys_vault', 'last_reset_date', 'DATE', 'CURRENT_DATE');
 
-    const ledgerTarget = ledgerPool || pool;
-    // Note: ensureColumn handles multi-pool context if passed a pool, 
-    // but here we are inside a client transaction for the core pool.
-    // ledgerPool might be a different DB entirely, so we can't use 'client' for it.
-    await ensureColumn(ledgerTarget, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
-    await ensureColumn(ledgerTarget, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(client, 'subscriptions', 'stripe_customer_id', 'VARCHAR(255)');
+      await ensureColumn(client, 'subscriptions', 'stripe_subscription_id', 'VARCHAR(255)');
+      await ensureColumn(client, 'subscriptions', 'billing_period', 'VARCHAR(20)', `'monthly'`);
+      await ensureColumn(client, 'subscriptions', 'last_period_start', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
 
-    await ensureColumn(client, 'subscriptions', 'stripe_customer_id', 'VARCHAR(255)');
-    await ensureColumn(client, 'subscriptions', 'stripe_subscription_id', 'VARCHAR(255)');
-    await ensureColumn(client, 'subscriptions', 'billing_period', 'VARCHAR(20)', `'monthly'`);
-    await ensureColumn(client, 'subscriptions', 'last_period_start', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+      await ensureColumn(client, 'user_files', 'file_type', 'VARCHAR(100)');
+      await ensureColumn(client, 'user_files', 'file_size', 'INTEGER');
+      await ensureColumn(client, 'user_files', 'file_url', 'TEXT');
+      await ensureColumn(client, 'user_files', 'file_content', 'TEXT');
+      await ensureColumn(client, 'user_files', 'mime_type', 'VARCHAR(100)');
 
-    await ensureColumn(client, 'user_files', 'file_type', 'VARCHAR(100)');
-    await ensureColumn(client, 'user_files', 'file_size', 'INTEGER');
-    await ensureColumn(client, 'user_files', 'file_url', 'TEXT');
-    await ensureColumn(client, 'user_files', 'file_content', 'TEXT');
-    await ensureColumn(client, 'user_files', 'mime_type', 'VARCHAR(100)');
+      await ensureColumn(client, 'system_settings', 'stripe_status', 'VARCHAR(20)', `'pending'`);
+      await ensureColumn(client, 'system_settings', 'stripe_last_verified_at', 'TIMESTAMP');
+      await ensureColumn(client, 'system_settings', 'stripe_secret_key', 'TEXT');
+      await ensureColumn(client, 'system_settings', 'stripe_publishable_key', 'TEXT');
+      await ensureColumn(client, 'system_settings', 'stripe_webhook_secret', 'TEXT');
+      await ensureColumn(client, 'system_settings', 'stripe_live_mode', 'BOOLEAN', 'false');
 
-    await ensureColumn(client, 'system_settings', 'stripe_status', 'VARCHAR(20)', `'pending'`);
-    await ensureColumn(client, 'system_settings', 'stripe_last_verified_at', 'TIMESTAMP');
-    await ensureColumn(client, 'system_settings', 'stripe_secret_key', 'TEXT');
-    await ensureColumn(client, 'system_settings', 'stripe_publishable_key', 'TEXT');
-    await ensureColumn(client, 'system_settings', 'stripe_webhook_secret', 'TEXT');
-    await ensureColumn(client, 'system_settings', 'stripe_live_mode', 'BOOLEAN', 'false');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_2_provider', 'VARCHAR(50)');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_2_model', 'VARCHAR(255)');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_3_provider', 'VARCHAR(50)');
+      await ensureColumn(client, 'tool_orchestrator', 'fallback_3_model', 'VARCHAR(255)');
 
-    await ensureColumn(ledgerTarget, 'ledger_transactions', 'user_id', 'INTEGER');
-    await ensureColumn(ledgerTarget, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
-    await ensureColumn(ledgerTarget, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
-    await ensureColumn(ledgerTarget, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
+      await ensureColumn(client, 'system_broadcasts', 'admin_id', 'INTEGER');
+      await ensureColumn(client, 'system_broadcasts', 'broadcast_type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(client, 'system_broadcasts', 'type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(client, 'system_broadcasts', 'target_group', 'VARCHAR(50)', `'all'`);
+      await ensureColumn(client, 'system_broadcasts', 'target_role', 'VARCHAR(20)', `'all'`);
+      await ensureColumn(client, 'system_broadcasts', 'status', 'VARCHAR(20)', `'completed'`);
+      await ensureColumn(client, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
 
-    await ensureColumn(ledgerTarget, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
+      await ensureColumn(client, 'system_logs', 'type', 'VARCHAR(50)', `'system'`);
+      await ensureColumn(client, 'system_logs', 'details', 'JSONB', `'{}'`);
+      await ensureColumn(client, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
 
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_1_provider', 'VARCHAR(50)');
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_1_model', 'VARCHAR(255)');
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_2_provider', 'VARCHAR(50)');
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_2_model', 'VARCHAR(255)');
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_3_provider', 'VARCHAR(50)');
-    await ensureColumn(client, 'tool_orchestrator', 'fallback_3_model', 'VARCHAR(255)');
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS password_resets (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ON CONFLICT DO NOTHING
+      `).catch(() => {}); // Already exists or schema managed
+    });
 
-    await ensureColumn(client, 'system_broadcasts', 'admin_id', 'INTEGER');
-    await ensureColumn(client, 'system_broadcasts', 'broadcast_type', 'VARCHAR(50)', `'system'`);
-    await ensureColumn(client, 'system_broadcasts', 'type', 'VARCHAR(50)', `'system'`);
-    await ensureColumn(client, 'system_broadcasts', 'target_group', 'VARCHAR(50)', `'all'`);
-    await ensureColumn(client, 'system_broadcasts', 'target_role', 'VARCHAR(20)', `'all'`);
-    await ensureColumn(client, 'system_broadcasts', 'status', 'VARCHAR(20)', `'completed'`);
-    await ensureColumn(client, 'system_broadcasts', 'sent_count', 'INTEGER', '0');
+    // MIGRATION: Ledger Schema v3 (Isolated Transaction)
+    await runVersioned('v3_ledger_schema_v1', 'Initial Ledger DB schema and hardened transactions', async () => {
+      const ledgerTarget = ledgerPool || pool;
+      const isExternal = !!ledgerPool;
+      let ledgerClient: any = ledgerTarget;
+      
+      if (isExternal) {
+        ledgerClient = await ledgerPool.connect();
+        await ledgerClient.query('BEGIN');
+      }
 
-    await ensureColumn(client, 'system_logs', 'type', 'VARCHAR(50)', `'system'`);
-    await ensureColumn(client, 'system_logs', 'details', 'JSONB', `'{}'`);
-    await ensureColumn(client, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
+      try {
+        await ensureColumn(ledgerClient, 'wallets', 'balance', 'DECIMAL(15,4)', '0.0000');
+        await ensureColumn(ledgerClient, 'wallets', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
+        await ensureColumn(ledgerClient, 'wallets', 'referral_activated', 'BOOLEAN', 'false');
+        
+        await ensureColumn(ledgerClient, 'ledger_transactions', 'user_id', 'INTEGER');
+        await ensureColumn(ledgerClient, 'ledger_transactions', 'status', 'VARCHAR(20)', `'success'`);
+        await ensureColumn(ledgerClient, 'ledger_transactions', 'metadata', 'JSONB', `'{}'`);
+        await ensureColumn(ledgerClient, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
 
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS password_resets (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        token VARCHAR(255) NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+        if (isExternal) await ledgerClient.query('COMMIT');
+      } catch (e) {
+        if (isExternal) await ledgerClient.query('ROLLBACK');
+        throw e;
+      } finally {
+        if (isExternal) ledgerClient.release();
+      }
+    });
 
-    // 6. Config seeding moved inside transaction
-    const coreUrl = process.env.DATABASE_URL;
-    const ledgerUrl = process.env.LEDGER_DATABASE_URL;
+    // MIGRATION: Database Registry Seed
+    await runVersioned('v4_registry_seed', 'Seeding database connections', async () => {
+      const coreUrl = process.env.DATABASE_URL;
+      const ledgerUrl = process.env.LEDGER_DATABASE_URL;
 
-    if (coreUrl) {
-        const coreEncrypted = encrypt(coreUrl);
-        await client.query(
-          `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('core', 'core', $1, true) ON CONFLICT (id) DO NOTHING`,
-          [coreEncrypted]
-        );
-    }
-    if (ledgerUrl) {
-        const ledgerEncrypted = encrypt(ledgerUrl);
-        await client.query(
-          `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('ledger', 'ledger', $1, true) ON CONFLICT (id) DO NOTHING`,
-          [ledgerEncrypted]
-        );
-    }
+      if (coreUrl) {
+          const coreEncrypted = encrypt(coreUrl);
+          await client.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('core', 'core', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [coreEncrypted]
+          );
+      }
+      if (ledgerUrl) {
+          const ledgerEncrypted = encrypt(ledgerUrl);
+          await client.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('ledger', 'ledger', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [ledgerEncrypted]
+          );
+      }
+    });
 
-    await client.query('COMMIT');
-    console.log('[Migrations] All core migrations completed successfully.');
+    // MIGRATION: Cleanup Duplicate Columns
+    await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async () => {
+      const dropColumns = [
+        'fallback1_provider', 'fallback1_model',
+        'fallback2_provider', 'fallback2_model',
+        'fallback3_provider', 'fallback3_model'
+      ];
+      for (const col of dropColumns) {
+        await client.query(`ALTER TABLE tool_orchestrator DROP COLUMN IF EXISTS "${col}"`);
+      }
+      
+      const dropUsageConstraints = ['user_usage_tool_id_key', 'user_usage_usage_date_key'];
+      for (const constr of dropUsageConstraints) {
+        await client.query(`ALTER TABLE user_usage DROP CONSTRAINT IF EXISTS "${constr}"`);
+      }
+    });
+
+    // MIGRATION: Coupon System Expansion v6
+    await runVersioned('v6_coupon_system_expansion', 'Adding detailed coupon tracking', async () => {
+      const ledgerTarget = ledgerPool || pool;
+      const isExternal = !!ledgerPool;
+      let ledgerClient: any = ledgerTarget;
+      
+      if (isExternal) {
+        ledgerClient = await ledgerPool.connect();
+        await ledgerClient.query('BEGIN');
+      }
+
+      try {
+        await ledgerClient.query(`
+          CREATE TABLE IF NOT EXISTS coupon_usages (
+            id SERIAL PRIMARY KEY,
+            coupon_id INTEGER REFERENCES coupons(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL,
+            transaction_id INTEGER,
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        if (isExternal) await ledgerClient.query('COMMIT');
+      } catch (e) {
+        if (isExternal) await ledgerClient.query('ROLLBACK');
+        throw e;
+      } finally {
+        if (isExternal) ledgerClient.release();
+      }
+    });
+
+    // MIGRATION: Finance & History Expansion v7
+    await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async () => {
+      const ledgerTarget = ledgerPool || pool;
+      const isExternal = !!ledgerPool;
+      let ledgerClient: any = ledgerTarget;
+      
+      if (isExternal) {
+        ledgerClient = await ledgerPool.connect();
+        await ledgerClient.query('BEGIN');
+      }
+
+      try {
+        await ledgerClient.query(`
+          CREATE TABLE IF NOT EXISTS deposit_requests (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            amount NUMERIC(15, 2) NOT NULL,
+            currency VARCHAR(10) DEFAULT 'USD',
+            method VARCHAR(50) NOT NULL,
+            proof_url TEXT,
+            status VARCHAR(20) DEFAULT 'pending',
+            rejection_reason TEXT,
+            admin_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Plan History in Core pool
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS plan_features_history (
+            id SERIAL PRIMARY KEY,
+            plan_id INTEGER REFERENCES plans(id) ON DELETE CASCADE,
+            admin_id INTEGER,
+            change_log JSONB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        if (isExternal) await ledgerClient.query('COMMIT');
+      } catch (e) {
+        if (isExternal) await ledgerClient.query('ROLLBACK');
+        throw e;
+      } finally {
+        if (isExternal) ledgerClient.release();
+      }
+    });
+
+    console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
-    await client.query('ROLLBACK');
     console.error('[CRITICAL] Database Migration failed:', error.message);
     if (process.env.NODE_ENV === 'production') throw error;
   } finally {
@@ -330,23 +463,17 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         tool_id VARCHAR(100) UNIQUE NOT NULL,
         primary_provider VARCHAR(100),
         primary_model VARCHAR(255),
-        fallback1_provider VARCHAR(100),
-        fallback1_model VARCHAR(255),
-        fallback2_provider VARCHAR(100),
-        fallback2_model VARCHAR(255),
-        fallback3_provider VARCHAR(100),
-        fallback3_model VARCHAR(255),
+        fallback_1_provider VARCHAR(100),
+        fallback_1_model VARCHAR(255),
+        fallback_2_provider VARCHAR(100),
+        fallback_2_model VARCHAR(255),
+        fallback_3_provider VARCHAR(100),
+        fallback_3_model VARCHAR(255),
         task_description TEXT,
         task_description_ar TEXT,
         is_active BOOLEAN DEFAULT true,
         cost_per_usage INTEGER DEFAULT 10,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        fallback_1_provider VARCHAR(50),
-        fallback_1_model VARCHAR(255),
-        fallback_2_provider VARCHAR(50),
-        fallback_2_model VARCHAR(255),
-        fallback_3_provider VARCHAR(50),
-        fallback_3_model VARCHAR(255)
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -565,10 +692,10 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       name: 'user_usage',
       query: `CREATE TABLE IF NOT EXISTS user_usage (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE,
-        tool_id VARCHAR(50) NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL,
+        tool_id VARCHAR(50) NOT NULL,
         usage_count INTEGER DEFAULT 0,
-        usage_date DATE DEFAULT CURRENT_DATE UNIQUE,
+        usage_date DATE DEFAULT CURRENT_DATE,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "user_usage_user_id_tool_id_usage_date_key" UNIQUE("user_id","tool_id","usage_date")
       )`
@@ -833,6 +960,55 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
+    },
+    {
+      name: 'oauth_states',
+      query: `CREATE TABLE IF NOT EXISTS oauth_states (
+        id SERIAL PRIMARY KEY,
+        state VARCHAR(255) UNIQUE NOT NULL,
+        provider VARCHAR(50) NOT NULL,
+        redirect_url TEXT,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'coupon_usages',
+      pool: targetLedgerPool,
+      query: `CREATE TABLE IF NOT EXISTS coupon_usages (
+        id SERIAL PRIMARY KEY,
+        coupon_id INTEGER REFERENCES coupons(id),
+        user_id INTEGER NOT NULL,
+        transaction_id INTEGER,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'deposit_requests',
+      pool: targetLedgerPool,
+      query: `CREATE TABLE IF NOT EXISTS deposit_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        amount NUMERIC(15, 2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'USD',
+        method VARCHAR(50) NOT NULL,
+        proof_url TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        rejection_reason TEXT,
+        admin_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'plan_features_history',
+      query: `CREATE TABLE IF NOT EXISTS plan_features_history (
+        id SERIAL PRIMARY KEY,
+        plan_id INTEGER REFERENCES plans(id),
+        admin_id INTEGER,
+        change_log JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
@@ -881,6 +1057,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS task_logs_task_id_key ON task_logs(task_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)` },
+    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_pkey ON oauth_states(id)` },
+    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_state_key ON oauth_states(state)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS tool_orchestrator_pkey ON tool_orchestrator(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS tool_orchestrator_tool_id_key ON tool_orchestrator(tool_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_created_at ON user_activity_logs(created_at)` },
@@ -941,6 +1119,22 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       `INSERT INTO system_settings (site_name_en, site_name_ar) VALUES ($1, $2)`,
       ['Premium AI', 'منصة النخبة']
     );
+  }
+
+  // Seed economy_settings in Ledger DB if empty
+  try {
+    const ecoCheck = await targetLedgerPool.query('SELECT count(*) FROM economy_settings');
+    if (parseInt(ecoCheck.rows[0].count) === 0) {
+        await targetLedgerPool.query(`
+            INSERT INTO economy_settings (
+              welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, 
+              points_per_dollar, conversion_rate, referral_bonus_percent, 
+              min_payout_usd, min_deposit_usd
+            ) VALUES (600, 1000, 1000, 1000, 0.001, 10, 10, 5)
+        `);
+    }
+  } catch (ecoErr) {
+    console.warn('[Migrations] Skipping economy_settings seed:', ecoErr);
   }
 
   await targetPool.query(`UPDATE plans SET is_active = true WHERE is_active IS NULL`);

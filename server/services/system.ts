@@ -1,4 +1,5 @@
 import { pool } from '../db/index.js';
+import { decrypt } from '../utils/crypto.js';
 
 let cachedAppNameEn = '';
 let cachedAppNameAr = '';
@@ -24,7 +25,16 @@ export async function getSystemSettings() {
       stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode
     FROM system_settings LIMIT 1
   `);
-  return result.rows[0] || {};
+  
+  const settings = result.rows[0] || {};
+  if (settings.stripe_publishable_key) {
+    try {
+      settings.stripe_publishable_key = decrypt(settings.stripe_publishable_key);
+    } catch (e) {
+      console.warn('[System] Failed to decrypt stripe_publishable_key:', e);
+    }
+  }
+  return settings;
 }
 
 export async function updateSystemSettings(settings: any) {

@@ -16,7 +16,9 @@ export function initCronJobs() {
   });
 
   cron.schedule('*/5 * * * *', async () => {
-    console.log('[Cron] 💓 Running database heartbeat check...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Cron] 💓 Running database heartbeat check...');
+    }
     await monitorDatabases();
   });
 

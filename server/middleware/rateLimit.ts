@@ -23,3 +23,11 @@ export const chatLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many messages. Please wait a moment.' }
 });
+
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 attempts per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many password reset requests. Please try again in an hour.' }
+});

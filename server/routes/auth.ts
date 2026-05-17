@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
-import { authLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -15,15 +15,6 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
 }
-
-const oauthStateStore = new Map<string, { ref: string | null, lang: string | null, mode?: string, remember?: boolean, expires: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  oauthStateStore.forEach((v, k) => {
-    if (v.expires < now) oauthStateStore.delete(k);
-  });
-}, 60000);
 
 const getBaseUrl = (req: express.Request) => {
   const xProto = req.get('x-forwarded-proto');
@@ -164,22 +155,21 @@ router.post("/login", authLimiter, async (req, res) => {
   }
 });
 
-router.get("/google/url", (req, res) => {
+router.get("/google/url", async (req, res) => {
   const { ref, lang, remember, mode } = req.query;
   
-  if (oauthStateStore.size > 1000) {
-    const oldestKey = oauthStateStore.keys().next().value;
-    if (oldestKey) oauthStateStore.delete(oldestKey);
-  }
+  const nonce = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 600000); // 10 minutes
 
-  const nonce = crypto.randomBytes(16).toString('hex');
-  oauthStateStore.set(nonce, { 
-    ref: ref as string || null, 
-    lang: lang as string || 'ar', 
-    mode: mode as string || 'popup',
-    remember: remember === 'true',
-    expires: Date.now() + 600000 
-  });
+  await pool.query(
+    `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
+    [nonce, 'google', JSON.stringify({ 
+      ref: ref as string || null, 
+      lang: lang as string || 'ar', 
+      mode: mode as string || 'popup', 
+      remember: remember === 'true' 
+    }), expiresAt]
+  );
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || '',
@@ -217,11 +207,18 @@ router.get("/google/callback", async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('No code provided');
 
-    const storedState = oauthStateStore.get(state as string);
-    if (!storedState || storedState.expires < Date.now()) {
+    const stateCheck = await pool.query(
+      'SELECT * FROM oauth_states WHERE state = $1 AND expires_at > CURRENT_TIMESTAMP',
+      [state]
+    );
+
+    if (stateCheck.rows.length === 0) {
       return res.status(403).send('Invalid or expired auth session');
     }
-    oauthStateStore.delete(state as string);
+
+    const stateRow = stateCheck.rows[0];
+    const storedState = JSON.parse(stateRow.redirect_url);
+    await pool.query('DELETE FROM oauth_states WHERE state = $1', [state]);
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -356,7 +353,7 @@ router.get("/google/callback", async (req, res) => {
           <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
         </head>
         <body style="background: #0f0f11; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Tajawal', sans-serif; overflow: hidden;">
-          <div style="text-align: center; padding: 40px; background: rgba(26, 26, 28, 0.8); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 24px; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 90%; width: 400px; animation: fadeIn 0.5s ease-out;">
+          <div style="text-align: center; padding: clamp(20px, 5vw, 40px); background: rgba(26, 26, 28, 0.8); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-large, 16px); backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 90%; width: 400px; animation: fadeIn 0.5s ease-out;">
             <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 24px;">
               <div style="position: absolute; inset: 0; border: 4px solid rgba(16, 185, 129, 0.1); border-radius: 50%;"></div>
               <div style="position: absolute; inset: 0; border: 4px solid transparent; border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
@@ -367,21 +364,26 @@ router.get("/google/callback", async (req, res) => {
                 </svg>
               </div>
             </div>
-            <h2 style="color: white; margin: 0 0 12px 0; font-size: 24px; font-weight: 700;">
+            <h2 style="color: white; margin: 0 0 12px 0; font-size: clamp(1.25rem, 5vw, 1.5rem); font-weight: 700;">
               ${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}
             </h2>
-            <p style="color: #9ca3af; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">
+            <p style="color: #9ca3af; margin: 0 0 24px 0; font-size: clamp(0.875rem, 3vw, 1rem); line-height: 1.6;">
               ${lang === 'ar' ? 'تمت مزامنة بياناتك بأمان. يمكنك الآن إغلاق هذه النافذة والعودة للمنصة.' : 'Session secured. You can now close this window and return to the platform.'}
             </p>
-            <button id="closeBtn" style="background: #10b981; color: white; border: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 16px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <button id="closeBtn" style="background: #10b981; color: white; border: none; padding: 12px 32px; border-radius: var(--radius-small, 4px); font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
               ${lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue'}
             </button>
           </div>
           
           <style nonce="${res.locals.nonce}">
+            :root {
+              --radius-large: 16px;
+              --radius-small: 4px;
+            }
             @keyframes spin { to { transform: rotate(360deg); } }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
             body { direction: ${lang === 'ar' ? 'rtl' : 'ltr'}; }
+            #closeBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4); filter: brightness(1.1); }
           </style>
 
           <script nonce="${res.locals.nonce}">
@@ -456,7 +458,7 @@ router.get("/google/callback", async (req, res) => {
   }
 });
 
-router.post("/forgot-password", authLimiter, async (req, res) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
