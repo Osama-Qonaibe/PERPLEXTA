@@ -33,16 +33,13 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
-const allowedOrigins = [
-  process.env.APP_URL,
-  ...envOrigins
-].filter(Boolean) as string[];
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+    const allowedOrigins = [process.env.APP_URL, ...envOrigins].filter(Boolean) as string[];
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
