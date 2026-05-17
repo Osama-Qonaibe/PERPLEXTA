@@ -730,39 +730,7 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
 
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
 
-    const existing = await pool.query('SELECT id FROM system_settings LIMIT 1');
-
-    if (existing.rows.length > 0) {
-      await pool.query(`
-        UPDATE system_settings SET
-          points_per_dollar = $1,
-          min_payout_usd = $2,
-          min_deposit_usd = $3,
-          referral_bonus_percent = $4,
-          welcome_bonus_points = $5,
-          referral_bonus_points = $6,
-          conversion_rate = $7,
-          min_withdrawal_cents = $8,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $9
-      `, [
-        points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-        existing.rows[0].id
-      ]);
-    } else {
-      await pool.query(`
-        INSERT INTO system_settings (
-          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-      `, [
-        points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-        welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents
-      ]);
-    }
-    
-    // Sync with Ledger DB economy_settings (Source of Truth)
+    // Ledger DB is the Source of Truth for Economy Settings
     const ledgerTarget = ledgerPool || pool;
     try {
       const ledgerCheck = await ledgerTarget.query('SELECT count(*) FROM economy_settings');
@@ -794,7 +762,8 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
         ]);
       }
     } catch (ledgerErr) {
-      console.warn('[Admin] Failed to sync economy settings to Ledger:', ledgerErr);
+      console.warn('[Admin] Failed to update economy settings in Ledger:', ledgerErr);
+      return res.status(500).json({ error: 'Failed to update finance settings' });
     }
 
     const { clearEconomyCache } = await import('../services/wallet.js');

@@ -435,6 +435,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
+    // MIGRATION: Economy settings refactor v10
+    await runVersioned('v10_economy_refactor', 'Removing redundant economy columns from system_settings and ensuring Ledger DB as source of truth', async () => {
+      const dropCols = [
+        'points_per_dollar', 'min_payout_usd', 'min_deposit_usd', 
+        'referral_bonus_percent', 'welcome_bonus_points', 'referral_bonus_points', 
+        'conversion_rate', 'min_withdrawal_cents', 'referral_activation_min_deposit'
+      ];
+      for (const col of dropCols) {
+        await client.query(`ALTER TABLE system_settings DROP COLUMN IF EXISTS "${col}"`);
+      }
+      console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB system_settings.');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -948,16 +961,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         stripe_live_mode BOOLEAN DEFAULT false,
         stripe_status VARCHAR(50) DEFAULT 'pending',
         stripe_last_verified_at TIMESTAMP,
-        points_per_dollar INTEGER DEFAULT 1000,
-        min_payout_usd NUMERIC(10, 2) DEFAULT '10',
-        min_deposit_usd NUMERIC(10, 2) DEFAULT '5',
-        referral_bonus_percent INTEGER DEFAULT 10,
-        welcome_bonus_points INTEGER DEFAULT 600,
-        referral_bonus_points INTEGER DEFAULT 1000,
-        conversion_rate NUMERIC(15, 6) DEFAULT '0.001',
-        min_withdrawal_cents INTEGER DEFAULT 1000,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        referral_activation_min_deposit NUMERIC(10, 2) DEFAULT '10.00'
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {

@@ -38,20 +38,24 @@ export async function getEconomySettings() {
 
   let settings: any = {};
   
-  // Prefer Ledger DB for financial constants (Sovereign approach)
-  if (ledgerPool) {
-    const res = await ledgerPool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM economy_settings LIMIT 1');
-    if (res.rows.length > 0) {
-      settings = res.rows[0];
-    }
-  }
+  // Ledger DB is the absolute Source of Truth for financial constants
+  const ledgerTarget = ledgerPool || pool;
+  const res = await ledgerTarget.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM economy_settings LIMIT 1');
   
-  // Fallback to system_settings in Core DB and merge
-  if (pool) {
-    const res = await pool.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents FROM system_settings LIMIT 1');
-    if (res.rows.length > 0) {
-      settings = { ...res.rows[0], ...settings };
-    }
+  if (res.rows.length > 0) {
+    settings = res.rows[0];
+  } else {
+    // Default fallback if table is empty
+    settings = {
+      points_per_dollar: 1000,
+      min_payout_usd: 10,
+      min_deposit_usd: 5,
+      referral_bonus_percent: 10,
+      welcome_bonus_points: 600,
+      referral_bonus_points: 1000,
+      conversion_rate: 0.001,
+      min_withdrawal_cents: 1000
+    };
   }
   
   economyCache = settings;
