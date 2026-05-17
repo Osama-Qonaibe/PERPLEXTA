@@ -47,6 +47,8 @@ router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, name, language = 'en' } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
     const lowerEmail = email.toLowerCase();
@@ -462,6 +464,8 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
     const userCheck = await pool.query('SELECT id, name FROM users WHERE email = $1', [email]);
     if (userCheck.rows.length === 0) {
@@ -471,12 +475,15 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1 hour
 
+    // Clean up old tokens for this email first
+    await pool.query('DELETE FROM password_resets WHERE email = $1', [email]);
+
     await pool.query(
       'INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, $3)',
       [email, token, expires]
     );
 
-    const resetLink = `${req.get('origin')}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    const resetLink = `${getBaseUrl(req)}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
     
     await sendSmartEmail(userCheck.rows[0].id, email, 'password_reset', {
       userName: userCheck.rows[0].name,

@@ -63,6 +63,15 @@ A robust, UI-driven approach to managing database connections directly from the 
 - **Schema Builder (1-Click Migrations):** A tool to automatically generate all required tables, schemas, and relationships on a fresh database with a single click.
 - **Disaster Recovery & Import:** A feature to instantly connect to an existing database or import from a backup file. In the event of a server failure or migration, the admin can restore the entire system's data (users, wallets, histories) in seconds.
 
+### 6.4. Rate Limiting Strategy & Proxy Awareness
+To maintain platform stability and protect against brute-force/DoS attacks, the system employs a multi-tiered rate limiting strategy:
+- **Global Limiter:** 300 requests / 15 minutes per IP. Handles general traffic and API exploration.
+- **Auth Limiter:** 20 requests / 15 minutes per IP. Strictly monitors login and sensitive authentication mutations.
+- **Chat Limiter:** 30 requests / minute per IP. Ensures fair usage of AI generation resources.
+- **Security Limiter (Forgot Password):** 5 requests / hour per IP. High-authority protection for recovery flows.
+
+**Note on Proxy Infrastructure:** The system identifies users via IP address (configured with `trust proxy: 1`). In environments behind a shared proxy (e.g., corporate/educational networks), multiple users may share the same limit. This is a deliberate security tradeoff to ensure platform integrity.
+
 ## 7. Admin Panel Architecture (The Command Center)
 The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (ERP) system for the AI platform, divided into logical, high-performance sections:
 

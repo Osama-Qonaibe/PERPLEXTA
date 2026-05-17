@@ -54,11 +54,6 @@ export async function getTransactionHistory(userId: string, type: string) {
 export async function convertPointsToBalance(userId: string, amountPoints: number) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
-  const wallet = await getUserWallet(userId);
-  if (Number(wallet.points) < amountPoints) {
-    throw new Error('Insufficient points');
-  }
-
   const settings = await getEconomySettings();
   const rate = parseFloat(settings.conversion_rate || '0.001'); 
   const usdAmount = amountPoints * rate;
@@ -67,14 +62,25 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
   try {
     await client.query('BEGIN');
     
-    await client.query(
-      'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [amountPoints, wallet.id]
+    // Lock the wallet row to prevent race conditions
+    const walletRes = await client.query(
+      'SELECT id, points, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+      [userId]
     );
+    
+    if (walletRes.rows.length === 0) {
+      throw new Error('Wallet not found');
+    }
 
+    const wallet = walletRes.rows[0];
+    if (Number(wallet.points) < amountPoints) {
+      throw new Error('Insufficient points');
+    }
+
+    // Combined update to points and balance in a single SQL operation
     await client.query(
-      'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [usdAmount, wallet.id]
+      'UPDATE wallets SET points = points - $1, balance = balance + $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+      [amountPoints, usdAmount, wallet.id]
     );
 
     await client.query(
@@ -95,11 +101,6 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
 export async function requestWithdrawal(userId: string, amountUSD: number, method: string, details: string) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
-  const wallet = await getUserWallet(userId);
-  if (Number(wallet.balance) < amountUSD) {
-    throw new Error('Insufficient USD balance');
-  }
-
   const settings = await getEconomySettings();
   const minCents = settings.min_withdrawal_cents || 2000;
   if (amountUSD * 100 < minCents) {
@@ -109,6 +110,21 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
   const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
+    
+    // Lock the wallet row to prevent balance inconsistencies
+    const walletRes = await client.query(
+      'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    
+    if (walletRes.rows.length === 0) {
+      throw new Error('Wallet not found');
+    }
+
+    const wallet = walletRes.rows[0];
+    if (Number(wallet.balance) < amountUSD) {
+      throw new Error('Insufficient USD balance');
+    }
     
     await client.query(
       'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -131,8 +147,9 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
 }
 
 export async function getReferralCount(userId: string) {
-  if (!pool) throw new Error('Database not available');
-  const result = await pool.query('SELECT count(*) FROM users WHERE referred_by = $1', [userId]);
+  if (!ledgerPool) throw new Error('Ledger database not available');
+  // Check referrals table in Ledger DB for 'active' status to ensure financial integrity
+  const result = await ledgerPool.query('SELECT count(*) FROM referrals WHERE referrer_id = $1 AND status = \'active\'', [userId]);
   return parseInt(result.rows[0].count);
 }
 
@@ -159,15 +176,25 @@ export async function checkReferralActivation(userId: string) {
 
 export async function deductFromWallet(userId: string, amount: number, transactionType: string, description: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
-  const wallet = await getUserWallet(userId);
-  
-  if (Number(wallet.balance) < amount) {
-    throw new Error('Insufficient balance');
-  }
 
   const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
+    
+    // Lock wallet to prevent race conditions during deduction
+    const walletRes = await client.query(
+      'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    
+    if (walletRes.rows.length === 0) {
+      throw new Error('Wallet not found');
+    }
+    
+    const wallet = walletRes.rows[0];
+    if (Number(wallet.balance) < amount) {
+      throw new Error('Insufficient balance');
+    }
     
     const result = await client.query(
       'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance',

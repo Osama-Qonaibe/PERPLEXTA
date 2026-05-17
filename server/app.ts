@@ -32,10 +32,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
 const allowedOrigins = [
   process.env.APP_URL,
-  'https://ais-dev-mrbhxkve7xoff5xgw5b35t-315908805121.europe-west1.run.app',
-  'https://ais-pre-mrbhxkve7xoff5xgw5b35t-315908805121.europe-west1.run.app'
+  ...envOrigins
 ].filter(Boolean) as string[];
 
 app.use(cors({
