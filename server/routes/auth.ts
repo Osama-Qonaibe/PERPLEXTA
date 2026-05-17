@@ -109,6 +109,10 @@ router.post("/signup", authLimiter, async (req, res) => {
 router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
+
     const lowerEmail = email.toLowerCase();
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1::text', [lowerEmail]);
     if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
@@ -483,10 +487,11 @@ router.get("/google/callback", async (req, res) => {
             <h2 class="title">
               ${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}
             </h2>
-            <p class="description">
-              ${lang === 'ar' ? 'تمت مزامنة بياناتك بأمان. يمكنك الآن إغلاق هذه النافذة والعودة للمنصة.' : 'Session secured. You can now close this window and return to the platform.'}
-            </p>
-            <button id="closeBtn" class="btn">
+            <div class="status-badge" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: #10b981; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0.8;">
+               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+               <span>${lang === 'ar' ? 'اتصال آمن' : 'SECURE SESSION'}</span>
+            </div>
+            <button id="closeBtn" class="btn" style="margin-top: 2rem;">
               ${lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue'}
             </button>
           </div>
@@ -518,6 +523,9 @@ router.get("/google/callback", async (req, res) => {
                     localStorage.setItem('app_remember', 'true');
                   }
                   localStorage.setItem('app_oauth_trigger', Date.now().toString());
+
+                  // Update title to Success
+                  document.title = "${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}";
                 } catch (e) {}
 
                 let isPopup = ${storedState.mode === 'popup' ? 'true' : 'false'};
@@ -569,6 +577,18 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
+
+    // Rate Limit by Email: check for recent requests (last 2 minutes)
+    const recentReset = await pool.query(
+      'SELECT id FROM password_resets WHERE email = $1 AND created_at > CURRENT_TIMESTAMP - INTERVAL \'2 minutes\'',
+      [email]
+    );
+    if (recentReset.rows.length > 0) {
+      return res.status(429).json({ 
+        error: 'Too many requests for this email. Please wait 2 minutes before trying again.',
+        error_ar: 'طلبات كثيرة لهذا البريد. يرجى الانتظار دقيقتين قبل المحاولة مرة أخرى.'
+      });
+    }
 
     const userCheck = await pool.query('SELECT id, name FROM users WHERE email = $1', [email]);
     if (userCheck.rows.length === 0) {

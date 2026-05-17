@@ -218,20 +218,37 @@ export async function deductFromWallet(userId: string, amount: number, transacti
 
 export async function refundToWallet(userId: string, amount: number, transactionType: string, description: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
-  const wallet = await getUserWallet(userId);
 
   const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
     
+    // Lock wallet to prevent race conditions during refund
+    let walletRes = await client.query(
+      'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+
+    let walletId: number;
+    if (walletRes.rows.length === 0) {
+      // Must ensure user exists and create wallet
+      const wallet = await getUserWallet(userId);
+      walletId = wallet.id;
+      // Re-lock purely for safety in transaction lifecycle
+      const reLock = await client.query('SELECT id FROM wallets WHERE id = $1 FOR UPDATE', [walletId]);
+      walletId = reLock.rows[0].id;
+    } else {
+      walletId = walletRes.rows[0].id;
+    }
+    
     const result = await client.query(
       'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance',
-      [amount, wallet.id]
+      [amount, walletId]
     );
 
     await client.query(
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
-      [userId, wallet.id, amount, transactionType, description]
+      [userId, walletId, amount, transactionType, description]
     );
 
     await client.query('COMMIT');

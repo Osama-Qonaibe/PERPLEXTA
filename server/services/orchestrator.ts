@@ -24,7 +24,8 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     return p.replace(/(SYSTEM[ _]MEMORY[ _]INGESTION|LIVE[ _]WEB[ _]CONTEXT|USER[ _]PROMPT|TECHNICAL[ _]DIRECTIVE|ASSISTANT[ _]MEMORY[ _]RECORDS|CONVERSATION[ _]CONTEXT[ _]SUMMARY):/gi, '[CLEANED_MARKER]');
   };
 
-  prompt = sanitizePrompt(prompt);
+  const cleanUserPrompt = sanitizePrompt(prompt);
+  let finalPrompt = cleanUserPrompt;
   
   if (!pool) throw new Error('System still initializing. Please wait.');
   
@@ -84,10 +85,10 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   
   if (toolIdStr === 'sovereign_search') {
     try {
-      const searchResults = await performSovereignSearch(prompt);
+      const searchResults = await performSovereignSearch(cleanUserPrompt);
       if (searchResults && searchResults.length > 0) {
         const searchContext = searchResults.map((r: any) => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
-        prompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${prompt}`;
+        finalPrompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
       }
     } catch (searchErr) {
       console.error('[Orchestrator] Sovereign Search failed:', searchErr);
@@ -99,7 +100,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       const uMemoryRes = await pool.query('SELECT memory FROM users WHERE id = $1', [userId]);
       const memory = uMemoryRes.rows[0]?.memory;
       if (memory) {
-        prompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${prompt}`;
+        finalPrompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
       }
     } catch (memErr) {
       console.error('[Orchestrator] Sovereign Memory ingestion failed:', memErr);
@@ -154,7 +155,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         continue;
       }
       
-      generatedText = await callAIProvider(target.provider, target.model, apiKey, prompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
+      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
       successfulModel = target;
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
