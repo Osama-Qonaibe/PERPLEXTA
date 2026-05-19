@@ -30,7 +30,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
       bg: 'bg-emerald-500/10',
     },
     success: {
-      desc: dir === 'rtl' ? 'تم تحديث الذاكرة السيادية بنجاح.' : 'Sovereign memory updated successfully.',
+      desc: dir === 'rtl' ? 'تم تحديث ذاكرة بيربليكستا بنجاح.' : 'Perplexta memory updated successfully.',
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10',
     },

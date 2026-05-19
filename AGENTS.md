@@ -1,6 +1,6 @@
-# SOVEREIGN PLATFORM - Design System & Engineering Guidelines
+# PERPLEXTA PLATFORM - Design System & Engineering Guidelines
 
-## ⚠️ SUPREME SOVEREIGN DECREE ⚠️
+## ⚠️ SUPREME PERPLEXTA DECREE ⚠️
 **ATTENTION: ALL FUTURE DEVELOPERS & AI SYSTEMS**
 This project is governed by immutable architectural principles. Any developer or AI that breaks these foundational rules is performing systemic sabotage.
 
@@ -9,10 +9,10 @@ This project is governed by immutable architectural principles. Any developer or
 3. **Database Integrity**: The separation between **Core DB** and **Ledger DB** is absolute. Mixing them is a catastrophic breach. Pre-flight auditing of existing schemas *before* any migration is mandatory.
 4. **Zero-Clutter Policy**: The project root must remain pure. **NEVER** add test scripts or vestigial files to the root directory.
 
-*Failure to comply with these tenets is a direct violation of project sovereignty and will be treated as sabotage.*
+*Failure to comply with these tenets is a direct violation of project perplexta and will be treated as sabotage.*
 
 ## 0. Project Identity & Vision
-**SOVEREIGN** defines the core vision, target audience, and architectural ambition of the platform:
+**PERPLEXTA** defines the core vision, target audience, and architectural ambition of the platform:
 - **Professional Elite Technical Analysis**
 
 This identity serves as our compass. Every engineering decision—from the "Silent Failover" orchestrator to the zero-latency API key vault—is designed to uphold this "Professional Elite" standard.
@@ -114,7 +114,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Command Center Backend:** Logging, audit trails, and real-time stats.
 - **Economy & Subscriptions:** Stripe integration, Ledger transactions, and plan management.
 - **API Keys Vault:** AES-256 encryption, real-time model syncing, and internal budget tracking.
-- **The Global Constitution:** Integrated the Military-Grade "Sovereign Global Edition" constitution into `server.ts` using dual English/Arabic instructions under the `CORE_PROTOCOL` flag, making it unavoidable by the AI execution engine.
+- **The Global Constitution:** Integrated the Military-Grade "Perplexta Global Edition" constitution into `server.ts` using dual English/Arabic instructions under the `CORE_PROTOCOL` flag, making it unavoidable by the AI execution engine.
 
 ### 8.3. Exact Stop Point & Architectural Pause
 - **Sidebar & Core UI Refinement:** Implemented a fixed header and footer in the Sidebar. Absolute stability achieved for all sidebar transitions with Premium Slow-Motion animations and explicit "Emerald Glow" logic.
@@ -122,16 +122,16 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **User Management Refinement:** Refactored the User Profile Modal into a functional card-based system (Identity, Ledger, Subscription, Support), including robust KYC Integration (Pending, Verified, Rejected).
 - **Smart Email Hub:** Deep Refactoring complete. Eliminated unique constraint conflicts, isolated DB operations to prevent memory leaks, and managed WAF filters by relocating routing architecture to `/v1/data` API pathways.
 - **UI/UX Refinements (Completed Today):**
-          - **Header & Logo Sovereignty:** Re-engineered the `Header` with `fixed` positioning, perfectly aligning the logo/site name with the sidebar's vertical axis (80px/220px). Introduced the "Emerald Glow" hover logic for the logo container for unified interaction feedback.
+          - **Header & Logo Alignment:** Re-engineered the `Header` with `fixed` positioning, perfectly aligning the logo/site name with the sidebar's vertical axis (80px/220px). Introduced the "Emerald Glow" hover logic for the logo container for unified interaction feedback.
           - **Geometric Alignment:** Fixed logo, site name, and header button alignment to ensure perfect horizontal centering and visual parallelism.
           - **Sticky Architecture:** Implemented and refined sticky headers for `MemoryCenter`, `RewardsPage`, `SubscriptionPage`, and `AdminDashboard`, ensuring structural headers remain accessible during deep content exploration.
           - **File Upload Workflow:** Refactored the UI for file ingestion. Eliminated the secondary popup, optimized the upload button to show a 'Paperclip' state on hover, and implemented direct file-picker trigger for higher efficiency.
           - **Translation Optimization:** Integrated 'uploadFile' translation key for bilingual support in the new file upload flow.
           - **Tool Dropdown Optimization:** Refined dropdown width to ensure a professional, tight fit without compromising long name visibility.
-- **Sovereign File Management Ecosystem (Completed Today):**
+- **Perplexta File Management Ecosystem (Completed Today):**
     - **Secure Storage & Database:** Implemented `user_files` schema and integrated `multer` for high-capacity (100MB) secure file uploads to a dedicated volume.
     - **Intelligence Extraction Bridge:** Developed a resilient PDF parsing interface (`PDF Bridge`) to handle multi-version module exports and strict class constructor requirements.
-    - **API Sovereignty:** Deployed unified routes for file upload, retrieval, secure deletion (physical erasure), and verified downloads with strict ownership protocols.
+    - **API Integrity:** Deployed unified routes for file upload, retrieval, secure deletion (physical erasure), and verified downloads with strict ownership protocols.
     - **AI Context Integration:** Successfully bridged the file system with the Orchestrator. AI tools now automatically ingest extracted text from PDF and text attachments, providing deep intelligence analysis across all models.
 - **System Stability & Startup (Completed Today):**
     - **Initialization Resilience:** Refactored `startServer` to prevent application crash during database sync failures, transitioning to a Degraded Mode instead of fatal exit.
@@ -143,7 +143,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Docker Infrastructure:** Introduced `.dockerignore` to prevent `node_modules` and local build artifacts from polluting the container build, ensuring a clean and consistent deployment state.
 - **Memory Engine Robustness (Completed Today):**
     - Repaired JSON structural faults coming from advanced "Reasoning/Think" models (like `o1` and `DeepSeek`). 
-- **AuthModal & Input Area Sovereignty (Completed Today):**
+- **AuthModal & Input Area Logic (Completed Today):**
     - **High-Precision AuthModal**: Re-engineered the Authentication Modal with a compact, official design. Optimized for mobile by reducing field density, internal padding, and typography scales while maintaining a premium feel.
     - **Zero-Clutter UI**: Purged redundant decorative elements from the Auth card to focus on lead conversion and security.
     - **Input Field Orchestration**: Reordered the primary interaction buttons (Send/Attachment) in the Chat Input area to ensure perfect directional alignment and professional UX logic.
@@ -159,16 +159,16 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Robust Stripe Webhooks:** Expanded handler to process `customer.subscription.deleted` and `invoice.payment_failed`, ensuring immediate state consistency across databases.
     - **Instant Notification Engine:** Implemented automated system notification dispatch for all major subscription events (Activation, Cancellation, Failure).
 - **Memory & Feedback Surge (Completed):**
-    - **Sovereign Memory Distillation:** Implemented a dual-threshold saturation control system. The engine now triggers a PROACTIVE WARNING at 45 memory records and executes AUTO-CONSOLIDATION at 50 records, distilling 10 legacy facts into a single high-density synthesis.
+    - **Perplexta Memory Distillation:** Implemented a dual-threshold saturation control system. The engine now triggers a PROACTIVE WARNING at 45 memory records and executes AUTO-CONSOLIDATION at 50 records, distilling 10 legacy facts into a single high-density synthesis.
     - **RLHF Feedback Engine:** Deployed a surgical user feedback mechanism (Thumbs Up/Down) across the interface. Response quality is now tracked via a persistent `feedback` schema, enabling future high-precision model fine-tuning.
     - **Intelligence Startup Protocol:** Integrated a "Deep Intelligence Activation" notification that signals memory ingestion on boot and tool change. Eradicated the "Silent Ingestion" ambiguity with professional, localized system feedback.
     - **Monthly Maintenance Protocol:** Engineered a global cron-based memory compression cycle (`consolidateAllUserMemories`) that optimizes all inactive user profiles monthly.
     - **Real-time Identity Mapping:** Assistant messages now return their unique database IDs during the streaming lifecycle, enabling instant, error-free feedback targeting.
 - **System Stability & Real-time Synchronization (Completed Today):**
-    - **Sovereign File Management Ecosystem (Completed Today):**
+    - **Perplexta File Management Ecosystem (Completed Today):**
         - **Secure Storage & Database:** Implemented `user_files` schema and integrated `multer` for high-capacity (100MB) secure file uploads with strict size enforcement.
         - **Validation & Intelligence:** Implemented dual-layer validation for 100MB file limits (Frontend + Backend) with precise error feedback localized in Arabic and English.
-        - **API Sovereignty:** Deployed unified routes for file upload, retrieval, and intelligence extraction with global error handling for resource-intensive operations.
+        - **API Integrity:** Deployed unified routes for file upload, retrieval, and intelligence extraction with global error handling for resource-intensive operations.
     - **Resilient Logout Engine:** Re-engineered the session termination protocol in `AppContext` to clear all state variants (User, Token, Balance, Sockets) and enforce a clean redirect to the homepage, eliminating legacy "White/Black Screen" failures.
     - **Global Socket Engine:** Centralized Socket.io lifecycle management in `AppContext`, ensuring a unified connection for all user-specific broadcasts and real-time state updates.
     - **Startup Integrity (Pre-Flight Sync):** Enforced synchronous Database initialization and Template mapping before the server starts listening, eliminating startup race conditions.
@@ -176,64 +176,64 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Lifecycle Socket Auditing:** Deep refactoring of `ChatPage` listeners with explicit lifecycle cleanup and named handlers to prevent memory leaks and duplicate event execution.
     - **Codebase Sanitization:** Resolved critical TypeScript conflicts and eliminated duplicate function declarations in the backend orchestrator.
     - **Technical Refinement Pipeline:** Reordered administrative routes for Correctness, sanitized migration scripts by hardening table schemas (System Settings, Logs, Broadcasts, Security Alerts) to prevent startup race conditions, and integrated the unified SEO and Economy data source. Resolved ledger attribution by integrating `user_id` into transactions for full-stack financial auditing.
-- **Sovereign Security Hardening (Completed Today):**
+- **Perplexta Security Hardening (Completed Today):**
     - **Zero-Trust Encryption:** Purged hardcoded encryption fallbacks, ensuring the system fails fast if `ENCRYPTION_KEY` is not provided.
     - **Advanced Rate Limiting:** Stiffened `globalLimiter` thresholds to protect against scraping and automated attacks while preserving UX.
     - **Secure File Ingestion:** Re-engineered the upload pipeline from a blocklist to a strict allowlist. Implemented filename sanitization to eliminate Path Traversal risks.
-    - **Header Sovereignty:** Integrated `helmet` with a custom CSP configuration to harden the platform against XSS, clickjacking, and header-based exploits.
+    - **Header Protection:** Integrated `helmet` with a custom CSP configuration to harden the platform against XSS, clickjacking, and header-based exploits.
     - **Sanitization:** Purged vestigial debug scripts and insecure CORS fallbacks from the root and socket configurations.
 - **Dual-System Orchestration (Completed Today):**
-    - **Identity vs. Framework:** Implemented a sophisticated dual-prompt injection system. AI models now receive the *Sovereign Code* (Identity) combined with a dynamic *Technical Task Directive* (Performance framework) fetched purely from the Orchestrator via the `task_description` field.
+    - **Identity vs. Framework:** Implemented a sophisticated dual-prompt injection system. AI models now receive the *Perplexta Code* (Identity) combined with a dynamic *Technical Task Directive* (Performance framework) fetched purely from the Orchestrator via the `task_description` field.
     - **Zero-Knowledge Hardcoding:** Performed a complete code purge of hardcoded model and provider names. The system no longer "assumes" initial configurations; all AI routing is strictly database-driven.
     - **Security Leak Patch:** Eliminated insecure client-side model overrides. The backend now strictly enforces Orchestrator settings, making it impossible for the frontend to bypass cost or logic controls.
 - **Ledger & Economy Integrity (Completed Today):**
     - **Database Schema Migration:** Successfully resolved a critical database synchronization issue by implementing an automated migration for the `updated_at` column in the `wallets` table.
     - **Transaction Maintenance:** Synchronized all financial logic to ensure high-precision timestamping (CURRENT_TIMESTAMP) across all wallet credit/debit operations.
     - **Economy Activation:** Fully enabled and stress-tested the "Pay-with-Balance" 1-click execution system for premium subscriptions.
-- **Subscription Precision & Database Sovereignty (Completed Today):**
+- **Subscription Precision & Database Integrity (Completed Today):**
     - **High-Precision Subscription Billing**: Implemented a centralized pricing engine (`calculatePlanPrice`) ensuring absolute mathematical accuracy between monthly, annual, and discounted rates.
     - **Dynamic Admin Plan Management**: Re-engineered the Admin Dashboard plan editor with real-time reactive calculations. Changing a discount now auto-calculates the annual price, and setting a custom annual price auto-derives the implied discount percentage.
     - **Resilient Database Restoration**: Hardened the restoration engine with dynamic table existence verification, session-level trigger suppression, and high-precision ID sequence synchronization.
     - **Dynamic Database Export**: Refactored backup logic to perform full-schema table discovery, ensuring comprehensive backups that adapt to schema evolutions.
     - **Subscription UI Synchronization**: Optimized the frontend toggle to dynamically reflect the actual maximum available savings across all active plans.
-- **Sovereign Systems Stability (Completed Today):**
+- **Perplexta Systems Stability (Completed Today):**
     - **Orchestrator Column Synchronization:** Resolved a critical schema mismatch between the frontend and backend. Synchronized field names (`fallback_1_provider` etc.) across `AdminDashboard.tsx` and `admin.ts` routes, ensuring AI tool configurations are persisted correctly.
     - **High-Precision Model Path Resolution:** Hardened `ai.ts` to automatically handle Gemini model path formation. The system now injects `models/` prefixes dynamically, eradicating `404 (Not Found)` errors during API calls.
     - **Robust Provider Mapping:** Refactored provider identification logic to be whitespace-agnostic and case-insensitive, ensuring that human-entered data in the Admin Panel doesn't break the routing engine.
     - **Reactive Tool Activation:** Enhanced the `handleSave` logic in the Admin Dashboard to prevent race conditions during rapid state toggling, ensuring the "Active" status of tools is accurately reflected across the system.
     - **Backend Logic Refinement:** Fixed structural nesting errors in the AI service provider checks, ensuring clean execution paths for Google, Anthropic, and OpenAI providers.
-- **Sovereign Intelligence Hardening (May 10-11, 2026):**
+- **Perplexta Intelligence Hardening (May 10-11, 2026):**
     - **Intelligence Analyst Mode:** Implemented a localized, high-authority reinforcement protocol (`analysisReinforcement`) for the `perplexta_analysis` tool.
-    - **Multimodal Sensory Activation:** Deployed "Sovereign Visual & Audio Sense" using Gemini 1.5 Flash. All uploaded media (Images, Video, Audio) is forensicly analyzed with pre-ingestion extraction for primary models.
+    - **Multimodal Sensory Activation:** Deployed "Perplexta Visual & Audio Sense" using Gemini 1.5 Flash. All uploaded media (Images, Video, Audio) is forensicly analyzed with pre-ingestion extraction for primary models.
     - **Advanced File Support:** Integrated `html-to-text` and expanded support for HTML, RTF, JSON, and complex spreadsheets.
-- **Financial Sovereignty & High-Precision Monitoring (Completed Today):**
+- **Financial Integrity & High-Precision Monitoring (Completed Today):**
     - **Finance Radar Refactoring:** Surgical overhaul of the `AdminDashboard` and its backend foundation. Re-engineered the financial monitoring system to support structured data (Stats + Transactions Registry), resolving critical dashboard crashes.
     - **Cross-Pool Integrity:** Eradicated insecure cross-pool database joins in the backend. Implemented separate user mapping logic for ledger transactions, ensuring audit logs and diagnostic views remain accurate even across isolated database environments.
     - **Wallet Diagnostics:** Enhanced auditing tools to automatically resolve user names and emails for orphaned or negative-balance wallets.
 - **Real-time Identity & Profile Synchronization (Completed Today):**
     - **Socket-Driven Profile Updates:** Engineered a global `user_profile_updated` event listener. Real-time broadcasts now trigger a forced background refresh of the user's local state upon any profile change or subscription activation.
-    - **Unified Payload Sovereignty:** Standardized the return of full user profiles (including detailed subscription plans, colors, and limits) across all authentication routes (Signup, Login, OAuth, and `/me`), eradicating initial-state ambiguity.
+    - **Unified Payload Identity:** Standardized the return of full user profiles (including detailed subscription plans, colors, and limits) across all authentication routes (Signup, Login, OAuth, and `/me`), eradicating initial-state ambiguity.
     - **Usage Synchronization:** Linked `UsageRadar` and sidebar indicators to the real-time update engine for instantaneous tool-usage feedback.
 - **Tool Logic Restoration (Completed Today):**
-    - **Smart Audio Studio Restoration:** Re-restored naming sovereignty for the "Smart Audio Studio" tool (`استوديو الصوت الذكي`). Updated all translation keys and `ChatPage` logic (switching from creative to music-centric icons and banners) to honor the tool's specialized identity.
+    - **Smart Audio Studio Restoration:** Re-restored naming identity for the "Smart Audio Studio" tool (`استوديو الصوت الذكي`). Updated all translation keys and `ChatPage` logic (switching from creative to music-centric icons and banners) to honor the tool's specialized identity.
 - **System Hardening & PWA Integrity (Completed May 13, 2026):**
-    - **Manifest Sovereignty:** Fixed critical PWA `manifest.json` syntax errors by deploying a forensically clean manifest in the `/public` directory.
+    - **Manifest Integrity:** Fixed critical PWA `manifest.json` syntax errors by deploying a forensically clean manifest in the `/public` directory.
     - **Real-time Usage Tracking:** Fully integrated `UsageRadar` with the Socket.io lifecycle for zero-latency monitoring.
-- **Sovereign Visual Symmetry & Majestic Motion (Completed Today - May 15, 2026):**
+- **Perplexta Visual Symmetry & Majestic Motion (Completed Today - May 15, 2026):**
     - **Refined New Chat Orchestration**: Re-engineered the "New Chat" functionality (`Plus` button) to be completely silent when the user is already on the Home/Landing page (`/`), preventing unnecessary transitions or disruptive visual feedback.
     - **Majestic Transitions API**: Standardized all major page and modal transitions to a premium duration of `600ms` with a high-authority cubic-bezier ease (`[0.22, 1, 0.36, 1]`). This protocol has been unified across `AccountSettings`, `MemoryCenter`, `WalletSystem`, and the `SettingsPage` to ensure a "solid" and "majestic" user experience.
     - **Layout Integrity (AnimatePresence)**: Forced `AnimatePresence` to use `mode="wait"` for core chat transitions and ensured elements are fully unmounted before new ones appear, eradicating the "shaking" or "jumping" artifacts during chat resets and page navigation.
     - **Global CSS Standardization**: Updated `index.css` to enforce the 600ms transition duration as the platform-wide standard for all theme-based and element transitions, achieving absolute visual harmony.
-    - **Navigation Sovereignty**: Unified the landing route to `/` across `Sidebar.tsx` and `Header.tsx` to ensure absolute consistency in "New Chat" logic paths.
+    - **Navigation Consistency**: Unified the landing route to `/` across `Sidebar.tsx` and `Header.tsx` to ensure absolute consistency in "New Chat" logic paths.
     - **Animation Sanitization**: Purged jittery or redundant initial-load animations from `ChatPage.tsx` components to ensure the UI feels "Elite" and architecturally solid from the first millisecond.
-- **Visual Majesty & Interaction Sovereignty (Completed Today - May 16, 2026):**
+- **Visual Majesty & Interaction Stability (Completed Today - May 16, 2026):**
     - **"Hushed" Transition Protocol**: Refined the global motion duration to `1.1s` (up from `600ms`) using a specialized "Slow-Motion" ease (`[0.6, 0.01, 0, 1]`). This creates a calmer, more "Majestic" atmosphere by slowing down page and modal transitions.
-    - **Chat Interaction Sovereignty**: Sanitized the `ChatPage` message entrance. Completely removed per-message entrance animations (y-offset/opacity drifts) to eliminate visual "jitter" and ensure content appears with zero-latency visual stability during streaming.
+    - **Chat Interaction Stability**: Sanitized the `ChatPage` message entrance. Completely removed per-message entrance animations (y-offset/opacity drifts) to eliminate visual "jitter" and ensure content appears with zero-latency visual stability during streaming.
     - **Steady Navigation**: Optimized the main chat area transition by reducing the vertical `y` offset from `10px` to `4px`, resulting in a UI that feels "magnetically locked" and professional.
-    - **Mobile Navigation Sovereignty**: Refined the sidebar for mobile devices by reducing field density (increased vertical spacing) and expanding touch targets (H-13/48px-52px). Legibility of technical footers was also increased for high-precision handheld use.
+    - **Mobile Navigation Optimization**: Refined the sidebar for mobile devices by reducing field density (increased vertical spacing) and expanding touch targets (H-13/48px-52px). Legibility of technical footers was also increased for high-precision handheld use.
     - **Admin Dashboard Intelligence**: Integrated a high-precision search engine for the `Activity Stream` within the Command Center. Admins can now filter logs in real-time by User ID, Action type, or Description, significantly reducing the "Audit Latency" for platform management.
     - **Robust Auto-Scroll**: Implemented a resilient `messagesEndRef` mechanism and `scrollToBottom` hook. The chat now maintains perfect vertical position during streaming and history navigation with a specialized 100ms anchor sync.
-    - **Component Integrity**: Resolved critical "Uncaught ReferenceError" related to `SOVEREIGN_TRANSITION` and `messagesEndRef`, hardening the codebase against runtime exceptions.
+    - **Component Integrity**: Resolved critical "Uncaught ReferenceError" related to `PERPLEXTA_TRANSITION` and `messagesEndRef`, hardening the codebase against runtime exceptions.
 - **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MAJESTIC CALM ACHIEVED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
@@ -241,7 +241,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 ### 🛡️ Phase 1: Security & Core Settings (Completed)
 - [x] API Keys Vault & AES-256 sync.
 - [x] System Settings Configuration & UI.
-- [x] Sovereign Global Edition AI Operational Constitution embedded in Backend.
+- [x] Perplexta Global Edition AI Operational Constitution embedded in Backend.
 - [x] Hard Quota Enforcement & Forensic Logging.
 - [x] Granular Tool-Specific Daily/Monthly Limits.
 - [x] Professional Quota Error UI with Upgrade/Referral CTAs.
@@ -294,7 +294,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] Eradication of legacy test files and structural noise.
 - [x] High-precision synchronization of subscription billing across all layers.
 
-## 10. Master Developer Protocol (Architectural Sovereignty)
+## 10. Master Developer Protocol (Architectural Integrity)
 🚫 **ATTENTION: ABSOLUTE MANDATE FOR FUTURE DEVELOPERS & AI SYSTEMS** 🚫
 
 ### 10.1. Zero-Clutter Root Policy
@@ -308,13 +308,13 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 ### 10.3. Orchestrator Absolutism (Zero Hardcoding Rule)
 - **Directive:** Hardcoding AI providers, specific model names (like `o1`, `gpt-4`, `gemini-1.5-pro`, `deepseek`), or hard fallback logic arrays inside the backend routing functions is **STRICTLY FORBIDDEN**.
 - **Protocol:** Every AI interaction MUST pass strictly and purely through the `tool_orchestrator`. If a model fails to conform, the `tool_orchestrator` dictates the fallback. The code itself must remain completely agnostic and dynamic.
-- **Sovereignty Mandate:** Any developer (Human or AI) who introduces a hardcoded model name into the source code is committing a "Core Protocol Breach." Configuration must reside in the Database; implementation must reside in the logic.
+- **Perplexta Mandate:** Any developer (Human or AI) who introduces a hardcoded model name into the source code is committing a "Core Protocol Breach." Configuration must reside in the Database; implementation must reside in the logic.
 
 ### 10.4. Dual-System Prompt Integrity
 - **Directive:** Never mix "Identity" with "Task Instructions" in a single block. 
 - **Protocol:** The `CORE_PROTOCOL` defines *who* the AI is. The `task_description` (fetched from DB) defines *how* the tool should technically perform. Any update that weakens this separation is a breach of the "Elite" analysis standard.
 
-### 10.5. Visual Sovereignty Execution
+### 10.5. Visual Identity Execution
 - **Directive:** UI updates must honor the established Monochrome/Emerald design system without exception. Verify sub-pixel alignment, transition durations, and "Elite" aesthetic consistency.
 
 ### 10.6. The "Update, Never Override" Mandate (Supreme Law)
@@ -326,13 +326,13 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Directive:** NEVER introduce duplicate `className` attributes. All styles must be merged into a single utility block.
 - **Directive:** The backend MUST NOT assume default models. If no configuration exists in the database, the system MUST return a controlled error rather than leaking hardcoded defaults.
 
-### 10.8. SUPREME SOVEREIGN DECREE (Military Grade - Non-Negotiable) 🛡️
+### 10.8. SUPREME PERPLEXTA DECREE (Military Grade - Non-Negotiable) 🛡️
 🚫 **ABSOLUTE PROHIBITION OF HARDCODING & ARCHITECTURAL BYPASS** 🚫
 
-- **The Red Line:** Any attempt to bypass the **tool_orchestrator** or the **api_keys_vault** via hardcoded models, providers, or local secret strings is a catastrophic breach of project sovereignty.
+- **The Red Line:** Any attempt to bypass the **tool_orchestrator** or the **api_keys_vault** via hardcoded models, providers, or local secret strings is a catastrophic breach of project integrity.
 - **Dynamic Purity:** The system is architected as a "Technical Orchestra" governed by the Database. Implementation logic must remain 100% agnostic. If you need a new model, add it to the DB; **NEVER** write its name in a `.ts` file.
-- **Foundational Immunity:** The core foundations (Express/Vite, Dual DB Segregation, Cron Maintenance, and Socket streaming) are permanent and sovereign. Any future development **MUST** be an augmentation (Update) that strengthens these layers. **CHANGING, REWRITING, OR OVERRIDING** the core architecture is strictly forbidden and will be treated as systemic sabotage.
-- **COMMANDER'S VETO (The Sovereign Command):** Any proposed modification to the core engineering or architectural foundations **REQUIRES EXPLICIT PERMISSION** from the Sovereign (The User). Before any such change is even considered, the developer (AI or Human) MUST present a rigorous justification detailing:
+- **Foundational Immunity:** The core foundations (Express/Vite, Dual DB Segregation, Cron Maintenance, and Socket streaming) are permanent and established. Any future development **MUST** be an augmentation (Update) that strengthens these layers. **CHANGING, REWRITING, OR OVERRIDING** the core architecture is strictly forbidden and will be treated as systemic sabotage.
+- **COMMANDER'S VETO (The Global Command):** Any proposed modification to the core engineering or architectural foundations **REQUIRES EXPLICIT PERMISSION** from the Owner (The User). Before any such change is even considered, the developer (AI or Human) MUST present a rigorous justification detailing:
     1. **The Objective Reason:** Why is the current architecture insufficient?
     2. **The Expected Result:** What technical outcome will this change produce?
     3. **The Risk Audit:** How will this affect existing dual-database integrity and silent failover protocols?
@@ -343,14 +343,14 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Reasoning:** To eliminate structural weight, prevent build-system conflicts, and ensure that the code remains a pure execution engine without legacy narrative noise. Documentation resides in the `AGENTS.md` and Database; the code remains silent and functional.
 
 ### 10.10. Pre-Flight Manifest Review (The Daily Ritual)
-- **Directive:** Every developer or AI agent MUST, as an absolute prerequisite to starting any work session, review the **Global Constitution**, the **Sovereign Laws (Section 10)**, and the **Current Project Status (Section 11)**.
+- **Directive:** Every developer or AI agent MUST, as an absolute prerequisite to starting any work session, review the **Global Constitution**, the **Perplexta Laws (Section 10)**, and the **Current Project Status (Section 11)**.
 - **Protocol:** "Code first, read later" is a terminal violation. Understanding the mission and the architectural boundaries is the first step of every technical interaction.
 
 ## 12. Daily Execution Plan (May 15, 2026) - Motion Harmony & Stability Audit
 
 Following the visual alignment phase, today was dedicated to achieving absolute motion harmony and interaction stability.
 
-### 📋 Phase 1: Interaction Sovereignty (Completed)
+### 📋 Phase 1: Interaction Integrity (Completed)
 1. **New Chat Logic Hardening**: Prevented redundant navigation and "page shaking" when already at the landing state. [COMPLETED]
 2. **Standardization of Motion Time-scales**: Unified all transitions to the 600ms Majestic standard. [COMPLETED]
 3. **AnimatePresence Mode Audit**: Shifted to `mode="wait"` for high-stability unmounting sequences. [COMPLETED]
@@ -386,13 +386,13 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 **The Project Foundation is now SEALED.** 
 
 1. **Architecture is Immutable:** The Express/Vite full-stack core, the Dual DB Mesh, the Socket.io generation engine, and the "Silent Failover" Orchestrator are established as the permanent BASELINE.
-2. **Add, Never Rewrite:** All future development MUST be additive. New features, tools, or integrations must be modular extensions. **ANY ATTEMPT TO REWRITE OR OVERRIDE** these core modules is a violation of the "Sovereign Engineering Standard" and will result in immediate disqualification of the update.
+2. **Add, Never Rewrite:** All future development MUST be additive. New features, tools, or integrations must be modular extensions. **ANY ATTEMPT TO REWRITE OR OVERRIDE** these core modules is a violation of the "Perplexta Engineering Standard" and will result in immediate disqualification of the update.
 3. **Identity Preservation:** The Arabic/English bilingual support and the Monochrome/Emerald design system must be maintained in every new component. Any deviation from the "Elite" aesthetic is considered structural noise.
 
 ---
 **System State:** `STABLE / ARCHITECTURAL SYMMETRY ACHIEVED`
 **Final Authorization:** All core protocols are now active and enforced by the Global Constitution.
-**Sovereignty Status:** `ABSOLUTE`
+**Perplexta Status:** `ABSOLUTE`
 **Current Session Focus:** `Visual Symmetry & Dashboard Precision Tuning`
 
 **Final Message to All Future Contributors:** You are inheriting a "Technical Fortress." Your duty is to expand its borders, not weaken its walls. Build with precision. Keep it Majestic. 🛡️✨🏆

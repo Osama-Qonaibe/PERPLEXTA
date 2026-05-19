@@ -6,8 +6,8 @@ import { callAIProvider, getProviderKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { extractTextFromFile } from './extractor.js';
-import { sovereignTTS } from './tts.js';
-import { performSovereignSearch } from './search.js';
+import { perplextaTTS } from './tts.js';
+import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
@@ -83,19 +83,19 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
-  if (toolIdStr === 'sovereign_search') {
+  if (toolIdStr === 'perplexta_search') {
     try {
-      const searchResults = await performSovereignSearch(cleanUserPrompt);
+      const searchResults = await performPerplextaSearch(cleanUserPrompt);
       if (searchResults && searchResults.length > 0) {
         const searchContext = searchResults.map((r: any) => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
         finalPrompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
       }
     } catch (searchErr) {
-      console.error('[Orchestrator] Sovereign Search failed:', searchErr);
+      console.error('[Orchestrator] Perplexta Search failed:', searchErr);
     }
   }
 
-  if (toolIdStr === 'sovereign_memory') {
+  if (toolIdStr === 'perplexta_memory') {
     try {
       const uMemoryRes = await pool.query('SELECT memory FROM users WHERE id = $1', [userId]);
       const memory = uMemoryRes.rows[0]?.memory;
@@ -103,7 +103,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         finalPrompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
       }
     } catch (memErr) {
-      console.error('[Orchestrator] Sovereign Memory ingestion failed:', memErr);
+      console.error('[Orchestrator] Perplexta Memory ingestion failed:', memErr);
     }
   }
 
@@ -192,7 +192,7 @@ ${system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : ''}
   await incrementUserUsage(userId, toolIdStr);
   
   if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
-     await logSystemActivity(userId, 'SOVEREIGN_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
+     await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
   }
 
   return { result: generatedText };

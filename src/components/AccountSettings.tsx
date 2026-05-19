@@ -63,7 +63,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   };
 
   const PRESETS = [
-    { id: 'precise', icon: <Target size={16} />, en: 'Sovereign Precise', ar: 'السيادي الدقيق', desc_en: 'Strategic, concise, high authority.', desc_ar: 'استراتيجي، موجز، ذو سلطة عالية.' },
+    { id: 'precise', icon: <Target size={16} />, en: 'Perplexta Precise', ar: 'بيربليكستا الدقيق', desc_en: 'Strategic, concise, high authority.', desc_ar: 'استراتيجي، موجز، ذو سلطة عالية.' },
     { id: 'direct', icon: <Zap size={16} />, en: 'Direct & Concise', ar: 'مباشر وقليل الشروحات', desc_en: 'Straight to the point, minimal fluff.', desc_ar: 'مباشر، يركز على الجوهر، أقل قدر من المقدمات.' },
     { id: 'executive', icon: <Zap size={16} />, en: 'Executive Brief', ar: 'الموجز التنفيذي', desc_en: 'Action-oriented, bullet points, ROI focused.', desc_ar: 'موجه للعمل، نقاط مختصرة، يركز على النتائج.' },
     { id: 'creative', icon: <Sparkles size={16} />, en: 'Creative Catalyst', ar: 'المحفز الإبداعي', desc_en: 'Brainstorming-focused, expansive, vibrant.', desc_ar: 'يركز على العصف الذهني، توسعي، حيوي.' },
@@ -329,7 +329,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   <Sparkles size={32} className="drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-xl font-black tracking-tight text-emerald-500 uppercase">{dir === 'rtl' ? 'معايرة الذكاء السيادي' : 'Sovereign Intelligence'}</h3>
+                  <h3 className="text-xl font-black tracking-tight text-emerald-500 uppercase">{dir === 'rtl' ? 'معايرة ذكاء بيربليكستا' : 'Perplexta Intelligence'}</h3>
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium max-w-lg">
                     {dir === 'rtl' 
                       ? 'قم بتخصيص كيفية تفاعل المساعد معك بناءً على هويتك المهنية وأسلوب الردود المفضل لديك لضمان تجربة استخباراتية فائقة.' 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
-import { sovereignPageTransition, sovereignItemTransition } from '../constants/motions';
+import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
 
 export const RewardsPage: React.FC = () => {
   const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings } = useAppContext();
@@ -252,7 +252,7 @@ export const RewardsPage: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={sovereignPageTransition}
+      variants={perplextaPageTransition}
       className="max-w-5xl mx-auto w-[92%] md:w-[85%] pb-24 space-y-6 md:space-y-10"
     >
       

@@ -1,4 +1,4 @@
-export const ENCRYPTION_KEY = 'sovereign_secure_key_32_chars_!!'; // Should match server-side key
+export const ENCRYPTION_KEY = 'perplexta_secure_key_32_chars_!!'; // Should match server-side key
 
 export async function encrypt(text: string): Promise<string> {
   const enc = new TextEncoder();

@@ -1,4 +1,4 @@
-import { pool, ledgerPool, createInternalPool, synchronizeSovereignPoolsFromRegistry } from '../db/index.js';
+import { pool, ledgerPool, createInternalPool, synchronizePerplextaPoolsFromRegistry } from '../db/index.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
@@ -46,7 +46,7 @@ export async function saveDatabaseConfig(config: any) {
   if (active_state) {
     const targetId = id || body.id;
     if (targetId === 'core' || targetId === 'ledger') {
-      await synchronizeSovereignPoolsFromRegistry();
+      await synchronizePerplextaPoolsFromRegistry();
       await runDatabaseMigrations();
     }
   }

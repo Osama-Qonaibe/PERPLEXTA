@@ -24,7 +24,7 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
         price_data: { 
           currency: 'usd', 
           product_data: { 
-            name: `Sovereign - ${plan.name_en}`,
+            name: `Perplexta - ${plan.name_en}`,
             description: `Subscription: ${billingCycle}`
           }, 
           unit_amount: Math.round(price * 100) 

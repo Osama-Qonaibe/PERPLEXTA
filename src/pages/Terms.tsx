@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 import { motion } from 'motion/react';
-import { sovereignPageTransition } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 
 export const Terms: React.FC = () => {
   const { t, dir, theme } = useAppContext();
@@ -14,7 +14,7 @@ export const Terms: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={sovereignPageTransition}
+      variants={perplextaPageTransition}
       className="max-w-4xl mx-auto px-6 sm:px-8 pb-12"
     >
       <div className={`sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3 mb-8 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>

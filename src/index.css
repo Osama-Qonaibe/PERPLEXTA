@@ -24,7 +24,7 @@
   
   --border-subtle: #e2e8f0;
   --border-main: #e8ecef;
-  --border-sovereign: #cbd5e1;
+  --border-perplexta: #cbd5e1;
   --border: var(--border-subtle);
   --border-accent: #10b981;
   
@@ -55,7 +55,7 @@
 }
 
 .dark {
-    /* Architectural Variables - Dark Mode (Sovereign Deep Console) */
+    /* Architectural Variables - Dark Mode (Perplexta Deep Console) */
     --bg-base: #080809;
     --bg-primary: #0d0d0f;
     --bg-secondary: #141416;
@@ -70,7 +70,7 @@
 
     --border-subtle: rgba(255, 255, 255, 0.03);
     --border-main: rgba(255, 255, 255, 0.05);
-    --border-sovereign: rgba(255, 255, 255, 0.07);
+    --border-perplexta: rgba(255, 255, 255, 0.07);
     --border: var(--border-main);
     --border-accent: #10b981;
 
@@ -113,12 +113,12 @@
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   
-  /* Sovereign Colors */
+  /* Perplexta Colors */
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-dropdown: var(--bg-dropdown);
   --color-bg-hover: var(--bg-hover);
-  --color-border-sovereign: var(--border-sovereign);
+  --color-border-perplexta: var(--border-perplexta);
   --color-border-accent: var(--border-accent);
   
   --radius-custom: var(--radius);
@@ -158,7 +158,7 @@
 }
 
 /* Standard Interactive Transitions (300ms) */
-.transition-sovereign {
+.transition-perplexta {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
   transition-duration: 300ms;
   transition-timing-function: var(--ms-easing);
@@ -192,8 +192,8 @@
   transition: all 300ms var(--ms-easing);
 }
 
-/* Sovereign Icon Button Pattern */
-.btn-icon-sovereign {
+/* Perplexta Icon Button Pattern */
+.btn-icon-perplexta {
   width: 40px;
   height: 40px;
   display: flex;
@@ -207,13 +207,13 @@
   flex-shrink: 0;
 }
 
-.btn-icon-sovereign:hover {
+.btn-icon-perplexta:hover {
   background-color: var(--bg-hover);
   color: #10b981;
   filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
 }
 
-.dark .btn-icon-sovereign:hover {
+.dark .btn-icon-perplexta:hover {
   background-color: rgba(31, 41, 55, 1); /* gray-800 */
 }
 
@@ -221,7 +221,7 @@
 .separator-v {
   width: 1px;
   height: 20px;
-  background-color: var(--border-sovereign);
+  background-color: var(--border-perplexta);
 }
 
 html {

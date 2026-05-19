@@ -60,12 +60,12 @@ const CenteredLoader = () => {
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-1">
              <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em] drop-shadow-sm">
-                {siteName || 'SOVEREIGN'}
+                {siteName || 'PERPLEXTA'}
              </h2>
              <div className="flex items-center justify-center gap-3">
                 <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-800" />
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em] translate-y-0.5">
-                   {language === 'ar' ? 'جاري تفعيل الاتصال السيادي' : 'ACTIVATING SOVEREIGN CONNECTION'}
+                   {language === 'ar' ? 'جاري تفعيل بوابة بيربليكستا' : 'ACTIVATING PERPLEXTA GATEWAY'}
                 </span>
                 <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-800" />
              </div>
@@ -160,7 +160,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <ErrorBoundary name="Sovereign Core Runtime">
+        <ErrorBoundary name="Perplexta Core Runtime">
           <PWAWrapper>
           <Routes>
             <Route path="/" element={<MainLayout />}>

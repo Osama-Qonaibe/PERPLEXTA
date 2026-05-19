@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { CheckCircle2, MessageSquare, Image as ImageIcon, Video, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { sovereignPageTransition } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
@@ -147,7 +147,7 @@ export const SubscriptionPage: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={sovereignPageTransition}
+      variants={perplextaPageTransition}
       className="max-w-6xl mx-auto px-4 pb-12"
     >
       <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]">

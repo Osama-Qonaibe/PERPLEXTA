@@ -1,10 +1,10 @@
 import { Variants } from 'motion/react';
 
 /**
- * Premium Sovereign Page Transition
+ * Premium Perplexta Page Transition
  * Synchronized to 300ms for a distinctive, elite feel.
  */
-export const sovereignPageTransition: Variants = {
+export const perplextaPageTransition: Variants = {
   initial: {
     opacity: 0,
   },
@@ -25,7 +25,7 @@ export const sovereignPageTransition: Variants = {
   },
 };
 
-export const sovereignItemTransition: Variants = {
+export const perplextaItemTransition: Variants = {
   initial: { opacity: 0 },
   animate: { 
     opacity: 1, 
@@ -39,7 +39,7 @@ export const sovereignItemTransition: Variants = {
 /**
  * Shared Architectural Motion Config
  */
-export const SOVEREIGN_TRANSITION = { 
+export const PERPLEXTA_TRANSITION = { 
   type: "tween" as const, 
   duration: 1.1, 
   ease: [0.6, 0.01, 0, 1] as [number, number, number, number]

@@ -37,7 +37,7 @@ export const pdf = async (dataBuffer: Buffer) => {
   }
 };
 
-export const sovereignMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
+export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   if (!apiKey) return 'API Key missing for multimodal sense.';
   
@@ -99,7 +99,7 @@ export const extractTextFromFile = async (filePath: string, mimeType: string, or
     }
 
     if (mimeType.startsWith('image/') || mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
-      return await sovereignMultimodalSense(dataBuffer, mimeType, originalName);
+      return await perplextaMultimodalSense(dataBuffer, mimeType, originalName);
     }
 
     return 'Unsupported file type for text extraction.';

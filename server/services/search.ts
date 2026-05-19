@@ -1,4 +1,4 @@
-export async function performSovereignSearch(query: string) {
+export async function performPerplextaSearch(query: string) {
   const apiKey = (process.env.SERPER_API_KEY || '').trim();
   if (!apiKey) return [];
 

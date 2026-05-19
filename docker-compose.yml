@@ -1,4 +1,4 @@
-# SOVEREIGN INFRASTRUCTURE ARCHITECTURE
+# PERPLEXTA INFRASTRUCTURE ARCHITECTURE
 services:
   # Core Application
   app:
@@ -9,8 +9,8 @@ services:
     environment:
       - NODE_ENV=production
       - DB_SSL_REQUIRED=false
-      - DATABASE_URL=postgresql://platform_admin:sovereign_pass@db_core:5432/platform_core
-      - LEDGER_DATABASE_URL=postgresql://platform_admin:sovereign_pass@db_ledger:5432/platform_ledger
+      - DATABASE_URL=postgresql://platform_admin:perplexta_pass@db_core:5432/platform_core
+      - LEDGER_DATABASE_URL=postgresql://platform_admin:perplexta_pass@db_ledger:5432/platform_ledger
       - JWT_SECRET=change_this_to_a_secure_random_string
       - VITE_APP_URL=http://your-server-ip:3000
     depends_on:
@@ -29,7 +29,7 @@ services:
       - core_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=platform_admin
-      - POSTGRES_PASSWORD=sovereign_pass
+      - POSTGRES_PASSWORD=perplexta_pass
       - POSTGRES_DB=platform_core
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U platform_admin -d platform_core"]
@@ -47,7 +47,7 @@ services:
       - ledger_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=platform_admin
-      - POSTGRES_PASSWORD=sovereign_pass
+      - POSTGRES_PASSWORD=perplexta_pass
       - POSTGRES_DB=platform_ledger
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U platform_admin -d platform_ledger"]

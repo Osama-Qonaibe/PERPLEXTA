@@ -5,7 +5,7 @@ import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { sovereignPageTransition } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
@@ -22,7 +22,7 @@ export const AdminLayout: React.FC = () => {
           initial="initial"
           animate="animate"
           exit="exit"
-          variants={sovereignPageTransition}
+          variants={perplextaPageTransition}
           className="flex h-full w-full overflow-hidden relative z-10"
         >
           <AdminSidebar activeLanguage={language} />

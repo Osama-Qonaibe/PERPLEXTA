@@ -113,7 +113,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 </div>
                 <div className="space-y-1 text-center md:text-left rtl:md:text-right">
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.4em]">
-                    {dir === 'rtl' ? 'الرصيد السيادي المتاح' : 'Available Sovereign Liquidity'}
+                    {dir === 'rtl' ? 'رصيد بيربليكستا المتاح' : 'Available Perplexta Liquidity'}
                   </p>
                   <div className="flex items-baseline justify-center md:justify-start gap-2">
                     <span className="text-2xl font-medium opacity-40">₪</span>
@@ -154,7 +154,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                </div>
                <div className="hidden lg:block h-10 w-px bg-[var(--border)]" />
                <div className="space-y-1 hidden md:block">
-                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'المستوى السيادي' : 'Sovereign tier'}</p>
+                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'المستوى في بيربليكستا' : 'Perplexta tier'}</p>
                   <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Elite Intelligence</p>
                </div>
             </div>
@@ -162,7 +162,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
         </div>
       </div>
 
-      {/* Sovereign Tabs - Emerald Glow Hierarchy */}
+      {/* Perplexta Tabs - Emerald Glow Hierarchy */}
       <div className="px-6 md:px-12 mt-6 flex-none">
         <div className="flex items-center border-b border-[var(--border)] transition-all duration-[var(--theme-transition-duration)]">
           {[

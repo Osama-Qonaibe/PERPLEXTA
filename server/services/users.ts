@@ -17,8 +17,8 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_ar: 'مراجعة الوثائق القانونية المتخصصة والاستخبارات.'
   },
   'notebook': { 
-    name_en: 'Sovereign Notebook', 
-    name_ar: 'المفكرة السيادية',
+    name_en: 'Perplexta Notebook', 
+    name_ar: 'مفكرة بيربليكستا',
     desc_en: 'Organize and connect your thoughts with AI.',
     desc_ar: 'نظم واربط أفكارك بمساعدة الذكاء الاصطناعي.'
   },
@@ -65,8 +65,8 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_ar: 'تصميم وعصف ذهني تعاوني بالذكاء الاصطناعي.'
   },
   'sovereign_memory': { 
-    name_en: 'Sovereign Memory', 
-    name_ar: 'الذاكرة السيادية',
+    name_en: 'Perplexta Memory', 
+    name_ar: 'ذاكرة بيربليكستا',
     desc_en: 'Persistent AI personalization and context.',
     desc_ar: 'تخصيص وسياق دائم للذكاء الاصطناعي.'
   },

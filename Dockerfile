@@ -1,4 +1,4 @@
-# Dockerfile for Sovereign AI Platform
+# Dockerfile for Perplexta AI Platform
 FROM node:22-alpine
 
 WORKDIR /app

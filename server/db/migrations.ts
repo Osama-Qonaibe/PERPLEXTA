@@ -1,34 +1,54 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import bcrypt from 'bcryptjs';
-import { pool, ledgerPool, initializeSovereignPools, createInternalPool } from './index.js';
+import { pool, ledgerPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
 export async function runSystemMaintenance() {
   try {
     if (pool) {
+      // Safety check: only run if tables exist to prevent startup migration race conditions
+      const tableCheck = await pool.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name IN ('token_blacklist', 'password_resets', 'user_activity_logs', 'subscriptions', 'oauth_states', 'ai_logs')
+      `);
+      const existingTables = new Set(tableCheck.rows.map(r => r.table_name));
+
       // 1. Cleanup expired tokens
-      await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+      if (existingTables.has('token_blacklist')) {
+        await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+      }
       
       // 2. Cleanup expired password resets
-      await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
+      if (existingTables.has('password_resets')) {
+        await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
+      }
       
       // 3. Cleanup old activity logs (keep 30 days)
-      await pool.query("DELETE FROM user_activity_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      if (existingTables.has('user_activity_logs')) {
+        await pool.query("DELETE FROM user_activity_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      }
       
       // 4. Update expired subscriptions
-      await pool.query(`
-        UPDATE subscriptions 
-        SET status = 'expired', updated_at = CURRENT_TIMESTAMP 
-        WHERE current_period_end < CURRENT_TIMESTAMP 
-        AND status = 'active'
-      `);
+      if (existingTables.has('subscriptions')) {
+        await pool.query(`
+          UPDATE subscriptions 
+          SET status = 'expired', updated_at = CURRENT_TIMESTAMP 
+          WHERE current_period_end < CURRENT_TIMESTAMP 
+          AND status = 'active'
+        `);
+      }
 
       // 5. Cleanup expired OAuth states
-      await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
+      if (existingTables.has('oauth_states')) {
+        await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
+      }
 
       // 6. Cleanup old AI logs (keep 30 days)
-      await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      if (existingTables.has('ai_logs')) {
+        await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      }
 
       console.log('[Maintenance] Daily system cleanup completed successfully.');
     }
@@ -344,6 +364,29 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(ledgerTarget, 'economy_settings', 'referral_activation_min_deposit', 'NUMERIC(10, 2)', "'10.00'");
       
       console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB and ensured Ledger DB schema.');
+    });
+
+    // MIGRATION: Ensure Baseline Tables v11
+    await runVersioned('v11_ensure_baseline_tables', 'Ensuring critical tables like password_resets exist', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS password_resets (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS password_resets_pkey ON password_resets(id)`);
+      
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS token_blacklist (
+          id SERIAL PRIMARY KEY,
+          token TEXT UNIQUE NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -1181,7 +1224,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         VALUES
           ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}'),
           ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}'),
-          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Sovereign Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
+          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Perplexta Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
         ON CONFLICT (name_en) DO NOTHING
       `);
     }
@@ -1193,20 +1236,20 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       VALUES
         ('chat', '', '', 'Elite strategic assistant for professional discourse and general logic.', 'مساعد استراتيجي نخبوي للنقاش المهني والمنطق العام.', 10),
         ('chat_fast', '', '', 'High-speed technical intelligence agent for quick insights.', 'عميل ذكاء تقني سريع للاستفسارات الفورية.', 5),
-        ('chat_pro', '', '', 'Advanced sovereign reasoning engine for deep technical problem solving.', 'محرك استنتاج سيادي متقدم لحل المشكلات التقنية العميقة.', 25),
+        ('chat_pro', '', '', 'Advanced perplexta reasoning engine for deep technical problem solving.', 'محرك استنتاج استراتيجي متقدم لحل المشكلات التقنية العميقة.', 25),
         ('chat_reasoning', '', '', 'Complex multi-step reasoning protocol for high-stakes intelligence.', 'بروتوكول تفكير معقد متعدد الخطوات للمهام فائقة الأهمية.', 50),
         ('perplexta_analysis', '', '', 'Professional technical synthesis and deep digital strategic search.', 'البحث الاستراتيجي الرقمي العميق والتحليل التقني المهني.', 15),
         ('image', '', '', 'High-precision visual synthesis engine for professional assets.', 'محرك توليد بصري عالي الدقة للأصول المهنية.', 30),
         ('video', '', '', 'Global standard video generation and cinematic synthesis.', 'توليد فيديو بمعايير عالمية وتوليد سينمائي متقدم.', 100),
         ('tts', '', '', 'Elite natural acoustic synthesis and voice engineering.', 'توليد صوتي طبيعي متطور وهندسة صوتية نخبوية.', 10),
         ('stt', '', '', 'High-fidelity acoustic transcription and linguistic extraction.', 'تحويل صوتي عالي الدقة واستخراج لغوي متقن.', 5),
-        ('legal_analysis', '', '', 'Sovereign professional document auditing and legal synthesis.', 'تدقيق الوثائق المهنية السيادية والتركيب القانوني.', 40),
+        ('legal_analysis', '', '', 'Perplexta professional document auditing and legal synthesis.', 'تدقيق الوثائق المهنية الاحترافية والتركيب القانوني.', 40),
         ('learning', '', '', 'Professional cognitive adaptation and tailored learning systems.', 'التكيف المعرفي المهني وأنظمة التعلم المخصصة.', 20),
         ('code', '', '', 'Master-level software engineering workstation and logic constructor.', 'محطة عمل هندسة البرمجيات وبناء المنطق البرمجي المتقدم.', 20),
-        ('canvas', '', '', 'Sovereign creative studio and multi-modal design canvas.', 'استوديو الإبداع السيادي ولوحة التصميم متعددة الوسائط.', 25),
+        ('canvas', '', '', 'Perplexta creative studio and multi-modal design canvas.', 'استوديو الإبداع المتقدم ولوحة التصميم متعددة الوسائط.', 25),
         ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
-        ('sovereign_memory', '', '', 'Unified system intelligence and long-term memory synthesis.', 'ذاكرة النظام الموحدة وتركيب المعارف طويلة الأمد.', 5),
-        ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
+        ('perplexta_memory', '', '', 'Unified system intelligence and long-term memory synthesis.', 'ذاكرة النظام الموحدة وتركيب المعارف طويلة الأمد.', 5),
+        ('perplexta_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
       ON CONFLICT (tool_id) DO NOTHING
     `);
   }

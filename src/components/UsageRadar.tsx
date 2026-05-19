@@ -117,7 +117,7 @@ export const UsageRadar: React.FC = () => {
 
   return (
     <div className="space-y-10 transition-all duration-[var(--theme-transition-duration)]">
-      {/* Usage Radar Header - Elite Design (Sovereign Static) */}
+      {/* Usage Radar Header - Elite Design (Perplexta Static) */}
       <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
         
         {/* Fixed Header Row */}

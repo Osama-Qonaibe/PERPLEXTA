@@ -6,7 +6,7 @@ import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
 import { motion, AnimatePresence } from 'motion/react';
-import { sovereignPageTransition } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 import { 
   User, Settings2, Shield, CreditCard, 
   Wallet, Palette, Keyboard, BrainCircuit, Globe,
@@ -287,7 +287,7 @@ export const SettingsPage: React.FC = () => {
                 initial="initial"
                 animate="animate"
                 exit="exit"
-                variants={sovereignPageTransition}
+                variants={perplextaPageTransition}
                 className="space-y-12 pb-12 w-full"
               >
               {/* Account Tab */}

@@ -1,6 +1,6 @@
 # PERPLEXTA
 
-> **Sovereign AI Platform** — A production-grade, full-stack AI assistant platform with multi-provider orchestration, dual-database financial isolation, subscription management, and real-time intelligence.
+> **Perplexta AI Platform** — A production-grade, full-stack AI assistant platform with multi-provider orchestration, dual-database financial isolation, subscription management, and real-time intelligence.
 
 ![Stack](https://img.shields.io/badge/Stack-React%20%2B%20Node.js%20%2B%20PostgreSQL-10b981?style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Full--Stack-3178c6?style=flat-square)

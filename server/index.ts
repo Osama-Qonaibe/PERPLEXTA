@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';
-import { initializeSovereignPools, synchronizeSovereignPoolsFromRegistry } from './db/index.js';
+import { initializePerplextaPools, synchronizePerplextaPoolsFromRegistry } from './db/index.js';
 import { createServer as createViteServer } from 'vite';
 import { runDatabaseMigrations, setIo } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
@@ -13,11 +13,11 @@ const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
-    console.log('[Server] Initializing Sovereign Ecosystem...');
+    console.log('[Server] Initializing Perplexta Ecosystem...');
     
-    await initializeSovereignPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
+    await initializePerplextaPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
     await runDatabaseMigrations();
-    await synchronizeSovereignPoolsFromRegistry();
+    await synchronizePerplextaPoolsFromRegistry();
     await syncSystemTemplates();
     await refreshCachedAppName();
     
@@ -37,7 +37,7 @@ async function startServer() {
     initCronJobs();
 
     httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] 🚀 Sovereign Engine active on port ${PORT}`);
+      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT}`);
     });
   } catch (err) {
     console.error('[Server] FATAL: Critical Startup Failure. Database or Core Service unavailable:', err);

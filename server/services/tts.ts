@@ -1,4 +1,4 @@
-export async function sovereignTTS(text: string, voiceId: string = 'standard') {
+export async function perplextaTTS(text: string, voiceId: string = 'standard') {
   const apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
   if (!apiKey) throw new Error('ElevenLabs API Key is missing.');
 

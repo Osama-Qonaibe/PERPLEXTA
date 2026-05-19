@@ -8,7 +8,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
 import { motion, AnimatePresence } from 'motion/react';
-import { sovereignPageTransition, SOVEREIGN_TRANSITION } from '../constants/motions';
+import { perplextaPageTransition, PERPLEXTA_TRANSITION } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -65,7 +65,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       <div className="flex items-center justify-between px-4 py-2 bg-transparent border-none">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Sovereign Audio Slate' : lang}</span>
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-theme">
           {isMediaUrl ? (
@@ -108,7 +108,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
 
           <div className="text-center space-y-1">
-            <h3 className="text-xs font-black text-emerald-500 tracking-[0.2em] uppercase">Sovereign Orchestra Master</h3>
+            <h3 className="text-xs font-black text-emerald-500 tracking-[0.2em] uppercase">Perplexta Orchestra Master</h3>
             <p className="text-[10px] text-[var(--text-secondary)] font-medium tracking-widest leading-none">
               {dir === 'rtl' ? 'الإنتاج الأوركسترالي الحصري' : 'EXCLUSIVE ORCHESTRAL PRODUCTION'}
             </p>
@@ -357,10 +357,10 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
 };
 
 const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' | 'rtl'; theme: string }) => {
-  // Parsing the structured output based on the SOVEREIGN CREATIVE PRODUCTION PROTOCOL
+  // Parsing the structured output based on the PERPLEXTA CREATIVE PRODUCTION PROTOCOL
   const sections: { title: string; body: string; id: string }[] = [];
   
-  // High-precision split for the three sovereign phases
+  // High-precision split for the three perplexta phases
   const splitRegex = /(?:^|\n)(?:#\s*|[\d]\.\s*)?\[(?:I|II|III)\.\s*[^\]]+\]/g;
   const rawSections = content.split(splitRegex).filter(s => s.trim().length > 0);
   const titles = (content.match(splitRegex) || []) as string[];
@@ -416,7 +416,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-0.5 glow-emerald">
-                  {dir === 'rtl' ? 'مرحلة الإنتاج السيادي' : 'SOVEREIGN PRODUCTION PHASE'} {idx + 1}
+                  {dir === 'rtl' ? 'مرحلة إنتاج بيربليكستا' : 'PERPLEXTA PRODUCTION PHASE'} {idx + 1}
                 </span>
                 <h3 className="text-xl font-black tracking-tight text-[var(--text-primary)] uppercase">
                   {(section.title as string).replace(/[#\d\.\[\]]/g, '').trim()}
@@ -476,7 +476,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                          </motion.div>
                          <div className="text-center px-6">
                             <h4 className="text-xl font-black text-white tracking-widest uppercase mb-1 drop-shadow-md">
-                              {dir === 'rtl' ? 'تحفة الأوركسترا السيادية' : 'SOVEREIGN ORCHESTRA MASTERPIECE'}
+                              {dir === 'rtl' ? 'تحفة الأوركسترا من بيربليكستا' : 'PERPLEXTA ORCHESTRA MASTERPIECE'}
                             </h4>
                             <p className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase">
                               {dir === 'rtl' ? 'جودة استوديو 24 بت' : '24-BIT STUDIO QUALITY'}
@@ -524,7 +524,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                              </div>
                           </div>
                           <div className="absolute top-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest">
-                            {dir === 'rtl' ? 'عرض فني سيادي' : 'SOVEREIGN ART VIEW'}
+                            {dir === 'rtl' ? 'عرض فني من بيربليكستا' : 'PERPLEXTA ART VIEW'}
                           </div>
                         </div>
                       )
@@ -553,7 +553,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
         <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
           <LayoutGrid size={12} className="text-emerald-500" />
-          {dir === 'rtl' ? 'تم توليد الحزمة عبر محرك السيادة الإبداعي' : 'GENERATED VIA SOVEREIGN CREATIVE ENGINE'}
+          {dir === 'rtl' ? 'تم توليد الحزمة عبر محرك بيربليكستا الإبداعي' : 'GENERATED VIA PERPLEXTA CREATIVE ENGINE'}
         </div>
       </motion.div>
     </div>
@@ -617,8 +617,8 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Sovereign Intelligence',
-          text: dir === 'rtl' ? 'انضم إلي في سوفرين واستخدم الذكاء الاصطناعي الأقوى.' : 'Join me on Sovereign and use the most powerful AI.',
+          title: 'Perplexta Intelligence',
+          text: dir === 'rtl' ? 'انضم إلي في بيربليكستا واستخدم الذكاء الاصطناعي الأقوى.' : 'Join me on Perplexta and use the most powerful AI.',
           url: referralLink,
         });
       } catch (err) {
@@ -738,7 +738,7 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatId, setChatId] = useState<string | null>(routeChatId || null);
 
-  // Sovereign Preservation: Sync local state to persistent storage
+  // Perplexta Preservation: Sync local state to persistent storage
   useEffect(() => {
     sessionStorage.setItem('draft_query', query);
   }, [query]);
@@ -775,13 +775,13 @@ export const ChatPage: React.FC = () => {
   const [showImageSettings, setShowImageSettings] = useState(true);
   const [showAudioSettings, setShowAudioSettings] = useState(true);
 
-  // Sovereign: document.title synchronization
+  // Perplexta: document.title synchronization
   useEffect(() => {
     const firstUserMsg = messages.find(m => m.role === 'user');
     if (firstUserMsg) {
       document.title = stripProtocolMarkers(firstUserMsg.content).slice(0, 60);
     } else {
-      document.title = dir === 'rtl' ? (siteSettings?.siteNameAr || 'محادثة السيادة') : (siteSettings?.siteName || 'Sovereign Chat');
+      document.title = dir === 'rtl' ? (siteSettings?.siteNameAr || 'محادثة بيربليكستا') : (siteSettings?.siteName || 'Perplexta Chat');
     }
   }, [messages, siteSettings, dir]);
   const [showChatLimitWarning, setShowChatLimitWarning] = useState(false);
@@ -852,7 +852,7 @@ export const ChatPage: React.FC = () => {
           }
         }
         if (finalTranscript) {
-          // Sovereign: High-precision insertion
+          // Perplexta: High-precision insertion
           setQuery(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
           if (textareaRef.current) {
              textareaRef.current.style.height = 'auto';
@@ -957,7 +957,7 @@ export const ChatPage: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Sovereign_Chat_${new Date().toISOString().split('T')[0]}.md`;
+        link.download = `Perplexta_Chat_${new Date().toISOString().split('T')[0]}.md`;
         link.click();
         URL.revokeObjectURL(url);
       } 
@@ -980,7 +980,7 @@ export const ChatPage: React.FC = () => {
         const header = document.createElement('div');
         header.innerHTML = `
           <div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid ${theme === 'dark' ? '#1a1a1c' : '#f0f0f0'};">
-            <h1 style="margin: 0; font-size: 28px; color: #10b981;">SOVEREIGN</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #10b981;">PERPLEXTA</h1>
             <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.6;">${dir === 'rtl' ? 'تقرير تصدير الذكاء الاصطناعي' : 'AI Intelligence Export Report'}</p>
             <p style="margin: 5px 0 0 0; font-size: 10px; opacity: 0.4;">${new Date().toLocaleString()}</p>
           </div>
@@ -998,7 +998,7 @@ export const ChatPage: React.FC = () => {
           msgEl.style.border = theme === 'dark' ? '1px solid #2d2d2f' : '1px solid #e9ecef';
           
           const roleLabel = document.createElement('div');
-          roleLabel.innerText = msg.role === 'user' ? (dir === 'rtl' ? 'المستخدم' : 'User') : (dir === 'rtl' ? 'المساعد السيادي' : 'Sovereign Assistant');
+          roleLabel.innerText = msg.role === 'user' ? (dir === 'rtl' ? 'المستخدم' : 'User') : (dir === 'rtl' ? 'مساعد بيربليكستا' : 'Perplexta Assistant');
           roleLabel.style.fontWeight = '900';
           roleLabel.style.marginBottom = '10px';
           roleLabel.style.fontSize = '12px';
@@ -1023,7 +1023,7 @@ export const ChatPage: React.FC = () => {
         footer.style.textAlign = 'center';
         footer.style.fontSize = '10px';
         footer.style.opacity = '0.3';
-        footer.innerText = '© 2026 SOVEREIGN PLATFORM - CONFIDENTIAL AI REPORT';
+        footer.innerText = '© 2026 PERPLEXTA PLATFORM - CONFIDENTIAL AI REPORT';
         exportEl.appendChild(footer);
 
         document.body.appendChild(exportEl);
@@ -1059,7 +1059,7 @@ export const ChatPage: React.FC = () => {
           heightLeft -= pageHeight;
         }
 
-        pdf.save(`Sovereign_Chat_${new Date().toISOString().split('T')[0]}.pdf`);
+        pdf.save(`Perplexta_Chat_${new Date().toISOString().split('T')[0]}.pdf`);
       }
       else if (format === 'docx') {
         let htmlContent = `
@@ -1073,7 +1073,7 @@ export const ChatPage: React.FC = () => {
           </style>
           </head>
           <body dir="${dir}">
-            <h1 style="text-align: center;">Sovereign Chat Export</h1>
+            <h1 style="text-align: center;">Perplexta Chat Export</h1>
             <p style="text-align: center; color: #666;">${new Date().toLocaleString()}</p>
         `;
 
@@ -1093,7 +1093,7 @@ export const ChatPage: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Sovereign_Chat_${new Date().toISOString().split('T')[0]}.doc`;
+        link.download = `Perplexta_Chat_${new Date().toISOString().split('T')[0]}.doc`;
         link.click();
         URL.revokeObjectURL(url);
       }
@@ -1203,7 +1203,7 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Sovereign: Auto-scrolling is strictly disabled to maintain a static, controlled screen view.
+    // Perplexta: Auto-scrolling is strictly disabled to maintain a static, controlled screen view.
     // The user segment demands zero-jitter, manual context control.
   }, [messages, isGenerating]);
 
@@ -1267,7 +1267,7 @@ export const ChatPage: React.FC = () => {
   }, [chatId]);
 
   useEffect(() => {
-    // Sovereign Memory Protocol: Initial Startup notification
+    // Perplexta Memory Protocol: Initial Startup notification
     const timer = setTimeout(() => {
       triggerMemoryNotification('startup');
     }, 1500); // Slight delay for premium feel
@@ -1283,7 +1283,7 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (routeChatId) {
-      // Sovereign Resiliency: If we are already mid-generation for THIS chat ID, do not reload
+      // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
       if (isGenerating && chatId === routeChatId) {
         console.log('[ChatPage] Skipping redundant load for active generation session.');
@@ -1296,7 +1296,7 @@ export const ChatPage: React.FC = () => {
       setMessages([]);
       setChatId(null);
       localStorage.removeItem('last_chat_id');
-      // Trigger Sovereign Memory Startup for new chat
+      // Trigger Perplexta Memory Startup for new chat
       triggerMemoryNotification('startup');
     }
   }, [routeChatId, token, isAuthReady]);
@@ -1320,7 +1320,7 @@ export const ChatPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Sovereign: Strict 100MB limit (Google-standard for high-intel analysis)
+      // Perplexta: Strict 100MB limit (Google-standard for high-intel analysis)
       const MAX_SIZE = 100 * 1024 * 1024;
       if (file.size > MAX_SIZE) {
         toast.error(
@@ -1359,7 +1359,7 @@ export const ChatPage: React.FC = () => {
           citations: typeof msg.citations === 'string' ? JSON.parse(msg.citations) : msg.citations,
           follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups
         })));
-        // Sovereign: Static view preserves position on load
+        // Perplexta: Static view preserves position on load
         // setTimeout(() => scrollToBottom('auto'), 100);
       }
     } catch (error) {
@@ -1757,7 +1757,7 @@ export const ChatPage: React.FC = () => {
       toolId: 'image',
       hoverColor: 'group-hover:text-emerald-500', 
       dropShadow: 'group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-      desc: dir === 'rtl' ? 'توليد صور بجودة 8K السيادية' : 'Sovereign 8K Image Generation'
+      desc: dir === 'rtl' ? 'توليد صور بجودة 8K من بيربليكستا' : 'Perplexta 8K Image Generation'
     },
     { 
       icon: <Video size={24} />, 
@@ -2356,7 +2356,7 @@ export const ChatPage: React.FC = () => {
         initial="initial"
         animate="animate"
         exit="exit"
-        variants={sovereignPageTransition}
+        variants={perplextaPageTransition}
         className="h-full flex flex-col w-full overflow-hidden"
       >
       {showChatLimitWarning && (
@@ -2825,7 +2825,7 @@ export const ChatPage: React.FC = () => {
                                   const url = window.URL.createObjectURL(blob);
                                   const link = document.createElement('a');
                                   link.href = url;
-                                  link.download = `Sovereign_Gen_${Date.now()}.png`;
+                                  link.download = `Perplexta_Gen_${Date.now()}.png`;
                                   document.body.appendChild(link);
                                   link.click();
                                   document.body.removeChild(link);
@@ -2881,7 +2881,7 @@ export const ChatPage: React.FC = () => {
                                   const url = window.URL.createObjectURL(blob);
                                   const link = document.createElement('a');
                                   link.href = url;
-                                  link.download = `Sovereign_Gen_${Date.now()}.mp4`;
+                                  link.download = `Perplexta_Gen_${Date.now()}.mp4`;
                                   document.body.appendChild(link);
                                   link.click();
                                   document.body.removeChild(link);
@@ -2940,7 +2940,7 @@ export const ChatPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Sovereign Message Toolbar - Optimized Bottom Layout */}
+                  {/* Perplexta Message Toolbar - Optimized Bottom Layout */}
                   {(!isGenerating || idx < messages.length - 1) && msg.role === 'assistant' && (
                     <motion.div 
                       initial={{ opacity: 0 }}
@@ -2998,7 +2998,7 @@ export const ChatPage: React.FC = () => {
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = `Sovereign_Response_${Date.now()}.md`;
+                            a.download = `Perplexta_Response_${Date.now()}.md`;
                             a.click();
                             URL.revokeObjectURL(url);
                           }}
@@ -3015,7 +3015,7 @@ export const ChatPage: React.FC = () => {
                             try {
                               if (navigator.share) {
                                 await navigator.share({
-                                  title: 'Sovereign AI Response',
+                                  title: 'Perplexta AI Response',
                                   text: msg.content,
                                   url: window.location.href
                                 });
@@ -3213,7 +3213,7 @@ export const ChatPage: React.FC = () => {
                   <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
-                         {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة السيادة' : 'Sovereign Answer')}
+                         {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
                        </span>
                     </div>
                     <div className="markdown-body prose dark:prose-invert text-[13px] line-clamp-6 text-gray-700 dark:text-gray-300">

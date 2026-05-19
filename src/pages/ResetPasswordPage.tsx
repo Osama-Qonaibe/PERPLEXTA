@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { sovereignPageTransition } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 import { toast } from 'sonner';
 
 export const ResetPasswordPage: React.FC = () => {
@@ -76,7 +76,7 @@ export const ResetPasswordPage: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={sovereignPageTransition}
+      variants={perplextaPageTransition}
       className="flex items-center justify-center min-h-screen bg-[var(--bg-primary)] p-6" 
       dir={dir}
     >
@@ -200,7 +200,7 @@ export const ResetPasswordPage: React.FC = () => {
         </AnimatePresence>
 
         <div className="mt-8 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 opacity-40">
-           Sovereign Secure Auth Core v2.4.0
+           Perplexta Secure Auth Core v2.4.0
         </div>
       </motion.div>
     </motion.div>

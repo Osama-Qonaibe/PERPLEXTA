@@ -5,7 +5,7 @@ import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { SOVEREIGN_TRANSITION } from '../constants/motions';
+import { PERPLEXTA_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
@@ -39,7 +39,7 @@ export const MainLayout: React.FC = () => {
             paddingInlineStart: isMobile ? 0 : (isSidebarOpen ? 220 : 80),
             paddingInlineEnd: 0,
           }}
-          transition={SOVEREIGN_TRANSITION}
+          transition={PERPLEXTA_TRANSITION}
           className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden"
           style={{ 
             paddingLeft: 'unset', 

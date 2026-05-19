@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { motion, AnimatePresence } from "motion/react";
-import { sovereignPageTransition } from "../constants/motions";
+import { perplextaPageTransition } from "../constants/motions";
 import {
   Music,
   Activity,
@@ -2085,7 +2085,7 @@ const ApiKeysVaultView = ({
   const handleSaveKey = async (id: string, key: string, urlKey?: string) => {
     if (!key && !urlKey) return;
 
-    // First, force a test. We MUST verify before saving as per Sovereign mandate.
+    // First, force a test. We MUST verify before saving as per Perplexta mandate.
     const isVerified = await handleTestKeyConnection(id, key, urlKey);
     if (!isVerified) {
       showToast(
@@ -3372,7 +3372,7 @@ const DatabaseOrchestrationView = ({
                     <div className="flex items-center gap-2 pt-1">
                       <ShieldCheck size={12} className="text-emerald-500/60" />
                       <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
-                        Sovereign Encryption Active
+                        Perplexta Encryption Active
                       </p>
                     </div>
                   </motion.div>
@@ -3732,8 +3732,8 @@ const OrchestratorView = ({
                 learning: GraduationCap,
                 code: Code2,
                 canvas: Music,
-                sovereign_memory: Database,
-                sovereign_search: Search,
+                perplexta_memory: Database,
+                perplexta_search: Search,
               };
 
               if (savedRoute) {
@@ -10321,7 +10321,7 @@ export const AdminDashboard: React.FC = () => {
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={sovereignPageTransition}
+      variants={perplextaPageTransition}
       className="flex flex-col w-full"
     >
       {/* Sticky Admin Header - Elite Command Layer */}

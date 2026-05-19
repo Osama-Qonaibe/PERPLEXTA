@@ -40,7 +40,7 @@ export function createInternalPool(connectionString: string, max = 1) {
   });
 }
 
-export async function initializeSovereignPools(coreUrl: string, ledgerUrl: string) {
+export async function initializePerplextaPools(coreUrl: string, ledgerUrl: string) {
   const redactedUrl = (url: string) => {
     try {
       const u = new URL(url);
@@ -51,7 +51,7 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
     }
   };
 
-  console.log(`[DB] initializing Sovereign Pools...`);
+  console.log(`[DB] Initializing Perplexta Pools...`);
   if (coreUrl) console.log(`[DB] Core Target: ${redactedUrl(coreUrl)}`);
   
   if (!coreUrl) {
@@ -123,7 +123,7 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
       pool.query('SELECT 1'),
       ledgerPool.query('SELECT 1')
     ]);
-    console.log('[DB] Sovereign Pools verified and active.');
+    console.log('[DB] Perplexta Pools verified and active.');
 
   } catch (poolCreationError: any) {
     console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
@@ -135,7 +135,7 @@ export async function initializeSovereignPools(coreUrl: string, ledgerUrl: strin
   }
 }
 
-export async function synchronizeSovereignPoolsFromRegistry() {
+export async function synchronizePerplextaPoolsFromRegistry() {
   if (!pool) return;
   console.log('[DB] Checking for active remote database overrides...');
   
@@ -148,8 +148,8 @@ export async function synchronizeSovereignPoolsFromRegistry() {
       const defaultLedger = process.env.LEDGER_DATABASE_URL || defaultCore;
       
       if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger) {
-        console.log('[DB] No active registry overrides. Reverting Sovereign Pools to environment defaults.');
-        await initializeSovereignPools(defaultCore, defaultLedger);
+        console.log('[DB] No active registry overrides. Reverting Perplexta Pools to environment defaults.');
+        await initializePerplextaPools(defaultCore, defaultLedger);
       } else {
         console.log('[DB] No overrides found. Already using environment defaults.');
       }
@@ -204,8 +204,8 @@ export async function synchronizeSovereignPoolsFromRegistry() {
     }
 
     console.log('[DB] Registry connections verified. Swapping pools...');
-    await initializeSovereignPools(coreUrl, ledgerUrl || coreUrl);
-    console.log('[DB] Sovereign Pools synchronized with active registry configuration.');
+    await initializePerplextaPools(coreUrl, ledgerUrl || coreUrl);
+    console.log('[DB] Perplexta Pools synchronized with active registry configuration.');
   } catch (syncErr: any) {
     console.warn('[DB] Registry synchronization skipped:', syncErr.message);
   }

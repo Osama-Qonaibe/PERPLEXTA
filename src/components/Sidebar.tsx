@@ -4,11 +4,11 @@ import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClos
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { SOVEREIGN_TRANSITION } from '../constants/motions';
+import { PERPLEXTA_TRANSITION } from '../constants/motions';
 import { PWAInstall } from './PWAInstall'; 
-const sidebarTransition = SOVEREIGN_TRANSITION;
-const sidebarSpring = SOVEREIGN_TRANSITION;
-const elasticSpring = SOVEREIGN_TRANSITION;
+const sidebarTransition = PERPLEXTA_TRANSITION;
+const sidebarSpring = PERPLEXTA_TRANSITION;
+const elasticSpring = PERPLEXTA_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isInstallable, installApp, isInstalling } = useAppContext();
@@ -110,7 +110,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }, [token]);
 
   useEffect(() => {
-    // Sovereign: The sidebar state is preserved regardless of window dimensions to ensure 
+    // Perplexta: The sidebar state is preserved regardless of window dimensions to ensure 
     // a consistent, professional, and user-centric experience. Auto-closing on resize 
     // was considered intrusive by the elite technical segment.
     return () => {};
@@ -148,7 +148,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     const isAlreadyAtNewChat = window.location.pathname === '/';
     
     if (isAlreadyAtNewChat) {
-      // Sovereign: Silent fail if already at base. No movement allowed.
+      // Perplexta: Silent fail if already at base. No movement allowed.
       if (isMobile) setIsSidebarOpen(false);
       return;
     }
@@ -230,7 +230,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           initial={false}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={SOVEREIGN_TRANSITION}
+                          transition={PERPLEXTA_TRANSITION}
                           className={`font-medium text-sm whitespace-nowrap text-[var(--text-secondary)] ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
                         >
                           {item.label}
@@ -256,7 +256,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           initial={false}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={SOVEREIGN_TRANSITION}
+                          transition={PERPLEXTA_TRANSITION}
                           className={`font-bold ${isMobile ? 'text-base' : 'text-sm'} text-emerald-500 whitespace-nowrap`}
                         >
                           {t('newChat')}
@@ -350,7 +350,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={SOVEREIGN_TRANSITION}
+                                    transition={PERPLEXTA_TRANSITION}
                                     className={`font-bold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap text-start text-[var(--text-primary)] transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
                                   >
                                     {chat.title}
@@ -430,7 +430,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={SOVEREIGN_TRANSITION}
+                                    transition={PERPLEXTA_TRANSITION}
                                     className="overflow-hidden whitespace-nowrap text-start"
                                   >
                                     <span className="font-medium text-sm">{t('consumption')}</span>
@@ -467,7 +467,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   exit={{ opacity: 0 }}
-                                  transition={SOVEREIGN_TRANSITION}
+                                  transition={PERPLEXTA_TRANSITION}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                   >
                                   <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
@@ -484,7 +484,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   exit={{ opacity: 0 }}
-                                  transition={SOVEREIGN_TRANSITION}
+                                  transition={PERPLEXTA_TRANSITION}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
                                   <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
@@ -531,7 +531,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
-                              transition={SOVEREIGN_TRANSITION}
+                              transition={PERPLEXTA_TRANSITION}
                               className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                             >
                               <span className={`font-bold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap leading-tight text-[var(--text-primary)] transition-theme`}>{user.name}</span>
@@ -568,7 +568,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             initial={{ opacity: 0, x: dir === 'rtl' ? 8 : -8 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: dir === 'rtl' ? 8 : -8 }}
-                            transition={SOVEREIGN_TRANSITION}
+                            transition={PERPLEXTA_TRANSITION}
                             className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                           >
                             <span className="text-[10px] text-[var(--text-muted)] truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
@@ -590,7 +590,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      transition={SOVEREIGN_TRANSITION}
+                      transition={PERPLEXTA_TRANSITION}
                       className="flex items-center justify-between gap-1 opacity-30 hover:opacity-100 transition-theme pointer-events-auto"
                     >
                       <NavLink to="/terms" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-[var(--text-muted)] hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
