@@ -977,6 +977,10 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
 
 router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   try {
+    const confirmation = req.headers['x-confirm-action'] || req.body?.confirm;
+    if (confirmation !== 'DELETE_ALL') {
+      return res.status(400).json({ error: 'Action confirmation required. Please specify confirm: "DELETE_ALL" payload or header.' });
+    }
     const countRes = await ledgerPool.query('SELECT COUNT(*) FROM ledger_transactions');
     await ledgerPool.query('DELETE FROM ledger_transactions');
     await auditLog((req as any).user?.id, 'Purge All Financial Transactions', 'finance', { deletedCount: parseInt(countRes.rows[0].count) });
@@ -1067,6 +1071,10 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
 
 router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) => {
   try {
+    const confirmation = req.headers['x-confirm-action'] || req.body?.confirm;
+    if (confirmation !== 'DELETE_ALL') {
+      return res.status(400).json({ error: 'Action confirmation required. Please specify confirm: "DELETE_ALL" payload or header.' });
+    }
     const countRes = await pool.query('SELECT COUNT(*) FROM chats');
     await pool.query('TRUNCATE TABLE messages CASCADE');
     await pool.query('DELETE FROM chats');

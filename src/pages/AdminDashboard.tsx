@@ -810,7 +810,12 @@ const CommandCenterView = ({
                     "/api/admin/maintenance/clear-chats",
                     {
                       method: "DELETE",
-                      headers: { Authorization: `Bearer ${token}` },
+                      headers: { 
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                        "x-confirm-action": "DELETE_ALL"
+                      },
+                      body: JSON.stringify({ confirm: "DELETE_ALL" }),
                     },
                   );
                   if (res.ok) {
@@ -1128,7 +1133,12 @@ const DigitalFinancialRadarView = ({
     try {
       const res = await fetch("/api/admin/financial/all", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "x-confirm-action": "DELETE_ALL"
+        },
+        body: JSON.stringify({ confirm: "DELETE_ALL" }),
       });
 
       if (res.ok) {
