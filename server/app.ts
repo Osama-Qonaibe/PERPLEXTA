@@ -111,6 +111,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
+import messageRoutes from './routes/messages.js';
 import adminRoutes from './routes/admin.js';
 import fileRoutes from './routes/files.js';
 import paymentRoutes from './routes/payments.js';
@@ -127,6 +128,7 @@ import emailRoutes from './routes/email.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);

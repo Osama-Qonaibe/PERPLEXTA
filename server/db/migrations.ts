@@ -394,6 +394,32 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_limits JSONB DEFAULT NULL`);
     });
 
+    // MIGRATION: Payment Gateways Settings Expansion v13
+    await runVersioned('v13_payment_gateways_expansion', 'Adding crypto deposit address, bank details, and PayPal address to economy_settings', async (tx, ledgerTx) => {
+      const ledgerTarget = ledgerTx || tx;
+      await ensureColumn(ledgerTarget, 'economy_settings', 'crypto_address', 'TEXT', `'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'`);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_name', 'VARCHAR(255)', `'Merchant Discount Bank IL (011)'`);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_recipient', 'VARCHAR(255)', `'Perplexta Tech Platforms LTD.'`);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_iban', 'VARCHAR(255)', `'IL42 0110 0000 0000 3484 2192'`);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_swift', 'VARCHAR(100)', `'PPLXIL33XXX'`);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'paypal_email', 'VARCHAR(255)', `'paypal@perplexta.com'`);
+    });
+
+    // MIGRATION: PayPal Credentials to system_settings v14
+    await runVersioned('v14_paypal_settings', 'Adding PayPal credential columns to system_settings table', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'paypal_client_id', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'paypal_client_secret', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'paypal_mode', "VARCHAR(20)", `'sandbox'`);
+      await ensureColumn(tx, 'system_settings', 'paypal_status', "VARCHAR(50)", `'pending'`);
+      await ensureColumn(tx, 'system_settings', 'paypal_last_verified_at', 'TIMESTAMP');
+    });
+
+    // MIGRATION: Hide column for transaction records v15
+    await runVersioned('v15_transaction_hide_column', 'Adding is_hidden column to ledger_transactions for user level clear/archive mechanics', async (tx, ledgerTx) => {
+      const ledgerTarget = ledgerTx || tx;
+      await ensureColumn(ledgerTarget, 'ledger_transactions', 'is_hidden', 'BOOLEAN', 'false');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -639,7 +665,13 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         referral_bonus_percent INTEGER DEFAULT 10,
         min_payout_usd NUMERIC(10, 2) DEFAULT '10.00',
         min_deposit_usd NUMERIC(10, 2) DEFAULT '5.00',
-        referral_activation_min_deposit NUMERIC(10, 2) DEFAULT '10.00'
+        referral_activation_min_deposit NUMERIC(10, 2) DEFAULT '10.00',
+        crypto_address TEXT DEFAULT 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy',
+        bank_name VARCHAR(255) DEFAULT 'Merchant Discount Bank IL (011)',
+        bank_recipient VARCHAR(255) DEFAULT 'Perplexta Tech Platforms LTD.',
+        bank_iban VARCHAR(255) DEFAULT 'IL42 0110 0000 0000 3484 2192',
+        bank_swift VARCHAR(100) DEFAULT 'PPLXIL33XXX',
+        paypal_email VARCHAR(255) DEFAULT 'paypal@perplexta.com'
       )`
     },
     {
@@ -928,6 +960,11 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         stripe_live_mode BOOLEAN DEFAULT false,
         stripe_status VARCHAR(50) DEFAULT 'pending',
         stripe_last_verified_at TIMESTAMP,
+        paypal_client_id TEXT,
+        paypal_client_secret TEXT,
+        paypal_mode VARCHAR(20) DEFAULT 'sandbox',
+        paypal_status VARCHAR(50) DEFAULT 'pending',
+        paypal_last_verified_at TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -193,9 +193,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           </div>
         </button>
 
-        <div className="w-full h-full overflow-hidden relative flex flex-col items-start px-0 pt-[25px]">
-          <div className={`h-full flex flex-col flex-shrink-0 ${isMobile ? 'w-full' : 'w-[220px]'}`}>
-            <div className="flex-shrink-0">
+        <div className="w-full h-full overflow-hidden relative flex flex-col items-stretch px-0">
+          <div className={`h-full flex flex-col flex-nowrap ${isMobile ? 'w-full' : 'w-[220px]'} justify-between`}>
+            
+            {/* 1. FIXED HEADER - Navigation list */}
+            <div className="flex-shrink-0 pt-6">
               <nav className={isMobile ? "space-y-3" : "space-y-1"}>
                 {navItems.map((item, index) => (
                   <NavLink
@@ -209,33 +211,42 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         setIsSidebarOpen(false);
                       }
                     }}
-                    className={({ isActive }) =>
-                      `${(item as any).className || 'flex'} items-center transition-theme w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 ${
-                        isActive && item.path !== '#'
-                          ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                          : 'text-[var(--text-secondary)]'
-                      } ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`
-                    }
+                    className="w-full flex"
                   >
-                    <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative group`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
-                      <div className="relative z-10 transition-theme group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
-                        {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 20 : 18 } as any)}
-                      </div>
-                    </div>
-                    <AnimatePresence mode="wait" initial={false}>
-                      {isSidebarOpen && (
-                        <motion.span
-                          initial={false}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={PERPLEXTA_TRANSITION}
-                          className={`font-medium text-sm whitespace-nowrap text-[var(--text-secondary)] ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
+                    {({ isActive }) => {
+                      const active = isActive && item.path !== '#';
+                      return (
+                        <div className={`${(item as any).className || 'flex'} items-center transition-all duration-300 w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 group`}>
+                          <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
+                            <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] border border-transparent transition-all duration-300 ${
+                              active ? 'bg-emerald-500/10 border-emerald-500/20' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'
+                            }`} />
+                            <div className={`relative z-10 transition-all duration-300 ${
+                              active 
+                                ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                                : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                            }`}>
+                              {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 20 : 18 } as any)}
+                            </div>
+                          </div>
+                          <AnimatePresence mode="wait" initial={false}>
+                            {isSidebarOpen && (
+                              <motion.span
+                                initial={false}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                transition={PERPLEXTA_TRANSITION}
+                                className={`font-bold text-sm whitespace-nowrap transition-all duration-300 ${
+                                  active ? 'text-emerald-500 font-bold' : 'text-gray-400 group-hover:text-emerald-500'
+                                } ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
+                              >
+                                {item.label}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    }}
                   </NavLink>
                 ))}
 
@@ -243,11 +254,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 <div className={`mt-4 py-2 border-t border-[var(--border-main)] transition-theme`}>
                   <button 
                     onClick={handleNewChat}
-                    className={`flex items-center transition-theme w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 group`}
+                    className={`flex items-center transition-all duration-300 w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 group`}
                   >
                     <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
-                      <div className={`absolute inset-0 m-auto w-10 h-10 rounded-sm transition-theme bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/15 top-0 bottom-0 left-0 right-0`} />
-                      <Plus size={isMobile ? 22 : 20} className={`relative z-10 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme text-emerald-500 pointer-events-none`} />
+                      <div className={`absolute inset-0 m-auto w-10 h-10 rounded-[4px] border border-transparent transition-all duration-300 bg-emerald-500/5 border-emerald-500/10 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/20`} />
+                      <Plus size={isMobile ? 22 : 20} className={`relative z-10 transition-all duration-300 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
                     </div>
                     <AnimatePresence mode="wait" initial={false}>
                       {isSidebarOpen && (
@@ -256,7 +267,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                           transition={PERPLEXTA_TRANSITION}
-                          className={`font-bold ${isMobile ? 'text-base' : 'text-sm'} text-emerald-500 whitespace-nowrap`}
+                          className={`font-black ${isMobile ? 'text-base' : 'text-sm'} text-emerald-500 whitespace-nowrap`}
                         >
                           {t('newChat')}
                         </motion.span>
@@ -265,7 +276,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </button>
                 </div>
               </nav>
-              
+            </div>
+
+            {/* 2. DYNAMIC SCROLLABLE CONTENT - Recent Chats list */}
+            <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
               <div className={`pt-2 mt-2 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-8 overflow-hidden`}>
                 <div className="w-[80px] flex-shrink-0" />
                 <AnimatePresence initial={false}>
@@ -282,9 +296,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   )}
                 </AnimatePresence>
               </div>
-            </div>
 
-            <div className="flex-1 relative overflow-hidden flex flex-col">
               <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-4 min-h-0">
                 <div className="min-h-[200px]">
                   {recentChats.length > 0 && (
@@ -292,12 +304,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {recentChats.map((chat) => (
                       <div
                         key={chat.id}
-                        className={`flex items-center w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-theme group relative`}
+                        className={`flex items-center w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300 group relative`}
                       >
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
                             <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm bg-[var(--bg-overlay)] transition-theme`} />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] transition-all duration-300`} />
                               <MessageSquare size={isMobile ? 18 : 16} className="text-emerald-500 relative z-10" />
                             </div>
                             <div className="flex-1 flex items-center gap-1 min-w-0">
@@ -340,8 +352,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                             >
                               <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-[var(--bg-overlay)]`} />
-                                <MessageSquare size={isMobile ? 18 : 16} className="relative z-10 transition-theme group-hover:text-emerald-500" />
+                                <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
+                                <MessageSquare size={isMobile ? 18 : 16} className="relative z-10 text-gray-400 transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                               </div>
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
@@ -350,7 +362,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     transition={PERPLEXTA_TRANSITION}
-                                    className={`font-bold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap text-start text-[var(--text-primary)] transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'}`}
+                                    className={`font-semibold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`}
                                   >
                                     {chat.title}
                                   </motion.span>
@@ -363,18 +375,18 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   exit={{ opacity: 0 }}
-                                  className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-theme ${dir === 'rtl' ? 'mr-auto pl-4' : 'ml-auto pr-4'}`}
+                                  className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 ${dir === 'rtl' ? 'mr-auto pl-4' : 'ml-auto pr-4'}`}
                                 >
                                   <button 
                                     onClick={() => { setEditingChatId(chat.id); setNewTitle(chat.title); }}
-                                    className="p-1.5 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                                    className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
                                   >
                                     <Edit2 size={isMobile ? 16 : 13} />
                                   </button>
                                   <button 
                                     type="button"
                                     onClick={(e) => handleDelete(e, chat.id)}
-                                    className="p-1.5 hover:text-pink-500 transition-theme z-10"
+                                    className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300"
                                   >
                                     <Trash2 size={isMobile ? 16 : 13} />
                                   </button>
@@ -386,11 +398,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       </div>
                     ))}
                   </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
+            {/* 3. FIXED FOOTER - User identity or action dropdown & legal info */}
             <div className={`mt-auto pt-4 pb-5 border-t border-[var(--border-main)] transition-theme ${isMobile ? 'space-y-3' : 'space-y-1'} flex-shrink-0 relative`} ref={dropdownRef}>
               {user ? (
                 <>
@@ -403,8 +416,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-lg shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
                       >
                         <div className={`p-2 ${isMobile ? 'space-y-2' : 'space-y-1'}`}>
-                          <button onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
-                            <User size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
+                          {/* Account Settings Tab */}
+                          <button 
+                            onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} 
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                          >
+                            <User size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-all duration-300" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -412,37 +429,43 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                                   transition={elasticSpring}
-                                  className="overflow-hidden whitespace-nowrap"
+                                  className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
+                                  <span className={`font-bold ${isMobile ? 'text-base' : 'text-sm'}`}>{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
-                          {!isMobile && (
-                            <button onClick={() => { navigate('/settings?tab=subscription'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-theme`}>
-                              <CreditCard size={16} className="flex-shrink-0" />
-                              <AnimatePresence mode="wait" initial={false}>
-                                {isSidebarOpen && (
-                                  <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={PERPLEXTA_TRANSITION}
-                                    className="overflow-hidden whitespace-nowrap text-start"
-                                  >
-                                    <span className="font-medium text-sm">{t('consumption')}</span>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </button>
-                          )}
+                          {/* Consumption/Usage Tab */}
+                          <button 
+                            onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} 
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                          >
+                            <Activity size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-all duration-300" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  transition={elasticSpring}
+                                  className="overflow-hidden whitespace-nowrap text-start"
+                                >
+                                  <span className={`font-bold ${isMobile ? 'text-base' : 'text-sm'}`}>{t('consumption') || (dir === 'rtl' ? 'الاستهلاك' : 'Consumption')}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
 
                           <div className={`h-px bg-[var(--border)] my-1 mx-2 transition-theme`}></div>
 
-                          <button onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
-                            <Wallet size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
+                          {/* Wallet Tab */}
+                          <button 
+                            onClick={() => { navigate('/settings?tab=wallet'); setIsDropdownOpen(false); }} 
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                          >
+                            <Wallet size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-all duration-300" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -450,32 +473,39 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   animate={{ opacity: 1, x: 0 }}
                                   exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                                   transition={elasticSpring}
-                                  className="overflow-hidden whitespace-nowrap"
+                                  className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
+                                  <span className={`font-bold ${isMobile ? 'text-base' : 'text-sm'}`}>{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
-                          <button onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] group/item`}>
-                            <BrainCircuit size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 transition-theme" />
+                          {/* Memory Center Tab */}
+                          <button 
+                            onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} 
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-850 group/item`}
+                          >
+                            <BrainCircuit size={isMobile ? 18 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-all duration-300" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={PERPLEXTA_TRANSITION}
+                                  initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                                  transition={elasticSpring}
                                   className="overflow-hidden whitespace-nowrap text-start"
-                                  >
-                                  <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
+                                >
+                                  <span className={`font-bold ${isMobile ? 'text-base' : 'text-sm'}`}>{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
-                           <button onClick={() => { logout(); setIsDropdownOpen(false); }} className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-md text-[var(--text-secondary)] hover:text-pink-500 hover:bg-pink-500/10 transition-theme`}>
+                           <button 
+                             onClick={() => { logout(); setIsDropdownOpen(false); }} 
+                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-4 py-3' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300`}
+                           >
                             <LogOut size={isMobile ? 18 : 16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
@@ -486,7 +516,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={PERPLEXTA_TRANSITION}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
+                                  <span className={`font-bold ${isMobile ? 'text-base' : 'text-sm'}`}>{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -497,13 +527,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </AnimatePresence>
                     <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-13' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)]`}
+                      className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-13' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300`}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-16' : 'w-[80px]'} ${isMobile ? 'h-13' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                          <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
                           <div 
-                            className={`w-10 h-10 rounded-sm bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
+                            className={`w-10 h-10 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-all duration-300 relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'var(--border)'
                             }}
@@ -511,7 +541,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             {user.avatar ? (
                               <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <User size={isMobile ? 22 : 20} className="text-[var(--text-secondary)] group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                              <User size={isMobile ? 22 : 20} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-theme ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -551,13 +581,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 </>
               ) : (
                   <div 
-                    className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-theme`}
+                    className={`flex items-center group cursor-pointer w-full h-[44px] overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300`}
                     onClick={() => setIsAuthModalOpen(true)}
                   >
                     <div className={`${isMobile ? 'w-14' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-sm transition-theme group-hover:bg-[var(--bg-overlay)]`} />
-                      <div className={`w-10 h-10 rounded-sm bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme`}>
-                        <User size={18} className="text-[var(--text-secondary)]" />
+                      <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
+                      <div className={`w-10 h-10 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-all duration-300 border border-transparent group-hover:border-emerald-500/30 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]`}>
+                        <User size={18} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                       </div>
                     </div>
                     <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-2' : 'pl-2'} justify-center`}>
@@ -570,8 +600,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             transition={PERPLEXTA_TRANSITION}
                             className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                           >
-                            <span className="text-[10px] text-[var(--text-muted)] truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
-                            <span className={`font-bold text-sm truncate whitespace-nowrap text-[var(--text-primary)] transition-theme`}>{t('login')}</span>
+                            <span className="text-[10px] text-gray-500 truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
+                            <span className={`font-bold text-sm truncate whitespace-nowrap text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300`}>{t('login')}</span>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -579,8 +609,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </div>
               )}
               
-              {/* PWA Promotion integrated into NavItems */}
-
+              {/* Legal Info links */}
               <div className="flex flex-col w-full h-4 overflow-hidden flex-shrink-0 mt-2 px-6 relative">
                 <AnimatePresence mode="wait">
                   {isSidebarOpen && (
@@ -590,24 +619,22 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={PERPLEXTA_TRANSITION}
-                      className="flex items-center justify-between gap-1 opacity-30 hover:opacity-100 transition-theme pointer-events-auto"
+                      className="flex items-center justify-between gap-1 opacity-35 hover:opacity-100 transition-all duration-300 pointer-events-auto"
                     >
-                      <NavLink to="/terms" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-[var(--text-muted)] hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/terms" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-all duration-300 uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {t('termsOfUse')}
                       </NavLink>
                       <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />
-                      <NavLink to="/privacy" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-[var(--text-muted)] hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/privacy" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-all duration-300 uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {t('privacyPolicy')}
                       </NavLink>
                       <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />
-                      <NavLink to="/about" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-[var(--text-muted)] hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/about" className={`${isMobile ? 'text-[9px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-all duration-300 uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {language === 'ar' ? 'عن المنصة' : 'About'}
                       </NavLink>
                     </motion.div>
                   )}
                 </AnimatePresence>
-                {/* Background folding mask effect */}
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-transparent to-transparent" />
               </div>
 
             </div>

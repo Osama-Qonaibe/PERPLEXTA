@@ -162,7 +162,7 @@ router.post("/login", authLimiter, async (req, res) => {
 });
 
 router.get("/google/url", async (req, res) => {
-  const { ref, lang, remember, mode } = req.query;
+  const { ref, lang, remember, mode, theme } = req.query;
   
   const nonce = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 600000); // 10 minutes
@@ -173,7 +173,8 @@ router.get("/google/url", async (req, res) => {
       ref: ref as string || null, 
       lang: lang as string || 'ar', 
       mode: mode as string || 'popup', 
-      remember: remember === 'true' 
+      remember: remember === 'true',
+      theme: theme as string || 'dark'
     }), expiresAt]
   );
 
@@ -259,10 +260,11 @@ router.get("/google/callback", async (req, res) => {
     if (result.rows.length === 0) {
       const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
       const finalLang = storedState.lang || 'ar';
+      const finalTheme = storedState.theme || 'dark';
       
       const insertResult = await pool.query(
-        `INSERT INTO users (email, name, avatar, provider, role, language) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role, finalLang]
+        `INSERT INTO users (email, name, avatar, provider, role, language, theme) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role, finalLang, finalTheme]
       );
       user = insertResult.rows[0];
       
@@ -281,14 +283,27 @@ router.get("/google/callback", async (req, res) => {
       const updates = [];
       const values = [];
       if (user.provider !== 'google') {
-        updates.push(`provider = $${updates.length + 1}, avatar = $${updates.length + 2}`);
-        values.push('google', googleUser.picture);
+        updates.push(`provider = $${updates.length + 1}`);
+        values.push('google');
+      }
+
+      // Maintain latest Google profile avatar synchronized on login
+      if (googleUser.picture && googleUser.picture !== user.avatar) {
+        updates.push(`avatar = $${updates.length + 1}`);
+        values.push(googleUser.picture);
+        user.avatar = googleUser.picture;
       }
       
       if (storedState.lang && storedState.lang !== user.language) {
         updates.push(`language = $${updates.length + 1}`);
         values.push(storedState.lang);
         user.language = storedState.lang; 
+      }
+
+      if (storedState.theme && storedState.theme !== user.theme) {
+        updates.push(`theme = $${updates.length + 1}`);
+        values.push(storedState.theme);
+        user.theme = storedState.theme;
       }
 
       if (updates.length > 0) {

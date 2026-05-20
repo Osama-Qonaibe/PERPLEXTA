@@ -304,24 +304,30 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   <div className="p-4 border-b border-[var(--border-main)] flex items-center justify-between">
                     <h3 className="font-bold text-sm text-[var(--text-primary)]">{language === 'ar' ? 'الإشعارات' : 'Notifications'}</h3>
                     <div className="flex items-center gap-3">
-                      {unreadCount > 0 && (
-                        <button 
-                          onClick={markAllAsRead}
-                          className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1"
-                        >
-                          <Check size={12} />
-                          {language === 'ar' ? 'تعيين الكل كمقروء' : 'Mark all read'}
-                        </button>
-                      )}
-                      {notifications.length > 0 && (
-                        <button 
-                          onClick={clearAllNotifications}
-                          className="text-[10px] font-bold text-pink-500 hover:text-pink-400 transition-colors flex items-center gap-1"
-                        >
-                          <Trash2 size={12} />
-                          {language === 'ar' ? 'مسح الكل' : 'Clear all'}
-                        </button>
-                      )}
+                      <button 
+                        onClick={unreadCount > 0 ? markAllAsRead : undefined}
+                        disabled={unreadCount === 0}
+                        className={`text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                          unreadCount > 0 
+                            ? 'text-emerald-500 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer' 
+                            : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
+                        }`}
+                      >
+                        <Check size={12} />
+                        {language === 'ar' ? 'تحديد كالمقروء' : 'Mark all read'}
+                      </button>
+                      <button 
+                        onClick={notifications.length > 0 ? clearAllNotifications : undefined}
+                        disabled={notifications.length === 0}
+                        className={`text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                          notifications.length > 0 
+                            ? 'text-rose-500 hover:text-rose-400 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer' 
+                            : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
+                        }`}
+                      >
+                        <Trash2 size={12} />
+                        {language === 'ar' ? 'مسح الكل' : 'Clear all'}
+                      </button>
                     </div>
                   </div>
                   
@@ -330,35 +336,52 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => markAsRead(notif.id)}
-                          className={`w-full p-4 flex gap-3 text-right hover:bg-[var(--bg-primary)] transition-colors border-b border-[var(--border-main)] last:border-0 group cursor-pointer ${
-                            !notif.is_read ? 'bg-emerald-500/5' : ''
+                          onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
+                          className={`w-full p-4 flex gap-3 text-right hover:bg-[var(--bg-primary)] transition-all duration-300 border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
+                            !notif.is_read ? 'bg-emerald-500/[0.03] border-r-2 border-r-emerald-500' : ''
                           }`}
                           dir={dir}
                         >
-                          <div className={`mt-1 h-8 w-8 rounded-sm flex items-center justify-center shrink-0 ${
-                            !notif.is_read ? 'bg-emerald-500/20 text-emerald-500' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
+                          <div className={`mt-1 h-8 w-8 rounded-sm flex items-center justify-center shrink-0 transition-theme ${
+                            !notif.is_read ? 'bg-emerald-500/20 text-emerald-500 font-bold' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
                           }`}>
                             {getNotifIcon(notif.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className={`text-xs font-bold transition-theme ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-muted)]'}`}>
-                              {language === 'ar' ? notif.title_ar : notif.title_en}
-                            </h4>
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className={`text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-primary)]'}`}>
+                                {language === 'ar' ? notif.title_ar : notif.title_en}
+                              </h4>
+                              {!notif.is_read && (
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                              )}
+                            </div>
                             <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed transition-theme">
                               {language === 'ar' ? notif.message_ar : notif.message_en}
                             </p>
-                            <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center justify-between mt-2.5">
                               <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] transition-theme">
                                 <Clock size={10} />
                                 <span>{new Date(notif.created_at).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                                className="p-1 hover:text-pink-500 transition-colors opacity-0 group-hover:opacity-100"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {!notif.is_read && (
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
+                                    className="p-1 text-emerald-500/60 hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.8)] opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                    title={language === 'ar' ? 'تحديد كمقروء' : 'Mark as read'}
+                                  >
+                                    <Check size={12} className="stroke-[3px]" />
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
+                                  className="p-1 text-rose-500/60 hover:text-rose-500 hover:drop-shadow-[0_0_6px_rgba(239,68,68,0.8)] opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                  title={language === 'ar' ? 'حذف الإشعار' : 'Delete notification'}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>

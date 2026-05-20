@@ -168,3 +168,30 @@ export async function generateChatTitle(chatId: string, firstMessageContent: str
     console.error('[ChatService] Title Generation Error:', error);
   }
 }
+
+export async function togglePinMessage(chatId: string, messageId: string, userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  
+  // Verify user owns the chat and message belongs to that chat
+  const checkRes = await pool.query(`
+    SELECT m.id, m.is_pinned, c.user_id 
+    FROM messages m
+    JOIN chats c ON m.chat_id = c.id
+    WHERE m.id = $1 AND m.chat_id = $2
+  `, [messageId, chatId]);
+
+  if (checkRes.rows.length === 0) {
+    return { success: false, error: 'Message not found in this chat' };
+  }
+
+  if (checkRes.rows[0].user_id !== parseInt(userId) && checkRes.rows[0].user_id !== userId) {
+    return { success: false, error: 'Unauthorized to modify this chat message' };
+  }
+
+  const currentPinned = checkRes.rows[0].is_pinned || false;
+  const newPinned = !currentPinned;
+
+  await pool.query('UPDATE messages SET is_pinned = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newPinned, messageId]);
+
+  return { success: true, is_pinned: newPinned };
+}

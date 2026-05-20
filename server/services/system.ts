@@ -25,7 +25,8 @@ export async function getSystemSettings() {
       site_name_en, site_name_ar, site_description_en, site_description_ar,
       seo_description_en, seo_description_ar, keywords_en, keywords_ar,
       google_analytics_id, logo_url, favicon_url,
-      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode
+      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
+      paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
     FROM system_settings LIMIT 1
   `);
   
@@ -35,6 +36,13 @@ export async function getSystemSettings() {
       settings.stripe_publishable_key = decrypt(settings.stripe_publishable_key);
     } catch (e) {
       console.warn('[System] Failed to decrypt stripe_publishable_key:', e);
+    }
+  }
+  if (settings.paypal_client_id) {
+    try {
+      settings.paypal_client_id = decrypt(settings.paypal_client_id);
+    } catch (e) {
+      console.warn('[System] Failed to decrypt paypal_client_id:', e);
     }
   }
   return settings;

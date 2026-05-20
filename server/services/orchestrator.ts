@@ -11,6 +11,7 @@ import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
+import { deductUsageFromWallet } from './wallet.js';
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, chat_id, file_data } = reqBody;
@@ -57,33 +58,46 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const route = routeResult.rows[0];
   
   if (!quota.allowed) {
-    const periodStrEn = quota.period === 'daily' ? 'Daily' : 'Monthly';
-    const periodStrAr = quota.period === 'daily' ? 'يومي' : 'شهري';
-    
-    const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Unlock limitless intelligence by upgrading your plan or referring a friend to earn points.`;
-    const msgAr = `تتطلب هذه العملية عضوية ممتازة: لقد وصلت إلى الحد ال${periodStrAr} المسموح به لهذه الأداة. استمتع بذكاء غير محدود عبر ترقية خطتك أو دعوة صديق للحصول على نقاط مكافأة.`;
-    
-    await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quota.period} quota (${quota.currentUsage}/${quota.limit})`, { toolIdStr, quota });
-
-    throw new Error(JSON.stringify({ 
-      error: msgEn, 
-      error_ar: msgAr, 
-      type: 'QUOTA_EXCEEDED',
-      limit: quota.limit, 
-      current: quota.currentUsage, 
-      period: quota.period,
-      cta: {
-        upgrade: true,
-        referral: true
+    try {
+      // Attempt transaction-safe ledger deduction of points or balance for tool overage
+      const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
+      if (io) {
+        io.to(`user_${userId}`).emit('user_profile_updated');
+        io.to(`user_${userId}`).emit('wallet_charge_notice', { 
+          toolId: toolIdStr, 
+          charged: chargeRes.charged, 
+          amount: chargeRes.amount 
+        });
       }
-    }));
+    } catch (chargeErr: any) {
+      const periodStrEn = quota.period === 'daily' ? 'Daily' : 'Monthly';
+      const periodStrAr = quota.period === 'daily' ? 'يومي' : 'شهري';
+      
+      const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Please upgrade your plan or recharge your digital wallet (Pay-per-Request: 10 Tool Points or equivalents) to execute excess actions.`;
+      const msgAr = `تتطلب هذه العملية رصيداً أو عضوية ممتازة: لقد تجاوزت الحد ال${periodStrAr} المسموح به. يرجى شحن محفظتك الرقمية أو ترقية باقتك للاستمرار بالاستفادة بالدفع لكل معاملة (10 نقاط أو ما يعادلها).`;
+      
+      await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quota.period} quota (${quota.currentUsage}/${quota.limit}) and wallet fallback failed: ${chargeErr.message}`, { toolIdStr, quota });
+
+      throw new Error(JSON.stringify({ 
+        error: msgEn, 
+        error_ar: msgAr, 
+        type: 'QUOTA_EXCEEDED',
+        limit: quota.limit, 
+        current: quota.currentUsage, 
+        period: quota.period,
+        cta: {
+          upgrade: true,
+          referral: true
+        }
+      }));
+    }
   }
   
   const userLang = userRes.rows[0]?.language || 'ar';
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
-  if (toolIdStr === 'perplexta_search') {
+  if (toolIdStr === 'perplexta_search' || toolIdStr === 'sovereign_search') {
     try {
       const searchResults = await performPerplextaSearch(cleanUserPrompt);
       if (searchResults && searchResults.length > 0) {
@@ -91,7 +105,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
         finalPrompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
       }
     } catch (searchErr) {
-      console.error('[Orchestrator] Perplexta Search failed:', searchErr);
+      console.error(`[Orchestrator] ${toolIdStr} failed:`, searchErr);
     }
   }
 
@@ -146,11 +160,43 @@ Your direct mandate is to synthesize the user's current message, context, and co
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
   }
 
+  if (toolIdStr === 'sovereign_search') {
+    const searchInstructions = `
+[SOVEREIGN CORE INTELLIGENCE SEARCH PROTOCOL]
+You are acting as the Sovereign Intelligence Search Engine (البحث الاستخباراتي السيادي) of Perplexta.
+Your mandate is to perform a deep-dive, real-time extraction and analysis of the search context against the user's prompt.
+
+1. CRITICAL ANALYSIS: Synthesise the live web search context, eliminate tracking biases, and organize findings with perfect analytical rigor.
+2. ELITE REPORTING: Structure your response using clear headers, bulleted high-density insights, and precise source attributions. Match the elite, premium Arabic/English posture of Perplexta.
+`.trim();
+
+    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
+  }
+
+  const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
+  const toolSeparationProtocol = `
+[STRICT_TASK_AND_TOOL_ISOLATION_MANDATE]
+- CURRENT_ACTIVE_TOOL: "${toolIdStr}"
+- COGNITIVE_BOUNDARY_RULE: 
+  ${isChatOnly ? `
+  * You are operating in a standard CHAT/CONVERSATIONAL mode.
+  * Your sole purpose is to engage in professional dialogue, explain concepts, answer questions, and assist conversationally.
+  * You MUST NOT execute or simulate specialized tools (such as Image Generation, Video Engine Rendering, Live Search Scraping, High-Dimensional Audio Synthesizing, or Legal Auditing).
+  * If the user asks for these specific media, search, or code generation tasks, politely advise them in a premium tone (in their preferred language) to activate the corresponding tool from the "Advanced Tools" menu in the input bar.` : `
+  * You are operating as a SPECIALIZED engineering tool ("${toolIdStr}").
+  * You MUST strictly keep your focus within the domain of this active tool.
+  * Do not answer general lifestyle chat queries or unrelated general conversational paths. Focus 100% on producing high-fidelity outputs for the active tool's specific domain.`}
+- FUSION_CONTROL: Do not let any tool duplicate the role of another. No overlapping capabilities are permitted. Keep the boundaries absolute.
+`.trim();
+
   const finalSystemPrompt = `
 ${protocol}
 
 [MISSION_OBJECTIVE]
 ${taskDesc || 'Execute the user request with highest professional precision.'}
+
+[TOOL_CONTROL_POLICY]
+${toolSeparationProtocol}
 
 [CONVERSATION_CONTEXT]
 ${contextSummary || 'No previous summary available.'}

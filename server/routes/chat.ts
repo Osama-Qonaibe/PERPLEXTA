@@ -8,7 +8,8 @@ import {
   getChatMessages, 
   addChatMessage, 
   getMessageCount,
-  deleteUserChat
+  deleteUserChat,
+  togglePinMessage
 } from '../services/chat.js';
 
 const router = express.Router();
@@ -58,6 +59,20 @@ router.get("/:id/messages", authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;
     res.status(status).json({ error: error.message || 'Failed to fetch messages' });
+  }
+});
+
+router.post("/:id/messages/:messageId/pin", authenticateToken, async (req: any, res) => {
+  try {
+    const { id, messageId } = req.params;
+    const result = await togglePinMessage(id, messageId, req.user.id);
+    if (!result.success) {
+      return res.status(403).json({ error: result.error });
+    }
+    res.json(result);
+  } catch (error: any) {
+    const status = error.message === 'Database initializing' ? 503 : 500;
+    res.status(status).json({ error: error.message || 'Failed to toggle pin state' });
   }
 });
 

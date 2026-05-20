@@ -114,6 +114,8 @@ const translations = {
     rewards: 'المكافآت',
     subscription: 'الاشتراكات',
     consumption: 'الاستهلاك',
+    usageRadar: 'رادار الاستهلاك',
+    realTimeUsageSync: 'مزامنة لحظية للموارد',
     dashboard: 'لوحة التحكم',
     newChat: 'محادثة جديدة',
     settings: 'الإعدادات',
@@ -797,6 +799,8 @@ const translations = {
     rewards: 'Rewards',
     subscription: 'Subscriptions',
     consumption: 'Consumption',
+    usageRadar: 'Usage Radar',
+    realTimeUsageSync: 'Real-time resource synchronization',
     dashboard: 'Dashboard',
     newChat: 'New Chat',
     settings: 'Settings',
@@ -1970,13 +1974,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const ref = localStorage.getItem('app_ref');
       const lang = localStorage.getItem('language') || 'ar';
+      const theme = localStorage.getItem('theme') || 'dark';
       
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       
       const mode = (isMobileDevice || isStandalone) ? 'redirect' : 'popup';
       
-      const res = await fetch(`/api/auth/google/url?lang=${lang}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}`);
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}`);
       
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);

@@ -7,6 +7,7 @@ import { tools } from '../config/constants.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
+import { sendEmail } from '../services/email.js';
 import { 
   getDatabaseRegistry, 
   saveDatabaseConfig, 
@@ -355,27 +356,136 @@ router.get("/broadcasts", authenticateAdmin, async (req, res) => {
 
 router.post("/broadcasts/send", authenticateAdmin, async (req, res) => {
   try {
-    const { title_en, title_ar, content_en, content_ar, type, target_group } = req.body;
+    const { title_en, title_ar, content_en, content_ar, type, broadcast_type, target_group } = req.body;
     if (!title_en || !content_en) return res.status(400).json({ error: 'title_en and content_en are required' });
 
-    const countRes = await pool.query(
-      target_group === 'all'
-        ? 'SELECT COUNT(*) FROM users WHERE status = $1'
-        : 'SELECT COUNT(*) FROM users u JOIN subscriptions s ON u.id = s.user_id WHERE u.status = $1',
-      ['active']
-    );
-    const sentCount = parseInt(countRes.rows[0].count) || 0;
+    const finalType = broadcast_type || type || 'both';
 
+    // 1. Fetch matching active users according to target criteria
+    let queryStr = '';
+    if (target_group === 'pro_only') {
+      queryStr = `
+        SELECT u.id, u.email, u.name, u.language 
+        FROM users u 
+        JOIN subscriptions s ON u.id = s.user_id 
+        WHERE u.status = 'active' AND s.status = 'active'
+      `;
+    } else if (target_group === 'free_only') {
+      queryStr = `
+        SELECT u.id, u.email, u.name, u.language 
+        FROM users u 
+        WHERE u.status = 'active' 
+        AND NOT EXISTS (
+          SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active'
+        )
+      `;
+    } else {
+      // Default to 'all' active users
+      queryStr = `
+        SELECT u.id, u.email, u.name, u.language 
+        FROM users u 
+        WHERE u.status = 'active'
+      `;
+    }
+
+    const usersRes = await pool.query(queryStr);
+    const targetUsers = usersRes.rows;
+    const sentCount = targetUsers.length;
+
+    const adminId = (req as any).user?.id || null;
+
+    // 2. Register initial system_broadcasts entry
     const result = await pool.query(`
-      INSERT INTO system_broadcasts (title_en, title_ar, content_en, content_ar, type, target_group, status, sent_count)
-      VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7)
+      INSERT INTO system_broadcasts (
+        admin_id, broadcast_type, target_group, title_en, title_ar, 
+        content_en, content_ar, status, sent_count
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
-    `, [title_en, title_ar, content_en, content_ar, type, target_group, sentCount]);
+    `, [
+      adminId,
+      finalType,
+      target_group || 'all',
+      title_en,
+      title_ar || '',
+      content_en,
+      content_ar || '',
+      'sending',
+      sentCount
+    ]);
+    const broadcastId = result.rows[0].id;
+
+    // 3. Background asynchronous delivery processing to prevent HTTP timeouts
+    (async () => {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const user of targetUsers) {
+        try {
+          const userLang = (user.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+          const subject = userLang === 'ar' ? (title_ar || title_en) : title_en;
+          const body = userLang === 'ar' ? (content_ar || content_en) : content_en;
+
+          // Dispatch system notification
+          if (finalType === 'notification' || finalType === 'both') {
+            await pool.query(`
+              INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
+              VALUES ($1, $2, $3, $4, $5, $6)
+            `, [
+              user.id, 
+              title_en, 
+              title_ar || '', 
+              content_en, 
+              content_ar || '', 
+              'broadcast'
+            ]).catch((e: any) => console.error('[Broadcast Background] Notification failed:', e));
+          }
+
+          // Dispatch real SMTP email if needed
+          if (finalType === 'email' || finalType === 'both') {
+            const mailRes = await sendEmail(user.email, subject, body, adminId);
+            if (mailRes.success) {
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } else {
+            successCount++;
+          }
+        } catch (itemErr: any) {
+          console.error(`[Broadcast Background] User ${user.id} delivery error:`, itemErr);
+          failCount++;
+        }
+      }
+
+      // Update broadcast row state
+      await pool.query(
+        `UPDATE system_broadcasts SET status = 'completed', sent_count = $1 WHERE id = $2`,
+        [successCount, broadcastId]
+      ).catch((e: any) => console.error('[Broadcast Background] Final state update failed:', e));
+
+      // Record final campaign activity audit log
+      await auditLog(adminId, 'Send Broadcast Completed', 'system', {
+        broadcastId,
+        finalType,
+        target_group,
+        total: sentCount,
+        successes: successCount,
+        failures: failCount
+      });
+    })();
+
+    // Log broadcast initiation
+    await auditLog(adminId, 'Send Broadcast', 'system', { title_en, target_group, sentCount });
     
-    await auditLog((req as any).user?.id, 'Send Broadcast', 'system', { title_en, target_group, sentCount });
-    res.json({ success: true, broadcastId: result.rows[0].id });
-  } catch {
-    res.status(500).json({ error: 'Internal Error' });
+    res.json({ 
+      success: true, 
+      broadcastId, 
+      sent_count: sentCount 
+    });
+  } catch (error: any) {
+    console.error('[Admin] Broadcast trigger route error:', error);
+    res.status(500).json({ error: error.message || 'Internal Error' });
   }
 });
 
@@ -656,21 +766,33 @@ router.post("/users/:id/send-email", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { subject, body } = req.body;
     
+    if (!subject || !body) {
+      return res.status(400).json({ error: 'Subject and body are required.' });
+    }
+    
     const userRes = await pool.query('SELECT email FROM users WHERE id = $1', [id]);
     if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     
-    // For now, we log the email request. In a real system, you'd use a mail service.
-    await auditLog((req as any).user?.id, 'Send Manual Email', 'communication', { 
+    const targetEmail = userRes.rows[0].email;
+    const adminId = (req as any).user?.id || null;
+
+    // Send the actual email using our robust SMTP service
+    const emailResult = await sendEmail(targetEmail, subject, body, adminId);
+
+    if (!emailResult.success) {
+      return res.status(500).json({ error: emailResult.error || 'Failed to deliver SMTP email' });
+    }
+    
+    await auditLog(adminId, 'Send Manual Email', 'communication', { 
       targetUser: id, 
-      targetEmail: userRes.rows[0].email,
+      targetEmail,
       subject 
     });
     
-    console.log(`[Admin Email] To: ${userRes.rows[0].email}, Subject: ${subject}`);
-    
-    res.json({ success: true, message: 'Email sent (simulated)' });
-  } catch {
-    res.status(500).json({ error: 'Failed to send email' });
+    res.json({ success: true, message: 'Email sent successfully via configured SMTP mailer.' });
+  } catch (error: any) {
+    console.error('[Admin Email] Route error:', error);
+    res.status(500).json({ error: error.message || 'Failed to deliver SMTP email' });
   }
 });
 
@@ -986,7 +1108,13 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
       welcome_bonus_points = 600, 
       referral_bonus_points = 1000, 
       conversion_rate = 0.001,
-      referral_activation_min_deposit = 10
+      referral_activation_min_deposit = 10,
+      crypto_address,
+      bank_name,
+      bank_recipient,
+      bank_iban,
+      bank_swift,
+      paypal_email
     } = req.body;
 
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
@@ -1007,23 +1135,41 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
             conversion_rate = $7, 
             min_withdrawal_cents = $8,
             referral_activation_min_deposit = $9,
+            crypto_address = $10,
+            bank_name = $11,
+            bank_recipient = $12,
+            bank_iban = $13,
+            bank_swift = $14,
+            paypal_email = $15,
             updated_at = CURRENT_TIMESTAMP
         `, [
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-          referral_activation_min_deposit
+          referral_activation_min_deposit,
+          crypto_address,
+          bank_name,
+          bank_recipient,
+          bank_iban,
+          bank_swift,
+          paypal_email
         ]);
       } else {
         await ledgerTarget.query(`
           INSERT INTO economy_settings (
             points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
             welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-            referral_activation_min_deposit
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            referral_activation_min_deposit, crypto_address, bank_name, bank_recipient, bank_iban, bank_swift, paypal_email
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         `, [
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-          referral_activation_min_deposit
+          referral_activation_min_deposit,
+          crypto_address,
+          bank_name,
+          bank_recipient,
+          bank_iban,
+          bank_swift,
+          paypal_email
         ]);
       }
     } catch (ledgerErr) {
@@ -1095,6 +1241,64 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
     await pool.query('UPDATE system_settings SET stripe_status = $1, stripe_last_verified_at = CURRENT_TIMESTAMP', ['verified']);
     res.json({ success: true, message: 'Verified successfully' });
   } catch {
+    res.status(400).json({ error: 'Verification failed' });
+  }
+});
+
+router.post("/settings/paypal", authenticateAdmin, async (req, res) => {
+  try {
+    const { clientId, clientSecret, mode } = req.body;
+    
+    let query = 'UPDATE system_settings SET updated_at = CURRENT_TIMESTAMP';
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (clientId !== undefined && clientId !== '') {
+      query += `, paypal_client_id = $${paramCount++}`;
+      params.push(encrypt(clientId));
+    }
+    if (clientSecret !== undefined && clientSecret !== '') {
+      query += `, paypal_client_secret = $${paramCount++}`;
+      params.push(encrypt(clientSecret));
+    }
+    if (mode !== undefined && mode !== '') {
+      query += `, paypal_mode = $${paramCount++}`;
+      params.push(mode);
+    }
+
+    query += `, paypal_status = 'verified', paypal_last_verified_at = CURRENT_TIMESTAMP`;
+
+    await pool.query(query, params);
+    
+    await auditLog((req as any).user?.id, 'Update PayPal Settings', 'finance', { mode, clientId: '***' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Admin] PayPal settings update failed:', error);
+    res.status(500).json({ error: 'Update failed' });
+  }
+});
+
+router.post("/settings/paypal/verify", authenticateAdmin, async (req, res) => {
+  try {
+    const settings = await pool.query('SELECT paypal_client_id, paypal_client_secret, paypal_mode FROM system_settings LIMIT 1');
+    if (!settings.rows[0]?.paypal_client_id || !settings.rows[0]?.paypal_client_secret) {
+      return res.status(400).json({ error: 'PayPal client credentials not configured' });
+    }
+
+    const { getPayPalAccessToken } = await import('../services/payments.js');
+    const clientId = decrypt(settings.rows[0].paypal_client_id);
+    const clientSecret = decrypt(settings.rows[0].paypal_client_secret);
+    const mode = settings.rows[0].paypal_mode || 'sandbox';
+
+    const token = await getPayPalAccessToken(clientId, clientSecret, mode);
+    if (!token) {
+      return res.status(400).json({ error: 'Failed to authenticate with PayPal APIs' });
+    }
+    
+    await pool.query('UPDATE system_settings SET paypal_status = $1, paypal_last_verified_at = CURRENT_TIMESTAMP', ['verified']);
+    res.json({ success: true, message: 'Verified successfully' });
+  } catch (error: any) {
+    console.error('[Admin] PayPal verify failed:', error);
     res.status(400).json({ error: 'Verification failed' });
   }
 });
@@ -1225,6 +1429,325 @@ router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
     res.json({ success: true, status });
   } catch (error) {
     res.status(500).json({ error: 'Test failed' });
+  }
+});
+
+router.get("/financial-requests", authenticateAdmin, async (req, res) => {
+  try {
+    const depositRes = await ledgerPool.query('SELECT * FROM deposit_requests ORDER BY created_at DESC');
+    const withdrawRes = await ledgerPool.query('SELECT * FROM withdrawal_requests ORDER BY created_at DESC');
+    
+    // Fetch unique user ids to map them in memory
+    const userIds = [
+      ...depositRes.rows.map((r: any) => r.user_id),
+      ...withdrawRes.rows.map((r: any) => r.user_id)
+    ];
+    
+    let userMap = new Map();
+    if (userIds.length > 0) {
+      const uniqueUserIds = [...new Set(userIds)];
+      const usersQuery = await pool.query(
+        'SELECT id, email, name FROM users WHERE id = ANY($1)',
+        [uniqueUserIds]
+      );
+      userMap = new Map(usersQuery.rows.map((u: any) => [u.id, {
+        id: u.id,
+        email: u.email,
+        username: u.name,
+        full_name: u.name
+      }]));
+    }
+    
+    const deposits = depositRes.rows.map((dep: any) => ({
+      ...dep,
+      user: userMap.get(dep.user_id) || { email: 'unknown@perplexta.com', username: 'unknown', full_name: 'Unknown User' }
+    }));
+    
+    const withdrawals = withdrawRes.rows.map((wit: any) => ({
+      ...wit,
+      user: userMap.get(wit.user_id) || { email: 'unknown@perplexta.com', username: 'unknown', full_name: 'Unknown User' }
+    }));
+    
+    res.json({ deposits, withdrawals });
+  } catch (error: any) {
+    console.error('[Admin] Financial requests error:', error);
+    res.status(500).json({ error: 'Failed to fetch financial requests' });
+  }
+});
+
+router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, res) => {
+  const { id } = req.params;
+  const { action, rejectionReason } = req.body;
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action' });
+  }
+
+  const client = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Fetch deposit request with FOR UPDATE lock
+    const depRes = await client.query('SELECT * FROM deposit_requests WHERE id = $1 FOR UPDATE', [id]);
+    if (depRes.rows.length === 0) {
+      throw new Error('Deposit request not found');
+    }
+
+    const request = depRes.rows[0];
+    if (request.status !== 'pending') {
+      throw new Error('This request is already processed');
+    }
+
+    const adminId = req.user.id;
+
+    if (action === 'approve') {
+      // 2. Load and lock user wallet
+      let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [request.user_id]);
+      let walletId;
+      
+      if (walletRes.rows.length === 0) {
+        const insertWallet = await client.query(
+          'INSERT INTO wallets (user_id, balance, points) VALUES ($1, $2, 0) RETURNING id',
+          [request.user_id, 0]
+        );
+        walletId = insertWallet.rows[0].id;
+      } else {
+        walletId = walletRes.rows[0].id;
+      }
+
+      // 3. Update wallet balance
+      await client.query(
+        'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [request.amount, walletId]
+      );
+
+      // 4. Create ledger_transaction
+      let refText = 'None';
+      try {
+        const payload = JSON.parse(request.proof_url);
+        refText = payload.reference_id || 'None';
+      } catch {
+        refText = request.proof_url || 'None';
+      }
+
+      await client.query(`
+        INSERT INTO ledger_transactions (wallet_id, user_id, amount, transaction_type, status, reference_id, description)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [
+        walletId,
+        request.user_id,
+        request.amount,
+        'deposit',
+        'success',
+        id.toString(),
+        `Approved manual deposit of $${request.amount} via ${request.method} (Ref: ${refText})`
+      ]);
+
+      // 5. Update deposit request
+      await client.query(
+        'UPDATE deposit_requests SET status = $1, admin_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        ['approved', adminId, id]
+      );
+
+      await client.query('COMMIT');
+
+      // 6. Dispatch Notification & Real-Time Broadcast
+      const { createNotification } = await import('../services/notifications.js');
+      await createNotification(
+        request.user_id,
+        'deposit_approved',
+        'Deposit Approved',
+        'تم قبول الإيداع',
+        `Success! Your manual deposit request of $${request.amount} has been approved and credited.`,
+        `تهانينا! تم تأكيد وقبول طلب الإيداع بمبلغ $${request.amount} وشحن الرصيد بمحفظتك.`
+      );
+
+    } else {
+      // Reject action
+      await client.query(
+        'UPDATE deposit_requests SET status = $1, rejection_reason = $2, admin_id = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
+        ['rejected', rejectionReason || 'Information does not match chain ledger records', adminId, id]
+      );
+
+      await client.query('COMMIT');
+
+      // Dispatch Notification
+      const { createNotification } = await import('../services/notifications.js');
+      await createNotification(
+        request.user_id,
+        'deposit_rejected',
+        'Deposit Rejected',
+        'تم رفض طلب الإيداع',
+        `Notice: Your deposit request of $${request.amount} was rejected. Reason: ${rejectionReason || 'Details mismatch'}`,
+        `تنبيه: تم رفض طلب الإيداع بقيمة $${request.amount}. السبب: ${rejectionReason || 'عدم تطابق البيانات'}`
+      );
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    await client.query('ROLLBACK');
+    console.error('[Admin] Deposit Action Error:', error);
+    res.status(500).json({ error: error.message || 'Deposit verification failed' });
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: any, res) => {
+  const { id } = req.params;
+  const { action, rejectionReason } = req.body;
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action' });
+  }
+
+  const client = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Lock withdrawal request
+    const witRes = await client.query('SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE', [id]);
+    if (witRes.rows.length === 0) {
+      throw new Error('Withdrawal request not found');
+    }
+
+    const request = witRes.rows[0];
+    if (request.status !== 'pending') {
+      throw new Error('This withdrawal request has already been processed');
+    }
+
+    const adminId = req.user.id;
+    const amountUSD = Number(request.amount_cents) / 100;
+
+    if (action === 'approve') {
+      // 2. Mark withdrawal as approved
+      await client.query(
+        'UPDATE withdrawal_requests SET status = $1, processed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        ['approved', id]
+      );
+
+      // 3. Mark matching ledger transaction as success
+      await client.query(
+        "UPDATE ledger_transactions SET status = 'success', updated_at = CURRENT_TIMESTAMP WHERE reference_id = $1 AND transaction_type = 'withdrawal'",
+        [id.toString()]
+      );
+
+      await client.query('COMMIT');
+
+      // Dispatch Notification
+      const { createNotification } = await import('../services/notifications.js');
+      await createNotification(
+        request.user_id,
+        'withdrawal_approved',
+        'Withdrawal Approved',
+        'تمت الموافقة على طلب السحب',
+        `Hooray! Your disbursement of $${amountUSD.toFixed(2)} has been completed successfully via ${request.method}.`,
+        `تم تحويل مبلغ السحب بنجاح بقيمة $${amountUSD.toFixed(2)} شيكل/دولار عبر ${request.method}.`
+      );
+
+    } else {
+      // Rejection action: Refund user wallet balance!
+      let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [request.user_id]);
+      if (walletRes.rows.length === 0) {
+        throw new Error('Wallet not found for user');
+      }
+      const wallet = walletRes.rows[0];
+
+      // Add balance back
+      await client.query(
+        'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [amountUSD, wallet.id]
+      );
+
+      // Update matching ledger_transaction to failed/refunded with descriptive text
+      await client.query(`
+        UPDATE ledger_transactions 
+        SET status = 'failed', 
+            description = description || ' (Rejected. Refunded to wallet. Reason: ' || $1 || ')',
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE reference_id = $2 
+        AND transaction_type = 'withdrawal'
+      `, [rejectionReason || 'Details invalid', id.toString()]);
+
+      // Record a companion ledger transaction showing credit refund for ledger parity!
+      await client.query(`
+        INSERT INTO ledger_transactions (wallet_id, user_id, amount, transaction_type, status, reference_id, description)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [
+        wallet.id,
+        request.user_id,
+        amountUSD,
+        'refund',
+        'success',
+        id.toString(),
+        `Refunded $${amountUSD.toFixed(2)} to wallet for rejected withdrawal request id #${id}`
+      ]);
+
+      // Mark request as rejected
+      await client.query(
+        'UPDATE withdrawal_requests SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        ['rejected', rejectionReason || 'Payment parameters or credentials invalid', id]
+      );
+
+      await client.query('COMMIT');
+
+      // Dispatch Notification
+      const { createNotification } = await import('../services/notifications.js');
+      await createNotification(
+        request.user_id,
+        'withdrawal_rejected',
+        'Withdrawal Rejected',
+        'تم رفض طلب السحب',
+        `Notice: Your withdrawal request of $${amountUSD.toFixed(2)} was rejected and refunded. Reason: ${rejectionReason || 'Info invalid'}`,
+        `تنبيه: تم رفض طلب السحب بمبلغ $${amountUSD.toFixed(2)} وإعادة الرصيد بالكامل لمحفظتك. السبب: ${rejectionReason || 'بيانات خاطئة'}`
+      );
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    await client.query('ROLLBACK');
+    console.error('[Admin] Withdrawal Action Error:', error);
+    res.status(500).json({ error: error.message || 'Withdrawal validation failed' });
+  } finally {
+    client.release();
+  }
+});
+
+// Delete deposit requests (Only non-pending records)
+router.delete("/deposit-requests/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const checkRes = await ledgerPool.query('SELECT status FROM deposit_requests WHERE id = $1', [id]);
+    if (checkRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    const { status } = checkRes.rows[0];
+    if (status === 'pending') {
+      return res.status(400).json({ error: 'Cannot delete a pending request. Approve or Reject it first.' });
+    }
+    await ledgerPool.query('DELETE FROM deposit_requests WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Admin] Delete Deposit Request Error:', error);
+    res.status(500).json({ error: 'Failed to delete request' });
+  }
+});
+
+// Delete withdrawal requests (Only non-pending records)
+router.delete("/withdrawal-requests/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const checkRes = await ledgerPool.query('SELECT status FROM withdrawal_requests WHERE id = $1', [id]);
+    if (checkRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    const { status } = checkRes.rows[0];
+    if (status === 'pending') {
+      return res.status(400).json({ error: 'Cannot delete a pending request. Approve or Reject it first.' });
+    }
+    await ledgerPool.query('DELETE FROM withdrawal_requests WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Admin] Delete Withdrawal Request Error:', error);
+    res.status(500).json({ error: 'Failed to delete request' });
   }
 });
 

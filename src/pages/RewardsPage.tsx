@@ -12,10 +12,7 @@ export const RewardsPage: React.FC = () => {
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [convertAmount, setConvertAmount] = useState('10000');
   
-  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawMethod, setWithdrawMethod] = useState<'paypal' | 'crypto' | 'bank'>('paypal');
-  const [paymentDetails, setPaymentDetails] = useState('');
+
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,48 +132,7 @@ export const RewardsPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  const handleWithdraw = async () => {
-    if (!withdrawAmount || !paymentDetails || !token) return;
-    
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/wallet/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          amountUSD: Number(withdrawAmount),
-          method: withdrawMethod,
-          details: paymentDetails
-        })
-      });
-      
-      if (res.ok) {
-        alert(t('withdrawalRequestSent'));
-        setIsWithdrawModalOpen(false);
-        setWithdrawAmount('');
-        setPaymentDetails('');
-        const walletRes = await fetch('/api/wallet', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (walletRes.ok) {
-          const data = await walletRes.json();
-          setWallet(data);
-        }
-        refreshUser();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Withdrawal failed');
-      }
-    } catch (error) {
-      console.error('Error requesting withdrawal:', error);
-      alert('An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
   
   useEffect(() => {
     const fetchData = async () => {
@@ -245,7 +201,6 @@ export const RewardsPage: React.FC = () => {
 
   const withdrawableUSD = Number(wallet.balance || 0).toFixed(2);
   const estimatedPointsWorth = (Number(wallet.points || 0) * Number(economySettings.conversion_rate || 0)).toFixed(2);
-  const minWithdrawalUSD = (Number(economySettings.min_withdrawal_cents || 0) / 100).toFixed(2);
 
   return (
     <motion.div 
@@ -279,7 +234,7 @@ export const RewardsPage: React.FC = () => {
           
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/settings?tab=wallet')}
               className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 group`}
             >
               <Landmark size={14} className="group-hover:scale-110 transition-transform" />
@@ -310,7 +265,7 @@ export const RewardsPage: React.FC = () => {
               <span className="text-4xl md:text-6xl font-bold text-white tracking-tight">${withdrawableUSD}</span>
             </div>
             <button 
-              onClick={() => setIsWithdrawModalOpen(true)}
+              onClick={() => navigate('/settings?tab=wallet')}
               className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-white text-xs md:text-base font-bold transition-all duration-300 group"
             >
               <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
@@ -767,138 +722,7 @@ export const RewardsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Withdraw Balance Modal */}
-      {isWithdrawModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsWithdrawModalOpen(false)}
-          />
-          
-          {/* Modal Content */}
-          <div className={`relative w-full max-w-md rounded-[var(--radius)] p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
-            
-            {/* Header */}
-            <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
-              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
-                {t('withdrawBalance')}
-              </h2>
-              <Wallet className="text-emerald-500 md:w-7 md:h-7" size={24} />
-            </div>
 
-            {/* Amount Input */}
-            <div className="space-y-1.5 md:space-y-2 mb-5 md:mb-6">
-              <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
-                {t('withdrawalAmount')}
-              </label>
-              <div className={`relative flex items-center rounded-[var(--radius)] border transition-all bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
-                <span className="px-3 md:px-4 text-[var(--text-muted)] font-bold text-lg md:text-xl">$</span>
-                <input 
-                  type="text"
-                  value={withdrawAmount || ''}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  placeholder="0.00"
-                  className={`w-full bg-transparent py-3 md:py-4 text-lg md:text-xl font-bold text-[var(--text-primary)] focus:outline-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
-                  dir="ltr"
-                />
-              </div>
-              <div className="flex items-center justify-between mt-1.5 md:mt-2">
-                <p className="text-[10px] md:text-sm text-emerald-500/80">
-                  {t('minWithdrawalAmount').replace('{min}', minWithdrawalUSD)}
-                </p>
-                {withdrawAmount && !isNaN(Number(withdrawAmount)) && Number(withdrawAmount) > 0 && (
-                  <p className="text-[10px] md:text-xs font-bold text-rose-500">
-                    - {Math.round(Number(withdrawAmount) * economySettings.points_per_dollar).toLocaleString()} {t('points')}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Withdrawal Method */}
-            <div className="space-y-2.5 md:space-y-3 mb-5 md:mb-6">
-              <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
-                {t('withdrawalMethod')}
-              </label>
-              <div className="grid grid-cols-3 gap-2 md:gap-3">
-                <button
-                  onClick={() => setWithdrawMethod('paypal')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[var(--radius)] border transition-all duration-300 ${
-                    withdrawMethod === 'paypal'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
-                      : 'border-[var(--border-main)] text-[var(--text-secondary)] hover:border-emerald-500/30 hover:text-emerald-500'
-                  }`}
-                >
-                  <CreditCard size={18} className="md:w-5 md:h-5" />
-                  <span className="text-[9px] md:text-xs font-medium">{t('paypalUser')}</span>
-                </button>
-                <button
-                  onClick={() => setWithdrawMethod('crypto')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[var(--radius)] border transition-all duration-300 ${
-                    withdrawMethod === 'crypto'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
-                      : 'border-[var(--border-main)] text-[var(--text-secondary)] hover:border-emerald-500/30 hover:text-emerald-500'
-                  }`}
-                >
-                  <Bitcoin size={18} className="md:w-5 md:h-5" />
-                  <span className="text-[9px] md:text-xs font-medium">{t('crypto')}</span>
-                </button>
-                <button
-                  onClick={() => setWithdrawMethod('bank')}
-                  className={`flex flex-col items-center justify-center gap-1.5 md:gap-2 p-2.5 md:p-3 rounded-[var(--radius)] border transition-all duration-300 ${
-                    withdrawMethod === 'bank'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
-                      : 'border-[var(--border-main)] text-[var(--text-secondary)] hover:border-emerald-500/30 hover:text-emerald-500'
-                  }`}
-                >
-                  <Landmark size={18} className="md:w-5 md:h-5" />
-                  <span className="text-[9px] md:text-xs font-medium">{t('bankAccount')}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Payment Details Input */}
-            <div className="space-y-1.5 md:space-y-2 mb-6 md:mb-8">
-              <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
-                {t('paymentDetails')}
-              </label>
-              <div className={`relative flex items-center rounded-[var(--radius)] border transition-all bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
-                <input 
-                  type="text"
-                  value={paymentDetails || ''}
-                  onChange={(e) => setPaymentDetails(e.target.value)}
-                  placeholder={
-                    withdrawMethod === 'paypal' ? t('paypalEmailPlaceholder') :
-                    withdrawMethod === 'crypto' ? t('cryptoAddressPlaceholder') :
-                    t('bankDetailsPlaceholder')
-                  }
-                  className={`w-full bg-transparent px-4 py-3 md:px-6 md:py-4 text-[11px] md:text-sm font-medium text-[var(--text-primary)] focus:outline-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 md:gap-4">
-              <button 
-                onClick={() => setIsWithdrawModalOpen(false)}
-                className={`flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-all duration-300 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]`}
-              >
-                {t('cancel')}
-              </button>
-              <button 
-                onClick={handleWithdraw}
-                disabled={isSubmitting}
-                className={`flex-[2] py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all duration-300 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-50`}
-              >
-                {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} className="md:w-4.5 md:h-4.5" />}
-                {t('sendRequest')}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </motion.div>
   );

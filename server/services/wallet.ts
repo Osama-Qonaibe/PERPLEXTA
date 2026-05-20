@@ -45,10 +45,17 @@ export async function getEconomySettings() {
   
   // Ledger DB is the absolute Source of Truth for financial constants
   const ledgerTarget = ledgerPool || pool;
-  const res = await ledgerTarget.query('SELECT points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent, welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents, referral_activation_min_deposit FROM economy_settings LIMIT 1');
+  const res = await ledgerTarget.query('SELECT * FROM economy_settings LIMIT 1');
   
   if (res.rows.length > 0) {
     settings = res.rows[0];
+    // Fill defaults for any missing columns
+    if (!settings.crypto_address) settings.crypto_address = 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy';
+    if (!settings.bank_name) settings.bank_name = 'Merchant Discount Bank IL (011)';
+    if (!settings.bank_recipient) settings.bank_recipient = 'Perplexta Tech Platforms LTD.';
+    if (!settings.bank_iban) settings.bank_iban = 'IL42 0110 0000 0000 3484 2192';
+    if (!settings.bank_swift) settings.bank_swift = 'PPLXIL33XXX';
+    if (!settings.paypal_email) settings.paypal_email = 'paypal@perplexta.com';
   } else {
     // Default fallback if table is empty
     settings = {
@@ -60,7 +67,13 @@ export async function getEconomySettings() {
       referral_bonus_points: 1000,
       conversion_rate: 0.001,
       min_withdrawal_cents: 1000,
-      referral_activation_min_deposit: 10
+      referral_activation_min_deposit: 10,
+      crypto_address: 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy',
+      bank_name: 'Merchant Discount Bank IL (011)',
+      bank_recipient: 'Perplexta Tech Platforms LTD.',
+      bank_iban: 'IL42 0110 0000 0000 3484 2192',
+      bank_swift: 'PPLXIL33XXX',
+      paypal_email: 'paypal@perplexta.com'
     };
   }
   
@@ -73,7 +86,8 @@ export async function updateEconomySettings(settings: any) {
   const { 
     points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
     welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
-    referral_activation_min_deposit
+    referral_activation_min_deposit,
+    crypto_address, bank_name, bank_recipient, bank_iban, bank_swift, paypal_email
   } = settings;
   
   const ledgerTarget = ledgerPool || pool;
@@ -83,11 +97,19 @@ export async function updateEconomySettings(settings: any) {
       referral_bonus_percent = $4, welcome_bonus_points = $5, 
       referral_bonus_points = $6, min_withdrawal_cents = $7, 
       conversion_rate = $8, referral_activation_min_deposit = $9,
+      crypto_address = $10, bank_name = $11, bank_recipient = $12,
+      bank_iban = $13, bank_swift = $14, paypal_email = $15,
       updated_at = CURRENT_TIMESTAMP
   `, [
     points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
     welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
-    referral_activation_min_deposit
+    referral_activation_min_deposit,
+    crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy',
+    bank_name || 'Merchant Discount Bank IL (011)',
+    bank_recipient || 'Perplexta Tech Platforms LTD.',
+    bank_iban || 'IL42 0110 0000 0000 3484 2192',
+    bank_swift || 'PPLXIL33XXX',
+    paypal_email || 'paypal@perplexta.com'
   ]);
   
   clearEconomyCache();
@@ -102,7 +124,7 @@ export function clearEconomyCache() {
 export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   
-  let baseQuery = 'FROM ledger_transactions WHERE user_id = $1';
+  let baseQuery = 'FROM ledger_transactions WHERE user_id = $1 AND (is_hidden IS NOT TRUE)';
   const params: any[] = [userId];
 
   if (type !== 'all') {
@@ -210,9 +232,15 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
       [amountUSD, wallet.id]
     );
 
+    const witRes = await client.query(
+      'INSERT INTO withdrawal_requests (user_id, amount_cents, method, details, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [userId, Math.round(amountUSD * 100), method, details, 'pending']
+    );
+    const withdrawalId = witRes.rows[0].id;
+
     await client.query(
-      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, wallet.id, -amountUSD, 'withdrawal', `Withdrawal request for $${amountUSD} via ${method} (${details})`, 'pending']
+      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, status, reference_id, description) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [userId, wallet.id, -amountUSD, 'withdrawal', 'pending', withdrawalId.toString(), `Withdrawal request for $${amountUSD} via ${method} (${details})`]
     );
 
     await client.query('COMMIT');
@@ -376,3 +404,108 @@ export async function adjustWalletBalance(userId: string | number, amount: numbe
     client.release();
   }
 }
+
+export async function depositToWallet(userId: string | number, amount: number, method: string, description: string) {
+  if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) {
+    throw new Error('Invalid User ID');
+  }
+
+  if (amount <= 0) {
+    throw new Error('Deposit amount must be greater than zero');
+  }
+
+  const client = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+    const wallet = await getUserWallet(userIdNum, client);
+    
+    // Update balance
+    const result = await client.query(
+      `UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance, points`,
+      [amount, wallet.id]
+    );
+
+    // Write audit ledger record
+    await client.query(
+      `INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) 
+       VALUES ($1, $2, $3, 'deposit', $4, 'success')`,
+      [userIdNum, wallet.id, amount, `Deposited via ${method}: ${description}`]
+    );
+
+    await client.query('COMMIT');
+
+    // Trigger referral activation checks in secondary process if needed
+    try {
+      await checkReferralActivation(userIdNum);
+    } catch (refErr) {
+      console.warn('[Wallet] Referral activation check warning during deposit:', refErr);
+    }
+
+    return {
+      success: true,
+      newBalance: result.rows[0].balance,
+      newPoints: result.rows[0].points
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deductUsageFromWallet(userId: string | number, toolId: string) {
+  if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) throw new Error('Invalid User ID');
+
+  const client = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+    const wallet = await getUserWallet(userIdNum, client);
+    const settings = await getEconomySettings();
+    const rate = parseFloat(settings.conversion_rate || '0.001');
+
+    const pointsCost = 10; // 10 points per excess request
+    const usdCost = pointsCost * rate; // e.g., 0.01 usd or ils per request
+
+    if (wallet.points >= pointsCost) {
+      // Deduct from points
+      await client.query(
+        'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [pointsCost, wallet.id]
+      );
+      await client.query(
+        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [userIdNum, wallet.id, 0, -pointsCost, 'tool_usage_points', `Exceeded ${toolId} quota. Charged ${pointsCost} tool points.`, 'success']
+      );
+      await client.query('COMMIT');
+      return { charged: 'points', amount: pointsCost };
+    } else if (Number(wallet.balance) >= usdCost) {
+      // Deduct from balance
+      await client.query(
+        'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [usdCost, wallet.id]
+      );
+      await client.query(
+        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [userIdNum, wallet.id, -usdCost, 0, 'tool_usage_balance', `Exceeded ${toolId} quota. Charged ₪${usdCost.toFixed(2)} from wallet cache balance.`, 'success']
+      );
+      await client.query('COMMIT');
+      return { charged: 'balance', amount: usdCost };
+    } else {
+      throw new Error('Insufficient balance and points');
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+

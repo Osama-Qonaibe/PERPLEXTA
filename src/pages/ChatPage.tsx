@@ -1299,9 +1299,7 @@ export const ChatPage: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<'fast' | 'thinking' | 'pro'>(() => {
     return (localStorage.getItem('last_active_model') as any) || 'fast';
   });
-  const [selectedTool, setSelectedTool] = useState<string>(() => {
-    return localStorage.getItem('last_active_tool') || 'chat';
-  });
+  const [selectedTool, setSelectedTool] = useState<string>('chat');
   const [activeDropdown, setActiveDropdown] = useState<'tool' | 'model'>('tool');
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -2071,6 +2069,17 @@ export const ChatPage: React.FC = () => {
       triggerMemoryNotification('cleanup', desc);
     };
 
+    const onWalletChargeNotice = (data: any) => {
+      const { toolId, charged, amount } = data;
+      const toolLabel = toolId === 'perplexta_analysis' 
+        ? (dir === 'rtl' ? 'البحث التفصيلي العسكري المعمق' : 'Deep Military-Grade Analysis')
+        : toolId;
+      const msg = dir === 'rtl'
+        ? `✓ نظام المحاسبة التلقائي: تم خصم ${charged === 'points' ? `${amount} نقطة أداة` : `$${amount.toFixed(2)} رصيد نقدي`} مقابل تشغيل أداة "${toolLabel}" بنجاح وتأصيل المعاملة بالدفتر.`
+        : `✓ Auto-Billing: Charged ${charged === 'points' ? `${amount} tool points` : `$${amount.toFixed(2)} cash balance`} for executing "${toolLabel}" under ledger reference.`;
+      toast.info(msg, { duration: 6000 });
+    };
+
     const onChatError = (data: any) => {
       let errorMessage = '';
       let isQuota = false;
@@ -2155,6 +2164,7 @@ export const ChatPage: React.FC = () => {
     socket.on('memory_warning', onMemoryWarning);
     socket.on('memory_cleanup', onMemoryCleanup);
     socket.on('memory_consolidation', onMemoryConsolidation);
+    socket.on('wallet_charge_notice', onWalletChargeNotice);
     socket.on('chat_error', onChatError);
 
     return () => {
@@ -2166,6 +2176,7 @@ export const ChatPage: React.FC = () => {
       socket.off('memory_warning', onMemoryWarning);
       socket.off('memory_cleanup', onMemoryCleanup);
       socket.off('memory_consolidation', onMemoryConsolidation);
+      socket.off('wallet_charge_notice', onWalletChargeNotice);
       socket.off('chat_error', onChatError);
     };
   }, [socket, dir]);
@@ -2853,12 +2864,12 @@ export const ChatPage: React.FC = () => {
               </button>
               
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-50 overflow-hidden bg-transparent border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
                   <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.map((tool) => (
+                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool) => (
                       <button 
                         key={tool.id} 
                         onClick={() => {
@@ -2911,7 +2922,7 @@ export const ChatPage: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
               {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-50 bg-transparent border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
                   {models.map((model, idx) => (
                     <button 
                       key={`${model.id}-${idx}`}
@@ -3083,6 +3094,18 @@ export const ChatPage: React.FC = () => {
                   </h2>
                </div>
                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowPinnedModal(true)}
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-all duration-300 text-gray-400 hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] relative"
+                    title={dir === 'rtl' ? 'الرسائل المثبتة' : 'Pinned Messages'}
+                  >
+                    <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "transition-all duration-300"} />
+                    {messages.filter(m => m.is_pinned).length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(16,185,129,0.6)]">
+                        {messages.filter(m => m.is_pinned).length}
+                      </span>
+                    )}
+                  </button>
                   <div className="relative" ref={exportMenuRef}>
                     <button 
                       onClick={() => !isExporting && setIsExportMenuOpen(!isExportMenuOpen)}
@@ -3351,6 +3374,15 @@ export const ChatPage: React.FC = () => {
                                       <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
                                     </div>
                                   )}
+                                  <button 
+                                    onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
+                                    className={`opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] shrink-0 ${
+                                      msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
+                                    }`}
+                                    title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
+                                  >
+                                    {msg.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                                  </button>
                                   <button 
                                     onClick={() => {
                                       setEditingMessageIndex(idx);
@@ -3846,18 +3878,37 @@ export const ChatPage: React.FC = () => {
               </div>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                {messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                  <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
-                    <div className="flex items-center justify-between mb-2">
-                       <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
-                         {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
-                       </span>
-                    </div>
-                    <div className="markdown-body prose dark:prose-invert text-[13px] line-clamp-6 text-gray-700 dark:text-gray-300">
-                      <Markdown>{stripProtocolMarkers(msg.content)}</Markdown>
-                    </div>
+                {messages.filter(m => m.is_pinned).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Pin size={32} className="text-[var(--text-muted)] opacity-35 mb-3 animate-pulse text-emerald-500/40" />
+                    <p className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                      {dir === 'rtl' ? 'لا توجد رسائل مثبتة حالياً' : 'No pinned messages yet'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1 max-w-[280px] leading-relaxed">
+                      {dir === 'rtl' ? 'ثبّت الرسائل المهمة في المحادثة لتبقى محفوظة هنا.' : 'Pin important questions or responses to view them in this list.'}
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  messages.filter(m => m.is_pinned).map((msg, pIdx) => (
+                    <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
+                           {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
+                         </span>
+                         <button
+                           onClick={() => handlePinMessage(msg.id!, false)}
+                           className="text-gray-400 hover:text-emerald-500 transition-all duration-300 p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
+                           title={dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin'}
+                         >
+                           <PinOff size={12} />
+                         </button>
+                      </div>
+                      <div className="markdown-body prose dark:prose-invert text-[13px] line-clamp-6 text-gray-700 dark:text-gray-300">
+                        <Markdown>{stripProtocolMarkers(msg.content)}</Markdown>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           </motion.div>

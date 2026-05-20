@@ -2,30 +2,80 @@ import nodemailer from 'nodemailer';
 import { pool } from '../db/index.js';
 import { systemTemplates } from '../config/templates.js';
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, adminId: number | null = null) {
   try {
     const settings = await pool.query('SELECT * FROM email_settings LIMIT 1');
-    if (settings.rows.length === 0) throw new Error('Email settings not configured.');
+    if (settings.rows.length === 0) {
+      throw new Error('Email SMTP settings are not configured in the admin panel.');
+    }
 
     const s = settings.rows[0];
+    if (!s.smtp_host || !s.smtp_port) {
+      throw new Error('SMTP Host or Port is not specified in settings.');
+    }
+
+    const isSSL = s.smtp_encryption === 'ssl';
     const transporter = nodemailer.createTransport({
       host: s.smtp_host,
-      port: s.smtp_port,
-      secure: s.smtp_encryption === 'ssl',
-      auth: { user: s.smtp_username, pass: s.smtp_password }
+      port: parseInt(s.smtp_port || '587'),
+      secure: isSSL,
+      auth: { 
+        user: s.smtp_username || '', 
+        pass: s.smtp_password || '' 
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 15000 // 15 seconds wait timeout
     });
 
-    await transporter.sendMail({
-      from: `"${s.sender_name}" <${s.sender_email}>`,
+    const info = await transporter.sendMail({
+      from: `"${s.sender_name || 'Perplexta'}" <${s.sender_email || 'noreply@perplexta.com'}>`,
       to,
       subject,
       html
     });
 
-    return true;
-  } catch (error) {
-    console.error('[Email] Failed to send email:', error);
-    return false;
+    // Consistent communication logging for robust auditing
+    await pool.query(
+      `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
+      [
+        adminId,
+        'Send Outgoing Email',
+        'communication',
+        JSON.stringify({
+          to,
+          subject,
+          messageId: info.messageId,
+          status: 'success',
+          sender: s.sender_email,
+          timestamp: new Date().toISOString()
+        })
+      ]
+    ).catch((logErr: any) => console.error('[Email Log] DB logging failed on success:', logErr));
+
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('[Email] Failed to send email to:', to, 'Error:', error);
+
+    // Consistent failed communication logging for robust auditing
+    await pool.query(
+      `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
+      [
+        adminId,
+        'Send Outgoing Email Failed',
+        'communication',
+        JSON.stringify({
+          to,
+          subject,
+          status: 'failed',
+          error: error.message || 'Unknown SMTP error',
+          timestamp: new Date().toISOString()
+        })
+      ]
+    ).catch((logErr: any) => console.error('[Email Log] DB logging failed on fallback error:', logErr));
+
+    return { success: false, error: error.message || 'Unknown email transfer error.' };
   }
 }
 
@@ -47,7 +97,8 @@ export const sendSmartEmail = async (userId: number | null, toEmail: string, tem
       body = body.replace(regex, value);
     });
 
-    return await sendEmail(toEmail, subject, body);
+    const result = await sendEmail(toEmail, subject, body, userId);
+    return result.success;
   } catch (error) {
     console.error('[Email] Smart email failed:', error);
     return false;

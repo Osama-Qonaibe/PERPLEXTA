@@ -17,17 +17,22 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: false, // Use our high-fidelity custom sw.js manually registered in index.html
         workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
+          navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api/],
         },
         manifest: {
-          name: 'Perplexta',
+          name: 'Perplexta Platform',
           short_name: 'Perplexta',
           description: 'A professional elite platform for advanced AI capabilities and technical analysis.',
           theme_color: '#10b981',
           background_color: '#0f0f11',
           display: 'standalone',
+          display_override: ['standalone', 'minimal-ui'],
           start_url: '/',
+          categories: ['productivity', 'finance', 'business', 'utilities'],
           icons: [
             {
               src: 'app-assets/icon.png',
@@ -38,6 +43,29 @@ export default defineConfig(({ mode }) => {
               src: 'app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png'
+            }
+          ],
+          shortcuts: [
+            {
+              name: 'New Chat',
+              short_name: 'New Chat',
+              description: 'Start a fresh AI orchestration session',
+              url: '/',
+              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
+            },
+            {
+              name: 'Rewards Center',
+              short_name: 'Rewards',
+              description: 'Manage points, loyalty bonuses and verification statuses',
+              url: '/rewards',
+              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
+            },
+            {
+              name: 'Workspace Settings',
+              short_name: 'Settings',
+              description: 'Customize your AI models and theme settings',
+              url: '/settings',
+              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
             }
           ]
         }
