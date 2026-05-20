@@ -9,7 +9,8 @@ export async function checkUserQuota(userId: number, toolId: string) {
         SELECT 
           u.id as user_id,
           u.role,
-          p.limits
+          p.limits,
+          u.custom_limits
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
         LEFT JOIN plans p ON (s.plan_id = p.id OR (s.plan_id IS NULL AND p.name_en = 'Starter'))
@@ -27,6 +28,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
       )
       SELECT 
         ui.limits,
+        ui.custom_limits,
         ui.role,
         (SELECT count FROM daily_usage) as daily_count,
         (SELECT count FROM monthly_usage) as monthly_count
@@ -35,16 +37,17 @@ export async function checkUserQuota(userId: number, toolId: string) {
 
     if (res.rows.length === 0) return { allowed: true };
     
-    const { limits, role, daily_count, monthly_count } = res.rows[0];
+    const { limits, custom_limits, role, daily_count, monthly_count } = res.rows[0];
     
     if (role === 'admin') return { allowed: true };
     
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
     
-    if (!limits) return { allowed: true };
+    const finalLimits = { ...(limits || {}), ...(custom_limits || {}) };
+    if (Object.keys(finalLimits).length === 0) return { allowed: true };
     
-    const toolLimit = limits[toolId];
+    const toolLimit = finalLimits[toolId];
     if (!toolLimit || toolLimit === 'unlimited') return { allowed: true };
     
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;

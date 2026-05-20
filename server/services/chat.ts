@@ -117,7 +117,7 @@ export async function handleChatMessage(socket: any, data: any) {
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 
-    socket.emit('chat_chunk', { chunk: result.result, chatId: finalChatId, isFinal: true });
+    socket.emit('chat_chunk', { chunk: '', chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
       result: result.result, 
       chatId: finalChatId, 

@@ -2851,6 +2851,7 @@ const DatabaseOrchestrationView = ({
         setDatabases(
           data.map((db: any) => ({
             ...db,
+            type: db.type === "postgres" ? "local" : db.type || "local",
             titleKey: `${db.provider}DbTitle`,
             descKey: `${db.provider.includes("shadow") ? "shadow" : "primary"}DbDesc`,
             icon: db.provider.includes("core") ? Database : Landmark,
@@ -2862,6 +2863,7 @@ const DatabaseOrchestrationView = ({
                 : "amber",
             isTesting: false,
             showPassword: false,
+            connectionTested: db.status === "healthy",
           })),
         );
       }
@@ -2915,14 +2917,14 @@ const DatabaseOrchestrationView = ({
       if (res.ok && data.success) {
         setDatabases((dbs) =>
           dbs.map((d) =>
-            d.id === id ? { ...d, isTesting: false, status: "healthy" } : d,
+            d.id === id ? { ...d, isTesting: false, status: "healthy", connectionTested: true } : d,
           ),
         );
         showToast(t("dbTestSuccess") || "Connection successful!", "success");
       } else {
         setDatabases((dbs) =>
           dbs.map((d) =>
-            d.id === id ? { ...d, isTesting: false, status: "error" } : d,
+            d.id === id ? { ...d, isTesting: false, status: "error", connectionTested: false } : d,
           ),
         );
         showToast(
@@ -2933,7 +2935,7 @@ const DatabaseOrchestrationView = ({
     } catch (error) {
       setDatabases((dbs) =>
         dbs.map((d) =>
-          d.id === id ? { ...d, isTesting: false, status: "error" } : d,
+          d.id === id ? { ...d, isTesting: false, status: "error", connectionTested: false } : d,
         ),
       );
       showToast(t("dbTestError") || "Connection error", "error");
@@ -2943,6 +2945,16 @@ const DatabaseOrchestrationView = ({
   const handleSaveConfig = async (id: string) => {
     const db = databases.find((d) => d.id === id);
     if (!db) return;
+
+    if (!db.connectionTested) {
+      showToast(
+        dir === "rtl"
+          ? "يجب اختبار الاتصال بنجاح أولاً قبل حفظ التعديلات."
+          : "Please successfully test the connection before saving configuration.",
+        "error"
+      );
+      return;
+    }
 
     try {
       const res = await fetch("/api/admin/databases/save", {
@@ -3215,8 +3227,29 @@ const DatabaseOrchestrationView = ({
   };
 
   const handleChange = (id: string, field: string, value: string | boolean) => {
+    const connectionFields = [
+      "host",
+      "port",
+      "username",
+      "password",
+      "db_name",
+      "dbName",
+      "connection_string",
+      "connectionString",
+      "type"
+    ];
     setDatabases((dbs) =>
-      dbs.map((db) => (db.id === id ? { ...db, [field]: value } : db)),
+      dbs.map((db) => {
+        if (db.id === id) {
+          const isConnectionField = connectionFields.includes(field);
+          return {
+            ...db,
+            [field]: value,
+            connectionTested: isConnectionField ? false : db.connectionTested,
+          };
+        }
+        return db;
+      }),
     );
   };
 
@@ -3734,6 +3767,8 @@ const OrchestratorView = ({
                 canvas: Music,
                 perplexta_memory: Database,
                 perplexta_search: Search,
+                sovereign_memory: Database,
+                sovereign_search: Search,
               };
 
               if (savedRoute) {
@@ -4967,6 +5002,10 @@ const ALL_TOOLS = [
   "learning",
   "code",
   "canvas",
+  "perplexta_memory",
+  "perplexta_search",
+  "sovereign_memory",
+  "sovereign_search",
   "storage_mb",
 ];
 
@@ -5936,6 +5975,7 @@ const UserManagementView = ({
   });
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
+  const [customLimits, setCustomLimits] = useState<any>({});
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -5994,6 +6034,7 @@ const UserManagementView = ({
       kyc_rejection_reason?: string;
       kyc_required?: boolean;
       status?: string;
+      custom_limits?: any;
     },
   ) => {
     setIsUpdating(true);
@@ -6545,6 +6586,7 @@ const UserManagementView = ({
   const handleViewProfile = (user: any) => {
     setSelectedUser(user);
     setSupportNotes(user.support_notes || "");
+    setCustomLimits(user.custom_limits || {});
     setIsProfileModalOpen(true);
     fetchUserUsage(user.id);
   };
@@ -6646,7 +6688,7 @@ const UserManagementView = ({
               onChange={(e) => setStatusFilter(e.target.value)}
               className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
             >
-              <option value="all">All Status</option>
+              <option value="all">{dir === "rtl" ? "جميع الحالات" : "All Status"}</option>
               <option value="active">{t("active")}</option>
               <option value="suspended">{t("suspended")}</option>
             </select>
@@ -6661,7 +6703,7 @@ const UserManagementView = ({
               onChange={(e) => setPlanFilter(e.target.value)}
               className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
             >
-              <option value="all">All Plans</option>
+              <option value="all">{dir === "rtl" ? "جميع الباقات" : "All Plans"}</option>
               {plans.map((p) => (
                 <option key={p.id} value={p.id}>
                   {dir === "rtl" ? p.nameAr : p.nameEn}
@@ -6930,7 +6972,7 @@ const UserManagementView = ({
                   <div className="flex flex-col items-center gap-3">
                     <Users size={40} className="text-gray-800/20" />
                     <span className="text-xs font-bold uppercase tracking-widest opacity-50">
-                      No explorers found in this sector
+                      No users found in this sector
                     </span>
                   </div>
                 </td>
@@ -6949,7 +6991,7 @@ const UserManagementView = ({
                 <div className="flex items-center gap-3 text-emerald-500">
                   <UserPlus size={24} />
                   <h3 className="text-xl font-black tracking-tight">
-                    {dir === "rtl" ? "إضافة مستكشف جديد" : "New Explorer Registry"}
+                    {dir === "rtl" ? "إضافة مستخدم جديد" : "New User Registry"}
                   </h3>
                 </div>
                 <button
@@ -7035,7 +7077,7 @@ const UserManagementView = ({
                   ) : (
                     <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
                   )}
-                  {dir === "rtl" ? "تسجيل العضو" : "Register Explorer"}
+                  {dir === "rtl" ? "تسجيل المستخدم" : "Register User"}
                 </button>
               </div>
             </div>
@@ -7901,12 +7943,31 @@ const UserManagementView = ({
                           {t("consumptionRadar")}
                         </h3>
                       </div>
-                      {isLoadingUsage && (
-                        <RefreshCw
-                          size={16}
-                          className="animate-spin text-emerald-500"
-                        />
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            await handleUpdatePermissions(selectedUser.id, {
+                              role: selectedUser.role,
+                              kyc_status: selectedUser.kyc_status,
+                              kyc_rejection_reason: selectedUser.kyc_rejection_reason,
+                              kyc_required: selectedUser.kyc_required,
+                              status: selectedUser.status || selectedUser.subscription_status,
+                              custom_limits: customLimits,
+                            });
+                          }}
+                          disabled={isUpdating}
+                          className="px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-bold text-[10px] uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Save size={12} />
+                          {dir === "rtl" ? "حفظ تخصيص الميزات" : "Save Feature Overrides"}
+                        </button>
+                        {isLoadingUsage && (
+                          <RefreshCw
+                            size={16}
+                            className="animate-spin text-emerald-500"
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {!selectedUserUsage ? (
@@ -7919,30 +7980,34 @@ const UserManagementView = ({
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {ALL_TOOLS.map((toolId) => {
-                          const limits =
+                          const planLimits =
                             getPlanDetails(selectedUser.plan_id).limits || {};
-                          const limit = limits[toolId] || {
+                          const planLimit = planLimits[toolId] || {
                             daily: 0,
                             monthly: 0,
                           };
+                          
+                          const customLimit = customLimits?.[toolId];
+                          const hasOverride = customLimit !== undefined && customLimit !== null;
+
+                          const dailyLimitRaw = hasOverride ? customLimit.daily : (planLimit?.daily || (typeof planLimit === "number" ? planLimit : 0));
+                          const monthlyLimitRaw = hasOverride ? customLimit.monthly : (planLimit?.monthly || (typeof planLimit === "number" ? planLimit * 30 : 0));
+
+                          const dailyLimit = dailyLimitRaw === "unlimited" ? "unlimited" : Number(dailyLimitRaw || 0);
+                          const monthlyLimit = monthlyLimitRaw === "unlimited" ? "unlimited" : Number(monthlyLimitRaw || 0);
+
                           const toolKey = toolId;
                           const usage = selectedUserUsage[toolKey] || {
                             daily: 0,
                             monthly: 0,
                           };
-                          const dailyLimit =
-                            limit?.daily ||
-                            (typeof limit === "number" ? limit : 0);
-                          const monthlyLimit =
-                            limit?.monthly ||
-                            (typeof limit === "number" ? limit * 30 : 0);
 
                           const dailyPercent =
-                            dailyLimit > 0
+                            dailyLimit === "unlimited" ? 0 : dailyLimit > 0
                               ? Math.min(100, (usage.daily / dailyLimit) * 100)
                               : 0;
                           const monthlyPercent =
-                            monthlyLimit > 0
+                            monthlyLimit === "unlimited" ? 0 : monthlyLimit > 0
                               ? Math.min(
                                   100,
                                   (usage.monthly / monthlyLimit) * 100,
@@ -7952,77 +8017,138 @@ const UserManagementView = ({
                           return (
                             <div
                               key={toolKey}
-                              className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"} transition-theme hover:border-emerald-500/30 group`}
+                              className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"} transition-theme hover:border-emerald-500/30 group flex flex-col justify-between`}
                             >
-                              <div className="flex items-center justify-between mb-3 px-1">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-500 transition-theme">
-                                  {t(toolKey)}
-                                </span>
-                                <Zap
-                                  size={10}
-                                  className={
-                                    dailyPercent > 80
-                                      ? "text-amber-500 animate-pulse"
-                                      : "text-gray-600"
-                                  }
-                                />
-                              </div>
-
-                              <div className="space-y-3">
-                                {/* Daily Bar */}
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-[8px] font-bold uppercase">
-                                    <span className="text-gray-500">
-                                      {t("daily")}
-                                    </span>
-                                    <span
-                                      className={
-                                        dailyPercent > 90
-                                          ? "text-red-500"
-                                          : "text-emerald-500"
-                                      }
-                                    >
-                                      {String(
-                                        typeof usage.daily === "number"
-                                          ? usage.daily
-                                          : 0,
-                                      )}{" "}
-                                      / {String(Number(dailyLimit))}
-                                    </span>
-                                  </div>
-                                  <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full transition-theme ${dailyPercent > 90 ? "bg-red-500" : "bg-emerald-500"}`}
-                                      style={{ width: `${dailyPercent}%` }}
-                                    />
-                                  </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-500 transition-theme">
+                                    {t(toolKey)}
+                                  </span>
+                                  <Zap
+                                    size={10}
+                                    className={
+                                      dailyPercent > 80
+                                        ? "text-amber-500 animate-pulse"
+                                        : "text-gray-600"
+                                    }
+                                  />
                                 </div>
 
-                                {/* Monthly Bar */}
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-[8px] font-bold uppercase">
-                                    <span className="text-gray-500">
-                                      {t("monthly")}
-                                    </span>
-                                    <span
-                                      className={
-                                        monthlyPercent > 90
-                                          ? "text-red-500"
-                                          : "text-blue-500"
-                                      }
-                                    >
-                                      {String(
-                                        typeof usage.monthly === "number"
-                                          ? usage.monthly
-                                          : 0,
-                                      )}{" "}
-                                      / {String(Number(monthlyLimit))}
-                                    </span>
+                                <div className="space-y-3">
+                                  {/* Daily Bar */}
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-[8px] font-bold uppercase">
+                                      <span className="text-gray-500">
+                                        {t("daily")}
+                                      </span>
+                                      <span
+                                        className={
+                                          dailyPercent > 90
+                                            ? "text-red-500"
+                                            : "text-emerald-500"
+                                        }
+                                      >
+                                        {String(
+                                          typeof usage.daily === "number"
+                                            ? usage.daily
+                                            : 0,
+                                        )}{" "}
+                                        / {dailyLimit === "unlimited" ? (dir === "rtl" ? "غير محدود" : "unlimited") : String(dailyLimit)}
+                                      </span>
+                                    </div>
+                                    <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-theme ${dailyPercent > 90 ? "bg-red-500" : "bg-emerald-500"}`}
+                                        style={{ width: `${dailyLimit === "unlimited" ? 0 : dailyPercent}%` }}
+                                      />
+                                    </div>
                                   </div>
-                                  <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full transition-theme ${monthlyPercent > 90 ? "bg-red-500" : "bg-blue-500"}`}
-                                      style={{ width: `${monthlyPercent}%` }}
+
+                                  {/* Monthly Bar */}
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-[8px] font-bold uppercase">
+                                      <span className="text-gray-500">
+                                        {t("monthly")}
+                                      </span>
+                                      <span
+                                        className={
+                                          monthlyPercent > 90
+                                            ? "text-red-500"
+                                            : "text-blue-500"
+                                        }
+                                      >
+                                        {String(
+                                          typeof usage.monthly === "number"
+                                            ? usage.monthly
+                                            : 0,
+                                        )}{" "}
+                                        / {monthlyLimit === "unlimited" ? (dir === "rtl" ? "غير محدود" : "unlimited") : String(monthlyLimit)}
+                                      </span>
+                                    </div>
+                                    <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-theme ${monthlyPercent > 90 ? "bg-red-500" : "bg-blue-500"}`}
+                                        style={{ width: `${monthlyLimit === "unlimited" ? 0 : monthlyPercent}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Override Section */}
+                              <div className="mt-4 pt-3 border-t border-[var(--border-main)]/10 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className={`text-[9.5px] font-black ${hasOverride ? "text-amber-500" : "text-gray-500"}`}>
+                                    {hasOverride ? (dir === "rtl" ? "حد مخصص ⚙️" : "Custom Override ⚙️") : (dir === "rtl" ? "الافتراضي" : "Standard Plan")}
+                                  </span>
+                                  {hasOverride && (
+                                    <button
+                                      onClick={() => {
+                                        const next = { ...customLimits };
+                                        delete next[toolId];
+                                        setCustomLimits(next);
+                                      }}
+                                      className="text-[9px] font-bold text-red-500 hover:underline cursor-pointer"
+                                    >
+                                      {dir === "rtl" ? "إلغاء التخصيص" : "Reset"}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <div>
+                                    <label className="text-[8px] font-medium text-gray-500 block mb-0.5">
+                                      {dir === "rtl" ? "اليومي" : "Daily"}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder={typeof planLimit === "number" ? String(planLimit) : String(planLimit?.daily || "unlimited")}
+                                      value={customLimit?.daily !== undefined ? String(customLimit.daily) : ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        const next = { ...customLimits };
+                                        if (!next[toolId]) next[toolId] = { daily: "unlimited", monthly: "unlimited" };
+                                        next[toolId] = { ...next[toolId], daily: val === "" ? "unlimited" : (val.trim() === "unlimited" ? "unlimited" : (isNaN(Number(val)) ? val : Number(val))) };
+                                        setCustomLimits(next);
+                                      }}
+                                      className={`w-full h-7 px-1.5 rounded-sm text-[10px] font-bold border focus:outline-none focus:border-amber-500/50 transition-theme ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)] text-amber-500" : "bg-white border-[var(--border-main)] text-amber-600"}`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] font-medium text-gray-500 block mb-0.5">
+                                      {dir === "rtl" ? "الشهري" : "Monthly"}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder={typeof planLimit === "number" ? String(planLimit * 30) : String(planLimit?.monthly || "unlimited")}
+                                      value={customLimit?.monthly !== undefined ? String(customLimit.monthly) : ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        const next = { ...customLimits };
+                                        if (!next[toolId]) next[toolId] = { daily: "unlimited", monthly: "unlimited" };
+                                        next[toolId] = { ...next[toolId], monthly: val === "" ? "unlimited" : (val.trim() === "unlimited" ? "unlimited" : (isNaN(Number(val)) ? val : Number(val))) };
+                                        setCustomLimits(next);
+                                      }}
+                                      className={`w-full h-7 px-1.5 rounded-sm text-[10px] font-bold border focus:outline-none focus:border-amber-500/50 transition-theme ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)] text-amber-500" : "bg-white border-[var(--border-main)] text-amber-600"}`}
                                     />
                                   </div>
                                 </div>

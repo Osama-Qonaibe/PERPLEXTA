@@ -13,7 +13,7 @@ export async function runSystemMaintenance() {
         FROM information_schema.tables 
         WHERE table_name IN ('token_blacklist', 'password_resets', 'user_activity_logs', 'subscriptions', 'oauth_states', 'ai_logs')
       `);
-      const existingTables = new Set(tableCheck.rows.map(r => r.table_name));
+      const existingTables = new Set(tableCheck.rows.map((r: any) => r.table_name));
 
       // 1. Cleanup expired tokens
       if (existingTables.has('token_blacklist')) {
@@ -387,6 +387,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+    });
+
+    // MIGRATION: Granular Limit Overrides v12
+    await runVersioned('v12_custom_limits', 'Adding custom_limits jsonb column to users table for granular overrides', async (tx) => {
+      await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_limits JSONB DEFAULT NULL`);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -1249,7 +1254,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         ('canvas', '', '', 'Perplexta creative studio and multi-modal design canvas.', 'استوديو الإبداع المتقدم ولوحة التصميم متعددة الوسائط.', 25),
         ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
         ('perplexta_memory', '', '', 'Unified system intelligence and long-term memory synthesis.', 'ذاكرة النظام الموحدة وتركيب المعارف طويلة الأمد.', 5),
-        ('perplexta_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
+        ('perplexta_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10),
+        ('sovereign_memory', '', '', 'Unified sovereign system intelligence and long-term memory synthesis.', 'ذاكرة النظام السيادية الموحدة وتركيب المعارف طويلة الأمد.', 5),
+        ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
       ON CONFLICT (tool_id) DO NOTHING
     `);
   }

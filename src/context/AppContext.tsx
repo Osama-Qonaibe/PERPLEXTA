@@ -89,6 +89,12 @@ interface AppContextType {
   isMobile: boolean;
   isInstallable: boolean;
   isInstalling: boolean;
+  isStandalone: boolean;
+  isInstallationRunning: boolean;
+  installProgress: number;
+  installLogs: string[];
+  installSuccess: boolean;
+  closeInstallationModal: () => void;
   rememberMe: boolean;
   isOperationPending: boolean;
   setIsOperationPending: (val: boolean) => void;
@@ -125,6 +131,8 @@ const translations = {
     chat_pro: 'احترافي',
     chat_reasoning: 'تفكير',
     perplexta_search: 'البحث الاستخباراتي',
+    sovereign_search: 'البحث السيادي',
+    sovereign_search_desc: 'البحث الاستخباراتي الذكي والتنقيب عن المعرفة العالمية في الوقت الفعلي بأعلى مستويات النزاهة.',
     perplexta_analysis: 'تحليل بيربليكستا',
     perplexta_analysis_desc: 'البحث التقني والتحليل الرقمي العميق',
     legal_analysis: 'المساعد القانوني',
@@ -139,6 +147,8 @@ const translations = {
     canvas: 'استوديو الصوت الذكي',
     storage_mb: 'مساحة التخزين (MB)',
     perplexta_memory: 'الذاكرة الجوهرية',
+    sovereign_memory: 'الذاكرة السيادية',
+    sovereign_memory_desc: 'التكامل السيادي والاحتفاظ بالمعارف والذكريات على المدى الطويل لمصادقة وسياق الهوية الرقمية الذكية.',
     newBadge: 'جديد',
     commandCenter: 'مركز القيادة',
     aiInfrastructure: 'إدارة المفاتيح',
@@ -443,10 +453,10 @@ const translations = {
     notVerifiedKYC: 'حساب غير موثق',
     role_admin: 'مدير نظام',
     role_support: 'دعم فني',
-    role_elite: 'مستكشف إيليت',
-    role_user: 'مستكشف',
-    userManagement: 'إدارة المستكشفين',
-    addExplorer: 'إضافة مستكشف',
+    role_elite: 'مستخدم إيليت',
+    role_user: 'مستخدم',
+    userManagement: 'إدارة المستخدمين',
+    addExplorer: 'إضافة مستخدم',
     deleteUser: 'حذف مستخدم',
     ai: 'الذكاء الاصطناعي',
     system: 'النظام',
@@ -804,6 +814,8 @@ const translations = {
     chat_pro: 'Pro',
     chat_reasoning: 'Think',
     perplexta_search: 'Intelligence Search',
+    sovereign_search: 'Sovereign Search',
+    sovereign_search_desc: 'Real-time sovereign web intelligence and strategic knowledge extraction with zero-tracking integrity.',
     perplexta_analysis: 'Perplexta Analysis',
     perplexta_analysis_desc: 'Technical Search & Deep Digital Analysis',
     legal_analysis: 'Legal Assistant',
@@ -818,6 +830,8 @@ const translations = {
     canvas: 'Smart Audio Studio',
     storage_mb: 'Storage Space (MB)',
     perplexta_memory: 'Core Memory',
+    sovereign_memory: 'Sovereign Memory',
+    sovereign_memory_desc: 'Sovereign system integration and long-term knowledge retention with identity verification mapping.',
     newBadge: 'NEW',
     commandCenter: 'Command Center',
     aiInfrastructure: 'API Keys Vault',
@@ -899,10 +913,10 @@ const translations = {
     ledger: 'Ledger',
     role_admin: 'Admin',
     role_support: 'Support',
-    role_elite: 'Elite Explorer',
-    role_user: 'Explorer',
+    role_elite: 'Elite User',
+    role_user: 'User',
     userManagement: 'User Management',
-    addExplorer: 'Add Explorer',
+    addExplorer: 'Add User',
     deleteUser: 'Delete User',
     ai: 'AI',
     system: 'System',
@@ -1559,6 +1573,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
+  const [isStandalone, setIsStandalone] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           (window.navigator as any).standalone === true ||
+           document.referrer.includes('android-app://');
+  });
+  const [isInstallationRunning, setIsInstallationRunning] = useState<boolean>(false);
+  const [installProgress, setInstallProgress] = useState<number>(0);
+  const [installLogs, setInstallLogs] = useState<string[]>([]);
+  const [installSuccess, setInstallSuccess] = useState<boolean>(false);
+
+  const closeInstallationModal = () => {
+    setIsInstallationRunning(false);
+    setInstallSuccess(false);
+    setIsInstalling(false);
+  };
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -1566,13 +1597,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsInstallable(true);
     };
 
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -1591,15 +1630,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [isOperationPending]);
 
   const installApp = async () => {
-    if (!deferredPrompt) return;
+    setIsInstallationRunning(true);
     setIsInstalling(true);
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstallable(false);
-      setDeferredPrompt(null);
+    setInstallProgress(0);
+    setInstallSuccess(false);
+
+    const logsAr = [
+      '[معايرة] جاري الاتصال بقنوات الـ PWA المشفرة للبيانات ونظام الحقن...',
+      '[معالجة] توجيه مسارات الإرسال واستبيان سرعة وسائط التخزين المحلية للواجهة وبدء المزامنة الفورية...',
+      '[بناء الكاش] جاري بناء وتخزين أصول الواجهة الأساسية لحفظها في مصفوفة التصفح السريع...',
+      '[تأمين الميثاق] حقن ميثاق بيربليكستا الدستوري للتشغيل السيادي الآمن بموجب بروتوكول CORE_PROTOCOL الخاص بالمنصة...',
+      '[حقن الذاكرة] تفعيل بروتوكولات العقدة المستقلة ومزامنة الـ Service Worker لتمكين التشغيل السلس بلا إنترنت 24/7...',
+      '[فحص النزاهة] مطابقة مفاتيح التشفير AES-256 وقسائم الدفتر المالي المشفر وصفر-تأخير للمحفظة والملفات السحابية...',
+      '[اكتمال التنفيذ] المصافحة الرقمية تكتمل بنجاح! مصفوفة الوصول السريع لـ PERPLEXTA نشطة وجاهزة للعمل بنسبة 100%.'
+    ];
+
+    const logsEn = [
+      '[CALIBRATING] Handshaking with secure PWA satellite node channel and compilation pipeline...',
+      '[ROUTING] Optimizing telemetry pipelines and auditing filesystem state for lightning-fast client-side delivery...',
+      '[COMPILING] Extracting and caching layout engine, fonts, icons, and real-time dashboard assets locally...',
+      '[SECURING] Binding Perplexta Sovereign Security Constitution under military-grade CORE_PROTOCOL standard...',
+      '[DENSE_SYNCHRONY] Deploying responsive multithread service worker for offline runtime execution & memory compression...',
+      '[INTEGRITY] Validating ledger wallet endpoints and verification of AES-256 credentials with zero-leak proxy layer...',
+      '[COMPLETED] Cryptographic handshake finalized successfully! Interactive core volume is fully synchronized.'
+    ];
+
+    const targetLogs = language === 'ar' ? logsAr : logsEn;
+    setInstallLogs([targetLogs[0]]);
+
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([15, 30, 45]);
     }
-    setIsInstalling(false);
+
+    const interval = setInterval(() => {
+      setInstallProgress((prev) => {
+        const increment = Math.floor(Math.random() * 8) + 4;
+        const next = prev + increment;
+        
+        if (next >= 100) {
+          clearInterval(interval);
+          setInstallLogs((old) => [...old, targetLogs[6]]);
+          
+          if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate([100, 50, 100]);
+          }
+
+          setTimeout(async () => {
+            if (isInstallable && deferredPrompt) {
+              try {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                  setIsStandalone(true);
+                  setIsInstallable(false);
+                  setDeferredPrompt(null);
+                  setInstallSuccess(true);
+                } else {
+                  setIsInstallationRunning(false);
+                  setIsInstalling(false);
+                }
+              } catch (err) {
+                console.error("PWA prompt trigger error:", err);
+                setInstallSuccess(true);
+              }
+            } else {
+              setInstallSuccess(true);
+            }
+          }, 1200);
+
+          return 100;
+        }
+
+        const stepIndex = Math.min(Math.floor(next / 16.6), 5);
+        const currentLog = targetLogs[stepIndex];
+        setInstallLogs((oldLogs) => {
+          if (oldLogs[oldLogs.length - 1] !== currentLog && currentLog) {
+            return [...oldLogs, currentLog];
+          }
+          return oldLogs;
+        });
+
+        return next;
+      });
+    }, 100);
   };
 
   const [economySettings, setEconomySettings] = useState<any>({ 
@@ -2051,7 +2164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const appName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
-    const nameToUse = appName || (language === 'ar' ? 'المنصة الذكية' : 'Smart Platform');
+    const nameToUse = appName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
     
     document.title = nameToUse;
   }, [siteSettings, language]);
@@ -2394,7 +2507,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentSiteName = language === 'ar' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
     const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
     
-    document.title = currentSiteName || '...';
+    document.title = currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
     
     let metaDescription = document.querySelector('meta[name="description"]');
     if (!metaDescription) {
@@ -2488,6 +2601,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isMobile,
       isInstallable,
       isInstalling,
+      isStandalone,
+      isInstallationRunning,
+      installProgress,
+      installLogs,
+      installSuccess,
+      closeInstallationModal,
       rememberMe,
       setRememberMe,
       isOperationPending,

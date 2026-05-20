@@ -55,6 +55,7 @@ export async function saveDatabaseConfig(config: any) {
 
 export async function testDatabaseConnection(config: any) {
   const body = config.config || config;
+  const dbId = config.id || body.id;
   const connection_string = body.connection_string || body.connectionString;
   const host = body.host;
   const port = body.port;
@@ -62,10 +63,31 @@ export async function testDatabaseConnection(config: any) {
   const username = body.username;
   const password = body.password;
 
-  let connStr = connection_string;
+  let decryptedPassword = '';
+  let decryptedConnString = '';
+
+  if (dbId) {
+    try {
+      const existing = await pool.query('SELECT password, connection_string FROM db_connections_registry WHERE id = $1', [dbId]);
+      if (existing.rows.length > 0) {
+        const row = existing.rows[0];
+        if (row.password) {
+          try { decryptedPassword = decrypt(row.password); } catch {}
+        }
+        if (row.connection_string) {
+          try { decryptedConnString = decrypt(row.connection_string); } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn('[AdminService] Failed to fetch existing credentials for test connection:', e);
+    }
+  }
+
+  let connStr = connection_string || decryptedConnString;
   if (!connStr && host) {
+    const finalPass = password || decryptedPassword;
     const encodedUser = encodeURIComponent(username || '');
-    const encodedPass = encodeURIComponent(password || '');
+    const encodedPass = encodeURIComponent(finalPass || '');
     connStr = `postgres://${encodedUser}:${encodedPass}@${host}:${port}/${db_name}`;
   }
 

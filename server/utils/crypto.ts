@@ -57,5 +57,19 @@ export function decrypt(text: string): string {
   };
 
   const primaryResult = performDecryption(text, ENCRYPTION_KEY);
-  return primaryResult || text;
+  if (primaryResult !== null) return primaryResult;
+
+  const defaultBrowserKey = 'perplexta_secure_key_32_chars_!!';
+  if (ENCRYPTION_KEY !== defaultBrowserKey) {
+    const fallbackResult = performDecryption(text, defaultBrowserKey);
+    if (fallbackResult !== null) return fallbackResult;
+  }
+
+  const envPlaceholderKey = 'your_secure_32_chars_key_here_!';
+  if (ENCRYPTION_KEY !== envPlaceholderKey) {
+    const fallbackEnvResult = performDecryption(text, envPlaceholderKey);
+    if (fallbackEnvResult !== null) return fallbackEnvResult;
+  }
+
+  return text;
 }

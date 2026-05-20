@@ -13,11 +13,13 @@ import { Privacy } from './pages/Privacy';
 import { About } from './pages/About';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { IncentiveCard } from './components/IncentiveCard';
+import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ShieldCheck } from 'lucide-react';
+import { DefaultLogo } from './components/DefaultLogo';
 
 const CenteredLoader = () => {
   const { siteSettings, language } = useAppContext();
@@ -48,9 +50,9 @@ const CenteredLoader = () => {
           />
           <div className="relative w-24 h-24 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-[var(--border-main)]/80 flex items-center justify-center shadow-2xl overflow-hidden group">
             {siteSettings.logoBase64 ? (
-              <img src={siteSettings.logoBase64} alt="Logo" className="w-14 h-14 object-contain" />
+              <img src={siteSettings.logoBase64} alt="Logo" className="w-[84px] h-[84px] object-cover block rounded-sm" />
             ) : (
-              <Sparkles className="text-emerald-500 w-12 h-12 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
+              <DefaultLogo className="w-16 h-16" iconClassName="w-10 h-10" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/10 to-transparent opacity-50" />
           </div>
@@ -60,7 +62,7 @@ const CenteredLoader = () => {
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="space-y-1">
              <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em] drop-shadow-sm">
-                {siteName || 'PERPLEXTA'}
+                {siteName || (language === 'ar' ? 'بيربليكستا' : 'PERPLEXTA')}
              </h2>
              <div className="flex items-center justify-center gap-3">
                 <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-800" />
@@ -138,6 +140,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         expand={false}
       />
       <IncentiveCard />
+      <PWACinematicModal />
       
       <AnimatePresence>
         {!isAuthReady && <CenteredLoader key="global-loader" />}

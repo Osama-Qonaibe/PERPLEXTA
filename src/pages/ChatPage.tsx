@@ -1,7 +1,7 @@
 import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings } from 'lucide-react';
+import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import Markdown from 'react-markdown';
@@ -30,18 +30,43 @@ const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const { dir } = useAppContext();
+  const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : 'text';
   const codeContent = String(children).trim();
 
+  // Sandbox Mode state & execution variables
+  const [sandboxMode, setSandboxMode] = useState(false);
+  const [editableCode, setEditableCode] = useState(codeContent);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [outputLogs, setOutputLogs] = useState<{ type: 'log' | 'info' | 'warn' | 'error'; text: string; time: string }[]>([]);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEditableCode(codeContent);
+  }, [codeContent]);
+
   const isMediaUrl = (codeContent.startsWith('http') || codeContent.startsWith('/')) && (codeContent.includes('.png') || codeContent.includes('.jpg') || codeContent.includes('.mp4') || codeContent.includes('.gif') || codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg'));
 
+  const isExecutable = !isMediaUrl && ['javascript', 'js', 'typescript', 'ts', 'html', 'css'].includes(lang.toLowerCase());
+
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(codeContent);
+    navigator.clipboard.writeText(editableCode)
+      .then(() => {
+        setCopied(true);
+        toast.success(dir === 'rtl' ? 'تم نسخ الكود بنجاح' : 'Code copied to clipboard!');
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy code: ', err);
+        toast.error(dir === 'rtl' ? 'فشل نسخ الكود' : 'Failed to copy code');
+      });
   };
 
   const downloadCode = () => {
-    const blob = new Blob([codeContent], { type: 'text/plain' });
+    const blob = new Blob([editableCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -58,30 +83,262 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     a.click();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = e.currentTarget.selectionStart;
+      const end = e.currentTarget.selectionEnd;
+      const newValue = editableCode.substring(0, start) + '  ' + editableCode.substring(end);
+      setEditableCode(newValue);
+      setTimeout(() => {
+        e.currentTarget.selectionStart = e.currentTarget.selectionEnd = start + 2;
+      }, 0);
+    }
+  };
+
+  const handleRun = async () => {
+    setIsPlaying(true);
+    setExecutionError(null);
+    setIframeSrc(null);
+    setOutputLogs([]);
+
+    const language = lang.toLowerCase();
+    if (['html', 'css'].includes(language)) {
+      setIsRunning(true);
+      try {
+        let fullHtml = '';
+        const isDark = document.body.classList.contains('dark') || document.documentElement.className.includes('dark');
+        const documentClass = isDark ? 'dark' : 'light';
+        
+        if (language === 'html') {
+          fullHtml = `
+            <!DOCTYPE html>
+            <html class="${documentClass}">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { 
+                  font-family: system-ui, -apple-system, sans-serif; 
+                  margin: 1rem; 
+                  padding: 0;
+                  color: ${isDark ? '#e2e8f0' : '#1e293b'}; 
+                  background-color: ${isDark ? '#0f0f11' : '#ffffff'}; 
+                }
+              </style>
+            </head>
+            <body>
+              ${editableCode}
+            </body>
+            </html>
+          `;
+        } else {
+          fullHtml = `
+            <!DOCTYPE html>
+            <html class="${documentClass}">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { 
+                  font-family: system-ui, -apple-system, sans-serif; 
+                  margin: 1rem; 
+                  padding: 0;
+                  color: ${isDark ? '#e2e8f0' : '#1e293b'}; 
+                  background-color: ${isDark ? '#0f0f11' : '#ffffff'}; 
+                }
+                ${editableCode}
+              </style>
+            </head>
+            <body>
+              <div class="sandbox-demo-container">
+                <h1 class="demo-title">CSS Sandbox Preview</h1>
+                <p class="demo-text">Style standard selectors, utilities, classes, or ID attributes here!</p>
+                <div class="demo-card" style="border: 1px solid ${isDark ? '#334155' : '#e2e8f0'}; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; background-color: ${isDark ? '#1a1a1c' : '#f8fafc'}; max-width: 450px;">
+                  <h3 style="margin-top: 0;">Interactive Demo Card</h3>
+                  <p style="font-size: 14px; opacity: 0.85;">This card mimics typical interface content to display visual styles clearly.</p>
+                  <button class="demo-button" style="padding: 0.5rem 1rem; border-radius: 4px; border: none; font-weight: bold; background-color: #10b981; color: white;">Button One</button>
+                  <button class="demo-button outline" style="padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #10b981; font-weight: bold; background-color: transparent; color: #10b981; margin-left: 0.5rem;">Button Two</button>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+        }
+        setIframeSrc(fullHtml);
+      } catch (err: any) {
+        setExecutionError(err?.message || String(err));
+      } finally {
+        setIsRunning(false);
+      }
+    } else {
+      setIsRunning(true);
+      const startTime = performance.now();
+      const logsList: { type: 'log' | 'info' | 'warn' | 'error'; text: string; time: string }[] = [];
+      const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false });
+
+      const customConsole = {
+        log: (...args: any[]) => {
+          logsList.push({
+            type: 'log',
+            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
+            time: getTimestamp()
+          });
+        },
+        info: (...args: any[]) => {
+          logsList.push({
+            type: 'info',
+            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
+            time: getTimestamp()
+          });
+        },
+        warn: (...args: any[]) => {
+          logsList.push({
+            type: 'warn',
+            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
+            time: getTimestamp()
+          });
+        },
+        error: (...args: any[]) => {
+          logsList.push({
+            type: 'error',
+            text: args.map(arg => typeof arg === 'object' ? String(arg?.message || JSON.stringify(arg)) : String(arg)).join(' '),
+            time: getTimestamp()
+          });
+        }
+      };
+
+      try {
+        let jsCode = editableCode;
+        if (['typescript', 'ts'].includes(language)) {
+          jsCode = jsCode
+            .replace(/import\s+[\s\S]*?\s+from\s+['"].*?['"];?/g, '')
+            .replace(/export\s+(default\s+)?/g, '')
+            .replace(/(?:interface|type)\s+\w+[\s\S]*?\{[\s\S]*?\}/g, '')
+            .replace(/(const|let|var)\s+(\w+)\s*:\s*\w+/g, '$1 $2')
+            .replace(/function\s+(\w+)\s*\((.*?)\)\s*:\s*\w+/g, 'function $1($2)')
+            .replace(/\((.*?)\)\s*:\s*\w+\s*=>/g, '($1) =>');
+        }
+
+        const runner = new Function('console', `
+          try {
+            ${jsCode}
+          } catch (err) {
+            console.error(err);
+          }
+        `);
+        runner(customConsole);
+
+        const duration = (performance.now() - startTime).toFixed(1);
+        logsList.push({
+          type: 'info',
+          text: `[SYSTEM] Process completed in ${duration}ms.`,
+          time: getTimestamp()
+        });
+        setOutputLogs(logsList);
+      } catch (err: any) {
+        setExecutionError(err?.message || String(err));
+        logsList.push({
+          type: 'error',
+          text: `[CRASH] ${err?.message || String(err)}`,
+          time: getTimestamp()
+        });
+        setOutputLogs(logsList);
+      } finally {
+        setIsRunning(false);
+      }
+    }
+  };
+
+  const handleStop = () => {
+    setIsPlaying(false);
+    setIframeSrc(null);
+    setOutputLogs([]);
+  };
+
+  const handleReset = () => {
+    setEditableCode(codeContent);
+    handleStop();
+    toast.success(dir === 'rtl' ? 'تمت إعادة تعيين الكود البرمجي' : 'Code reset for execution');
+  };
+
   if (inline) return <code className={className} {...props}>{children}</code>;
 
   return (
-    <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border-none shadow-none">
-      <div className="flex items-center justify-between px-4 py-2 bg-transparent border-none">
+    <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-all duration-300">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-[#1a1a1c]/40 border-b border-gray-100 dark:border-gray-800/40 rounded-t-md">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-theme">
-          {isMediaUrl ? (
-            <button onClick={() => downloadFile(children)} className="p-1.5 rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
-              <Download size={13} />
-            </button>
-          ) : (
-            <>
-              <button onClick={copyToClipboard} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Copy code">
-                <Copy size={14} />
+
+        {/* Action Controls & Interactive Execution Toggle */}
+        <div className="flex items-center gap-2">
+          {isExecutable && (
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
+              <button
+                onClick={() => { setSandboxMode(false); handleStop(); }}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-all duration-300 ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+              >
+                {dir === 'rtl' ? 'مصدر الكود' : 'Source Code'}
               </button>
-              <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
-                <FileText size={14} />
+              <button
+                onClick={() => { setSandboxMode(true); }}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-all duration-300 ${sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+              >
+                {dir === 'rtl' ? 'بيئة الاختبار' : 'Interactive Sandbox'}
               </button>
-            </>
+            </div>
           )}
+
+          <div className="flex items-center gap-1 transition-theme">
+            {isMediaUrl ? (
+              <button onClick={() => downloadFile(children)} className="p-1.5 rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
+                <Download size={13} />
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={copyToClipboard} 
+                  className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 hover:bg-[var(--bg-overlay)] active:scale-95" 
+                  title={copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied!') : (dir === 'rtl' ? 'نسخ الكود' : 'Copy code')}
+                >
+                  <AnimatePresence mode="wait">
+                    {copied ? (
+                      <motion.div
+                        key="checked"
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.5, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      >
+                        <Check size={14} />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="copy"
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.5, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Copy size={14} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  {copied && (
+                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap animate-bounce font-sans pointer-events-none">
+                      {dir === 'rtl' ? 'تم النسخ!' : 'Copied!'}
+                    </span>
+                  )}
+                </button>
+                <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
+                  <FileText size={14} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
       
@@ -90,7 +347,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
+          className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-b-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
           {/* Audio Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
@@ -146,21 +403,150 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
         </motion.div>
       ) : (
-        <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md`} {...props}>
-          {isMediaUrl ? (
-            codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 animate-pulse">
-                  <Music size={32} />
-                </div>
-                <span className="text-sm font-bold text-emerald-500 tracking-widest uppercase">Sonic Draft Ready</span>
-                <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
+        <div className="relative">
+          {sandboxMode ? (
+            /* Interactive Sandbox Mode (Editable code text area with Play & Reset toolbar) */
+            <div className="flex flex-col w-full bg-[var(--bg-secondary)] overflow-hidden rounded-b-md">
+              <div className="relative p-1">
+                <textarea
+                  value={editableCode}
+                  onChange={(e) => setEditableCode(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full min-h-[220px] max-h-[450px] p-4 bg-transparent outline-none border-b border-gray-100 dark:border-gray-800/40 font-mono text-[13px] md:text-[14px] leading-relaxed text-[var(--text-primary)] resize-y custom-scrollbar"
+                  spellCheck="false"
+                  placeholder={dir === 'rtl' ? 'اكتب أو عدل الكود البرمجي هنا لتجربته...' : 'Type or modify code snippet here to test...'}
+                />
               </div>
-            ) : (
-              <img src={codeContent} alt="Generated" className="max-w-full rounded-md" />
-            )
-          ) : children}
-        </code>
+
+              {/* Execution Action Drawer Controls */}
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-50/30 dark:bg-black/10">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleRun}
+                    disabled={isRunning}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 disabled:opacity-50"
+                  >
+                    {isRunning ? (
+                      <Loader2 size={13} className="animate-spin text-emerald-500" />
+                    ) : (
+                      <Play size={13} className="fill-emerald-500/20 stroke-emerald-500" />
+                    )}
+                    <span>{dir === 'rtl' ? 'تنفيذ برمجياً' : 'Run Sandbox'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all duration-300 border border-transparent"
+                  >
+                    <RefreshCw size={12} />
+                    <span>{dir === 'rtl' ? 'إعادة التعيين' : 'Reset'}</span>
+                  </button>
+
+                  {isPlaying && (
+                    <button
+                      onClick={handleStop}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-red-500/10 text-red-500 hover:text-red-600 transition-all duration-300 border border-transparent"
+                    >
+                      <Square size={12} className="fill-red-500/10" />
+                      <span>{dir === 'rtl' ? 'إخفاء النتائج' : 'Clear View'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-[10px] font-mono text-[var(--text-muted)] select-none">
+                  {dir === 'rtl' ? 'محرر بيربليكستا النشط' : 'PERPLEXTA ACTIVE SANDBOX'}
+                </div>
+              </div>
+
+              {/* Sandbox Outputs Drawer */}
+              <AnimatePresence>
+                {isPlaying && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="border-t border-gray-100 dark:border-gray-800/40 overflow-hidden"
+                  >
+                    {['html', 'css'].includes(lang.toLowerCase()) ? (
+                      <div className="p-4 bg-gray-50/10 dark:bg-black/20">
+                        <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 select-none flex items-center justify-between">
+                          <span>{dir === 'rtl' ? 'معاينة النتيجة التفاعلية' : 'LIVE COMPONENT INTERFACE'}</span>
+                          <span className="flex h-1.5 w-1.5 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                          </span>
+                        </div>
+                        {iframeSrc ? (
+                          <iframe
+                            srcDoc={iframeSrc}
+                            sandbox="allow-scripts"
+                            className="w-full h-[300px] bg-white rounded-[4px] border border-gray-200 dark:border-gray-800/80 shadow-inner"
+                            title="Sandbox PreviewFrame"
+                          />
+                        ) : (
+                          <div className="w-full h-[300px] flex items-center justify-center bg-gray-100 dark:bg-black/30 text-xs text-[var(--text-muted)] rounded-[4px]">
+                            {dir === 'rtl' ? 'جاري تحميل المعاينة...' : 'Loading Visual Component...'}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-[#08080a] text-gray-300 font-mono text-xs select-text">
+                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 border-b border-gray-800/50 pb-1.5 select-none flex items-center justify-between">
+                          <span>{dir === 'rtl' ? '콘솔 مخرجات كونسول الآلة' : 'CONSOLE RUNTIME WORKSPACE'}</span>
+                          <button
+                            onClick={() => setOutputLogs([])}
+                            className="text-gray-600 hover:text-emerald-500 transition-theme"
+                            title="Clear Logs"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-1.5 max-h-[250px] overflow-y-auto custom-scrollbar">
+                          {outputLogs.map((log, lidx) => (
+                            <div key={lidx} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
+                              log.type === 'error' ? 'text-red-400 bg-red-950/20 px-2 rounded-sm' :
+                              log.type === 'warn' ? 'text-amber-400 bg-amber-950/20 px-2 rounded-sm' :
+                              log.type === 'info' ? 'text-emerald-400 bg-emerald-950/10 px-2 rounded-sm' : 'text-gray-300'
+                            }`}>
+                              <span className="text-gray-600 select-none text-[9px] mt-0.5 font-bold tracking-tighter">[{log.time}]</span>
+                              {log.type === 'error' && <AlertTriangle size={12} className="mt-0.5 shrink-0" />}
+                              {log.type === 'warn' && <AlertTriangle size={12} className="mt-0.5 shrink-0" />}
+                              <pre className="font-mono whitespace-pre-wrap break-all text-[12px]">{log.text}</pre>
+                            </div>
+                          ))}
+                          {outputLogs.length === 0 && (
+                            <div className="text-gray-600 italic py-2 text-center text-[10px]">
+                              {dir === 'rtl' ? 'لا يوجد إنتاج برامجي مسجل حتى الآن. اضغط فوق "تشغيل المعمل" للبدء.' : 'No console output. Click "Run Sandbox" to trigger execution.'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            /* Standard Read Only View with Code Syntax Box */
+            <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border-none rounded-b-md`} {...props}>
+              {isMediaUrl ? (
+                codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
+                  <div className="flex flex-col items-center gap-4 py-8">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 animate-pulse">
+                      <Music size={32} />
+                    </div>
+                    <span className="text-sm font-bold text-emerald-500 tracking-widest uppercase">Sonic Draft Ready</span>
+                    <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
+                  </div>
+                ) : (
+                  <img src={codeContent} alt="Generated" className="max-w-full rounded-md" referrerPolicy="no-referrer" />
+                )
+              ) : children}
+            </code>
+          )}
+        </div>
       )}
     </div>
   );
@@ -187,6 +573,197 @@ interface Message {
     base64?: string;
   };
 }
+
+const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) => {
+  const normId = toolId || 'chat';
+  
+  if (normId.startsWith('chat_fast') || normId === 'chat_fast') {
+    return {
+      label: dir === 'rtl' ? 'البحث السريع والتوليد الخفيف' : 'Fast Generation',
+      icon: Zap,
+      colorClass: 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+      bgClass: 'bg-amber-500/10 border-amber-500/20'
+    };
+  }
+  if (normId.startsWith('chat_pro') || normId === 'chat_pro') {
+    return {
+      label: dir === 'rtl' ? 'الذكاء الفائق والتحليل المتقدم' : 'Elite Reasoning',
+      icon: Sparkles,
+      colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+      bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+    };
+  }
+  if (normId.startsWith('chat_reasoning') || normId === 'chat_reasoning') {
+    return {
+      label: dir === 'rtl' ? 'التفكير العميق والتحميص المنطقي' : 'Deep Reasoning',
+      icon: Brain,
+      colorClass: 'text-sky-500 drop-shadow-[0_0_8px_rgba(14,165,233,0.5)]',
+      bgClass: 'bg-sky-500/10 border-sky-500/20'
+    };
+  }
+  
+  switch (normId) {
+    case 'code':
+      return {
+        label: t('code') || (dir === 'rtl' ? 'توليد وتحليل البرمجيات' : 'Code Engine'),
+        icon: Code,
+        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+      };
+    case 'video':
+      return {
+        label: t('video') || (dir === 'rtl' ? 'محرك إنتاج الفيديو' : 'Video Creator'),
+        icon: Video,
+        colorClass: 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]',
+        bgClass: 'bg-red-500/10 border-red-500/20'
+      };
+    case 'image':
+      return {
+        label: t('image') || (dir === 'rtl' ? 'التوليد الصوري الإبداعي' : 'Studio Image'),
+        icon: ImageIcon,
+        colorClass: 'text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]',
+        bgClass: 'bg-pink-500/10 border-pink-500/20'
+      };
+    case 'learning':
+      return {
+        label: t('learning') || (dir === 'rtl' ? 'التعليم والتأهيل المعرفي' : 'Learning Guide'),
+        icon: BookOpen,
+        colorClass: 'text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]',
+        bgClass: 'bg-purple-500/10 border-purple-500/20'
+      };
+    case 'perplexta_analysis':
+      return {
+        label: t('perplexta_analysis') || (dir === 'rtl' ? 'تحليل رقمي عميق وبحث شامل' : 'Deep Digital Search'),
+        icon: Search,
+        colorClass: 'text-teal-500 drop-shadow-[0_0_8px_rgba(20,184,166,0.5)]',
+        bgClass: 'bg-teal-500/10 border-teal-500/20'
+      };
+    case 'sovereign_search':
+    case 'perplexta_search':
+      return {
+        label: t('sovereign_search') || (dir === 'rtl' ? 'البحث الاستخباراتي السيادي' : 'Sovereign Intelligence Search'),
+        icon: Search,
+        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+      };
+    case 'sovereign_memory':
+    case 'perplexta_memory':
+      return {
+        label: t('sovereign_memory') || (dir === 'rtl' ? 'الذاكرة السيادية الجوهرية' : 'Sovereign Core Memory'),
+        icon: Database,
+        colorClass: 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+        bgClass: 'bg-amber-500/10 border-amber-500/20'
+      };
+    case 'legal_analysis':
+      return {
+        label: t('legal_analysis') || (dir === 'rtl' ? 'التحقيق والتدقيق القانوني' : 'Legal Auditing'),
+        icon: Scale,
+        colorClass: 'text-indigo-500 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]',
+        bgClass: 'bg-indigo-500/10 border-indigo-500/20'
+      };
+    case 'notebook':
+      return {
+        label: t('notebook') || (dir === 'rtl' ? 'صياغة ونشر المدونات والمذكرات' : 'Smart Editor'),
+        icon: Megaphone,
+        colorClass: 'text-lime-500 drop-shadow-[0_0_8px_rgba(132,204,22,0.5)]',
+        bgClass: 'bg-lime-500/10 border-lime-500/20'
+      };
+    case 'canvas':
+      return {
+        label: t('canvas') || (dir === 'rtl' ? 'استوديو تأليف الموسيقى والمؤثرات' : 'Sound Orchestra'),
+        icon: Music,
+        colorClass: 'text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]',
+        bgClass: 'bg-cyan-500/10 border-cyan-500/20'
+      };
+    case 'tts':
+      return {
+        label: t('tts') || (dir === 'rtl' ? 'توليد النطق الطبيعي (سمعي)' : 'Studio Voice'),
+        icon: Volume2,
+        colorClass: 'text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]',
+        bgClass: 'bg-blue-500/10 border-blue-500/20'
+      };
+    case 'stt':
+      return {
+        label: t('stt') || (dir === 'rtl' ? 'تحليل وتسجيل الصوت المباشر' : 'Live Audio Capture'),
+        icon: Mic,
+        colorClass: 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]',
+        bgClass: 'bg-orange-500/10 border-orange-500/20'
+      };
+    default:
+      return {
+        label: t('chat') || (dir === 'rtl' ? 'مساعد بيربليكستا المباشر' : 'AI Companion'),
+        icon: MessageSquare,
+        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+      };
+  }
+};
+
+const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, isGenerating: boolean, dir: 'ltr' | 'rtl', t: any }) => {
+  const details = getToolDetails(tool, dir, t);
+  const Icon = details.icon;
+  
+  return (
+    <div className={`flex items-center gap-2.5 mb-5 w-fit select-none bg-gray-50/50 dark:bg-[#1a1a1c]/20 border border-gray-100/60 dark:border-gray-800/20 px-3 py-1.5 rounded-[4px] shadow-sm backdrop-blur-[2px] ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
+      <div className={`relative flex items-center justify-center w-6.5 h-6.5 rounded-[4px] border border-transparent transition-all duration-300 ${details.bgClass}`}>
+        {isGenerating ? (
+          <>
+            <motion.div 
+              className="absolute inset-0 rounded-[4px] bg-emerald-500/20 blur-sm"
+              animate={{ 
+                scale: [1, 1.3, 1],
+                opacity: [0.3, 0.7, 0.3]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            <motion.div
+              animate={{
+                rotate: [0, 15, -15, 0],
+                scale: [1, 1.1, 0.9, 1]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className={details.colorClass}
+            >
+              <Icon size={12} />
+            </motion.div>
+          </>
+        ) : (
+          <div className={details.colorClass}>
+            <Icon size={12} />
+          </div>
+        )}
+      </div>
+      
+      <div className="flex flex-col min-w-0">
+        <div className={`flex items-center gap-1.5 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
+          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] truncate max-w-[180px] sm:max-w-[250px]">
+            {details.label}
+          </span>
+          {isGenerating && (
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+          )}
+        </div>
+        <span className="text-[8px] md:text-[9px] text-[var(--text-muted)] tracking-tight uppercase">
+          {isGenerating 
+            ? (dir === 'rtl' ? 'جاري التحليل والمعالجة المباشرة...' : 'Processing Technical Context...') 
+            : (dir === 'rtl' ? 'مخرجات عملية الآلة المتكاملة' : 'Executed Engine Result')
+          }
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 'ltr' | 'rtl' }) => {
   if (!steps || steps.length === 0) return null;
@@ -798,6 +1375,7 @@ export const ChatPage: React.FC = () => {
   const streamingBuffer = useRef('');
   const typewriterInterval = useRef<any>(null);
   const isGeneratingRef = useRef(false);
+  const finalResponseDataRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -1214,13 +1792,50 @@ export const ChatPage: React.FC = () => {
     }
   }, [isGenerating]);
 
+  // Clean up typewriter interval on component unmount
+  useEffect(() => {
+    return () => {
+      if (typewriterInterval.current) {
+        clearInterval(typewriterInterval.current);
+        typewriterInterval.current = null;
+      }
+    };
+  }, []);
+
   const startTypewriter = () => {
     if (typewriterInterval.current) return;
     
     typewriterInterval.current = setInterval(() => {
       if (streamingBuffer.current.length > 0) {
-        // Meticulous precision: smaller, more consistent chunks for better typewriter feel
-        const pullAmount = Math.max(1, Math.min(3, Math.ceil(streamingBuffer.current.length / 15)));
+        // PERPLEXTA HIGH-PRECISION TYPEWRITER LOGIC
+        // Dynamic pulling: scales up if queue builds up to maintain zero-latency
+        const bufferLen = streamingBuffer.current.length;
+        let pullAmount = 1;
+        if (!isGeneratingRef.current) {
+          // If generation is complete, pull larger chunks to flush the buffer rapidly and avoid artificial lag
+          pullAmount = Math.min(bufferLen, Math.max(4, Math.ceil(bufferLen / 6)));
+        } else if (bufferLen > 250) {
+          // Keep up with rapid server models under high load
+          pullAmount = Math.min(bufferLen, 24);
+        } else if (bufferLen > 100) {
+          pullAmount = Math.min(bufferLen, 12);
+        } else if (bufferLen > 50) {
+          pullAmount = Math.min(bufferLen, 8);
+        } else if (bufferLen > 15) {
+          pullAmount = Math.min(bufferLen, 4);
+        } else {
+          pullAmount = Math.min(bufferLen, 2);
+        }
+
+        // Safe surrogate pair checker to avoid breaking emojis or complex characters helper
+        if (pullAmount < bufferLen) {
+          const charCode = streamingBuffer.current.charCodeAt(pullAmount - 1);
+          // If split ends on high surrogate (0xD800 - 0xDBFF), increment to keep code point units unified
+          if (charCode >= 0xD800 && charCode <= 0xDBFF) {
+            pullAmount = Math.min(bufferLen, pullAmount + 1);
+          }
+        }
+
         const chunk = streamingBuffer.current.substring(0, pullAmount);
         streamingBuffer.current = streamingBuffer.current.substring(pullAmount);
         
@@ -1242,6 +1857,17 @@ export const ChatPage: React.FC = () => {
           }
           return prev;
         });
+
+        // Smart, responsive scroll anchoring synchronized with browser's compositor refresh cycles (240px thresh)
+        requestAnimationFrame(() => {
+          const container = document.getElementById('chat-messages-container');
+          if (container) {
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 240;
+            if (isNearBottom) {
+              container.scrollTop = container.scrollHeight;
+            }
+          }
+        });
       } else if (!isGeneratingRef.current) {
         // Stop interval when buffer is empty and generation is done
         if (typewriterInterval.current) {
@@ -1259,7 +1885,7 @@ export const ChatPage: React.FC = () => {
           });
         }
       }
-    }, 25);
+    }, 10);
   };
 
   useEffect(() => {
@@ -1285,7 +1911,7 @@ export const ChatPage: React.FC = () => {
     if (routeChatId) {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
-      if (isGenerating && chatId === routeChatId) {
+      if ((isGenerating || isGeneratingRef.current) && (chatId === routeChatId || chatIdRef.current === routeChatId || !chatId)) {
         console.log('[ChatPage] Skipping redundant load for active generation session.');
         return;
       }
@@ -1370,52 +1996,58 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (!socket) return;
 
+    const applyFinalResponse = (data: any) => {
+      if (!data) return;
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant') {
+          newMessages[newMessages.length - 1] = {
+            ...lastMessage,
+            content: data.result,
+            tool: data.tool || lastMessage.tool,
+            id: data.message_id || lastMessage.id,
+            thinking_steps: data.thinking_steps || lastMessage.thinking_steps,
+            citations: data.citations || lastMessage.citations,
+            follow_ups: data.follow_ups || [],
+            is_streaming: false
+          };
+        }
+        return newMessages;
+      });
+      finalResponseDataRef.current = null;
+    };
+
     const onChatChunk = (data: any) => {
       if (data.isFinal) {
-        // For final data, we just append to buffer and let typewriter finish
-        streamingBuffer.current += data.chunk || '';
-      } else {
-        streamingBuffer.current += data.chunk;
-      }
-      
-      // Ensure the assistant message exists to start receiving chunks
-      setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
-        if (!lastMessage || lastMessage.role !== 'assistant') {
-          return [...prev, { role: 'assistant', content: '', is_streaming: true }];
+        // Prevent appending a duplicate whole response text if chunks have already stream-loaded.
+        if (streamingBuffer.current.length === 0) {
+          streamingBuffer.current += data.chunk || '';
         }
-        return prev;
-      });
+      } else {
+        streamingBuffer.current += data.chunk || '';
+      }
     };
 
     const onChatResponse = async (data: any) => {
-      // Ensure the final content is applied even if streaming missed it or for binary tools
-      if (data.result) {
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            newMessages[newMessages.length - 1] = {
-              ...lastMessage,
-              content: data.result,
-              tool: data.tool || lastMessage.tool,
-              id: data.message_id || lastMessage.id,
-              thinking_steps: data.thinking_steps || lastMessage.thinking_steps,
-              citations: data.citations || lastMessage.citations,
-              follow_ups: data.follow_ups || []
-            };
-          }
-          return newMessages;
-        });
-      }
+      // Buffer the final response data safely to prevent early typewriter state overwrites
+      finalResponseDataRef.current = data;
 
-      const checkBuffer = setInterval(async () => {
-        if (streamingBuffer.current.length === 0) {
-          clearInterval(checkBuffer);
-          setIsGenerating(false);
-          streamingBuffer.current = ''; // Reset buffer
-        }
-      }, 100);
+      // If typing buffer has completely caught up, apply the definitive database response data immediately
+      if (streamingBuffer.current.length === 0) {
+        applyFinalResponse(data);
+        setIsGenerating(false);
+      } else {
+        // Set an active polling watcher to transition only after the typewriter drains remaining chunks
+        const checkBuffer = setInterval(async () => {
+          if (streamingBuffer.current.length === 0) {
+            clearInterval(checkBuffer);
+            applyFinalResponse(finalResponseDataRef.current || data);
+            setIsGenerating(false);
+            streamingBuffer.current = ''; // Reset buffer
+          }
+        }, 100);
+      }
     };
 
     const onMemoryExtracted = (data: any) => {
@@ -1590,7 +2222,7 @@ export const ChatPage: React.FC = () => {
             preview: previewUrl || undefined
           } : undefined
         }, 
-        { role: 'assistant', content: '', tool: toolToUse }
+        { role: 'assistant', content: '', tool: toolToUse, is_streaming: true }
       ];
       
       if (updatedMessages.length > MAX_CHAT_MESSAGES) {
@@ -1685,7 +2317,7 @@ export const ChatPage: React.FC = () => {
         if (selectedFile.size > MAX_SIZE) {
           throw new Error(dir === 'rtl' 
             ? 'حجم الملف كبير جداً (الحد الأقصى 100 ميجابايت)' 
-            : 'File size exceeds sovereign limit (max 100MB)');
+            : 'File size exceeds maximum allowed limit (max 100MB)');
         }
 
         try {
@@ -2061,6 +2693,8 @@ export const ChatPage: React.FC = () => {
       { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
     ] : []),
     { id: 'canvas', label: t('canvas'), icon: <Music size={18} />, isNew: true },
+    { id: 'sovereign_search', label: t('sovereign_search') || t('perplexta_search'), icon: <Search size={18} />, isNew: true },
+    { id: 'sovereign_memory', label: t('sovereign_memory') || t('perplexta_memory'), icon: <Database size={18} />, isNew: true },
     { id: 'tts', label: t('tts'), icon: <Volume2 size={18} />, isNew: true },
     { id: 'stt', label: t('stt'), icon: <Mic size={18} />, isNew: true },
   ];
@@ -2582,18 +3216,17 @@ export const ChatPage: React.FC = () => {
               </div>
             </div>
           )}
-          <div id="chat-messages-container" className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col">
+          <div id="chat-messages-container" className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}>
           <AnimatePresence mode="wait">
-            <motion.div 
-               key={chatId || 'new-chat-empty'}
-               initial={{ opacity: 0, y: 4 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: -4 }}
-               transition={{ duration: 1.2, ease: [0.6, 0.01, 0, 1] }}
-               className="flex-1 flex flex-col"
-            >
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full">
+            {messages.length === 0 ? (
+              <motion.div
+                key="onboarding-view"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
+              >
               <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
                 <h1 
                   className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
@@ -2629,9 +3262,16 @@ export const ChatPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4">
+            </motion.div>
+            ) : (
+              <motion.div
+                key="chat-thread-view"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4"
+              >
               {messages.map((msg, idx) => {
                 return (
                   <div 
@@ -2726,7 +3366,15 @@ export const ChatPage: React.FC = () => {
                         </div>
                       ) : (
                       <div className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight">
-                        {isGenerating && idx === messages.length - 1 && msg.content === '' ? (
+                        {!msg.is_quota_error && !msg.is_system_inactive && (
+                          <ToolStatusIndicator 
+                            tool={msg.tool} 
+                            isGenerating={isGenerating && idx === messages.length - 1} 
+                            dir={dir} 
+                            t={t} 
+                          />
+                        )}
+                        {isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
                            <ResponseSkeleton dir={dir} />
                         ) : msg.is_quota_error ? (
                            <QuotaExceededCard data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
@@ -2762,7 +3410,7 @@ export const ChatPage: React.FC = () => {
                                       const text = Array.isArray(children) ? children.join('') : children;
                                       const parts = text.split(/(\[\d+\])/g);
                                       return (
-                                        <div className="last:mb-0 mb-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                                        <div className="last:mb-0 mb-3 text-sm leading-relaxed text-slate-900 dark:text-slate-100 antialiased font-normal">
                                           {parts.map((part, i) => {
                                             const match = part.match(/^\[(\d+)\]$/);
                                             if (match && msg.citations) {
@@ -2786,26 +3434,16 @@ export const ChatPage: React.FC = () => {
                                             return part;
                                           })}
                                           {isStreamingActive && isLastParagraph && (
-                                            <motion.span
-                                              initial={{ opacity: 0 }}
-                                              animate={{ opacity: [0, 1, 0.5, 1, 0] }}
-                                              transition={{ repeat: Infinity, duration: 0.6, ease: "linear" }}
-                                              className="inline-block w-[2px] h-[1.1em] ml-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.9)] align-middle"
-                                            />
+                                            <span className="typing-cursor-emerald" />
                                           )}
                                         </div>
                                       );
                                     }
                                     return (
-                                      <div className="last:mb-0 mb-3 text-sm leading-relaxed text-[var(--text-primary)]">
+                                      <div className="last:mb-0 mb-3 text-sm leading-relaxed text-slate-900 dark:text-slate-100 antialiased font-normal">
                                         {children}
                                         {isStreamingActive && isLastParagraph && (
-                                          <motion.span
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: [0, 1, 0.5, 1, 0] }}
-                                            transition={{ repeat: Infinity, duration: 0.6, ease: "linear" }}
-                                            className="inline-block w-[2px] h-[1.1em] ml-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.9)] align-middle"
-                                          />
+                                          <span className="typing-cursor-emerald" />
                                         )}
                                       </div>
                                     );
@@ -3161,9 +3799,8 @@ export const ChatPage: React.FC = () => {
                 );
               })}
               <div ref={messagesEndRef} className="h-10" />
-            </div>
+            </motion.div>
           )}
-          </motion.div>
         </AnimatePresence>
       </div>
 

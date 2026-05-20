@@ -267,3 +267,246 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none !important;
 }
+
+/* Optimized Real-Time Blinking Typing Cursor */
+@keyframes cursorBlink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+.typing-cursor-emerald {
+  display: inline-block;
+  width: 2.5px;
+  height: 1.15em;
+  margin-left: 5px;
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.9);
+  vertical-align: middle;
+  animation: cursorBlink 0.8s steps(2, start) infinite;
+  will-change: opacity;
+}
+
+.overflow-anchor-none {
+  overflow-anchor: none !important;
+}
+
+.scroll-behavior-auto {
+  scroll-behavior: auto !important;
+}
+
+/* ==========================================================================
+   PERPLEXTA ELITE MARKDOWN RENDERING STYLES
+   ========================================================================== */
+.markdown-body {
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 14px + 0.1vw, 15.5px);
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Base Paragraphs with Balanced Contrast & Rhythm */
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 0.95rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headings with Premium Rhythm & Emerald Glow Accents */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+  margin-top: 1.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.markdown-body h1 {
+  font-size: clamp(1.35rem, 1.25rem + 1vw, 1.65rem);
+  border-bottom: 1.5px solid var(--border-perplexta);
+  padding-bottom: 0.6rem;
+}
+
+.markdown-body h2 {
+  font-size: clamp(1.15rem, 1.1rem + 0.5vw, 1.35rem);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.markdown-body h2::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 0.8em;
+  background-color: var(--accent-emerald);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.markdown-body h3 {
+  font-size: clamp(1rem, 1rem + 0.2vw, 1.12rem);
+}
+
+/* Inline Bold/Strong Formatting - Elevated High Contrast */
+.markdown-body strong {
+  font-weight: 800;
+  color: var(--text-primary);
+  background-color: rgba(16, 185, 129, 0.04);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
+
+.dark .markdown-body strong {
+  color: #ffffff;
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+/* Symmetric List Padding LTR/RTL */
+.markdown-body ul,
+.markdown-body ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.95rem;
+  padding-left: 1.6rem;
+}
+
+[dir="rtl"] .markdown-body ul,
+[dir="rtl"] .markdown-body ol {
+  padding-left: 0;
+  padding-right: 1.6rem;
+}
+
+.markdown-body li {
+  margin-bottom: 0.45rem;
+  color: var(--text-secondary);
+}
+
+.markdown-body li::marker {
+  color: var(--accent-emerald);
+  font-weight: 800;
+}
+
+/* Emerald Styled Custom Bullets for Unordered Lists */
+.markdown-body ul > li {
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+[dir="rtl"] .markdown-body ul > li {
+  padding-left: 0;
+  padding-right: 1.15rem;
+}
+
+.markdown-body ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 5px;
+  height: 5px;
+  background-color: var(--accent-emerald);
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+[dir="rtl"] .markdown-body ul > li::before {
+  left: auto;
+  right: 0;
+}
+
+/* Quote Blocks with Translucent Tint & Accents */
+.markdown-body blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.4rem;
+  background: rgba(16, 185, 129, 0.02);
+  border-left: 3px solid var(--accent-emerald);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  font-style: italic;
+}
+
+[dir="rtl"] .markdown-body blockquote {
+  border-left: none;
+  border-right: 3px solid var(--accent-emerald);
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+}
+
+.markdown-body blockquote p {
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+/* High Contrast Horizontal Separators */
+.markdown-body hr {
+  margin: 2rem auto;
+  border: 0;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(16, 185, 129, 0), rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0));
+}
+
+/* High Density Professional Tables */
+.markdown-body table {
+  width: 100%;
+  margin-top: 1.4rem;
+  margin-bottom: 1.4rem;
+  border-collapse: collapse;
+  font-size: clamp(12px, 12px + 0.1vw, 13.5px);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.dark .markdown-body table {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 0.8rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+[dir="rtl"] .markdown-body th,
+[dir="rtl"] .markdown-body td {
+  text-align: right;
+}
+
+.markdown-body th {
+  background-color: rgba(16, 185, 129, 0.05);
+  font-weight: 700;
+  color: var(--accent-emerald);
+  text-transform: uppercase;
+  font-size: clamp(10.5px, 10.5px + 0.14vw, 12px);
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid rgba(16, 185, 129, 0.15);
+}
+
+.markdown-body tr:nth-child(even) {
+  background-color: rgba(16, 185, 129, 0.01);
+}
+
+.markdown-body tr:hover {
+  background-color: rgba(16, 185, 129, 0.02);
+}
+
+/* Code layout within Markdown */
+.markdown-body code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--accent-emerald);
+  background-color: rgba(16, 185, 129, 0.08);
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  font-weight: 500;
+}

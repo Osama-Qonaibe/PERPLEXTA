@@ -10,7 +10,7 @@
 
 ## Overview
 
-PERPLEXTA is a multi-tool AI platform that allows users to interact with multiple AI models through a unified, secure interface. It features a sovereign dual-database architecture separating core application data from all financial operations.
+PERPLEXTA is a multi-tool AI platform that allows users to interact with multiple AI models through a unified, secure interface. It features an isolated, secure dual-database architecture separating core application data from all financial operations.
 
 **Key capabilities:**
 - Multi-provider AI orchestration (OpenAI, Anthropic, Google, Groq, and more) with automatic fallback

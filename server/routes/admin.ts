@@ -180,7 +180,7 @@ router.get("/users", authenticateAdmin, async (req, res) => {
     const result = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
-        u.kyc_status, u.kyc_required, u.support_notes, u.kyc_rejection_reason,
+        u.kyc_status, u.kyc_required, u.support_notes, u.kyc_rejection_reason, u.custom_limits,
         s.plan_id, s.status as subscription_status, s.current_period_end,
         p.name_en as plan_name
       FROM users u
@@ -499,7 +499,7 @@ router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
 router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { role, status, kyc_status, kyc_rejection_reason, kyc_required } = req.body;
+    const { role, status, kyc_status, kyc_rejection_reason, kyc_required, custom_limits } = req.body;
     
     if (role && !['admin', 'user', 'support', 'elite'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
@@ -524,6 +524,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
       if (kyc_status) { userUpdates.push(`kyc_status = $${valIdx++}`); userValues.push(kyc_status); }
       if (kyc_rejection_reason !== undefined) { userUpdates.push(`kyc_rejection_reason = $${valIdx++}`); userValues.push(kyc_rejection_reason); }
       if (kyc_required !== undefined) { userUpdates.push(`kyc_required = $${valIdx++}`); userValues.push(kyc_required); }
+      if (custom_limits !== undefined) { userUpdates.push(`custom_limits = $${valIdx++}`); userValues.push(custom_limits); }
 
       if (userUpdates.length > 0) {
         await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);

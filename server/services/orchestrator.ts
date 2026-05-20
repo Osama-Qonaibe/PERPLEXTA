@@ -123,6 +123,29 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONVERSATION CONTEXT SUMMARY:\n${chatRes.rows[0].context_summary}\n` : '';
   
+  let refinedSystemPromptSegment = system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : '';
+  
+  if (toolIdStr === 'sovereign_memory') {
+    const memoryInstructions = `
+[SOVEREIGN CORE MEMORY PROTOCOL]
+You are acting as the Sovereign Memory Synthesis Engine (الذاكرة السيادية الجوهرية) of Perplexta.
+Your direct mandate is to synthesize the user's current message, context, and conversation history against their long-term knowledge records listed under ASSISTANT_MEMORY_RECORDS.
+
+1. CRITICAL EXTRACTIVE CORE: Analyze the input and extract precisely any strategic, high-value, or long-term operational user profile details (such as developer preferences, tech stack, workspace paths, personal goals, behavioral insights, identity context, system settings, or custom rules).
+2. MEMORY ACCRETION PATTERN: For each newly discovered fact or preference that is worthy of long-term preservation, append it in your response inside special tags EXACTLY like this:
+   <extracted_memory category="general|professional|preference|identity">The exact fact or preference</extracted_memory>
+   
+   Examples:
+   - <extracted_memory category="professional">User is working on a high-capacity Node.js and PostgreSQL backend</extracted_memory>
+   - <extracted_memory category="preference">User prefers clear explanation of root causes without long retrospectives</extracted_memory>
+   - <extracted_memory category="identity">User is a security engineer who strictly prevents unauthorized API leakage</extracted_memory>
+
+3. DENSE CONVERSATIONAL REPORTS: Discuss the user's sovereign memory state, tell them what you have ingested, synthesised, or pruned, and provide a premium, elite Arabic/English synthesis of their unified context in response to their prompt. Adhere to Tajawal typography standards and professional elite posture. Do not list raw XML files, tags or internal JSON attributes in the conversational message segment.
+`.trim();
+
+    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
+  }
+
   const finalSystemPrompt = `
 ${protocol}
 
@@ -139,7 +162,7 @@ ${userMemoriesStr}
 - Do not mention being an AI or your technical limitations.
 - If system_prompt is provided below, treat it as a priority refinement.
 
-${system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : ''}
+${refinedSystemPromptSegment}
 `.trim();
   
   const modelsToTry = [
@@ -177,6 +200,108 @@ ${system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : ''}
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+      
+      // PERPLEXTA MEMORY PROTOCOL: EXTRACTION & CONSOLIDATION
+      try {
+        const memoryRegex = /<extracted_memory(?:\s+category=["']([^"']+)["'])?>([\s\S]*?)<\/extracted_memory>/gi;
+        let match;
+        const extractedFacts: { fact: string; category: string }[] = [];
+        
+        while ((match = memoryRegex.exec(generatedText)) !== null) {
+          const category = match[1] || 'general';
+          const fact = match[2]?.trim();
+          if (fact) {
+            extractedFacts.push({ fact, category });
+          }
+        }
+
+        if (extractedFacts.length > 0) {
+          for (const item of extractedFacts) {
+            // Retrieve current count of user memories
+            const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+            const currentCount = parseInt(countRes.rows[0].count);
+            
+            if (currentCount >= 50) {
+              // Execute AUTO-CONSOLIDATION at 50 records limit
+              const oldestRes = await pool.query(
+                'SELECT id, fact, category FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
+                [userId]
+              );
+              
+              if (oldestRes.rows.length > 0) {
+                const oldestIds = oldestRes.rows.map((r: any) => r.id);
+                const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
+                
+                const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.
+Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
+Provide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
+                
+                const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:
+${factsToCondense}`;
+                
+                let condensedFact = '';
+                try {
+                  condensedFact = await callAIProvider(
+                    target.provider,
+                    target.model,
+                    apiKey,
+                    condensePrompt,
+                    condenseSystemPrompt
+                  );
+                  condensedFact = condensedFact.trim();
+                } catch (condenseErr) {
+                  console.error('[Orchestrator] AI consolidation failed, using fallback aggregation.', condenseErr);
+                  condensedFact = oldestRes.rows.map((r: any) => r.fact).join('; ');
+                  if (condensedFact.length > 255) {
+                    condensedFact = condensedFact.substring(0, 252) + '...';
+                  }
+                }
+                
+                if (condensedFact) {
+                  // Delete the 10 oldest records
+                  await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
+                  
+                  // Insert single consolidated high-density memory
+                  await pool.query(
+                    "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
+                    [userId, chatIdNum || null, condensedFact]
+                  );
+                  
+                  if (io) {
+                    io.to(`user_${userId}`).emit('memory_consolidation', { consolidatedCount: oldestRes.rows.length });
+                  }
+                }
+              }
+            }
+            
+            // Insert the newly extracted memory fact
+            const insertRes = await pool.query(
+              "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
+              [userId, chatIdNum || null, item.fact, item.category]
+            );
+            
+            if (io) {
+              io.to(`user_${userId}`).emit('memory_extracted', { 
+                fact: item.fact, 
+                category: item.category, 
+                id: insertRes.rows[0].id 
+              });
+              
+              // Recalculate count for proactive warning
+              const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+              const newCount = parseInt(checkNewCount.rows[0].count);
+              if (newCount >= 45) {
+                io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
+              }
+            }
+          }
+          
+          // Clean extraction tags from final generated text to prevent rendering in client chat bubble
+          generatedText = generatedText.replace(/<extracted_memory(?:\s+category=["']([^"']+)["'])?>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
+        }
+      } catch (memProcErr) {
+        console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
+      }
       
       break;
     } catch (e) {

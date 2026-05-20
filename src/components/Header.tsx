@@ -1,12 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { DefaultLogo } from './DefaultLogo';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isStandalone, isInstallable, installApp, isMobile } = useAppContext();
+  
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('pwa_banner_dismissed') === 'true';
+  });
+
+  const handleDismiss = () => {
+    localStorage.setItem('pwa_banner_dismissed', 'true');
+    setIsDismissed(true);
+  };
+
+  const showMobileBanner = !isStandalone && isMobile && !isDismissed;
   
   // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
@@ -144,7 +157,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         className="w-full h-full object-cover block" 
                       />
                     </div>
-                  ) : null}
+                  ) : (
+                    <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
+                  )}
                   {/* Subtle Glow Underlay */}
                   <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-theme rounded-full blur-2xl -z-10" />
                 </div>
@@ -229,6 +244,22 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
         {/* Global Tools Section */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
+           {!isStandalone && (
+             <button
+               onClick={installApp}
+               className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-emerald-500/20 hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"
+               title={language === 'ar' ? 'تثبيت التطبيق على جهازك' : 'Install app on your device'}
+             >
+               <Download size={15} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-theme animate-pulse" />
+               <span className="hidden sm:inline text-[13px] text-emerald-500 font-bold transition-theme font-sans">
+                 {language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}
+               </span>
+               <span className="sm:hidden text-[10px] text-emerald-500 font-bold transition-theme font-sans">
+                 PWA
+               </span>
+             </button>
+           )}
+
            <button 
                 onClick={toggleLanguage}
                 className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group"
@@ -352,6 +383,47 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         )}
       </div>
     </div>
+
+    <AnimatePresence>
+      {showMobileBanner && (
+        <motion.div
+          initial={{ opacity: 0, y: -15, height: 0 }}
+          animate={{ opacity: 1, y: 0, height: 'auto' }}
+          exit={{ opacity: 0, y: -15, height: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          className={`absolute top-[72px] left-0 right-0 z-[70] transition-theme border-b flex items-center justify-between px-4 py-2.5 text-xs font-sans shadow-lg overflow-hidden ${
+            theme === 'dark'
+              ? 'bg-[#121418] border-gray-800/60 text-gray-300'
+              : 'bg-[#fafafa] border-gray-200 text-gray-700'
+          }`}
+        >
+          <div className="flex items-center gap-2 max-w-[80%] text-right" dir={dir}>
+            <Smartphone size={16} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
+            <p className="font-medium truncate text-[11px] sm:text-xs leading-normal">
+              {language === 'ar' 
+                ? 'ثبّت بيربليكستا السيادية كتطبيق هاتف ذكي للوصول المباشر والتشغيل التلقائي.' 
+                : 'Install Perplexta for offline resilience and fast mobile access.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={installApp}
+              className="px-2.5 py-1 text-[10px] uppercase font-black tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-[4px] transition-all duration-300 cursor-pointer text-xs"
+            >
+              {language === 'ar' ? 'تثبيت' : 'Install'}
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="w-8 h-8 flex items-center justify-center bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800/60 text-gray-400 hover:text-[var(--text-primary)] rounded-[4px] transition-all duration-300 cursor-pointer shrink-0"
+              title={language === 'ar' ? 'إغلاق التنبيه' : 'Dismiss prompt'}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
   </header>
 );
 };

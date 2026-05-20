@@ -5,7 +5,6 @@ import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { PERPLEXTA_TRANSITION } from '../constants/motions';
-import { PWAInstall } from './PWAInstall'; 
 const sidebarTransition = PERPLEXTA_TRANSITION;
 const sidebarSpring = PERPLEXTA_TRANSITION;
 const elasticSpring = PERPLEXTA_TRANSITION;
