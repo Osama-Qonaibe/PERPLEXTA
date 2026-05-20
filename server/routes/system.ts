@@ -22,18 +22,18 @@ router.get("/economy", async (req, res) => {
   }
 });
 
-router.post("/admin/settings", authenticateAdmin, async (req, res) => {
+router.get("/admin/settings", authenticateAdmin, async (req, res) => {
   try {
-    const result = await updateSystemSettings(req.body);
-    res.json(result);
+    const settings = await getSystemSettings();
+    res.json(settings);
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }
 });
 
-router.post("/admin/economy", authenticateAdmin, async (req, res) => {
+router.post("/admin/settings", authenticateAdmin, async (req, res) => {
   try {
-    const result = await updateEconomySettings(req.body);
+    const result = await updateSystemSettings(req.body);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
