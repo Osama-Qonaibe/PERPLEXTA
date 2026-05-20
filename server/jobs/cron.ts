@@ -22,6 +22,20 @@ export function initCronJobs() {
     await monitorDatabases();
   });
 
+  cron.schedule('0 */6 * * *', async () => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Cron] 🧹 Running background micro-cleanup for expired tokens and resets...');
+    }
+    try {
+      if (pool) {
+        await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+        await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
+      }
+    } catch (err: any) {
+      console.error('[Cron] Micro-cleanup failed:', err.message);
+    }
+  });
+
   cron.schedule('5 3 * * *', async () => {
     console.log('[Cron] 🔍 Checking for expiring subscriptions...');
     try {

@@ -91,6 +91,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
     const amount = params.get('amount');
+    const sessionId = params.get('session_id');
     const tokenParam = params.get('token') || params.get('orderId');
 
     if (status === 'success' && amount) {
@@ -104,6 +105,44 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       url.searchParams.delete('status');
       url.searchParams.delete('amount');
       window.history.replaceState({}, '', url.toString());
+    } else if (status === 'stripe-success' && sessionId) {
+      const verifyStripeSession = async () => {
+        const toastId = toast.loading(
+          dir === 'rtl' 
+            ? 'جاري تأكيد عملية الشحن بدقّة بالغة...' 
+            : 'Verifying deposit session securely...'
+        );
+        try {
+          const res = await fetch(`/api/payments/verify-stripe-session?session_id=${sessionId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          toast.dismiss(toastId);
+          if (res.ok) {
+            const data = await res.json();
+            toast.success(
+              dir === 'rtl' 
+                ? `تم تأكيد شحن الرصيد بمبلغ $${data.amount} بنجاح ودقة بالغة عبر Stripe!` 
+                : `Wallet credited with $${data.amount} successfully via Stripe Secure Checkout!`
+            );
+            fetchWallet();
+          } else {
+            toast.error(
+              dir === 'rtl'
+                ? 'فشل التحقق من صحة عملية الدفع عبر Stripe.'
+                : 'Could not verify Stripe checkout session.'
+            );
+          }
+        } catch (err: any) {
+          toast.dismiss(toastId);
+          console.error('[Stripe Callback] Verification error:', err);
+        } finally {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('status');
+          url.searchParams.delete('session_id');
+          window.history.replaceState({}, '', url.toString());
+        }
+      };
+      verifyStripeSession();
     } else if (status === 'cancel') {
       toast.error(
         dir === 'rtl'

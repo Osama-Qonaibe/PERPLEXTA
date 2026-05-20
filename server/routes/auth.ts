@@ -7,7 +7,7 @@ import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
 import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -73,7 +73,8 @@ router.post("/signup", authLimiter, async (req, res) => {
       ON CONFLICT (user_id) DO NOTHING
     `, [user.id]);
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
+    const remember = req.body.remember === true || req.body.remember === 'true';
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status,
@@ -130,7 +131,8 @@ router.post("/login", authLimiter, async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
+    const remember = req.body.remember === true || req.body.remember === 'true';
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
@@ -192,13 +194,15 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
   try {
     const token = req.token;
     if (token) {
-      const decoded: any = jwt.decode(token);
+      const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+      const decoded: any = jwt.verify(token, jwtSecret);
       const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
       await pool.query(
         'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
         [token, expiresAt]
       );
+      addToBlacklistCache(token);
     }
     
     await logSystemActivity(req.user.id, 'logout', 'User logged out', {}, req);
@@ -314,7 +318,8 @@ router.get("/google/callback", async (req, res) => {
       await logSystemActivity(user.id, 'login', 'User logged in via Google', {}, req);
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: '7d' });
+    const remember = storedState?.remember === true || storedState?.remember === 'true';
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
@@ -640,6 +645,9 @@ router.post("/reset-password", authLimiter, async (req, res) => {
   try {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ error: 'Missing token or password' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
 
     await client.query('BEGIN');
 

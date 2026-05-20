@@ -1,13 +1,15 @@
 import express from 'express';
 import Stripe from 'stripe';
 import { pool, ledgerPool } from '../db/index.js';
-import { authenticateAdmin } from '../middleware/auth.js';
+import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
 import { tools } from '../config/constants.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
+import { isSafeHost } from '../utils/helpers.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 import { 
   getDatabaseRegistry, 
   saveDatabaseConfig, 
@@ -52,6 +54,17 @@ router.get("/databases/registry", authenticateAdmin, async (req, res) => {
 
 router.post("/databases/save", authenticateAdmin, async (req, res) => {
   try {
+    const config = req.body.config || req.body;
+    const host = config.host;
+    const connStr = config.connection_string || config.connectionString;
+
+    if (host && !(await isSafeHost(host))) {
+      return res.status(400).json({ error: 'SSRF Block: Host points to a disallowed local/internal/private resource' });
+    }
+    if (connStr && !(await isSafeHost(connStr))) {
+      return res.status(400).json({ error: 'SSRF Block: Connection string points to a disallowed local/internal/private resource' });
+    }
+
     const result = await saveDatabaseConfig(req.body);
     res.json(result);
   } catch (error) {
@@ -65,6 +78,17 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
     if (!config.host && !config.connection_string && !config.connectionString) {
       return res.status(400).json({ error: 'Host or connection string is required' });
     }
+
+    const host = config.host;
+    const connStr = config.connection_string || config.connectionString;
+
+    if (host && !(await isSafeHost(host))) {
+      return res.status(400).json({ error: 'SSRF Block: Host points to a disallowed local/internal/private resource' });
+    }
+    if (connStr && !(await isSafeHost(connStr))) {
+      return res.status(400).json({ error: 'SSRF Block: Connection string points to a disallowed local/internal/private resource' });
+    }
+
     const result = await testDatabaseConnection(req.body);
     res.json(result);
   } catch (error: any) {
@@ -86,6 +110,7 @@ router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
 router.get("/databases/export", authenticateAdmin, async (req, res) => {
   try {
     const backup = await exportDatabase(req.query.type as any);
+    await auditLog((req as any).user?.id, 'Export Database Backup', 'system', { type: req.query.type });
     res.json(backup);
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -230,6 +255,7 @@ router.patch("/users/:id/status", authenticateAdmin, async (req, res) => {
     }
 
     await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, userIdNum]);
+    invalidateUserCache(userIdNum);
     await auditLog((req as any).user?.id, 'Update User Status', 'system', { targetUser: userIdNum, status });
     res.json({ success: true });
   } catch (error: any) {
@@ -253,6 +279,7 @@ router.patch("/users/:id/role", authenticateAdmin, async (req, res) => {
     }
 
     await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, userIdNum]);
+    invalidateUserCache(userIdNum);
     await auditLog((req as any).user?.id, 'Update User Role', 'system', { targetUser: userIdNum, role });
     res.json({ success: true });
   } catch (error: any) {
@@ -528,12 +555,17 @@ router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/users", authenticateAdmin, async (req, res) => {
+router.post("/users", authenticateAdmin, authLimiter, async (req, res) => {
   try {
     const { name, email, password, role = 'user', balance = 0, points = 0 } = req.body;
     
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email and password are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
 
     const check = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -1003,6 +1035,9 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
   try {
     const { ids, type } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'IDs array required' });
+    if (ids.length > 500) {
+      return res.status(400).json({ error: 'Maximum batch delete size is 500 records' });
+    }
     
     if (type === 'financial') {
       await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = ANY($1)', [ids]);
@@ -1052,16 +1087,19 @@ router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
     const { type } = req.params;
     const adminId = (req as any).user?.id;
 
-    if (type === 'ai_generation' || type === 'ai') {
+    const normalizedType = type === 'ai_generation' ? 'ai' : 
+                           (type === 'system_event' ? 'system' : type);
+
+    if (normalizedType === 'ai') {
       await pool.query("DELETE FROM system_logs WHERE type = 'ai_generation'");
       await auditLog(adminId, 'Clear AI Generation Logs', 'system', { type });
-    } else if (type === 'system_event' || type === 'system') {
+    } else if (normalizedType === 'system') {
       await pool.query("DELETE FROM system_logs WHERE type != 'ai_generation'");
       await auditLog(adminId, 'Clear System Event Logs', 'system', { type });
-    } else if (type === 'alert') {
+    } else if (normalizedType === 'alert') {
       await pool.query('DELETE FROM security_alerts');
       await auditLog(adminId, 'Clear Security Alerts', 'system', { type });
-    } else if (type === 'log') {
+    } else if (normalizedType === 'log') {
       await pool.query('DELETE FROM system_logs');
       await auditLog(adminId, 'Clear All System Logs', 'system', { type });
     } else {

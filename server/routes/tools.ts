@@ -1,12 +1,13 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
 import { executeTaskLogic } from '../services/orchestrator.js';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 
 const router = express.Router();
 
-router.post("/execute-task", authenticateToken, async (req: any, res) => {
+router.post("/execute-task", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { socketId } = req.body;

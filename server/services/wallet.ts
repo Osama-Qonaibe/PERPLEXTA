@@ -124,6 +124,9 @@ export function clearEconomyCache() {
 export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   
+  // High Performance & Security Fix: Cap the request limit to 100 to prevent DoS via massive page results
+  const cappedLimit = Math.min(Math.max(1, limit), 100);
+
   let baseQuery = 'FROM ledger_transactions WHERE user_id = $1 AND (is_hidden IS NOT TRUE)';
   const params: any[] = [userId];
 
@@ -140,14 +143,14 @@ export async function getTransactionHistory(userId: string, type: string, limit:
   const offsetIdx = params.length + 2;
   const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
   
-  const finalParams = [...params, limit, offset];
+  const finalParams = [...params, cappedLimit, offset];
   const result = await ledgerPool.query(dataQuery, finalParams);
   
   return {
     transactions: result.rows,
     total,
     hasMore: offset + result.rows.length < total,
-    limit,
+    limit: cappedLimit,
     offset
   };
 }
@@ -155,6 +158,11 @@ export async function getTransactionHistory(userId: string, type: string, limit:
 export async function convertPointsToBalance(userId: string, amountPoints: number) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
+  // Security Fix: Prevent negative numbers or zero-point conversion attacks
+  if (isNaN(amountPoints) || amountPoints <= 0) {
+    throw new Error('Points amount must be a positive integer greater than zero.');
+  }
+
   const settings = await getEconomySettings();
   const rate = parseFloat(settings.conversion_rate || '0.001'); 
   const usdAmount = amountPoints * rate;
@@ -202,6 +210,22 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
 export async function requestWithdrawal(userId: string, amountUSD: number, method: string, details: string) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
+  // Security Validation: Enforce strict whitelist over details & parameters to prevent injection or invalid requests
+  const cleanedMethod = method ? method.trim().toLowerCase() : '';
+  const allowedMethods = ['paypal', 'bank', 'crypto'];
+  if (!allowedMethods.includes(cleanedMethod)) {
+    throw new Error('Invalid withdrawal method. Allowed methods: PayPal, Bank, Crypto.');
+  }
+
+  if (isNaN(amountUSD) || amountUSD <= 0) {
+    throw new Error('Withdrawal amount must be greater than zero.');
+  }
+
+  // Sanitize the inputs: strip potential HTML/script tags and restrict maximum length to 500 characters
+  const sanitizedDetails = details 
+    ? details.toString().replace(/<[^>]*>/g, '').substring(0, 500).trim()
+    : '';
+
   const settings = await getEconomySettings();
   const minCents = settings.min_withdrawal_cents || 2000;
   if (amountUSD * 100 < minCents) {
@@ -234,13 +258,13 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
 
     const witRes = await client.query(
       'INSERT INTO withdrawal_requests (user_id, amount_cents, method, details, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [userId, Math.round(amountUSD * 100), method, details, 'pending']
+      [userId, Math.round(amountUSD * 100), cleanedMethod, sanitizedDetails, 'pending']
     );
     const withdrawalId = witRes.rows[0].id;
 
     await client.query(
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, status, reference_id, description) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [userId, wallet.id, -amountUSD, 'withdrawal', 'pending', withdrawalId.toString(), `Withdrawal request for $${amountUSD} via ${method} (${details})`]
+      [userId, wallet.id, -amountUSD, 'withdrawal', 'pending', withdrawalId.toString(), `Withdrawal request for $${amountUSD} via ${cleanedMethod} (${sanitizedDetails})`]
     );
 
     await client.query('COMMIT');
@@ -372,6 +396,11 @@ export async function adjustWalletBalance(userId: string | number, amount: numbe
   const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
   if (isNaN(userIdNum)) {
     throw new Error('Invalid User ID');
+  }
+
+  // Security Hardening: Immunize from SQL injection by asserting exact whitelisted values for column targeting
+  if (target !== 'points' && target !== 'balance') {
+    throw new Error('Invalid target column specification');
   }
 
   const client = await ledgerPool.connect();

@@ -5,7 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { globalLimiter } from './middleware/rateLimit.js';
+import { globalLimiter, adminLimiter } from './middleware/rateLimit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,7 +103,85 @@ app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 app.use(express.static(publicPath));
-app.use('/uploads', express.static(uploadsPath));
+
+import jwt from 'jsonwebtoken';
+import { pool } from './db/index.js';
+
+app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(uploadsPath, filename);
+
+    // Secure Verification: Absolute path traversal guarding
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
+      return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+
+    // Avatars/visual images are accessed publicly to ensure perfect browser rendering behavior
+    if (publicExtensions.includes(ext)) {
+      return res.sendFile(resolvedPath);
+    }
+
+    // High Security documents check: verify authentication & ownership
+    const authHeader = req.headers['authorization'];
+    let token = authHeader && authHeader.split(' ')[1];
+    if (!token && req.query.token) {
+      token = req.query.token as string;
+    }
+
+    if (token) {
+      token = token.trim();
+      if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
+      }
+    }
+
+    if (!token || token === 'null' || token === 'undefined') {
+      return res.status(401).json({ error: 'Unauthorized: Authentication is required to download this document.' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+    jwt.verify(token, jwtSecret, async (err: any, decoded: any) => {
+      if (err) {
+        return res.status(403).json({ error: 'Forbidden: Invalid token' });
+      }
+
+      const user = decoded as any;
+      if (user.role === 'admin') {
+        return res.sendFile(resolvedPath);
+      }
+
+      // Check database to ensure document ownership
+      try {
+        const isUserFileRes = await pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
+        if (isUserFileRes.rows.length > 0) {
+          return res.sendFile(resolvedPath);
+        }
+
+        const isProofRes = await pool.query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
+        if (isProofRes.rows.length > 0) {
+          return res.sendFile(resolvedPath);
+        }
+
+        return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+      } catch (dbErr) {
+        console.error('[Upload Secure Handler] Database error:', dbErr);
+        return res.status(500).json({ error: 'Database verification failure' });
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.use('/api', globalLimiter);
 
@@ -129,7 +207,7 @@ import emailRoutes from './routes/email.js';
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
