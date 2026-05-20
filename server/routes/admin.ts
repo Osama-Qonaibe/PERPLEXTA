@@ -223,11 +223,17 @@ router.patch("/users/:id/status", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
-    await auditLog((req as any).user?.id, 'Update User Status', 'system', { targetUser: id, status });
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
+    await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, userIdNum]);
+    await auditLog((req as any).user?.id, 'Update User Status', 'system', { targetUser: userIdNum, status });
     res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('[Admin] Failed to update user status:', error);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
@@ -240,11 +246,17 @@ router.patch("/users/:id/role", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
-    await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, id]);
-    await auditLog((req as any).user?.id, 'Update User Role', 'system', { targetUser: id, role });
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
+    await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, userIdNum]);
+    await auditLog((req as any).user?.id, 'Update User Role', 'system', { targetUser: userIdNum, role });
     res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('[Admin] Failed to update user role:', error);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
@@ -511,12 +523,17 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid kyc_status' });
     }
 
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       
       const userUpdates = [];
-      const userValues: any[] = [id];
+      const userValues: any[] = [userIdNum];
       let valIdx = 2;
 
       if (role) { userUpdates.push(`role = $${valIdx++}`); userValues.push(role); }
@@ -533,11 +550,11 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
       // Sync KYC status to Ledger DB
       if (kyc_status) {
         const { syncKYCStatus } = await import('../services/kyc.js');
-        await syncKYCStatus(id, kyc_status, kyc_rejection_reason || null);
+        await syncKYCStatus(userIdNum, kyc_status, kyc_rejection_reason || null, client);
       }
 
       await client.query('COMMIT');
-      await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: id, changes: { role, status, kyc_status } });
+      await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: userIdNum, changes: { role, status, kyc_status } });
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -545,8 +562,9 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     } finally {
       client.release();
     }
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('[Admin] Failed to update user permissions:', error);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
@@ -554,9 +572,14 @@ router.patch("/users/:id/kyc-status", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { kyc_required } = req.body;
-    await pool.query('UPDATE users SET kyc_required = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [kyc_required, id]);
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+    await pool.query('UPDATE users SET kyc_required = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [kyc_required, userIdNum]);
     res.json({ success: true });
-  } catch {
+  } catch (error: any) {
+    console.error('[Admin] Failed to update KYC status:', error);
     res.status(500).json({ error: 'Failed to update KYC status' });
   }
 });
@@ -566,20 +589,37 @@ router.patch("/users/:id/kyc-verification", authenticateAdmin, async (req, res) 
     const { id } = req.params;
     const { kyc_status, rejection_reason } = req.body;
     
-    const { syncKYCStatus } = await import('../services/kyc.js');
-    await syncKYCStatus(id, kyc_status, rejection_reason || null);
-    
-    await pool.query(`
-      UPDATE users SET 
-        kyc_status = $1, 
-        kyc_rejection_reason = $2, 
-        kyc_required = CASE WHEN $1 = 'verified' THEN false ELSE kyc_required END,
-        updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $3
-    `, [kyc_status, rejection_reason || null, id]);
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
 
-    res.json({ success: true });
-  } catch {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { syncKYCStatus } = await import('../services/kyc.js');
+      await syncKYCStatus(userIdNum, kyc_status, rejection_reason || null, client);
+      
+      await client.query(`
+        UPDATE users SET 
+          kyc_status = $1, 
+          kyc_rejection_reason = $2, 
+          kyc_required = CASE WHEN $1 = 'verified' THEN false ELSE kyc_required END,
+          updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $3
+      `, [kyc_status, rejection_reason || null, userIdNum]);
+
+      await client.query('COMMIT');
+      res.json({ success: true });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    console.error('[Admin] Failed to update verification status:', error);
     res.status(500).json({ error: 'Failed to update verification status' });
   }
 });

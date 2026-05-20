@@ -1,19 +1,24 @@
 import { ledgerPool, pool } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
-export async function getUserWallet(userId: string, txClient?: any) {
+export async function getUserWallet(userId: string | number, txClient?: any) {
   const targetLedger = txClient || ledgerPool;
   if (!targetLedger || !pool) throw new Error('Database not available');
   
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) {
+    throw new Error('Invalid User ID');
+  }
+  
   // Referential Integrity: Verify user exists in Core DB first
-  const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+  const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userIdNum]);
   if (userCheck.rows.length === 0) {
-    throw new Error(`Integrity Error: User ${userId} does not exist in Core DB`);
+    throw new Error(`Integrity Error: User ${userIdNum} does not exist in Core DB`);
   }
   
   // Explicitly check for existence and lock if in transaction to avoid deadlocks/race conditions
   if (txClient) {
-    const existing = await txClient.query('SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+    const existing = await txClient.query('SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1 FOR UPDATE', [userIdNum]);
     if (existing.rows.length > 0) return existing.rows[0];
   }
 
@@ -22,7 +27,7 @@ export async function getUserWallet(userId: string, txClient?: any) {
     VALUES ($1, 0, 0) 
     ON CONFLICT (user_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
     RETURNING id, balance, points, referral_activated
-  `, [userId]);
+  `, [userIdNum]);
   
   return result.rows[0];
 }
@@ -220,17 +225,23 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
   }
 }
 
-export async function getReferralCount(userId: string) {
+export async function getReferralCount(userId: string | number) {
   if (!ledgerPool) throw new Error('Ledger database not available');
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) throw new Error('Invalid User ID');
+
   // Check referrals table in Ledger DB for 'active' status to ensure financial integrity
-  const result = await ledgerPool.query('SELECT count(*) FROM referrals WHERE referrer_id = $1 AND status = \'active\'', [userId]);
+  const result = await ledgerPool.query('SELECT count(*) FROM referrals WHERE referrer_id = $1 AND status = \'active\'', [userIdNum]);
   return parseInt(result.rows[0].count);
 }
 
-export async function checkReferralActivation(userId: string) {
+export async function checkReferralActivation(userId: string | number) {
   if (!ledgerPool || !pool) return;
   
-  const wallet = await getUserWallet(userId);
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) return;
+
+  const wallet = await getUserWallet(userIdNum);
   if (wallet.referral_activated) return;
 
   const settings = await getEconomySettings();
@@ -238,18 +249,21 @@ export async function checkReferralActivation(userId: string) {
 
   const depositResult = await ledgerPool.query(
     "SELECT SUM(amount) as total FROM ledger_transactions WHERE user_id = $1 AND (transaction_type = 'deposit' OR transaction_type = 'add_funds') AND status = 'success'",
-    [userId]
+    [userIdNum]
   );
   
   const totalDeposited = parseFloat(depositResult.rows[0].total || '0');
 
   if (totalDeposited >= parseFloat(minDeposit)) {
-    await ledgerPool.query('UPDATE wallets SET referral_activated = true WHERE user_id = $1', [userId]);
+    await ledgerPool.query('UPDATE wallets SET referral_activated = true WHERE user_id = $1', [userIdNum]);
   }
 }
 
-export async function deductFromWallet(userId: string, amount: number, transactionType: string, description: string) {
+export async function deductFromWallet(userId: string | number, amount: number, transactionType: string, description: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) throw new Error('Invalid User ID');
 
   const client = await ledgerPool.connect();
   try {
@@ -258,7 +272,7 @@ export async function deductFromWallet(userId: string, amount: number, transacti
     // Lock wallet to prevent race conditions during deduction
     const walletRes = await client.query(
       'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
-      [userId]
+      [userIdNum]
     );
     
     if (walletRes.rows.length === 0) {
@@ -277,7 +291,7 @@ export async function deductFromWallet(userId: string, amount: number, transacti
 
     await client.query(
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
-      [userId, wallet.id, -amount, transactionType, description]
+      [userIdNum, wallet.id, -amount, transactionType, description]
     );
 
     await client.query('COMMIT');
@@ -290,15 +304,18 @@ export async function deductFromWallet(userId: string, amount: number, transacti
   }
 }
 
-export async function refundToWallet(userId: string, amount: number, transactionType: string, description: string) {
+export async function refundToWallet(userId: string | number, amount: number, transactionType: string, description: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) throw new Error('Invalid User ID');
 
   const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
     
     // Transaction-Safe wallet acquisition with lock
-    const wallet = await getUserWallet(userId, client);
+    const wallet = await getUserWallet(userIdNum, client);
     const walletId = wallet.id;
     
     const result = await client.query(
@@ -308,7 +325,7 @@ export async function refundToWallet(userId: string, amount: number, transaction
 
     await client.query(
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
-      [userId, walletId, amount, transactionType, description]
+      [userIdNum, walletId, amount, transactionType, description]
     );
 
     await client.query('COMMIT');
@@ -321,13 +338,18 @@ export async function refundToWallet(userId: string, amount: number, transaction
   }
 }
 
-export async function adjustWalletBalance(userId: string, amount: number, type: 'credit' | 'debit' | 'add' | 'deduct', reason: string, target: 'balance' | 'points' = 'balance') {
+export async function adjustWalletBalance(userId: string | number, amount: number, type: 'credit' | 'debit' | 'add' | 'deduct', reason: string, target: 'balance' | 'points' = 'balance') {
   if (!ledgerPool) throw new Error('Ledger database not available');
+
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) {
+    throw new Error('Invalid User ID');
+  }
 
   const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
-    const wallet = await getUserWallet(userId, client);
+    const wallet = await getUserWallet(userIdNum, client);
     const isCredit = type === 'credit' || type === 'add';
     const finalAmount = isCredit ? Math.abs(amount) : -Math.abs(amount);
 
@@ -339,7 +361,7 @@ export async function adjustWalletBalance(userId: string, amount: number, type: 
 
     await client.query(
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6)',
-      [userId, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
+      [userIdNum, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
     );
 
     await client.query('COMMIT');

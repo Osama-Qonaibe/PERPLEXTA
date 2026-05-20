@@ -1,15 +1,23 @@
 import { pool, ledgerPool } from '../db/index.js';
 
-export async function syncKYCStatus(userId: string, kyc_status: string, rejection_reason: string | null = null) {
-  const client = await pool.connect();
+export async function syncKYCStatus(userId: string | number, kyc_status: string, rejection_reason: string | null = null, txClient?: any) {
   const ledgerTarget = ledgerPool || pool;
+  const client = txClient || await pool.connect();
+  const shouldCommit = !txClient;
   try {
-    await client.query('BEGIN');
+    const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+    if (isNaN(userIdNum)) {
+      throw new Error('Invalid user ID');
+    }
+
+    if (shouldCommit) {
+      await client.query('BEGIN');
+    }
     
     // 1. Update Core DB
     await client.query(
       'UPDATE users SET kyc_status = $1, kyc_rejection_reason = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-      [kyc_status, rejection_reason, userId]
+      [kyc_status, rejection_reason, userIdNum]
     );
 
     // 2. Sync to Ledger DB
@@ -20,14 +28,20 @@ export async function syncKYCStatus(userId: string, kyc_status: string, rejectio
         status = EXCLUDED.status, 
         rejection_reason = EXCLUDED.rejection_reason,
         updated_at = CURRENT_TIMESTAMP
-    `, [userId, kyc_status, rejection_reason]);
+    `, [userIdNum, kyc_status, rejection_reason]);
 
-    await client.query('COMMIT');
+    if (shouldCommit) {
+      await client.query('COMMIT');
+    }
     return { success: true };
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (shouldCommit) {
+      await client.query('ROLLBACK');
+    }
     throw error;
   } finally {
-    client.release();
+    if (shouldCommit) {
+      client.release();
+    }
   }
 }

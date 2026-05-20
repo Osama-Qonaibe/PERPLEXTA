@@ -23,9 +23,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com", "https://www.transparenttextures.com"],
+      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
+      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.stripe.com", "https://*.googleapis.com"],
       connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameAncestors: ["'self'"]
@@ -42,7 +42,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // In production, strictly enforce allowed origins. In dev, allow all.
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -68,6 +71,7 @@ const publicPath = path.join(process.cwd(), 'public');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 const distPath = path.join(process.cwd(), 'dist');
 
+// Middleware to serve manifest and service worker files from either dist or public
 const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     const distFile = path.join(distPath, fileName);
@@ -142,6 +146,7 @@ if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
+    // Check if path has a static file extension to prevent sending HTML index for missing assets
     const hasStaticExtension = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav)$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
       res.sendFile(path.join(distPath, 'index.html'));
