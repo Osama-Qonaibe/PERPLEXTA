@@ -419,60 +419,72 @@ router.post("/broadcasts/send", authenticateAdmin, async (req, res) => {
     (async () => {
       let successCount = 0;
       let failCount = 0;
+      try {
+        for (const user of targetUsers) {
+          try {
+            const userLang = (user.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+            const subject = userLang === 'ar' ? (title_ar || title_en) : title_en;
+            const body = userLang === 'ar' ? (content_ar || content_en) : content_en;
 
-      for (const user of targetUsers) {
-        try {
-          const userLang = (user.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
-          const subject = userLang === 'ar' ? (title_ar || title_en) : title_en;
-          const body = userLang === 'ar' ? (content_ar || content_en) : content_en;
-
-          // Dispatch system notification
-          if (finalType === 'notification' || finalType === 'both') {
-            await pool.query(`
-              INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
-              VALUES ($1, $2, $3, $4, $5, $6)
-            `, [
-              user.id, 
-              title_en, 
-              title_ar || '', 
-              content_en, 
-              content_ar || '', 
-              'broadcast'
-            ]).catch((e: any) => console.error('[Broadcast Background] Notification failed:', e));
-          }
-
-          // Dispatch real SMTP email if needed
-          if (finalType === 'email' || finalType === 'both') {
-            const mailRes = await sendEmail(user.email, subject, body, adminId);
-            if (mailRes.success) {
-              successCount++;
-            } else {
-              failCount++;
+            // Dispatch system notification
+            if (finalType === 'notification' || finalType === 'both') {
+              await pool.query(`
+                INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
+                VALUES ($1, $2, $3, $4, $5, $6)
+              `, [
+                user.id, 
+                title_en, 
+                title_ar || '', 
+                content_en, 
+                content_ar || '', 
+                'broadcast'
+              ]).catch((e: any) => console.error('[Broadcast Background] Notification failed:', e));
             }
-          } else {
-            successCount++;
+
+            // Dispatch real SMTP email if needed
+            if (finalType === 'email' || finalType === 'both') {
+              const mailRes = await sendEmail(user.email, subject, body, adminId);
+              if (mailRes.success) {
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } else {
+              successCount++;
+            }
+          } catch (itemErr: any) {
+            console.error(`[Broadcast Background] User ${user.id} delivery error:`, itemErr);
+            failCount++;
           }
-        } catch (itemErr: any) {
-          console.error(`[Broadcast Background] User ${user.id} delivery error:`, itemErr);
-          failCount++;
         }
+
+        // Update broadcast row state
+        await pool.query(
+          `UPDATE system_broadcasts SET status = 'completed', sent_count = $1 WHERE id = $2`,
+          [successCount, broadcastId]
+        ).catch((e: any) => console.error('[Broadcast Background] Final state update failed:', e));
+
+        // Record final campaign activity audit log
+        await auditLog(adminId, 'Send Broadcast Completed', 'system', {
+          broadcastId,
+          finalType,
+          target_group,
+          total: sentCount,
+          successes: successCount,
+          failures: failCount
+        });
+      } catch (globalBgError: any) {
+        console.error('[Broadcast Background] Fatal execution error:', globalBgError);
+        await pool.query(
+          `UPDATE system_broadcasts SET status = 'failed' WHERE id = $1`,
+          [broadcastId]
+        ).catch((e: any) => console.error('[Broadcast Background] Mark failed state failed:', e));
+        
+        await auditLog(adminId, 'Send Broadcast Failed', 'system', {
+          broadcastId,
+          error: globalBgError.message || String(globalBgError)
+        }).catch((e: any) => console.error('[Broadcast Background] Fail audit log failed:', e));
       }
-
-      // Update broadcast row state
-      await pool.query(
-        `UPDATE system_broadcasts SET status = 'completed', sent_count = $1 WHERE id = $2`,
-        [successCount, broadcastId]
-      ).catch((e: any) => console.error('[Broadcast Background] Final state update failed:', e));
-
-      // Record final campaign activity audit log
-      await auditLog(adminId, 'Send Broadcast Completed', 'system', {
-        broadcastId,
-        finalType,
-        target_group,
-        total: sentCount,
-        successes: successCount,
-        failures: failCount
-      });
     })();
 
     // Log broadcast initiation
@@ -754,7 +766,11 @@ router.patch("/users/:id/support-notes", authenticateAdmin, async (req, res) => 
   try {
     const { id } = req.params;
     const { notes } = req.body;
-    await pool.query('UPDATE users SET support_notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [notes, id]);
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+    await pool.query('UPDATE users SET support_notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [notes, userIdNum]);
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to update support notes' });
@@ -801,13 +817,25 @@ router.post("/users/:id/notify", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { titleEn, titleAr, messageEn, messageAr, type } = req.body;
     
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
     await pool.query(`
       INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
       VALUES ($1, $2, $3, $4, $5, $6)
-    `, [id, titleEn, titleAr, messageEn, messageAr, type || 'system']);
+    `, [userIdNum, titleEn, titleAr, messageEn, messageAr, type || 'system']);
     
+    await auditLog((req as any).user?.id, 'Send Manual Notification', 'system', { 
+      targetUser: userIdNum, 
+      type: type || 'system',
+      titleEn
+    });
+
     res.json({ success: true });
-  } catch {
+  } catch (error: any) {
+    console.error('[Admin Notify] Error:', error);
     res.status(500).json({ error: 'Failed to send notification' });
   }
 });
@@ -817,6 +845,11 @@ router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { planId } = req.body;
     
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
     const planRes = await pool.query('SELECT id FROM plans WHERE id = $1', [planId]);
     if (planRes.rows.length === 0) return res.status(400).json({ error: 'Invalid plan ID' });
 
@@ -827,9 +860,9 @@ router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
         plan_id = EXCLUDED.plan_id,
         status = 'active',
         updated_at = CURRENT_TIMESTAMP
-    `, [id, planId]);
+    `, [userIdNum, planId]);
     
-    await auditLog((req as any).user?.id, 'Update User Plan', 'system', { targetUser: id, planId });
+    await auditLog((req as any).user?.id, 'Update User Plan', 'system', { targetUser: userIdNum, planId });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update subscription' });
@@ -861,7 +894,17 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
     const totalBalance = await ledgerPool.query('SELECT sum(balance) as total FROM wallets');
     const totalTransactions = await ledgerPool.query('SELECT count(*) FROM ledger_transactions');
     const recentVolume = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '24 hours'");
+    const prevVolume = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '48 hours' AND created_at <= now() - interval '24 hours'");
     
+    const volCurrent = parseFloat(recentVolume.rows[0].total || 0);
+    const volPrev = parseFloat(prevVolume.rows[0].total || 0);
+    let volChange = 0;
+    if (volPrev > 0) {
+      volChange = ((volCurrent - volPrev) / volPrev) * 100;
+    } else if (volCurrent > 0) {
+      volChange = 100.0;
+    }
+
     const recentTx = await ledgerPool.query('SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT 50');
     
     let transactions = recentTx.rows;
@@ -883,7 +926,8 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
       stats: {
         total_liquidity: parseFloat(totalBalance.rows[0].total || 0),
         transaction_count: parseInt(totalTransactions.rows[0].count),
-        volume_24h: parseFloat(recentVolume.rows[0].total || 0),
+        volume_24h: volCurrent,
+        volume_change_24h: volChange,
         health_score: 100
       },
       transactions

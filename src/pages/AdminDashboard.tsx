@@ -226,7 +226,7 @@ const CommandCenterView = ({
   };
 
   const handleBulkDeleteActivity = async (type: "ai_generation" | "system_event" | "all" | "log") => {
-    const mappedType = type === "log" ? "all" : type;
+    const mappedType = type;
     const typeLabel =
       mappedType === "ai_generation"
         ? language === "ar"
@@ -237,8 +237,8 @@ const CommandCenterView = ({
           ? "النظام"
           : "System"
         : language === "ar"
-        ? "الكل"
-        : "All";
+        ? "كل السجلات"
+        : "All Logs";
 
     if (
       !token ||
@@ -249,8 +249,8 @@ const CommandCenterView = ({
     )
       return;
 
-    // Map type to backend expectations: ai, system, all
-    const backendType = mappedType === "ai_generation" ? "ai" : (mappedType === "system_event" ? "system" : "all");
+    // Map type to backend expectations: ai, system, or log
+    const backendType = mappedType === "ai_generation" ? "ai" : (mappedType === "system_event" ? "system" : "log");
 
     try {
       const res = await fetch(`/api/admin/activity/all/${backendType}`, {
@@ -1046,15 +1046,48 @@ const DigitalFinancialRadarView = ({
         fetch("/api/admin/wallet-alerts", { headers }),
       ]);
 
+      let hasError = false;
+      let errorDesc = "";
+
       if (financeRes.ok) {
         const data = await financeRes.json();
         setFinancials(data.transactions || []);
         if (data.stats) setRadarStats(data.stats);
+      } else {
+        hasError = true;
+        errorDesc += " [Radar Stats Failed]";
       }
-      if (diagRes.ok) setWalletDiagnostics(await diagRes.json());
-      if (alertsRes.ok) setWalletAlerts(await alertsRes.json());
-    } catch (error) {
+
+      if (diagRes.ok) {
+        setWalletDiagnostics(await diagRes.json());
+      } else {
+        hasError = true;
+        errorDesc += " [Wallet Diagnostics Failed]";
+      }
+
+      if (alertsRes.ok) {
+        setWalletAlerts(await alertsRes.json());
+      } else {
+        hasError = true;
+        errorDesc += " [Wallet Alerts Failed]";
+      }
+
+      if (hasError) {
+        throw new Error(
+          language === "ar"
+            ? `فشل جلب بعض بيانات الرادار المالي بسبب خطأ في الخادم:${errorDesc}`
+            : `Failed to fetch some financial radar data due to server error:${errorDesc}`
+        );
+      }
+    } catch (error: any) {
       console.error("Error fetching radar data:", error);
+      showToast(
+        error.message ||
+          (language === "ar"
+            ? "فشل في جلب بيانات الرادار الفني من الخادم."
+            : "Failed to fetch technical radar data from the server."),
+        "error"
+      );
     } finally {
       setTimeout(() => setLoading(false), 800);
     }
@@ -1338,9 +1371,14 @@ const DigitalFinancialRadarView = ({
               <ArrowRightLeft size={20} />
             </div>
             <span
-              className={`text-sm font-medium px-2 py-1 rounded-sm bg-blue-500/10 text-blue-500`}
+              className={`text-sm font-medium px-2 py-1 rounded-sm transition-theme ${
+                (radarStats?.volume_change_24h ?? 0) >= 0
+                  ? "bg-emerald-500/10 text-emerald-500"
+                  : "bg-rose-500/10 text-rose-500"
+              }`}
             >
-              +5.2%
+              {(radarStats?.volume_change_24h ?? 0) >= 0 ? "+" : ""}
+              {(radarStats?.volume_change_24h ?? 0).toFixed(1)}%
             </span>
           </div>
           <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
@@ -2852,6 +2890,7 @@ const DatabaseOrchestrationView = ({
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [openBackupMenuId, setOpenBackupMenuId] = useState<string | null>(null);
 
   const fetchDatabases = async () => {
     try {
@@ -3617,10 +3656,7 @@ const DatabaseOrchestrationView = ({
                   <div className="relative group/backup">
                     <button
                       onClick={() => {
-                        const menu = document.getElementById(
-                          `backup-menu-${db.id}`,
-                        );
-                        if (menu) menu.classList.toggle("hidden");
+                        setOpenBackupMenuId((prev) => (prev === db.id ? null : db.id));
                       }}
                       className={`w-full h-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider bg-[var(--bg-primary)] border-[var(--border-main)] text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/5`}
                     >
@@ -3634,15 +3670,14 @@ const DatabaseOrchestrationView = ({
                     </button>
 
                     <div
-                      id={`backup-menu-${db.id}`}
-                      className="hidden absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 transition-theme"
+                      className={`${
+                        openBackupMenuId === db.id ? "block" : "hidden"
+                      } absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 transition-theme`}
                     >
                       <button
                         onClick={() => {
                           handleExportBackup(db.id);
-                          document
-                            .getElementById(`backup-menu-${db.id}`)
-                            ?.classList.add("hidden");
+                          setOpenBackupMenuId(null);
                         }}
                         className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-blue-500/10 text-blue-500 transition-theme text-xs font-bold"
                       >
@@ -3661,7 +3696,10 @@ const DatabaseOrchestrationView = ({
                           type="file"
                           accept=".json"
                           className="hidden"
-                          onChange={(e) => handleImportBackup(db.id, e)}
+                          onChange={(e) => {
+                            handleImportBackup(db.id, e);
+                            setOpenBackupMenuId(null);
+                          }}
                         />
                       </label>
                     </div>
