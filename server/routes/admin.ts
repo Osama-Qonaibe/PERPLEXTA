@@ -9,7 +9,7 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { isSafeHost } from '../utils/helpers.js';
-import { authLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, adminLimiter } from '../middleware/rateLimit.js';
 import { 
   getDatabaseRegistry, 
   saveDatabaseConfig, 
@@ -22,6 +22,7 @@ import {
 } from '../services/admin.js';
 
 const router = express.Router();
+router.use(adminLimiter);
 
 async function auditLog(userId: any, action: string, type: string, details: object) {
   try {
@@ -203,6 +204,12 @@ router.delete("/plans/:id", authenticateAdmin, async (req, res) => {
 
 router.get("/users", authenticateAdmin, async (req, res) => {
   try {
+    let limit = parseInt(req.query.limit as string, 10) || 500;
+    let offset = parseInt(req.query.offset as string, 10) || 0;
+    if (isNaN(limit) || limit < 1) limit = 500;
+    if (limit > 1000) limit = 1000;
+    if (isNaN(offset) || offset < 0) offset = 0;
+
     const result = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
@@ -213,13 +220,20 @@ router.get("/users", authenticateAdmin, async (req, res) => {
       LEFT JOIN subscriptions s ON u.id = s.user_id
       LEFT JOIN plans p ON s.plan_id = p.id
       ORDER BY u.created_at DESC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
     
     let walletMap = new Map();
     try {
-      const targetLedger = ledgerPool || pool;
-      const walletRes = await targetLedger.query('SELECT user_id, balance, points FROM wallets');
-      walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
+      const userIds = result.rows.map((user: any) => user.id);
+      if (userIds.length > 0) {
+        const targetLedger = ledgerPool || pool;
+        const walletRes = await targetLedger.query(
+          'SELECT user_id, balance, points FROM wallets WHERE user_id = ANY($1)',
+          [userIds]
+        );
+        walletMap = new Map(walletRes.rows.map((row: any) => [row.user_id, row]));
+      }
     } catch (e) {
       console.error('[Admin] Failed to fetch wallets for user list:', e);
     }
@@ -785,13 +799,26 @@ router.patch("/users/:id/kyc-verification", authenticateAdmin, async (req, res) 
 router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) {
+      return res.status(400).json({ error: 'Invalid User ID format' });
+    }
+
     const { amount, reason, type, unit } = req.body;
-    
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ error: 'Amount must be a valid positive number' });
+    }
+
+    if (type !== 'credit' && type !== 'debit' && type !== 'add' && type !== 'deduct') {
+      return res.status(400).json({ error: 'Invalid adjustment type specified' });
+    }
+
     const target = (unit === 'PTS' || unit === 'points') ? 'points' : 'balance';
     const { adjustWalletBalance } = await import('../services/wallet.js');
-    const result = await adjustWalletBalance(id, amount, type, reason || 'Admin adjustment', target);
+    const result = await adjustWalletBalance(userIdNum, parsedAmount, type, reason || 'Admin adjustment', target);
     
-    await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: id, amount, type, unit, reason });
+    await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: userIdNum, amount: parsedAmount, type, unit, reason });
     res.json({ success: true, newBalance: result.newBalance, newPoints: result.newPoints });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to adjust balance' });
@@ -1174,8 +1201,12 @@ router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) =>
 router.delete("/ledger-transactions/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = $1', [id]);
-    await auditLog((req as any).user?.id, 'Delete Ledger Transaction', 'finance', { transactionId: id });
+    const txIdNum = parseInt(id, 10);
+    if (isNaN(txIdNum)) {
+      return res.status(400).json({ error: 'Invalid transaction ID format' });
+    }
+    await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = $1', [txIdNum]);
+    await auditLog((req as any).user?.id, 'Delete Ledger Transaction', 'finance', { transactionId: txIdNum });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Delete failed' });
@@ -1342,6 +1373,13 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
 router.post("/settings/paypal", authenticateAdmin, async (req, res) => {
   try {
     const { clientId, clientSecret, mode } = req.body;
+
+    if (clientId !== undefined && clientId !== '' && typeof clientId !== 'string') {
+      return res.status(400).json({ error: 'Client ID must be a string' });
+    }
+    if (clientSecret !== undefined && clientSecret !== '' && typeof clientSecret !== 'string') {
+      return res.status(400).json({ error: 'Client Secret must be a string' });
+    }
     
     let query = 'UPDATE system_settings SET updated_at = CURRENT_TIMESTAMP';
     const params: any[] = [];
@@ -1355,16 +1393,23 @@ router.post("/settings/paypal", authenticateAdmin, async (req, res) => {
       query += `, paypal_client_secret = $${paramCount++}`;
       params.push(encrypt(clientSecret));
     }
+
+    let auditedMode = mode;
     if (mode !== undefined && mode !== '') {
+      const modeLower = mode.toString().trim().toLowerCase();
+      if (modeLower !== 'sandbox' && modeLower !== 'live') {
+        return res.status(400).json({ error: 'PayPal mode must be either "sandbox" or "live".' });
+      }
       query += `, paypal_mode = $${paramCount++}`;
-      params.push(mode);
+      params.push(modeLower);
+      auditedMode = modeLower;
     }
 
     query += `, paypal_status = 'verified', paypal_last_verified_at = CURRENT_TIMESTAMP`;
 
     await pool.query(query, params);
     
-    await auditLog((req as any).user?.id, 'Update PayPal Settings', 'finance', { mode, clientId: '***' });
+    await auditLog((req as any).user?.id, 'Update PayPal Settings', 'finance', { mode: auditedMode, clientId: '***' });
     res.json({ success: true });
   } catch (error) {
     console.error('[Admin] PayPal settings update failed:', error);
