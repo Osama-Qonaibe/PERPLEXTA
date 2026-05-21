@@ -43,6 +43,23 @@ const getRedirectUri = (req: express.Request) => {
   return `${getBaseUrl(req)}/api/auth/google/callback`;
 };
 
+const isValidGooglePicture = (url: any): boolean => {
+  if (typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname;
+    return hostname === 'lh3.googleusercontent.com' || 
+           hostname.endsWith('.googleusercontent.com') ||
+           hostname === 'googleusercontent.com' ||
+           hostname === 'www.google.com' ||
+           hostname === 'google.com' ||
+           hostname === 'profiles.google.com';
+  } catch {
+    return false;
+  }
+};
+
 router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, name, language = 'en' } = req.body;
@@ -200,7 +217,6 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
   try {
     const token = req.token;
     if (token) {
-      const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
       const decoded: any = jwt.verify(token, jwtSecret);
       const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
@@ -272,9 +288,10 @@ router.get("/google/callback", async (req, res) => {
       const finalLang = storedState.lang || 'ar';
       const finalTheme = storedState.theme || 'dark';
       
+      const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
       const insertResult = await pool.query(
         `INSERT INTO users (email, name, avatar, provider, role, language, theme) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [lowerEmail, googleUser.name || googleUser.given_name, googleUser.picture, 'google', role, finalLang, finalTheme]
+        [lowerEmail, googleUser.name || googleUser.given_name, validatedPicture, 'google', role, finalLang, finalTheme]
       );
       user = insertResult.rows[0];
       
@@ -298,10 +315,11 @@ router.get("/google/callback", async (req, res) => {
       }
 
       // Maintain latest Google profile avatar synchronized on login
-      if (googleUser.picture && googleUser.picture !== user.avatar) {
+      const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
+      if (validatedPicture && validatedPicture !== user.avatar) {
         updates.push(`avatar = $${updates.length + 1}`);
-        values.push(googleUser.picture);
-        user.avatar = googleUser.picture;
+        values.push(validatedPicture);
+        user.avatar = validatedPicture;
       }
       
       if (storedState.lang && storedState.lang !== user.language) {
@@ -357,7 +375,10 @@ router.get("/google/callback", async (req, res) => {
     };
 
     const lang = storedState.lang || user.language || 'ar';
-    const targetRef = storedState.ref || '/';
+    let targetRef = storedState.ref || '/';
+    if (typeof targetRef !== 'string' || !targetRef.startsWith('/') || targetRef.startsWith('//') || targetRef.startsWith('\\\\')) {
+      targetRef = '/';
+    }
     const allowedOrigin = getBaseUrl(req);
     
     const rawPayload = JSON.stringify({ 
