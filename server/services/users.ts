@@ -277,7 +277,7 @@ export async function getUserProfile(userId: string) {
   };
 }
 
-export async function updateUserProfile(userId: string, data: any) {
+export async function updateUserProfile(userId: string | number, data: any) {
   if (!pool) throw new Error('Database initializing');
   
   const { name, avatar, language, theme, custom_instructions, password, email } = data;
@@ -285,29 +285,97 @@ export async function updateUserProfile(userId: string, data: any) {
   const values: any[] = [];
   let idx = 1;
 
-  if (name !== undefined) { updates.push(`name = $${idx++}`); values.push(name); }
-  if (avatar !== undefined) { updates.push(`avatar = $${idx++}`); values.push(avatar); }
-  if (language !== undefined) { updates.push(`language = $${idx++}`); values.push(language); }
-  if (theme !== undefined) { updates.push(`theme = $${idx++}`); values.push(theme); }
-  if (custom_instructions !== undefined) { updates.push(`custom_instructions = $${idx++}`); values.push(custom_instructions); }
-  if (email !== undefined) { updates.push(`email = $${idx++}`); values.push(email); }
+  if (name !== undefined) {
+    if (name !== null && typeof name !== 'string') {
+      throw new Error('Name must be a string');
+    }
+    updates.push(`name = $${idx++}`);
+    values.push(name);
+  }
+
+  if (avatar !== undefined) {
+    if (avatar !== null && typeof avatar !== 'string') {
+      throw new Error('Avatar URL must be a string');
+    }
+    updates.push(`avatar = $${idx++}`);
+    values.push(avatar);
+  }
+
+  if (language !== undefined) {
+    if (typeof language !== 'string') {
+      throw new Error('Language must be a string');
+    }
+    const cleanLang = language.trim().toLowerCase();
+    if (cleanLang !== 'en' && cleanLang !== 'ar') {
+      throw new Error('Invalid language specified. Must be "en" or "ar".');
+    }
+    updates.push(`language = $${idx++}`);
+    values.push(cleanLang);
+  }
+
+  if (theme !== undefined) {
+    if (typeof theme !== 'string') {
+      throw new Error('Theme must be a string');
+    }
+    const cleanTheme = theme.trim().toLowerCase();
+    if (cleanTheme !== 'light' && cleanTheme !== 'dark') {
+      throw new Error('Invalid theme specified. Must be "light" or "dark".');
+    }
+    updates.push(`theme = $${idx++}`);
+    values.push(cleanTheme);
+  }
+
+  if (custom_instructions !== undefined) {
+    if (custom_instructions !== null && typeof custom_instructions !== 'string') {
+      throw new Error('Custom instructions must be a string');
+    }
+    updates.push(`custom_instructions = $${idx++}`);
+    values.push(custom_instructions);
+  }
+
+  if (email !== undefined) {
+    if (typeof email !== 'string') {
+      throw new Error('Email must be a string');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      throw new Error('Invalid email format');
+    }
+    
+    const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [cleanEmail, userId]);
+    if (emailCheck.rows.length > 0) {
+      throw new Error('Email is already in use by another account');
+    }
+    
+    updates.push(`email = $${idx++}`);
+    values.push(cleanEmail);
+  }
   
   if (password !== undefined && password !== '') {
+    if (typeof password !== 'string') {
+      throw new Error('Password must be a string');
+    }
+    if (password.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
+    }
     const hash = await bcrypt.hash(password, 10);
     updates.push(`password_hash = $${idx++}`);
     values.push(hash);
   }
 
-  if (updates.length === 0) return await getUserProfile(userId);
+  const userIdStr = userId.toString();
 
-  values.push(userId);
+  if (updates.length === 0) return await getUserProfile(userIdStr);
+
+  values.push(userIdStr);
   const query = `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`;
   
   await pool.query(query, values);
   
   if (io) {
-    io.to(`user_${userId}`).emit('user_profile_updated');
+    io.to(`user_${userIdStr}`).emit('user_profile_updated');
   }
 
-  return await getUserProfile(userId);
+  return await getUserProfile(userIdStr);
 }

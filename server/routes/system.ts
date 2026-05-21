@@ -1,13 +1,41 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import { authenticateAdmin, authenticateToken } from '../middleware/auth.js';
 import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEconomySettings } from '../services/system.js';
 import { pool } from '../db/index.js';
 
 const router = express.Router();
 
+const checkOptionalAuth = (req: express.Request): boolean => {
+  try {
+    const authHeader = req.headers['authorization'];
+    let token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      token = token.trim();
+      if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
+      }
+    }
+    if (!token || token === 'null' || token === 'undefined' || token === '') {
+      return false;
+    }
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) return false;
+    jwt.verify(token, jwtSecret);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 router.get("/settings", async (req, res) => {
   try {
-    const settings = await getSystemSettings();
+    const settings = { ...await getSystemSettings() };
+    const isAuth = checkOptionalAuth(req);
+    if (!isAuth) {
+      delete settings.stripe_publishable_key;
+      delete settings.paypal_client_id;
+    }
     res.json(settings);
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
@@ -16,7 +44,16 @@ router.get("/settings", async (req, res) => {
 
 router.get("/economy", async (req, res) => {
   try {
-    const economy = await getEconomySettings();
+    const economy = { ...await getEconomySettings() };
+    const isAuth = checkOptionalAuth(req);
+    if (!isAuth) {
+      delete economy.crypto_address;
+      delete economy.bank_name;
+      delete economy.bank_recipient;
+      delete economy.bank_iban;
+      delete economy.bank_swift;
+      delete economy.paypal_email;
+    }
     res.json(economy);
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });

@@ -159,6 +159,10 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
       return res.status(403).json({ error: 'Unauthorized: Session details mismatch.' });
     }
 
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
+    }
+
     return res.json({ success: true, amount: parseFloat(amount || '0') });
   } catch (error: any) {
     console.error('[Stripe Verify Session] Error:', error);
