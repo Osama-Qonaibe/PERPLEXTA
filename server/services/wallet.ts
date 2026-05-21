@@ -393,6 +393,11 @@ export async function refundToWallet(userId: string | number, amount: number, tr
 export async function adjustWalletBalance(userId: string | number, amount: number, type: 'credit' | 'debit' | 'add' | 'deduct', reason: string, target: 'balance' | 'points' = 'balance') {
   if (!ledgerPool) throw new Error('Ledger database not available');
 
+  // Validate amount to prevent 0 or negative balance manipulation attacks
+  if (isNaN(amount) || amount <= 0) {
+    throw new Error('Adjustment amount must be a positive number greater than zero.');
+  }
+
   const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
   if (isNaN(userIdNum)) {
     throw new Error('Invalid User ID');
