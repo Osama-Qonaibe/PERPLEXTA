@@ -206,6 +206,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'messages', 'citations', 'JSONB', `'[]'`);
       await ensureColumn(tx, 'messages', 'follow_ups', 'JSONB', `'[]'`);
       await ensureColumn(tx, 'messages', 'feedback', 'SMALLINT', '0');
+      await ensureColumn(tx, 'messages', 'generation_time', 'NUMERIC');
 
       await ensureColumn(tx, 'api_keys_vault', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
       await ensureColumn(tx, 'api_keys_vault', 'model_list', 'JSONB', `'[]'`);
@@ -420,6 +421,36 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'is_hidden', 'BOOLEAN', 'false');
     });
 
+    // MIGRATION: Referral Code v16
+    await runVersioned('v16_user_referral_code', 'Adding unique 6-character alphanumeric referral_code to users table and populating existing users', async (tx) => {
+      await ensureColumn(tx, 'users', 'referral_code', 'VARCHAR(6)');
+      
+      // Fetch all users currently lacking a referral_code
+      const usersRes = await tx.query('SELECT id FROM users WHERE referral_code IS NULL OR referral_code = \'\'');
+      for (const row of usersRes.rows) {
+        let code = '';
+        let isUnique = false;
+        let attempts = 0;
+        while (!isUnique && attempts < 100) {
+          attempts++;
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          // Verify code doesn't exist already in DB (pre-migration set + user table)
+          const dupRes = await tx.query('SELECT id FROM users WHERE referral_code = $1', [code]);
+          if (dupRes.rows.length === 0) {
+            isUnique = true;
+          }
+        }
+        await tx.query('UPDATE users SET referral_code = $1 WHERE id = $2', [code, row.id]);
+      }
+      
+      // Create a unique index to strictly prevent duplication at database level
+      await tx.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -509,6 +540,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         thinking_steps JSONB DEFAULT '[]',
         citations JSONB DEFAULT '[]',
         follow_ups JSONB DEFAULT '[]',
+        generation_time NUMERIC,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         tool VARCHAR(100),
         is_pinned BOOLEAN DEFAULT false,

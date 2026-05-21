@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export const AuthModal: React.FC = () => {
   const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe } = useAppContext();
   const [searchParams] = useSearchParams();
-  const ref = searchParams.get('ref') || undefined;
+  const ref = searchParams.get('ref') || localStorage.getItem('app_ref') || undefined;
   
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [isLoading, setIsLoading] = useState(false);

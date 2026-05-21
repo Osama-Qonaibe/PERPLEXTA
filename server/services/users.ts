@@ -209,7 +209,7 @@ export async function getUserProfile(userId: string) {
   if (!pool) throw new Error('Database initializing');
   
   const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at,
+    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code,
            s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color, p.limits
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -271,6 +271,7 @@ export async function getUserProfile(userId: string) {
     custom_instructions: row.custom_instructions,
     kyc_status: row.kyc_status,
     created_at: row.created_at,
+    referral_code: row.referral_code,
     subscription,
     balance: wallet.balance,
     points: parseInt(wallet.points)

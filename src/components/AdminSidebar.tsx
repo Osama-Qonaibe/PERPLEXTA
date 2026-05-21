@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Activity, Key, Database, Cpu, Landmark, 
   CreditCard, Users, Settings, Mail, ArrowRight,
-  Send
+  Send, Brain
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -27,6 +27,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
     ] : []),
     { icon: <Users size={18} />, label: t('userManagement'), path: '/admin/users' },
     ...(!isSupport ? [
+      { icon: <Brain size={18} />, label: language === 'ar' ? 'مركز الذاكرة' : 'Memory Center', path: '/admin/memories' },
       { icon: <Mail size={18} />, label: t('smartEmailHub'), path: '/admin/emails' },
       { icon: <Send size={18} />, label: t('smartBroadcast'), path: '/admin/broadcast' },
       { icon: <Settings size={18} />, label: t('systemSettings'), path: '/admin/settings' },

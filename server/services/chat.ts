@@ -94,6 +94,8 @@ export async function handleChatMessage(socket: any, data: any) {
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 
+    const generationStart = Date.now();
+
     const result = await executeTaskLogic(
       { 
         tool_id: finalToolId, 
@@ -110,9 +112,11 @@ export async function handleChatMessage(socket: any, data: any) {
       socket
     );
 
+    const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
+
     await pool.query(
-      'UPDATE messages SET content = $1 WHERE id = $2',
-      [result.result, assistantMessageId]
+      'UPDATE messages SET content = $1, generation_time = $2 WHERE id = $3',
+      [result.result, generationTimeSeconds, assistantMessageId]
     );
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
@@ -122,11 +126,25 @@ export async function handleChatMessage(socket: any, data: any) {
       result: result.result, 
       chatId: finalChatId, 
       message_id: assistantMessageId,
-      tool: finalToolId 
+      tool: finalToolId,
+      generation_time: generationTimeSeconds
     });
 
   } catch (error: any) {
-    console.error('[ChatService] Error:', error);
+    let isSystemInactive = false;
+    try {
+      const parsedErr = JSON.parse(error.message);
+      if (parsedErr && parsedErr.type === 'SYSTEM_INACTIVE') {
+        isSystemInactive = true;
+      }
+    } catch (_) {}
+
+    if (isSystemInactive) {
+      console.info(`[ChatService] Service temporarily suspended or inactive tool processed gracefully for user: ${authenticatedUserId}`);
+    } else {
+      console.error('[ChatService] Error:', error);
+    }
+
     if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
       pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[ChatService] Placeholder deletion failed:', e));
     }
@@ -134,7 +152,18 @@ export async function handleChatMessage(socket: any, data: any) {
     let userMessage = 'An unexpected system error occurred. Please try again later.';
     try {
       const parsed = JSON.parse(error.message);
-      if (parsed.error) userMessage = parsed.error;
+      
+      let userLang = 'ar';
+      try {
+        const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
+        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'ar';
+      } catch (_) {}
+      
+      if (userLang === 'ar' && parsed.error_ar) {
+        userMessage = parsed.error_ar;
+      } else if (parsed.error) {
+        userMessage = parsed.error;
+      }
     } catch (e) {
       if (error.message && (error.message.includes('provider') || error.message.includes('quota') || error.message.includes('Unauthorized'))) {
         userMessage = error.message;

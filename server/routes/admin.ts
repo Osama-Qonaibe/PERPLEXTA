@@ -8,6 +8,7 @@ import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
+import { consolidateAllUserMemories } from '../services/memory.js';
 import { isSafeHost } from '../utils/helpers.js';
 import { authLimiter, adminLimiter } from '../middleware/rateLimit.js';
 import { 
@@ -133,7 +134,7 @@ router.post("/databases/import", authenticateAdmin, async (req, res) => {
 
 router.get("/api-keys", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT provider, updated_at, daily_budget, used_today, models, is_active FROM api_keys_vault');
+    const result = await pool.query('SELECT provider, updated_at, daily_budget, used_today, models, is_active, url_key FROM api_keys_vault');
     res.json({ keys: result.rows });
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1444,15 +1445,38 @@ router.post("/settings/paypal/verify", authenticateAdmin, async (req, res) => {
 
 router.post("/api-keys", authenticateAdmin, async (req, res) => {
   try {
-    const { provider, key, daily_budget = 0, urlKey } = req.body;
-    if (!provider || !key) return res.status(400).json({ error: 'Provider and Key are required' });
+    const { provider, key, daily_budget, urlKey } = req.body;
+    if (!provider) return res.status(400).json({ error: 'Provider is required' });
 
+    const cleanProvider = provider.toLowerCase().replace(/\s+/g, '');
     let finalKey = key;
-    if (provider.toLowerCase() === 'ollama' && urlKey) {
-      finalKey = `${urlKey}:${key}`;
+    let finalBudget = daily_budget !== undefined ? parseFloat(daily_budget) : null;
+    let existingObj: any = null;
+
+    const existingRes = await pool.query(
+      'SELECT encrypted_key, daily_budget, url_key FROM api_keys_vault WHERE provider = $1',
+      [cleanProvider]
+    );
+    if (existingRes.rows.length > 0) {
+      existingObj = existingRes.rows[0];
     }
 
-    const status = await checkProviderStatus(provider, finalKey);
+    if (!finalKey && existingObj) {
+      finalKey = decrypt(existingObj.encrypted_key);
+    }
+
+    if (finalBudget === null || isNaN(finalBudget)) {
+      finalBudget = existingObj ? parseFloat(existingObj.daily_budget) : 0;
+    }
+
+    if (!finalKey) return res.status(400).json({ error: 'Key is required' });
+
+    let checkingKey = finalKey;
+    if (cleanProvider === 'ollama' && urlKey) {
+      checkingKey = `${urlKey}:${finalKey}`;
+    }
+
+    const status = await checkProviderStatus(cleanProvider, checkingKey, urlKey);
     if (!status.isValid) {
       return res.status(400).json({ 
         error: 'Invalid API Key', 
@@ -1463,30 +1487,32 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
     const encryptedKey = encrypt(finalKey);
     
     await pool.query(`
-      INSERT INTO api_keys_vault (provider, encrypted_key, daily_budget, is_active, updated_at)
-      VALUES ($1, $2, $3, true, CURRENT_TIMESTAMP)
+      INSERT INTO api_keys_vault (provider, encrypted_key, daily_budget, url_key, is_active, updated_at)
+      VALUES ($1, $2, $3, $4, true, CURRENT_TIMESTAMP)
       ON CONFLICT (provider) DO UPDATE SET 
         encrypted_key = EXCLUDED.encrypted_key,
         daily_budget = EXCLUDED.daily_budget,
+        url_key = EXCLUDED.url_key,
         is_active = true,
         updated_at = CURRENT_TIMESTAMP
-    `, [provider.toLowerCase(), encryptedKey, daily_budget]);
+    `, [cleanProvider, encryptedKey, finalBudget, urlKey]);
 
-    invalidateVaultCache(provider);
+    invalidateVaultCache(cleanProvider);
 
     let syncedCount = 0;
     let syncedModels: any[] = [];
     try {
-      const syncResult = await syncProviderModelsInternal(provider.toLowerCase(), finalKey);
+      const syncResult = await syncProviderModelsInternal(cleanProvider, finalKey, urlKey);
       syncedCount = syncResult.count;
       syncedModels = syncResult.models;
     } catch (syncErr) {
       console.error('[Admin] Post-save model sync failed:', syncErr);
     }
 
-    await auditLog((req as any).user?.id, 'Save API Key', 'system', { provider: provider.toLowerCase() });
+    await auditLog((req as any).user?.id, 'Save API Key', 'system', { provider: cleanProvider });
     res.json({ success: true, count: syncedCount, models: syncedModels, status });
   } catch (error) {
+    console.error('[Admin] api-key save endpoint failed:', error);
     res.status(500).json({ error: 'Failed to save API key' });
   }
 });
@@ -1496,7 +1522,8 @@ router.post("/api-keys/:id/budget", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { budget } = req.body;
     if (budget === undefined || isNaN(Number(budget))) return res.status(400).json({ error: 'Valid budget required' });
-    await pool.query('UPDATE api_keys_vault SET daily_budget = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [budget, id]);
+    const cleanId = id.toLowerCase().replace(/\s+/g, '');
+    await pool.query('UPDATE api_keys_vault SET daily_budget = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [budget, cleanId]);
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Update failed' });
@@ -1506,8 +1533,9 @@ router.post("/api-keys/:id/budget", authenticateAdmin, async (req, res) => {
 router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM api_keys_vault WHERE provider = $1', [id]);
-    await auditLog((req as any).user?.id, 'Delete API Key', 'system', { provider: id });
+    const cleanId = id.toLowerCase().replace(/\s+/g, '');
+    await pool.query('DELETE FROM api_keys_vault WHERE provider = $1', [cleanId]);
+    await auditLog((req as any).user?.id, 'Delete API Key', 'system', { provider: cleanId });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Delete failed' });
@@ -1517,11 +1545,13 @@ router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
 router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
+    const cleanId = id.toLowerCase().replace(/\s+/g, '');
+    const keyResult = await pool.query('SELECT encrypted_key, url_key FROM api_keys_vault WHERE provider = $1', [cleanId]);
     if (keyResult.rows.length === 0) return res.status(404).json({ error: 'Provider key not found' });
     
     const decryptedKey = decrypt(keyResult.rows[0].encrypted_key);
-    const syncResult = await syncProviderModelsInternal(id, decryptedKey);
+    const urlKey = keyResult.rows[0].url_key;
+    const syncResult = await syncProviderModelsInternal(cleanId, decryptedKey, urlKey);
     res.json({ success: true, count: syncResult.count, models: syncResult.models });
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1531,13 +1561,15 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
 router.post("/api-keys/:id/sync-usage", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
+    const cleanId = id.toLowerCase().replace(/\s+/g, '');
+    const keyResult = await pool.query('SELECT encrypted_key, url_key FROM api_keys_vault WHERE provider = $1', [cleanId]);
     if (keyResult.rows.length === 0) return res.status(404).json({ error: 'Key not found' });
     
     const decryptedKey = decrypt(keyResult.rows[0].encrypted_key);
-    const status = await checkProviderStatus(id, decryptedKey);
+    const urlKey = keyResult.rows[0].url_key;
+    const status = await checkProviderStatus(cleanId, decryptedKey, urlKey);
     
-    await pool.query('UPDATE api_keys_vault SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [status.isValid, id]);
+    await pool.query('UPDATE api_keys_vault SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [status.isValid, cleanId]);
     res.json({ success: true, status });
   } catch {
     res.status(500).json({ error: 'Sync failed' });
@@ -1548,15 +1580,16 @@ router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { key, urlKey } = req.body;
+    const cleanId = id.toLowerCase().replace(/\s+/g, '');
     
     let keyToTest = key;
     if (keyToTest) {
-      if (id.toLowerCase() === 'ollama' && urlKey) {
+      if (cleanId === 'ollama' && urlKey) {
         keyToTest = `${urlKey}:${keyToTest}`;
       }
     } else {
       // Fallback to saved key
-      const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [id]);
+      const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [cleanId]);
       if (keyResult.rows.length > 0) {
         keyToTest = decrypt(keyResult.rows[0].encrypted_key);
       }
@@ -1564,7 +1597,7 @@ router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
 
     if (!keyToTest) return res.status(400).json({ error: 'No key provided for testing' });
     
-    const status = await checkProviderStatus(id, keyToTest);
+    const status = await checkProviderStatus(cleanId, keyToTest, urlKey);
     res.json({ success: true, status });
   } catch (error) {
     res.status(500).json({ error: 'Test failed' });
@@ -1887,6 +1920,51 @@ router.delete("/withdrawal-requests/:id", authenticateAdmin, async (req, res) =>
   } catch (error: any) {
     console.error('[Admin] Delete Withdrawal Request Error:', error);
     res.status(500).json({ error: 'Failed to delete request' });
+  }
+});
+
+// Fetch Memory System Metrics
+router.get("/memories/stats", authenticateAdmin, async (req, res) => {
+  try {
+    const totalRes = await pool.query('SELECT count(*) FROM chat_memories');
+    const usersRes = await pool.query('SELECT count(DISTINCT user_id) FROM chat_memories');
+    
+    const total = parseInt(totalRes.rows[0].count);
+    const users = parseInt(usersRes.rows[0].count);
+    const average = users > 0 ? (total / users).toFixed(1) : '0';
+
+    res.json({
+      totalMemories: total,
+      usersWithMemories: users,
+      averageMemories: parseFloat(average)
+    });
+  } catch (err: any) {
+    console.error('[Admin] Memory Stats Error:', err);
+    res.status(500).json({ error: 'Failed to fetch memory stats' });
+  }
+});
+
+// Trigger Manual Memory Consolidation
+router.post("/memories/consolidate", authenticateAdmin, async (req, res) => {
+  try {
+    const { targetUserId, threshold } = req.body;
+    const options: any = {};
+    if (targetUserId) options.targetUserId = parseInt(targetUserId);
+    if (threshold !== undefined) options.threshold = parseInt(threshold);
+
+    const report = await consolidateAllUserMemories(options);
+    
+    await auditLog(
+      (req as any).user?.id,
+      'Triggered Manual Memory Consolidation',
+      'system',
+      { options, resultsCount: report.length }
+    );
+    
+    res.json({ success: true, report });
+  } catch (err: any) {
+    console.error('[Admin] Manual Memory Consolidation Error:', err);
+    res.status(500).json({ error: err.message || 'Failed to consolidate user memories' });
   }
 });
 

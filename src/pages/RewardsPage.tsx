@@ -190,7 +190,7 @@ export const RewardsPage: React.FC = () => {
     return text;
   };
 
-  const referralLink = contextUser ? `${window.location.origin}/?ref=${contextUser.id}` : "...";
+  const referralLink = contextUser ? `${window.location.origin}/?ref=${contextUser.referral_code || contextUser.id}` : "...";
 
   const handleCopy = () => {
     if (!contextUser) return;

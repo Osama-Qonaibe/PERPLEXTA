@@ -53,7 +53,7 @@ export const IncentiveCard: React.FC = () => {
   const { percentage, toolId, planNameEn, planNameAr } = milestoneData;
   const planName = dir === 'rtl' ? planNameAr : planNameEn;
   
-  const referralLink = `${window.location.origin}/?ref=${user?.id || 'elite'}`;
+  const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();

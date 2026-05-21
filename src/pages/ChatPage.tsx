@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
+import { trackGAEvent } from '../components/GoogleAnalytics';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
@@ -566,6 +567,7 @@ interface Message {
   citations?: { title: string; url: string; index: number }[];
   follow_ups?: string[];
   is_streaming?: boolean;
+  generation_time?: number;
   file?: {
     name: string;
     type: string;
@@ -1182,7 +1184,7 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
 
 export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
   const [copied, setCopied] = useState(false);
-  const referralLink = `${window.location.origin}/?ref=${user?.id || 'elite'}`;
+  const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -1330,6 +1332,17 @@ export const ChatPage: React.FC = () => {
     setIsOperationPending(isGenerating || query.length > 100);
   }, [isGenerating, query, setIsOperationPending]);
 
+  // Synchronize generation state and active chat ID globally for real-time sidebar pulse
+  useEffect(() => {
+    const activeChatId = chatId || routeChatId || null;
+    window.dispatchEvent(new CustomEvent('ai-streaming-state', {
+      detail: { isGenerating, chatId: activeChatId }
+    }));
+    if (!isGenerating && activeChatId) {
+      window.dispatchEvent(new Event('chat-updated'));
+    }
+  }, [isGenerating, chatId, routeChatId]);
+
   const [videoSettings, setVideoSettings] = useState({
     aspectRatio: '16:9',
     resolution: '720p',
@@ -1373,6 +1386,7 @@ export const ChatPage: React.FC = () => {
   const streamingBuffer = useRef('');
   const typewriterInterval = useRef<any>(null);
   const isGeneratingRef = useRef(false);
+  const generationStartTimeRef = useRef<number | null>(null);
   const finalResponseDataRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1744,6 +1758,8 @@ export const ChatPage: React.FC = () => {
           ? (dir === 'rtl' ? 'تم تثبيت الرسالة' : 'Message pinned') 
           : (dir === 'rtl' ? 'تم إلغاء التثبيت' : 'Message unpinned')
         );
+        // Track GA pin interaction
+        trackGAEvent(isPinned ? 'message_pinned' : 'message_unpinned', 'interaction');
       }
     } catch (err) {
       console.error('Pin error:', err);
@@ -1763,6 +1779,9 @@ export const ChatPage: React.FC = () => {
       });
       if (res.ok) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback } : m));
+        // Track GA feedback event
+        const feedLabel = feedback === 1 ? 'thumbs_up' : feedback === -1 ? 'thumbs_down' : 'neutral';
+        trackGAEvent('feedback_submitted', 'message_quality', feedLabel);
       }
     } catch (err) {
       console.error('Feedback error:', err);
@@ -1811,18 +1830,18 @@ export const ChatPage: React.FC = () => {
         let pullAmount = 1;
         if (!isGeneratingRef.current) {
           // If generation is complete, pull larger chunks to flush the buffer rapidly and avoid artificial lag
-          pullAmount = Math.min(bufferLen, Math.max(4, Math.ceil(bufferLen / 6)));
-        } else if (bufferLen > 250) {
+          pullAmount = Math.min(bufferLen, Math.max(12, Math.ceil(bufferLen / 3)));
+        } else if (bufferLen > 200) {
           // Keep up with rapid server models under high load
-          pullAmount = Math.min(bufferLen, 24);
+          pullAmount = Math.min(bufferLen, 32);
         } else if (bufferLen > 100) {
-          pullAmount = Math.min(bufferLen, 12);
+          pullAmount = Math.min(bufferLen, 18);
         } else if (bufferLen > 50) {
-          pullAmount = Math.min(bufferLen, 8);
+          pullAmount = Math.min(bufferLen, 10);
         } else if (bufferLen > 15) {
-          pullAmount = Math.min(bufferLen, 4);
+          pullAmount = Math.min(bufferLen, 5);
         } else {
-          pullAmount = Math.min(bufferLen, 2);
+          pullAmount = Math.min(bufferLen, 3);
         }
 
         // Safe surrogate pair checker to avoid breaking emojis or complex characters helper
@@ -1833,6 +1852,10 @@ export const ChatPage: React.FC = () => {
             pullAmount = Math.min(bufferLen, pullAmount + 1);
           }
         }
+
+        const elapsed = generationStartTimeRef.current 
+          ? parseFloat(((Date.now() - generationStartTimeRef.current) / 1000).toFixed(1)) 
+          : undefined;
 
         const chunk = streamingBuffer.current.substring(0, pullAmount);
         streamingBuffer.current = streamingBuffer.current.substring(pullAmount);
@@ -1846,11 +1869,12 @@ export const ChatPage: React.FC = () => {
             newMessages[lastIdx] = {
               ...lastMessage,
               content: lastMessage.content + chunk,
-              is_streaming: true
+              is_streaming: true,
+              generation_time: elapsed
             };
             return newMessages;
           } else if (lastIdx === -1 || (lastMessage && lastMessage.role === 'user')) {
-            newMessages.push({ role: 'assistant', content: chunk, is_streaming: true });
+            newMessages.push({ role: 'assistant', content: chunk, is_streaming: true, generation_time: elapsed });
             return newMessages;
           }
           return prev;
@@ -1876,7 +1900,14 @@ export const ChatPage: React.FC = () => {
             const newMessages = [...prev];
             const lastIdx = newMessages.length - 1;
             if (lastIdx >= 0 && newMessages[lastIdx].role === 'assistant') {
-              newMessages[lastIdx] = { ...newMessages[lastIdx], is_streaming: false };
+              const finalElapsed = generationStartTimeRef.current 
+                ? parseFloat(((Date.now() - generationStartTimeRef.current) / 1000).toFixed(1)) 
+                : undefined;
+              newMessages[lastIdx] = { 
+                ...newMessages[lastIdx], 
+                is_streaming: false,
+                generation_time: finalElapsed || newMessages[lastIdx].generation_time
+              };
               return newMessages;
             }
             return prev;
@@ -1979,6 +2010,7 @@ export const ChatPage: React.FC = () => {
           tool: msg.tool,
           feedback: msg.feedback,
           is_pinned: msg.is_pinned,
+          generation_time: msg.generation_time ? parseFloat(msg.generation_time) : undefined,
           thinking_steps: typeof msg.thinking_steps === 'string' ? JSON.parse(msg.thinking_steps) : msg.thinking_steps,
           citations: typeof msg.citations === 'string' ? JSON.parse(msg.citations) : msg.citations,
           follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups
@@ -2008,7 +2040,8 @@ export const ChatPage: React.FC = () => {
             thinking_steps: data.thinking_steps || lastMessage.thinking_steps,
             citations: data.citations || lastMessage.citations,
             follow_ups: data.follow_ups || [],
-            is_streaming: false
+            is_streaming: false,
+            generation_time: data.generation_time !== undefined ? parseFloat(data.generation_time) : lastMessage.generation_time
           };
         }
         return newMessages;
@@ -2241,9 +2274,13 @@ export const ChatPage: React.FC = () => {
         setShowChatLimitWarning(true);
       }
       
+      generationStartTimeRef.current = Date.now();
       setMessages(updatedMessages);
       setIsGenerating(true);
       streamingBuffer.current = '';
+      
+      // Track analytics event for chat submission
+      trackGAEvent('chat_submitted', 'chat_engagement', toolToUse);
       
       // Small micro-task delay for first message UI sync
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -2770,7 +2807,7 @@ export const ChatPage: React.FC = () => {
         <div className="flex items-end px-1 sm:px-3 py-1 sm:py-3 gap-0.5 sm:gap-2">
           {/* Send Button */}
           <div className="flex-shrink-0 flex items-center">
-            <button 
+            <motion.button 
               onClick={() => handleSendOrStop()}
               className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme group shadow-none
                 ${!isGenerating && !query.trim() 
@@ -2778,6 +2815,24 @@ export const ChatPage: React.FC = () => {
                   : 'hover:bg-emerald-500/5 hover:border-emerald-500/20 active:scale-95'
                 } border border-transparent`}
               disabled={!isGenerating && !query.trim()}
+              animate={isGenerating ? {
+                boxShadow: [
+                  "0 0 0px rgba(16, 185, 129, 0)",
+                  "0 0 16px rgba(16, 185, 129, 0.6)",
+                  "0 0 0px rgba(16, 185, 129, 0)"
+                ],
+                scale: [1, 1.05, 1],
+                borderColor: [
+                  "rgba(16, 185, 129, 0.1)",
+                  "rgba(16, 185, 129, 0.5)",
+                  "rgba(16, 185, 129, 0.1)"
+                ]
+              } : {}}
+              transition={isGenerating ? {
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              } : {}}
             >
               {isGenerating ? (
                 <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10">
@@ -2796,7 +2851,7 @@ export const ChatPage: React.FC = () => {
                   />
                 </div>
               )}
-            </button>
+            </motion.button>
           </div>
 
           {/* Textarea Area */}
@@ -3594,6 +3649,19 @@ export const ChatPage: React.FC = () => {
                           {stripProtocolMarkers(msg.content)}
                         </Markdown>
                       )}
+                      {msg.role === 'assistant' && (msg.is_streaming || (isGenerating && idx === messages.length - 1)) && (
+                        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-[var(--text-muted)] font-mono select-none">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                          <span>
+                            {dir === 'rtl' ? 'جاري التحليل والإنتاج...' : 'Analyzing and generating...'}
+                          </span>
+                          {msg.generation_time !== undefined && (
+                            <span className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] font-bold">
+                              ({Number(msg.generation_time).toFixed(1)}s)
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {(!isGenerating || idx < messages.length - 1 || (msg.content && msg.content.length > 50)) && (
                         <>
                           <Citations 
@@ -3680,6 +3748,14 @@ export const ChatPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-1 sm:gap-2">
+                        {msg.generation_time !== undefined && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 select-none mr-1 sm:mr-2">
+                            <Zap size={10} className="text-emerald-500" />
+                            <span className="text-[10px] font-mono leading-none font-semibold">
+                              {Number(msg.generation_time).toFixed(2)}s
+                            </span>
+                          </div>
+                        )}
                         <button 
                           onClick={async () => {
                             try {

@@ -30,12 +30,13 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   
   if (!pool) throw new Error('System still initializing. Please wait.');
   
-  const [routeResult, quota, chatRes, userRes, vaultCheck] = await Promise.all([
+  const [routeResult, quota, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
     checkUserQuota(userId, toolIdStr),
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
     pool.query('SELECT language FROM users WHERE id = $1', [userId]),
-    pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true')
+    pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
+    pool.query('SELECT fact FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [userId]).catch(() => ({ rows: [] }))
   ]);
 
   if (parseInt(vaultCheck.rows[0].count) === 0) {
@@ -47,7 +48,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   }
   
   if (routeResult.rows.length === 0 || !routeResult.rows[0].primary_provider || !routeResult.rows[0].primary_model) {
-     await logSecurityAlert(userId, 'UNCONFIGURED_TOOL_ACCESS', 'medium', `User attempted to access tool "${toolIdStr}" but it is not yet configured or activated by the Admin.`, { toolId: toolIdStr });
+     await logSystemActivity(userId, 'INACTIVE_TOOL_ACCESS', `User attempted to access tool "${toolIdStr}" but it is currently inactive or undergoing maintenance.`, { toolId: toolIdStr });
      throw new Error(JSON.stringify({
         error: "This specialized service is temporarily unavailable for optimization. Our engineers have been notified.",
         error_ar: "هذه الخدمة المتخصصة غير متاحة مؤقتاً لأغراض التحسين. تم إخطار مهندسينا بالفعل.",
@@ -122,16 +123,8 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   }
 
   let userMemoriesStr = '';
-  try {
-    const memoryRes = await pool.query(
-      'SELECT fact FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
-      [userId]
-    );
-    if (memoryRes.rows.length > 0) {
-      userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
-    }
-  } catch (memErr) {
-    console.error('[Orchestrator] Memory retrieval failed:', memErr);
+  if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
+    userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
   }
 
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
@@ -230,11 +223,18 @@ ${refinedSystemPromptSegment}
       }
 
       const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
-      if (budgetRes.rows.length === 0 || !budgetRes.rows[0].is_active) continue;
-      
-      const vault = budgetRes.rows[0];
-      const dailyBudget = parseFloat(vault.daily_budget || '0');
-      const usedToday = parseFloat(vault.used_today || '0');
+      let isProviderActive = budgetRes.rows.length > 0 && budgetRes.rows[0].is_active;
+      let dailyBudget = 0;
+      let usedToday = 0;
+
+      if (budgetRes.rows.length > 0) {
+        dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
+        usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
+      }
+
+      if (!isProviderActive) {
+        continue;
+      }
 
       if (dailyBudget > 0 && usedToday >= dailyBudget) {
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
@@ -350,14 +350,50 @@ ${factsToCondense}`;
       }
       
       break;
-    } catch (e) {
+    } catch (e: any) {
       console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, e);
+      
+      const errMessage = e.message || '';
+      const isQuotaOrAuthExhausted = 
+        errMessage.includes('429') || 
+        errMessage.includes('401') || 
+        errMessage.includes('1113') || 
+        errMessage.includes('Insufficient balance') || 
+        errMessage.includes('resource package') || 
+        errMessage.includes('quota') || 
+        errMessage.includes('recharge') || 
+        errMessage.includes('balance');
+        
+      if (isQuotaOrAuthExhausted) {
+        try {
+          const provLower = target.provider.toLowerCase();
+          await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
+          invalidateVaultCache(provLower);
+          
+          console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion or auth failure (429/401).`);
+          
+          await logSecurityAlert(
+            userId, 
+            'PROVIDER_AUTO_DEACTIVATED', 
+            'high', 
+            `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`, 
+            { provider: target.provider, error: errMessage }
+          );
+        } catch (dbErr) {
+          console.error('[Orchestrator] Error deactivating failed provider in DB:', dbErr);
+        }
+      }
     }
   }
 
   if (!generatedText) {
-    await logSecurityAlert(userId, 'ORCHESTRATION_FAILURE', 'high', `System failed to generate response across all configured models for tool "${toolIdStr}".`, { toolIdStr, modelsTried: modelsToTry });
-    throw new Error('Intelligence Generation failed across all configured models. Please check your AI API keys and credits in the Admin Dashboard.');
+    await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
+    
+    throw new Error(JSON.stringify({
+      error: "The service for this tool is temporarily suspended due to scheduled technical maintenance or capacity limits. Please try again in a few moments.",
+      error_ar: "تم إيقاف الخدمة المرتبطة بهذه الأداة مؤقتاً لأغراض الصيانة والتحديث الفني الجاري لتحسين الأداء. يُرجى المحاولة مرة أخرى بعد قليل.",
+      type: "SYSTEM_INACTIVE"
+    }));
   }
 
   await incrementUserUsage(userId, toolIdStr);

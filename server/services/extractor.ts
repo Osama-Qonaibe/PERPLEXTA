@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { createRequire } from 'module';
+import { getProviderKey } from './ai.js';
 const require = createRequire(import.meta.url);
 const _pdf = require('pdf-parse');
 const mammoth = require('mammoth');
@@ -38,7 +39,10 @@ export const pdf = async (dataBuffer: Buffer) => {
 };
 
 export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
-  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  let apiKey = await getProviderKey('google');
+  if (!apiKey) {
+    apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  }
   if (!apiKey) return 'API Key missing for multimodal sense.';
   
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;

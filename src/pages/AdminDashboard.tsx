@@ -1819,6 +1819,15 @@ const ApiKeysVaultView = ({
     providerId: string;
     providerName: string;
   } | null>(null);
+
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [newCustomId, setNewCustomId] = useState("");
+  const [newCustomName, setNewCustomName] = useState("");
+  const [newCustomUrl, setNewCustomUrl] = useState("");
+  const [newCustomKey, setNewCustomKey] = useState("");
+  const [newCustomBudget, setNewCustomBudget] = useState("");
+  const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+
   const [providers, setProviders] = useState([
     {
       id: "openai",
@@ -2005,8 +2014,14 @@ const ApiKeysVaultView = ({
             ? data.keys
             : [];
 
-        setProviders((prevProviders) =>
-          prevProviders.map((p) => {
+        const BUILT_IN_IDS = [
+          "openai", "anthropic", "google", "deepseek", "groq", "openrouter",
+          "mistral", "together", "xai", "serper", "elevenlabs", "ollama"
+        ];
+
+        setProviders((prevProviders) => {
+          // 1. Map built-in providers
+          const updatedBuiltIn = prevProviders.filter((p: any) => !p.isCustom).map((p) => {
             const savedKey = savedKeys.find((k: any) => k.provider === p.id);
             if (savedKey) {
               return {
@@ -2016,13 +2031,47 @@ const ApiKeysVaultView = ({
                 updatedAt: savedKey.updated_at,
                 budget: parseFloat(savedKey.daily_budget) || 0,
                 usedToday: parseFloat(savedKey.used_today) || 0,
+                urlKey: savedKey.url_key || "",
                 key: "",
-                urlKey: "",
               };
             }
-            return p;
-          }),
-        );
+            return {
+              ...p,
+              status: "missing",
+              isActive: false,
+              key: "",
+              urlKey: "",
+            };
+          });
+
+          // 2. Identify custom providers from the database (those not in the built-in list)
+          const customKeys = savedKeys.filter((k: any) => {
+            const normalizedProvider = k.provider.toLowerCase();
+            return !BUILT_IN_IDS.includes(normalizedProvider);
+          });
+
+          const updatedCustom = customKeys.map((k: any) => {
+            const existing = prevProviders.find((p: any) => p.id === k.provider);
+            const customName = k.provider.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+            return {
+              id: k.provider,
+              name: existing?.name || customName,
+              key: "",
+              urlKey: k.url_key || "",
+              status: "active",
+              isActive: !!k.is_active,
+              isVisible: false,
+              isTesting: false,
+              isCustom: true,
+              url: k.url_key || "",
+              updatedAt: k.updated_at,
+              budget: parseFloat(k.daily_budget) || 0,
+              usedToday: parseFloat(k.used_today) || 0,
+            };
+          });
+
+          return [...updatedBuiltIn, ...updatedCustom];
+        });
       }
     } catch (error) {
       console.error("Error fetching API keys status:", error);
@@ -2757,10 +2806,12 @@ const ApiKeysVaultView = ({
                 <Key size={14} className="text-gray-400 shrink-0" />
               </div>
 
-              {provider.id === "ollama" && (
+              {(provider.id === "ollama" || (provider as any).isCustom) && (
                 <div className="space-y-1.5 mt-4">
                   <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1">
-                    {t("ollamaUrlLabel") || "Cloud Endpoint URL"}
+                    {provider.id === "ollama" 
+                      ? (t("ollamaUrlLabel") || "Cloud Endpoint URL")
+                      : (language === "ar" ? "رابط نقطة النهاية (Endpoint Base URL)" : "API Endpoint Base URL")}
                   </label>
                   <div
                     className={`flex items-center h-11 px-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 transition-theme shadow-sm`}
@@ -2777,7 +2828,7 @@ const ApiKeysVaultView = ({
                           ),
                         )
                       }
-                      placeholder="https://cloud.ollama.ai:11434"
+                      placeholder={provider.id === "ollama" ? "https://cloud.ollama.ai:11434" : "https://api.yourprovider.com/v1"}
                       className={`flex-1 bg-transparent border-none focus:outline-none px-2 text-xs font-mono text-[var(--text-primary)] placeholder-gray-500`}
                       dir="ltr"
                     />
@@ -2808,8 +2859,9 @@ const ApiKeysVaultView = ({
                     </div>
                   </div>
                   <p className="text-[9px] text-gray-500 px-1 italic">
-                    {t("ollamaCloudHint") ||
-                      "Note: Enter your Ollama Cloud URL here. Localhost is used as fallback only."}
+                    {provider.id === "ollama" 
+                      ? (t("ollamaCloudHint") || "Note: Enter your Ollama Cloud URL here. Localhost is used as fallback only.")
+                      : (language === "ar" ? "تأكد من أن الرابط متوافق مع بنية OpenAI وتجلب موديلاتها تلقائياً." : "Ensure this endpoint serves standard OpenAI-compatible completions and models.")}
                   </p>
                 </div>
               )}
@@ -2821,18 +2873,18 @@ const ApiKeysVaultView = ({
                   handleSaveKey(
                     provider.id,
                     provider.key,
-                    provider.id === "ollama"
+                    (provider.id === "ollama" || (provider as any).isCustom)
                       ? (provider as any).urlKey
                       : undefined,
                   )
                 }
                 disabled={
                   !provider.key &&
-                  (provider.id !== "ollama" || !(provider as any).urlKey)
+                  ((provider.id !== "ollama" && !(provider as any).isCustom) || !(provider as any).urlKey)
                 }
                 className={`h-11 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-theme ${
                   !provider.key
-                    ? "bg-[var(--bg-secondary)]0/5 text-gray-500 cursor-not-allowed border border-transparent"
+                    ? "bg-[var(--bg-secondary)] text-gray-500 cursor-not-allowed border border-transparent"
                     : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
                 }`}
               >
@@ -2843,7 +2895,7 @@ const ApiKeysVaultView = ({
                   handleTestKeyConnection(
                     provider.id,
                     provider.key,
-                    provider.id === "ollama"
+                    (provider.id === "ollama" || (provider as any).isCustom)
                       ? (provider as any).urlKey
                       : undefined,
                   )
@@ -2863,6 +2915,233 @@ const ApiKeysVaultView = ({
             </button>
           </div>
         ))}
+
+        {/* Custom Provider Creation Slot */}
+        {!showAddCustom ? (
+          <button
+            onClick={() => {
+              setShowAddCustom(true);
+              setNewCustomId("");
+              setNewCustomName("");
+              setNewCustomUrl("");
+              setNewCustomKey("");
+              setNewCustomBudget("");
+            }}
+            className="p-6 rounded-lg border border-dashed border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] min-h-[440px] text-gray-400 hover:text-emerald-500 group cursor-pointer"
+          >
+            <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 dark:border-gray-800 flex items-center justify-center group-hover:border-emerald-500/30 group-hover:bg-emerald-500/5 transition-all duration-300">
+              <Plus size={24} className="group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="text-center">
+              <h4 className="font-bold text-sm text-gray-900 dark:text-white">
+                {language === "ar" ? "إضافة مزود مخصص مستقل" : "Add Custom Independent Provider"}
+              </h4>
+              <p className="text-xs text-gray-500 mt-1 max-w-[220px] mx-auto">
+                {language === "ar" ? "ربط أي وجهة API متوافقة مع بنية OpenAI بشكل آمن مع الفحص والتزامن" : "Securely connect block-independent OpenAI-compatible APIs"}
+              </p>
+            </div>
+          </button>
+        ) : (
+          <div className="p-6 rounded-lg border border-emerald-500/20 bg-[var(--bg-secondary)] shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[440px]">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-[var(--border-main)]/30">
+                <span className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
+                  <Cpu size={14} />
+                  {language === "ar" ? "مزود مخصص جديد" : "New Custom Provider"}
+                </span>
+                <button 
+                  onClick={() => setShowAddCustom(false)}
+                  className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Name Field */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {language === "ar" ? "اسم المزود (العرض في القوائم)" : "Provider Display Name"}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. HostLlama"
+                  value={newCustomName}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setNewCustomName(name);
+                    // Auto-slugify
+                    const slug = name
+                      .toLowerCase()
+                      .replace(/[^a-z0-9_-]/g, "_")
+                      .replace(/_+/g, "_");
+                    setNewCustomId(slug);
+                  }}
+                  className="w-full h-10 px-3 text-xs rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                />
+              </div>
+
+              {/* Unique ID Field */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex justify-between">
+                  <span>{language === "ar" ? "معرف المزود البرمجي (slug)" : "Unique Provider Slug / ID"}</span>
+                  <span className="text-[8px] text-gray-400 normal-case font-bold font-mono">Auto-generated</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. hostllama"
+                  value={newCustomId}
+                  onChange={(e) => setNewCustomId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "_"))}
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                />
+              </div>
+
+              {/* Base URL Endpoint Key */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {language === "ar" ? "رابط نقطة النهاية (Base URL)" : "API Endpoint Base URL"}
+                </label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://api.yourprovider.com/v1"
+                  value={newCustomUrl}
+                  onChange={(e) => setNewCustomUrl(e.target.value)}
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Key Field */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {language === "ar" ? "المفتاح السري (API Key)" : "Secret API Key"}
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="sk-••••••••••••••••"
+                  value={newCustomKey}
+                  onChange={(e) => setNewCustomKey(e.target.value)}
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Budget Field */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {language === "ar" ? "ميزانية الاستهلاك اليومي ($)" : "Daily Budget ($ Limits)"}
+                </label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={newCustomBudget}
+                  onChange={(e) => setNewCustomBudget(e.target.value)}
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-[var(--border-main)]/30">
+              <button
+                type="button"
+                onClick={() => setShowAddCustom(false)}
+                className="h-11 text-[10px] uppercase tracking-widest font-black rounded-sm border border-[var(--border-main)] bg-[var(--bg-primary)] hover:bg-red-500/5 hover:border-red-500/20 hover:text-red-500 transition-colors cursor-pointer"
+              >
+                {language === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl || !newCustomKey}
+                onClick={async () => {
+                  if (!newCustomId || !newCustomName || !newCustomUrl || !newCustomKey) return;
+                  setIsCreatingCustom(true);
+
+                  showToast(
+                    language === "ar" ? "جاري فحص نقطة الاتصال ومزامنة الموديلات..." : "Testing endpoint and syncing models...",
+                    "success"
+                  );
+                  
+                  try {
+                    const testRes = await fetch(`/api/admin/api-keys/${newCustomId}/test`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                      },
+                      body: JSON.stringify({ key: newCustomKey, urlKey: newCustomUrl })
+                    });
+                    
+                    if (!testRes.ok) {
+                      let errText = "Verification failed";
+                      try {
+                        const errJson = await testRes.json();
+                        errText = errJson.error || errText;
+                      } catch(_) {}
+                      throw new Error(errText);
+                    }
+                    
+                    const testData = await testRes.json();
+                    if (!testData.status?.isValid) {
+                      throw new Error(testData.status?.message || "Invalid Base URL or Key.");
+                    }
+
+                    // verified, save
+                    const saveRes = await fetch(`/api/admin/api-keys`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        provider: newCustomId,
+                        key: newCustomKey,
+                        urlKey: newCustomUrl,
+                        daily_budget: parseFloat(newCustomBudget) || 0
+                      })
+                    });
+
+                    if (saveRes.ok) {
+                      const saveData = await saveRes.json();
+                      showToast(
+                        language === "ar" ? `تم ربط المزود بنجاح ومزامنة ${saveData.count || 0} موديل.` : `Successfully connected provider and synced ${saveData.count || 0} models.`,
+                        "success"
+                      );
+                      
+                      await fetchKeys();
+                      setShowAddCustom(false);
+                    } else {
+                      let errText = "Could not save custom provider";
+                      try {
+                        const errJson = await saveRes.json();
+                        errText = errJson.error || errText;
+                      } catch(_) {}
+                      throw new Error(errText);
+                    }
+                  } catch (e: any) {
+                    showToast(e.message || "Operation failed", "error");
+                  } finally {
+                    setIsCreatingCustom(false);
+                  }
+                }}
+                className={`h-11 text-[10px] uppercase tracking-widest font-black rounded-sm text-white transition-all flex items-center justify-center gap-1.5 ${
+                  isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl || !newCustomKey
+                    ? "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
+                    : "bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                }`}
+              >
+                {isCreatingCustom ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                {language === "ar" ? "فحص وحفظ" : "Verify & Save"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -10775,6 +11054,582 @@ const MassBroadcastView = ({
   );
 };
 
+interface MemoryConsolidationReportItem {
+  userId: number;
+  userName: string;
+  userEmail: string;
+  oldCount: number;
+  newCount: number;
+  archivedFacts: string[];
+  distilledFact: string;
+  success: boolean;
+  error?: string;
+}
+
+const MemoryCenterView = ({
+  theme,
+  t,
+  dir,
+  language,
+}: {
+  theme: string;
+  t: (key: string, replacements?: any) => string;
+  dir: string;
+  language: string;
+}) => {
+  const { token, setIsOperationPending } = useAppContext();
+  const [threshold, setThreshold] = useState<number>(10);
+  const [targetUserId, setTargetUserId] = useState<string>("");
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [reports, setReports] = useState<MemoryConsolidationReportItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [systemStats, setSystemStats] = useState<{
+    totalMemories: number;
+    usersWithMemories: number;
+    averageMemories: number;
+  } | null>(null);
+  const [loadingStats, setLoadingStats] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string>("");
+  const [isSuccessToast, setIsSuccessToast] = useState<boolean>(false);
+
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    try {
+      const res = await fetch("/api/admin/memories/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSystemStats(data);
+      }
+    } catch (err) {
+      console.error("Failed to load memory stats:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchStats();
+    }
+  }, [token]);
+
+  const handleRunConsolidation = async () => {
+    setIsRunning(true);
+    setIsOperationPending(true);
+    setReports([]);
+    try {
+      const res = await fetch("/api/admin/memories/consolidate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          targetUserId: targetUserId ? parseInt(targetUserId) : undefined,
+          threshold: threshold,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setReports(data.report || []);
+        setToastMsg(
+          language === "ar"
+            ? "اكتملت عملية تكثيف الذاكرة بنجاح!"
+            : "Memory distillation cycle completed successfully!"
+        );
+        setIsSuccessToast(true);
+        fetchStats();
+      } else {
+        setToastMsg(data.error || "Failed to execute consolidation");
+        setIsSuccessToast(false);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Network error");
+      setIsSuccessToast(false);
+    } finally {
+      setIsRunning(false);
+      setIsOperationPending(false);
+      setTimeout(() => {
+        setToastMsg("");
+      }, 4000);
+    }
+  };
+
+  const filteredReports = reports.filter(
+    (item) =>
+      item.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.distilledFact.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Toast Notice */}
+      {toastMsg && (
+        <div
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
+            isSuccessToast
+              ? theme === "dark"
+                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
+                : "bg-white border border-emerald-200 text-emerald-600"
+              : theme === "dark"
+                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
+                : "bg-white border border-red-200 text-red-600"
+          }`}
+        >
+          {isSuccessToast ? (
+            <CheckCircle2
+              size={20}
+              className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+            />
+          ) : (
+            <AlertCircle size={20} className="text-red-500" />
+          )}
+          <span className="font-medium text-sm">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Hero Header with Documentation and Protocols */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-sm`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+            <Brain
+              size={28}
+              className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+              {language === "ar"
+                ? "بروتوكول تحسين وصيانة الذاكرة التراكمية"
+                : "PERPLEXTA SYSTEM MEMORY OPTIMIZATION PROTOCOL"}
+            </h4>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              {language === "ar"
+                ? "يقوم محرك Distillation الذكي بتقليص وتكثيف 10 ذكريات قديمة متراكمة في ملف المستخدم عالي الأهمية (Elite Profile) وتحويلها إلى حقيقة ذكاء واحدة عالية الكثافة والتركيز (High-Density Fact) لا تتجاوز 150 حرفاً. يضمن هذا الإجراء صفر تشتت للنماذج ورفع الدقة بنسبة تزيد على 90% مع تخفيض استهلاك تذكر الرموز (Tokens)."
+                : "The intelligent Distillation engine automatically condenses 10 legacy, accumulated memory fragments from the elite profile into a single high-density consolidated fact statement under 150 characters. This protocol aligns context focus, enhances analytical accuracy by over 90%, and secures minimal latency."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-Time System Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar" ? "إجمالي السجلات" : "TOTAL MEMORIES"}
+            </span>
+            <Database
+              size={18}
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.totalMemories ?? 0}
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+        </div>
+
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar" ? "المخدمين النشطين" : "ACTIVE PROFILES"}
+            </span>
+            <Users
+              size={18}
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.usersWithMemories ?? 0}
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+        </div>
+
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar"
+                ? "متوسط الكثافة لكل حساب"
+                : "MEAN PROFILE DENSITY"}
+            </span>
+            <Cpu
+              size={18}
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.averageMemories ?? 0}{" "}
+                <span className="text-sm font-normal text-gray-500">
+                  rec/user
+                </span>
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+        </div>
+      </div>
+
+      {/* Action Trigger Consolidation Form Console */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-6 border-b border-[var(--border)] pb-3">
+          {language === "ar"
+            ? "أدوات التشغيل وتحديد الأهداف"
+            : "TRIGGER MANIFEST & MANIPULATION"}
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar"
+                ? "الحد الأدنى للذكريات المستهدفة"
+                : "MINIMUM ACCUMULATION LIMIT (THRESHOLD)"}
+            </label>
+            <input
+              type="number"
+              value={threshold}
+              onChange={(e) =>
+                setThreshold(Math.max(2, parseInt(e.target.value) || 2))
+              }
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder="e.g. 10"
+              min="2"
+            />
+            <p className="text-[10px] text-gray-500">
+              {language === "ar"
+                ? "سيتم فقط معالجة المستخدمين الذين لديهم هذا العدد من الذكريات أو أكثر."
+                : "Process profiles containing this memory record count or higher."}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar"
+                ? "معرّف مستخدم محدد (اختياري)"
+                : "EXPLICIT USER IDENTIFIER ID (OPTIONAL)"}
+            </label>
+            <input
+              type="text"
+              value={targetUserId}
+              onChange={(e) =>
+                setTargetUserId(e.target.value.replace(/\D/g, ""))
+              }
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder="e.g. 52"
+            />
+            <p className="text-[10px] text-gray-500">
+              {language === "ar"
+                ? "اترك هذا الحقل فارغاً لتشغيل عملية التكثيف لجميع المستخدمين المؤهلين."
+                : "Leave blank to process all system users matching the criteria."}
+            </p>
+          </div>
+
+          <div>
+            <button
+              onClick={handleRunConsolidation}
+              disabled={isRunning}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/40 text-white rounded-[4px] font-medium text-sm transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
+            >
+              {isRunning ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white/35 border-t-white animate-spin"></div>
+                  {language === "ar"
+                    ? "جاري التكثيف والتوليف..."
+                    : "DISTILLING MEMORIES..."}
+                </>
+              ) : (
+                <>
+                  <Brain
+                    size={16}
+                    className="text-white drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  />
+                  {language === "ar"
+                    ? "بدء عملية التكثيف اليدوي"
+                    : "EXECUTE MANIFEST CYCLE"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Results & Verification Console */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md space-y-6`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+          <div>
+            <h4 className="text-base font-bold text-gray-900 dark:text-white">
+              {language === "ar"
+                ? "تقرير معالجة تكثيف الذاكرة"
+                : "DISTILLATION EXECUTION REPORT"}
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              {language === "ar"
+                ? "تحقق من جودة التوليف الذكي ومخرجات الذكاء الاصطناعي لكل مستخدم نشط."
+                : "Audit the generated high-density facts and compression quality below."}
+            </p>
+          </div>
+
+          <div className="relative w-full md:w-80">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all text-xs ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder={
+                language === "ar"
+                  ? "بحث عن اسم، بريد، أو محتوى..."
+                  : "Search name, email, or synthesized fact..."
+              }
+            />
+            <div className={`absolute top-2.5 left-3 text-gray-400`}>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {filteredReports.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded bg-gray-50 dark:bg-[#0f0f11] border border-dashed border-[var(--border)]">
+            <Brain
+              size={48}
+              className="text-gray-300 dark:text-gray-700/60 mb-4 animate-pulse"
+            />
+            <p className="text-sm font-bold text-gray-500">
+              {language === "ar"
+                ? "لا توجد نتائج معالجة حالية"
+                : "No active runtime logs available."}
+            </p>
+            <p className="text-xs text-gray-500 mt-1 max-w-sm">
+              {language === "ar"
+                ? "ابدأ بتحديد الخيارات وضغط بدء عملية التكثيف اليدوي أعلاه لاستيراد ومكثفة سجلات المستخدمين."
+                : "Select targets and run the manifest cycle to stream and capture direct synthesis details here."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredReports.map((report) => (
+              <div
+                key={report.userId}
+                className={`p-5 rounded-lg border transition-all duration-300 ${
+                  report.success
+                    ? theme === "dark"
+                      ? "bg-[#0f0f11]/60 border-emerald-500/15 shadow-[0_0_15px_rgba(16,185,129,0.02)]"
+                      : "bg-emerald-50/15 border-emerald-200/50"
+                    : theme === "dark"
+                      ? "bg-[#0f0f11]/60 border-red-500/15"
+                      : "bg-red-50/15 border-red-200/50"
+                }`}
+              >
+                {/* User Header Details */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-3 mb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">
+                        {report.userName}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-gray-200 dark:bg-gray-800 text-gray-500">
+                        UID: #{report.userId}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-400 font-mono">
+                      {report.userEmail}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    {/* Compression indicator with glow */}
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">
+                          {language === "ar"
+                            ? "السجلات المعالجة"
+                            : "OPTIMIZATION SCALE"}
+                        </div>
+                        <div className="text-xs font-mono text-gray-400">
+                          <span className="text-red-400 font-bold">
+                            {report.oldCount}
+                          </span>
+                          {" ➔ "}
+                          <span className="text-emerald-400 font-bold">
+                            {report.newCount}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        {Math.round(
+                          ((report.oldCount - report.newCount) /
+                            report.oldCount) *
+                            100
+                        )}
+                        % {language === "ar" ? "تقليص" : "REDUCED"}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    {report.success ? (
+                      <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
+                        {language === "ar" ? "ناجح" : "COMPLETED"}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-red-500 font-bold bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                        {language === "ar" ? "فشل" : "FAILED"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {report.success ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Distilled segment */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        {language === "ar"
+                          ? "الذاكرة التوليفية عالية الكثافة"
+                          : "SYNTHESIZED INTEL FACT STATEMENT (RESULTS)"}
+                      </div>
+                      <blockquote
+                        className={`p-4 rounded border-s-4 border-emerald-500 leading-relaxed text-sm font-medium ${
+                          theme === "dark"
+                            ? "bg-[#131315] border-gray-800 text-gray-100"
+                            : "bg-white border-gray-200 text-gray-800"
+                        }`}
+                      >
+                        “{report.distilledFact}”
+                      </blockquote>
+                    </div>
+
+                    {/* Archived Segment list */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between">
+                        <span>
+                          {language === "ar"
+                            ? "السجلات الـ 10 المؤرشفة القديمة"
+                            : "ARCHIVED LEGACY FACT STATEMENTS"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-normal font-mono">
+                          Count: {report.archivedFacts.length}
+                        </span>
+                      </div>
+                      <div
+                        className={`p-3 rounded border font-mono text-[11px] leading-relaxed max-h-36 overflow-y-auto custom-scrollbar space-y-1.5 ${
+                          theme === "dark"
+                            ? "bg-[#131315]/80 border-gray-800 text-gray-400"
+                            : "bg-white border-gray-100 text-gray-650"
+                        }`}
+                      >
+                        {report.archivedFacts.map((fact, idx) => (
+                          <div
+                            key={idx}
+                            className="border-b border-gray-800/15 last:border-0 pb-1 last:pb-0"
+                          >
+                            {fact}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-red-400 font-mono p-3 bg-red-500/5 rounded border border-red-500/10">
+                    <strong>Error description:</strong>{" "}
+                    {report.error || "Failed to process consolidation."}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SystemSettingsView = ({
   theme,
   t,
@@ -11341,6 +12196,149 @@ const SystemSettingsView = ({
               onChange={(e) => setGoogleAnalyticsId(e.target.value)}
               className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {dir === "rtl" 
+                ? "يسمح هذا المعرّف (مثل G-XXXXX) بمراقبة حركة المرور وسلوك المستخدمين وإرسال إحصاءات تفاعلية فورية إلى حساب إحصاءات جوجل الخاص بك."
+                : "This ID (e.g., G-XXXXX) enables real-time user behavior tracking, page transit logs, and custom interaction telemetry reporting directly to your Google Analytics dashboard."}
+            </p>
+          </div>
+
+          {/* Real-time Google Search Results Preview (SERP Preview) */}
+          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <Globe size={16} className="text-emerald-500 animate-pulse" />
+              {dir === "rtl" ? "معاينة حية لنتائج بحث جوجل (SERP Preview)" : "Live Google Search Result Preview (SERP)"}
+            </h3>
+            
+            <div className="max-w-2xl mx-auto">
+              {dir === "rtl" ? (
+                /* Arabic Search Snippet Card - displayed strictly when Arabic interface is loaded */
+                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between text-right`} dir="rtl">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5 justify-start flex-row-reverse text-right">
+                      {faviconBase64 ? (
+                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
+                      )}
+                      <div className="flex flex-col leading-none items-end">
+                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
+                          {siteNameAr || siteName || "بيربليكستا"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
+                          https://perplexta.com
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans text-right">
+                      {siteNameAr || siteName || "بيربليكستا"} | منصة التحليل التقني
+                    </h4>
+                    
+                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans text-right">
+                      {seoDescriptionAr ? (
+                        seoDescriptionAr.length > 160 
+                          ? `${seoDescriptionAr.slice(0, 157)}...` 
+                          : seoDescriptionAr
+                      ) : (
+                        "يرجى توفير وصف دقيق ومحسن لمحركات البحث ويركز على الكفاءة والتحليل."
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Length optimization metric */}
+                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
+                    <div className="flex justify-between items-center text-[10px] font-sans mb-1.5 text-gray-400 flex-row-reverse">
+                      <span>طول الوصف (مثالي: 120-160 حرفاً)</span>
+                      <span className={
+                        seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
+                          ? "text-emerald-500 font-bold"
+                          : seoDescriptionAr.length > 160 
+                          ? "text-red-500" 
+                          : "text-amber-500"
+                      }>
+                        {seoDescriptionAr.length} حرف
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
+                            ? "bg-emerald-500"
+                            : seoDescriptionAr.length > 160
+                            ? "bg-red-500"
+                            : "bg-amber-500"
+                        }`}
+                        style={{ width: `${Math.min(100, (seoDescriptionAr.length / 160) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* English Search Snippet Card - displayed strictly when English interface is loaded */
+                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between`}>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {faviconBase64 ? (
+                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
+                      )}
+                      <div className="flex flex-col leading-none">
+                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
+                          {siteName || "Perplexta Platform"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
+                          https://perplexta.com
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans">
+                      {siteName || "Perplexta Platform"} | Best Technical Analysis
+                    </h4>
+                    
+                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans">
+                      {seoDescriptionEn ? (
+                        seoDescriptionEn.length > 160 
+                          ? `${seoDescriptionEn.slice(0, 157)}...` 
+                          : seoDescriptionEn
+                      ) : (
+                        "Please provide a high-quality, concise search engine description focused on technical analysis."
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Length optimization metric */}
+                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
+                    <div className="flex justify-between items-center text-[10px] font-mono mb-1.5 text-gray-400">
+                      <span>Description Length (Optimal: 120-160 chars)</span>
+                      <span className={
+                        seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
+                          ? "text-emerald-500 font-bold"
+                          : seoDescriptionEn.length > 160 
+                          ? "text-red-500" 
+                          : "text-amber-500"
+                      }>
+                        {seoDescriptionEn.length} chars
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
+                            ? "bg-emerald-500"
+                            : seoDescriptionEn.length > 160
+                            ? "bg-red-500"
+                            : "bg-amber-500"
+                        }`}
+                        style={{ width: `${Math.min(100, (seoDescriptionEn.length / 160) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex justify-end mt-6">
@@ -11447,6 +12445,8 @@ export const AdminDashboard: React.FC = () => {
         return t("plansSubscriptions");
       case "users":
         return t("userManagement");
+      case "memories":
+        return language === "ar" ? "مركز الذاكرة" : "Memory Center";
       case "emails":
         return t("smartEmailHub");
       case "broadcast":
@@ -11488,6 +12488,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "إدارة الهوية والتحقق والصلاحيات"
           : "IDENTITY, KYC & PERMISSIONS CONTROL";
+      case "memories":
+        return language === "ar"
+          ? "إدارة وتكثيف ذاكرة المستخدمين واستقصاء الذكاء"
+          : "MANUAL MEMORY DISTILLATION & AUDIT CENTRAL";
       case "emails":
         return language === "ar"
           ? "إدارة القوالب والاتصالات الذكية"
@@ -11523,6 +12527,8 @@ export const AdminDashboard: React.FC = () => {
         return <CreditCard size={28} className={iconClass} />;
       case "users":
         return <Users size={28} className={iconClass} />;
+      case "memories":
+        return <Brain size={28} className={iconClass} />;
       case "emails":
         return <Mail size={28} className={iconClass} />;
       case "broadcast":
@@ -11669,6 +12675,8 @@ export const AdminDashboard: React.FC = () => {
             <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
           ) : path === "users" ? (
             <UserManagementView theme={theme} t={t} dir={dir} />
+          ) : path === "memories" ? (
+            <MemoryCenterView theme={theme} t={t} dir={dir} language={language} />
           ) : path === "emails" ? (
             <SmartEmailHubView theme={theme} t={t} dir={dir} />
           ) : path === "broadcast" ? (

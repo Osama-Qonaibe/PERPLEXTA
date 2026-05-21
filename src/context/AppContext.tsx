@@ -16,6 +16,7 @@ export interface User {
   kyc_status?: 'pending' | 'verified' | 'rejected' | 'none';
   kyc_rejection_reason?: string | null;
   custom_instructions?: string;
+  referral_code?: string;
   memory?: string;
   subscription?: {
     plan_id: string;
@@ -2386,6 +2387,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await res.json();
       if (res.ok) {
         await refreshUser();
+        // Track completed purchase event in Google Analytics
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'purchase', {
+            transaction_id: `bal_${Date.now()}`,
+            value: billingCycle === 'annual' ? 99.0 : 9.9, // general fallback estimate
+            currency: 'USD',
+            items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }],
+            method: 'balance'
+          });
+          console.log(`[Google Analytics] Tracked Completed Purchase for plan: ${planId} (${billingCycle})`);
+        }
         return { success: true, message: data.message };
       }
       return { success: false, error: data.error };
@@ -2410,6 +2422,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       const data = await res.json();
       if (res.ok && data.url) {
+        // Track begin checkout event in Google Analytics
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'begin_checkout', {
+            value: billingCycle === 'annual' ? 99.0 : 9.9,
+            currency: 'USD',
+            items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }]
+          });
+          console.log(`[Google Analytics] Tracked Begin Checkout for plan: ${planId} (${billingCycle})`);
+        }
         window.location.href = data.url;
         return { url: data.url };
       }

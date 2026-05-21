@@ -53,7 +53,7 @@ export const SubscriptionPage: React.FC = () => {
     return 0;
   };
 
-  const referralLink = `${window.location.origin}/?ref=${user?.id || 'guest'}`;
+  const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'guest'}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);

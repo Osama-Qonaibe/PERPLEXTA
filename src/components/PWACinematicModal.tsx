@@ -39,7 +39,7 @@ export const PWACinematicModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg bg-[#0e1014] border border-gray-800/80 rounded-sm shadow-2xl p-6 md:p-8 overflow-hidden z-10 box-border text-right"
+            className={`relative w-full max-w-lg bg-[#0e1014] border border-gray-800/80 rounded-sm shadow-2xl p-6 md:p-8 overflow-hidden z-10 box-border ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
             dir={dir}
           >
             {/* Close button */}
@@ -80,7 +80,7 @@ export const PWACinematicModal: React.FC = () => {
                 </p>
 
                 {isIOS && !isStandalone && (
-                  <div className="mt-4 p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-[4px] text-right flex items-start gap-3.5 max-w-sm mx-auto shadow-sm" dir={dir}>
+                  <div className={`mt-4 p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-[4px] ${dir === 'rtl' ? 'text-right' : 'text-left'} flex items-start gap-3.5 max-w-sm mx-auto shadow-sm`} dir={dir}>
                     <div className="text-emerald-500 w-5 h-5 flex items-center justify-center shrink-0">
                       <Share size={16} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
                     </div>
@@ -99,7 +99,7 @@ export const PWACinematicModal: React.FC = () => {
                 )}
 
                 {/* Start Line and End Line Verification Box */}
-                <div className="my-6 p-4 rounded-sm bg-[#111317]/80 border border-emerald-500/20 text-right text-[10px] font-mono text-gray-500 space-y-2 relative overflow-hidden" dir={dir}>
+                <div className={`my-6 p-4 rounded-sm bg-[#111317]/80 border border-emerald-500/20 ${dir === 'rtl' ? 'text-right' : 'text-left'} text-[10px] font-mono text-gray-500 space-y-2 relative overflow-hidden`} dir={dir}>
                   {/* Glowing laser track */}
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
                   
@@ -155,7 +155,7 @@ export const PWACinematicModal: React.FC = () => {
                 </div>
 
                 {/* Start Line and End Line Visual Matrix */}
-                <div className="my-8 relative px-4 text-right">
+                <div className={`my-8 relative px-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                   {/* Labels & Vertical Lines of Start and End */}
                   <div className={`flex justify-between items-end mb-2.5 text-[9px] font-mono text-gray-400 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
                     <div className="flex items-center gap-1.5">
@@ -205,7 +205,7 @@ export const PWACinematicModal: React.FC = () => {
 
                 {/* Telemetry scrolling console box */}
                 <div className="bg-[#0b0c0f] border border-gray-800/80 rounded-sm p-4 h-32 overflow-hidden flex flex-col justify-end">
-                  <div className="overflow-y-auto custom-scrollbar flex flex-col gap-1.5 text-[9px] font-mono select-none text-right">
+                  <div className={`overflow-y-auto custom-scrollbar flex flex-col gap-1.5 text-[9px] font-mono select-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                     {installLogs.map((log, index) => (
                       <motion.div
                         key={index}

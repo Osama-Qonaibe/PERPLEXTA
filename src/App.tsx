@@ -193,6 +193,7 @@ export default function App() {
               <Route path="finance" element={<AdminDashboard />} />
               <Route path="plans" element={<AdminDashboard />} />
               <Route path="users" element={<AdminDashboard />} />
+              <Route path="memories" element={<AdminDashboard />} />
               <Route path="emails" element={<AdminDashboard />} />
               <Route path="broadcast" element={<AdminDashboard />} />
               <Route path="settings" element={<AdminDashboard />} />

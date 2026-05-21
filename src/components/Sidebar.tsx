@@ -19,9 +19,27 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [recentChats, setRecentChats] = useState<any[]>([]);
+  const [streamingChatId, setStreamingChatId] = useState<string | null>(null);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleStreamingState = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent && customEvent.detail) {
+        if (customEvent.detail.isGenerating) {
+          setStreamingChatId(customEvent.detail.chatId);
+        } else {
+          setStreamingChatId(null);
+        }
+      }
+    };
+    window.addEventListener('ai-streaming-state', handleStreamingState);
+    return () => {
+      window.removeEventListener('ai-streaming-state', handleStreamingState);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -302,9 +320,18 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   {recentChats.length > 0 && (
                     <div className={isMobile ? "space-y-3" : "space-y-1"}>
                         {recentChats.map((chat) => (
-                      <div
+                      <motion.div
                         key={chat.id}
-                        className={`flex items-center w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300 group relative`}
+                        animate={streamingChatId === chat.id ? {
+                          backgroundColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.06)", "rgba(16,185,129,0)"],
+                          borderColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.25)", "rgba(16,185,129,0)"]
+                        } : {}}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className={`flex items-center w-full ${isMobile ? 'h-13' : 'h-11'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300 group relative border border-transparent rounded-[4px]`}
                       >
                         {editingChatId === chat.id ? (
                           <div className="flex items-center w-full h-full pr-2">
@@ -353,7 +380,14 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             >
                               <div className={`${isMobile ? 'w-16' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
                                 <div className={`absolute inset-0 mx-auto w-10 h-10 rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
-                                <MessageSquare size={isMobile ? 18 : 16} className="relative z-10 text-gray-400 transition-all duration-300 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                                <MessageSquare 
+                                  size={isMobile ? 18 : 16} 
+                                  className={`relative z-10 transition-all duration-300 ${
+                                    streamingChatId === chat.id 
+                                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' 
+                                      : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                  }`} 
+                                />
                               </div>
                               <AnimatePresence mode="wait" initial={false}>
                                 {isSidebarOpen && (
@@ -362,7 +396,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     transition={PERPLEXTA_TRANSITION}
-                                    className={`font-semibold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`}
+                                    className={`font-semibold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
+                                      streamingChatId === chat.id 
+                                        ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
+                                        : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                    }`}
                                   >
                                     {chat.title}
                                   </motion.span>
@@ -395,7 +433,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                   )}

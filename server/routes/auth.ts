@@ -60,9 +60,28 @@ const isValidGooglePicture = (url: any): boolean => {
   }
 };
 
+async function generateUniqueReferralCode(): Promise<string> {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let isUnique = false;
+  let code = '';
+  let attempts = 0;
+  while (!isUnique && attempts < 100) {
+    attempts++;
+    code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const check = await pool.query('SELECT id FROM users WHERE referral_code = $1', [code]);
+    if (check.rows.length === 0) {
+      isUnique = true;
+    }
+  }
+  return code;
+}
+
 router.post("/signup", authLimiter, async (req, res) => {
   try {
-    const { email, password, name, language = 'en' } = req.body;
+    const { email, password, name, language = 'en', ref } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
     if (typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Email and password must be strings' });
@@ -79,9 +98,20 @@ router.post("/signup", authLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
     const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
 
+    // Parse and look up referring user
+    let referredBy: number | null = null;
+    if (ref && typeof ref === 'string' && ref.trim().length > 0) {
+      const parentUser = await pool.query('SELECT id FROM users WHERE UPPER(referral_code) = $1', [ref.trim().toUpperCase()]);
+      if (parentUser.rows.length > 0) {
+        referredBy = parentUser.rows[0].id;
+      }
+    }
+
+    const referralCode = await generateUniqueReferralCode();
+
     const result = await pool.query(
-      `INSERT INTO users (email, name, password_hash, provider, role) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [lowerEmail, name || lowerEmail.split('@')[0], passwordHash, 'email', role]
+      `INSERT INTO users (email, name, password_hash, provider, role, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [lowerEmail, name || lowerEmail.split('@')[0], passwordHash, 'email', role, referralCode, referredBy]
     );
 
     const user = result.rows[0];
@@ -93,11 +123,37 @@ router.post("/signup", authLimiter, async (req, res) => {
       ON CONFLICT (user_id) DO NOTHING
     `, [user.id]);
 
+    // Record the referral in ledger database
+    if (referredBy) {
+      let bonusPoints = 1000;
+      try {
+        const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
+        if (econRes.rows.length > 0) {
+          bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
+        }
+      } catch (econErr) {
+        console.error('Failed to query economy settings:', econErr);
+      }
+
+      try {
+        await ledgerPool.query(
+          `INSERT INTO referrals (referrer_id, referred_id, bonus_points, status) VALUES ($1, $2, $3, 'pending') ON CONFLICT (referred_id) DO NOTHING`,
+          [referredBy, user.id, bonusPoints]
+        );
+        await ledgerPool.query(
+          `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
+          [referredBy, user.id]
+        );
+      } catch (refErr) {
+        console.error('Failed to insert referral record on signup:', refErr);
+      }
+    }
+
     const remember = req.body.remember === true || req.body.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
-      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status,
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -158,7 +214,7 @@ router.post("/login", authLimiter, async (req, res) => {
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
-      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -288,10 +344,30 @@ router.get("/google/callback", async (req, res) => {
       const finalLang = storedState.lang || 'ar';
       const finalTheme = storedState.theme || 'dark';
       
+      // Parse and look up referring user
+      let referredBy: number | null = null;
+      const ref = storedState?.ref;
+      if (ref && typeof ref === 'string' && ref.trim().length > 0) {
+        const parentUser = await pool.query('SELECT id FROM users WHERE UPPER(referral_code) = $1', [ref.trim().toUpperCase()]);
+        if (parentUser.rows.length > 0) {
+          referredBy = parentUser.rows[0].id;
+        } else {
+          const numericId = parseInt(ref.trim(), 10);
+          if (!isNaN(numericId)) {
+            const parentUserById = await pool.query('SELECT id FROM users WHERE id = $1', [numericId]);
+            if (parentUserById.rows.length > 0) {
+              referredBy = parentUserById.rows[0].id;
+            }
+          }
+        }
+      }
+
+      const referralCode = await generateUniqueReferralCode();
+
       const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
       const insertResult = await pool.query(
-        `INSERT INTO users (email, name, avatar, provider, role, language, theme) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [lowerEmail, googleUser.name || googleUser.given_name, validatedPicture, 'google', role, finalLang, finalTheme]
+        `INSERT INTO users (email, name, avatar, provider, role, language, theme, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [lowerEmail, googleUser.name || googleUser.given_name, validatedPicture, 'google', role, finalLang, finalTheme, referralCode, referredBy]
       );
       user = insertResult.rows[0];
       
@@ -301,6 +377,32 @@ router.get("/google/callback", async (req, res) => {
         VALUES ($1, (SELECT id FROM plans WHERE name_en = 'Starter' LIMIT 1), 'active', CURRENT_TIMESTAMP + INTERVAL '100 years')
         ON CONFLICT (user_id) DO NOTHING
       `, [user.id]);
+
+      // Record the referral in ledger database
+      if (referredBy) {
+        let bonusPoints = 1000;
+        try {
+          const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
+          if (econRes.rows.length > 0) {
+            bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
+          }
+        } catch (econErr) {
+          console.error('Failed to query economy settings in Google registration:', econErr);
+        }
+
+        try {
+          await ledgerPool.query(
+            `INSERT INTO referrals (referrer_id, referred_id, bonus_points, status) VALUES ($1, $2, $3, 'pending') ON CONFLICT (referred_id) DO NOTHING`,
+            [referredBy, user.id, bonusPoints]
+          );
+          await ledgerPool.query(
+            `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
+            [referredBy, user.id]
+          );
+        } catch (refErr) {
+          console.error('Failed to insert referral record on Google registration:', refErr);
+        }
+      }
 
       await logSystemActivity(user.id, 'signup', 'User signed up via Google', {}, req);
     } else {
@@ -314,7 +416,6 @@ router.get("/google/callback", async (req, res) => {
         values.push('google');
       }
 
-      // Maintain latest Google profile avatar synchronized on login
       const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
       if (validatedPicture && validatedPicture !== user.avatar) {
         updates.push(`avatar = $${updates.length + 1}`);
@@ -346,7 +447,7 @@ router.get("/google/callback", async (req, res) => {
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     const fullProfile = await pool.query(`
-      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme,
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -364,6 +465,7 @@ router.get("/google/callback", async (req, res) => {
       status: row.status,
       language: row.language,
       theme: row.theme,
+      referral_code: row.referral_code,
       subscription: row.plan_id ? {
         plan_id: row.plan_id,
         status: row.sub_status,
