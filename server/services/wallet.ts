@@ -10,13 +10,11 @@ export async function getUserWallet(userId: string | number, txClient?: any) {
     throw new Error('Invalid User ID');
   }
   
-  // Referential Integrity: Verify user exists in Core DB first
   const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userIdNum]);
   if (userCheck.rows.length === 0) {
     throw new Error(`Integrity Error: User ${userIdNum} does not exist in Core DB`);
   }
   
-  // Explicitly check for existence and lock if in transaction to avoid deadlocks/race conditions
   if (txClient) {
     const existing = await txClient.query('SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1 FOR UPDATE', [userIdNum]);
     if (existing.rows.length > 0) return existing.rows[0];
@@ -43,13 +41,11 @@ export async function getEconomySettings() {
 
   let settings: any = {};
   
-  // Ledger DB is the absolute Source of Truth for financial constants
   const ledgerTarget = ledgerPool || pool;
   const res = await ledgerTarget.query('SELECT * FROM economy_settings LIMIT 1');
   
   if (res.rows.length > 0) {
     settings = res.rows[0];
-    // Fill defaults for any missing columns
     if (!settings.crypto_address) settings.crypto_address = 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy';
     if (!settings.bank_name) settings.bank_name = 'Merchant Discount Bank IL (011)';
     if (!settings.bank_recipient) settings.bank_recipient = 'Perplexta Tech Platforms LTD.';
@@ -57,7 +53,6 @@ export async function getEconomySettings() {
     if (!settings.bank_swift) settings.bank_swift = 'PPLXIL33XXX';
     if (!settings.paypal_email) settings.paypal_email = 'paypal@perplexta.com';
   } else {
-    // Default fallback if table is empty
     settings = {
       points_per_dollar: 1000,
       min_payout_usd: 10,
@@ -124,7 +119,6 @@ export function clearEconomyCache() {
 export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   
-  // High Performance & Security Fix: Cap the request limit to 100 to prevent DoS via massive page results
   const cappedLimit = Math.min(Math.max(1, limit), 100);
 
   let baseQuery = 'FROM ledger_transactions WHERE user_id = $1 AND (is_hidden IS NOT TRUE)';
@@ -135,7 +129,6 @@ export async function getTransactionHistory(userId: string, type: string, limit:
     params.push(type);
   }
 
-  // Get total count first
   const countRes = await ledgerPool.query(`SELECT COUNT(*) as total ${baseQuery}`, params);
   const total = parseInt(countRes.rows[0].total || '0');
 
@@ -158,7 +151,6 @@ export async function getTransactionHistory(userId: string, type: string, limit:
 export async function convertPointsToBalance(userId: string, amountPoints: number) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
-  // Security Fix: Prevent negative numbers or zero-point conversion attacks
   if (isNaN(amountPoints) || amountPoints <= 0) {
     throw new Error('Points amount must be a positive integer greater than zero.');
   }
@@ -171,7 +163,6 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
   try {
     await client.query('BEGIN');
     
-    // Lock the wallet row to prevent race conditions
     const walletRes = await client.query(
       'SELECT id, points, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -186,7 +177,6 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
       throw new Error('Insufficient points');
     }
 
-    // Combined update to points and balance in a single SQL operation
     await client.query(
       'UPDATE wallets SET points = points - $1, balance = balance + $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
       [amountPoints, usdAmount, wallet.id]
@@ -210,7 +200,6 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
 export async function requestWithdrawal(userId: string, amountUSD: number, method: string, details: string) {
   if (!ledgerPool || !pool) throw new Error('Database not available');
   
-  // Security Validation: Enforce strict whitelist over details & parameters to prevent injection or invalid requests
   const cleanedMethod = method ? method.trim().toLowerCase() : '';
   const allowedMethods = ['paypal', 'bank', 'crypto'];
   if (!allowedMethods.includes(cleanedMethod)) {
@@ -221,7 +210,6 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
     throw new Error('Withdrawal amount must be greater than zero.');
   }
 
-  // Sanitize the inputs: strip potential HTML/script tags and restrict maximum length to 500 characters
   const sanitizedDetails = details 
     ? details.toString().replace(/<[^>]*>/g, '').substring(0, 500).trim()
     : '';
@@ -236,7 +224,6 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
   try {
     await client.query('BEGIN');
     
-    // Lock the wallet row to prevent balance inconsistencies
     const walletRes = await client.query(
       'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
       [userId]
@@ -282,7 +269,6 @@ export async function getReferralCount(userId: string | number) {
   const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
   if (isNaN(userIdNum)) throw new Error('Invalid User ID');
 
-  // Check referrals table in Ledger DB for 'active' status to ensure financial integrity
   const result = await ledgerPool.query('SELECT count(*) FROM referrals WHERE referrer_id = $1 AND status = \'active\'', [userIdNum]);
   return parseInt(result.rows[0].count);
 }
@@ -321,7 +307,6 @@ export async function deductFromWallet(userId: string | number, amount: number, 
   try {
     await client.query('BEGIN');
     
-    // Lock wallet to prevent race conditions during deduction
     const walletRes = await client.query(
       'SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE',
       [userIdNum]
@@ -366,7 +351,6 @@ export async function refundToWallet(userId: string | number, amount: number, tr
   try {
     await client.query('BEGIN');
     
-    // Transaction-Safe wallet acquisition with lock
     const wallet = await getUserWallet(userIdNum, client);
     const walletId = wallet.id;
     
@@ -393,7 +377,6 @@ export async function refundToWallet(userId: string | number, amount: number, tr
 export async function adjustWalletBalance(userId: string | number, amount: number, type: 'credit' | 'debit' | 'add' | 'deduct', reason: string, target: 'balance' | 'points' = 'balance') {
   if (!ledgerPool) throw new Error('Ledger database not available');
 
-  // Validate amount to prevent 0 or negative balance manipulation attacks
   if (isNaN(amount) || amount <= 0) {
     throw new Error('Adjustment amount must be a positive number greater than zero.');
   }
@@ -403,7 +386,6 @@ export async function adjustWalletBalance(userId: string | number, amount: numbe
     throw new Error('Invalid User ID');
   }
 
-  // Security Hardening: Immunize from SQL injection by asserting exact whitelisted values for column targeting
   if (target !== 'points' && target !== 'balance') {
     throw new Error('Invalid target column specification');
   }
@@ -456,13 +438,11 @@ export async function depositToWallet(userId: string | number, amount: number, m
     await client.query('BEGIN');
     const wallet = await getUserWallet(userIdNum, client);
     
-    // Update balance
     const result = await client.query(
       `UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING balance, points`,
       [amount, wallet.id]
     );
 
-    // Write audit ledger record
     await client.query(
       `INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) 
        VALUES ($1, $2, $3, 'deposit', $4, 'success')`,
@@ -471,7 +451,6 @@ export async function depositToWallet(userId: string | number, amount: number, m
 
     await client.query('COMMIT');
 
-    // Trigger referral activation checks in secondary process if needed
     try {
       await checkReferralActivation(userIdNum);
     } catch (refErr) {
@@ -504,11 +483,10 @@ export async function deductUsageFromWallet(userId: string | number, toolId: str
     const settings = await getEconomySettings();
     const rate = parseFloat(settings.conversion_rate || '0.001');
 
-    const pointsCost = 10; // 10 points per excess request
-    const usdCost = pointsCost * rate; // e.g., 0.01 usd or ils per request
+    const pointsCost = 10;
+    const usdCost = pointsCost * rate;
 
     if (wallet.points >= pointsCost) {
-      // Deduct from points
       await client.query(
         'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [pointsCost, wallet.id]
@@ -520,7 +498,6 @@ export async function deductUsageFromWallet(userId: string | number, toolId: str
       await client.query('COMMIT');
       return { charged: 'points', amount: pointsCost };
     } else if (Number(wallet.balance) >= usdCost) {
-      // Deduct from balance
       await client.query(
         'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [usdCost, wallet.id]
