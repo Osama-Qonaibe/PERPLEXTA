@@ -8,15 +8,24 @@ interface AccountSettingsProps {
   onUpdate: (updates: any) => void;
   dir: 'rtl' | 'ltr';
   theme: 'dark' | 'light';
+  showToast?: (message: string, type?: 'success' | 'error') => void;
 }
 
-export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate, dir, theme }) => {
+export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate, dir, theme, showToast }) => {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'profile' | 'intelligence' | 'preferences'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, token, setIsOperationPending, language, setLanguage, setTheme } = useAppContext();
+
+  const notify = (message: string, type: 'success' | 'error' = 'success') => {
+    if (showToast) {
+      showToast(message, type);
+    } else {
+      alert(message);
+    }
+  };
 
   useEffect(() => {
     setIsOperationPending(isUploading || editingField !== null);
@@ -28,7 +37,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
     const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_AVATAR_SIZE) {
-      alert(dir === 'rtl' ? 'حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)' : 'Image is too large (Max 5MB)');
+      notify(dir === 'rtl' ? 'حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)' : 'Image is too large (Max 5MB)', 'error');
       e.target.value = '';
       return;
     }
@@ -52,11 +61,11 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
           onUpdate({ avatar: data.url });
         }
       } else {
-        alert(data.error || t('saveFailed'));
+        notify(data.error || t('saveFailed'), 'error');
       }
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      alert(t('saveFailed'));
+      notify(t('saveFailed'), 'error');
     } finally {
       setIsUploading(false);
     }
@@ -84,13 +93,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
     if (editingField === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(editValue)) {
-        alert(dir === 'rtl' ? 'بريد إلكتروني غير صالح' : 'Invalid email address');
+        notify(dir === 'rtl' ? 'بريد إلكتروني غير صالح' : 'Invalid email address', 'error');
         return;
       }
     }
 
     if (editingField === 'password' && editValue.length > 0 && editValue.length < 8) {
-      alert(dir === 'rtl' ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters');
+      notify(dir === 'rtl' ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters', 'error');
       return;
     }
 

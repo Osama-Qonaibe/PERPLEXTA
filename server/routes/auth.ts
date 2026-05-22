@@ -460,6 +460,13 @@ router.get("/google/callback", async (req, res) => {
         values.push(validatedPicture);
         user.avatar = validatedPicture;
       }
+
+      const googleName = googleUser.name || googleUser.given_name;
+      if (googleName && googleName !== user.name) {
+        updates.push(`name = $${updates.length + 1}`);
+        values.push(googleName);
+        user.name = googleName;
+      }
       
       if (storedState.lang && storedState.lang !== user.language) {
         updates.push(`language = $${updates.length + 1}`);

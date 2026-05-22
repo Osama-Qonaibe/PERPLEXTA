@@ -27,7 +27,15 @@ export const SettingsPage: React.FC = () => {
     return tab || 'account';
   });
   const [localUser, setLocalUser] = useState(user);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const navigate = useNavigate();
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -69,7 +77,7 @@ export const SettingsPage: React.FC = () => {
     if (updates && updates.id && updates.email) {
       setLocalUser(updates);
       setUser(updates);
-      alert(t('saveSuccess'));
+      showToast(t('saveSuccess'), 'success');
       return;
     }
 
@@ -83,11 +91,13 @@ export const SettingsPage: React.FC = () => {
         const updatedUser = await res.json();
         setLocalUser(updatedUser);
         setUser(updatedUser);
-        alert(t('saveSuccess'));
+        showToast(t('saveSuccess'), 'success');
+      } else {
+        showToast(t('saveFailed'), 'error');
       }
     } catch (error) {
       console.error('Failed to update profile', error);
-      alert(t('saveFailed'));
+      showToast(t('saveFailed'), 'error');
     }
   };
 
@@ -298,6 +308,7 @@ export const SettingsPage: React.FC = () => {
                     onUpdate={handleUpdateProfile} 
                     dir={dir} 
                     theme={theme} 
+                    showToast={showToast}
                   />
                 </div>
               )}
@@ -331,6 +342,26 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            className={`fixed bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+              toast.type === 'success' 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                : 'bg-red-500/10 border-red-500/20 text-red-500'
+            }`}
+            style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(16,185,129,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
+          >
+            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="font-bold text-sm tracking-tight">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

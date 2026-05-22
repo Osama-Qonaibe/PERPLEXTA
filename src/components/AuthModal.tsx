@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const AuthModal: React.FC = () => {
-  const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe } = useAppContext();
+  const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
   const [searchParams] = useSearchParams();
   const ref = searchParams.get('ref') || localStorage.getItem('app_ref') || undefined;
   
@@ -17,6 +17,12 @@ export const AuthModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    if (isAuthModalOpen && user) {
+      setIsAuthModalOpen(false);
+    }
+  }, [isAuthModalOpen, user, setIsAuthModalOpen]);
 
   if (!isAuthModalOpen) return null;
 
