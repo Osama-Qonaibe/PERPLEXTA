@@ -240,6 +240,12 @@ ${refinedSystemPromptSegment}
     { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
+  // Ultimate resilient fallback to system-provided model (Gemini)
+  const hasSystemModel = modelsToTry.some(m => m.provider.toLowerCase() === 'google' && m.model.toLowerCase().includes('gemini'));
+  if (!hasSystemModel) {
+    modelsToTry.push({ provider: 'google', model: 'gemini-1.5-flash' });
+  }
+
   let generatedText = '';
   let successfulModel = null;
   
@@ -252,7 +258,7 @@ ${refinedSystemPromptSegment}
       }
 
       const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
-      let isProviderActive = budgetRes.rows.length > 0 && budgetRes.rows[0].is_active;
+      let isProviderActive = budgetRes.rows.length === 0 || budgetRes.rows[0].is_active;
       let dailyBudget = 0;
       let usedToday = 0;
 
@@ -329,14 +335,27 @@ ${refinedSystemPromptSegment}
                   }
                 }
                 
-                // If we still don't have an associated chat_id, use the current active chatIdNum, or query the latest active chat for the user
+                // Fallback to the chat_id from the most recent message to persist context
                 if (!associatedChatId) {
-                  const latestChatRes = await pool.query(
-                    "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+                  const latestMessageChatRes = await pool.query(
+                    `SELECT c.id FROM chats c 
+                     JOIN messages m ON m.chat_id = c.id 
+                     WHERE c.user_id = $1 
+                     ORDER BY m.created_at DESC 
+                     LIMIT 1`,
                     [userId]
                   );
-                  if (latestChatRes.rows.length > 0) {
-                    associatedChatId = latestChatRes.rows[0].id;
+                  if (latestMessageChatRes.rows.length > 0) {
+                    associatedChatId = latestMessageChatRes.rows[0].id;
+                  } else {
+                    // Ultimate fallback to user's most recently active chat
+                    const latestChatRes = await pool.query(
+                      "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+                      [userId]
+                    );
+                    if (latestChatRes.rows.length > 0) {
+                      associatedChatId = latestChatRes.rows[0].id;
+                    }
                   }
                 }
                 
@@ -428,12 +447,15 @@ ${factsToCondense}`;
       const isQuotaOrAuthExhausted = 
         errMessage.includes('429') || 
         errMessage.includes('401') || 
+        errMessage.includes('403') || 
         errMessage.includes('1113') || 
         errMessage.includes('Insufficient balance') || 
         errMessage.includes('resource package') || 
         errMessage.includes('quota') || 
         errMessage.includes('recharge') || 
-        errMessage.includes('balance');
+        errMessage.includes('balance') ||
+        errMessage.includes('subscription') ||
+        errMessage.includes('upgrade');
         
       if (isQuotaOrAuthExhausted) {
         try {
@@ -441,7 +463,7 @@ ${factsToCondense}`;
           await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
           invalidateVaultCache(provLower);
           
-          console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion or auth failure (429/401).`);
+          console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
           
           await logSecurityAlert(
             userId, 

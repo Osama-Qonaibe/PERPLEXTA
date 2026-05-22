@@ -10,6 +10,19 @@ const router = express.Router();
 router.post("/execute-task", authenticateToken, chatLimiter, async (req: any, res) => {
   const userId = req.user?.id;
   try {
+    const subRes = await pool.query(`
+      SELECT s.status, u.role 
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+    `, [userId]);
+    
+    const role = subRes.rows[0]?.role;
+    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to execute tools.' });
+    }
+
     const { socketId } = req.body;
     let targetSocket = socketId ? io?.sockets.sockets.get(socketId) : null;
 

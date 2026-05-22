@@ -1313,6 +1313,9 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatId, setChatId] = useState<string | null>(routeChatId || null);
 
+  const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active');
+  const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active'));
+
   // Perplexta Preservation: Sync local state to persistent storage
   useEffect(() => {
     sessionStorage.setItem('draft_query', query);
@@ -2248,6 +2251,11 @@ export const ChatPage: React.FC = () => {
         setIsAuthModalOpen(true);
         return;
       }
+
+      if (!hasActiveSub) {
+        navigate('/subscriptions');
+        return;
+      }
       
       const currentQuery = overrideQuery || query;
       if (!currentQuery.trim() && !selectedFile) return;
@@ -2875,8 +2883,9 @@ export const ChatPage: React.FC = () => {
                   if (textareaRef.current) textareaRef.current.style.height = 'auto'; // Reset height
                 }
               }}
-              placeholder={t('askAssistant')}
-              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-sm sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
+              disabled={isInputDisabled}
+              placeholder={isInputDisabled ? (dir === 'rtl' ? 'يرجى تنشيط حسابك بتفعيل باقة اشتراك للبدء...' : 'Activate your account with a subscription to start...') : t('askAssistant')}
+              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-sm sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
               dir="auto"
               rows={1}
               style={{ minHeight: '32px', maxHeight: '200px' }}
@@ -2891,11 +2900,17 @@ export const ChatPage: React.FC = () => {
               className="hidden" 
               accept="*/*" 
               onChange={handleFileChange} 
+              disabled={isInputDisabled}
             />
             <button 
               title={dir === 'rtl' ? 'رفع ملف (الحد الأقصى 100 ميجابايت)' : 'Upload File (Max 100MB)'}
-              onClick={() => document.getElementById('unified-upload')?.click()}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme hover:bg-emerald-500/5 group border border-transparent hover:border-emerald-500/20 shadow-none hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              onClick={() => {
+                if (!isInputDisabled) {
+                  document.getElementById('unified-upload')?.click();
+                }
+              }}
+              disabled={isInputDisabled}
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/5 group hover:border-emerald-500/20 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]'}`}
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-theme" />
               <Paperclip size={18} className="md:w-5 md:h-5 text-emerald-500 hidden group-hover:block transition-theme drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
@@ -2907,11 +2922,18 @@ export const ChatPage: React.FC = () => {
           <div className="flex items-center gap-1 sm:gap-1.5">
             <div className="relative">
               <button 
-                onClick={() => setIsAdvancedToolsOpen(!isAdvancedToolsOpen)}
+                onClick={() => {
+                  if (!isInputDisabled) {
+                    setIsAdvancedToolsOpen(!isAdvancedToolsOpen);
+                  }
+                }}
+                disabled={isInputDisabled}
                 className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
-                  activeDropdown === 'tool'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                    : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5'
+                  isInputDisabled
+                    ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
+                    : activeDropdown === 'tool'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5'
                 }`}
               >
                 <span className={activeDropdown === 'tool' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
@@ -2966,11 +2988,18 @@ export const ChatPage: React.FC = () => {
             {/* Linked Model Selector */}
             <div className="relative">
               <button 
-                onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
+                onClick={() => {
+                  if (!isInputDisabled) {
+                    setIsModelMenuOpen(!isModelMenuOpen);
+                  }
+                }}
+                disabled={isInputDisabled}
                 className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
-                  activeDropdown === 'model'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                    : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
+                  isInputDisabled
+                    ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
+                    : activeDropdown === 'model'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
                 }`}
               >
                 <span className={activeDropdown === 'model' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
@@ -3315,50 +3344,119 @@ export const ChatPage: React.FC = () => {
           <div id="chat-messages-container" className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}>
           <AnimatePresence mode="wait">
             {messages.length === 0 ? (
-              <motion.div
-                key="onboarding-view"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
-              >
-              <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
-                <h1 
-                  className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
+              !hasActiveSub ? (
+                <motion.div
+                  key="subscription-blocker-onboarding"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="flex-1 flex flex-col items-center justify-center min-h-full py-8 md:py-16 selection:bg-emerald-500/10 w-full"
                 >
-                  {t('howCanIHelp')}
-                </h1>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
-                  {suggestions.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setQuery(item.label);
-                        setSelectedTool((item as any).toolId);
-                        setActiveDropdown('tool');
-                      }}
-                      className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-md border transition-theme text-start relative overflow-hidden bg-transparent border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
-                    >
-                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-sm flex items-center justify-center transition-theme relative z-10 bg-transparent text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
-                        {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 20, className: 'md:w-5 md:h-5' } as any)}
+                  <div className="w-full max-w-xl px-4 md:px-6">
+                    <div className="rounded-[var(--radius)] border bg-[var(--bg-secondary)] border-[var(--border-main)] overflow-hidden shadow-2xl relative p-6 md:p-8 flex flex-col items-center text-center">
+                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500" />
+                      
+                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] mb-6 transition-all duration-300 hover:scale-110">
+                        <Sparkles size={32} className="animate-pulse" />
                       </div>
-                      <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
-                        <span className="text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-theme truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500">
-                          {item.label}
-                        </span>
-                        <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 group-hover:text-emerald-500/70 transition-theme truncate w-full">
-                          {item.desc}
-                        </span>
+                      
+                      <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)] tracking-tight mb-3">
+                        {dir === 'rtl' ? 'تنشيط حسابك مطلوب' : 'Account Activation Required'}
+                      </h2>
+                      
+                      <p className="text-xs md:text-sm text-gray-500 leading-relaxed max-w-md mb-8">
+                        {dir === 'rtl' 
+                          ? 'أنت مسجل حالياً بدون خطة نشطة. للاستفادة من محادثات الذكاء الاصطناعي وخدمات الأدوات المتقدمة، يرجى تفعيل أي من الخطط المجانية أو المدفوعة.'
+                          : 'You are currently registered without an active subscription plan. To use AI conversations and analytical tools, please subscribe to a free or premium plan.'}
+                      </p>
+
+                      <div className="w-full flex flex-col sm:flex-row gap-3 justify-center mb-8">
+                        <button
+                          onClick={() => navigate('/subscriptions')}
+                          className="px-6 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                          {dir === 'rtl' ? 'اختر خطة لتنشيط الحساب' : 'Choose Plan to Activate'}
+                        </button>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute -inset-px rounded-md border border-emerald-500/0 group-hover:border-emerald-500/10 transition-theme pointer-events-none" />
-                    </button>
-                  ))}
+
+                      <div className="w-full border-t border-[var(--border-main)] pt-6 flex flex-col items-center">
+                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-wider mb-2">
+                          {dir === 'rtl' ? 'ادعُ أصدقاءك واربح الرصيد' : 'Invite Friends and Earn Credits'}
+                        </h4>
+                        <p className="text-[9px] md:text-[11px] text-gray-500 mb-4 max-w-sm">
+                          {dir === 'rtl'
+                            ? 'احصل على نقاط إضافية عن كل صديق يسجل من خلالك لتفعيل ميزاتك المتقدمة مجاناً!'
+                            : 'Get bonus points dynamically when friends register with your code to activate premium features for free!'}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 w-full max-w-sm rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] p-1.5">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`${window.location.origin}/?ref=${user?.referral_code || user?.id || 'guest'}`}
+                            className="bg-transparent text-[10px] md:text-xs flex-1 outline-none text-[var(--text-secondary)] px-2 font-mono truncate animate-none border-none shadow-none"
+                          />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/?ref=${user?.referral_code || user?.id || 'guest'}`);
+                              alert(dir === 'rtl' ? 'تم نسخ رابط الدعوة!' : 'Invitation link copied!');
+                            }}
+                            className="h-8 px-3 rounded-[4px] border border-[var(--border-main)] hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 hover:text-emerald-500"
+                          >
+                            {dir === 'rtl' ? 'نسخ' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="onboarding-view"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
+                >
+                <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
+                  <h1 
+                    className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
+                  >
+                    {t('howCanIHelp')}
+                  </h1>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setQuery(item.label);
+                          setSelectedTool((item as any).toolId);
+                          setActiveDropdown('tool');
+                        }}
+                        className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-md border transition-theme text-start relative overflow-hidden bg-transparent border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
+                      >
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-sm flex items-center justify-center transition-theme relative z-10 bg-transparent text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
+                          {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 20, className: 'md:w-5 md:h-5' } as any)}
+                        </div>
+                        <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
+                          <span className="text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-theme truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500">
+                            {item.label}
+                          </span>
+                          <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 group-hover:text-emerald-500/70 transition-theme truncate w-full">
+                            {item.desc}
+                          </span>
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute -inset-px rounded-md border border-emerald-500/0 group-hover:border-emerald-500/10 transition-theme pointer-events-none" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+              )
             ) : (
               <motion.div
                 key="chat-thread-view"

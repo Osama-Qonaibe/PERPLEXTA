@@ -208,14 +208,27 @@ export async function consolidateAllUserMemories(options?: {
             associatedChatId = parseInt(cidStr, 10);
           }
         }
-        // If no chat_id in memories being consolidated, fallback to user's most recently active chat
+        // Fallback to the chat_id from the most recent message to persist context
         if (!associatedChatId) {
-          const latestChatRes = await pool.query(
-            "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+          const latestMessageChatRes = await pool.query(
+            `SELECT c.id FROM chats c 
+             JOIN messages m ON m.chat_id = c.id 
+             WHERE c.user_id = $1 
+             ORDER BY m.created_at DESC 
+             LIMIT 1`,
             [userId]
           );
-          if (latestChatRes.rows.length > 0) {
-            associatedChatId = latestChatRes.rows[0].id;
+          if (latestMessageChatRes.rows.length > 0) {
+            associatedChatId = latestMessageChatRes.rows[0].id;
+          } else {
+            // Ultimate fallback to user's most recently active chat
+            const latestChatRes = await pool.query(
+              "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+              [userId]
+            );
+            if (latestChatRes.rows.length > 0) {
+              associatedChatId = latestChatRes.rows[0].id;
+            }
           }
         }
 

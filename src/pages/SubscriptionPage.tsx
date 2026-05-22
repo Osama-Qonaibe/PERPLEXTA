@@ -73,10 +73,30 @@ export const SubscriptionPage: React.FC = () => {
     }
   };
 
+  const isActivePlan = (planId: string) => {
+    return user?.subscription?.plan_id?.toString() === planId.toString() && user?.subscription?.status === 'active';
+  };
+
   const handleUpgrade = async (planId: string) => {
     if (!user) { setIsAuthModalOpen(true); return; }
     const plan = plans.find(p => p.id === planId);
-    if (user?.subscription?.plan_id?.toString() === planId.toString()) return;
+    if (!plan) return;
+    if (isActivePlan(planId)) return;
+    
+    const price = billingCycle === 'annual' ? Number(plan.annualPrice || 0) : Number(plan.monthlyPrice || 0);
+    if (price === 0) {
+      setLoading(`${planId}-stripe`);
+      const res = await payWithBalance(planId, billingCycle);
+      if (res.success) {
+        await refreshUser();
+        setResultModal('success');
+      } else {
+        alert(res.error || 'Activation failed');
+      }
+      setLoading(null);
+      return;
+    }
+
     setSelectedPlanForModal(plan);
     setLoading(`${planId}-stripe`);
     const res = await stripeCheckout(planId, billingCycle);
@@ -199,7 +219,7 @@ export const SubscriptionPage: React.FC = () => {
           <div 
             key={plan.id} 
             className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
-              user?.subscription?.plan_id?.toString() === plan.id.toString() 
+              isActivePlan(plan.id) 
                 ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
                 : 'hover:border-emerald-500/30'
             }`}
@@ -236,25 +256,25 @@ export const SubscriptionPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-8 relative z-10">
               <button 
                 onClick={() => handleUpgrade(plan.id)}
-                disabled={loading !== null || user?.subscription?.plan_id?.toString() === plan.id.toString()}
+                disabled={loading !== null || isActivePlan(plan.id)}
                 className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
                 style={{ 
                   backgroundColor: plan.color || '#10b981', 
-                  boxShadow: user?.subscription?.plan_id?.toString() === plan.id.toString() ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
-                  opacity: user?.subscription?.plan_id?.toString() === plan.id.toString() ? 0.9 : 1
+                  boxShadow: isActivePlan(plan.id) ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
+                  opacity: isActivePlan(plan.id) ? 0.9 : 1
                 }}
               >
-                {user?.subscription?.plan_id?.toString() === plan.id.toString() ? (
+                {isActivePlan(plan.id) ? (
                   <div className="flex items-center gap-1.5"><CheckCircle2 size={16} />{dir === 'rtl' ? 'نشط' : 'Active'}</div>
                 ) : (loading === `${plan.id}-stripe` ? '...' : (dir === 'rtl' ? 'اشتراك' : 'Subscribe'))}
               </button>
               <button 
                 onClick={() => handlePayWithBalance(plan.id)}
-                disabled={loading !== null || user?.subscription?.plan_id?.toString() === plan.id.toString()}
+                disabled={loading !== null || isActivePlan(plan.id)}
                 className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
-                style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: user?.subscription?.plan_id?.toString() === plan.id.toString() ? 0.8 : 1 }}
+                style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
               >
-                {user?.subscription?.plan_id?.toString() === plan.id.toString() ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
+                {isActivePlan(plan.id) ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
               </button>
             </div>
             <div className="flex-1 space-y-2 md:space-y-3 mb-6 md:mb-8">

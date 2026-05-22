@@ -46,7 +46,7 @@ export const tokenLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Max 100 administrative interactions to block brute-forcing and scraping
+  max: 2000, // Max 2000 administrative interactions to block brute-forcing and scraping without restricting authentic dashboards
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Security: Too many admin requests. Action throttled.' }

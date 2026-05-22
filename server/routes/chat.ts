@@ -1,4 +1,5 @@
 import express from 'express';
+import { pool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { 
@@ -17,6 +18,20 @@ const router = express.Router();
 
 router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
+    // Audit active subscription status
+    const subRes = await pool.query(`
+      SELECT s.status, u.role 
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+    `, [req.user.id]);
+    
+    const role = subRes.rows[0]?.role;
+    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to create a chat.' });
+    }
+
     const chat = await createChat(req.user.id, req.body.title);
     res.json(chat);
   } catch (error: any) {
@@ -37,13 +52,27 @@ router.get("/", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    const { role, content, tool } = req.body;
+    // Audit active subscription status
+    const subRes = await pool.query(`
+      SELECT s.status, u.role 
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+    `, [req.user.id]);
+    
+    const role = subRes.rows[0]?.role;
+    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to send messages.' });
+    }
+
+    const { role: msgRole, content, tool } = req.body;
     const chatId = req.params.id;
-    await addChatMessage(chatId, role, content, tool);
+    await addChatMessage(chatId, msgRole, content, tool);
     res.json({ success: true });
 
     const count = await getMessageCount(chatId);
-    if (count === 1 && role === 'user') {
+    if (count === 1 && msgRole === 'user') {
       generateChatTitle(chatId, content);
     }
   } catch (error: any) {

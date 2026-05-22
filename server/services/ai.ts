@@ -252,7 +252,12 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 targetHeaders['Authorization'] = `Bearer ${keyToUse}`;
             }
             try {
-                const res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+                let res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+                if (!res.ok && (res.status === 401 || res.status === 403) && targetHeaders['Authorization']) {
+                    const headersNoAuth = { ...targetHeaders };
+                    delete headersNoAuth['Authorization'];
+                    res = await fetch(`${cleanUrl}/api/tags`, { headers: headersNoAuth });
+                }
                 status.isValid = res.ok;
                 if (!res.ok) {
                     status.message = `Ollama: Connection failed (${res.status}): ${res.statusText}`;
@@ -282,15 +287,21 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                         if (res.status === 404 || res.status === 405 || res.status === 403 || res.status === 401) {
                             status.isValid = true;
                             status.message = `Warning: Models endpoint returned ${res.status}, but provider accepts completions using fallback model lists.`;
+                        } else {
+                            // Let custom providers remain valid so they can be saved, but issue a warning
+                            status.isValid = true;
+                            status.message = `Warning: Base URL endpoint validation failed (${res.status}). Key saved anyway.`;
                         }
                     }
                 } catch (fetchErr: any) {
-                    status.isValid = false;
-                    status.message = `Network Connection to ${cleanUrl} failed: ${fetchErr.message}`;
+                    // Let custom providers remain valid so they can be saved, but issue a warning
+                    status.isValid = true;
+                    status.message = `Warning: Custom provider endpoint unreachable: ${fetchErr.message}. Custom provider key saved without live validation.`;
                 }
             } else {
-                status.isValid = false;
-                status.message = 'No API Base URL (Endpoint URL) is configured for this custom provider.';
+                // If no Base URL is configured, skip verification to allow flexible local/fallback usage
+                status.isValid = true;
+                status.message = 'Warning: No API Base URL provided. Verification skipped. Please configure base URL to fetch models dynamically.';
             }
         }
 
@@ -480,6 +491,12 @@ export async function callAIProvider(
     body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
   }
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok && normProvider === 'ollama' && (res.status === 401 || res.status === 403) && headers['Authorization']) {
+    console.warn(`[AI Service] Ollama returned ${res.status} with Authorization header. Retrying without Authorization...`);
+    const headersNoAuth = { ...headers };
+    delete headersNoAuth['Authorization'];
+    res = await fetch(url, { method: 'POST', headers: headersNoAuth, body: JSON.stringify(body) });
+  }
   return handleResponse(res);
 }

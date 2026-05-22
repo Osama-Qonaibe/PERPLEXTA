@@ -4,6 +4,20 @@ export async function checkUserQuota(userId: number, toolId: string) {
   try {
     if (!pool) return { allowed: true };
 
+    const subRes = await pool.query(`
+      SELECT s.status, u.role
+      FROM users u
+      LEFT JOIN subscriptions s ON u.id = s.user_id
+      WHERE u.id = $1
+    `, [userId]);
+
+    const userRole = subRes.rows[0]?.role;
+    const isSubActive = subRes.rows.length > 0 && subRes.rows[0].status === 'active';
+
+    if (userRole !== 'admin' && !isSubActive) {
+      return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
+    }
+
     const res = await pool.query(`
       WITH user_info AS (
         SELECT 
@@ -13,7 +27,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
           u.custom_limits
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
-        LEFT JOIN plans p ON (s.plan_id = p.id OR (s.plan_id IS NULL AND p.name_en = 'Starter'))
+        LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
       ),
       daily_usage AS (
@@ -45,7 +59,10 @@ export async function checkUserQuota(userId: number, toolId: string) {
     const currentMonthly = parseInt(monthly_count || '0');
     
     const finalLimits = { ...(limits || {}), ...(custom_limits || {}) };
-    if (Object.keys(finalLimits).length === 0) return { allowed: true };
+    if (Object.keys(finalLimits).length === 0) {
+      // If they are active but have no limits, default to no access to be highly conservative
+      return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
+    }
     
     const toolLimit = finalLimits[toolId];
     if (!toolLimit || toolLimit === 'unlimited') return { allowed: true };

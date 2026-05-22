@@ -211,7 +211,7 @@ export async function getUserProfile(userId: string) {
   const walletRes = await (ledgerPool || pool).query('SELECT balance, points FROM wallets WHERE user_id = $1', [userId]);
   const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
   
-  let subscription = row.plan_id ? {
+  const subscription = row.plan_id ? {
     plan_id: row.plan_id,
     status: row.sub_status,
     current_period_end: row.current_period_end,
@@ -220,32 +220,6 @@ export async function getUserProfile(userId: string) {
     plan_color: row.plan_color,
     limits: row.limits
   } : null;
-  
-  if (!subscription) {
-    const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
-    if (starterRes.rows.length > 0) {
-      const p = starterRes.rows[0];
-      subscription = {
-        plan_id: p.id,
-        status: 'active',
-        current_period_end: null,
-        plan_name_en: p.name_en,
-        plan_name_ar: p.name_ar,
-        plan_color: p.color,
-        limits: p.limits
-      };
-    } else {
-      subscription = {
-        plan_id: 0,
-        status: 'active',
-        current_period_end: null,
-        plan_name_en: 'Starter',
-        plan_name_ar: 'البداية',
-        plan_color: '#10b981',
-        limits: {}
-      };
-    }
-  }
   
   return {
     id: row.id,
