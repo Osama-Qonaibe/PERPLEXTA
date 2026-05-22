@@ -19,8 +19,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
+      styleSrc: ["'self'", "'unsafe-inline'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
       connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
