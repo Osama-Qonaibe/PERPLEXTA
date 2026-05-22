@@ -98,7 +98,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
   
-  if (toolIdStr === 'perplexta_search' || toolIdStr === 'sovereign_search') {
+  if (toolIdStr === 'sovereign_search') {
     try {
       const searchResults = await performPerplextaSearch(cleanUserPrompt);
       if (searchResults && searchResults.length > 0) {
@@ -107,18 +107,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       }
     } catch (searchErr) {
       console.error(`[Orchestrator] ${toolIdStr} failed:`, searchErr);
-    }
-  }
-
-  if (toolIdStr === 'perplexta_memory') {
-    try {
-      const uMemoryRes = await pool.query('SELECT memory FROM users WHERE id = $1', [userId]);
-      const memory = uMemoryRes.rows[0]?.memory;
-      if (memory) {
-        finalPrompt = `SYSTEM MEMORY INGESTION:\n${memory}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
-      }
-    } catch (memErr) {
-      console.error('[Orchestrator] Perplexta Memory ingestion failed:', memErr);
     }
   }
 
@@ -142,12 +130,16 @@ Your direct mandate is to synthesize the user's current message, context, and co
 2. MEMORY ACCRETION PATTERN: For each newly discovered fact or preference that is worthy of long-term preservation, append it in your response inside special tags EXACTLY like this:
    <extracted_memory category="general|professional|preference|identity">The exact fact or preference</extracted_memory>
    
-   Examples:
+   Examples / أمثلة:
    - <extracted_memory category="professional">User is working on a high-capacity Node.js and PostgreSQL backend</extracted_memory>
    - <extracted_memory category="preference">User prefers clear explanation of root causes without long retrospectives</extracted_memory>
    - <extracted_memory category="identity">User is a security engineer who strictly prevents unauthorized API leakage</extracted_memory>
+   - <extracted_memory category="general">المستخدم يفضل تبسيط الشروح وحل المشاكل التقنية فوراً</extracted_memory>
 
 3. DENSE CONVERSATIONAL REPORTS: Discuss the user's sovereign memory state, tell them what you have ingested, synthesised, or pruned, and provide a premium, elite Arabic/English synthesis of their unified context in response to their prompt. Adhere to Tajawal typography standards and professional elite posture. Do not list raw XML files, tags or internal JSON attributes in the conversational message segment.
+
+CRITICAL MANDATE: You MUST output the <extracted_memory> tags inside your final response when detecting any facts/preferences worthy of memory. If you do not include <extracted_memory> tags, the memory engine will not persist the fact.
+تنبيه هام ومصيري: يجب تفكيك المدخلات وصياغتها داخل وسم <extracted_memory category="...">الحقيقة أو التفضيل المستخلص</extracted_memory> في نهاية الإجابة لضمان قيام الخادم بالتقاطها وحفظها في قاعدة البيانات بأعلى دقة ممكنة.
 `.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
@@ -249,7 +241,7 @@ ${refinedSystemPromptSegment}
       
       // PERPLEXTA MEMORY PROTOCOL: EXTRACTION & CONSOLIDATION
       try {
-        const memoryRegex = /<extracted_memory(?:\s+category=["']([^"']+)["'])?>([\s\S]*?)<\/extracted_memory>/gi;
+        const memoryRegex = /<extracted_memory(?:\s+category=\s*["']?([^"' >]+)["']?)?>([\s\S]*?)<\/extracted_memory>/gi;
         let match;
         const extractedFacts: { fact: string; category: string }[] = [];
         
@@ -343,7 +335,7 @@ ${factsToCondense}`;
           }
           
           // Clean extraction tags from final generated text to prevent rendering in client chat bubble
-          generatedText = generatedText.replace(/<extracted_memory(?:\s+category=["']([^"']+)["'])?>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
+          generatedText = generatedText.replace(/<extracted_memory(?:\s+category=\s*["']?([^"' >]+)["']?)?>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
         }
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);

@@ -64,18 +64,6 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_en: 'Collaborative AI design and brainstorming.',
     desc_ar: 'تصميم وعصف ذهني تعاوني بالذكاء الاصطناعي.'
   },
-  'perplexta_memory': { 
-    name_en: 'Perplexta Memory', 
-    name_ar: 'ذاكرة بيربليكستا',
-    desc_en: 'Persistent AI personalization and context.',
-    desc_ar: 'تخصيص وسياق دائم للذكاء الاصطناعي.'
-  },
-  'perplexta_search': { 
-    name_en: 'Intelligence Search', 
-    name_ar: 'البحث الاستخباراتي',
-    desc_en: 'Global real-time web intelligence and strategic knowledge extraction.',
-    desc_ar: 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.'
-  },
   'sovereign_memory': { 
     name_en: 'Sovereign Memory', 
     name_ar: 'الذاكرة السيادية',

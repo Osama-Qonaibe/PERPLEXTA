@@ -25,6 +25,26 @@ const CenteredLoader = () => {
   const { siteSettings, language } = useAppContext();
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
 
+  const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
+  let loaderText = '';
+  if (language === 'ar') {
+    if (loaderType === 'login') {
+      loaderText = 'جاري تفعيل بيربليكستا';
+    } else if (loaderType === 'logout') {
+      loaderText = 'جاري مسح سجلات بيربليكستا';
+    } else {
+      loaderText = 'جاري تحديث النظام';
+    }
+  } else {
+    if (loaderType === 'login') {
+      loaderText = 'ACTIVATING PERPLEXTA';
+    } else if (loaderType === 'logout') {
+      loaderText = 'CLEARING PERPLEXTA LOGS';
+    } else {
+      loaderText = 'SYSTEM UPDATE IN PROGRESS';
+    }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -67,7 +87,7 @@ const CenteredLoader = () => {
              <div className="flex items-center justify-center gap-3">
                 <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-800" />
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em] translate-y-0.5">
-                   {language === 'ar' ? 'جاري تفعيل بوابة بيربليكستا' : 'ACTIVATING PERPLEXTA GATEWAY'}
+                   {loaderText}
                 </span>
                 <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-800" />
              </div>

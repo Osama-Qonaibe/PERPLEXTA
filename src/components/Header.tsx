@@ -78,7 +78,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   }, [chatId, token]);
 
   const handleRename = async () => {
-    if (!chatId || !tempTitle.trim() || !token) return;
+    if (!chatId || !token) return;
+    const trimmedTitle = tempTitle.trim();
+    if (!trimmedTitle) {
+      setIsEditingTitle(false);
+      return;
+    }
     try {
       const res = await fetch(`/api/chats/${chatId}`, {
         method: 'PATCH',
@@ -86,10 +91,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ title: tempTitle })
+        body: JSON.stringify({ title: trimmedTitle })
       });
       if (res.ok) {
-        setChatTitle(tempTitle);
+        setChatTitle(trimmedTitle);
         setIsEditingTitle(false);
         window.dispatchEvent(new Event('chat-updated'));
       }
@@ -203,10 +208,16 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className={`hidden md:flex items-center gap-2 px-3 h-8 rounded-sm bg-transparent border border-[var(--border-main)] max-w-full`}
+                className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-300 max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
+                onClick={() => {
+                  if (!isEditingTitle) {
+                    setIsEditingTitle(true);
+                    setTempTitle(chatTitle || '');
+                  }
+                }}
               >
                 {isEditingTitle ? (
-                  <div className="flex items-center gap-1.5 min-w-[200px] h-full">
+                  <div className="flex items-center gap-1.5 w-full h-full" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="text"
                       autoFocus
@@ -216,25 +227,31 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         if (e.key === 'Enter') handleRename();
                         if (e.key === 'Escape') setIsEditingTitle(false);
                       }}
-                      className="bg-transparent text-[11px] font-bold outline-none text-[var(--text-primary)] w-full h-full"
+                      className="bg-transparent text-[11px] sm:text-xs font-bold outline-none text-[var(--text-primary)] w-full h-full"
                     />
-                    <div className="flex items-center h-full">
-                      <button onClick={handleRename} className="p-1 hover:text-emerald-500 transition-colors">
-                         <Check size={14} />
+                    <div className="flex items-center gap-0.5">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleRename(); }}
+                        className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all duration-300"
+                        title={language === 'ar' ? 'حفظ' : 'Save'}
+                      >
+                         <Check size={13} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
+                        className="p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-all duration-300"
+                        title={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                      >
+                         <X size={13} />
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="group flex items-center gap-2 overflow-hidden h-full">
-                    <h2 className="text-[11px] font-bold text-[var(--text-muted)] truncate lowercase tracking-tight transition-theme">
+                  <div className="flex items-center justify-between gap-1.5 overflow-hidden w-full h-full select-none">
+                    <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
                       {chatTitle}
                     </h2>
-                    <button 
-                      onClick={() => { setIsEditingTitle(true); setTempTitle(chatTitle); }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-emerald-500 transition-theme font-bold flex-shrink-0"
-                    >
-                      <Edit2 size={12} />
-                    </button>
+                    <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 flex-shrink-0" />
                   </div>
                 )}
               </motion.div>

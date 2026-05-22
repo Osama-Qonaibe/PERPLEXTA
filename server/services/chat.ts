@@ -50,6 +50,15 @@ export async function deleteUserChat(chatId: string, userId: string) {
   return result.rows.length > 0;
 }
 
+export async function updateUserChatTitle(chatId: string, userId: string, title: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query(
+    'UPDATE chats SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3 RETURNING *',
+    [title, chatId, userId]
+  );
+  return result.rows.length > 0;
+}
+
 export async function handleChatMessage(socket: any, data: any) {
   const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data } = data;
   

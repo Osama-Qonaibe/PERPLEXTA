@@ -4094,8 +4094,6 @@ const OrchestratorView = ({
                 learning: GraduationCap,
                 code: Code2,
                 canvas: Music,
-                perplexta_memory: Database,
-                perplexta_search: Search,
                 sovereign_memory: Database,
                 sovereign_search: Search,
               };
@@ -6400,8 +6398,6 @@ const ALL_TOOLS = [
   "learning",
   "code",
   "canvas",
-  "perplexta_memory",
-  "perplexta_search",
   "sovereign_memory",
   "sovereign_search",
   "storage_mb",

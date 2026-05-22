@@ -641,7 +641,6 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
         bgClass: 'bg-teal-500/10 border-teal-500/20'
       };
     case 'sovereign_search':
-    case 'perplexta_search':
       return {
         label: t('sovereign_search') || (dir === 'rtl' ? 'البحث الاستخباراتي السيادي' : 'Sovereign Intelligence Search'),
         icon: Search,
@@ -649,7 +648,6 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
         bgClass: 'bg-emerald-500/10 border-emerald-500/20'
       };
     case 'sovereign_memory':
-    case 'perplexta_memory':
       return {
         label: t('sovereign_memory') || (dir === 'rtl' ? 'الذاكرة السيادية الجوهرية' : 'Sovereign Core Memory'),
         icon: Database,
@@ -1704,21 +1702,25 @@ export const ChatPage: React.FC = () => {
   const handleThreadRename = async () => {
     if (!chatId || !chatRenameTitle.trim()) return;
     try {
-      const res = await fetch(`/api/chats/${chatId}/title`, {
-        method: 'POST',
+      const res = await fetch(`/api/chats/${chatId}`, {
+        method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json', 
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ title: chatRenameTitle })
+        body: JSON.stringify({ title: chatRenameTitle.trim() })
       });
       if (res.ok) {
         toast.success(dir === 'rtl' ? 'تم تغيير العنوان' : 'Title updated');
         window.dispatchEvent(new Event('chat-updated'));
         setIsRenaming(false);
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || (dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title'));
       }
     } catch (e) {
       console.error('Rename error:', e);
+      toast.error(dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title');
     }
   };
 
@@ -2741,8 +2743,8 @@ export const ChatPage: React.FC = () => {
       { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
     ] : []),
     { id: 'canvas', label: t('canvas'), icon: <Music size={18} />, isNew: true },
-    { id: 'sovereign_search', label: t('sovereign_search') || t('perplexta_search'), icon: <Search size={18} />, isNew: true },
-    { id: 'sovereign_memory', label: t('sovereign_memory') || t('perplexta_memory'), icon: <Database size={18} />, isNew: true },
+    { id: 'sovereign_search', label: t('sovereign_search'), icon: <Search size={18} />, isNew: true },
+    { id: 'sovereign_memory', label: t('sovereign_memory'), icon: <Database size={18} />, isNew: true },
     { id: 'tts', label: t('tts'), icon: <Volume2 size={18} />, isNew: true },
     { id: 'stt', label: t('stt'), icon: <Mic size={18} />, isNew: true },
   ];
@@ -2924,7 +2926,7 @@ export const ChatPage: React.FC = () => {
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool) => (
+                    {advancedTools.map((tool) => (
                       <button 
                         key={tool.id} 
                         onClick={() => {
@@ -3222,10 +3224,26 @@ export const ChatPage: React.FC = () => {
                             </button>
  
                             <button 
-                              onClick={() => {
+                              onClick={async () => {
                                 setIsRenaming(true);
-                                setChatRenameTitle(messages[0]?.content.substring(0, 30) || 'New Title');
+                                setChatRenameTitle(dir === 'rtl' ? 'جاري التحميل...' : 'Loading...');
                                 setIsExportMenuOpen(false);
+                                try {
+                                  const res = await fetch(`/api/chats`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                  });
+                                  if (res.ok) {
+                                    const chats = await res.json();
+                                    const currentChat = chats.find((c: any) => c.id === chatId || c.id?.toString() === chatId?.toString());
+                                    if (currentChat) {
+                                      setChatRenameTitle(currentChat.title);
+                                      return;
+                                    }
+                                  }
+                                } catch (e) {
+                                  console.error(e);
+                                }
+                                setChatRenameTitle(messages[0]?.content.substring(0, 30) || 'New Title');
                               }}
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
@@ -3420,7 +3438,7 @@ export const ChatPage: React.FC = () => {
                               ) : (
                                 <div className={`group relative flex items-center gap-3 w-full ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
                                   {/* Each question is an H1-style heading in the flow */}
-                                  <h1 className={`text-lg md:text-4xl font-black tracking-tight flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'} leading-tight whitespace-pre-wrap text-[var(--text-primary)] uppercase`}>
+                                  <h1 className={`text-md md:text-xl font-black tracking-tight flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'} leading-tight whitespace-pre-wrap text-[var(--text-primary)] uppercase`}>
                                     {stripProtocolMarkers(msg.content)}
                                   </h1>
                                   {msg.is_pinned && (

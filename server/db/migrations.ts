@@ -451,6 +451,16 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)');
     });
 
+    // MIGRATION: Messages Schema Update v17
+    await runVersioned('v17_messages_schema_update', 'Ensuring tracking and generation metadata columns exist in messages table', async (tx) => {
+      await ensureColumn(tx, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'citations', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'follow_ups', 'JSONB', `'[]'`);
+      await ensureColumn(tx, 'messages', 'feedback', 'SMALLINT', '0');
+      await ensureColumn(tx, 'messages', 'generation_time', 'NUMERIC');
+      await ensureColumn(tx, 'messages', 'is_pinned', 'BOOLEAN', 'false');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1322,8 +1332,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         ('code', '', '', 'Master-level software engineering workstation and logic constructor.', 'محطة عمل هندسة البرمجيات وبناء المنطق البرمجي المتقدم.', 20),
         ('canvas', '', '', 'Perplexta creative studio and multi-modal design canvas.', 'استوديو الإبداع المتقدم ولوحة التصميم متعددة الوسائط.', 25),
         ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
-        ('perplexta_memory', '', '', 'Unified system intelligence and long-term memory synthesis.', 'ذاكرة النظام الموحدة وتركيب المعارف طويلة الأمد.', 5),
-        ('perplexta_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10),
         ('sovereign_memory', '', '', 'Unified sovereign system intelligence and long-term memory synthesis.', 'ذاكرة النظام السيادية الموحدة وتركيب المعارف طويلة الأمد.', 5),
         ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
       ON CONFLICT (tool_id) DO NOTHING

@@ -9,7 +9,8 @@ import {
   addChatMessage, 
   getMessageCount,
   deleteUserChat,
-  togglePinMessage
+  togglePinMessage,
+  updateUserChatTitle
 } from '../services/chat.js';
 
 const router = express.Router();
@@ -84,6 +85,21 @@ router.delete("/:id", authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;
     res.status(status).json({ error: error.message || 'Failed to delete chat' });
+  }
+});
+
+router.patch("/:id", authenticateToken, async (req: any, res) => {
+  try {
+    const { title } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    const success = await updateUserChatTitle(req.params.id, req.user.id, title.trim());
+    if (!success) return res.status(404).json({ error: 'Chat not found' });
+    res.json({ success: true, title: title.trim() });
+  } catch (error: any) {
+    const status = error.message === 'Database initializing' ? 503 : 500;
+    res.status(status).json({ error: error.message || 'Failed to update chat title' });
   }
 });
 

@@ -133,7 +133,6 @@ const translations = {
     chat_fast: 'سريع',
     chat_pro: 'احترافي',
     chat_reasoning: 'تفكير',
-    perplexta_search: 'البحث الاستخباراتي',
     sovereign_search: 'البحث السيادي',
     sovereign_search_desc: 'البحث الاستخباراتي الذكي والتنقيب عن المعرفة العالمية في الوقت الفعلي بأعلى مستويات النزاهة.',
     perplexta_analysis: 'تحليل بيربليكستا',
@@ -149,7 +148,6 @@ const translations = {
     code: 'إنشاء كود',
     canvas: 'استوديو الصوت الذكي',
     storage_mb: 'مساحة التخزين (MB)',
-    perplexta_memory: 'الذاكرة الجوهرية',
     sovereign_memory: 'الذاكرة السيادية',
     sovereign_memory_desc: 'التكامل السيادي والاحتفاظ بالمعارف والذكريات على المدى الطويل لمصادقة وسياق الهوية الرقمية الذكية.',
     newBadge: 'جديد',
@@ -818,7 +816,6 @@ const translations = {
     chat_fast: 'Fast',
     chat_pro: 'Pro',
     chat_reasoning: 'Think',
-    perplexta_search: 'Intelligence Search',
     sovereign_search: 'Sovereign Search',
     sovereign_search_desc: 'Real-time sovereign web intelligence and strategic knowledge extraction with zero-tracking integrity.',
     perplexta_analysis: 'Perplexta Analysis',
@@ -834,7 +831,6 @@ const translations = {
     code: 'Code Generation',
     canvas: 'Smart Audio Studio',
     storage_mb: 'Storage Space (MB)',
-    perplexta_memory: 'Core Memory',
     sovereign_memory: 'Sovereign Memory',
     sovereign_memory_desc: 'Sovereign system integration and long-term knowledge retention with identity verification mapping.',
     newBadge: 'NEW',
@@ -1519,7 +1515,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const completeBoot = (force = false) => {
     const elapsed = Date.now() - bootStartTime.current;
     const remaining = force ? 0 : Math.max(0, MIN_BOOT_TIME - elapsed);
-    setTimeout(() => setIsAuthReady(true), remaining);
+    setTimeout(() => {
+      setIsAuthReady(true);
+      localStorage.removeItem('app_loader_type');
+    }, remaining);
   };
   const [balance, setBalance] = useState<number>(0);
   const [balanceUSD, setBalanceUSD] = useState<number>(0);
@@ -1745,6 +1744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
       const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
+      localStorage.setItem('app_loader_type', 'login');
       
       setTimeout(() => {
         localStorage.removeItem('app_oauth_syncing');
@@ -2030,6 +2030,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+          localStorage.setItem('app_loader_type', 'login');
           
           setTimeout(() => {
             window.location.href = '/';
@@ -2072,6 +2073,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
+          localStorage.setItem('app_loader_type', 'login');
           
           setTimeout(() => {
             window.location.href = '/';
@@ -2098,7 +2100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = (forceRedirect = true) => {
-    // 1. Force UI into loading/reset state immediately to prevent "stale state" crashes in sub-components
+    localStorage.setItem('app_loader_type', 'logout');
     setIsAuthReady(false);
     setIsAuthModalOpen(false);
 

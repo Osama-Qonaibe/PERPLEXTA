@@ -98,7 +98,6 @@ router.post("/signup", authLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
     const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
 
-    // Parse and look up referring user
     let referredBy: number | null = null;
     if (ref && typeof ref === 'string' && ref.trim().length > 0) {
       const parentUser = await pool.query('SELECT id FROM users WHERE UPPER(referral_code) = $1', [ref.trim().toUpperCase()]);
@@ -123,7 +122,6 @@ router.post("/signup", authLimiter, async (req, res) => {
       ON CONFLICT (user_id) DO NOTHING
     `, [user.id]);
 
-    // Record the referral in ledger database
     if (referredBy) {
       let bonusPoints = 1000;
       try {
@@ -344,7 +342,6 @@ router.get("/google/callback", async (req, res) => {
       const finalLang = storedState.lang || 'ar';
       const finalTheme = storedState.theme || 'dark';
       
-      // Parse and look up referring user
       let referredBy: number | null = null;
       const ref = storedState?.ref;
       if (ref && typeof ref === 'string' && ref.trim().length > 0) {
@@ -378,7 +375,6 @@ router.get("/google/callback", async (req, res) => {
         ON CONFLICT (user_id) DO NOTHING
       `, [user.id]);
 
-      // Record the referral in ledger database
       if (referredBy) {
         let bonusPoints = 1000;
         try {
@@ -673,7 +669,6 @@ router.get("/google/callback", async (req, res) => {
                   }
                   localStorage.setItem('app_oauth_trigger', Date.now().toString());
 
-                  // Update title to Success
                   document.title = "${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}";
                 } catch (e) {}
 
@@ -727,7 +722,6 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
-    // Rate Limit by Email: check for recent requests (last 2 minutes)
     const recentReset = await pool.query(
       'SELECT id FROM password_resets WHERE email = $1 AND created_at > CURRENT_TIMESTAMP - INTERVAL \'2 minutes\'',
       [email]
@@ -747,7 +741,6 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1 hour
 
-    // Clean up old tokens for this email first
     await pool.query('DELETE FROM password_resets WHERE email = $1', [email]);
 
     await pool.query(
