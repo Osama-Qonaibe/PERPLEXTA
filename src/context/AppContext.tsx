@@ -1736,6 +1736,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser(info);
       setIsAuthModalOpen(false); 
       
+      // Fetch full profile (with avatar, points, balance) immediately after token activation
+      fetch(`/api/user/me?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${newToken}` }
+      })
+        .then(r => r.json())
+        .then(data => {
+          const profile = data.user || (data.email ? data : null);
+          if (profile) {
+            setUser(profile);
+            if (profile.points !== undefined) setBalance(Number(profile.points));
+            if (profile.balance !== undefined) setBalanceUSD(Number(profile.balance));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to sync oauth profile on-the-fly:", err);
+        });
+      
       if (authLang && (authLang === 'ar' || authLang === 'en')) {
         setLanguage(authLang as any);
         localStorage.setItem('language', authLang);

@@ -1,12 +1,15 @@
 import path from 'path';
 import fs from 'fs/promises';
-import { createRequire } from 'module';
 import { getProviderKey } from './ai.js';
-const require = createRequire(import.meta.url);
-const _pdf = require('pdf-parse');
-const mammoth = require('mammoth');
-const XLSX = require('xlsx');
-const { convert: convertHtmlToText } = require('html-to-text');
+import * as _pdfFunc from 'pdf-parse';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
+
+// @ts-ignore
+import { convert } from 'html-to-text';
+
+const _pdf = (typeof _pdfFunc === 'function' ? _pdfFunc : (_pdfFunc as any).default || _pdfFunc) as any;
+const convertHtmlToText = convert;
 
 export const pdf = async (dataBuffer: Buffer) => {
   try {

@@ -596,9 +596,16 @@ router.post("/users", authenticateAdmin, authLimiter, async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      const referralCodeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let referralCode = '';
+      for (let i = 0; i < 6; i++) {
+        referralCode += referralCodeChars.charAt(Math.floor(Math.random() * referralCodeChars.length));
+      }
+      const generatedAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
+
       const newUser = await client.query(
-        `INSERT INTO users (name, email, password_hash, role, status) VALUES ($1, $2, $3, $4, 'active') RETURNING id`,
-        [name, email, hash, role]
+        `INSERT INTO users (name, email, password_hash, role, status, language, theme, avatar, referral_code) VALUES ($1, $2, $3, $4, 'active', 'ar', 'dark', $5, $6) RETURNING id`,
+        [name, email, hash, role, generatedAvatar, referralCode]
       );
       const userId = newUser.rows[0].id;
 

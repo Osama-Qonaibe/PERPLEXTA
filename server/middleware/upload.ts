@@ -1,11 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!existsSync(uploadDir)) {

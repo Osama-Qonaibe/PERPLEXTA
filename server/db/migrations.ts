@@ -124,7 +124,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     if (type === 'scratch') {
       console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
-      const tables = ['db_connections_registry', 'users', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
+      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
       for (const t of tables) {
         await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
       }
@@ -459,6 +459,25 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'messages', 'feedback', 'SMALLINT', '0');
       await ensureColumn(tx, 'messages', 'generation_time', 'NUMERIC');
       await ensureColumn(tx, 'messages', 'is_pinned', 'BOOLEAN', 'false');
+    });
+
+    // MIGRATION: User Sessions Schema v18
+    await runVersioned('v18_user_sessions_schema', 'Greatly hardening session persistence, tracking active logins, IP, and platform preferences', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          session_token TEXT UNIQUE NOT NULL,
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          status VARCHAR(20) DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP NOT NULL,
+          last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');

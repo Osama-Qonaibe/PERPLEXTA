@@ -150,6 +150,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         if (nowMs - lastActive > 5 * 1000 * 60) {
           pool.query('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = $1', [userPayload.id])
             .catch((e: any) => console.error('Error updating last_active_at:', e));
+
+          pool.query("UPDATE user_sessions SET last_active_at = CURRENT_TIMESTAMP WHERE session_token = $1 AND status = 'active'", [token])
+            .catch((e: any) => console.error('Error updating user_sessions last_active_at:', e));
         }
 
         (req as any).user = userPayload;

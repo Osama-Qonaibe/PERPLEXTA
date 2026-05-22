@@ -60,6 +60,21 @@ const isValidGooglePicture = (url: any): boolean => {
   }
 };
 
+const createUserSession = async (userId: number, token: string, req: express.Request, expiresInDays: number) => {
+  try {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    
+    await pool.query(
+      `INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at) VALUES ($1, $2, $3, $4, $5)`,
+      [userId, token, ipAddress, userAgent, expiresAt]
+    );
+  } catch (err) {
+    console.error('[Session Error] Failed to write session to DB:', err);
+  }
+};
+
 async function generateUniqueReferralCode(): Promise<string> {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let isUnique = false;
@@ -81,7 +96,7 @@ async function generateUniqueReferralCode(): Promise<string> {
 
 router.post("/signup", authLimiter, async (req, res) => {
   try {
-    const { email, password, name, language = 'en', ref } = req.body;
+    const { email, password, name, language = 'ar', theme = 'dark', ref } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
     if (typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Email and password must be strings' });
@@ -107,10 +122,12 @@ router.post("/signup", authLimiter, async (req, res) => {
     }
 
     const referralCode = await generateUniqueReferralCode();
+    const normalizedName = name || lowerEmail.split('@')[0];
+    const generatedAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(normalizedName)}`;
 
     const result = await pool.query(
-      `INSERT INTO users (email, name, password_hash, provider, role, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [lowerEmail, name || lowerEmail.split('@')[0], passwordHash, 'email', role, referralCode, referredBy]
+      `INSERT INTO users (email, name, password_hash, provider, role, referral_code, referred_by, theme, language, avatar) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [lowerEmail, normalizedName, passwordHash, 'email', role, referralCode, referredBy, theme, language, generatedAvatar]
     );
 
     const user = result.rows[0];
@@ -150,8 +167,11 @@ router.post("/signup", authLimiter, async (req, res) => {
     const remember = req.body.remember === true || req.body.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
+    // Save session in DB
+    await createUserSession(user.id, token, req, remember ? 30 : 1);
+
     const fullProfile = await pool.query(`
-      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.referral_code,
+      SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -208,9 +228,19 @@ router.post("/login", authLimiter, async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
+    // Backfill avatar dynamically if missing
+    let userAvatar = user.avatar;
+    if (!userAvatar) {
+      userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || lowerEmail.split('@')[0])}`;
+      await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [userAvatar, user.id]);
+    }
+
     const remember = req.body.remember === true || req.body.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
+    // Register active user session
+    await createUserSession(user.id, token, req, remember ? 30 : 1);
+
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
@@ -279,6 +309,16 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
         [token, expiresAt]
       );
       addToBlacklistCache(token);
+
+      // Revoke the database-level user session
+      try {
+        await pool.query(
+          "UPDATE user_sessions SET status = 'revoked', last_active_at = CURRENT_TIMESTAMP WHERE session_token = $1",
+          [token]
+        );
+      } catch (sessionErr) {
+        console.error('[Session] Failed to revoke session on logout:', sessionErr);
+      }
     }
     
     await logSystemActivity(req.user.id, 'logout', 'User logged out', {}, req);
@@ -361,7 +401,9 @@ router.get("/google/callback", async (req, res) => {
 
       const referralCode = await generateUniqueReferralCode();
 
-      const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
+      const validatedPicture = isValidGooglePicture(googleUser.picture) 
+        ? googleUser.picture 
+        : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(googleUser.name || googleUser.given_name || lowerEmail.split('@')[0])}`;
       const insertResult = await pool.query(
         `INSERT INTO users (email, name, avatar, provider, role, language, theme, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [lowerEmail, googleUser.name || googleUser.given_name, validatedPicture, 'google', role, finalLang, finalTheme, referralCode, referredBy]
@@ -442,6 +484,9 @@ router.get("/google/callback", async (req, res) => {
     const remember = storedState?.remember === true || storedState?.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
+    // Register active user session
+    await createUserSession(user.id, token, req, remember ? 30 : 1);
+
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
              s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color
