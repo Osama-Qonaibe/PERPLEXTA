@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fetch from 'node-fetch';
+import dns from 'dns';
 import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
@@ -43,19 +44,51 @@ const getRedirectUri = (req: express.Request) => {
   return `${getBaseUrl(req)}/api/auth/google/callback`;
 };
 
+const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {
+  console.log(`[GoogleAvatarDiagnostic] [${context}]`);
+  console.log(`  - Timestamp: ${new Date().toISOString()}`);
+  console.log(`  - User Email: ${googleUser?.email || 'N/A'}`);
+  console.log(`  - User Name: ${googleUser?.name || googleUser?.given_name || 'N/A'}`);
+  console.log(`  - Raw Picture URL: ${JSON.stringify(url)}`);
+  console.log(`  - Result of Validation: ${isValid}`);
+  if (url && typeof url === 'string') {
+    try {
+      const parsed = new URL(url);
+      console.log(`  - Parsed Hostname: ${parsed.hostname}`);
+      console.log(`  - Parsed Protocol: ${parsed.protocol}`);
+    } catch (e: any) {
+      console.log(`  - URL Parsing Failure: ${e.message}`);
+    }
+  }
+  if (error) {
+    console.error(`  - Associated Error Details:`, error);
+  }
+};
+
 const isValidGooglePicture = (url: any): boolean => {
-  if (typeof url !== 'string') return false;
+  if (typeof url !== 'string') {
+    console.log(`[isValidGooglePicture] Failed: url is not a string (type is ${typeof url})`);
+    return false;
+  }
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') return false;
+    if (parsed.protocol !== 'https:') {
+      console.log(`[isValidGooglePicture] Failed: protocol is "${parsed.protocol}", expected https:`);
+      return false;
+    }
     const hostname = parsed.hostname;
-    return hostname === 'lh3.googleusercontent.com' || 
-           hostname.endsWith('.googleusercontent.com') ||
-           hostname === 'googleusercontent.com' ||
-           hostname === 'www.google.com' ||
-           hostname === 'google.com' ||
-           hostname === 'profiles.google.com';
-  } catch {
+    const isValid = hostname === 'lh3.googleusercontent.com' || 
+                    hostname.endsWith('.googleusercontent.com') ||
+                    hostname === 'googleusercontent.com' ||
+                    hostname === 'www.google.com' ||
+                    hostname === 'google.com' ||
+                    hostname === 'profiles.google.com';
+    if (!isValid) {
+      console.log(`[isValidGooglePicture] Failed: hostname "${hostname}" is not in the allowed list.`);
+    }
+    return isValid;
+  } catch (err: any) {
+    console.log(`[isValidGooglePicture] Failed: url parsing error - ${err.message}`);
     return false;
   }
 };
@@ -299,6 +332,76 @@ router.get("/google/url", async (req, res) => {
   res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
 });
 
+router.get("/google/test-reachability", async (req, res) => {
+  const targetHost = 'lh3.googleusercontent.com';
+  const targetUrl = `https://${targetHost}`;
+  const report: any = {
+    timestamp: new Date().toISOString(),
+    targetHost,
+    targetUrl,
+    dnsLookup: null,
+    fetchResult: null,
+    errorMessage: null,
+    environment: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      env: process.env.NODE_ENV || 'production'
+    }
+  };
+
+  try {
+    console.log(`[GoogleReachabilityDiagnostic] Testing reachability for ${targetHost}`);
+    
+    // 1. DNS Resolution
+    await new Promise<void>((resolve) => {
+      dns.lookup(targetHost, { all: true }, (err, addresses) => {
+        if (err) {
+          console.error(`[GoogleReachabilityDiagnostic] DNS resolution failed:`, err);
+          report.dnsLookup = { success: false, error: err.message, code: err.code };
+        } else {
+          console.log(`[GoogleReachabilityDiagnostic] DNS resolved addresses:`, addresses);
+          report.dnsLookup = { success: true, addresses };
+        }
+        resolve();
+      });
+    });
+
+    // 2. HTTP/HTTPS Fetch Reachability
+    console.log(`[GoogleReachabilityDiagnostic] Fetching target URL ${targetUrl}`);
+    const startTime = Date.now();
+    const fetchRes = await fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+      },
+      timeout: 8000 // 8 seconds timeout
+    } as any);
+    const duration = Date.now() - startTime;
+
+    report.fetchResult = {
+      success: true,
+      ok: fetchRes.ok,
+      status: fetchRes.status,
+      statusText: fetchRes.statusText,
+      durationMs: duration,
+      headers: Object.fromEntries(fetchRes.headers.entries())
+    };
+    
+    console.log(`[GoogleReachabilityDiagnostic] HTTP request returned status ${fetchRes.status} in ${duration}ms`);
+  } catch (err: any) {
+    console.error(`[GoogleReachabilityDiagnostic] Fetch failed:`, err);
+    report.errorMessage = err.message;
+    report.errorRaw = {
+      message: err.message,
+      code: err.code,
+      stack: err.stack
+    };
+  }
+
+  res.json(report);
+});
+
 router.post("/logout", authenticateToken, async (req: any, res) => {
   try {
     const token = req.token;
@@ -403,7 +506,10 @@ router.get("/google/callback", async (req, res) => {
 
       const referralCode = await generateUniqueReferralCode();
 
-      const validatedPicture = isValidGooglePicture(googleUser.picture) 
+      const isPictureValid = isValidGooglePicture(googleUser.picture);
+      logAvatarProcess('Google Signup', googleUser, googleUser.picture, isPictureValid);
+
+      const validatedPicture = isPictureValid 
         ? googleUser.picture 
         : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(googleUser.name || googleUser.given_name || lowerEmail.split('@')[0])}`;
       const insertResult = await pool.query(
@@ -456,7 +562,10 @@ router.get("/google/callback", async (req, res) => {
         values.push('google');
       }
 
-      const validatedPicture = isValidGooglePicture(googleUser.picture) ? googleUser.picture : null;
+      const isPictureValid = isValidGooglePicture(googleUser.picture);
+      logAvatarProcess('Google Login Update', googleUser, googleUser.picture, isPictureValid);
+
+      const validatedPicture = isPictureValid ? googleUser.picture : null;
       if (validatedPicture && validatedPicture !== user.avatar) {
         updates.push(`avatar = $${updates.length + 1}`);
         values.push(validatedPicture);
