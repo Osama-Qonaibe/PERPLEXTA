@@ -276,6 +276,8 @@ router.get("/google/url", async (req, res) => {
   const nonce = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 600000); // 10 minutes
 
+  // NOTE: oauth_states.redirect_url acts as a serialized state payload (JSON) 
+  // mapping referral info, platform language, visual theme, and modal UI orientation.
   await pool.query(
     `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
     [nonce, 'google', JSON.stringify({ 
