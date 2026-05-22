@@ -13,59 +13,70 @@ export interface ConsolidationReportItem {
   error?: string;
 }
 
-export async function getUserMemories(userId: string) {
+export async function getUserMemories(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
+  const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const result = await pool.query(
     'SELECT * FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC',
-    [userId]
+    [cleanId]
   );
   return result.rows;
 }
 
-export async function addMemory(userId: string, fact: string, category: string = 'general', source: string = 'user', chatId?: number) {
+export async function addMemory(
+  userId: string | number,
+  fact: string,
+  category: string = 'general',
+  source: string = 'user',
+  chatId?: number
+) {
   if (!pool) throw new Error('Database initializing');
   
-  const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-  if (parseInt(countRes.rows[0].count) >= 50) {
+  const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+  const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [cleanId]);
+  if (parseInt(countRes.rows[0].count, 10) >= 50) {
     throw new Error('Memory limit reached (50)');
   }
 
   const result = await pool.query(
     'INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [userId, chatId || null, fact, category, source]
+    [cleanId, chatId || null, fact, category, source]
   );
   return result.rows[0];
 }
 
-export async function updateMemory(id: number, userId: string, fact: string, category?: string) {
+export async function updateMemory(id: number, userId: string | number, fact: string, category?: string) {
   if (!pool) throw new Error('Database initializing');
   
+  const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   let query = 'UPDATE chat_memories SET fact = $1, updated_at = CURRENT_TIMESTAMP';
   const params: any[] = [fact];
   
   if (category) {
     query += ', category = $2 WHERE id = $3 AND user_id = $4 RETURNING *';
-    params.push(category, id, userId);
+    params.push(category, id, cleanId);
   } else {
     query += ' WHERE id = $2 AND user_id = $3 RETURNING *';
-    params.push(id, userId);
+    params.push(id, cleanId);
   }
 
   const result = await pool.query(query, params);
   return result.rows[0];
 }
 
-export async function deleteMemory(id: number, userId: string) {
+export async function deleteMemory(id: number, userId: string | number) {
   if (!pool) throw new Error('Database initializing');
+  const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const result = await pool.query(
     'DELETE FROM chat_memories WHERE id = $1 AND user_id = $2 RETURNING *',
-    [id, userId]
+    [id, cleanId]
   );
   return result.rows.length > 0;
 }
 
-export async function pruneMemories(userId: string) {
+export async function pruneMemories(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
+  const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const result = await pool.query(`
     DELETE FROM chat_memories 
     WHERE id IN (
@@ -75,28 +86,46 @@ export async function pruneMemories(userId: string) {
       LIMIT 10
     )
     RETURNING *
-  `, [userId]);
+  `, [cleanId]);
   return result.rows.length;
 }
 
 export async function consolidateAllUserMemories(options?: {
-  targetUserId?: number;
+  targetUserId?: number | string;
   threshold?: number;
 }) {
   if (!pool) throw new Error('Database initializing');
   
   const threshold = options?.threshold ?? 10;
+  const targetUserId = options?.targetUserId ? (typeof options.targetUserId === 'string' ? parseInt(options.targetUserId, 10) : options.targetUserId) : undefined;
   
   // 1. Determine active provider & model from tool_orchestrator
+  // Prioritize sovereign_memory first, then chat, then fallback to anything active
   let provider = 'google';
   let model = 'gemini-1.5-flash';
   try {
     const orchestratorRes = await pool.query(
-      "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE is_active = true AND primary_provider IS NOT NULL LIMIT 1"
+      "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE tool_id = 'sovereign_memory' AND is_active = true"
     );
-    if (orchestratorRes.rows.length > 0) {
+    if (orchestratorRes.rows.length > 0 && orchestratorRes.rows[0].primary_provider) {
       provider = orchestratorRes.rows[0].primary_provider;
       model = orchestratorRes.rows[0].primary_model;
+    } else {
+      const chatOrchestratorRes = await pool.query(
+        "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE tool_id = 'chat' AND is_active = true"
+      );
+      if (chatOrchestratorRes.rows.length > 0 && chatOrchestratorRes.rows[0].primary_provider) {
+        provider = chatOrchestratorRes.rows[0].primary_provider;
+        model = chatOrchestratorRes.rows[0].primary_model;
+      } else {
+        const generalRes = await pool.query(
+          "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE is_active = true AND primary_provider IS NOT NULL LIMIT 1"
+        );
+        if (generalRes.rows.length > 0) {
+          provider = generalRes.rows[0].primary_provider;
+          model = generalRes.rows[0].primary_model;
+        }
+      }
     }
   } catch (err) {
     console.error('[Memory Service] Failed to fetch active orchestrator route, falling back default', err);
@@ -112,7 +141,7 @@ export async function consolidateAllUserMemories(options?: {
   let targetUsersQuery = '';
   const queryParams: any[] = [];
   
-  if (options?.targetUserId) {
+  if (targetUserId) {
     targetUsersQuery = `
       SELECT m.user_id, u.name, u.email, count(*) as count 
       FROM chat_memories m
@@ -120,7 +149,7 @@ export async function consolidateAllUserMemories(options?: {
       WHERE m.user_id = $1 
       GROUP BY m.user_id, u.name, u.email
     `;
-    queryParams.push(options.targetUserId);
+    queryParams.push(targetUserId);
   } else {
     targetUsersQuery = `
       SELECT m.user_id, u.name, u.email, count(*) as count 
@@ -139,7 +168,7 @@ export async function consolidateAllUserMemories(options?: {
     const userId = row.user_id;
     const userName = row.name || 'Elite User';
     const userEmail = row.email || '';
-    const oldCount = parseInt(row.count);
+    const oldCount = parseInt(row.count, 10);
 
     const reportItem: ConsolidationReportItem = {
       userId,
@@ -153,9 +182,9 @@ export async function consolidateAllUserMemories(options?: {
     };
 
     try {
-      // Get the 10 oldest memories for user
+      // Get the 10 oldest memories for user including chat_id for lineage mapping
       const oldestRes = await pool.query(
-        'SELECT id, fact, category FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
+        'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
         [userId]
       );
 
@@ -163,6 +192,32 @@ export async function consolidateAllUserMemories(options?: {
         const oldestIds = oldestRes.rows.map((r: any) => r.id);
         const archivedFacts = oldestRes.rows.map((r: any) => `[${r.category}] ${r.fact}`);
         reportItem.archivedFacts = archivedFacts;
+
+        // Count frequencies of chat_ids among the memories to find the most relevant one
+        const chatIdCounts: Record<number, number> = {};
+        for (const m of oldestRes.rows) {
+          if (m.chat_id) {
+            chatIdCounts[m.chat_id] = (chatIdCounts[m.chat_id] || 0) + 1;
+          }
+        }
+        let associatedChatId: number | null = null;
+        let maxCount = 0;
+        for (const [cidStr, count] of Object.entries(chatIdCounts)) {
+          if (count > maxCount) {
+            maxCount = count;
+            associatedChatId = parseInt(cidStr, 10);
+          }
+        }
+        // If no chat_id in memories being consolidated, fallback to user's most recently active chat
+        if (!associatedChatId) {
+          const latestChatRes = await pool.query(
+            "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+            [userId]
+          );
+          if (latestChatRes.rows.length > 0) {
+            associatedChatId = latestChatRes.rows[0].id;
+          }
+        }
 
         const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
         
@@ -191,21 +246,33 @@ ${factsToCondense}`;
           }
         }
 
+        // Clean distilledFact from any accidental tags leak, reasoning structures (<think>), and markdown code fences
+        if (distilledFact) {
+          // Remove deep reasoning think tags block
+          distilledFact = distilledFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
+          // Remove memory extraction tags
+          distilledFact = distilledFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
+          // Strip any JSON markdown formatting or accidental json tags
+          distilledFact = distilledFact.replace(/```(?:json)?/gi, '');
+          distilledFact = distilledFact.replace(/[{}]/g, '');
+          distilledFact = distilledFact.trim();
+        }
+
         if (distilledFact) {
           // Delete selected oldest records
           await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
 
-          // Insert high-density consolidated fact
+          // Insert high-density consolidated fact with complete lineage context
           await pool.query(
-            "INSERT INTO chat_memories (user_id, fact, category, source) VALUES ($1, $2, 'general', 'ai')",
-            [userId, distilledFact]
+            "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
+            [userId, associatedChatId, distilledFact]
           );
 
           // Get final count
           const finalCountRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           
           reportItem.distilledFact = distilledFact;
-          reportItem.newCount = parseInt(finalCountRes.rows[0].count);
+          reportItem.newCount = parseInt(finalCountRes.rows[0].count, 10);
           reportItem.success = true;
         }
       } else {

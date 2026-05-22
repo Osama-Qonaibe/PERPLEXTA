@@ -17,6 +17,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   let { tool_id, prompt, system_prompt, chat_id, file_data } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
+  const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
   
   // Simple sanitization to prevent prompt injection by neutralizing internal markers
   const sanitizePrompt = (p: string) => {
@@ -36,8 +37,36 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
     pool.query('SELECT language FROM users WHERE id = $1', [userId]),
     pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
-    pool.query('SELECT fact FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [userId]).catch(() => ({ rows: [] }))
+    pool.query(
+      `SELECT fact FROM chat_memories 
+       WHERE user_id = $1 
+       ORDER BY 
+         CASE WHEN chat_id = $2 THEN 0 ELSE 1 END ASC, 
+         created_at DESC 
+       LIMIT 50`,
+      [userId, chatIdNum]
+    ).catch(() => ({ rows: [] }))
   ]);
+
+  let history: { role: string; content: string }[] = [];
+  if (chatIdNum > 0) {
+    try {
+      const historyRes = await pool.query(
+        "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 16",
+        [chatIdNum]
+      );
+      const rawHistory = [...historyRes.rows].reverse();
+      if (rawHistory.length > 0 && rawHistory[rawHistory.length - 1].role === 'user') {
+        rawHistory.pop();
+      }
+      history = rawHistory.map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      }));
+    } catch (err) {
+      console.error('[Orchestrator] Failed to fetch chat history:', err);
+    }
+  }
 
   if (parseInt(vaultCheck.rows[0].count) === 0) {
     throw new Error(JSON.stringify({
@@ -143,6 +172,15 @@ CRITICAL MANDATE: You MUST output the <extracted_memory> tags inside your final 
 `.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
+  } else if (isChatOnly) {
+    const conversationalMemoryInstructions = `
+[SOVEREIGN COGNITIVE MEMORY ACQUISITION]
+* Always dynamically monitor the dialogue for user-specific preferences, tech stack, personal workspace parameters, goals, system settings, rules, or identity facts.
+* If you discover any durable fact, style preference, specialized rule, or user characteristic that is highly beneficial for long-term personalized recall, encapsulate it inside XML tags like this: <extracted_memory category="general|professional|preference|identity">Fact or preference details</extracted_memory>
+* These tags are parsed securely in the background and stored in the user's permanent memory database to guide future chats. Do NOT mention this mechanism in your conversational message. Keep the tags neat.
+`.trim();
+
+    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${conversationalMemoryInstructions}` : conversationalMemoryInstructions;
   }
 
   if (toolIdStr === 'sovereign_search') {
@@ -158,7 +196,6 @@ Your mandate is to perform a deep-dive, real-time extraction and analysis of the
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
   }
 
-  const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
   const toolSeparationProtocol = `
 [STRICT_TASK_AND_TOOL_ISOLATION_MANDATE]
 - CURRENT_ACTIVE_TOOL: "${toolIdStr}"
@@ -233,15 +270,21 @@ ${refinedSystemPromptSegment}
         continue;
       }
       
-      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, [], { fileData: file_data });
+      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data });
       successfulModel = target;
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+
+      if (chatIdNum > 0) {
+        updateChatContextSummary(chatIdNum, userId, target.provider, target.model, apiKey).catch(err => {
+          console.error('[Orchestrator] Progressive summarization error:', err);
+        });
+      }
       
       // PERPLEXTA MEMORY PROTOCOL: EXTRACTION & CONSOLIDATION
       try {
-        const memoryRegex = /<extracted_memory(?:\s+category=\s*["']?([^"' >]+)["']?)?>([\s\S]*?)<\/extracted_memory>/gi;
+        const memoryRegex = /<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
         let match;
         const extractedFacts: { fact: string; category: string }[] = [];
         
@@ -262,13 +305,40 @@ ${refinedSystemPromptSegment}
             if (currentCount >= 50) {
               // Execute AUTO-CONSOLIDATION at 50 records limit
               const oldestRes = await pool.query(
-                'SELECT id, fact, category FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
+                'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
                 [userId]
               );
               
               if (oldestRes.rows.length > 0) {
                 const oldestIds = oldestRes.rows.map((r: any) => r.id);
                 const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
+                
+                // Count frequencies of chat_ids among the memories to find the most relevant one
+                const chatIdCounts: Record<number, number> = {};
+                for (const m of oldestRes.rows) {
+                  if (m.chat_id) {
+                    chatIdCounts[m.chat_id] = (chatIdCounts[m.chat_id] || 0) + 1;
+                  }
+                }
+                let associatedChatId = chatIdNum || null;
+                let maxCount = 0;
+                for (const [cidStr, count] of Object.entries(chatIdCounts)) {
+                  if (count > maxCount) {
+                    maxCount = count;
+                    associatedChatId = parseInt(cidStr, 10);
+                  }
+                }
+                
+                // If we still don't have an associated chat_id, use the current active chatIdNum, or query the latest active chat for the user
+                if (!associatedChatId) {
+                  const latestChatRes = await pool.query(
+                    "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+                    [userId]
+                  );
+                  if (latestChatRes.rows.length > 0) {
+                    associatedChatId = latestChatRes.rows[0].id;
+                  }
+                }
                 
                 const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.
 Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
@@ -294,15 +364,24 @@ ${factsToCondense}`;
                     condensedFact = condensedFact.substring(0, 252) + '...';
                   }
                 }
+
+                // Clean condensedFact from reasoning thinker blocks, nested code fences or JSON structures
+                if (condensedFact) {
+                  condensedFact = condensedFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
+                  condensedFact = condensedFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
+                  condensedFact = condensedFact.replace(/```(?:json)?/gi, '');
+                  condensedFact = condensedFact.replace(/[{}]/g, '');
+                  condensedFact = condensedFact.trim();
+                }
                 
                 if (condensedFact) {
                   // Delete the 10 oldest records
                   await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
                   
-                  // Insert single consolidated high-density memory
+                  // Insert single consolidated high-density memory with complete lineage context
                   await pool.query(
                     "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
-                    [userId, chatIdNum || null, condensedFact]
+                    [userId, associatedChatId || null, condensedFact]
                   );
                   
                   if (io) {
@@ -333,10 +412,10 @@ ${factsToCondense}`;
               }
             }
           }
-          
-          // Clean extraction tags from final generated text to prevent rendering in client chat bubble
-          generatedText = generatedText.replace(/<extracted_memory(?:\s+category=\s*["']?([^"' >]+)["']?)?>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
         }
+        
+        // Always clean extraction tags from final generated text to prevent rendering in client chat bubble, using the most comprehensive pattern
+        generatedText = generatedText.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
       }
@@ -396,3 +475,31 @@ ${factsToCondense}`;
 
   return { result: generatedText };
 };
+
+async function updateChatContextSummary(chatId: number, userId: number, provider: string, model: string, apiKey: string) {
+  try {
+    if (!pool) return;
+    const msgRes = await pool.query(
+      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at ASC",
+      [chatId]
+    );
+    const msgs = msgRes.rows;
+    if (msgs.length < 2) return;
+
+    const conversationText = msgs.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
+    
+    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.
+Your goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.
+Do NOT use markdown headers, just clear text bullets. Limit of 250 characters. Maintain the professional tone of Perplexta.`;
+    
+    const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:
+${conversationText}`;
+
+    const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
+    if (contextSummary) {
+      await pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [contextSummary.trim(), chatId]);
+    }
+  } catch (err) {
+    console.error('[Memory Service] Progressive summarization failed:', err);
+  }
+}

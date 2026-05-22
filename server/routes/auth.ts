@@ -76,7 +76,6 @@ const isValidGooglePicture = (url: any): boolean => {
       console.log(`[isValidGooglePicture] Failed: protocol is "${parsed.protocol}", expected https:`);
       return false;
     }
-    // Allow any valid HTTPS URL returned by Google's official userinfo API to guarantee reachability.
     return true;
   } catch (err: any) {
     console.log(`[isValidGooglePicture] Failed: url parsing error - ${err.message}`);
@@ -191,7 +190,6 @@ router.post("/signup", authLimiter, async (req, res) => {
     const remember = req.body.remember === true || req.body.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    // Save session in DB
     await createUserSession(user.id, token, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`
@@ -252,7 +250,6 @@ router.post("/login", authLimiter, async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Backfill avatar dynamically if missing
     let userAvatar = user.avatar;
     if (!userAvatar) {
       userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || lowerEmail.split('@')[0])}`;
@@ -262,7 +259,6 @@ router.post("/login", authLimiter, async (req, res) => {
     const remember = req.body.remember === true || req.body.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    // Register active user session
     await createUserSession(user.id, token, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`
@@ -300,8 +296,6 @@ router.get("/google/url", async (req, res) => {
   const nonce = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 600000); // 10 minutes
 
-  // NOTE: oauth_states.redirect_url acts as a serialized state payload (JSON) 
-  // mapping referral info, platform language, visual theme, and modal UI orientation.
   await pool.query(
     `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
     [nonce, 'google', JSON.stringify({ 
@@ -343,7 +337,6 @@ router.get("/google/test-reachability", async (req, res) => {
   try {
     console.log(`[GoogleReachabilityDiagnostic] Testing reachability for ${targetHost}`);
     
-    // 1. DNS Resolution
     await new Promise<void>((resolve) => {
       dns.lookup(targetHost, { all: true }, (err, addresses) => {
         if (err) {
@@ -357,7 +350,6 @@ router.get("/google/test-reachability", async (req, res) => {
       });
     });
 
-    // 2. HTTP/HTTPS Fetch Reachability
     console.log(`[GoogleReachabilityDiagnostic] Fetching target URL ${targetUrl}`);
     const startTime = Date.now();
     const fetchRes = await fetch(targetUrl, {
@@ -406,7 +398,6 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
       );
       addToBlacklistCache(token);
 
-      // Revoke the database-level user session
       try {
         await pool.query(
           "UPDATE user_sessions SET status = 'revoked', last_active_at = CURRENT_TIMESTAMP WHERE session_token = $1",
@@ -593,7 +584,6 @@ router.get("/google/callback", async (req, res) => {
     const remember = storedState?.remember === true || storedState?.remember === 'true';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    // Register active user session
     await createUserSession(user.id, token, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`

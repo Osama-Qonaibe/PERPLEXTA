@@ -18,6 +18,24 @@ export async function handleApiError(response: Response, provider: string) {
   }
 }
 
+function cleanOllamaUrl(rawUrl: string): string {
+  let url = rawUrl.trim();
+  if (!url) return 'http://localhost:11434';
+  if (!url.startsWith('http')) {
+    url = `http://${url}`;
+  }
+  while (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (url.endsWith('/api')) {
+    url = url.slice(0, -4);
+  }
+  while (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  return url;
+}
+
 export async function syncProviderModelsInternal(providerId: string, apiKey: string, urlKey?: string) {
   let models: any[] = [];
   let count = 0;
@@ -79,12 +97,15 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'ollama') {
-        let baseUrl = apiKey.split(':')[0] || 'http://localhost:11434';
-        const response = await fetch(`${baseUrl}/api/tags`);
-        if (response.ok) {
-            const data = await response.json();
-            models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
+        const cleanUrl = cleanOllamaUrl(urlKey || '');
+        const targetHeaders: any = { 'Accept': 'application/json' };
+        if (apiKey && apiKey.trim() !== '') {
+            targetHeaders['Authorization'] = `Bearer ${apiKey}`;
         }
+        const response = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+        await handleApiError(response, 'Ollama');
+        const data = await response.json();
+        models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
     } else {
         // Fallback for custom or arbitrary providers (treated as OpenAI-compatible)
         let baseUrl = urlKey;
@@ -218,7 +239,28 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
             });
             status.isValid = res.ok;
         } else if (normProvider === 'ollama') {
-            status.isValid = true;
+            const cleanUrl = cleanOllamaUrl(urlKey || '');
+            const targetHeaders: any = { 'Accept': 'application/json' };
+            let keyToUse = apiKey || '';
+            if (urlKey && keyToUse.startsWith(urlKey)) {
+                keyToUse = keyToUse.substring(urlKey.length);
+                if (keyToUse.startsWith(':')) {
+                    keyToUse = keyToUse.substring(1);
+                }
+            }
+            if (keyToUse && keyToUse.trim() !== '' && !keyToUse.includes('http')) {
+                targetHeaders['Authorization'] = `Bearer ${keyToUse}`;
+            }
+            try {
+                const res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+                status.isValid = res.ok;
+                if (!res.ok) {
+                    status.message = `Ollama: Connection failed (${res.status}): ${res.statusText}`;
+                }
+            } catch (err: any) {
+                status.isValid = false;
+                status.message = `Ollama: Failed to connect to ${cleanUrl} (${err.message})`;
+            }
         } else {
             // General OpenAI-compatible custom provider check
             let baseUrl = urlKey;
@@ -414,8 +456,16 @@ export async function callAIProvider(
     };
     if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   } else if (normProvider === 'ollama') {
-    const baseUrl = cleanApiKey.includes('http') ? cleanApiKey : 'http://localhost:11434';
-    url = `${baseUrl}/api/chat`;
+    let baseUrl = '';
+    const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
+    if (dbRes.rows.length > 0 && dbRes.rows[0].url_key) {
+      baseUrl = dbRes.rows[0].url_key;
+    }
+    const cleanUrl = cleanOllamaUrl(baseUrl);
+    url = `${cleanUrl}/api/chat`;
+    if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
+      headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    }
     body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
   } else {
     // Default to OpenAI-style for unknown/custom providers
