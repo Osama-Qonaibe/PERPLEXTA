@@ -198,6 +198,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'users', 'support_notes', 'TEXT');
       await ensureColumn(tx, 'users', 'password_hash', 'TEXT');
       await ensureColumn(tx, 'users', 'status', 'VARCHAR(20)', `'active'`);
+      await ensureColumn(tx, 'users', 'avatar', 'TEXT');
 
       await ensureColumn(tx, 'chats', 'updated_at', 'TIMESTAMP', 'CURRENT_TIMESTAMP');
       await ensureColumn(tx, 'chats', 'context_summary', 'TEXT');

@@ -42,7 +42,16 @@ router.get("/profile", authenticateToken, async (req: any, res) => {
 router.get("/me", authenticateToken, async (req: any, res) => {
    try {
      const profile = await getUserProfile(req.user.id);
-     if (!profile) return res.status(404).json({ error: 'User not found' });
+     if (!profile) {
+       console.warn(`[DEBUG /me] User with ID ${req.user.id} not found.`);
+       return res.status(404).json({ error: 'User not found' });
+     }
+     console.log(`[DEBUG /me] Profile fetched successfully:`, {
+       id: profile.id,
+       email: profile.email,
+       hasAvatar: !!profile.avatar,
+       avatarPreview: profile.avatar ? (profile.avatar.length > 50 ? profile.avatar.substring(0, 50) + '...' : profile.avatar) : null
+     });
      res.json(profile);
    } catch (error: any) {
      if (error.message === 'Database initializing') {

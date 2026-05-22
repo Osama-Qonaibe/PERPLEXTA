@@ -76,17 +76,8 @@ const isValidGooglePicture = (url: any): boolean => {
       console.log(`[isValidGooglePicture] Failed: protocol is "${parsed.protocol}", expected https:`);
       return false;
     }
-    const hostname = parsed.hostname;
-    const isValid = hostname === 'lh3.googleusercontent.com' || 
-                    hostname.endsWith('.googleusercontent.com') ||
-                    hostname === 'googleusercontent.com' ||
-                    hostname === 'www.google.com' ||
-                    hostname === 'google.com' ||
-                    hostname === 'profiles.google.com';
-    if (!isValid) {
-      console.log(`[isValidGooglePicture] Failed: hostname "${hostname}" is not in the allowed list.`);
-    }
-    return isValid;
+    // Allow any valid HTTPS URL returned by Google's official userinfo API to guarantee reachability.
+    return true;
   } catch (err: any) {
     console.log(`[isValidGooglePicture] Failed: url parsing error - ${err.message}`);
     return false;

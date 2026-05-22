@@ -19,7 +19,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     setIsDismissed(true);
   };
 
-  const showMobileBanner = !isStandalone && isMobile && !isDismissed;
+  const showMobileBanner = !isStandalone && isMobile && !isDismissed && isInstallable;
   
   // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
@@ -261,7 +261,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
         {/* Global Tools Section */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
-           {!isStandalone && (
+           {!isStandalone && isInstallable && (
              <button
                onClick={installApp}
                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-emerald-500/20 hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"

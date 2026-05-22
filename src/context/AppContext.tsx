@@ -1771,6 +1771,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return;
         }
         
+        localStorage.setItem('app_force_refresh', '1');
         window.location.href = targetRef;
       }, 600);
     };
@@ -1968,9 +1969,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Only fetch once per token change/mount
-    if (!profileFetched.current) {
+    const forceRefresh = localStorage.getItem('app_force_refresh') === '1';
+    // Only fetch once per token change/mount, or if forced via refresh key
+    if (!profileFetched.current || forceRefresh) {
       profileFetched.current = true;
+      localStorage.removeItem('app_force_refresh');
       
       // Fetch economic settings (public)
       fetch(`/api/economy`)
