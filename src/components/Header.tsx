@@ -111,8 +111,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const isAdminPath = location.pathname.startsWith('/admin');
   const isMobileView = windowWidth < 1024;
-  // Professional Elite Protocol: Only show header menu button if it's the only toggle available
-  // (Main sidebar has its own toggle on desktop; admin sidebar does not)
   const shouldShowMenuButton = !isSidebarOpen && !isAdminPath && isMobileView;
 
   useEffect(() => {
@@ -149,7 +147,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)] transition-theme`} />
       
       <div className="w-full flex justify-between items-center h-full">
-        {/* Logo and App Name - Perfectly aligned with Sidebar */}
         <div className="flex items-center h-full">
           <div className={`flex items-center h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto'}`}>
               <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}>
@@ -165,7 +162,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   ) : (
                     <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
                   )}
-                  {/* Subtle Glow Underlay */}
                   <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-theme rounded-full blur-2xl -z-10" />
                 </div>
                 {!isMobileView ? (
@@ -189,7 +185,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           )}
         </div>
 
-        {/* Global Notification Area - Parallel and Centered */}
         <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full">
             <AnimatePresence mode="wait">
               {memoryNotification.isVisible ? (
@@ -259,7 +254,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
             </AnimatePresence>
         </nav>
 
-        {/* Global Tools Section */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
            {!isStandalone && isInstallable && (
              <button
