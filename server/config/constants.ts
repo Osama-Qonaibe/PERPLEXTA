@@ -9,7 +9,7 @@ export const tools = [
   { id: 'tts', cost: 10, desc: 'Perplexta vocal synthesis', descAr: 'توليد صوتي احترافي' },
   { id: 'stt', cost: 10, desc: 'Ultra-precision transcription', descAr: 'نسخ صوتي فائق الدقة' },
   { id: 'legal_analysis', cost: 40, desc: 'Military-grade legal intelligence', descAr: 'تحليل قانوني احترافي' },
-  { id: 'learning', cost: 20, desc: 'Adaptive learning system', descAr: 'نظام تعلم متكيف' },
+  { id: 'learning', cost: 20, desc: 'Education assistant system', descAr: 'مساعد التعليم' },
   { id: 'code', cost: 20, desc: 'Elite engineering workstation', descAr: 'بيئة هندسة برمجيات' },
   { id: 'canvas', cost: 25, desc: 'Smart Audio & Multi-modal Studio', descAr: 'استوديو الصوت الذكي والإنتاج المتعدد' },
   { id: 'notebook', cost: 30, desc: 'Perplexta research notebook', descAr: 'دفتر أبحاث احترافي' },

@@ -47,10 +47,10 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_ar: 'سرد صوتي طبيعي مدعوم بالذكاء الاصطناعي.'
   },
   'learning': { 
-    name_en: 'Deep Learning', 
-    name_ar: 'التعلم العميق',
-    desc_en: 'Accelerated skill acquisition and education.',
-    desc_ar: 'اكتساب المهارات والتعليم المعزز.'
+    name_en: 'Education Assistant', 
+    name_ar: 'مساعد التعليم',
+    desc_en: 'Advanced tool for strategic education and intelligence tutoring.',
+    desc_ar: 'مساعد ذكي متقدم للتعليم والتدريب الاستراتيجي.'
   },
   'code': { 
     name_en: 'Code Engineering', 

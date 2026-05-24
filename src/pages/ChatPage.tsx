@@ -1,7 +1,7 @@
 import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
@@ -628,7 +628,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       };
     case 'learning':
       return {
-        label: t('learning') || (dir === 'rtl' ? 'التعليم والتأهيل المعرفي' : 'Learning Guide'),
+        label: t('learning') || (dir === 'rtl' ? 'مساعد التعليم' : 'Education Assistant'),
         icon: BookOpen,
         colorClass: 'text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]',
         bgClass: 'bg-purple-500/10 border-purple-500/20'
@@ -1438,6 +1438,14 @@ export const ChatPage: React.FC = () => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [chatRenameTitle, setChatRenameTitle] = useState('');
   const [openCitationsMap, setOpenCitationsMap] = useState<Record<number, boolean>>({});
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const threshold = 300; // pixels from the bottom
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setShowScrollToBottom(distanceToBottom > threshold);
+  };
   
   const MAX_CHAT_MESSAGES = 50;
   
@@ -3046,7 +3054,7 @@ export const ChatPage: React.FC = () => {
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.map((tool) => (
+                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool) => (
                       <button 
                         key={tool.id} 
                         onClick={() => {
@@ -3439,7 +3447,11 @@ export const ChatPage: React.FC = () => {
               </div>
             </div>
           )}
-          <div id="chat-messages-container" className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}>
+          <div 
+            id="chat-messages-container" 
+            onScroll={handleScroll}
+            className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}
+          >
           <AnimatePresence mode="wait">
             {messages.length === 0 ? (
               !hasActiveSub ? (
@@ -4126,11 +4138,29 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-        <div className="w-full flex-shrink-0 px-0 md:px-4 pb-4">
-          <div className="max-w-5xl mx-auto w-full text-[var(--text-primary)]">
-            {renderInputArea()}
-          </div>
+      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-4 relative">
+        <AnimatePresence>
+          {showScrollToBottom && (
+            <motion.button
+              key="scroll-to-bottom-btn"
+              initial={{ opacity: 0, y: 10, x: "-50%", scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
+              exit={{ opacity: 0, y: 10, x: "-50%", scale: 0.8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              onClick={() => scrollToBottom('smooth')}
+              style={{ left: '50%' }}
+              className="absolute bottom-full mb-3 z-40 flex items-center justify-center p-2 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 cursor-pointer active:scale-95 bg-transparent border-0"
+              title={dir === 'rtl' ? 'الرجوع للأسفل' : 'Scroll to Bottom'}
+            >
+              <ArrowDown size={22} className="animate-[bounce_2s_infinite]" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <div className="max-w-5xl mx-auto w-full text-[var(--text-primary)]">
+          {renderInputArea()}
         </div>
+      </div>
       </div>
 
       <AnimatePresence>
