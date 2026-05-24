@@ -41,6 +41,165 @@ export const pdf = async (dataBuffer: Buffer) => {
   }
 };
 
+export interface ForensicReport {
+  pdfVersion: string;
+  isEncrypted: boolean;
+  totalObjectsCount: number;
+  interactiveJavascriptCount: number;
+  optionalContentGroupsCount: number;
+  embeddedFilesCount: number;
+  actionsUriCount: number;
+  incrementalEofCount: number;
+  rootDefCount: number;
+  flateStreamsCount: number;
+  hiddenLayers: string[];
+  anomalies: string[];
+  metadata: {
+    author: string;
+    creator: string;
+    producer: string;
+    creationDate: string;
+    modDate: string;
+    title: string;
+    subject: string;
+  };
+  detailedLog: string[];
+}
+
+export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
+  const textStr = dataBuffer.toString('binary');
+  const anomalies: string[] = [];
+  const detailedLog: string[] = [];
+
+  // 1. PDF Version check
+  let pdfVersion = 'N/A';
+  const verMatch = textStr.slice(0, 1024).match(/%PDF-(\d+\.\d+)/);
+  if (verMatch) {
+    pdfVersion = verMatch[1];
+    detailedLog.push(`[Structural Analysis] Verified PDF version standard: %PDF-${pdfVersion}`);
+  } else {
+    anomalies.push('Standard PDF header %PDF- not found in first 1024 bytes. Possible structural obfuscation.');
+  }
+
+  // 2. Structural counters
+  const totalObjectsCount = (textStr.match(/\b\d+\s+\d+\s+obj\b/g) || []).length;
+  const interactiveJavascriptCount = (textStr.match(/\/JS\b|\/JavaScript\b/gi) || []).length;
+  const optionalContentGroupsCount = (textStr.match(/\/OCG\b|\/OCGs\b/g) || []).length;
+  const embeddedFilesCount = (textStr.match(/\/EmbeddedFiles\b/gi) || []).length;
+  const actionsUriCount = (textStr.match(/\/URI\b/gi) || []).length;
+  const incrementalEofCount = (textStr.match(/%%EOF/g) || []).length;
+  const rootDefCount = (textStr.match(/\/Root\s+\d+\s+\d+\s+R\b/g) || []).length;
+  const flateStreamsCount = (textStr.match(/\/FlateDecode\b/g) || []).length;
+
+  detailedLog.push(`[Object Discovery] Parsed ${totalObjectsCount} individual dictionary objects.`);
+  detailedLog.push(`[Layer Discovery] Located ${optionalContentGroupsCount} Optional Content Groups (OCG) structures.`);
+  detailedLog.push(`[Stream Ingestion] Identified ${flateStreamsCount} Flate-encoded compressed binary streams.`);
+
+  // 3. Extract hidden Layer Names (Optional Content Groups)
+  const hiddenLayers: string[] = [];
+  const ocgNameMatches = textStr.match(/\/Name\s*\((.*?)\)|\/Name\s*\/([a-zA-Z0-9_-]+)/g);
+  if (ocgNameMatches && optionalContentGroupsCount > 0) {
+    ocgNameMatches.forEach(m => {
+      let name = '';
+      if (m.includes('(')) {
+        const start = m.indexOf('(') + 1;
+        const end = m.lastIndexOf(')');
+        if (start < end) name = m.substring(start, end);
+      } else if (m.includes('/')) {
+        const parts = m.split('/');
+        name = parts[parts.length - 1];
+      }
+      name = name.trim();
+      if (name && !['Name', 'Type', 'Properties'].includes(name) && !hiddenLayers.includes(name) && name.length < 60) {
+        hiddenLayers.push(name);
+      }
+    });
+  }
+
+  if (hiddenLayers.length > 0) {
+    detailedLog.push(`[Hidden Layer Map] Extracted designated layer hierarchy: [${hiddenLayers.join(', ')}]`);
+  } else if (optionalContentGroupsCount > 0) {
+    detailedLog.push(`[Hidden Layer Warning] OCG definitions detected, but layer labeling is obfuscated or stored in external resource dictionaries.`);
+  }
+
+  // 4. Trace Suspicious Elements / Forensic Anomalies
+  if (interactiveJavascriptCount > 0) {
+    anomalies.push(`Interactive JavaScript dictionary reference detected (${interactiveJavascriptCount} occurrences). Possible active scripting layer.`);
+    detailedLog.push(`[ALERT - Forensic] Identified active scripts in document scope.`);
+  }
+  if (embeddedFilesCount > 0) {
+    anomalies.push(`Embedded external files dictionary index located (${embeddedFilesCount} occurrences). Possible secondary stealth payload package.`);
+    detailedLog.push(`[ALERT - Forensic] Secure package layer contains embedded nested files.`);
+  }
+  if (incrementalEofCount > 1) {
+    anomalies.push(`Multiple PDF end-of-file markers (%%EOF) located (${incrementalEofCount} occurrences). Indicates incremental content appending or trailer modification layers.`);
+    detailedLog.push(`[ALERT - Forensic] Inconsistent document state: Incremental modification trailer block detected.`);
+  }
+  if (rootDefCount > 1) {
+    anomalies.push(`Duplicate root document catalogs detected (${rootDefCount} occurrences). Classic technique for hiding alternate page trees in forensic audits.`);
+    detailedLog.push(`[ALERT - Forensic] Multiple root descriptors found. Structure contains double page tree routing.`);
+  }
+
+  // 5. Native Metadata Extraction via Raw Buffer Parsing
+  const extractMetaField = (field: string): string => {
+    const bracketRegex = new RegExp(`\\/${field}\\s*\\(([^\\)]+)\\)`, 'i');
+    const bracketMatch = textStr.match(bracketRegex);
+    if (bracketMatch) return bracketMatch[1].trim();
+
+    const hexRegex = new RegExp(`\\/${field}\\s*<([^>]+)>`, 'i');
+    const hexMatch = textStr.match(hexRegex);
+    if (hexMatch) {
+      const hex = hexMatch[1].trim();
+      try {
+        let str = '';
+        for (let i = 0; i < hex.length; i += 2) {
+          str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+        }
+        return str.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+      } catch (e) {
+        return `Hex: ${hex}`;
+      }
+    }
+    return 'N/A';
+  };
+
+  const author = extractMetaField('Author');
+  const creator = extractMetaField('Creator');
+  const producer = extractMetaField('Producer');
+  const title = extractMetaField('Title');
+  const subject = extractMetaField('Subject');
+  const creationDate = extractMetaField('CreationDate');
+  const modDate = extractMetaField('ModDate');
+
+  detailedLog.push(`[Metadata Parser] Extracted Author: ${author !== 'N/A' ? author : 'None designated'}`);
+  detailedLog.push(`[Metadata Parser] Extracted Creation Date: ${creationDate !== 'N/A' ? creationDate : 'None designated'}`);
+
+  return {
+    pdfVersion,
+    isEncrypted: textStr.includes('/Encrypt'),
+    totalObjectsCount,
+    interactiveJavascriptCount,
+    optionalContentGroupsCount,
+    embeddedFilesCount,
+    actionsUriCount,
+    incrementalEofCount,
+    rootDefCount,
+    flateStreamsCount,
+    hiddenLayers,
+    anomalies,
+    metadata: {
+      author,
+      creator,
+      producer,
+      title,
+      subject,
+      creationDate,
+      modDate,
+    },
+    detailedLog,
+  };
+};
+
 export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
   let apiKey = await getProviderKey('google');
   if (!apiKey) {

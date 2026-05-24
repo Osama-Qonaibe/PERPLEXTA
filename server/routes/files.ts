@@ -1,10 +1,12 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
-import { extractTextFromFile } from '../services/extractor.js';
+import { extractTextFromFile, forensicScanPDF } from '../services/extractor.js';
 import { logSystemActivity } from '../services/notifications.js';
 import { getUserFiles, saveFileMetadata, getUserStorageUsage } from '../services/files.js';
 import { pool } from '../db/index.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 const router = express.Router();
 
@@ -51,6 +53,16 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
     const extractedText = await extractTextFromFile(filePath, mimetype, originalname);
     
+    let forensic = null;
+    if (mimetype === 'application/pdf') {
+      try {
+        const fileBuffer = await fs.readFile(filePath);
+        forensic = forensicScanPDF(fileBuffer);
+      } catch (err: any) {
+        console.error('[PDF Bridge Ingest] File forensic scan failed:', err.message);
+      }
+    }
+
     const file = await saveFileMetadata(userId, {
       file_name: originalname,
       file_url: filename,
@@ -59,7 +71,8 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
       file_type: fileType,
       metadata: { 
         extractedText: extractedText.substring(0, 5000), 
-        isProcessed: extractedText.length > 0
+        isProcessed: extractedText.length > 0,
+        forensic
       }
     });
 
@@ -67,6 +80,29 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     await logSystemActivity(userId, 'file_upload', `Uploaded file: ${originalname}`, { fileId: file.id }, req);
   } catch (error) {
     res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+router.post("/analyze-forensic", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No document attached for diagnostic audit.' });
+    }
+    const { path: filePath, mimetype } = req.file;
+
+    if (mimetype !== 'application/pdf') {
+      return res.status(400).json({ error: 'Forensic mode analytical scanner is restricted to PDF binary documents.' });
+    }
+
+    const fileBuffer = await fs.readFile(filePath);
+    const forensicReport = forensicScanPDF(fileBuffer);
+
+    // Clean up temporary file immediately to satisfy Zero-Clutter and security rules
+    await fs.unlink(filePath).catch(() => {});
+
+    res.json({ success: true, forensic: forensicReport });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Forensic diagnostic mapping failed.', details: error.message });
   }
 });
 

@@ -1313,6 +1313,10 @@ export const ChatPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAdvancedToolsOpen, setIsAdvancedToolsOpen] = useState(false);
+  const [forensicMode, setForensicMode] = useState(false);
+  const [isAnalyzingForensic, setIsAnalyzingForensic] = useState(false);
+  const [forensicReport, setForensicReport] = useState<any | null>(null);
+  const [isForensicModalOpen, setIsForensicModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -1335,6 +1339,54 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('last_active_tool', selectedTool);
   }, [selectedTool]);
+
+  const triggerForensicDiagnostic = async () => {
+    if (!selectedFile) return;
+    setIsAnalyzingForensic(true);
+    setForensicReport(null);
+    setIsForensicModalOpen(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const authToken = token || localStorage.getItem('app_token');
+      const response = await fetch('/api/files/analyze-forensic', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Diagnostic mapping failed');
+      }
+
+      const data = await response.json();
+      if (data.success && data.forensic) {
+        setForensicReport(data.forensic);
+        toast.success(
+          dir === 'rtl' 
+            ? 'تم إنجاز الفحص الرقمي بنجاح' 
+            : 'Forensic digital audit completed successfully'
+        );
+      } else {
+        throw new Error('No forensic diagnostic record found');
+      }
+    } catch (err: any) {
+      console.error('[Forensic client scanner]', err);
+      toast.error(
+        dir === 'rtl'
+          ? `عذرًا، فشل الفحص: ${err.message}`
+          : `Document diagnostic failed: ${err.message}`
+      );
+      setIsForensicModalOpen(false);
+    } finally {
+      setIsAnalyzingForensic(false);
+    }
+  };
 
   useEffect(() => {
     setIsOperationPending(isGenerating || query.length > 100);
@@ -2410,12 +2462,15 @@ export const ChatPage: React.FC = () => {
         data_s: encryptedCustomInstructions,
         mode: 'aes_v2',
         file_data: fileData,
+        forensic_mode: forensicMode,
         video_settings: selectedTool === 'video' ? videoSettings : undefined,
         image_settings: selectedTool === 'image' ? imageSettings : undefined,
         audio_settings: selectedTool === 'canvas' ? audioSettings : undefined
       });
       setSelectedFile(null);
       setPreviewUrl(null);
+      setForensicMode(false);
+      setForensicReport(null);
       const input = document.getElementById('unified-upload') as HTMLInputElement;
       if (input) input.value = '';
     } catch (error: any) {
@@ -2788,7 +2843,7 @@ export const ChatPage: React.FC = () => {
         {/* Top: File/Image Preview */}
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
-            <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)]`}>
+            <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)] flex-shrink-0`}>
               <div className="flex items-center gap-2 px-1.5 py-1 min-w-[120px]">
                 {previewUrl && selectedFile.type.startsWith('image/') ? (
                   <div className="w-8 h-8 rounded-sm overflow-hidden border border-[var(--border)] bg-[var(--bg-base)]">
@@ -2813,6 +2868,8 @@ export const ChatPage: React.FC = () => {
                 onClick={() => {
                   setSelectedFile(null);
                   setPreviewUrl(null);
+                  setForensicMode(false);
+                  setForensicReport(null);
                   const input = document.getElementById('unified-upload') as HTMLInputElement;
                   if (input) input.value = '';
                 }}
@@ -2821,6 +2878,37 @@ export const ChatPage: React.FC = () => {
                 <Plus size={10} className="rotate-45" />
               </button>
             </div>
+
+            {selectedFile.type === 'application/pdf' && (
+              <div className="flex items-center gap-3 self-center pl-2 border-l border-[var(--border)] ml-2 h-10 select-none">
+                <button
+                  type="button"
+                  onClick={triggerForensicDiagnostic}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-transparent hover:border-emerald-500/30 hover:bg-emerald-500/5 text-xs font-semibold text-emerald-500 transition-all duration-300 shadow-none bg-transparent"
+                >
+                  <Sparkles size={13} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+                  <span>{dir === 'rtl' ? 'فحص جنائي مباشر' : 'Run Forensic Scan'}</span>
+                </button>
+
+                <div className="w-px h-5 bg-gray-200 dark:bg-gray-800/80" />
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={forensicMode}
+                      onChange={(e) => setForensicMode(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-300 ${forensicMode ? 'bg-emerald-500/80 dark:bg-emerald-500/50' : ''}`} />
+                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-emerald-500' : ''}`} />
+                  </div>
+                  <span className={`text-[10px] font-bold ${forensicMode ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-[var(--text-muted)]'}`}>
+                    {dir === 'rtl' ? 'وضع التحقيق الجنائي' : 'Forensic Mode'}
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         )}
 
@@ -4111,6 +4199,217 @@ export const ChatPage: React.FC = () => {
                     </div>
                   ))
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        
+        {isForensicModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#0f0f11] border border-gray-800 text-gray-100 rounded-lg w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden font-sans"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+                    <Sparkles size={20} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-emerald-400">
+                      {dir === 'rtl' ? 'التحليل الجنائي للوثيقة' : 'Document Forensic Audit'}
+                    </h2>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter mt-0.5">
+                      {selectedFile?.name || 'document.pdf'} • {(Number(selectedFile?.size || 0) / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsForensicModalOpen(false)}
+                  className="w-10 h-10 rounded-sm hover:bg-gray-800 flex items-center justify-center text-gray-400 transition-colors bg-transparent border-transparent cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                {isAnalyzingForensic ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <Loader2 size={36} className="text-emerald-500 animate-spin mb-4" />
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">
+                      {dir === 'rtl' ? 'جاري فحص الطبقات المخفية وهيكل الملف المصدري...' : 'Analyzing binary optional content streams & file layers...'}
+                    </p>
+                    <p className="text-[10px] text-gray-600 mt-1">
+                      Parsing incremental update trees, trailers & OCG dictionaries
+                    </p>
+                  </div>
+                ) : forensicReport ? (
+                  <div className="space-y-6">
+                    {/* Highlights Alerts Grid */}
+                    {forensicReport.anomalies.length > 0 ? (
+                      <div className="p-4 rounded-md bg-red-950/20 border border-red-900/40 text-red-200">
+                        <div className="flex items-center gap-2 mb-2 font-black text-xs tracking-wider uppercase">
+                          <AlertTriangle size={14} className="text-red-500 animate-bounce" />
+                          <span>{dir === 'rtl' ? 'تنبيهات أمنية هيكلية' : 'Structural Security Violations'}</span>
+                        </div>
+                        <ul className="text-[11px] list-disc list-inside space-y-1 text-red-300">
+                          {forensicReport.anomalies.map((anomaly: string, aIdx: number) => (
+                            <li key={aIdx}>{anomaly}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-md bg-emerald-950/20 border border-emerald-900/40 text-emerald-200">
+                        <div className="flex items-center gap-2 font-black text-xs tracking-wider uppercase">
+                          <Check size={14} className="text-emerald-500" />
+                          <span>{dir === 'rtl' ? 'التحقق السليم لهيكل الملف' : 'Document Format Integrity Verified'}</span>
+                        </div>
+                        <p className="text-[10px] text-emerald-400/75 mt-1">
+                          No deceptive multi-incremental states or nested active script payloads detected in this scope.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left Side: Document Structure */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                          {dir === 'rtl' ? 'مؤشرات الهيكل الكوديكى' : 'Core Forensic Properties'}
+                        </h3>
+                        <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-3">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'إصدار الـ PDF القياسي' : 'PDF Specification Version'}</span>
+                            <span className="font-mono font-bold text-gray-100">{forensicReport.pdfVersion}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'التشفير وحماية كلمة المرور' : 'Is Passcode Encrypted'}</span>
+                            <span className={`font-mono font-bold ${forensicReport.isEncrypted ? 'text-amber-500' : 'text-gray-400'}`}>
+                              {forensicReport.isEncrypted ? (dir === 'rtl' ? 'نعم (مؤمن)' : 'Yes (Locked)') : (dir === 'rtl' ? 'لا (مفتوح)' : 'No')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'إجمالي كائنات الـ Object' : 'Parsed Objects Count'}</span>
+                            <span className="font-mono font-bold text-emerald-400">{forensicReport.totalObjectsCount}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'مجموعات المحتوى الاختياري OCG (الأطياف)' : 'Optional Content Layers (OCG)'}</span>
+                            <span className="font-mono font-bold text-emerald-400">{forensicReport.optionalContentGroupsCount}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'الملفات المدمجة داخلياً' : 'Nested Embedded Files'}</span>
+                            <span className={`font-mono font-bold ${forensicReport.embeddedFilesCount > 0 ? 'text-amber-500' : 'text-gray-400'}`}>
+                              {forensicReport.embeddedFilesCount}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'الروابط التشعبية الفعالة' : 'Active URI References'}</span>
+                            <span className="font-mono font-bold text-gray-400">{forensicReport.actionsUriCount}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'تعديلات متراكمة (علامات EOF)' : 'Append Signatures (EOF Flags)'}</span>
+                            <span className={`font-mono font-bold ${forensicReport.incrementalEofCount > 1 ? 'text-amber-500' : 'text-gray-400'}`}>
+                              {forensicReport.incrementalEofCount} {forensicReport.incrementalEofCount > 1 && `(${dir==='rtl'?'معدل تراكمياً':'Incremental modification'})`}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400">{dir === 'rtl' ? 'سجلات شجرة الصفحات الرئيسية' : 'Page Tree Descriptors'}</span>
+                            <span className="font-mono font-bold text-gray-400">{forensicReport.rootDefCount}</span>
+                          </div>
+                        </div>
+
+                        {/* Hidden Layers list if any */}
+                        <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-2">
+                          <span className="text-xs font-black uppercase tracking-wider text-gray-400">
+                            {dir === 'rtl' ? 'طبقات الوثيقة المحددة (الأطياف المخفية)' : 'Optional Content Layers List (Hidden Paths)'}
+                          </span>
+                          {forensicReport.hiddenLayers.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {forensicReport.hiddenLayers.map((layer: string, lIdx: number) => (
+                                <span key={lIdx} className="text-[9px] font-bold tracking-tight bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-1 rounded-[4px]">
+                                  {layer}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-gray-600 italic">
+                              {dir === 'rtl' ? 'لم يتم العثور على مجموعات أو طبقات محتوى مغلفة منفصلة.' : 'No optional layer dictionaries or overlay hierarchies found.'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Side: Document Metadata Archive */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                          {dir === 'rtl' ? 'سجل البيانات الوصفية الملحقة' : 'Embedded Metadata Trail'}
+                        </h3>
+                        <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-4">
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'العنوان':'Title'}</span>
+                            <p className="text-xs text-gray-200 mt-1 font-semibold">{forensicReport.metadata.title !== 'N/A' ? forensicReport.metadata.title : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'المؤلف / المالك المصدري':'Author / Owner'}</span>
+                            <p className="text-xs mt-1 font-semibold text-emerald-400">{forensicReport.metadata.author !== 'N/A' ? forensicReport.metadata.author : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'الموضوع':'Subject'}</span>
+                            <p className="text-xs text-gray-300 mt-1">{forensicReport.metadata.subject !== 'N/A' ? forensicReport.metadata.subject : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'تاريخ الإنشاء الرقمي':'Creation Date'}</span>
+                            <p className="text-xs text-gray-300 mt-1 font-mono">{forensicReport.metadata.creationDate !== 'N/A' ? forensicReport.metadata.creationDate : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'أداة تحرير المحتوى المصدري':'Creator Software'}</span>
+                            <p className="text-xs text-gray-300 mt-1 font-mono">{forensicReport.metadata.creator !== 'N/A' ? forensicReport.metadata.creator : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'أداة إنتاج الـ PDF':'Producer Engine'}</span>
+                            <p className="text-xs text-gray-300 mt-1 font-mono">{forensicReport.metadata.producer !== 'N/A' ? forensicReport.metadata.producer : (dir==='rtl'?'غير محدد':'None')}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom section: Scanner Log */}
+                    <div className="space-y-2 pt-2 border-t border-gray-800">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                        {dir === 'rtl' ? 'سجل الفحص المعالج خطوة بخطوة' : 'Scanner Processing Stream Logs'}
+                      </h3>
+                      <div className="bg-[#0b0b0c] border border-gray-900 rounded p-4 font-mono text-[9px] text-gray-400 space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
+                        {forensicReport.detailedLog.map((log: string, lIdx: number) => (
+                          <div key={lIdx} className="leading-relaxed hover:text-emerald-400 transition-colors">
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+                    <p className="text-xs">{dir === 'rtl' ? 'توصيف ناقص للتقرير' : 'Forensic logs truncated.'}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer close button */}
+              <div className="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
+                <button
+                  onClick={() => setIsForensicModalOpen(false)}
+                  className="px-5 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer border-transparent"
+                >
+                  {dir === 'rtl' ? 'إغلاق نافذة الفحص' : 'Close Forensic Console'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

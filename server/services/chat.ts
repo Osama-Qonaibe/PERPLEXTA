@@ -60,7 +60,7 @@ export async function updateUserChatTitle(chatId: string, userId: string, title:
 }
 
 export async function handleChatMessage(socket: any, data: any) {
-  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data } = data;
+  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data, forensic_mode } = data;
   
   let authenticatedUserId = userId;
   if (!authenticatedUserId && token) {
@@ -111,7 +111,8 @@ export async function handleChatMessage(socket: any, data: any) {
         prompt: finalPrompt, 
         chat_id: finalChatId,
         system_prompt: customInstructions,
-        file_data
+        file_data,
+        forensic_mode
       }, 
       authenticatedUserId, 
       undefined, 

@@ -69,8 +69,13 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       jwt.verify(token, jwtSecret, async (err: any, user: any) => {
         if (err) {
-          console.error(`[Auth] JWT Error: ${err.name}`);
-          res.status(403).json({ error: 'Forbidden', message: 'Token verification failed' });
+          if (err.name === 'TokenExpiredError') {
+            console.warn(`[Auth] JWT Token Expired`);
+            res.status(401).json({ error: 'TokenExpiredError', message: 'Token has expired' });
+          } else {
+            console.error(`[Auth] JWT Error: ${err.name}`);
+            res.status(403).json({ error: 'Forbidden', message: 'Token verification failed' });
+          }
           return;
         }
 

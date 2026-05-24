@@ -10,17 +10,12 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-app.use((req, res, next) => {
-  res.locals.nonce = crypto.randomBytes(16).toString('base64');
-  next();
-});
-
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`],
-      styleSrc: ["'self'", "'unsafe-inline'", (req: any, res: any) => `'nonce-${res.locals.nonce}'`, "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
       connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],

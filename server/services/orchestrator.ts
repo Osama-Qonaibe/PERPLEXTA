@@ -5,7 +5,7 @@ import { decrypt } from '../utils/crypto.js';
 import { callAIProvider, getProviderKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
-import { extractTextFromFile } from './extractor.js';
+import { extractTextFromFile, forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
 import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
@@ -14,7 +14,7 @@ import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet } from './wallet.js';
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
-  let { tool_id, prompt, system_prompt, chat_id, file_data } = reqBody;
+  let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
@@ -28,6 +28,50 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
 
   const cleanUserPrompt = sanitizePrompt(prompt);
   let finalPrompt = cleanUserPrompt;
+
+  // Integrate Forensic scan on attached files inside the chat stream
+  if (file_data && file_data.type === 'application/pdf' && file_data.data) {
+    try {
+      const fileBuffer = Buffer.from(file_data.data, 'base64');
+      const forensicReport = forensicScanPDF(fileBuffer);
+      
+      const forensicPromptSegment = `
+[PDF BRIDGE - DEEP FORENSIC AUDIT DISCLOSURE]
+The user attached a sensitive document evaluated under the PDF Bridge's Forensic Mode. Review and analyze the structural layout, extracted metadata, and anomalies documented below:
+
+- PDF Version: ${forensicReport.pdfVersion}
+- Password Encrypted: ${forensicReport.isEncrypted ? 'YES' : 'NO'}
+- Total Parsed Objects: ${forensicReport.totalObjectsCount}
+- Compressed Streams (Flate): ${forensicReport.flateStreamsCount}
+- Optional Content Groups (Hidden Layers): ${forensicReport.optionalContentGroupsCount} [${forensicReport.hiddenLayers.join(', ')}]
+- Interactive JavaScript Definitions Count: ${forensicReport.interactiveJavascriptCount}
+- Embedded Internal Files: ${forensicReport.embeddedFilesCount}
+- Hyperlinks/URI targets: ${forensicReport.actionsUriCount}
+- Modification State (Trailer Markers count): ${forensicReport.incrementalEofCount} (Multiple modifications: ${forensicReport.incrementalEofCount > 1 ? 'YES' : 'NO'})
+- Duplicate Page Root Registries Count: ${forensicReport.rootDefCount}
+
+Extracted PDF metadata:
+  * Title: ${forensicReport.metadata.title}
+  * Subject: ${forensicReport.metadata.subject}
+  * Author: ${forensicReport.metadata.author}
+  * Creator: ${forensicReport.metadata.creator}
+  * Producer: ${forensicReport.metadata.producer}
+  * Creation Date: ${forensicReport.metadata.creationDate}
+  * Modification Date: ${forensicReport.metadata.modDate}
+
+Detailed Scanner Diagnostics:
+${forensicReport.detailedLog.map(log => `  • ${log}`).join('\n')}
+
+System-Level Anomalies:
+${forensicReport.anomalies.length > 0 ? forensicReport.anomalies.map(a => `  ⚠️ [ANOMALY] ${a}`).join('\n') : "  No critical binary anomalies detected."}
+
+Instruction: You MUST explicitly disclose this forensic audit to the user. Describe the detected metadata, verify the existence of hidden layers or OCG names, and raise any security warnings (for active scripts, incremental amendments, etc.) before or alongside your standard content evaluation.
+`;
+      finalPrompt = `${finalPrompt}\n\n${forensicPromptSegment}`;
+    } catch (err: any) {
+      console.error('[Orchestrator Forensic Engine] Base64 PDF forensic scan failed:', err.message);
+    }
+  }
   
   if (!pool) throw new Error('System still initializing. Please wait.');
   
