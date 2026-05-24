@@ -3,7 +3,8 @@ import { getStripe, getWebhookSecret, createPayPalOrder, capturePayPalOrder } fr
 import { authenticateToken } from '../middleware/auth.js';
 import { pool, ledgerPool } from '../db/index.js';
 import { activateStripeSubscription, cancelSubscription } from '../services/subscriptions.js';
-import { depositToWallet } from '../services/wallet.js';
+import { depositToWallet, getUserWallet } from '../services/wallet.js';
+import { createNotification } from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -170,6 +171,47 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
   }
 });
 
+router.get("/verify-subscription-session", authenticateToken, async (req: any, res) => {
+  try {
+    const { session_id } = req.query;
+    if (!session_id) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    const stripe = await getStripe();
+    if (!stripe) {
+      return res.status(400).json({ error: 'Payments not configured' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const { userId, planId, billingCycle } = session.metadata || {};
+
+    if (!userId || !planId) {
+      return res.status(400).json({ error: 'Invalid session metadata: user_id or plan_id is missing' });
+    }
+
+    if (userId !== req.user.id.toString()) {
+      return res.status(403).json({ error: 'Unauthorized: Session details mismatch.' });
+    }
+
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
+    }
+
+    // Activate the subscription synchronously if it hasn't been active yet
+    await activateStripeSubscription(userId, planId, (session.subscription as string) || '', billingCycle || 'monthly', (session.customer as string) || '');
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('[Stripe Verify Subscription Session] Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to verify subscription checkout session' });
+  }
+});
+
 router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
   try {
     const { planId, billingCycle } = req.body;
@@ -197,13 +239,23 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
             name: `Perplexta - ${plan.name_en}`,
             description: `Subscription: ${billingCycle}`
           }, 
-          unit_amount: Math.round(price * 100) 
+          unit_amount: Math.round(price * 100),
+          recurring: {
+            interval: billingCycle === 'annual' ? 'year' : 'month'
+          }
         }, 
         quantity: 1 
       }],
       mode: 'subscription',
-      success_url: `${process.env.APP_URL}/success`,
-      cancel_url: `${process.env.APP_URL}/cancel`,
+      subscription_data: {
+        metadata: {
+          userId: req.user.id.toString(),
+          planId: planId.toString(),
+          billingCycle: billingCycle
+        }
+      },
+      success_url: `${process.env.APP_URL || 'http://localhost:3000'}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}/subscription?canceled=true`,
       metadata: { 
         userId: req.user.id.toString(), 
         planId: planId.toString(),
@@ -218,22 +270,36 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
   }
 });
 
-router.post("/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+router.post("/webhook", async (req: any, res) => {
   const stripe = await getStripe();
   const webhookSecret = getWebhookSecret();
-  if (!stripe || !webhookSecret) return res.status(400).send('Webhook unconfigured');
+  if (!stripe || !webhookSecret) {
+    console.error('[Stripe Webhook] Webhook is unconfigured (missing client or secret)');
+    return res.status(400).send('Webhook unconfigured');
+  }
 
   const sig = req.headers['stripe-signature'] as string;
+  if (!sig) {
+    console.error('[Stripe Webhook] Missing stripe-signature header');
+    return res.status(400).send('Missing signature');
+  }
+
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    const rawBody = req.rawBody || req.body;
+    event = stripe.webhooks.constructEvent(
+      rawBody instanceof Buffer ? rawBody : Buffer.from(rawBody), 
+      sig, 
+      webhookSecret
+    );
   } catch (err: any) {
     console.error(`[Stripe] Webhook signature verification failed: ${err.message}`);
-    return res.status(400).send('Webhook signature invalid');
+    return res.status(400).send(`Webhook signature invalid: ${err.message}`);
   }
 
   try {
+    console.log(`[Stripe Webhook] Processed event signature. Type: ${event.type}`);
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as any;
@@ -244,30 +310,236 @@ router.post("/webhook", express.raw({ type: 'application/json' }), async (req, r
             await depositToWallet(userId, amount, 'Stripe Gateway', `Stripe Checkout Session ${session.id}`);
           }
         } else {
-          const { userId, planId, billingCycle } = session.metadata;
+          const { userId, planId, billingCycle } = session.metadata || {};
           if (userId && planId) {
-            await activateStripeSubscription(userId, planId, session.subscription, billingCycle || 'monthly');
+            await activateStripeSubscription(userId, planId, (session.subscription as string) || '', billingCycle || 'monthly', (session.customer as string) || '');
+          }
+        }
+        break;
+      }
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as any;
+        const stripeSubscriptionId = invoice.subscription;
+        if (stripeSubscriptionId) {
+          // Resolve User and Plan IDs
+          let userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
+          let planId = invoice.subscription_details?.metadata?.planId || invoice.metadata?.planId;
+          let billingCycle = invoice.subscription_details?.metadata?.billingCycle || invoice.metadata?.billingCycle || 'monthly';
+
+          if (!userId) {
+            // Fallback 1: Query local DB to identify user by subscription ID
+            const subCheck = await pool.query(
+              'SELECT user_id, plan_id, billing_period FROM subscriptions WHERE stripe_subscription_id = $1',
+              [stripeSubscriptionId]
+            );
+            if (subCheck.rows.length > 0) {
+              userId = subCheck.rows[0].user_id;
+              planId = subCheck.rows[0].plan_id;
+              billingCycle = subCheck.rows[0].billing_period || billingCycle;
+            } else {
+              // Fallback 2: Retrieve the subscription object from Stripe
+              try {
+                const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId as string);
+                userId = stripeSub.metadata?.userId;
+                planId = stripeSub.metadata?.planId;
+                billingCycle = stripeSub.metadata?.billingCycle || billingCycle;
+              } catch (subErr: any) {
+                console.error('[Stripe Webhook] Failed to retrieve subscription from API:', subErr.message);
+              }
+            }
+          }
+
+          if (userId && planId) {
+            // Resolve Plan details for description logging
+            const planRes = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
+            const plan = planRes.rows[0];
+            const planName = plan ? plan.name_en : 'Premium Plan';
+
+            // Calculate exact period range
+            let periodEnd = new Date();
+            if (invoice.lines?.data?.[0]?.period?.end) {
+              periodEnd = new Date(invoice.lines.data[0].period.end * 1000);
+            } else {
+              const days = billingCycle === 'annual' ? 365 : 30;
+              periodEnd.setDate(periodEnd.getDate() + days);
+            }
+
+            let periodStart = new Date();
+            if (invoice.lines?.data?.[0]?.period?.start) {
+              periodStart = new Date(invoice.lines.data[0].period.start * 1000);
+            }
+
+            // A. Update subscription record in Core DB
+            await pool.query(`
+              INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end, last_period_start, stripe_customer_id, stripe_subscription_id)
+              VALUES ($1, $2, 'active', $3, $4, $5, $6, $7)
+              ON CONFLICT (user_id) DO UPDATE SET
+                plan_id = EXCLUDED.plan_id,
+                status = 'active',
+                billing_period = EXCLUDED.billing_period,
+                current_period_end = EXCLUDED.current_period_end,
+                last_period_start = EXCLUDED.last_period_start,
+                stripe_customer_id = EXCLUDED.stripe_customer_id,
+                stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+                updated_at = CURRENT_TIMESTAMP
+            `, [userId, planId, billingCycle, periodEnd, periodStart, invoice.customer, stripeSubscriptionId]);
+
+            // B. Fetch or Initialize Wallet
+            const wallet = await getUserWallet(userId);
+
+            // C. Log secure transaction in the Append-Only financial Ledger DB
+            const amountUSD = (invoice.amount_paid || 0) / 100;
+            const targetLedgerPool = ledgerPool || pool;
+            await targetLedgerPool.query(`
+              INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, status, reference_id, description, metadata)
+              VALUES ($1, $2, $3, 'subscription_stripe', 'success', $4, $5, $6)
+            `, [
+              userId,
+              wallet.id,
+              -amountUSD,
+              invoice.id,
+              `Stripe Subscription Payment for ${planName} (${billingCycle})`,
+              JSON.stringify({
+                stripe_invoice_id: invoice.id,
+                stripe_subscription_id: stripeSubscriptionId,
+                stripe_customer_id: invoice.customer,
+                amount_paid_cents: invoice.amount_paid
+              })
+            ]);
+
+            // D. Send Notification to User
+            await createNotification(
+              userId,
+              'success',
+              'Subscription Updated',
+              'تم تجديد الاشتراك',
+              `Your subscription for ${planName} has been successfully synchronized and updated via Stripe.`,
+              `تم تجديد اشتراكك في باقة ${plan ? plan.name_ar : 'المميزة'} بنجاح عبر Stripe.`
+            );
+
+            // E. Notify live sockets
+            const { io } = await import('../config/socket.js');
+            if (io) {
+              io.to(`user_${userId}`).emit('user_profile_updated');
+            }
+          } else {
+            console.warn(`[Stripe Webhook] Could not resolve user/plan IDs for invoice ${invoice.id}`);
           }
         }
         break;
       }
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as any;
-        const userId = subscription.metadata?.userId;
+        let userId = subscription.metadata?.userId;
+
+        if (!userId) {
+          // Fallback: look up subscriber in Core DB
+          const subCheck = await pool.query(
+            'SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1',
+            [subscription.id]
+          );
+          if (subCheck.rows.length > 0) {
+            userId = subCheck.rows[0].user_id;
+          }
+        }
+
         if (userId) {
-          await cancelSubscription(userId);
+          await pool.query(`
+            UPDATE subscriptions 
+            SET status = 'expired', updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = $1
+          `, [userId]);
+
+          await createNotification(
+            userId, 
+            'warning',
+            'Subscription Expired',
+            'انتهت صلاحية الاشتراك',
+            `Your subscription has expired.`,
+            `انتهت صلاحية اشتراكك.`
+          );
+
+          const { io } = await import('../config/socket.js');
+          if (io) {
+            io.to(`user_${userId}`).emit('user_profile_updated');
+          }
+        } else {
+          console.warn(`[Stripe Webhook] No user found for deleted subscription ${subscription.id}`);
+        }
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as any;
+        let userId = subscription.metadata?.userId;
+
+        if (!userId) {
+          const subCheck = await pool.query(
+            'SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1',
+            [subscription.id]
+          );
+          if (subCheck.rows.length > 0) {
+            userId = subCheck.rows[0].user_id;
+          }
+        }
+
+        if (userId) {
+          const stripeStatus = subscription.status; // e.g. 'active', 'trialing', 'past_due', 'unpaid', 'canceled'
+          const localStatus = (stripeStatus === 'active' || stripeStatus === 'trialing') ? 'active' : 'expired';
+          
+          await pool.query(`
+            UPDATE subscriptions 
+            SET status = $1, updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = $2
+          `, [localStatus, userId]);
+
+          const { io } = await import('../config/socket.js');
+          if (io) {
+            io.to(`user_${userId}`).emit('user_profile_updated');
+          }
         }
         break;
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object as any;
-        const userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
+        let userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
+
+        if (!userId && invoice.subscription) {
+          const subCheck = await pool.query(
+            'SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1',
+            [invoice.subscription]
+          );
+          if (subCheck.rows.length > 0) {
+            userId = subCheck.rows[0].user_id;
+          }
+        }
+
         if (userId) {
-          await cancelSubscription(userId);
+          await pool.query(`
+            UPDATE subscriptions 
+            SET status = 'expired', updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = $1
+          `, [userId]);
+
+          await createNotification(
+            userId, 
+            'warning',
+            'Subscription Expired due to Failed Payment',
+            'انتهى الاشتراك بسبب فشل الدفع',
+            `Your recurring subscription payment failed and your subscription has expired.`,
+            `فشلت عملية الدفع الخاصة بالاشتراك ولذلك انتهت صلاحية اشتراكك.`
+          );
+
+          const { io } = await import('../config/socket.js');
+          if (io) {
+            io.to(`user_${userId}`).emit('user_profile_updated');
+          }
+        } else {
+          console.warn(`[Stripe Webhook] No user found for failed invoice ${invoice.id}`);
         }
         break;
       }
       default:
+        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
         break;
     }
 

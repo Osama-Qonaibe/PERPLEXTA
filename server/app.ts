@@ -53,7 +53,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req: any, res, buf) => {
+    if (req.originalUrl && (req.originalUrl.startsWith('/api/payments/webhook') || req.originalUrl.includes('webhook'))) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.use((req, res, next) => {

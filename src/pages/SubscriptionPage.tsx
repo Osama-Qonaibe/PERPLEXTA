@@ -13,7 +13,7 @@ const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export const SubscriptionPage: React.FC = () => {
-  const { t, theme, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile } = useAppContext();
+  const { t, theme, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,12 +22,76 @@ export const SubscriptionPage: React.FC = () => {
     }
   }, [isMobile, navigate]);
 
+  const [isVerifying, setIsVerifying] = React.useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+
+    if (params.get('success') === 'true') {
+      const verifyAndRefresh = async () => {
+        setIsVerifying(true);
+        const authToken = localStorage.getItem('app_token') || token;
+        if (sessionId && authToken) {
+          try {
+            await fetch(`/api/payments/verify-subscription-session?session_id=${sessionId}`, {
+              headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+          } catch (e) {
+            console.error('Failed to verify session synchronously:', e);
+          }
+        }
+        const updatedUser = (await refreshUser()) as any;
+        const activePlanId = updatedUser?.subscription?.plan_id || (user as any)?.subscription?.plan_id;
+        if (activePlanId) {
+          const matchingPlan = plans.find(p => p.id.toString() === activePlanId.toString());
+          if (matchingPlan) {
+            setSelectedPlanForModal(matchingPlan);
+          }
+        }
+        setResultModal('success');
+        setIsVerifying(false);
+        navigate('/subscription', { replace: true });
+      };
+
+      verifyAndRefresh();
+    } else if (params.get('canceled') === 'true') {
+      alert(dir === 'rtl' ? 'تم إلغاء عملية الدفع.' : 'Payment was canceled.');
+      navigate('/subscription', { replace: true });
+    }
+  }, [refreshUser, navigate, dir, token, plans, user]);
+
   const [billingCycle, setBillingCycle] = React.useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = React.useState<string | null>(null);
   const [confirmingPlan, setConfirmingPlan] = React.useState<any>(null);
   const [selectedPlanForModal, setSelectedPlanForModal] = React.useState<any>(null);
   const [resultModal, setResultModal] = React.useState<'success' | 'insufficient' | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const [redirectCountdown, setRedirectCountdown] = React.useState<number | null>(null);
+
+  useEffect(() => {
+    let timer: any;
+    if (resultModal === 'success') {
+      setRedirectCountdown(5);
+      timer = setInterval(() => {
+        setRedirectCountdown((prev) => {
+          if (prev === null) return null;
+          if (prev <= 1) {
+            clearInterval(timer);
+            setResultModal(null);
+            navigate('/');
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setRedirectCountdown(null);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [resultModal, navigate]);
 
   const visiblePlans = plans.filter(plan => plan.isVisible);
 
@@ -170,6 +234,18 @@ export const SubscriptionPage: React.FC = () => {
       variants={perplextaPageTransition}
       className="max-w-6xl mx-auto px-4 pb-12"
     >
+      {isVerifying && (
+        <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-md">
+          <Loader2 className="animate-spin text-emerald-500 mb-4" size={50} />
+          <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">
+            {dir === 'rtl' ? 'جاري تفعيل الاشتراك...' : 'Activating Subscription...'}
+          </h2>
+          <p className="text-sm text-gray-400">
+            {dir === 'rtl' ? 'يرجى الانتظار بينما نقوم بتأكيد الدفع الخاص بك وتنشيط الخطة' : 'Please wait while we confirm your payment and activate your plan'}
+          </p>
+        </div>
+      )}
+
       <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-4">
@@ -381,35 +457,83 @@ export const SubscriptionPage: React.FC = () => {
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={() => setResultModal(null)}
+                onClick={() => {
+                  if (resultModal === 'success') {
+                    setResultModal(null);
+                    navigate('/');
+                  } else {
+                    setResultModal(null);
+                  }
+                }}
                 className="absolute inset-0 bg-black/80 backdrop-blur-md"
               />
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                className="relative w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden border p-8 text-center bg-[var(--bg-secondary)] border-[var(--border-main)]"
+                className="relative w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden border p-5 md:p-8 text-center bg-[var(--bg-secondary)] border-[var(--border-main)]"
               >
                 <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: selectedPlanForModal?.color || '#10b981' }}></div>
-                <button onClick={() => setResultModal(null)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <button 
+                  onClick={() => {
+                    if (resultModal === 'success') {
+                      setResultModal(null);
+                      navigate('/');
+                    } else {
+                      setResultModal(null);
+                    }
+                  }} 
+                  className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
                   <X size={20} />
                 </button>
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-5 md:mb-8">
                   <div 
-                    className="w-20 h-20 rounded-[var(--radius)] flex items-center justify-center"
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-[var(--radius)] flex items-center justify-center"
                     style={{ backgroundColor: `${selectedPlanForModal?.color || '#10b981'}15`, color: selectedPlanForModal?.color || '#10b981' }}
                   >
                     {resultModal === 'success' ? (
-                      <CheckCircle2 size={40} style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
+                      <CheckCircle2 size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
                     ) : (
-                      <AlertCircle size={40} style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
+                      <AlertCircle size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
                     )}
                   </div>
                 </div>
-                <h2 className="text-2xl font-bold mb-3">
+                <h2 className="text-xl md:text-2xl font-bold mb-3">
                   {resultModal === 'success' ? t('subscriptionSuccess') : t('insufficientBalanceTitle')}
                 </h2>
-                <p className="text-gray-500 text-sm leading-relaxed mb-8 px-4">
+                <p className="text-gray-500 text-xs md:text-sm leading-relaxed mb-5 md:mb-8 px-2 md:px-4">
                   {resultModal === 'success' ? t('subscriptionSuccessDesc') : t('insufficientBalanceDesc')}
                 </p>
+                {resultModal === 'success' && redirectCountdown !== null && (
+                  <div 
+                    className="mb-5 md:mb-6 p-4 rounded-[var(--radius)] border flex flex-col items-center justify-center transition-all duration-300 shadow-sm"
+                    style={{ 
+                      backgroundColor: `${selectedPlanForModal?.color || '#10b981'}08`, 
+                      borderColor: `${selectedPlanForModal?.color || '#10b981'}25` 
+                    }}
+                  >
+                    <div 
+                      className="flex items-center gap-2.5 text-xs md:text-sm font-black uppercase tracking-wider mb-2"
+                      style={{ color: selectedPlanForModal?.color || '#10b981' }}
+                    >
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>
+                        {dir === 'rtl' 
+                          ? `جاري تفعيل الاشتراك وتوجيهك إلى المنصة خلال ${redirectCountdown} ثوانٍ...` 
+                          : `Activating premium tier and redirecting to the console in ${redirectCountdown} seconds...`
+                        }
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-[var(--border-main)]/50 h-1.5 rounded-full overflow-hidden mt-1">
+                      <motion.div 
+                        initial={{ width: "100%" }}
+                        animate={{ width: "0%" }}
+                        transition={{ duration: 5, ease: "linear" }}
+                        className="h-full"
+                        style={{ backgroundColor: selectedPlanForModal?.color || '#10b981' }}
+                      />
+                    </div>
+                  </div>
+                )}
                 {resultModal === 'insufficient' && (
                   <div className="p-4 rounded-[var(--radius)] mb-6 flex items-center justify-between bg-[var(--bg-overlay)]">
                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
@@ -419,37 +543,49 @@ export const SubscriptionPage: React.FC = () => {
                     <span className="text-lg font-bold text-[var(--text-primary)]">${Number(balanceUSD || 0).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="p-6 rounded-[var(--radius)] mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
+                <div className="p-4 md:p-6 rounded-[var(--radius)] mb-5 md:mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 text-start">
                     {t('yourReferralLink')}
                   </p>
-                  <div className="flex items-center gap-2 p-2 rounded-[var(--radius)] border bg-[var(--bg-base)] border-[var(--border)]">
+                  <div className="flex items-center gap-2 p-1.5 rounded-[var(--radius)] border bg-[var(--bg-base)] border-[var(--border)]">
                     <button 
                       onClick={handleCopyLink}
-                      className="shrink-0 w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 text-white"
+                      className="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 text-white"
                       style={{ backgroundColor: copied ? '#10b981' : selectedPlanForModal?.color || '#10b981' }}
                     >
-                      {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                      {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                     </button>
                     <div className="flex-1 overflow-hidden text-start">
-                      <p className="text-xs font-mono text-gray-500 truncate px-2">{referralLink}</p>
+                      <p className="text-[11px] md:text-xs font-mono text-gray-500 truncate px-2">{referralLink}</p>
                     </div>
                   </div>
                 </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={handleShare}
-                      className="flex-1 py-4 rounded-[var(--radius)] text-white font-bold text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                  <button 
+                    onClick={handleShare}
+                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: selectedPlanForModal?.color || '#10b981', boxShadow: `0 10px 20px -5px ${(selectedPlanForModal?.color || '#10b981')}40` }}
                   >
                     <Share2 size={18} />
                     {t('shareWithFriends')}
                   </button>
-                    <button 
-                      onClick={() => setResultModal(null)}
-                      className="flex-1 py-4 rounded-[var(--radius)] font-bold text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
-                    >
-                    {t('close')}
+                  <button 
+                    onClick={() => {
+                      setResultModal(null);
+                      if (resultModal === 'success') {
+                        navigate('/');
+                      }
+                    }}
+                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)] flex items-center justify-center gap-2"
+                  >
+                    {resultModal === 'success' ? (
+                      <>
+                        <CheckCircle2 size={16} style={{ color: selectedPlanForModal?.color || '#10b981' }} />
+                        <span>{dir === 'rtl' ? 'الانتقال للرئيسية' : 'Go to Homepage'}</span>
+                      </>
+                    ) : (
+                      t('close')
+                    )}
                   </button>
                 </div>
               </motion.div>

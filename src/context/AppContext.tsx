@@ -76,7 +76,7 @@ interface AppContextType {
   setEconomySettings: (settings: any) => void;
   payWithBalance: (planId: string, billingCycle: 'monthly' | 'annual') => Promise<{ success: boolean, message?: string, error?: string }>;
   stripeCheckout: (planId: string, billingCycle: 'monthly' | 'annual') => Promise<{ url?: string, error?: string }>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<any>;
   notifications: any[];
   setNotifications: (notifications: any[]) => void;
   unreadCount: number;
@@ -108,6 +108,16 @@ interface AppContextType {
   };
   triggerMemoryNotification: (type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup', desc?: string) => void;
   closeMemoryNotification: () => void;
+  upgradePromptState: {
+    isOpen: boolean;
+    toolId: string;
+    limit?: number;
+    currentUsage?: number;
+    period?: 'daily' | 'monthly';
+  };
+  setUpgradePromptState: (state: any) => void;
+  triggerUpgradePrompt: (toolId: string, limit?: number, currentUsage?: number, period?: 'daily' | 'monthly') => void;
+  closeUpgradePrompt: () => void;
 }
 
 const translations = {
@@ -1549,6 +1559,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeMemoryNotification = () => {
     setMemoryNotification(prev => ({ ...prev, isVisible: false }));
   };
+
+  const [upgradePromptState, setUpgradePromptState] = useState<{
+    isOpen: boolean;
+    toolId: string;
+    limit?: number;
+    currentUsage?: number;
+    period?: 'daily' | 'monthly';
+  }>({
+    isOpen: false,
+    toolId: '',
+  });
+
+  const triggerUpgradePrompt = (toolId: string, limit?: number, currentUsage?: number, period?: 'daily' | 'monthly') => {
+    setUpgradePromptState({
+      isOpen: true,
+      toolId,
+      limit,
+      currentUsage,
+      period
+    });
+  };
+
+  const closeUpgradePrompt = () => {
+    setUpgradePromptState(prev => ({ ...prev, isOpen: false }));
+  };
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
   });
@@ -2385,11 +2420,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (data.economy) {
             setEconomySettings(data.economy);
           }
+          return userProfile;
         }
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
     }
+    return null;
   };
 
   const payWithBalance = async (planId: string, billingCycle: 'monthly' | 'annual') => {
@@ -2434,7 +2471,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { error: 'Auth required' };
     }
     try {
-      const res = await fetch('/api/subscriptions/stripe-checkout', {
+      const res = await fetch('/api/payments/stripe-checkout', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -2662,7 +2699,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       installApp,
       memoryNotification,
       triggerMemoryNotification,
-      closeMemoryNotification
+      closeMemoryNotification,
+      upgradePromptState,
+      setUpgradePromptState,
+      triggerUpgradePrompt,
+      closeUpgradePrompt
     }}>
       {children}
     </AppContext.Provider>

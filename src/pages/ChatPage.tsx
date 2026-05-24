@@ -1180,8 +1180,9 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
   </motion.div>
 );
 
-export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
+export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any, tool?: string }) => {
   const [copied, setCopied] = useState(false);
+  const { triggerUpgradePrompt } = useAppContext();
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
 
   const handleCopy = () => {
@@ -1266,7 +1267,13 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user }: { data: any,
 
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
-          onClick={() => navigate('/subscriptions')}
+          onClick={() => {
+            if (triggerUpgradePrompt) {
+              triggerUpgradePrompt(tool || 'chat', data.limit, data.current, data.period);
+            } else {
+              navigate('/subscription');
+            }
+          }}
           className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
@@ -1288,7 +1295,7 @@ export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
     installApp, isInstalling, siteSettings, setIsOperationPending, isAuthReady,
-    refreshUser, balanceUSD, economySettings, triggerMemoryNotification
+    refreshUser, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt
   } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
@@ -2131,6 +2138,9 @@ export const ChatPage: React.FC = () => {
         if (parsed.type === 'QUOTA_EXCEEDED') {
           isQuota = true;
           quotaData = parsed;
+          if (triggerUpgradePrompt) {
+            triggerUpgradePrompt(selectedTool || 'chat', parsed.limit, parsed.current, parsed.period);
+          }
         } else if (parsed.type === 'SYSTEM_INACTIVE') {
           isInactive = true;
           quotaData = parsed;
@@ -2253,7 +2263,7 @@ export const ChatPage: React.FC = () => {
       }
 
       if (!hasActiveSub) {
-        navigate('/subscriptions');
+        navigate('/subscription');
         return;
       }
       
@@ -3373,7 +3383,7 @@ export const ChatPage: React.FC = () => {
 
                       <div className="w-full flex flex-col sm:flex-row gap-3 justify-center mb-8">
                         <button
-                          onClick={() => navigate('/subscriptions')}
+                          onClick={() => navigate('/subscription')}
                           className="px-6 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]"
                         >
                           {dir === 'rtl' ? 'اختر خطة لتنشيط الحساب' : 'Choose Plan to Activate'}
@@ -3580,7 +3590,7 @@ export const ChatPage: React.FC = () => {
                         {isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
                            <ResponseSkeleton dir={dir} />
                         ) : msg.is_quota_error ? (
-                           <QuotaExceededCard data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
+                           <QuotaExceededCard tool={msg.tool} data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
                         ) : msg.is_system_inactive ? (
                            <SystemInactiveCard data={msg.quota_data} dir={dir} />
                         ) : (

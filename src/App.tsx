@@ -20,6 +20,7 @@ import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ShieldCheck } from 'lucide-react';
 import { DefaultLogo } from './components/DefaultLogo';
+import { UpgradePromptModal } from './components/UpgradePromptModal';
 
 const CenteredLoader = () => {
   const { siteSettings, language } = useAppContext();
@@ -161,6 +162,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       />
       <IncentiveCard />
       <PWACinematicModal />
+      <UpgradePromptModal />
       
       <AnimatePresence>
         {!isAuthReady && <CenteredLoader key="global-loader" />}

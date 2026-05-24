@@ -71,7 +71,7 @@ export async function getSubscriptionStatus(userId: string) {
   return result.rows[0] || null;
 }
 
-export async function activateStripeSubscription(userId: string, planId: string, subscriptionId: string, billingCycle: string) {
+export async function activateStripeSubscription(userId: string, planId: string, subscriptionId: string, billingCycle: string, stripeCustomerId?: string) {
   if (!pool) return;
   
   const cycleDays = billingCycle === 'annual' ? 365 : 30;
@@ -79,15 +79,17 @@ export async function activateStripeSubscription(userId: string, planId: string,
   periodEnd.setDate(periodEnd.getDate() + cycleDays);
 
   await pool.query(`
-    INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end)
-    VALUES ($1, $2, 'active', $3, $4)
+    INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end, stripe_subscription_id, stripe_customer_id)
+    VALUES ($1, $2, 'active', $3, $4, $5, $6)
     ON CONFLICT (user_id) DO UPDATE SET
       plan_id = EXCLUDED.plan_id,
       status = 'active',
       billing_period = EXCLUDED.billing_period,
       current_period_end = EXCLUDED.current_period_end,
+      stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+      stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, subscriptions.stripe_customer_id),
       updated_at = CURRENT_TIMESTAMP
-  `, [userId, planId, billingCycle, periodEnd]);
+  `, [userId, planId, billingCycle, periodEnd, subscriptionId, stripeCustomerId || null]);
 
   await createNotification(
     userId, 
