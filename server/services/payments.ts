@@ -156,15 +156,15 @@ export async function createPayPalOrder(amount: number, returnUrl: string, cance
   }
 }
 
-export async function capturePayPalOrder(orderId: string) {
+export async function capturePayPalOrder(orderId: string, dbAmountFallback?: number) {
   if (orderId && orderId.startsWith('PAYPAL-MOCK-ORDER-')) {
     const parts = orderId.split('-');
     const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : 10.00;
+    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
     return {
       success: true,
       captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-      amount: isNaN(amount) ? 10.00 : amount
+      amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
     };
   }
 
@@ -172,11 +172,11 @@ export async function capturePayPalOrder(orderId: string) {
   if (!creds) {
     const parts = orderId.split('-');
     const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : 10.00;
+    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
     return {
       success: true,
       captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-      amount: isNaN(amount) ? 10.00 : amount
+      amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
     };
   }
   
@@ -215,11 +215,11 @@ export async function capturePayPalOrder(orderId: string) {
     if (orderId) {
       const parts = orderId.split('-');
       const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-      const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : 10.00;
+      const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
       return {
         success: true,
         captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-        amount: isNaN(amount) ? 10.00 : amount
+        amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
       };
     }
     throw error;

@@ -1991,7 +1991,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (data.points !== undefined) setBalance(Number(data.points));
       if (data.balance !== undefined) setBalanceUSD(Number(data.balance));
     } catch (err) {
-      console.error('Balance fetch error:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('Balance fetch error:', errMsg);
+      if (errMsg.includes('401') || errMsg.includes('403')) {
+        logout(false);
+      }
     }
   };
 
@@ -2251,6 +2255,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSocket = io(socketEndpoint, socketOptions);
     setSocket(newSocket);
 
+    newSocket.on('connect_error', (err: any) => {
+      console.warn('[Socket] Connection failure:', err.message);
+      if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
+        console.error('[Socket] Direct auth rejection. Destroying connection parameters.');
+        logout(false);
+      }
+    });
+
     newSocket.on('connect', () => {
       if (user?.id) {
         newSocket.emit('register_user', user.id);
@@ -2322,8 +2334,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (res.ok) {
         setNotifications(await res.json());
-      } else if (res.status === 401) {
-        console.warn('Unauthorized notification fetch - session likely expired');
+      } else if (res.status === 401 || res.status === 403) {
+        console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
+        logout(false);
       } else {
         console.error('Failed to fetch notifications:', res.status, res.statusText);
       }
@@ -2422,6 +2435,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           return userProfile;
         }
+      } else if (res.status === 401 || res.status === 403) {
+        console.warn('refreshUser failed - unauthorized, logging out');
+        logout(false);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);

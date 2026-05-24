@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wallet, TrendingUp, Users, ArrowUpCircle, 
@@ -33,13 +34,20 @@ interface WalletData {
 }
 
 export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ theme, dir }) => {
-  const { t, token } = useAppContext();
+  const navigate = useNavigate();
+  const { t, token, refreshUser } = useAppContext() as any;
   const [activeTab, setActiveTab ] = useState('transactions');
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [manualDeposits, setManualDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
+
+  // High-precision verifying states
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [depositSuccessAmount, setDepositSuccessAmount] = useState<number | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+  const verificationStarted = React.useRef(false);
 
   // Deposit Form States
   const [depositAmount, setDepositAmount] = useState<string>('150');
@@ -94,48 +102,43 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     const sessionId = params.get('session_id');
     const tokenParam = params.get('token') || params.get('orderId');
 
-    if (status === 'success' && amount) {
-      toast.success(
-        dir === 'rtl' 
-          ? `تم تأكيد شحن الرصيد بمبلغ $${amount} بنجاح ودقة بالغة عبر Stripe!` 
-          : `Wallet credited with $${amount} successfully via Stripe Secure Checkout!`
-      );
-      // Clean up URL parameters to keep address bar pristine
-      const url = new URL(window.location.href);
-      url.searchParams.delete('status');
-      url.searchParams.delete('amount');
-      window.history.replaceState({}, '', url.toString());
-    } else if (status === 'stripe-success' && sessionId) {
+    if (status === 'stripe-success' && sessionId) {
+      if (verificationStarted.current) return;
+      verificationStarted.current = true;
       const verifyStripeSession = async () => {
-        const toastId = toast.loading(
-          dir === 'rtl' 
-            ? 'جاري تأكيد عملية الشحن بدقّة بالغة...' 
-            : 'Verifying deposit session securely...'
-        );
+        setIsVerifying(true);
         try {
+          // Dynamic pre-flight delay for visual confirmation of secure connection
+          await new Promise((resolve) => setTimeout(resolve, 1500));
           const res = await fetch(`/api/payments/verify-stripe-session?session_id=${sessionId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          toast.dismiss(toastId);
           if (res.ok) {
             const data = await res.json();
-            toast.success(
-              dir === 'rtl' 
-                ? `تم تأكيد شحن الرصيد بمبلغ $${data.amount} بنجاح ودقة بالغة عبر Stripe!` 
-                : `Wallet credited with $${data.amount} successfully via Stripe Secure Checkout!`
-            );
-            fetchWallet();
+            setDepositSuccessAmount(data.amount);
+            
+            // Re-fetch and synchronize wallet parameters
+            await fetchWallet();
+            if (typeof refreshUser === 'function') {
+              await refreshUser();
+            }
+            setRedirectCountdown(5);
           } else {
             toast.error(
               dir === 'rtl'
-                ? 'فشل التحقق من صحة عملية الدفع عبر Stripe.'
-                : 'Could not verify Stripe checkout session.'
+                ? 'فشل التحقق من صحة عملية الدفع ومطابقة حركات الدفتر المالي.'
+                : 'Could not verify database records for Stripe checkout session.'
             );
           }
         } catch (err: any) {
-          toast.dismiss(toastId);
           console.error('[Stripe Callback] Verification error:', err);
+          toast.error(
+            dir === 'rtl'
+              ? 'حدث خطأ في الاتصال أثناء تأكيد ومزامنة الرصيد.'
+              : 'Connection error during wallet database balance sync.'
+          );
         } finally {
+          setIsVerifying(false);
           const url = new URL(window.location.href);
           url.searchParams.delete('status');
           url.searchParams.delete('session_id');
@@ -176,13 +179,14 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
             if (captureRes.ok) {
               const capData = await captureRes.json();
-              toast.success(
-                dir === 'rtl'
-                  ? `بشرى سارة! تم شحن محفظتك بنجاح بمبلغ $${capData.amount} عبر بايبال!`
-                  : `Hooray! Account credited with $${capData.amount} successfully via PayPal!`
-              );
-              fetchWallet();
-              setActiveTab('transactions');
+              setDepositSuccessAmount(capData.amount);
+              
+              // Re-fetch and synchronize wallet parameters
+              await fetchWallet();
+              if (typeof refreshUser === 'function') {
+                await refreshUser();
+              }
+              setRedirectCountdown(5);
             } else {
               const errData = await captureRes.json();
               throw new Error(errData.error || 'Capture verification failed');
@@ -217,6 +221,34 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       window.history.replaceState({}, '', url.toString());
     }
   }, []);
+
+  useEffect(() => {
+    let timer: any;
+    if (depositSuccessAmount !== null) {
+      // Instantly initialize countdown sequence to 5 whenever success occurs
+      setRedirectCountdown(5);
+      
+      timer = setInterval(() => {
+        setRedirectCountdown((prev) => {
+          if (prev === null) return null;
+          if (prev <= 1) {
+            clearInterval(timer);
+            setDepositSuccessAmount(null);
+            setRedirectCountdown(null);
+            setActiveTab('transactions');
+            navigate('/settings?tab=wallet');
+            return null;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setRedirectCountdown(null);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [depositSuccessAmount, navigate]);
 
   useEffect(() => {
     if (activeTab !== 'deposit' && activeTab !== 'withdraw') {
@@ -345,8 +377,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
     setIsSubmittingDeposit(true);
 
-    // MANUAL FLOW: Crypto & Bank methods
-    if (depositMethod === 'crypto' || depositMethod === 'bank') {
+    // MANUAL FLOW: Crypto, Bank & PayPal methods
+    if (depositMethod === 'crypto' || depositMethod === 'bank' || depositMethod === 'paypal') {
       if (!manualRefId || manualRefId.trim().length === 0) {
         toast.error(
           dir === 'rtl'
@@ -383,7 +415,12 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
           },
           body: JSON.stringify({
             amount: amountVal,
-            method: depositMethod.toUpperCase() === 'CRYPTO' ? 'USDT (TRC-20)' : 'BANK TRANSFER',
+            method: 
+              depositMethod === 'crypto'
+                ? 'USDT (TRC-20)'
+                : depositMethod === 'paypal'
+                ? 'PAYPAL'
+                : 'BANK TRANSFER',
             reference_id: manualRefId,
             proof_url: uploadedFileUrl
           })
@@ -412,7 +449,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       return;
     }
 
-    // AUTOMATED GATEWAYS: Card / Paypal
+    // AUTOMATED GATEWAYS: Card
     if (depositMethod === 'card') {
       setDepositProgressStep(1); // Connecting to secure Stripe gateway
       try {
@@ -438,41 +475,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
         }
       } catch (err) {
         console.warn('Stripe checkout session failed to load', err);
-      }
-    } else if (depositMethod === 'paypal') {
-      setDepositProgressStep(1); // Connecting to PayPal secure gateway
-      try {
-        const paypalRes = await fetch('/api/payments/paypal-deposit', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ amount: amountVal })
-        });
-
-        if (paypalRes.ok) {
-          const paypalData = await paypalRes.json();
-          if (paypalData.url) {
-            setDepositProgressStep(3); // Redirecting to PayPal secure checkout page
-            toast.success(dir === 'rtl' ? 'جاري توجيهك إلى نافذة دفع بايبال الآمنة لإتمام المعاملة...' : 'Redirecting to PayPal secure checkout...');
-            setTimeout(() => {
-              window.location.href = paypalData.url;
-            }, 800);
-            return;
-          } else {
-            throw new Error('No checkout URL returned from PayPal server');
-          }
-        } else {
-          const errData = await paypalRes.json();
-          throw new Error(errData.error || 'Failed to create PayPal checkout');
-        }
-      } catch (err: any) {
-        console.error('PayPal checkout failed:', err);
-        toast.error(err.message || (dir === 'rtl' ? 'فشل بدء معالجة الدفع عبر بايبال' : 'Failed to launch PayPal billing session.'));
-        setIsSubmittingDeposit(false);
-        setDepositProgressStep(0);
-        return;
       }
     }
 
@@ -664,7 +666,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                     {dir === 'rtl' ? 'قيمة الرصيد بالدولار' : 'US Dollar Valuation'}
                   </p>
                   <p className="text-xl font-black text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
-                    ${(currentBalance * 0.27).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                    ${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                   </p>
                </div>
                <div className="space-y-1">
@@ -829,7 +831,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         <div>
                           <p className="text-xs font-black font-sans leading-none">{m.name}</p>
                           <span className="text-[8px] font-bold opacity-50 tracking-widest uppercase">
-                            {m.id === 'card' ? 'Secure 3D' : m.id === 'crypto' ? 'Instant' : m.id === 'bank' ? 'Wire' : '2-Click'}
+                            {m.id === 'card' ? 'Secure 3D' : m.id === 'crypto' ? 'Instant' : m.id === 'bank' ? 'Wire' : dir === 'rtl' ? 'مراجعة يدوية' : 'Manual'}
                           </span>
                         </div>
                       </button>
@@ -899,58 +901,64 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
                   {/* CRYPTO ADDRESS INFO */}
                   {depositMethod === 'crypto' && (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                        <ShieldCheck size={16} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">TRC-20 Decentralized Ledger Gateway</span>
+                        <ShieldCheck size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'بوابة تسوية الدفع الفوري عبر USDT (TRC-20) اليدوي' : 'USDT TRC-20 Secure Direct Settlement Ingestion Node'}</span>
                       </div>
                       
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-black text-[var(--text-muted)] leading-relaxed uppercase tracking-widest">
-                          {dir === 'rtl' ? 'عنوان محفظة الإيداع المخصصة لك (USDT TRC-20)' : 'Your Permanent Dedicated Deposit Address (USDT TRC-20):'}
-                        </p>
-                        <div className="flex items-center gap-3 bg-[var(--bg-base)] p-3 rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
-                          <code className="text-xs font-black tracking-wider text-emerald-500 select-all truncate flex-1">
-                            {wallet?.crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'}
-                          </code>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-[var(--primary)] uppercase">
+                        <div className="md:col-span-2 p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
+                          <div>
+                            <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'عنوان محفظة الإيداع المخصصة لك (USDT TRC-20)' : 'Your Permanent Dedicated Deposit Address (USDT TRC-20)'}</span>
+                            <span className="font-sans font-black text-xs text-emerald-500 tracking-wider font-mono select-all truncate block max-w-sm md:max-w-md">{wallet?.crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'}</span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(wallet?.crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy')}
-                            className="p-2 hover:bg-[var(--bg-surface)] text-emerald-500 rounded-[var(--radius)] shrink-0 transition-colors"
+                            className="p-1 hover:bg-[var(--bg-surface)] text-emerald-500 rounded-[for-badge-radius] transition-colors shrink-0"
                           >
-                            <Copy size={16} />
+                            <Copy size={14} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-[var(--radius)] bg-amber-500/5 border border-amber-500/20 flex gap-3">
-                        <Info size={18} className="text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-wider leading-relaxed">
+                      <div className="p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] text-center">
+                        <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest leading-relaxed">
                           {dir === 'rtl' 
-                            ? 'انتبه: أرسل شبكة TRC-20 فقط. إرسال أي عملة أخرى قد يؤدي إلى فقدان أموالك نهائياً. يتم إيداع رصيد الشيكل المكافئ تلقائياً بعد أول تأكيد على السلسلة.' 
-                            : 'ATTENTION: Only dispatch USDT via the Tron (TRC-20) network. Funds will credit to your account within 60 seconds after 1 blockchain confirmation node.'}
+                            ? 'الرجاء إرسال شبكة TRC-20 فقط إلى العنوان الموضح أعلاه أولاً، ثم املأ رقم معاملة الهاش المرجعي وأرفق صورة الإيصال لإرسال الطلب للمراجعة والموافقة يدويًا.' 
+                            : 'Ensure to send your USDT TRC-20 transfer directly to the address above before transmitting the verification details below.'}
                         </p>
                       </div>
 
-                      {/* Manual Verification Form Fields */}
+                      <div className="p-4 rounded-[var(--radius)] bg-amber-500/5 border border-amber-500/10 flex gap-3 text-left rtl:text-right">
+                        <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-wider leading-relaxed">
+                          {dir === 'rtl' 
+                            ? 'انتبه: أرسل شبكة TRC-20 فقط. إرسال أي عملة أخرى قد يؤدي إلى فقدان أموالك نهائياً. يتم إيداع رصيد المحفظة المكافئ بعد مراجعة المشرف للعملية بشكل يدوي ودقيق.' 
+                            : 'ATTENTION: Only dispatch USDT via the Tron (TRC-20) network. Your manual request will be verified by the system administrator immediately upon receipt verification.'}
+                        </p>
+                      </div>
+
+                      {/* Manual Verification Form Fields for Crypto */}
                       <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'الرقم المرجعي أو كود التحويل (مطلوب)' : 'Transaction Reference / Hash ID (Required)'}
+                            {dir === 'rtl' ? 'هاش المعاملة أو الكود التعريفي (مطلوب)' : 'Transaction Hash / Hash ID (Required)'}
                           </label>
                           <input
                             type="text"
                             required
                             value={manualRefId}
                             onChange={(e) => setManualRefId(e.target.value)}
-                            placeholder={dir === 'rtl' ? 'أدخل الرقم المرجعي أو هاش العملية هنا...' : 'Enter TXID or confirmation number...'}
+                            placeholder={dir === 'rtl' ? 'أدخل هاش التحويل (TXID) هنا...' : 'Enter USDT TRC-20 Transaction details...'}
                             className="w-full bg-[var(--bg-base)] text-xs text-[var(--text-primary)] font-mono p-3 rounded-[var(--radius)] border border-[var(--border)] focus:outline-none focus:border-emerald-500/50 transition-colors"
                           />
                         </div>
 
                         <div className="space-y-1">
                           <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'إثبات تحويل المعاملة (اختياري - صورة أو كشف حساب)' : 'Screenshot / Upload Payment Proof (Optional)'}
+                            {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload Payment Receipt (Optional)'}
                           </label>
                           <div className="flex items-center gap-3">
                             <input
@@ -988,25 +996,25 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
                   {/* BANK WIRE FIELDS */}
                   {depositMethod === 'bank' && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                        <Building size={16} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Israel Settlement Settlement Node IBAN</span>
+                        <Building size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'بوابة التحويل البنكي المحلي والدولي اليدوي' : 'Bank Wire Secure Direct Settlement Ingestion Node'}</span>
                       </div>
-
+ 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-[var(--primary)] uppercase">
                         <div className="p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] space-y-1">
                           <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'البنك المستلم' : 'Receiver Bank'}</span>
-                          <span className="font-black text-[10px]">{wallet?.bank_name || 'Merchant Discount Bank IL (011)'}</span>
+                          <span className="font-black text-[10px] text-[var(--text-primary)]">{wallet?.bank_name || 'Merchant Discount Bank IL (011)'}</span>
                         </div>
                         <div className="p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] space-y-1">
                           <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'اسم المستفيد' : 'Beneficiary'}</span>
-                          <span className="font-black text-[10px]">{wallet?.bank_recipient || 'Perplexta Tech Platforms LTD.'}</span>
+                          <span className="font-black text-[10px] text-[var(--text-primary)]">{wallet?.bank_recipient || 'Perplexta Tech Platforms LTD.'}</span>
                         </div>
                         <div className="md:col-span-2 p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
                           <div>
                             <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">IBAN / الحساب</span>
-                            <span className="font-black font-sans text-xs text-emerald-500 tracking-wider">{wallet?.bank_iban || 'IL42 0110 0000 0000 3484 2192'}</span>
+                            <span className="font-sans font-black text-xs text-emerald-500 tracking-wider font-mono">{wallet?.bank_iban || 'IL42 0110 0000 0000 3484 2192'}</span>
                           </div>
                           <button
                             type="button"
@@ -1019,7 +1027,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         <div className="p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
                           <div>
                             <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">SWIFT / BIC Code</span>
-                            <span className="font-sans font-black text-xs text-emerald-500 tracking-widest">{wallet?.bank_swift || 'PPLXIL33XXX'}</span>
+                            <span className="font-sans font-black text-xs text-emerald-500 tracking-widest font-mono">{wallet?.bank_swift || 'PPLXIL33XXX'}</span>
                           </div>
                           <button
                             type="button"
@@ -1029,31 +1037,39 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             <Copy size={14} />
                           </button>
                         </div>
-                        <div className="p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] space-y-1">
-                          <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'الرمز التعريفي للإيداع' : 'Deposit Ref Code (Include in memo)'}</span>
+                        <div className="md:col-span-2 p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] space-y-1">
+                          <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'الرمز التعريفي للإيداع (يجب كتابته كشرح للحوالة للتعرف الفوري)' : 'Deposit Ref Code (Include in transfer description/memo)'}</span>
                           <span className="font-black font-mono text-[11px] text-amber-500">MEMO-PPLX-{wallet?.referral_activated ? 'ACT' : 'NEW'}</span>
                         </div>
                       </div>
 
-                      {/* Manual Verification Form Fields */}
-                      <div className="mt-6 p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
+                      <div className="p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] text-center">
+                        <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest leading-relaxed">
+                          {dir === 'rtl' 
+                            ? 'الرجاء إجراء التحويل البنكي بالتفاصيل الموضحة أعلاه أولاً، ثم املأ الرقم المرجعي للحوالة وأرفق صورة الإيصال لإرسال الطلب للمراجعة والموافقة يدويًا.' 
+                            : 'Ensure to complete your manual bank transfer with the details above before transmitting the verification details below.'}
+                        </p>
+                      </div>
+
+                      {/* Manual Verification Form Fields for Bank */}
+                      <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'الرقم المرجعي أو كود التحويل (مطلوب)' : 'Transaction Reference / Hash ID (Required)'}
+                            {dir === 'rtl' ? 'الرقم المرجعي أو كود التحويل البنكي (مطلوب)' : 'Bank Transaction Reference / Hash ID (Required)'}
                           </label>
                           <input
                             type="text"
                             required
                             value={manualRefId}
                             onChange={(e) => setManualRefId(e.target.value)}
-                            placeholder={dir === 'rtl' ? 'أدخل الرقم المرجعي أو هاش العملية هنا...' : 'Enter TXID or confirmation number...'}
+                            placeholder={dir === 'rtl' ? 'أدخل الرقم المرجعي أو كود التحويل البنكي هنا...' : 'Enter Bank transfer reference details...'}
                             className="w-full bg-[var(--bg-base)] text-xs text-[var(--text-primary)] font-mono p-3 rounded-[var(--radius)] border border-[var(--border)] focus:outline-none focus:border-emerald-500/50 transition-colors"
                           />
                         </div>
 
                         <div className="space-y-1">
                           <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'إثبات تحويل المعاملة (اختياري - صورة أو كشف حساب)' : 'Screenshot / Upload Payment Proof (Optional)'}
+                            {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload Bank Transfer Receipt (Optional)'}
                           </label>
                           <div className="flex items-center gap-3">
                             <input
@@ -1091,18 +1107,87 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
                   {/* PAYPAL DIRECT GATEWAY */}
                   {depositMethod === 'paypal' && (
-                    <div className="space-y-4 text-center py-6">
-                      <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Globe size={24} />
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 text-emerald-500 mb-2">
+                        <Globe size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'رئاسة تسوية الدفع المباشر عبر PayPal اليدوي' : 'PayPal Secure Direct Settlement Ingestion Node'}</span>
                       </div>
-                      <h4 className="text-sm font-black text-[var(--text-primary)] font-sans uppercase">PayPal Fast Checkout Gateway</h4>
-                      <div className="p-3 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] max-w-sm mx-auto space-y-1">
-                        <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'بريد بايبل المتلقي' : 'PayPal Receiver Email'}</span>
-                        <span className="font-black font-mono text-emerald-500 text-xs">{wallet?.paypal_email || 'paypal@perplexta.com'}</span>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-[var(--primary)] uppercase">
+                        <div className="md:col-span-2 p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
+                          <div>
+                            <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'بريد PayPal الخاص بمحفظة الاستلام' : 'PayPal Receiver Email'}</span>
+                            <span className="font-sans font-black text-xs text-emerald-500 tracking-wider font-mono">{wallet?.paypal_email || 'paypal@perplexta.com'}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(wallet?.paypal_email || 'paypal@perplexta.com')}
+                            className="p-1 hover:bg-[var(--bg-surface)] text-emerald-500 rounded-[for-badge-radius] transition-colors"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest max-w-sm mx-auto">
-                        {dir === 'rtl' ? 'سيتم فتح نافذة آمنة لإجراء التفويض الفوري وسحب المبلغ المحدد.' : 'Approval processes happen in a secured modal with instant ledger booking.'}
-                      </p>
+
+                      <div className="p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] text-center">
+                        <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest leading-relaxed">
+                          {dir === 'rtl' 
+                            ? 'الرجاء تحويل القيمة المطلوبة إلى حساب بايبال الموضح أعلاه أولاً، ثم املأ رقم المعاملة المرجعي وأرفق صورة الإيصال لإرسال الطلب للمراجعة والموافقة يدويًا.' 
+                            : 'Ensure to send your transfer directly to the address above before transmitting the verification details below.'}
+                        </p>
+                      </div>
+
+                      {/* Manual Verification Form Fields for PayPal */}
+                      <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                            {dir === 'rtl' ? 'رقم معاملة بايبال أو كود الحوالة (مطلوب)' : 'PayPal Transaction ID / Invoice Hash (Required)'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={manualRefId}
+                            onChange={(e) => setManualRefId(e.target.value)}
+                            placeholder={dir === 'rtl' ? 'أدخل رقم المعاملة المرجعي هنا...' : 'Enter PayPal Transaction details...'}
+                            className="w-full bg-[var(--bg-base)] text-xs text-[var(--text-primary)] font-mono p-3 rounded-[var(--radius)] border border-[var(--border)] focus:outline-none focus:border-emerald-500/50 transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                            {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload PayPal Payment Receipt (Optional)'}
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="file"
+                              id="paypal-proof-upload"
+                              accept="image/*,application/pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setManualProofFile(e.target.files[0]);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor="paypal-proof-upload"
+                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
+                            >
+                              <Paperclip size={12} className="text-emerald-500" />
+                              {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
+                            </label>
+                            {manualProofFile && (
+                              <button
+                                type="button"
+                                onClick={() => setManualProofFile(null)}
+                                className="text-[10px] font-black text-rose-500 uppercase hover:underline"
+                              >
+                                {dir === 'rtl' ? 'إزالة' : 'REMOVE'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1120,9 +1205,19 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       >
                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-emerald-500">
                           <span>
-                            {depositProgressStep === 1 && (dir === 'rtl' ? 'الاتصال بخادم المعاملات المصرفية المشفر...' : 'Contacting financial clearing node')}
-                            {depositProgressStep === 2 && (dir === 'rtl' ? 'التحقق ومصادقة أرصدة الدقتر المالي...' : 'Validating account ledger codes')}
-                            {depositProgressStep === 3 && (dir === 'rtl' ? 'المزامنة والتسجيل بالوقت الفعلي في PostgreSQL...' : 'Synching live ledger core rows')}
+                            {depositMethod === 'card' ? (
+                              <>
+                                {depositProgressStep === 1 && (dir === 'rtl' ? 'جاري الاتصال بالقنوات المصرفية الآمنة...' : 'Connecting to secure gateway channels...')}
+                                {depositProgressStep === 2 && (dir === 'rtl' ? 'التحقق وتأمين تفاصيل معاملتك الرقمية...' : 'Validating and securing your digital transaction...')}
+                                {depositProgressStep === 3 && (dir === 'rtl' ? 'جاري تحويلك الآن لبوابة الدفع الآمنة... يرجى الانتظار' : 'Redirecting you automatically to secure payment gateway... Please wait')}
+                              </>
+                            ) : (
+                              <>
+                                {depositProgressStep === 1 && (dir === 'rtl' ? 'الاتصال بخادم المعاملات المصرفية المشفر...' : 'Contacting financial clearing node')}
+                                {depositProgressStep === 2 && (dir === 'rtl' ? 'التحقق ومصادقة تفاصيل طلبك المالي...' : 'Validating and authenticating financial request...')}
+                                {depositProgressStep === 3 && (dir === 'rtl' ? 'حفظ وتوثيق العملية في دفتر المعاملات الآمن...' : 'Securing and recording transaction in the safe ledger...')}
+                              </>
+                            )}
                           </span>
                           <Loader2 size={12} className="animate-spin" />
                         </div>
@@ -1145,7 +1240,19 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                     disabled={isSubmittingDeposit || !depositAmount}
                     className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-all duration-300 shadow-md hover:shadow-emerald-500/20"
                   >
-                    {isSubmittingDeposit ? (dir === 'rtl' ? 'جاري معالجة المعاملة المؤمّنة...' : 'SECURELY DISPATCHING FUND FLOWS...') : (dir === 'rtl' ? 'تأكيد المعاملة وشحن الرصيد' : 'CONFIRM TRANSACTION & CREDIT FUNDS')}
+                    {isSubmittingDeposit ? (
+                      (depositMethod === 'card') ? (
+                        dir === 'rtl' ? 'جاري تحويلك إلى بوابة الدفع الآمنة...' : 'REDIRECTING TO SECURE PAYMENT GATEWAY...'
+                      ) : (
+                        dir === 'rtl' ? 'جاري معالجة المعاملة وتأكيد الطلب المالي...' : 'TRANSMITTING SECURE TRANSACTION DATA...'
+                      )
+                    ) : (
+                      (depositMethod === 'paypal' || depositMethod === 'crypto' || depositMethod === 'bank') ? (
+                        dir === 'rtl' ? 'إرسال الطلب' : 'SUBMIT REQUEST'
+                      ) : (
+                        dir === 'rtl' ? 'تأكيد المعاملة وشحن الرصيد' : 'CONFIRM TRANSACTION & CREDIT FUNDS'
+                      )
+                    )}
                   </button>
                 </div>
 
@@ -1553,6 +1660,106 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             </motion.div>
           )}
 
+        </AnimatePresence>
+
+        {/* Verification Loader Overlay */}
+        <AnimatePresence>
+          {isVerifying && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#0a0a0c]/95 backdrop-blur-md text-white p-6"
+            >
+              <div className="max-w-md w-full text-center flex flex-col items-center">
+                <div className="relative mb-8 pt-4">
+                  <div className="w-16 h-16 rounded-full border-2 border-emerald-500/25 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-x-0 top-4 bottom-0 flex items-center justify-center">
+                    <ShieldCheck className="text-emerald-500" size={24} />
+                  </div>
+                </div>
+                
+                <h3 className="text-xl md:text-2xl font-black mb-3 tracking-tight text-white font-sans">
+                  {dir === 'rtl' ? 'تأكيد إيداع الأموال ومزامنة الرصيد...' : 'Verifying secure deposit...'}
+                </h3>
+                <p className="text-gray-400 text-xs md:text-sm font-medium leading-relaxed max-w-sm">
+                  {dir === 'rtl' 
+                    ? 'جاري تحديث ومزامنة الرصيد الفوري في محفظتك بشكل آمن...' 
+                    : 'Securing your transaction and updating your wallet balance...'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Deposit Success Modal Overlay */}
+        <AnimatePresence>
+          {depositSuccessAmount !== null && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[999] flex items-center justify-center bg-[#0a0a0c]/90 backdrop-blur-lg p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 15 }}
+                className="bg-[#121215] border border-gray-800/80 rounded-[8px] max-w-lg w-full p-6 md:p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.15)] relative overflow-hidden"
+              >
+                {/* Background glow circle */}
+                <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+                  <CheckCircle2 className="text-emerald-500" size={32} />
+                </div>
+
+                <h3 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">
+                  {dir === 'rtl' ? 'تم شحن المحفظة بنجاح!' : 'Wallet Loaded Successfully!'}
+                </h3>
+                
+                <p className="text-gray-400 text-xs md:text-sm font-medium mb-6">
+                  {dir === 'rtl' 
+                    ? 'تمت إضافة الأموال إلى محفظتك بنجاح ومزامنة الرصيد لتتمكن من استخدامه فوراً.' 
+                    : 'Funds have been successfully added to your wallet and your balance is now up-to-date and ready.'}
+                </p>
+
+                {/* Amount segment */}
+                <div className="bg-[#18181c] border border-gray-800/40 rounded-[6px] py-4 px-6 inline-flex flex-col items-center justify-center mb-8 min-w-[200px]">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">
+                    {dir === 'rtl' ? 'الرصيد المودع' : 'DEPOSITED AMOUNT'}
+                  </span>
+                  <span className="text-3xl md:text-4xl font-extrabold text-emerald-500 font-mono drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    +${Number(depositSuccessAmount).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Redirect countdown section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-2 text-emerald-400 font-medium text-xs md:text-sm">
+                    <Clock size={16} className="animate-pulse" />
+                    <span>
+                      {dir === 'rtl' 
+                        ? `سيتم تحويلك إلى سجل العمليات والمحفظة خلال ${redirectCountdown || 5} ثوان...` 
+                        : `Returning you to the wallet transactions index in ${redirectCountdown || 5} seconds...`}
+                    </span>
+                  </div>
+
+                  {/* Progressive countdown loader bar */}
+                  <div className="w-full bg-gray-800/40 h-[3px] rounded-full overflow-hidden">
+                    <motion.div 
+                      key={redirectCountdown}
+                      initial={{ width: '100%' }}
+                      animate={{ width: '0%' }}
+                      transition={{ duration: 1, ease: 'linear' }}
+                      className="bg-emerald-500 h-full"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
       </div>
