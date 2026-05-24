@@ -183,9 +183,10 @@ router.post("/signup", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    await createUserSession(user.id, token, req, remember ? 30 : 1);
+    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -209,7 +210,7 @@ router.post("/signup", authLimiter, async (req, res) => {
       } : null
     };
 
-    res.json({ token, user: userPayload });
+    res.json({ token: accessToken, refreshToken, user: userPayload });
 
     await logSystemActivity(user.id, 'signup', 'User signed up', {}, req);
     sendSmartEmail(user.id, user.email, 'welcome_email', { userName: user.name || 'User', baseUrl: getBaseUrl(req) }, language as any).catch(console.error);
@@ -252,9 +253,10 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    await createUserSession(user.id, token, req, remember ? 30 : 1);
+    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -278,10 +280,84 @@ router.post("/login", authLimiter, async (req, res) => {
       } : null
     };
 
-    res.json({ token, user: userPayload });
+    res.json({ token: accessToken, refreshToken, user: userPayload });
     await logSystemActivity(user.id, 'login', 'User logged in', {}, req);
   } catch (error) {
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+router.post("/refresh-token", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'RefreshTokenRequired', message: 'Refresh token is required' });
+    }
+
+    // Verify token with JWT Secret
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, jwtSecret);
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'TokenExpiredError', message: 'Refresh token has expired' });
+      }
+      return res.status(401).json({ error: 'InvalidToken', message: 'Refresh token verification failed' });
+    }
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'InvalidTokenType', message: 'Invalid token type' });
+    }
+
+    // Check if the old refresh token is blacklisted
+    const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [refreshToken]);
+    if (blacklistCheck.rows.length > 0) {
+      console.warn(`[Security Alert] Replay attempt with blacklisted refresh token from user ID: ${decoded.id}`);
+      await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE user_id = $1", [decoded.id]);
+      return res.status(401).json({ error: 'CompromisedSession', message: 'Session has been invalidated due to token reuse' });
+    }
+
+    // Check if there is an active session in user_sessions
+    const sessionRes = await pool.query(
+      "SELECT id FROM user_sessions WHERE session_token = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP", 
+      [refreshToken]
+    );
+    if (sessionRes.rows.length === 0) {
+      return res.status(401).json({ error: 'SessionInactive', message: 'Session is inactive or already processed' });
+    }
+
+    // Fetch user
+    const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
+    if (userRes.rows.length === 0) {
+      return res.status(401).json({ error: 'UserNotFound', message: 'User does not exist' });
+    }
+
+    const user = userRes.rows[0];
+    if (user.status === 'suspended') {
+      return res.status(403).json({ error: 'Suspended', message: 'User account is suspended' });
+    }
+
+    const remember = decoded.remember === true || decoded.remember === 'true';
+    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
+    const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+
+    // Mark previous refresh token as inactive
+    await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
+
+    // Add old refresh token to blacklist to prevent replay attacks
+    const expirySec = decoded.exp ? Math.floor(decoded.exp) : Math.floor(Date.now() / 1000) + 3600;
+    await pool.query(
+      "INSERT INTO token_blacklist (token, expires_at) VALUES ($1, TO_TIMESTAMP($2)) ON CONFLICT (token) DO NOTHING",
+      [refreshToken, expirySec]
+    );
+
+    // Write new session for rotated refresh token
+    await createUserSession(user.id, newRefreshToken, req, remember ? 30 : 1);
+
+    res.json({ token: newAccessToken, refreshToken: newRefreshToken });
+  } catch (error: any) {
+    console.error('[Refresh-Token Error]:', error.message);
+    res.status(500).json({ error: 'Internal Server Error during token refresh' });
   }
 });
 
@@ -572,9 +648,10 @@ router.get("/google/callback", async (req, res) => {
     }
 
     const remember = storedState?.remember === true || storedState?.remember === 'true';
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
-    await createUserSession(user.id, token, req, remember ? 30 : 1);
+    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -614,7 +691,8 @@ router.get("/google/callback", async (req, res) => {
     const allowedOrigin = getBaseUrl(req);
     
     const rawPayload = JSON.stringify({ 
-      token, 
+      token: accessToken, 
+      refreshToken,
       ...userPayload,
       lang: lang,
       ref: targetRef,
@@ -796,6 +874,9 @@ router.get("/google/callback", async (req, res) => {
                 
                 try {
                   localStorage.setItem('app_token', data.token);
+                  if (data.refreshToken) {
+                    localStorage.setItem('app_refresh_token', data.refreshToken);
+                  }
                   localStorage.setItem('app_oauth_user', JSON.stringify(data));
                   localStorage.setItem('language', data.lang);
                   if (data.remember) {

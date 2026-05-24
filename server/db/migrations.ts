@@ -11,7 +11,12 @@ export async function runSystemMaintenance() {
       const tableCheck = await pool.query(`
         SELECT table_name 
         FROM information_schema.tables 
-        WHERE table_name IN ('token_blacklist', 'password_resets', 'user_activity_logs', 'subscriptions', 'oauth_states', 'ai_logs')
+        WHERE table_name IN (
+          'token_blacklist', 'password_resets', 'user_activity_logs', 
+          'subscriptions', 'oauth_states', 'ai_logs', 'notifications', 
+          'system_logs', 'task_logs', 'stripe_events', 'security_alerts',
+          'user_usage'
+        )
       `);
       const existingTables = new Set(tableCheck.rows.map((r: any) => r.table_name));
 
@@ -50,7 +55,41 @@ export async function runSystemMaintenance() {
         await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
       }
 
-      console.log('[Maintenance] Daily system cleanup completed successfully.');
+      // 7. Cleanup read notifications older than 30 days or any notifications older than 90 days
+      if (existingTables.has('notifications')) {
+        await pool.query(`
+          DELETE FROM notifications 
+          WHERE (is_read = true AND created_at < CURRENT_TIMESTAMP - INTERVAL '30 days')
+             OR created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'
+        `);
+      }
+
+      // 8. Cleanup old system logs (keep 30 days)
+      if (existingTables.has('system_logs')) {
+        await pool.query("DELETE FROM system_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      }
+
+      // 9. Cleanup old task logs (keep 30 days)
+      if (existingTables.has('task_logs')) {
+        await pool.query("DELETE FROM task_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+      }
+
+      // 10. Cleanup processed Stripe webhooks events (keep 90 days for audit trail)
+      if (existingTables.has('stripe_events')) {
+        await pool.query("DELETE FROM stripe_events WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'");
+      }
+
+      // 11. Cleanup harmless security alerts (keep 90 days for tracking)
+      if (existingTables.has('security_alerts')) {
+        await pool.query("DELETE FROM security_alerts WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'");
+      }
+
+      // 12. Cleanup legacy user usage limits metrics older than 90 days (retains database indexing speed)
+      if (existingTables.has('user_usage')) {
+        await pool.query("DELETE FROM user_usage WHERE usage_date < CURRENT_DATE - INTERVAL '90 days'");
+      }
+
+      console.log('[Maintenance] Daily system and database event logging cleanups completed successfully.');
     }
   } catch (e: any) {
     console.error('[Maintenance] System maintenance failed:', e.message);

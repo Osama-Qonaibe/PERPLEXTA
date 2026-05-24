@@ -2,19 +2,72 @@ import cron from 'node-cron';
 import { runSystemMaintenance, monitorDatabases } from '../db/migrations.js';
 import { pool } from '../db/index.js';
 import { createNotification } from '../services/notifications.js';
+import { consolidateAllUserMemories } from '../services/memory.js';
+import fs from 'fs/promises';
+import path from 'path';
+
+async function cleanupOrphanedPhysicalFiles() {
+  console.log('[Cron] 🧹 Starting physical files audit and purge...');
+  try {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    
+    // Safety check: ensure uploading directory exists
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      console.log('[Cron] Uploads folder does not exist yet. Skipping physical purge.');
+      return;
+    }
+
+    const filesOnDisk = await fs.readdir(uploadDir);
+    if (filesOnDisk.length === 0) {
+      console.log('[Cron] No physical files found on disk uploads.');
+      return;
+    }
+
+    // Retrieve references from the database
+    const dbFilesRes = await pool.query('SELECT file_url FROM user_files');
+    const validFilenames = new Set(dbFilesRes.rows.map((row: any) => row.file_url));
+
+    let purgedCount = 0;
+    for (const filename of filesOnDisk) {
+      // Keep hidden configuration files, .gitkeep, or lockfiles intact
+      if (filename.startsWith('.')) continue;
+
+      if (!validFilenames.has(filename)) {
+        const filePath = path.join(uploadDir, filename);
+        await fs.unlink(filePath).catch(() => {});
+        purgedCount++;
+      }
+    }
+
+    if (purgedCount > 0) {
+      console.log(`[Cron] Purged ${purgedCount} orphaned physical files off disk successfully.`);
+    } else {
+      console.log('[Cron] Disk is completely synchronized. Zero orphaned files detected.');
+    }
+  } catch (err: any) {
+    console.error('[Cron] Orphaned files physical audit failed:', err.message);
+  }
+}
 
 export function initCronJobs() {
+  // 1. Daily maintenance, API keys reset, and orphaned physical files purge at 3:00 AM
   cron.schedule('0 3 * * *', async () => {
     console.log('[Cron] 🕒 Running daily system maintenance...');
     try {
       await runSystemMaintenance();
       await pool.query('UPDATE api_keys_vault SET used_today = 0, last_reset_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP');
       console.log('[Cron] API keys usage reset completed.');
+      
+      // Perform structural disk file audit to preserve Zero-Clutter goals
+      await cleanupOrphanedPhysicalFiles();
     } catch (err) {
       console.error('[Cron] Maintenance failed:', err);
     }
   });
 
+  // 2. Database heartbeat check every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Cron] 💓 Running database heartbeat check...');
@@ -22,6 +75,7 @@ export function initCronJobs() {
     await monitorDatabases();
   });
 
+  // 3. Background micro-cleanups for blacklisted tokens and resets every 6 hours
   cron.schedule('0 */6 * * *', async () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Cron] 🧹 Running background micro-cleanup for expired tokens and resets...');
@@ -36,6 +90,7 @@ export function initCronJobs() {
     }
   });
 
+  // 4. Checking for subscriptions that expire soon and notify them at 3:05 AM
   cron.schedule('5 3 * * *', async () => {
     console.log('[Cron] 🔍 Checking for expiring subscriptions...');
     try {
@@ -58,6 +113,18 @@ export function initCronJobs() {
       }
     } catch (err) {
       console.error('[Cron] Subscription check failed:', err);
+    }
+  });
+
+  // 5. Monthly Memory Distillation & Coherence Compaction on the 1st of every month at 4:30 AM
+  cron.schedule('30 4 1 * *', async () => {
+    console.log('[Cron] 🧠 Running monthly memory distillation (coherence compaction)...');
+    try {
+      // Compresses memory tables of inactive profiles and manages facts saturation
+      const result = await consolidateAllUserMemories({ threshold: 45 });
+      console.log('[Cron] Inactive memory distillation completed successfully:', result);
+    } catch (err: any) {
+      console.error('[Cron] Monthly memory distillation failed:', err.message);
     }
   });
 }

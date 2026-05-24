@@ -1517,6 +1517,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return null;
     }
   });
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() => {
+    try {
+      const rawRT = localStorage.getItem('app_refresh_token');
+      if (!rawRT || rawRT === 'null' || rawRT === 'undefined' || rawRT === '') return null;
+      return rawRT;
+    } catch (e) {
+      return null;
+    }
+  });
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const bootStartTime = useRef(Date.now());
@@ -1765,9 +1774,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (localStorage.getItem('app_oauth_syncing') === 'true') return;
       localStorage.setItem('app_oauth_syncing', 'true');
 
-      const { token: newToken, lang: authLang, ...info } = userData;
+      const { token: newToken, refreshToken: newRefreshToken, lang: authLang, ...info } = userData;
       localStorage.setItem('app_token', newToken);
       setToken(newToken);
+      if (newRefreshToken) {
+        localStorage.setItem('app_refresh_token', newRefreshToken);
+        setRefreshTokenState(newRefreshToken);
+      }
       setUser(info);
       setIsAuthModalOpen(false); 
       
@@ -1824,6 +1837,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const urlToken = getParam('token');
+    const urlRefreshToken = getParam('refreshToken');
     const urlUserRaw = getParam('user');
 
     // Only ingest token from URL if we are NOT on a sensitive page like reset-password 
@@ -1833,6 +1847,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (urlToken && !isSensitivePage && urlToken !== token) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
+      if (urlRefreshToken) {
+        localStorage.setItem('app_refresh_token', urlRefreshToken);
+        setRefreshTokenState(urlRefreshToken);
+      }
       
       let userData = null;
       if (urlUserRaw) {
@@ -1905,6 +1923,172 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('storage', storageListener);
     };
   }, [dir]);
+
+  const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  const silentRefreshToken = async (): Promise<string | null> => {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const currentRefreshToken = localStorage.getItem('app_refresh_token');
+    if (!currentRefreshToken) {
+      console.warn('[Session] No refresh token found. User session cannot be refreshed.');
+      return null;
+    }
+
+    const performRefresh = async (): Promise<string | null> => {
+      try {
+        console.log('[Session] Rotating access token/session...');
+        const res = await fetch('/api/auth/refresh-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: currentRefreshToken })
+        });
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            console.warn('[Session] Refresh token has expired/revoked. Performing clean logout.');
+            logout(false);
+          }
+          return null;
+        }
+
+        const data = await res.json();
+        if (data.token) {
+          const newAccessToken = data.token;
+          const newRefreshToken = data.refreshToken;
+
+          localStorage.setItem('app_token', newAccessToken);
+          setToken(newAccessToken);
+
+          if (newRefreshToken) {
+            localStorage.setItem('app_refresh_token', newRefreshToken);
+            setRefreshTokenState(newRefreshToken);
+          }
+
+          console.log('[Session] Active session tokens refreshed & rotated successfully.');
+          return newAccessToken;
+        }
+        return null;
+      } catch (err) {
+        console.error('[Session] Token rotation connection error:', err);
+        return null;
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    };
+
+    refreshPromiseRef.current = performRefresh();
+    return refreshPromiseRef.current;
+  };
+
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    const customFetch = async (...args: any[]) => {
+      let [resource, config] = args;
+
+      // Extract url to avoid intercepting refresh token request
+      const urlStr = typeof resource === 'string' 
+        ? resource 
+        : (resource instanceof Request ? resource.url : '');
+
+      const isRefreshRequest = urlStr.includes('refresh-token');
+
+      // Check if we already retried this request to avoid recursion loops
+      let isRetry = false;
+      if (config && config.headers) {
+        if (config.headers instanceof Headers) {
+          isRetry = config.headers.has('X-Is-Retry');
+        } else if (Array.isArray(config.headers)) {
+          isRetry = config.headers.some(([key]: [string, string]) => key.toLowerCase() === 'x-is-retry');
+        } else {
+          isRetry = !!(config.headers as any)['X-Is-Retry'];
+        }
+      }
+
+      const response = await originalFetch(resource, config);
+
+      if (response.status === 401 && !isRefreshRequest && !isRetry) {
+        const clone = response.clone();
+        try {
+          const json = await clone.json();
+          if (json.error === 'TokenExpiredError') {
+            console.warn('[Fetch Interceptor] JWT TokenExpiredError caught! Auto-refreshing session...');
+            
+            const newToken = await silentRefreshToken();
+            if (newToken) {
+              const newConfig = { ...config } as any;
+              
+              if (resource instanceof Request) {
+                resource.headers.set('Authorization', `Bearer ${newToken}`);
+                resource.headers.set('X-Is-Retry', 'true');
+              } else {
+                if (!newConfig.headers) {
+                  newConfig.headers = {};
+                }
+                
+                if (newConfig.headers instanceof Headers) {
+                  newConfig.headers.set('Authorization', `Bearer ${newToken}`);
+                  newConfig.headers.set('X-Is-Retry', 'true');
+                } else if (Array.isArray(newConfig.headers)) {
+                  newConfig.headers = [
+                    ...newConfig.headers.filter(([k]: [string, string]) => k.toLowerCase() !== 'authorization'),
+                    ['Authorization', `Bearer ${newToken}`],
+                    ['X-Is-Retry', 'true']
+                  ];
+                } else {
+                  newConfig.headers = {
+                    ...newConfig.headers,
+                    'Authorization': `Bearer ${newToken}`,
+                    'X-Is-Retry': 'true'
+                  };
+                }
+              }
+
+              console.log('[Fetch Interceptor] Re-executing failed request with pristine token.');
+              return await originalFetch(resource, newConfig);
+            }
+          }
+        } catch (e) {
+          // Response is not JSON or non-parsable
+        }
+      }
+
+      return response;
+    };
+
+    try {
+      Object.defineProperty(window, 'fetch', {
+        value: customFetch,
+        configurable: true,
+        writable: true
+      });
+    } catch (e) {
+      console.warn('[Session] Global fetch override fallback to assignment:', e);
+      try {
+        (window as any).fetch = customFetch;
+      } catch (err) {
+        console.error('[Session] Direct fetch assignment failed too:', err);
+      }
+    }
+
+    return () => {
+      try {
+        Object.defineProperty(window, 'fetch', {
+          value: originalFetch,
+          configurable: true,
+          writable: true
+        });
+      } catch (e) {
+        try {
+          (window as any).fetch = originalFetch;
+        } catch (err) {
+          // Silent fallback
+        }
+      }
+    };
+  }, [token]);
 
   const fetchWithRetry = async (url: string, options: any = {}, retries = 5, backoff = 1000): Promise<any> => {
     try {
@@ -2085,6 +2269,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await res.json();
         if (res.ok) {
           setToken(data.token);
+          if (data.refreshToken) {
+            localStorage.setItem('app_refresh_token', data.refreshToken);
+            setRefreshTokenState(data.refreshToken);
+          }
           setUser(data.user);
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
@@ -2128,6 +2316,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await res.json();
         if (res.ok) {
           setToken(data.token);
+          if (data.refreshToken) {
+            localStorage.setItem('app_refresh_token', data.refreshToken);
+            setRefreshTokenState(data.refreshToken);
+          }
           setUser(data.user);
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
@@ -2165,6 +2357,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 2. Clear Token from local storage first to prevent auto-login on refresh
     localStorage.removeItem('app_token');
+    localStorage.removeItem('app_refresh_token');
     
     // 3. API logout (Fire and forget, but keep it clean)
     if (token) {
@@ -2186,6 +2379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     // 5. Clear ALL sensitive state variants
     setToken(null);
+    setRefreshTokenState(null);
     setUser(null);
     setBalance(0);
     setBalanceUSD(0);

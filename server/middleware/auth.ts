@@ -108,6 +108,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         }
 
         const userPayload = user as any;
+        if (userPayload.type === 'refresh') {
+          res.status(401).json({ error: 'Unauthorized', message: 'Refresh token cannot be used as an access token' });
+          return;
+        }
 
         // 2. User Status & Role Check (with performance caching)
         let userData: any = null;
