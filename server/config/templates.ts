@@ -314,5 +314,160 @@ export const systemTemplates = [
         <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 16px; font-weight: 700; color: #10b981;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</div>
       </div>
     `, 'ar')
+  },
+  {
+    name: 'deposit_pending',
+    subject_en: 'Deposit Protocol Initiated: Perplexta Ledger',
+    subject_ar: 'بدء بروتوكول الإيداع: سجل بيربليكستا المالي',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Deposit Protocol Initiated</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A ledger deposit of <strong>{{amount}}</strong> has been registered in the system under pending status.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Transaction Method:</strong> <span style="color: #0f172a;">{{method}}</span></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Audit Reference:</strong> <code style="color: #10b981;">{{referenceId}}</code></div>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">The ledger credit operation will execute automatically upon clearing confirmation from the gateway or audit controller.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">بدء بروتوكول الإيداع المالي</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل معاملة إيداع مالي بمبلغ <strong>{{amount}}</strong> في السجل وهي بانتظار التأكيد المالي.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>طريقة المعاملة:</strong> <span style="color: #0f172a;">{{method}}</span></div>
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>مرجع التدقيق:</strong> <code style="color: #10b981;">{{referenceId}}</code></div>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">سيتم تنفيذ عملية الإضافة فور تلقي إشعار التأكيد التلقائي من بوابة المعاملات أو مسئول التدقيق المالي.</p>
+    `, 'ar')
+  },
+  {
+    name: 'deposit_success',
+    subject_en: 'Financial Record: Capital Deposit Cleared',
+    subject_ar: 'سجل مالي: تم اعتماد الإيداع وتغذية المحفظة',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Capital Deposit Cleared</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A payment of <strong>{{amount}}</strong> has been successfully processed and credited to your terminal wallet.</p>
+      <div style="border-left: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; color: #166534; font-size: 14px; font-weight: bold; font-family: monospace;">CREDITED TARGET: {{newBalance}} PTS</p>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px;">This is a secured ledger confirmation of final balance settlement.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم التسوية المالية للإيداع</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تمت معالجة دفعة بقيمة <strong>{{amount}}</strong> بنجاح وتغذية محفظتكم الرقمية في المنصة.</p>
+      <div style="border-right: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+        <p style="margin: 0; color: #166534; font-size: 15px; font-weight: bold; font-family: monospace;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</p>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px;">هذا إشعار ائتمان مالي آمن لتسوية الحساب النهائي.</p>
+    `, 'ar')
+  },
+  {
+    name: 'withdrawal_rejected',
+    subject_en: 'Financial Record: Capital Export Blocked',
+    subject_ar: 'سجل مالي: رفض طلب تصدير رأس المال',
+    body_en: wrapper(`
+      <h2 style="color: #ef4444; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Capital Export Blocked</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">The withdrawal request of <strong>{{amount}}</strong> has failed the compliance audit and was rejected.</p>
+      <div style="background-color: #fef2f2; padding: 25px; border: 1px solid #fee2e2; border-radius: 2px; margin: 25px 0; color: #991b1b;">
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">Rejection Reason:</div>
+        <div style="font-size: 14px; font-family: sans-serif;">{{reason}}</div>
+      </div>
+      <p style="color: #64748b; font-size: 13px;">The funds have been returned to your ledger balance. If you require clarification, please initiate a ticket protocol with operations support.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #ef4444; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم رفض تصدير رأس المال</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">الطلب المالي المتمثل بتصدير مبلغ <strong>{{amount}}</strong> لم ينجز معايير الامتثال ولذا تم رفضه.</p>
+      <div style="background-color: #fef2f2; padding: 25px; border: 1px solid #fee2e2; border-radius: 2px; margin: 25px 0; color: #991b1b;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">سبب الرفض:</div>
+        <div style="font-size: 15px; font-family: sans-serif;">{{reason}}</div>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">تم إعادة الأموال المرفوضة مباشرة إلى رصيدكم الحالي. يرجى فتح تذكرة دعم مالي مع الإدارة لاستيضاح التفاصيل.</p>
+    `, 'ar')
+  },
+  {
+    name: 'refund_processed',
+    subject_en: 'Ledger Notice: Reimbursement Settlement',
+    subject_ar: 'إشعار بالسجل: تسوية إرجاع مالي',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Reimbursement Ledger Settlement</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A ledger refund process has been completed for <strong>{{userName}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Reimbursed Amount:</strong> <span style="color: #0f172a; font-weight: bold;">{{amount}} PTS</span></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Reason / Note:</strong> <span style="color: #0f172a;">{{reason}}</span></div>
+        <div style="font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>Updated Ledger:</strong> <span style="color: #10b981; font-weight: bold;">{{newBalance}} PTS</span></div>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px;">The associated credits are immediately ready and authorized for consumption.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تسوية الإرجاع المالي للحساب</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم إنجاز تسوية ائتمان إرجاع مالي في السجل للمعرف <strong>{{userName}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>المبلغ المسترجع:</strong> <span style="color: #0f172a; font-weight: bold;">{{amount}} نقطة</span></div>
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>السبب / ملاحظة:</strong> <span style="color: #0f172a;">{{reason}}</span></div>
+        <div style="font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>الرصيد المحدَّث:</strong> <span style="color: #10b981; font-weight: bold;">{{newBalance}} نقطة</span></div>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px;">تتوفر هذه الأرصدة المستردة فوراً للاستهلاك أو الاستخدام ضمن المنصة.</p>
+    `, 'ar')
+  },
+  {
+    name: 'password_changed_alert',
+    subject_en: 'Security Alert: Login Credentials Altered',
+    subject_ar: 'تنبيه أمني: تعديل بيانات الدخول السرية',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Security Credentials Altered</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">This is an imperative security notification that the login password for account <strong>{{userName}}</strong> was successfully changed.</p>
+      <div style="background-color: #fffbeb; padding: 20px; border: 1px solid #fef3c7; color: #b45309; text-align: left; margin: 25px 0; border-radius: 2px;">
+        <div style="font-size: 13px; margin-bottom: 4px;"><strong>Security Registry:</strong></div>
+        <div style="font-size: 11px; font-family: monospace;">TIMESTAMP: {{time}}<br>N-SOURCE: {{ipAddress}}<br>AGENT: {{deviceInfo}}</div>
+      </div>
+      <p style="color: #ef4444; font-size: 13px; font-weight: 600;">IF YOU DID NOT EXECUTE THIS CHANGE: Contact security compliance immediately to lock down the terminal.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تعديل بيانات الوصول السرية</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">هذا تنبيه أمني إلزامي يفيد بأنه تم تغيير كلمة المرور المرتبطة بالمعرف <strong>{{userName}}</strong> بنجاح.</p>
+      <div style="background-color: #fffbeb; padding: 20px; border: 1px solid #fef3c7; color: #b45309; text-align: right; margin: 25px 0; border-radius: 2px;">
+        <div style="font-size: 14px; margin-bottom: 4px;"><strong>السجل الأمني للمعاملة:</strong></div>
+        <div style="font-size: 12px; font-family: monospace;">التوقيت: {{time}}<br>المصدر الرقمي: {{ipAddress}}<br>الجهاز المستعلم: {{deviceInfo}}</div>
+      </div>
+      <p style="color: #ef4444; font-size: 14px; font-weight: 700;">في حال لم تقم بهذا الإجراء بنفسك: يرجى التواصل بالامتثال الأمني فوراً لإغلاق وحماية الحساب.</p>
+    `, 'ar')
+  },
+  {
+    name: 'support_reply',
+    subject_en: 'Support Record: Operational Query Response',
+    subject_ar: 'سجل الدعم: رد جديد من الإدارة والدعم الفني',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Operational Query Response</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A representative of the operations and technical team has updated ticket <strong>#{{ticketId}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #0f172a; font-size: 14px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8;">
+        {{replySnippet}}
+      </div>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{ticketUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 15px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Access Communications Portal</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">رد جديد من الإدارة والدعم</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">قام فريق الدعم والعمليات الفنية بتحديث تذكرتكم رقم <strong>#{{ticketId}}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #0f172a; font-size: 15px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8;">
+        {{replySnippet}}
+      </div>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{ticketUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 15px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">الذهاب لمركز المراسلات والردود</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'referral_joined',
+    subject_en: 'Infrastructure Growth: Node Connectivity Extended',
+    subject_ar: 'نمو البنية التحتية: انضمام مستخدم جديد لشبكتك',
+    body_en: wrapper(`
+      <h3 style="color: #10b981; font-size: 18px; font-weight: 600;">Node Connectivity Extended</h3>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">A new system participant, <strong>{{referredUser}}</strong>, has successfully joined the Perplexta Terminal via your invitation protocol link.</p>
+      <p style="color: #64748b; font-size: 13px;">Upon execution of qualified platform actions by the referred node, compensation incentives will automatically sync and ledger to your balance.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h3 style="color: #10b981; font-size: 19px; font-weight: 700;">انضمام مستخدم جديد لشبكتك</h3>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل انضمام بنجاح للمعرّف <strong>{{referredUser}}</strong> في منصة بيربليكستا من خلال رابط الدعوة الخاص بالبروتوكول الخاص بك.</p>
+      <p style="color: #64748b; font-size: 14px;">عند قيام العقدة الجديدة بإجراء اشتراك مؤهل للمنصة، ستتم مزامنة حوافز الإحالة وإيداعها في رصيد محفظتكم تلقائياً.</p>
+    `, 'ar')
   }
 ];
