@@ -1,6 +1,17 @@
 import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-markup';
 import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
@@ -48,6 +59,31 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   useEffect(() => {
     setEditableCode(codeContent);
   }, [codeContent]);
+
+  const getHighlightedCode = () => {
+    const language = lang.toLowerCase();
+    let prismLang = language;
+    if (language === 'js') prismLang = 'javascript';
+    if (language === 'ts') prismLang = 'typescript';
+    if (language === 'py') prismLang = 'python';
+    if (language === 'sh') prismLang = 'bash';
+    if (language === 'html' || language === 'xml' || language === 'svg') prismLang = 'markup';
+    
+    const hasGrammar = Prism.languages[prismLang];
+    if (hasGrammar) {
+      try {
+        return Prism.highlight(editableCode, Prism.languages[prismLang], prismLang);
+      } catch (e) {
+        console.error('Prism highlighting error:', e);
+      }
+    }
+    return editableCode
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
 
   const isMediaUrl = (codeContent.startsWith('http') || codeContent.startsWith('/')) && (codeContent.includes('.png') || codeContent.includes('.jpg') || codeContent.includes('.mp4') || codeContent.includes('.gif') || codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg'));
 
@@ -413,7 +449,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   value={editableCode}
                   onChange={(e) => setEditableCode(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full min-h-[220px] max-h-[450px] p-4 bg-transparent outline-none border-b border-gray-100 dark:border-gray-800/40 font-mono text-[13px] md:text-[14px] leading-relaxed text-[var(--text-primary)] resize-y custom-scrollbar"
+                  className="w-full min-h-[220px] max-h-[450px] p-4 bg-transparent outline-none border-b border-gray-100 dark:border-gray-800/40 font-mono text-[13px] md:text-[14px] leading-relaxed text-[var(--text-primary)] resize-y custom-scrollbar text-left"
+                  style={{ direction: 'ltr', textAlign: 'left' }}
                   spellCheck="false"
                   placeholder={dir === 'rtl' ? 'اكتب أو عدل الكود البرمجي هنا لتجربته...' : 'Type or modify code snippet here to test...'}
                 />
@@ -531,9 +568,9 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             </div>
           ) : (
             /* Standard Read Only View with Code Syntax Box */
-            <code className={`${className} block p-4 overflow-x-auto text-[13px] md:text-[14px] text-[var(--text-primary)] font-mono leading-relaxed bg-[var(--bg-secondary)] border-none rounded-b-md`} {...props}>
-              {isMediaUrl ? (
-                codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
+            isMediaUrl ? (
+              <div className="w-full p-4 bg-[var(--bg-secondary)] rounded-b-md border-t border-gray-100 dark:border-gray-800/40">
+                {codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
                   <div className="flex flex-col items-center gap-4 py-8">
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 animate-pulse">
                       <Music size={32} />
@@ -542,10 +579,52 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                     <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
                   </div>
                 ) : (
-                  <img src={codeContent} alt="Generated" className="max-w-full rounded-md" referrerPolicy="no-referrer" />
-                )
-              ) : children}
-            </code>
+                  <img src={codeContent} alt="Generated" className="max-w-full rounded-md mx-auto" referrerPolicy="no-referrer" />
+                )}
+              </div>
+            ) : (
+              <div 
+                className="w-full overflow-x-auto bg-[#0c0c0e] text-[#f8f8f2] border-t border-gray-100/10 dark:border-gray-800/20 rounded-b-md select-text custom-scrollbar animate-fade-in" 
+                style={{ direction: 'ltr', textAlign: 'left' }}
+                {...props}
+              >
+                <div className="flex items-start min-w-max md:min-w-full">
+                  {/* Line Numbers Column */}
+                  <div className="flex select-none flex-col text-right text-[#5c5c62] py-5 pl-4 pr-3.5 border-r border-gray-100/10 dark:border-gray-800/20 font-mono text-[13px] md:text-[14px] leading-relaxed shrink-0 bg-[#0a0a0c]" style={{ userSelect: 'none' }}>
+                    {Array.from({ length: editableCode.split('\n').length || 1 }, (_, i) => (
+                      <span key={i + 1} className="block select-none min-w-[24px] text-right pr-0.5">
+                        {i + 1}
+                      </span>
+                    ))}
+                  </div>
+                  {/* Code Snippet Column */}
+                  <pre 
+                    className="flex-1 py-5 px-5 font-mono text-[13px] md:text-[14px] leading-relaxed bg-transparent text-[#f8f8f2] block text-left overflow-x-visible"
+                    style={{ 
+                      whiteSpace: 'pre', 
+                      wordBreak: 'normal', 
+                      wordWrap: 'normal', 
+                      unicodeBidi: 'isolate',
+                      direction: 'ltr',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <code 
+                      className={`${className || ''} font-mono block text-left`} 
+                      style={{ 
+                        whiteSpace: 'pre',
+                        wordBreak: 'normal', 
+                        wordWrap: 'normal', 
+                        unicodeBidi: 'isolate',
+                        direction: 'ltr', 
+                        textAlign: 'left' 
+                      }} 
+                      dangerouslySetInnerHTML={{ __html: getHighlightedCode() }} 
+                    />
+                  </pre>
+                </div>
+              </div>
+            )
           )}
         </div>
       )}
