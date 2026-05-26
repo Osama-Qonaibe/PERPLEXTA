@@ -1507,8 +1507,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     try {
-      // ONLY recover from localStorage on init. 
-      // URL token logic moved to useEffect to prevent session corruption on non-auth pages.
       const rawToken = localStorage.getItem('app_token');
       if (!rawToken || rawToken === 'null' || rawToken === 'undefined' || rawToken === '') return null;
       return rawToken;
@@ -2357,11 +2355,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const storedRefreshToken = localStorage.getItem('app_refresh_token');
 
-    // 2. Clear Token from local storage first to prevent auto-login on refresh
     localStorage.removeItem('app_token');
     localStorage.removeItem('app_refresh_token');
     
-    // 3. API logout (Fire and forget, but keep it clean)
     if (token) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
@@ -2373,7 +2369,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }).catch(e => console.error('API Logout error', e));
     }
 
-    // 4. Force Disconnect Socket and Null it out to stop all real-time events
     if (socket) {
       try {
         socket.disconnect();
@@ -2383,7 +2378,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSocket(null);
     }
     
-    // 5. Clear ALL sensitive state variants
     setToken(null);
     setRefreshTokenState(null);
     setUser(null);
@@ -2392,8 +2386,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
     setMilestoneData(null);
     
-    // 6. Pre-emptive small delay to let React states settle before the hard redirect
-    // Use window.location.replace to eliminate the legacy session from history
     if (forceRedirect) {
       setTimeout(() => {
         window.location.replace('/');

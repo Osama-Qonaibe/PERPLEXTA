@@ -44,7 +44,6 @@ export function initSocket(httpServer: HttpServer) {
     
     if (user.role === 'admin') {
       socket.join('admin_room');
-      // Broadcast initial stats to the joining admin immediately
       import('../services/admin.js').then(({ broadcastAdminStats }) => {
         broadcastAdminStats().catch(err => console.error('[Socket] Initial admin stats broadcast failed:', err));
       }).catch(err => console.error('[Socket] Failed to load admin service for initial stats:', err));
@@ -72,7 +71,6 @@ export function initSocket(httpServer: HttpServer) {
     });
   });
 
-  // Periodic broadcast of admin dashboard statistics to active admins every 15 seconds
   setInterval(() => {
     const adminRoom = io.sockets.adapter.rooms.get('admin_room');
     if (adminRoom && adminRoom.size > 0) {

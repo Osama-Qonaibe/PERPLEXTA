@@ -21,7 +21,6 @@ router.post("/paypal-deposit", authenticateToken, async (req: any, res) => {
 
     const orderData = await createPayPalOrder(Number(amount), returnUrl, cancelUrl);
 
-    // Secure the orderId by persisting it in the DB to assert ownership during capture
     const targetLedgerPool = ledgerPool || pool;
     if (targetLedgerPool) {
       await targetLedgerPool.query(`
@@ -44,7 +43,6 @@ router.post("/paypal-capture", authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'Order ID is required' });
     }
 
-    // Assert that this order ID was indeed initiated by the current user
     const targetLedgerPool = ledgerPool || pool;
     let validOrder: any = null;
 
@@ -168,7 +166,6 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
       return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
     }
 
-    // Apply the deposit synchronously to ensure immediate update in user balance
     const targetLedgerPool = ledgerPool || pool;
     if (targetLedgerPool) {
       const eventCheck = await targetLedgerPool.query('SELECT 1 FROM stripe_events WHERE stripe_event_id = $1', [session.id]);
@@ -182,7 +179,6 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
           const actualAmount = session.amount_total ? (session.amount_total / 100) : parseFloat(amount || '0');
           await depositToWallet(userId, actualAmount, 'Stripe Gateway', `Stripe Checkout Session ${session.id}`);
 
-          // Emit real-time WebSocket signals so the frontend syncs client states immediately
           const { io } = await import('../config/socket.js');
           if (io) {
             io.to(`user_${userId}`).emit('user_profile_updated');
@@ -235,7 +231,6 @@ router.get("/verify-subscription-session", authenticateToken, async (req: any, r
       return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
     }
 
-    // Activate the subscription synchronously if it hasn't been active yet
     await activateStripeSubscription(userId, planId, (session.subscription as string) || '', billingCycle || 'monthly', (session.customer as string) || '');
 
     return res.json({ success: true });
@@ -249,7 +244,6 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
   try {
     const { planId, billingCycle } = req.body;
     
-    // Low Severity Fix: Validate billingCycle to be only monthly or annual
     if (billingCycle !== 'monthly' && billingCycle !== 'annual') {
       return res.status(400).json({ error: 'Invalid billing cycle. Must be monthly or annual.' });
     }
@@ -370,13 +364,11 @@ router.post("/webhook", async (req: any, res) => {
         const invoice = event.data.object as any;
         const stripeSubscriptionId = invoice.subscription;
         if (stripeSubscriptionId) {
-          // Resolve User and Plan IDs
           let userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
           let planId = invoice.subscription_details?.metadata?.planId || invoice.metadata?.planId;
           let billingCycle = invoice.subscription_details?.metadata?.billingCycle || invoice.metadata?.billingCycle || 'monthly';
 
           if (!userId) {
-            // Fallback 1: Query local DB to identify user by subscription ID
             const subCheck = await pool.query(
               'SELECT user_id, plan_id, billing_period FROM subscriptions WHERE stripe_subscription_id = $1',
               [stripeSubscriptionId]
@@ -386,7 +378,6 @@ router.post("/webhook", async (req: any, res) => {
               planId = subCheck.rows[0].plan_id;
               billingCycle = subCheck.rows[0].billing_period || billingCycle;
             } else {
-              // Fallback 2: Retrieve the subscription object from Stripe
               try {
                 const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId as string);
                 userId = stripeSub.metadata?.userId;
@@ -399,12 +390,10 @@ router.post("/webhook", async (req: any, res) => {
           }
 
           if (userId && planId) {
-            // Resolve Plan details for description logging
             const planRes = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
             const plan = planRes.rows[0];
             const planName = plan ? plan.name_en : 'Premium Plan';
 
-            // Calculate exact period range
             let periodEnd = new Date();
             if (invoice.lines?.data?.[0]?.period?.end) {
               periodEnd = new Date(invoice.lines.data[0].period.end * 1000);
@@ -418,7 +407,6 @@ router.post("/webhook", async (req: any, res) => {
               periodStart = new Date(invoice.lines.data[0].period.start * 1000);
             }
 
-            // A. Update subscription record in Core DB
             await pool.query(`
               INSERT INTO subscriptions (user_id, plan_id, status, billing_period, current_period_end, last_period_start, stripe_customer_id, stripe_subscription_id)
               VALUES ($1, $2, 'active', $3, $4, $5, $6, $7)
@@ -433,10 +421,8 @@ router.post("/webhook", async (req: any, res) => {
                 updated_at = CURRENT_TIMESTAMP
             `, [userId, planId, billingCycle, periodEnd, periodStart, invoice.customer, stripeSubscriptionId]);
 
-            // B. Fetch or Initialize Wallet
             const wallet = await getUserWallet(userId);
 
-            // C. Log secure transaction in the Append-Only financial Ledger DB
             const amountUSD = (invoice.amount_paid || 0) / 100;
             const targetLedgerPool = ledgerPool || pool;
             await targetLedgerPool.query(`
@@ -456,7 +442,6 @@ router.post("/webhook", async (req: any, res) => {
               })
             ]);
 
-            // D. Send Notification to User
             await createNotification(
               userId,
               'success',
@@ -466,12 +451,10 @@ router.post("/webhook", async (req: any, res) => {
               `تم تجديد اشتراكك في باقة ${plan ? plan.name_ar : 'المميزة'} بنجاح عبر Stripe.`
             );
 
-            // E. Notify live sockets
             const { io } = await import('../config/socket.js');
             if (io) {
               io.to(`user_${userId}`).emit('user_profile_updated');
             }
-            // Notify admins in real-time about the updated revenue
             const { broadcastAdminStats } = await import('../services/admin.js');
             broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on payment:', err));
           } else {
@@ -485,7 +468,6 @@ router.post("/webhook", async (req: any, res) => {
         let userId = subscription.metadata?.userId;
 
         if (!userId) {
-          // Fallback: look up subscriber in Core DB
           const subCheck = await pool.query(
             'SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1',
             [subscription.id]
@@ -535,7 +517,7 @@ router.post("/webhook", async (req: any, res) => {
         }
 
         if (userId) {
-          const stripeStatus = subscription.status; // e.g. 'active', 'trialing', 'past_due', 'unpaid', 'canceled'
+          const stripeStatus = subscription.status;
           const localStatus = (stripeStatus === 'active' || stripeStatus === 'trialing') ? 'active' : 'expired';
           
           await pool.query(`
