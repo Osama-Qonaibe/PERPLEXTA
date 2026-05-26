@@ -13,11 +13,11 @@ export default defineConfig(({ mode }) => {
   return {
     root: __dirname,
     plugins: [
-      react(), 
+      react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: false, // Use our high-fidelity custom sw.js manually registered in index.html
+        injectRegister: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
           navigateFallback: '/index.html',
@@ -52,28 +52,27 @@ export default defineConfig(({ mode }) => {
               short_name: 'New Chat',
               description: 'Start a fresh AI orchestration session',
               url: '/',
-              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
+              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Rewards Center',
               short_name: 'Rewards',
               description: 'Manage points, loyalty bonuses and verification statuses',
               url: '/rewards',
-              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
+              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Workspace Settings',
               short_name: 'Settings',
               description: 'Customize your AI models and theme settings',
               url: '/settings',
-              icons: [{ 'src': 'app-assets/icon.png', 'sizes': '192x192' }]
+              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
             }
           ]
         }
       })
     ],
-    define: {
-    },
+    define: {},
     build: {
       chunkSizeWarningLimit: 2500,
     },
@@ -83,12 +82,16 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '0.0.0.0',
+      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
       headers: {
         'Content-Security-Policy': "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; connect-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; frame-ancestors * 'self';"
       },
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: false,
+    },
+    preview: {
+      host: '0.0.0.0',
+      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
     },
   };
 });
