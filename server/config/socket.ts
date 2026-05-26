@@ -56,6 +56,10 @@ export function initSocket(httpServer: HttpServer) {
       await handleChatMessage(socket, data);
     });
 
+    socket.on("typing", (data: any) => {
+      socket.to(`user_${user.id}`).emit("typing", data);
+    });
+
     socket.on("disconnect", () => {
     });
   });

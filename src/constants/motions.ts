@@ -44,3 +44,15 @@ export const PERPLEXTA_TRANSITION = {
   duration: 1.1, 
   ease: [0.6, 0.01, 0, 1] as [number, number, number, number]
 };
+
+/**
+ * Premium Snappy Sidebar Transition Config
+ * Optimized for buttery-smooth layout shifts in sidebar collapse/expand.
+ * Adjusted to be beautifully slow, calm, and majestic to prevent layout jitter.
+ */
+export const SIDEBAR_TRANSITION = {
+  type: "tween" as const,
+  duration: 2.2,
+  ease: [0.25, 1, 0.2, 1] as [number, number, number, number]
+};
+

@@ -11,7 +11,8 @@ import {
   getMessageCount,
   deleteUserChat,
   togglePinMessage,
-  updateUserChatTitle
+  updateUserChatTitle,
+  updateUserChatContextSummary
 } from '../services/chat.js';
 
 const router = express.Router();
@@ -119,16 +120,108 @@ router.delete("/:id", authenticateToken, async (req: any, res) => {
 
 router.patch("/:id", authenticateToken, async (req: any, res) => {
   try {
-    const { title } = req.body;
-    if (!title || !title.trim()) {
-      return res.status(400).json({ error: 'Title is required' });
+    const { title, context_summary } = req.body;
+    let success = false;
+    let updatedTitle = undefined;
+    let updatedContextSummary = undefined;
+
+    if (title !== undefined) {
+      if (!title || !title.trim()) {
+        return res.status(400).json({ error: 'Title is required' });
+      }
+      success = await updateUserChatTitle(req.params.id, req.user.id, title.trim());
+      updatedTitle = title.trim();
     }
-    const success = await updateUserChatTitle(req.params.id, req.user.id, title.trim());
+
+    if (context_summary !== undefined) {
+      success = await updateUserChatContextSummary(req.params.id, req.user.id, context_summary);
+      updatedContextSummary = context_summary;
+    }
+
+    if (title === undefined && context_summary === undefined) {
+      return res.status(400).json({ error: 'Title or context_summary is required' });
+    }
+
     if (!success) return res.status(404).json({ error: 'Chat not found' });
-    res.json({ success: true, title: title.trim() });
+    res.json({ success: true, title: updatedTitle, context_summary: updatedContextSummary });
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;
-    res.status(status).json({ error: error.message || 'Failed to update chat title' });
+    res.status(status).json({ error: error.message || 'Failed to update chat' });
+  }
+});
+
+router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) => {
+  try {
+    const chatId = req.params.id;
+    const { messageId } = req.body;
+
+    if (!messageId) {
+      return res.status(400).json({ error: 'Message ID is required for forking' });
+    }
+
+    // 1. Fetch the original chat and check ownership
+    const chatCheck = await pool.query('SELECT * FROM chats WHERE id = $1', [chatId]);
+    if (chatCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Original chat not found' });
+    }
+
+    const originalChat = chatCheck.rows[0];
+    if (originalChat.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to fork this chat' });
+    }
+
+    // 2. Fetch all messages for the original chat in order
+    const msgRes = await pool.query('SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC, id ASC', [chatId]);
+    const originalMessages = msgRes.rows;
+
+    const msgIndex = originalMessages.findIndex((m: any) => m.id === parseInt(messageId) || m.id === messageId);
+    if (msgIndex === -1) {
+      return res.status(404).json({ error: 'Target message not found in this chat' });
+    }
+
+    // Slice all messages up to and including the target message
+    const messagesToCopy = originalMessages.slice(0, msgIndex + 1);
+
+    // 3. Create a new chat/thread
+    const userLang = req.user.language || 'en';
+    const forkedTitlePrefix = userLang === 'ar' ? 'فرع: ' : 'Forked: ';
+    const newTitle = `${forkedTitlePrefix}${originalChat.title || 'Chat'}`.substring(0, 255);
+
+    const newChatRes = await pool.query(
+      'INSERT INTO chats (user_id, title, tool_id, tool, context_summary) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [req.user.id, newTitle, originalChat.tool_id || 'chat', originalChat.tool || 'chat', originalChat.context_summary || '']
+    );
+    const newChat = newChatRes.rows[0];
+
+    // 4. Copy messages
+    for (const msg of messagesToCopy) {
+      await pool.query(
+        `INSERT INTO messages (
+          chat_id, role, content, tool_id, model, tokens_used, feedback, 
+          thinking_steps, citations, follow_ups, generation_time, tool, is_pinned
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          newChat.id,
+          msg.role,
+          msg.content,
+          msg.tool_id,
+          msg.model,
+          msg.tokens_used,
+          msg.feedback,
+          JSON.stringify(msg.thinking_steps || []),
+          JSON.stringify(msg.citations || []),
+          JSON.stringify(msg.follow_ups || []),
+          msg.generation_time,
+          msg.tool,
+          msg.is_pinned
+        ]
+      );
+    }
+
+    res.json(newChat);
+  } catch (error: any) {
+    const status = error.message === 'Database initializing' ? 503 : 500;
+    res.status(status).json({ error: error.message || 'Failed to fork chat' });
   }
 });
 

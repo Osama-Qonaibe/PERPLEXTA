@@ -1,5 +1,5 @@
 import { MemoryNotification } from '../components/MemoryNotification';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -12,7 +12,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
@@ -59,6 +59,21 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   useEffect(() => {
     setEditableCode(codeContent);
   }, [codeContent]);
+
+  // Instantly deactivate Sandbox Mode if rendering or resizing on mobile to ensure optimal performance and lightweight render
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSandboxMode(false);
+        setIsPlaying(false);
+        setIframeSrc(null);
+        setOutputLogs([]);
+      }
+    };
+    handleResize(); // Run initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getHighlightedCode = () => {
     const language = lang.toLowerCase();
@@ -312,7 +327,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         {/* Action Controls & Interactive Execution Toggle */}
         <div className="flex items-center gap-2">
           {isExecutable && (
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
+            <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
               <button
                 onClick={() => { setSandboxMode(false); handleStop(); }}
                 className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-all duration-300 ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
@@ -449,7 +464,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   value={editableCode}
                   onChange={(e) => setEditableCode(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full min-h-[220px] max-h-[450px] p-4 bg-transparent outline-none border-b border-gray-100 dark:border-gray-800/40 font-mono text-[13px] md:text-[14px] leading-relaxed text-[var(--text-primary)] resize-y custom-scrollbar text-left"
+                  className="w-full min-h-[220px] max-h-[450px] p-4 bg-transparent outline-none border-b border-gray-100 dark:border-gray-800/40 font-mono text-[16px] md:text-[14px] leading-relaxed text-[var(--text-primary)] resize-y custom-scrollbar text-left"
                   style={{ direction: 'ltr', textAlign: 'left' }}
                   spellCheck="false"
                   placeholder={dir === 'rtl' ? 'اكتب أو عدل الكود البرمجي هنا لتجربته...' : 'Type or modify code snippet here to test...'}
@@ -647,6 +662,7 @@ interface Message {
   follow_ups?: string[];
   is_streaming?: boolean;
   generation_time?: number;
+  created_at?: string;
   file?: {
     name: string;
     type: string;
@@ -654,6 +670,23 @@ interface Message {
     base64?: string;
   };
 }
+
+const formatExactTimestamp = (createdAt: string | Date | undefined, dir: 'ltr' | 'rtl') => {
+  const dateObj = createdAt ? new Date(createdAt) : new Date();
+  if (isNaN(dateObj.getTime())) return '';
+  const pad = (num: number, size = 2) => String(num).padStart(size, '0');
+  
+  const yyyy = dateObj.getFullYear();
+  const mm = pad(dateObj.getMonth() + 1);
+  const dd = pad(dateObj.getDate());
+  
+  const hh = pad(dateObj.getHours());
+  const min = pad(dateObj.getMinutes());
+  const ss = pad(dateObj.getSeconds());
+  const ms = pad(dateObj.getMilliseconds(), 3);
+  
+  return `[${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${ms}]`;
+};
 
 const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) => {
   const normId = toolId || 'chat';
@@ -1397,6 +1430,28 @@ export const ChatPage: React.FC = () => {
   const [forensicReport, setForensicReport] = useState<any | null>(null);
   const [isForensicModalOpen, setIsForensicModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
+  const [liveElapsed, setLiveElapsed] = useState<number>(0);
+
+  useEffect(() => {
+    let intervalId: any = null;
+    if (isGenerating && generationStartTimeRef.current) {
+      intervalId = setInterval(() => {
+        const secs = parseFloat(((Date.now() - generationStartTimeRef.current!) / 1000).toFixed(1));
+        setLiveElapsed(secs);
+      }, 100);
+    } else {
+      setLiveElapsed(0);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isGenerating]);
+
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [typingParty, setTypingParty] = useState<'assistant' | 'user' | null>(null);
+  const [typingName, setTypingName] = useState<string>('');
+  const typingTimeoutRef = useRef<any>(null);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   
@@ -1406,9 +1461,20 @@ export const ChatPage: React.FC = () => {
   const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active');
   const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active'));
 
-  // Perplexta Preservation: Sync local state to persistent storage
+  // Perplexta Preservation: Debounced sync local state to persistent storage to prevent data loss on accidental reload
   useEffect(() => {
-    sessionStorage.setItem('draft_query', query);
+    if (!query) {
+      sessionStorage.setItem('draft_query', '');
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      sessionStorage.setItem('draft_query', query);
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
   }, [query]);
 
   useEffect(() => {
@@ -1418,6 +1484,28 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('last_active_tool', selectedTool);
   }, [selectedTool]);
+
+  const handleUserTyping = () => {
+    if (!socket || !user) return;
+    
+    socket.emit('typing', { isTyping: true, role: 'user', name: user.name || 'User' });
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('typing', { isTyping: false, role: 'user', name: user.name || 'User' });
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const triggerForensicDiagnostic = async () => {
     if (!selectedFile) return;
@@ -1939,6 +2027,41 @@ export const ChatPage: React.FC = () => {
     }
   };
 
+  const handleForkThread = async (messageId: number) => {
+    if (!token) {
+      toast.error(dir === 'rtl' ? 'يجب تسجيل الدخول أولاً' : 'Please log in to fork a thread');
+      return;
+    }
+    if (!chatId) return;
+
+    const loader = toast.loading(dir === 'rtl' ? 'جاري تفريع المحادثة...' : 'Forking thread...');
+    try {
+      const res = await fetch(`/api/chats/${chatId}/fork`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ messageId })
+      });
+
+      if (res.ok) {
+        const newChat = await res.json();
+        toast.dismiss(loader);
+        toast.success(dir === 'rtl' ? 'تم تفريع المحادثة بنجاح!' : 'Thread forked successfully!');
+        window.dispatchEvent(new Event('chat-updated'));
+        navigate(`/chat/${newChat.id}`);
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to fork');
+      }
+    } catch (err: any) {
+      toast.dismiss(loader);
+      console.error('Fork error:', err);
+      toast.error(dir === 'rtl' ? 'فشل تفريع المحادثة' : `Failed to fork thread: ${err.message || ''}`);
+    }
+  };
+
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return <ImageIcon size={20} />;
     if (fileType.startsWith('video/')) return <Video size={20} />;
@@ -2030,17 +2153,6 @@ export const ChatPage: React.FC = () => {
           }
           return prev;
         });
-
-        // Smart, responsive scroll anchoring synchronized with browser's compositor refresh cycles (240px thresh)
-        requestAnimationFrame(() => {
-          const container = document.getElementById('chat-messages-container');
-          if (container) {
-            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 240;
-            if (isNearBottom) {
-              container.scrollTop = container.scrollHeight;
-            }
-          }
-        });
       } else if (!isGeneratingRef.current) {
         // Stop interval when buffer is empty and generation is done
         if (typewriterInterval.current) {
@@ -2065,8 +2177,21 @@ export const ChatPage: React.FC = () => {
           });
         }
       }
-    }, 10);
+    }, 20);
   };
+
+  // Synchronized scroll anchoring to eliminate typewriter visual jitter/vibration
+  useLayoutEffect(() => {
+    if (!isGenerating && !isOtherTyping) return;
+    const container = document.getElementById('chat-messages-container');
+    if (container) {
+      // 300px threshold is a highly reliable visual scanning offset
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 300;
+      if (isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [messages[messages.length - 1]?.content, isGenerating, isOtherTyping]);
 
   useEffect(() => {
     chatIdRef.current = chatId;
@@ -2148,6 +2273,8 @@ export const ChatPage: React.FC = () => {
   const loadChat = async (id: string) => {
     if (!token || token === 'null') return;
     setChatId(id);
+    setIsChatMessagesLoading(true);
+    setMessages([]); // Clear stale messages to prevent visual overlap before fetch
     try {
       const res = await fetch(`/api/chats/${id}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -2164,13 +2291,16 @@ export const ChatPage: React.FC = () => {
           generation_time: msg.generation_time ? parseFloat(msg.generation_time) : undefined,
           thinking_steps: typeof msg.thinking_steps === 'string' ? JSON.parse(msg.thinking_steps) : msg.thinking_steps,
           citations: typeof msg.citations === 'string' ? JSON.parse(msg.citations) : msg.citations,
-          follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups
+          follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups,
+          created_at: msg.created_at
         })));
         // Perplexta: Static view preserves position on load
         // setTimeout(() => scrollToBottom('auto'), 100);
       }
     } catch (error) {
       console.error('Failed to load chat messages', error);
+    } finally {
+      setIsChatMessagesLoading(false);
     }
   };
 
@@ -2192,7 +2322,8 @@ export const ChatPage: React.FC = () => {
             citations: data.citations || lastMessage.citations,
             follow_ups: data.follow_ups || [],
             is_streaming: false,
-            generation_time: data.generation_time !== undefined ? parseFloat(data.generation_time) : lastMessage.generation_time
+            generation_time: data.generation_time !== undefined ? parseFloat(data.generation_time) : lastMessage.generation_time,
+            created_at: data.created_at || lastMessage.created_at || new Date().toISOString()
           };
         }
         return newMessages;
@@ -2343,10 +2474,19 @@ export const ChatPage: React.FC = () => {
       });
     };
 
+    const onTyping = (data: { isTyping: boolean; role?: 'assistant' | 'user'; name?: string }) => {
+      if (data) {
+        setIsOtherTyping(data.isTyping);
+        setTypingParty(data.role || 'assistant');
+        setTypingName(data.name || '');
+      }
+    };
+
     socket.on('chat_chunk', onChatChunk);
     socket.on('chat_response', onChatResponse);
     socket.on('search_steps', onSearchSteps);
     socket.on('citations', onCitations);
+    socket.on('typing', onTyping);
     socket.on('memory_extracted', onMemoryExtracted);
     socket.on('memory_warning', onMemoryWarning);
     socket.on('memory_cleanup', onMemoryCleanup);
@@ -2359,6 +2499,7 @@ export const ChatPage: React.FC = () => {
       socket.off('chat_response', onChatResponse);
       socket.off('search_steps', onSearchSteps);
       socket.off('citations', onCitations);
+      socket.off('typing', onTyping);
       socket.off('memory_extracted', onMemoryExtracted);
       socket.off('memory_warning', onMemoryWarning);
       socket.off('memory_cleanup', onMemoryCleanup);
@@ -2419,13 +2560,20 @@ export const ChatPage: React.FC = () => {
           role: 'user', 
           content: currentQuery,
           tool: toolToUse,
+          created_at: new Date().toISOString(),
           file: selectedFile ? {
             name: selectedFile.name,
             type: selectedFile.type,
             preview: previewUrl || undefined
           } : undefined
         }, 
-        { role: 'assistant', content: '', tool: toolToUse, is_streaming: true }
+        { 
+          role: 'assistant', 
+          content: '', 
+          tool: toolToUse, 
+          is_streaming: true,
+          created_at: new Date().toISOString()
+        }
       ];
       
       if (updatedMessages.length > MAX_CHAT_MESSAGES) {
@@ -2445,6 +2593,12 @@ export const ChatPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 50));
       
       setQuery('');
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (socket) {
+        socket.emit('typing', { isTyping: false, role: 'user', name: user?.name || 'User' });
+      }
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -2893,7 +3047,9 @@ export const ChatPage: React.FC = () => {
 
   const advancedTools = [
     { id: 'chat', label: t('chat'), icon: <MessageSquare size={18} />, isNew: false },
-    { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
+    ...(!isMobile ? [
+      { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
+    ] : []),
     { id: 'video', label: t('video'), icon: <Video size={18} />, isNew: false },
     { id: 'image', label: t('image'), icon: <ImageIcon size={18} />, isNew: false },
     { id: 'learning', label: t('learning'), icon: <BookOpen size={18} />, isNew: true },
@@ -2916,6 +3072,11 @@ export const ChatPage: React.FC = () => {
 
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-8 md:px-6 max-w-4xl mx-auto">
+      {isMobile && messages.length === 0 && hasActiveSub && (
+        <h1 className="text-[17px] font-black text-[var(--text-primary)] text-center tracking-tight mb-4 leading-tight px-0 uppercase drop-shadow-sm select-none">
+          {t('howCanIHelp')}
+        </h1>
+      )}
       {renderVideoSettings()}
       {renderImageSettings()}
       {renderAudioSettings()}
@@ -3058,6 +3219,7 @@ export const ChatPage: React.FC = () => {
                 setQuery(e.target.value);
                 e.target.style.height = 'auto';
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                handleUserTyping();
               }}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
@@ -3070,7 +3232,7 @@ export const ChatPage: React.FC = () => {
               }}
               disabled={isInputDisabled}
               placeholder={isInputDisabled ? (dir === 'rtl' ? 'يرجى تنشيط حسابك بتفعيل باقة اشتراك للبدء...' : 'Activate your account with a subscription to start...') : t('askAssistant')}
-              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-sm sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
+              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-[16px] sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
               dir="auto"
               rows={1}
               style={{ minHeight: '32px', maxHeight: '200px' }}
@@ -3532,7 +3694,32 @@ export const ChatPage: React.FC = () => {
             className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}
           >
           <AnimatePresence mode="wait">
-            {messages.length === 0 ? (
+            {isChatMessagesLoading ? (
+              <motion.div
+                key="chat-messages-skeleton"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-6 py-12 flex flex-col gap-8 min-h-full"
+              >
+                {[...Array(3)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="flex gap-4 w-full p-6 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] animate-pulse"
+                  >
+                    {/* Pulsing Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gray-200/20 dark:bg-gray-800/40 shrink-0" />
+                    {/* Pulsing Line Blocks */}
+                    <div className="flex-1 space-y-3 pt-1">
+                      <div className="h-2.5 bg-gray-250/50 dark:bg-gray-800/50 rounded w-1/4" />
+                      <div className="h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            ) : messages.length === 0 ? (
               !hasActiveSub ? (
                 <motion.div
                   key="subscription-blocker-onboarding"
@@ -3607,7 +3794,7 @@ export const ChatPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="flex-1 flex flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
+                  className="hidden md:flex flex-1 flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
                 >
                 <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
                   <h1 
@@ -3695,7 +3882,7 @@ export const ChatPage: React.FC = () => {
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     autoFocus
-                                    className="w-full bg-transparent border-none focus:ring-0 text-[13px] md:text-base resize-none outline-none"
+                                    className="w-full bg-transparent border-none focus:ring-0 text-[16px] md:text-sm resize-none outline-none"
                                     rows={Math.max(1, editValue.split('\n').length)}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -3755,9 +3942,18 @@ export const ChatPage: React.FC = () => {
                                   </button>
                                 </div>
                               )}
+                              {/* Exact Forensic Timestamp for User message */}
+                              <div className={`text-[10px] font-mono text-gray-400 dark:text-gray-500/80 mt-1 select-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                                {formatExactTimestamp(msg.created_at, dir)}
+                              </div>
                         </div>
                       ) : (
-                      <div className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
+                      >
                         {!msg.is_quota_error && !msg.is_system_inactive && (
                           <ToolStatusIndicator 
                             tool={msg.tool} 
@@ -3954,19 +4150,7 @@ export const ChatPage: React.FC = () => {
                           {stripProtocolMarkers(msg.content)}
                         </Markdown>
                       )}
-                      {msg.role === 'assistant' && (msg.is_streaming || (isGenerating && idx === messages.length - 1)) && (
-                        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-[var(--text-muted)] font-mono select-none">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
-                          <span>
-                            {dir === 'rtl' ? 'جاري التحليل والإنتاج...' : 'Analyzing and generating...'}
-                          </span>
-                          {msg.generation_time !== undefined && (
-                            <span className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] font-bold">
-                              ({Number(msg.generation_time).toFixed(1)}s)
-                            </span>
-                          )}
-                        </div>
-                      )}
+
                       {(!isGenerating || idx < messages.length - 1 || (msg.content && msg.content.length > 50)) && (
                         <>
                           <Citations 
@@ -3980,7 +4164,11 @@ export const ChatPage: React.FC = () => {
                       )}
                     </>
                       )}
-                    </div>
+                      {/* Exact Forensic Timestamp for Assistant Response */}
+                      <div className={`text-[10px] font-mono text-gray-400 dark:text-gray-500/80 mt-2 select-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                        {formatExactTimestamp(msg.created_at, dir)}
+                      </div>
+                    </motion.div>
                   )}
 
                   {/* Perplexta Message Toolbar - Optimized Bottom Layout */}
@@ -4007,14 +4195,14 @@ export const ChatPage: React.FC = () => {
                         <button 
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
                         <button 
                           onClick={() => handleTTS(msg.content)}
                           title={dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Volume2 size={13} />
                         </button>
@@ -4046,10 +4234,20 @@ export const ChatPage: React.FC = () => {
                             URL.revokeObjectURL(url);
                           }}
                           title={dir === 'rtl' ? 'تحميل' : 'Download'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Download size={13} />
                         </button>
+                        {msg.id && (
+                          <button 
+                            id={`fork-btn-${msg.id}`}
+                            onClick={() => handleForkThread(msg.id!)}
+                            title={dir === 'rtl' ? 'تفريع المحادثة' : 'Fork Thread'}
+                            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
+                          >
+                            <GitFork size={13} />
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1 sm:gap-2">
@@ -4173,44 +4371,41 @@ export const ChatPage: React.FC = () => {
                     </motion.div>
                   )}
                   
-                  <div className="mt-4 min-h-[10px] flex flex-col justify-end gap-2">
-                    <AnimatePresence>
-                      {isGenerating && idx === messages.length - 1 && (
-                        <motion.div 
-                          key="generating-indicator"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="w-full flex items-center gap-2 text-emerald-500/80"
-                        >
-                          {selectedTool === 'image' || selectedTool === 'video' || selectedTool === 'canvas' ? (
-                            <div className="flex items-center gap-3 bg-emerald-500/5 px-4 py-2 rounded-[var(--radius)] border border-emerald-500/10">
-                              <Brain className="w-4 h-4 text-emerald-500 animate-pulse" />
-                              <span className="text-sm font-medium tracking-tight text-emerald-500">
-                                {dir === 'rtl' ? 'جاري التحليل والإنتاج...' : 'Analyzing & Producing...'}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-3 px-1 py-1">
-                              <div className="flex gap-1.5 items-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 animate-pulse" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 animate-pulse [animation-delay:200ms]" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse [animation-delay:400ms]" />
-                              </div>
-                              <span className="text-xs font-medium text-emerald-500/60 tracking-wider font-mono">
-                                {dir === 'rtl' ? 'بيربليكستا يفكر...' : 'Perplexta Thinking...'}
-                              </span>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    </div>
                   </div>
                 </div>
                 );
               })}
+
+              <AnimatePresence>
+                {isOtherTyping && (
+                  <motion.div
+                    key="global-typing-indicator"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-emerald-500/5 border-emerald-500/10 text-emerald-500 select-none shadow-[0_0_15px_rgba(16,185,129,0.1)] mb-4 shrink-0 transition-theme"
+                  >
+                    <div className="flex gap-1 items-center justify-center">
+                      <span className="perplexta-dot" />
+                      <span className="perplexta-dot" />
+                      <span className="perplexta-dot" />
+                    </div>
+                    <span className="text-xs font-semibold font-sans tracking-tight flex items-center gap-1">
+                      <span>
+                        {typingParty === 'assistant' 
+                          ? (dir === 'rtl' ? 'بيربليكستا يكتب الآن...' : 'Perplexta is typing...') 
+                          : (dir === 'rtl' ? `${typingName || 'مستخدم آخر'} يكتب الآن...` : `${typingName || 'Someone'} is typing...`)}
+                      </span>
+                      {typingParty === 'assistant' && liveElapsed > 0 && (
+                        <span className="text-emerald-500/75 dark:text-emerald-400 font-mono text-[10px] ml-1 bg-emerald-500/10 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-[4px] leading-none">
+                          ({liveElapsed.toFixed(1)}s)
+                        </span>
+                      )}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div ref={messagesEndRef} className="h-10" />
             </motion.div>
           )}

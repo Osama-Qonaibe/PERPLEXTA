@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles } from 'lucide-react';
+import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles, MessageSquare } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 interface Memory {
@@ -9,6 +9,8 @@ interface Memory {
   source: 'user' | 'ai';
   created_at: string;
   updated_at: string;
+  chat_id?: number | string;
+  chat_title?: string;
 }
 
 interface MemoryCenterProps {
@@ -208,7 +210,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
               >
                 {categories.filter(c => c.id !== 'all').map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -220,7 +222,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder={dir === 'rtl' ? 'ما الذي يجب أن يتذكره المساعد؟' : 'What should the assistant remember?'}
-            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
             autoFocus
           />
           <div className="flex justify-end gap-3">
@@ -272,7 +274,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
-                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                       >
                         {categories.filter(c => c.id !== 'all').map(cat => (
                           <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -283,7 +285,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
                     autoFocus
                   />
                   <div className="flex justify-end gap-3 pt-2">
@@ -326,19 +328,37 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-primary)]" dir="auto">
                       {memory.fact}
                     </p>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-3 flex items-center gap-1.5">
+                    <p className="text-[10px] text-[var(--text-muted)] mt-3 flex items-center flex-wrap gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-emerald-500" />
-                      {new Date(memory.created_at).toLocaleString(dir === 'rtl' ? 'ar-EG' : 'en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      <span>
+                        {new Date(memory.created_at).toLocaleString(dir === 'rtl' ? 'ar-EG' : 'en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
                       {memory.updated_at !== memory.created_at && (
                         <>
-                          <span className="mx-1">•</span>
+                          <span className="mx-1 text-gray-300 dark:text-gray-700">•</span>
                           <span>{dir === 'rtl' ? 'تم التعديل' : 'Updated'}</span>
+                        </>
+                      )}
+                      {memory.chat_id && (
+                        <>
+                          <span className="mx-1 text-gray-300 dark:text-gray-700">•</span>
+                          <a 
+                            href={`/chat/${memory.chat_id}`}
+                            className="inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 font-bold transition-all duration-300 hover:underline"
+                            title={dir === 'rtl' ? 'انتقال إلى المحادثة المصدر' : 'Go to source thread'}
+                          >
+                            <MessageSquare size={10} className="text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+                            <span>
+                              {dir === 'rtl' ? 'المصدر: ' : 'Source: '}
+                              "{memory.chat_title || `#${memory.chat_id}`}"
+                            </span>
+                          </a>
                         </>
                       )}
                     </p>

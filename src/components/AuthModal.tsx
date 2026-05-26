@@ -3,11 +3,19 @@ import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'luc
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSwipeToClose } from '../utils/swipe';
 
 export const AuthModal: React.FC = () => {
   const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
   const [searchParams] = useSearchParams();
   const ref = searchParams.get('ref') || localStorage.getItem('app_ref') || undefined;
+  
+  const swipeHandlers = useSwipeToClose({
+    onSwipeClose: () => setIsAuthModalOpen(false),
+    direction: 'both',
+    dir: dir as 'rtl' | 'ltr',
+    isMobile: true
+  });
   
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +117,9 @@ export const AuthModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.3, bounce: 0.3 }}
+            onTouchStart={swipeHandlers.onTouchStart}
+            onTouchMove={swipeHandlers.onTouchMove}
+            onTouchEnd={swipeHandlers.onTouchEnd}
             className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-xl shadow-2xl border bg-[var(--bg-surface)] border-[var(--border)] overflow-hidden mx-auto`}
             dir={dir}
             onClick={(e) => e.stopPropagation()}

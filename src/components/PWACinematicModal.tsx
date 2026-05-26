@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, X, Share } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useSwipeToClose } from '../utils/swipe';
 
 export const PWACinematicModal: React.FC = () => {
   const {
@@ -15,6 +16,13 @@ export const PWACinematicModal: React.FC = () => {
   } = useAppContext();
 
   const dir = language === 'ar' ? 'rtl' : 'ltr';
+
+  const swipeHandlers = useSwipeToClose({
+    onSwipeClose: closeInstallationModal,
+    direction: 'both',
+    dir: dir as 'rtl' | 'ltr',
+    isMobile: true
+  });
 
   const isIOS = typeof window !== 'undefined' && 
                 (/iPad|iPhone|iPod/.test(navigator.userAgent) || 
@@ -39,6 +47,9 @@ export const PWACinematicModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}
             transition={{ type: "spring", duration: 0.5 }}
+            onTouchStart={swipeHandlers.onTouchStart}
+            onTouchMove={swipeHandlers.onTouchMove}
+            onTouchEnd={swipeHandlers.onTouchEnd}
             className={`relative w-full max-w-lg bg-[#0e1014] border border-gray-800/80 rounded-sm shadow-2xl p-6 md:p-8 overflow-hidden z-10 box-border ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
             dir={dir}
           >

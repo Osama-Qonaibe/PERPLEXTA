@@ -17,7 +17,11 @@ export async function getUserMemories(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
   const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const result = await pool.query(
-    'SELECT * FROM chat_memories WHERE user_id = $1 ORDER BY created_at DESC',
+    `SELECT m.*, c.title as chat_title 
+     FROM chat_memories m 
+     LEFT JOIN chats c ON m.chat_id = c.id 
+     WHERE m.user_id = $1 
+     ORDER BY m.created_at DESC`,
     [cleanId]
   );
   return result.rows;

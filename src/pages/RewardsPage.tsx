@@ -4,13 +4,21 @@ import { useAppContext } from '../context/AppContext';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
+import { useSwipeToClose } from '../utils/swipe';
 
 export const RewardsPage: React.FC = () => {
-  const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings } = useAppContext();
+  const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings, isMobile } = useAppContext();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [convertAmount, setConvertAmount] = useState('10000');
+  
+  const swipeHandlers = useSwipeToClose({
+    onSwipeClose: () => setIsConvertModalOpen(false),
+    direction: 'both',
+    dir: dir as 'rtl' | 'ltr',
+    isMobile: !!isMobile
+  });
   
 
   
@@ -672,7 +680,12 @@ export const RewardsPage: React.FC = () => {
           />
           
           {/* Modal Content */}
-          <div className={`relative w-full max-w-md rounded-[var(--radius)] p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}>
+          <div 
+            onTouchStart={swipeHandlers.onTouchStart}
+            onTouchMove={swipeHandlers.onTouchMove}
+            onTouchEnd={swipeHandlers.onTouchEnd}
+            className={`relative w-full max-w-md rounded-[var(--radius)] p-6 md:p-8 shadow-2xl bg-[var(--bg-secondary)] border border-[var(--border-main)]`}
+          >
             
             {/* Header */}
             <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">

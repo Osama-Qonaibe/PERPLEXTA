@@ -1,13 +1,75 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Info, 
+  Target, 
+  Globe, 
+  Shield, 
+  Building2, 
+  ExternalLink,
+  Layers,
+  Cpu,
+  Palette,
+  Video,
+  Zap,
+  Search,
+  Lock,
+  CheckCircle2,
+  Scale
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
 export const About: React.FC = () => {
-  const { t, dir, theme } = useAppContext();
+  const { language, dir, theme } = useAppContext();
   const navigate = useNavigate();
+
+  const isAr = language === "ar";
+
+  const ecosystem = [
+    { name: isAr ? "بيربليكستا" : "perplexta", desc: isAr ? "المنصة الأحدث المتخصصة في التصميم، وصناعة الفيديو والصور بدعم تقني متكامل" : "The latest platform specialized in design, video and image creation with integrated technical support", url: "https://perplexta.com" },
+    { name: "HebronAI", desc: isAr ? "أضخم منصة للمطورين وصناع المحتوى، تضم أدوات ونماذج ذكاء اصطناعي متقدمة" : "The largest platform for developers and content creators, featuring advanced AI tools and models", url: "https://hebronai.net" },
+    { name: "HebronMart", desc: isAr ? "مول رقمي متعدد التجار يربط الأسواق المحلية بالعالمية في تجربة تسوق فريدة" : "A multi-vendor digital mall connecting local markets to the world in a unique shopping experience", url: "https://hebronmart.com" },
+    { name: "VLU Panel", desc: isAr ? "لوحة التسويق الرقمي، تحسين محركات البحث (SEO)، وتعزيز الحضور والسمعة الرقمية" : "Digital marketing panel, SEO, and enhancing digital presence and reputation", url: "https://virallinkup.com" },
+    { name: "VLU Net", desc: isAr ? "مكتبة المنتجات الرقمية المرخصة (GPL) الجاهزة لإعادة البيع والتخصيص" : "Library of licensed digital products (GPL) ready for resale and customization", url: "https://virallinkup.net" },
+    { name: "VLU Host", desc: isAr ? "خدمات الاستضافة السحابية وإدارة الخوادم الخاصة لضمان السيادة الرقمية" : "Cloud hosting services and private server management to ensure digital sovereignty", url: "https://virallinkup.org" },
+  ];
+
+  const features = [
+    {
+      title: isAr ? "الإدارة الذاتية للمهام" : "Autonomous Task Management",
+      desc: isAr ? "نظام ذكي يتولى تحديد المحرك الأنسب لكل عملية لضمان أعلى جودة تنفيذ دون تدخل بشري" : "An intelligent system that determines the most suitable engine for each process to ensure the highest quality of execution without human intervention",
+      icon: Zap
+    },
+    {
+      title: isAr ? "الاستقرار الفائق" : "Extreme Stability",
+      desc: isAr ? "بنية تحتية سحابية متطورة تضمن استمرارية الخدمة بنسبة توافر كاملة وتحت أصعب ظروف ضغط البيانات" : "Advanced cloud infrastructure ensuring service continuity with full availability under the most challenging data pressure conditions",
+      icon: Globe
+    },
+    {
+      title: isAr ? "البحث الإدراكي المتقدم" : "Advanced Cognitive Search",
+      desc: isAr ? "قدرة فائقة على جلب المعلومات اللحظية وتحليلها بعمق لتزويدك بإجابات دقيقة وموثقة من قلب الويب" : "Superior ability to fetch real-time information and analyze it deeply to provide accurate and documented answers from the heart of the web",
+      icon: Search
+    },
+    {
+      title: isAr ? "الإبداع متعدد الوسائط" : "Multimedia Creativity",
+      desc: isAr ? "توليد محتوى بصري وسينمائي وصوتي احترافي عبر تكاملات تقنية ذكية تعيد صياغة مفهوم الابتكار" : "Generating professional visual cinematic and audio content through smart technical integrations that redefine the concept of innovation",
+      icon: Palette
+    },
+    {
+      title: isAr ? "الخصوصية المطلقة" : "Absolute Privacy",
+      desc: isAr ? "حماية بيانات المستخدمين داخل نظام مشفر بالكامل يتبع سياسات صارمة في السيادة الرقمية والأمان" : "Protecting user data within a fully encrypted system following strict policies in digital sovereignty and security",
+      icon: Lock
+    },
+    {
+      title: isAr ? "الربط المتقدم للمطورين" : "Advanced Developer Integration",
+      desc: isAr ? "توفير واجهات برمجية متقدمة تتيح للمطورين دمج قدرات المنصة الذكية داخل تطبيقاتهم ومشاريعهم الخاصة بمرونة عالية" : "Providing advanced APIs that allow developers to integrate the platform's smart capabilities into their own applications and projects with high flexibility",
+      icon: Cpu
+    }
+  ];
 
   return (
     <motion.div 
@@ -15,36 +77,284 @@ export const About: React.FC = () => {
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="max-w-4xl mx-auto px-6 sm:px-8 pb-12"
+      className="max-w-5xl mx-auto px-6 sm:px-8 pb-32 overflow-y-auto h-full custom-scrollbar"
     >
-      <div className={`sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3 mb-8 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
-        <div className="flex items-center gap-3 md:gap-4">
+      {/* Sticky Header */}
+      <div className="sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-4 mb-10 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
+            id="about-back-btn"
+            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
           >
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
           <div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white uppercase flex items-center gap-2">
-              <Info className="text-emerald-500" size={20} />
-              {dir === 'rtl' ? 'من نحن' : 'About Us'}
+            <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white uppercase flex items-center gap-2">
+              <Info className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={20} />
+              {isAr ? 'من نحن' : 'About Us'}
             </h1>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
-              {dir === 'rtl' ? 'رؤية المنصة وهويتها' : 'PLATFORM VISION & IDENTITY'}
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest font-mono">
+              {isAr ? 'رؤية المنصة وهويتها' : 'PLATFORM VISION & IDENTITY'}
             </p>
           </div>
         </div>
       </div>
 
-      <div className={`p-8 md:p-12 rounded-[var(--radius)] border ${theme === 'dark' ? 'bg-[#1a1a1c] border-[var(--border-main)]' : 'bg-white border-[var(--border-main)]'} shadow-xl`}>
-        <div className="prose dark:prose-invert max-w-none">
-          <p>
-            {dir === 'rtl' 
-              ? 'هذه الصفحة مخصصة لتعريف المستخدمين بالمنصة ورؤيتها وأهدافها.' 
-              : 'This is a placeholder for the About Us page. Please update this content with your information regarding the platform and its vision.'}
+      <div className="space-y-24">
+        {/* Hero Section */}
+        <section className="text-center space-y-4 pt-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-900/50 border border-gray-250/20 dark:border-gray-800/40 text-gray-800 dark:text-gray-200 text-xs font-bold uppercase tracking-widest">
+            <Info size={14} className="text-emerald-500" />
+            {isAr ? "من نحن" : "About Us"}
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">
+            {isAr ? "بيربليكستا" : "PERPLEXTA"}
+          </h1>
+          <p className="text-lg md:text-2xl font-bold text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] max-w-2xl mx-auto leading-relaxed">
+            {isAr ? "القوة الكامنة خلف القرار الذكي" : "The Power Behind Smart Decisions"}
           </p>
-        </div>
+        </section>
+
+        {/* Vision & Mission Section */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+          <div className="space-y-8">
+            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-all hover:border-emerald-500/20 group">
+              <div className="flex items-center gap-3 text-gray-900 dark:text-white mb-4">
+                <Target className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+                <h2 className="text-xl md:text-2xl font-black">{isAr ? "الرؤية" : "Vision"}</h2>
+              </div>
+              <p className="text-sm md:text-base leading-relaxed text-gray-600 dark:text-gray-300 font-medium">
+                {isAr 
+                  ? "نؤمن بأن التكنولوجيا يجب أن تخدم الإنسان ببساطة. رؤيتنا هي إنهاء تشتت المستخدم بين الأدوات عبر نظام سيادي يفهم احتياجاتك ويوجهها بدقة للمسار التقني الأمثل، لضمان نتائج مثالية وموثوقة."
+                  : "We believe technology should serve humanity simply. Our vision is to eliminate tool fragmentation through a sovereign system that understands your needs and autonomously directs them to the optimal technical path, ensuring seamless, reliable results."}
+              </p>
+            </div>
+
+            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-all hover:border-emerald-500/20 group">
+              <div className="flex items-center gap-3 text-gray-900 dark:text-white mb-4">
+                <Zap className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+                <h2 className="text-xl md:text-2xl font-black">{isAr ? "الرسالة" : "Mission"}</h2>
+              </div>
+              <p className="text-sm md:text-base leading-relaxed text-gray-600 dark:text-gray-300 font-medium">
+                {isAr 
+                  ? "تمكين المبدعين والشركات من تجاوز حدود الإنتاجية التقليدية. نقدم حلولاً تقنية ذكية وعميقة، مع التزام مطلق بحماية الخصوصية وتعزيز السيادة الرقمية لضمان بيئة عمل آمنة ومستقرة."
+                  : "We empower creators and enterprises to exceed productivity limits. By delivering intelligent, simple, and deep technical solutions, we maintain an absolute commitment to digital sovereignty and privacy, ensuring a secure and stable digital environment."}
+              </p>
+            </div>
+          </div>
+
+          <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-gray-50/50 dark:bg-gray-900/30 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center p-8 shadow-inner">
+            <div className="relative z-10 flex flex-col items-center gap-8 w-full">
+              <div className="flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-emerald-500/5 transition-all duration-500 group">
+                <Layers className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.6)] transition-all duration-500" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 w-full">
+                {[
+                  { icon: Palette, label: isAr ? "تصميم فائق" : "Superior Design" },
+                  { icon: Video, label: isAr ? "صناعة محتوى" : "Content Creation" },
+                  { icon: Cpu, label: isAr ? "ذكاء متصل" : "Connected AI" }
+                ].map((item, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-3 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-center gap-2 transition-all duration-300 hover:border-emerald-500/10 hover:-translate-y-1 group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-200/40 dark:border-gray-800/40">
+                      <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.6)] transition-all duration-300" />
+                    </div>
+                    <span className="text-[9px] uppercase font-black tracking-wider text-center leading-tight text-gray-800 dark:text-gray-200">
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Grid */}
+        <section className="space-y-10">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase">
+              {isAr ? "الميزات والقدرات" : "Features & Capabilities"}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto font-medium leading-relaxed">
+              {isAr ? "هندسة برمجية فريدة تجعلها المنصة الأكثر ذكاءً في إدارة الموارد التقنية عالمياً." : "Unique software architecture making it the smartest platform for managing technical resources globally."}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, i) => (
+              <div key={i} className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/40 hover:border-emerald-500/20 transition-all duration-300 group">
+                <div className="w-10 h-10 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:border-emerald-500/10 mb-4 transition-all duration-300">
+                  <feature.icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-semibold font-sans">
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Why PERPLEXTA */}
+        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.01] dark:border-emerald-500/10 shadow-[0_4px_24px_rgba(16,185,129,0.03)] space-y-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500" />
+          <h2 className="text-2xl font-black text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">{isAr ? "لماذا بيربليكستا؟" : "Why PERPLEXTA?"}</h2>
+          <p className="text-sm md:text-base leading-relaxed text-gray-800 dark:text-gray-200 font-semibold font-sans">
+            {isAr 
+              ? "لأننا قدمنا \"المساعد التنفيذي\" المتكامل. بيربليكستا لا تخطئ في اختيار الأداة، فهي مبنية على منطق \"البناء النظيف\" الذي يربط القوى التقنية العالمية في واجهة واحدة. نمنحك صفوة النتائج، ونوفر عليك الوقت والجهد وتكاليف الاشتراك المتعددة، بحل شامل يدار بعقل اصطناعي لا ينام."
+              : "Because we have provided an integrated \"Executive Assistant.\" PERPLEXTA does not make mistakes in choosing the tool, built on the logic of \"Clean Build\" that connects global technical powers in one simple interface. We give you the finest results, saving you time, effort, and multiple subscription costs, with a comprehensive solution managed by an artificial mind that never sleeps."}
+          </p>
+        </section>
+
+        {/* Technical Standards */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center border border-gray-200/60 dark:border-gray-800/60 rounded-[var(--radius)] p-6 md:p-8 bg-gray-50/20 dark:bg-gray-900/10">
+          <div className="space-y-4 text-center md:text-right animate-pulse">
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] mx-auto md:mx-0 md:mr-0 inline-block md:block" />
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white">{isAr ? "أمان وموثوقية عالمية" : "Global Security & Reliability"}</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+              <Scale className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <h2 className="text-xl font-bold">{isAr ? "المعايير التقنية والالتزام" : "Technical Standards & Commitment"}</h2>
+            </div>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 font-semibold leading-relaxed">
+              {isAr 
+                ? "نستخدم أحدث تقنيات Google المتطورة، ونلتزم بسياساتهم الصارمة. هذا الالتزام يضمن لمستخدمينا أعلى مستويات الأمان، والدقة، والموثوقية التقنية التي تفرضها المعايير العالمية في معالجة البيانات والذكاء الاصطناعي."
+                : "We rely on the latest advanced Google technologies and are fully committed to their strict policies. This commitment ensures our users receive the highest levels of security, accuracy, and technical reliability imposed by global standards in data processing and AI."}
+            </p>
+          </div>
+        </section>
+
+        {/* Corporate Identity & Transparency */}
+        <section className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-8">
+          <div className="flex items-center gap-3 text-gray-900 dark:text-white">
+            <Shield className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <h2 className="text-xl md:text-2xl font-black">{isAr ? "الهوية المؤسسية والشفافية" : "PERPLEXTA - Corporate Identity & Transparency"}</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <p className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-100">
+              {isAr 
+                ? "منصة بيربليكستا هي مشروع تقني رائد مملوك ومدار بالكامل من قبل"
+                : "The PERPLEXTA platform is a leading technical project fully owned and managed by"}
+            </p>
+            <div className="p-6 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-between shadow-sm">
+              <div>
+                <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white mb-1">
+                  {isAr ? "فيرال لينك اب المحدودة" : "VIRALLINKUP LTD"}
+                </h3>
+                <p className="text-xs md:text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  {isAr ? "شركة محدودة بالأسهم مسجلة رسمياً في المملكة المتحدة" : "A company limited by shares officially registered in the United Kingdom"}
+                </p>
+              </div>
+              <div>
+                <span className="inline-block px-3 py-1 text-xs font-bold text-emerald-500 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                  {isAr ? "نشطة" : "ACTIVE"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-250/20 dark:border-gray-800/40">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-emerald-500/10 transition-all duration-300 group shadow-sm">
+                <Globe className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-all duration-300" />
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">{isAr ? "رقم التسجيل" : "Registration Number"}</p>
+                  <p className="text-base font-black text-gray-900 dark:text-white font-mono">16804604</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-emerald-500/10 transition-all duration-300 group shadow-sm">
+                <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-all duration-300" />
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">{isAr ? "المقر المسجل" : "Registered Office"}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">128 City Road, London, EC1V 2NX</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 space-y-3 shadow-sm">
+              <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">{isAr ? "طبيعة العمل" : "Nature of Business"}</p>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-500 font-mono font-bold">58190</span>
+                  <span>{isAr ? "أنشطة النشر والابتكار التقني" : "publishing and tech innovation"}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-500 font-mono font-bold">62012</span>
+                  <span>{isAr ? "تطوير البرمجيات التجارية" : "business software development"}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-500 font-mono font-bold">63110</span>
+                  <span>{isAr ? "معالجة البيانات والاستضافة" : "data processing and hosting"}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-500 font-mono font-bold">70229</span>
+                  <span>{isAr ? "استشارات الإدارة المتخصصة" : "management consultancy"}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Ecosystem */}
+        <section className="space-y-10">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase">
+              {isAr ? "منظومة مشاريعنا" : "Our Digital Ecosystem"}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto font-medium">
+              {isAr ? "VIRALLINKUP LTD تفتخر بإدارة شبكة متكاملة من المنصات الرقمية" : "VIRALLINKUP LTD is proud to manage an integrated network of digital platforms"}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {ecosystem.map((item, i) => (
+              <a
+                key={i}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                id={`ecosystem-link-${i}`}
+                className="p-5 rounded-2xl bg-gray-50/30 dark:bg-gray-900/10 border border-gray-200/60 dark:border-gray-800/60 hover:border-emerald-500/20 hover:bg-gray-55/70 dark:hover:bg-gray-900/30 transition-all duration-300 group block relative overflow-hidden shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors">{item.name}</h3>
+                  <ExternalLink className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" />
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-semibold">
+                  {item.desc}
+                </p>
+                <div className="pt-3 mt-3 border-t border-gray-250/20 dark:border-gray-800/40 flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 font-mono">{item.url.replace("https://", "")}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer Section */}
+        <footer className="pt-10 border-t border-gray-250/20 dark:border-gray-800/40 space-y-10">
+          <div className="text-center">
+            <p className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-widest uppercase font-mono">
+              {isAr ? "فيرال لينك اب - نبتكر لنحمي بياناتك" : "VIRALLINKUP - INNOVATING TO PROTECT YOUR DATA"}
+            </p>
+          </div>
+
+          <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-4 max-w-4xl mx-auto shadow-inner">
+            <div className="flex items-center gap-3 text-gray-900 dark:text-white">
+              <Shield className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <h3 className="text-base md:text-lg font-black">{isAr ? "حقوق الملكية الفكرية" : "Intellectual Property Rights"}</h3>
+            </div>
+            <p className="text-xs md:text-sm leading-relaxed text-gray-600 dark:text-gray-300 font-semibold font-sans">
+              {isAr 
+                ? "جميع الحقوق البرمجية، العلامة التجارية، ومنطق الربط الذكي الخاص بـ بيربليكستا وكافة مشاريعنا هي حقوق محفوظة لشركة فيرال لينك اب المحدودة. أي محاولة لإعادة الإنتاج أو الاستخدام غير المصرح به تعرض الفاعل للمساءلة القانونية الدولية"
+                : "All software rights, trademarks, and the smart connection logic of PERPLEXTA and all our projects are reserved rights of VIRALLINKUP LTD. Any attempt at reproduction or unauthorized use exposes the actor to international legal accountability"}
+            </p>
+          </div>
+        </footer>
       </div>
     </motion.div>
   );

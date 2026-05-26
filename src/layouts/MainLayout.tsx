@@ -5,7 +5,7 @@ import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { PERPLEXTA_TRANSITION } from '../constants/motions';
+import { PERPLEXTA_TRANSITION, SIDEBAR_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
   const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
@@ -26,8 +26,8 @@ export const MainLayout: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.1, ease: [0.6, 0.01, 0, 1] }}
-              className="absolute inset-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
+              transition={SIDEBAR_TRANSITION}
+              className="fixed top-[72px] bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
               onClick={() => setIsSidebarOpen(false)}
             />
           )}
@@ -39,7 +39,7 @@ export const MainLayout: React.FC = () => {
             paddingInlineStart: isMobile ? 0 : (isSidebarOpen ? 220 : 80),
             paddingInlineEnd: 0,
           }}
-          transition={PERPLEXTA_TRANSITION}
+          transition={SIDEBAR_TRANSITION}
           className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden"
           style={{ 
             paddingLeft: 'unset', 
@@ -49,8 +49,8 @@ export const MainLayout: React.FC = () => {
           onClick={() => { if(isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
         >
           <Header activeLanguage={language} />
-          <main className="flex-1 overflow-y-auto scrollbar-none relative pt-[72px] bg-[var(--bg-base)] transition-theme">
-            <div className="h-full w-full">
+          <main className="flex-1 overflow-hidden relative pt-[72px] bg-[var(--bg-base)] transition-theme">
+            <div className="h-full w-full overflow-y-auto scrollbar-none relative">
               <Outlet />
             </div>
           </main>

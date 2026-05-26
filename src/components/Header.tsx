@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,6 +18,26 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     localStorage.setItem('pwa_banner_dismissed', 'true');
     setIsDismissed(true);
   };
+
+  const [isOffline, setIsOffline] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !navigator.onLine;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const showMobileBanner = !isStandalone && isMobile && !isDismissed && isInstallable;
   
@@ -148,11 +168,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       
       <div className="w-full flex justify-between items-center h-full">
         <div className="flex items-center h-full">
-          <div className={`flex items-center h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto'}`}>
+          <div className={`flex items-center h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
               <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}>
-                <div className={`${isMobileView ? 'w-14' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
+                <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {siteSettings.logoBase64 ? (
-                    <div className={`w-10 h-10 rounded-sm overflow-hidden border-2 border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}>
+                    <div className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}>
                       <img 
                         src={siteSettings.logoBase64} 
                         alt="Logo" 
@@ -173,13 +193,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           </div>
 
           {shouldShowMenuButton && (
-            <div className={`absolute bottom-0 ${dir === 'rtl' ? (isMobileView ? 'right-[56px] translate-x-1/2' : 'right-[80px] translate-x-1/2') : (isMobileView ? 'left-[56px] -translate-x-1/2' : 'left-[80px] -translate-x-1/2')} translate-y-1/2 z-[100]`}>
+            <div className={`absolute bottom-0 ${dir === 'rtl' ? 'right-8 sm:right-4 md:right-6' : 'left-8 sm:left-4 md:left-6'} translate-y-1/2 z-[100] w-10 h-10 flex items-center justify-center`}>
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
-                className={`w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] transition-theme hover:scale-125 active:scale-95 hover:text-emerald-500 group bg-transparent border-none`}
+                className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
                 title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
               >
-                <Menu size={20} className="group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-theme" />
+                <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-theme" />
               </button>
             </div>
           )}
@@ -255,6 +275,28 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
+          <AnimatePresence>
+            {isOffline && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-[4px] bg-amber-500/10 border border-amber-500/20 shrink-0 select-none font-sans"
+                title={language === 'ar' ? 'أنت تعمل دون اتصال بالإنترنت' : 'You are working offline'}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                <WifiOff size={14} className="text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                <span className="hidden sm:inline text-[11px] text-amber-500 font-bold tracking-tight uppercase">
+                  {language === 'ar' ? 'دون اتصال' : 'Offline'}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
            {!isStandalone && isInstallable && (
              <button
                onClick={installApp}

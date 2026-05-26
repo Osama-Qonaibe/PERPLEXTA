@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { useSwipeToClose } from '../utils/swipe';
 import { 
   X, Zap, CheckCircle2, ChevronRight, AlertTriangle, 
   Sparkles, ShieldCheck, Wallet, ArrowRight, Layers,
@@ -53,8 +54,15 @@ export const UpgradePromptModal: React.FC = () => {
   const navigate = useNavigate();
   const { 
     user, plans, balanceUSD, payWithBalance, stripeCheckout, refreshUser,
-    upgradePromptState, closeUpgradePrompt, language, dir
+    upgradePromptState, closeUpgradePrompt, language, dir, isMobile
   } = useAppContext();
+
+  const swipeHandlers = useSwipeToClose({
+    onSwipeClose: closeUpgradePrompt,
+    direction: 'both',
+    dir: dir as 'rtl' | 'ltr',
+    isMobile: !!isMobile
+  });
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loadingType, setLoadingType] = useState<'stripe' | 'balance' | null>(null);
@@ -183,6 +191,9 @@ export const UpgradePromptModal: React.FC = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 15 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          onTouchStart={swipeHandlers.onTouchStart}
+          onTouchMove={swipeHandlers.onTouchMove}
+          onTouchEnd={swipeHandlers.onTouchEnd}
           className="relative w-full max-w-2xl overflow-hidden rounded-lg border border-[var(--border-main)] bg-[#0f0f11] text-[var(--text-primary)] shadow-2xl flex flex-col font-sans"
           dir={dir}
         >

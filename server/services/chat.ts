@@ -59,6 +59,15 @@ export async function updateUserChatTitle(chatId: string, userId: string, title:
   return result.rows.length > 0;
 }
 
+export async function updateUserChatContextSummary(chatId: string, userId: string, contextSummary: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query(
+    'UPDATE chats SET context_summary = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3 RETURNING *',
+    [contextSummary, chatId, userId]
+  );
+  return result.rows.length > 0;
+}
+
 export async function handleChatMessage(socket: any, data: any) {
   const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data, forensic_mode } = data;
   
@@ -97,6 +106,9 @@ export async function handleChatMessage(socket: any, data: any) {
   try {
     if (!pool) throw new Error('Database not ready');
 
+    // Notify that the assistant is actively typing/thinking
+    socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta' });
+
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
       [finalChatId, 'assistant', '', finalToolId]
@@ -131,6 +143,9 @@ export async function handleChatMessage(socket: any, data: any) {
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 
+    // Reset typing state
+    socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
+
     socket.emit('chat_chunk', { chunk: '', chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
       result: result.result, 
@@ -141,6 +156,9 @@ export async function handleChatMessage(socket: any, data: any) {
     });
 
   } catch (error: any) {
+    // Reset typing state on error
+    socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
+
     let isSystemInactive = false;
     try {
       const parsedErr = JSON.parse(error.message);
