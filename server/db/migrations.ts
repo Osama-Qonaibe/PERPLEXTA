@@ -354,8 +354,31 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     // MIGRATION: Finance & History Expansion v7
     await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async (tx, ledgerTx) => {
-      // Logic handled in initDb for fresh installs, additive logic here if needed for existing ones
-      await tx.query(`SELECT 1`);
+      const ledgerTarget = ledgerTx || tx;
+      await ledgerTarget.query(`
+        CREATE TABLE IF NOT EXISTS deposit_requests (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          amount NUMERIC(15,2) NOT NULL,
+          currency VARCHAR(10) DEFAULT 'USD',
+          method VARCHAR(50) NOT NULL,
+          proof_url TEXT,
+          status VARCHAR(20) DEFAULT 'pending',
+          rejection_reason TEXT,
+          admin_id INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS plan_features_history (
+          id SERIAL PRIMARY KEY,
+          plan_id INTEGER,
+          admin_id INTEGER,
+          change_log JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
     });
 
     // MIGRATION: Security Hardening (Stripe Key Encryption) v8
@@ -388,6 +411,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           await tx.query(`UPDATE system_settings SET ${fieldsSql}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idParamIdx}`, values);
         }
       }
+    });
+
+    // MIGRATION: Sequential Reconciliation v9
+    await runVersioned('v9_filler_reconciliation', 'Reconciling migration index sequence to ensure consistent numbering', async (tx) => {
+      await tx.query(`SELECT 1`);
     });
 
     // MIGRATION: Economy settings refactor v10
