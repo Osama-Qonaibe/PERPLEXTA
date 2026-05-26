@@ -49,10 +49,12 @@ export async function getSystemSettings() {
 }
 
 export async function updateSystemSettings(settings: any) {
-  let seo_description_en = settings.seo_description_en;
-  let seo_description_ar = settings.seo_description_ar;
-  let keywords_en = settings.keywords_en;
-  let keywords_ar = settings.keywords_ar;
+  const existing = await getSystemSettings();
+
+  let seo_description_en = settings.seo_description_en !== undefined ? settings.seo_description_en : existing.seo_description_en;
+  let seo_description_ar = settings.seo_description_ar !== undefined ? settings.seo_description_ar : existing.seo_description_ar;
+  let keywords_en = settings.keywords_en !== undefined ? settings.keywords_en : existing.keywords_en;
+  let keywords_ar = settings.keywords_ar !== undefined ? settings.keywords_ar : existing.keywords_ar;
 
   // Gracefully adopt nested JSON object or string format if sent from Admin Dashboard
   if (settings.seo_description) {
@@ -60,8 +62,8 @@ export async function updateSystemSettings(settings: any) {
       const parsedSeo = typeof settings.seo_description === 'string' 
         ? JSON.parse(settings.seo_description) 
         : settings.seo_description;
-      if (parsedSeo.en) seo_description_en = parsedSeo.en;
-      if (parsedSeo.ar) seo_description_ar = parsedSeo.ar;
+      if (parsedSeo.en !== undefined) seo_description_en = parsedSeo.en;
+      if (parsedSeo.ar !== undefined) seo_description_ar = parsedSeo.ar;
     } catch (e) {
       console.warn('[System] Failed to parse nested seo_description:', e);
     }
@@ -72,17 +74,31 @@ export async function updateSystemSettings(settings: any) {
       const parsedKeywords = typeof settings.keywords === 'string' 
         ? JSON.parse(settings.keywords) 
         : settings.keywords;
-      if (parsedKeywords.en) keywords_en = parsedKeywords.en;
-      if (parsedKeywords.ar) keywords_ar = parsedKeywords.ar;
+      if (parsedKeywords.en !== undefined) keywords_en = parsedKeywords.en;
+      if (parsedKeywords.ar !== undefined) keywords_ar = parsedKeywords.ar;
     } catch (e) {
       console.warn('[System] Failed to parse nested keywords:', e);
     }
   }
 
-  const { 
-    site_name_en, site_name_ar, site_description_en, site_description_ar,
-    google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url
-  } = settings;
+  const site_name_en = settings.site_name_en !== undefined ? settings.site_name_en : existing.site_name_en;
+  const site_name_ar = settings.site_name_ar !== undefined ? settings.site_name_ar : existing.site_name_ar;
+  const site_description_en = settings.site_description_en !== undefined ? settings.site_description_en : existing.site_description_en;
+  const site_description_ar = settings.site_description_ar !== undefined ? settings.site_description_ar : existing.site_description_ar;
+
+  const google_analytics_id = settings.google_analytics_id !== undefined ? settings.google_analytics_id : existing.google_analytics_id;
+  const google_site_verification = settings.google_site_verification !== undefined ? settings.google_site_verification : existing.google_site_verification;
+
+  // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
+  const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
+    ? settings.logo_url 
+    : existing.logo_url;
+  const favicon_url = (settings.favicon_url !== undefined && settings.favicon_url !== null && settings.favicon_url !== '') 
+    ? settings.favicon_url 
+    : existing.favicon_url;
+  const seo_image_url = (settings.seo_image_url !== undefined && settings.seo_image_url !== null && settings.seo_image_url !== '') 
+    ? settings.seo_image_url 
+    : existing.seo_image_url;
   
   await pool.query(`
     UPDATE system_settings SET 
