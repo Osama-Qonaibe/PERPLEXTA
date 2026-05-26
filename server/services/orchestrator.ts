@@ -541,6 +541,58 @@ ${factsToCondense}`;
   return { result: generatedText };
 };
 
+function estimateAICallCost(provider: string, model: string, inputChars: number, outputChars: number): number {
+  const normProvider = provider.toLowerCase();
+  const normModel = model.toLowerCase();
+  
+  // Roughly 4 characters per token
+  const inputTokens = Math.ceil(inputChars / 4);
+  const outputTokens = Math.ceil(outputChars / 4);
+
+  let inputRatePerMillion = 0.5; 
+  let outputRatePerMillion = 1.5;
+
+  if (normProvider === 'google' || normProvider === 'gemini') {
+    if (normModel.includes('pro')) {
+      inputRatePerMillion = 1.25;
+      outputRatePerMillion = 5.00;
+    } else {
+      inputRatePerMillion = 0.075;
+      outputRatePerMillion = 0.30;
+    }
+  } else if (normProvider === 'openai') {
+    if (normModel.includes('gpt-4o-mini')) {
+      inputRatePerMillion = 0.15;
+      outputRatePerMillion = 0.60;
+    } else if (normModel.includes('gpt-4') || normModel.includes('o1')) {
+      inputRatePerMillion = 5.00;
+      outputRatePerMillion = 15.00;
+    } else {
+      inputRatePerMillion = 0.50;
+      outputRatePerMillion = 1.50;
+    }
+  } else if (normProvider === 'anthropic') {
+    if (normModel.includes('sonnet')) {
+      inputRatePerMillion = 3.00;
+      outputRatePerMillion = 15.00;
+    } else if (normModel.includes('haiku')) {
+      inputRatePerMillion = 0.25;
+      outputRatePerMillion = 1.25;
+    } else {
+      inputRatePerMillion = 3.00;
+      outputRatePerMillion = 15.00;
+    }
+  } else if (normProvider === 'deepseek') {
+    inputRatePerMillion = 0.14;
+    outputRatePerMillion = 0.28;
+  }
+
+  const inputCost = (inputTokens / 1000000) * inputRatePerMillion;
+  const outputCost = (outputTokens / 1000000) * outputRatePerMillion;
+  
+  return Math.max(0.00005, inputCost + outputCost);
+}
+
 async function updateChatContextSummary(chatId: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
     if (!pool) return;
@@ -579,7 +631,10 @@ ${conversationText}`;
 
     const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
     if (contextSummary) {
-      const updateCost = 0.0002; // track cost incrementally for background summarization
+      const inputChars = summaryPrompt.length + summarySystemPrompt.length;
+      const outputChars = contextSummary.length;
+      const updateCost = estimateAICallCost(provider, model, inputChars, outputChars);
+      
       await Promise.all([
         pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [contextSummary.trim(), chatId]),
         pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [updateCost, providerId])
