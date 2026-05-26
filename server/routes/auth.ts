@@ -294,7 +294,6 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(400).json({ error: 'RefreshTokenRequired', message: 'Refresh token is required' });
     }
 
-    // Verify token with JWT Secret
     let decoded: any;
     try {
       decoded = jwt.verify(refreshToken, jwtSecret);
@@ -309,7 +308,6 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'InvalidTokenType', message: 'Invalid token type' });
     }
 
-    // Check if the old refresh token is blacklisted
     const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [refreshToken]);
     if (blacklistCheck.rows.length > 0) {
       console.warn(`[Security Alert] Replay attempt with blacklisted refresh token from user ID: ${decoded.id}`);
@@ -317,7 +315,6 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'CompromisedSession', message: 'Session has been invalidated due to token reuse' });
     }
 
-    // Check if there is an active session in user_sessions
     const sessionRes = await pool.query(
       "SELECT id FROM user_sessions WHERE session_token = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP", 
       [refreshToken]
@@ -326,7 +323,6 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'SessionInactive', message: 'Session is inactive or already processed' });
     }
 
-    // Fetch user
     const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
     if (userRes.rows.length === 0) {
       return res.status(401).json({ error: 'UserNotFound', message: 'User does not exist' });
@@ -341,17 +337,14 @@ router.post("/refresh-token", async (req, res) => {
     const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
     const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
 
-    // Mark previous refresh token as inactive
     await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
 
-    // Add old refresh token to blacklist to prevent replay attacks
     const expirySec = decoded.exp ? Math.floor(decoded.exp) : Math.floor(Date.now() / 1000) + 3600;
     await pool.query(
       "INSERT INTO token_blacklist (token, expires_at) VALUES ($1, TO_TIMESTAMP($2)) ON CONFLICT (token) DO NOTHING",
       [refreshToken, expirySec]
     );
 
-    // Write new session for rotated refresh token
     await createUserSession(user.id, newRefreshToken, req, remember ? 30 : 1);
 
     res.json({ token: newAccessToken, refreshToken: newRefreshToken });
@@ -365,7 +358,7 @@ router.get("/google/url", async (req, res) => {
   const { ref, lang, remember, mode, theme } = req.query;
   
   const nonce = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 600000); // 10 minutes
+  const expiresAt = new Date(Date.now() + 600000);
 
   await pool.query(
     `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
@@ -468,12 +461,28 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
         [token, expiresAt]
       );
       addToBlacklistCache(token);
+    }
 
+    const { refreshToken } = req.body;
+    if (refreshToken) {
       try {
         await pool.query(
           "UPDATE user_sessions SET status = 'revoked', last_active_at = CURRENT_TIMESTAMP WHERE session_token = $1",
-          [token]
+          [refreshToken]
         );
+        try {
+          const rfDecoded: any = jwt.verify(refreshToken, jwtSecret);
+          const rfExpiry = rfDecoded?.exp ? new Date(rfDecoded.exp * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          await pool.query(
+            'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
+            [refreshToken, rfExpiry]
+          );
+        } catch {
+          await pool.query(
+            'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
+            [refreshToken, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
+          );
+        }
       } catch (sessionErr) {
         console.error('[Session] Failed to revoke session on logout:', sessionErr);
       }
@@ -954,7 +963,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 3600000); // 1 hour
+    const expires = new Date(Date.now() + 3600000);
 
     await pool.query('DELETE FROM password_resets WHERE email = $1', [email]);
 

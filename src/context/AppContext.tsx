@@ -2355,6 +2355,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthReady(false);
     setIsAuthModalOpen(false);
 
+    const storedRefreshToken = localStorage.getItem('app_refresh_token');
+
     // 2. Clear Token from local storage first to prevent auto-login on refresh
     localStorage.removeItem('app_token');
     localStorage.removeItem('app_refresh_token');
@@ -2363,7 +2365,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (token) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refreshToken: storedRefreshToken })
       }).catch(e => console.error('API Logout error', e));
     }
 
