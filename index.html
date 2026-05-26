@@ -129,6 +129,13 @@
             if (twImg) twImg.setAttribute('content', seoImg);
           }
 
+          // Dynamic Google Site Verification
+          var siteVerification = settings.googleSiteVerification;
+          if (siteVerification) {
+            var metaSV = document.querySelector('meta[name="google-site-verification"]');
+            if (metaSV) metaSV.setAttribute('content', siteVerification);
+          }
+
           // Dynamic Google Analytics Integration
           var gaId = settings.googleAnalyticsId || 'G-TJ89GYPD40';
           if (gaId && gaId !== 'G-TJ89GYPD40') {

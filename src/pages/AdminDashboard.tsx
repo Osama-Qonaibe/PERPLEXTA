@@ -11814,6 +11814,9 @@ const SystemSettingsView = ({
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState(
     siteSettings.googleAnalyticsId,
   );
+  const [googleSiteVerification, setGoogleSiteVerification] = useState(
+    siteSettings.googleSiteVerification || "",
+  );
 
   const [logoBase64, setLogoBase64] = useState<string | null>(
     siteSettings.logoBase64,
@@ -11866,6 +11869,7 @@ const SystemSettingsView = ({
           setKeywordsEn(kwsData.en || "");
           setKeywordsAr(kwsData.ar || "");
           setGoogleAnalyticsId(data.google_analytics_id || "");
+          setGoogleSiteVerification(data.google_site_verification || "");
           setLogoBase64(data.logo_url || null);
           setFaviconBase64(data.favicon_url || null);
           setSeoImageUrl(data.seo_image_url || null);
@@ -11936,6 +11940,7 @@ const SystemSettingsView = ({
             ar: siteSettings.keywordsAr,
           }),
           google_analytics_id: siteSettings.googleAnalyticsId,
+          google_site_verification: siteSettings.googleSiteVerification,
           logo_url: logoBase64,
           favicon_url: faviconBase64,
           seo_image_url: siteSettings.seoImageUrl,
@@ -11995,6 +12000,7 @@ const SystemSettingsView = ({
             ar: siteSettings.keywordsAr,
           }),
           google_analytics_id: siteSettings.googleAnalyticsId,
+          google_site_verification: siteSettings.googleSiteVerification,
           logo_url: logoBase64,
           favicon_url: faviconBase64,
           seo_image_url: siteSettings.seoImageUrl,
@@ -12048,6 +12054,7 @@ const SystemSettingsView = ({
           }),
           keywords: JSON.stringify({ en: keywordsEn, ar: keywordsAr }),
           google_analytics_id: googleAnalyticsId,
+          google_site_verification: googleSiteVerification,
           logo_url: siteSettings.logoBase64,
           favicon_url: siteSettings.faviconBase64,
           seo_image_url: seoImageUrl,
@@ -12062,6 +12069,7 @@ const SystemSettingsView = ({
           keywordsEn,
           keywordsAr,
           googleAnalyticsId,
+          googleSiteVerification,
           seoImageUrl,
         });
         showToast(t("saveSuccess") || "SEO settings saved", "success");
@@ -12367,6 +12375,24 @@ const SystemSettingsView = ({
               {dir === "rtl" 
                 ? "يسمح هذا المعرّف (مثل G-XXXXX) بمراقبة حركة المرور وسلوك المستخدمين وإرسال إحصاءات تفاعلية فورية إلى حساب إحصاءات جوجل الخاص بك."
                 : "This ID (e.g., G-XXXXX) enables real-time user behavior tracking, page transit logs, and custom interaction telemetry reporting directly to your Google Analytics dashboard."}
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("googleSiteVerification")}
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. google-site-verification=..."
+              value={googleSiteVerification || ""}
+              onChange={(e) => setGoogleSiteVerification(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {dir === "rtl" 
+                ? "يتم حقن رمز تحقق Google Search Console تلقائياً في ترويسة الصفحة لإثبات ملكية محركات البحث مباشرة دون رفع ملفات يدوية للجذر."
+                : "This verification key is dynamically injected into the head element to verify Google Search Console ownership instantly without manual file uploads to the root."}
             </p>
           </div>
 

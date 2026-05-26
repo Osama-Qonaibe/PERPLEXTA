@@ -535,6 +535,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'seo_image_url', 'TEXT');
     });
 
+    // MIGRATION: Google Site Verification Support v21
+    await runVersioned('v21_google_site_verification', 'Adding google_site_verification column extension to support dynamic search console verification', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'google_site_verification', 'VARCHAR(255)');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1070,6 +1075,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         keywords_en TEXT,
         keywords_ar TEXT,
         google_analytics_id VARCHAR(100),
+        google_site_verification VARCHAR(255),
         stripe_publishable_key TEXT,
         stripe_secret_key TEXT,
         stripe_webhook_secret TEXT,

@@ -45,6 +45,7 @@ export interface SiteSettings {
   keywordsEn: string;
   keywordsAr: string;
   googleAnalyticsId: string;
+  googleSiteVerification: string;
   seoImageUrl: string | null;
 }
 
@@ -506,6 +507,8 @@ const translations = {
     keywordsEn: 'الكلمات المفتاحية (بالإنجليزية، مفصولة بفاصلة)',
     googleAnalyticsId: 'معرف إحصاءات جوجل',
     googleAnalyticsDesc: 'مثال: G-XXXXXXXXXX',
+    googleSiteVerification: 'كود التحقق من Google Search Console',
+    googleSiteVerificationDesc: 'أدخل رمز التحقق (مثال: google-site-verification=...) لإثبات ملكية موقعك تلقائياً.',
     seoPreviewImageTitle: 'صورة معاينة محركات البحث ومواقع التواصل (SEO Share Image / og:image)',
     seoDragAndDrop: 'اسحب الملف إلى هنا أو اضغط للتصفح',
     seoSupportedFormats: 'التنسيقات المدعومة: PNG, JPG, WEBP',
@@ -1192,6 +1195,8 @@ const translations = {
     keywordsAr: 'Keywords (Arabic, comma-separated)',
     googleAnalyticsId: 'Google Analytics ID',
     googleAnalyticsDesc: 'Example: G-XXXXXXXXXX',
+    googleSiteVerification: 'Google Site Verification',
+    googleSiteVerificationDesc: 'Enter your verification tag (e.g., google-site-verification=...) to verify console ownership.',
     seoPreviewImageTitle: 'SEO & Social Share Preview Image (og:image)',
     seoDragAndDrop: 'Drag & drop image here or click to browse',
     seoSupportedFormats: 'Supported formats: PNG, JPG, WEBP',
@@ -2499,6 +2504,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       keywordsEn: '',
       keywordsAr: '',
       googleAnalyticsId: '',
+      googleSiteVerification: '',
       seoImageUrl: null
     };
   });
@@ -2819,6 +2825,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           keywordsEn: settingsData.keywords_en || '',
           keywordsAr: settingsData.keywords_ar || '',
           googleAnalyticsId: settingsData.google_analytics_id || '',
+          googleSiteVerification: settingsData.google_site_verification || '',
           logoBase64: settingsData.logo_url || null,
           faviconBase64: settingsData.favicon_url || null,
           seoImageUrl: settingsData.seo_image_url || null

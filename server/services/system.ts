@@ -24,7 +24,7 @@ export async function getSystemSettings() {
     SELECT 
       site_name_en, site_name_ar, site_description_en, site_description_ar,
       seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-      google_analytics_id, logo_url, favicon_url, seo_image_url,
+      google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url,
       stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
       paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
     FROM system_settings LIMIT 1
@@ -81,18 +81,18 @@ export async function updateSystemSettings(settings: any) {
 
   const { 
     site_name_en, site_name_ar, site_description_en, site_description_ar,
-    google_analytics_id, logo_url, favicon_url, seo_image_url
+    google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url
   } = settings;
   
   await pool.query(`
     UPDATE system_settings SET 
       site_name_en = $1, site_name_ar = $2, site_description_en = $3, site_description_ar = $4,
       seo_description_en = $5, seo_description_ar = $6, keywords_en = $7, keywords_ar = $8,
-      google_analytics_id = $9, logo_url = $10, favicon_url = $11, seo_image_url = $12, updated_at = CURRENT_TIMESTAMP
+      google_analytics_id = $9, google_site_verification = $10, logo_url = $11, favicon_url = $12, seo_image_url = $13, updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
-    google_analytics_id, logo_url, favicon_url, seo_image_url
+    google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url
   ]);
   
   await refreshCachedAppName();
