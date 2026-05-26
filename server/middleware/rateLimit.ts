@@ -1,4 +1,4 @@
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -20,7 +20,7 @@ export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 12,
   keyGenerator: (req: any) => {
-    return req.user?.id ? `user_${req.user.id}` : (req.ip || 'anonymous');
+    return req.user?.id ? `user_${req.user.id}` : ipKeyGenerator(req.ip || 'anonymous');
   },
   standardHeaders: true,
   legacyHeaders: false,
