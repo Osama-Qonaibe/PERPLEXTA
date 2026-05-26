@@ -17,7 +17,7 @@
     <meta property="og:url" content="https://perplexta.com" />
     <meta property="og:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
     <meta property="og:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
-    <meta property="og:image" content="/app-assets/og-image.png" />
+    <meta property="og:image" content="https://perplexta.com/app-assets/og-image.png" />
     <meta property="og:site_name" content="بيربليكستا | Perplexta" />
     <meta property="og:locale" content="ar_AR" />
     <meta property="og:locale:alternate" content="en_US" />
@@ -29,10 +29,19 @@
     <meta name="twitter:url" content="https://perplexta.com" />
     <meta name="twitter:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
     <meta name="twitter:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
-    <meta name="twitter:image" content="/app-assets/og-image.png" />
+    <meta name="twitter:image" content="https://perplexta.com/app-assets/og-image.png" />
 
     <!-- Google Webmasters / Search Console Verification (Placeholder for admins) -->
     <meta name="google-site-verification" content="verification_placeholder" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TJ89GYPD40"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-TJ89GYPD40');
+    </script>
 
     <!-- Web Application Schema (JSON-LD) for Search Engine Rich Cards -->
     <script type="application/ld+json">
@@ -108,6 +117,30 @@
           if (keywords) {
             var metaKeys = document.querySelector('meta[name="keywords"]');
             if (metaKeys) metaKeys.setAttribute('content', keywords);
+          }
+
+          // Dynamic SEO Image Update
+          var seoImg = settings.seoImageUrl;
+          if (seoImg) {
+            var ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg) ogImg.setAttribute('content', seoImg);
+            
+            var twImg = document.querySelector('meta[name="twitter:image"]');
+            if (twImg) twImg.setAttribute('content', seoImg);
+          }
+
+          // Dynamic Google Analytics Integration
+          var gaId = settings.googleAnalyticsId || 'G-TJ89GYPD40';
+          if (gaId && gaId !== 'G-TJ89GYPD40') {
+            var gaScript = document.createElement('script');
+            gaScript.async = true;
+            gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+            document.head.appendChild(gaScript);
+            
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function(){ dataLayer.push(arguments); };
+            gtag('js', new Date());
+            gtag('config', gaId);
           }
 
           if (settings.faviconBase64) {
