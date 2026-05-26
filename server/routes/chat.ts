@@ -19,7 +19,6 @@ const router = express.Router();
 
 router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    // Audit active subscription status
     const subRes = await pool.query(`
       SELECT s.status, u.role 
       FROM users u 
@@ -53,7 +52,6 @@ router.get("/", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    // Audit active subscription status
     const subRes = await pool.query(`
       SELECT s.status, u.role 
       FROM users u 
@@ -152,6 +150,19 @@ router.patch("/:id", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
+    const subRes = await pool.query(`
+      SELECT s.status, u.role 
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+    `, [req.user.id]);
+    
+    const role = subRes.rows[0]?.role;
+    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to fork a chat.' });
+    }
+
     const chatId = req.params.id;
     const { messageId } = req.body;
 
@@ -159,7 +170,6 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
       return res.status(400).json({ error: 'Message ID is required for forking' });
     }
 
-    // 1. Fetch the original chat and check ownership
     const chatCheck = await pool.query('SELECT * FROM chats WHERE id = $1', [chatId]);
     if (chatCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Original chat not found' });
@@ -170,7 +180,6 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
       return res.status(403).json({ error: 'Unauthorized to fork this chat' });
     }
 
-    // 2. Fetch all messages for the original chat in order
     const msgRes = await pool.query('SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC, id ASC', [chatId]);
     const originalMessages = msgRes.rows;
 
@@ -179,10 +188,8 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
       return res.status(404).json({ error: 'Target message not found in this chat' });
     }
 
-    // Slice all messages up to and including the target message
     const messagesToCopy = originalMessages.slice(0, msgIndex + 1);
 
-    // 3. Create a new chat/thread
     const userLang = req.user.language || 'en';
     const forkedTitlePrefix = userLang === 'ar' ? 'فرع: ' : 'Forked: ';
     const newTitle = `${forkedTitlePrefix}${originalChat.title || 'Chat'}`.substring(0, 255);
@@ -193,7 +200,6 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
     );
     const newChat = newChatRes.rows[0];
 
-    // 4. Copy messages
     for (const msg of messagesToCopy) {
       await pool.query(
         `INSERT INTO messages (
