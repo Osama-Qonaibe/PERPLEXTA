@@ -1,4 +1,5 @@
 import { pool } from '../db/index.js';
+import { createNotification } from './notifications.js';
 
 export async function checkUserQuota(userId: number, toolId: string) {
   try {
@@ -250,6 +251,12 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
     `, [userId, toolId]);
 
     await client.query('COMMIT');
+
+    // Trigger quota warning check asynchronously to protect user response times
+    checkAndTriggerQuotaWarnings(userId, toolId, currentDaily + 1, currentMonthly + 1, finalLimits).catch(err => {
+      console.error('[Quota Warning Engine] Non-blocking warning flow failed:', err);
+    });
+
     return { allowed: true, currentDaily: currentDaily + 1, currentMonthly: currentMonthly + 1 };
 
   } catch (error) {
@@ -284,5 +291,119 @@ export async function incrementUserUsage(userId: number, toolId: string) {
     `, [userId, toolId]);
   } catch (error) {
     console.error('[Quota] Increment failed:', error);
+  }
+}
+
+// ==========================================
+// QUOTA LIMIT APPROACH REVENUE-DRIVEN WARNING ENGINE
+// ==========================================
+
+function getToolFriendlyName(toolId: string, lang: 'en' | 'ar'): string {
+  const mapping: Record<string, { en: string; ar: string }> = {
+    'chat': { en: 'Strategic Assistant', ar: 'المساعد الاستراتيجي' },
+    'chat_fast': { en: 'Fast Technical AI', ar: 'الذكاء التقني السريع' },
+    'chat_pro': { en: 'Reasoning Pro Engine', ar: 'محرك الاستنتاج المتقدم' },
+    'chat_reasoning': { en: 'Advanced Reasoning Protocol', ar: 'بروتوكول التفكير المعقد' },
+    'perplexta_analysis': { en: 'Perplexta Analysis & Audit', ar: 'تحليل وبحث بيربليكستا' },
+    'image': { en: 'Visual Synthesis Engine', ar: 'محرك التوليد البصري' },
+    'video': { en: 'Cinematic Video Generator', ar: 'مولد الفيديو السينمائي' },
+    'tts': { en: 'Voice Synthesis Engine', ar: 'محرك التوليد الصوتي' },
+    'stt': { en: 'Speech Transcription', ar: 'التحويل الصوتي للنص' },
+  };
+  return mapping[toolId]?.[lang] || toolId;
+}
+
+async function evaluateAndNotify(userId: number, toolId: string, usage: number, limit: number, period: 'daily' | 'monthly') {
+  const pct = (usage / limit) * 100;
+  if (pct < 50) return;
+
+  // Determine threshold
+  let threshold = 0;
+  if (pct >= 80) {
+    threshold = 80;
+  } else if (pct >= 50) {
+    threshold = 50;
+  }
+
+  if (threshold === 0) return;
+
+  const warningType = `quota_warning_${toolId}_${period}_${threshold}`;
+
+  // Check if already notified for this user, warning type during the daily or monthly window
+  const querySql = `
+    SELECT 1 FROM notifications
+    WHERE user_id = $1 
+      AND type = $2 
+      AND created_at >= CASE WHEN $3 = 'daily' THEN CURRENT_DATE ELSE date_trunc('month', CURRENT_DATE) END
+    LIMIT 1
+  `;
+  const checkRes = await pool.query(querySql, [userId, warningType, period]);
+  if (checkRes.rows.length > 0) {
+    // Already notified today or this month for this threshold
+    return;
+  }
+
+  const toolNameEn = getToolFriendlyName(toolId, 'en');
+  const toolNameAr = getToolFriendlyName(toolId, 'ar');
+  const periodStrEn = period === 'daily' ? 'Daily' : 'Monthly';
+  const periodStrAr = period === 'daily' ? 'اليومي' : 'الشهري';
+
+  let titleEn = '';
+  let titleAr = '';
+  let messageEn = '';
+  let messageAr = '';
+
+  const pctString = pct >= 80 ? '80%' : '50%';
+
+  if (threshold === 50) {
+    titleEn = `Quota Status Alert: ${pctString} Consumed`;
+    titleAr = `تنبيه استهلاك الحدود: تم استخدام ${pctString}`;
+    
+    messageEn = `Premium Optimization: You have consumed ${pctString} of your ${periodStrEn} active quota limit for "${toolNameEn}". Keep your intelligence momentum at full power! Invite elite colleagues using your personalized referral code to credit your digital wallet instantly, or explore our flexible high-capacity premium tiers today!`;
+    messageAr = `تنبيه تحسين الأداء: لقد استهلكت ${pctString} من حدك ${periodStrAr} المتاح لأداة "${toolNameAr}". حافظ على استمرارية زخم تحليلاتك الذكية بكامل قوتها! شارك كود الإحالة المخصص لك مع زملائك المتميزين لكسب أرصدة فورية في محفظتك الرقمية، أو تصفح باقاتنا المرنة ذات السعات العالية المتاحة الآن!`;
+  } else {
+    titleEn = `Urgent Quota Limit Notice: ${pctString} Expended`;
+    titleAr = `تنبيه هام ومستعجل: تم استهلاك ${pctString} من الحدود`;
+
+    messageEn = `Action Advised: You are rapidly approaching full capacity with ${pctString} of your ${periodStrEn} limit spent for "${toolNameEn}". Secure your strategic tasks against interruptions: elevate your workflow by upgrading your tier with a 1-click upgrade, or seamlessly recharge your wallet instantly via the rewards section to utilize point-based fallbacks!`;
+    messageAr = `إجراء موصى به: أنت تقترب بسرعة من السعة الكاملة بنسبة استهلاك بلغت ${pctString} من حدك ${periodStrAr} لأداة "${toolNameAr}". حافظ على أمن أعمالك الاستراتيجية من الانقطاع: قم بترقية حسابك بضغطة واحدة، أو أعد شحن محفظتك الرقمية فوراً وبسهولة من قسم المكافآت للاستفادة من نظام الدفع الفوري لكل عملية!`;
+  }
+
+  await createNotification(userId, warningType, titleEn, titleAr, messageEn, messageAr, {
+    tool_id: toolId,
+    usage,
+    limit,
+    period,
+    threshold,
+    pct
+  });
+}
+
+async function checkAndTriggerQuotaWarnings(userId: number, toolId: string, currentDailyAfter: number, currentMonthlyAfter: number, finalLimits: any) {
+  try {
+    if (!pool) return;
+
+    const toolLimit = finalLimits[toolId];
+    if (!toolLimit || toolLimit === 'unlimited') return;
+
+    // We check both daily and monthly limits
+    let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
+    let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
+
+    if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
+      const limit = parseInt(dailyLimitVal);
+      if (!isNaN(limit) && limit > 0) {
+        await evaluateAndNotify(userId, toolId, currentDailyAfter, limit, 'daily');
+      }
+    }
+
+    if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
+      const limit = parseInt(monthlyLimitVal);
+      if (!isNaN(limit) && limit > 0) {
+        await evaluateAndNotify(userId, toolId, currentMonthlyAfter, limit, 'monthly');
+      }
+    }
+  } catch (err) {
+    console.error('[Quota Warning Engine] Process failed:', err);
   }
 }
