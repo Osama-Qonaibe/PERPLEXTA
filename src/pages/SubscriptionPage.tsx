@@ -147,7 +147,7 @@ export const SubscriptionPage: React.FC = () => {
     if (!plan) return;
     if (isActivePlan(planId)) return;
     
-    const price = billingCycle === 'annual' ? Number(plan.annualPrice || 0) : Number(plan.monthlyPrice || 0);
+    const price = getDisplayPrice(plan, billingCycle);
     if (price === 0) {
       setLoading(`${planId}-stripe`);
       const res = await payWithBalance(planId, billingCycle);
@@ -173,7 +173,7 @@ export const SubscriptionPage: React.FC = () => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
     setSelectedPlanForModal(plan);
-    const price = billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice;
+    const price = getDisplayPrice(plan, billingCycle);
     if (balanceUSD < price) { setResultModal('insufficient'); return; }
     setConfirmingPlan(plan);
   };
