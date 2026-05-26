@@ -957,7 +957,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             <Lock size={20} className="drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
+                            <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
                             <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wide leading-relaxed">
                               {dir === 'rtl' 
                                 ? 'بوابة دفع بطاقات الائتمان Stripe قيد التطوير والامتثال لأعلى معايير الأمان.'
@@ -1010,7 +1010,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           <div className="p-4 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 flex gap-3 text-left rtl:text-right">
                             <Lock size={16} className="text-emerald-500 shrink-0 mt-0.5" />
                             <div className="space-y-1">
-                              <p className="text-[10px] font-black text-white uppercase tracking-widest">{dir === 'rtl' ? 'بوابة Stripe الخارجية المشفرة' : 'FULLY EXTERNALIZED ENCRYPTED GATEWAY'}</p>
+                              <p className="text-[10px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-widest">{dir === 'rtl' ? 'بوابة Stripe الخارجية المشفرة' : 'FULLY EXTERNALIZED ENCRYPTED GATEWAY'}</p>
                               <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider leading-relaxed">
                                 {dir === 'rtl' 
                                   ? 'عند النقر على زر التأكيد بالأسفل، سيتم توجيهك بأمان كامل إلى صفحة دفع Stripe الرسمية والمؤمنة لتعبئة البيانات وإكمال المعاملة بدقة بالغة ورصيد فوري تزامني.'
@@ -1238,7 +1238,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             <Lock size={20} className="drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                           </div>
                           <div className="space-y-1">
-                            <h4 className="text-sm font-black text-white uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
+                            <h4 className="text-sm font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
                             <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wide leading-relaxed">
                               {dir === 'rtl' 
                                 ? 'بوابة دفع PayPal قيد التطوير والامتثال لأعلى معايير الأمان.'

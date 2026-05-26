@@ -3,7 +3,7 @@ import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { decrypt } from '../utils/crypto.js';
 import { callAIProvider, getProviderKey, invalidateVaultCache } from './ai.js';
-import { checkUserQuota, incrementUserUsage } from './quota.js';
+import { checkUserQuota, checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { extractTextFromFile, forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
@@ -75,9 +75,9 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   
   if (!pool) throw new Error('System still initializing. Please wait.');
   
-  const [routeResult, quota, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([
+  const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
-    checkUserQuota(userId, toolIdStr),
+    checkAndIncrementQuota(userId, toolIdStr),
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
     pool.query('SELECT language FROM users WHERE id = $1', [userId]),
     pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
@@ -131,7 +131,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const route = routeResult.rows[0];
   
-  if (!quota.allowed) {
+  if (!quotaCheck.allowed) {
     try {
       // Attempt transaction-safe ledger deduction of points or balance for tool overage
       const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
@@ -143,22 +143,24 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           amount: chargeRes.amount 
         });
       }
+      // Increment since they weren't allowed originally but succeeded via wallet
+      await incrementUserUsage(userId, toolIdStr);
     } catch (chargeErr: any) {
-      const periodStrEn = quota.period === 'daily' ? 'Daily' : 'Monthly';
-      const periodStrAr = quota.period === 'daily' ? 'يومي' : 'شهري';
+      const periodStrEn = quotaCheck.period === 'daily' ? 'Daily' : 'Monthly';
+      const periodStrAr = quotaCheck.period === 'daily' ? 'يومي' : 'شهري';
       
       const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Please upgrade your plan or recharge your digital wallet (Pay-per-Request: 10 Tool Points or equivalents) to execute excess actions.`;
       const msgAr = `تتطلب هذه العملية رصيداً أو عضوية ممتازة: لقد تجاوزت الحد ال${periodStrAr} المسموح به. يرجى شحن محفظتك الرقمية أو ترقية باقتك للاستمرار بالاستفادة بالدفع لكل معاملة (10 نقاط أو ما يعادلها).`;
       
-      await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quota.period} quota (${quota.currentUsage}/${quota.limit}) and wallet fallback failed: ${chargeErr.message}`, { toolIdStr, quota });
+      await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quotaCheck.period} quota (${quotaCheck.currentUsage}/${quotaCheck.limit}) and wallet fallback failed: ${chargeErr.message}`, { toolIdStr, quota: quotaCheck });
 
       throw new Error(JSON.stringify({ 
         error: msgEn, 
         error_ar: msgAr, 
         type: 'QUOTA_EXCEEDED',
-        limit: quota.limit, 
-        current: quota.currentUsage, 
-        period: quota.period,
+        limit: quotaCheck.limit, 
+        current: quotaCheck.currentUsage, 
+        period: quotaCheck.period,
         cta: {
           upgrade: true,
           referral: true
@@ -284,11 +286,7 @@ ${refinedSystemPromptSegment}
     { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
-  // Ultimate resilient fallback to system-provided model (Gemini)
-  const hasSystemModel = modelsToTry.some(m => m.provider.toLowerCase() === 'google' && m.model.toLowerCase().includes('gemini'));
-  if (!hasSystemModel) {
-    modelsToTry.push({ provider: 'google', model: 'gemini-1.5-flash' });
-  }
+  // Removed unmanaged fallback to system-provided model to satisfy database-driven Orchestrator Absolutism constraints.
 
   let generatedText = '';
   let successfulModel = null;
@@ -524,6 +522,9 @@ ${factsToCondense}`;
   }
 
   if (!generatedText) {
+    if (quotaCheck.allowed) {
+      await decrementUserUsage(userId, toolIdStr);
+    }
     await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
     
     throw new Error(JSON.stringify({
@@ -533,8 +534,6 @@ ${factsToCondense}`;
     }));
   }
 
-  await incrementUserUsage(userId, toolIdStr);
-  
   if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
   }
@@ -545,6 +544,23 @@ ${factsToCondense}`;
 async function updateChatContextSummary(chatId: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
     if (!pool) return;
+
+    const providerId = provider.toLowerCase();
+    const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
+    if (budgetRes.rows.length > 0) {
+      const { daily_budget, used_today, is_active } = budgetRes.rows[0];
+      if (!is_active) {
+        console.warn(`[Summary Service] Provider "${provider}" is inactive. Summarization skipped.`);
+        return;
+      }
+      const dailyBudget = parseFloat(daily_budget || '0');
+      const usedToday = parseFloat(used_today || '0');
+      if (dailyBudget > 0 && usedToday >= dailyBudget) {
+        console.warn(`[Summary Service] Provider "${provider}" reached daily budget limit (${usedToday}/${dailyBudget}). Summarization skipped.`);
+        return;
+      }
+    }
+
     const msgRes = await pool.query(
       "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at ASC",
       [chatId]
@@ -563,7 +579,11 @@ ${conversationText}`;
 
     const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
     if (contextSummary) {
-      await pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [contextSummary.trim(), chatId]);
+      const updateCost = 0.0002; // track cost incrementally for background summarization
+      await Promise.all([
+        pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [contextSummary.trim(), chatId]),
+        pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [updateCost, providerId])
+      ]);
     }
   } catch (err) {
     console.error('[Memory Service] Progressive summarization failed:', err);

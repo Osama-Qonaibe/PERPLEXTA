@@ -130,13 +130,11 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             }
         }
 
-        // If models list is empty, inject standard compatible models for user flow robustness
+        // If models list is empty, inject organic generic models matching the custom provider
         if (models.length === 0) {
             models = [
                 { id: 'custom-model', name: 'Custom Standard Model' },
-                { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Compatible)' },
-                { id: 'gpt-4o', name: 'GPT-4o (Compatible)' },
-                { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet (Compatible)' }
+                { id: 'custom-large', name: 'Custom Advanced Model' }
             ];
         }
     }
@@ -174,9 +172,7 @@ export async function getProviderKey(provider: string): Promise<string | null> {
     }
   } catch (_) {}
 
-  if (!decryptedKey && (normProvider === 'google' || normProvider === 'gemini') && process.env.GEMINI_API_KEY) {
-    decryptedKey = process.env.GEMINI_API_KEY.trim();
-  }
+  // Removed unmanaged GEMINI_API_KEY environment fallback to protect API Key Vault & budget auditing integrity.
 
   if (decryptedKey) {
     vaultCache.set(normProvider, decryptedKey);

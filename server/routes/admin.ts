@@ -1,16 +1,14 @@
 import express from 'express';
-import Stripe from 'stripe';
 import { pool, ledgerPool } from '../db/index.js';
 import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
-import { tools } from '../config/constants.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
 import { isSafeHost } from '../utils/helpers.js';
-import { authLimiter, adminLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { 
   getDatabaseRegistry, 
   saveDatabaseConfig, 
@@ -255,54 +253,6 @@ router.get("/users", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.patch("/users/:id/status", authenticateAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    if (!['active', 'suspended', 'pending'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const userIdNum = parseInt(id, 10);
-    if (isNaN(userIdNum)) {
-      return res.status(400).json({ error: 'Invalid User ID format' });
-    }
-
-    await pool.query('UPDATE users SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, userIdNum]);
-    invalidateUserCache(userIdNum);
-    await auditLog((req as any).user?.id, 'Update User Status', 'system', { targetUser: userIdNum, status });
-    res.json({ success: true });
-  } catch (error: any) {
-    console.error('[Admin] Failed to update user status:', error);
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
-  }
-});
-
-router.patch("/users/:id/role", authenticateAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { role } = req.body;
-    
-    if (!['admin', 'user', 'support', 'elite'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role' });
-    }
-
-    const userIdNum = parseInt(id, 10);
-    if (isNaN(userIdNum)) {
-      return res.status(400).json({ error: 'Invalid User ID format' });
-    }
-
-    await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, userIdNum]);
-    invalidateUserCache(userIdNum);
-    await auditLog((req as any).user?.id, 'Update User Role', 'system', { targetUser: userIdNum, role });
-    res.json({ success: true });
-  } catch (error: any) {
-    console.error('[Admin] Failed to update user role:', error);
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
-  }
-});
-
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
@@ -396,7 +346,7 @@ router.get("/broadcasts", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/broadcasts/send", authenticateAdmin, async (req, res) => {
+router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req, res) => {
   try {
     const { title_en, title_ar, content_en, content_ar, type, broadcast_type, target_group } = req.body;
     if (!title_en || !content_en) return res.status(400).json({ error: 'title_en and content_en are required' });
@@ -570,7 +520,7 @@ router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/users", authenticateAdmin, authLimiter, async (req, res) => {
+router.post("/users", authenticateAdmin, async (req, res) => {
   try {
     const { name, email, password, role = 'user', balance = 0, points = 0 } = req.body;
     
@@ -635,7 +585,7 @@ router.delete("/users/:id", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const adminId = (req as any).user?.id;
 
-    if (id === adminId?.toString()) {
+    if (parseInt(id, 10) === adminId) {
       return res.status(400).json({ error: 'Cannot delete yourself' });
     }
 
@@ -647,10 +597,10 @@ router.delete("/users/:id", authenticateAdmin, async (req, res) => {
       // But wallets/ledger might be in another DB
       if (ledgerPool && ledgerPool !== pool) {
         await ledgerPool.query('DELETE FROM wallets WHERE user_id = $1', [id]);
-        await ledgerPool.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id, id]);
+        await ledgerPool.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id]);
       } else {
         await client.query('DELETE FROM wallets WHERE user_id = $1', [id]);
-        await client.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id, id]);
+        await client.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id]);
       }
 
       await client.query('DELETE FROM users WHERE id = $1', [id]);
@@ -688,6 +638,50 @@ router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   }
 });
 
+async function updateUserPermissionsInternal(
+  userIdNum: number,
+  fields: {
+    role?: string;
+    status?: string;
+    kyc_status?: string;
+    kyc_rejection_reason?: string | null;
+    kyc_required?: boolean;
+    custom_limits?: any;
+  },
+  client: any
+) {
+  const { role, status, kyc_status, kyc_rejection_reason, kyc_required, custom_limits } = fields;
+  
+  const userUpdates = [];
+  const userValues: any[] = [userIdNum];
+  let valIdx = 2;
+
+  if (role !== undefined) { userUpdates.push(`role = $${valIdx++}`); userValues.push(role); }
+  if (status !== undefined) { userUpdates.push(`status = $${valIdx++}`); userValues.push(status); }
+  if (kyc_status !== undefined) { 
+    userUpdates.push(`kyc_status = $${valIdx++}`); 
+    userValues.push(kyc_status); 
+    if (kyc_status === 'verified') {
+      userUpdates.push(`kyc_required = false`);
+    }
+  }
+  if (kyc_rejection_reason !== undefined) { userUpdates.push(`kyc_rejection_reason = $${valIdx++}`); userValues.push(kyc_rejection_reason); }
+  if (kyc_required !== undefined && kyc_status !== 'verified') { 
+    userUpdates.push(`kyc_required = $${valIdx++}`); 
+    userValues.push(kyc_required); 
+  }
+  if (custom_limits !== undefined) { userUpdates.push(`custom_limits = $${valIdx++}`); userValues.push(custom_limits); }
+
+  if (userUpdates.length > 0) {
+    await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
+  }
+
+  if (kyc_status) {
+    const { syncKYCStatus } = await import('../services/kyc.js');
+    await syncKYCStatus(userIdNum, kyc_status, kyc_rejection_reason || null, client);
+  }
+}
+
 router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -711,29 +705,16 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      
-      const userUpdates = [];
-      const userValues: any[] = [userIdNum];
-      let valIdx = 2;
-
-      if (role) { userUpdates.push(`role = $${valIdx++}`); userValues.push(role); }
-      if (status) { userUpdates.push(`status = $${valIdx++}`); userValues.push(status); }
-      if (kyc_status) { userUpdates.push(`kyc_status = $${valIdx++}`); userValues.push(kyc_status); }
-      if (kyc_rejection_reason !== undefined) { userUpdates.push(`kyc_rejection_reason = $${valIdx++}`); userValues.push(kyc_rejection_reason); }
-      if (kyc_required !== undefined) { userUpdates.push(`kyc_required = $${valIdx++}`); userValues.push(kyc_required); }
-      if (custom_limits !== undefined) { userUpdates.push(`custom_limits = $${valIdx++}`); userValues.push(custom_limits); }
-
-      if (userUpdates.length > 0) {
-        await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
-      }
-
-      // Sync KYC status to Ledger DB
-      if (kyc_status) {
-        const { syncKYCStatus } = await import('../services/kyc.js');
-        await syncKYCStatus(userIdNum, kyc_status, kyc_rejection_reason || null, client);
-      }
-
+      await updateUserPermissionsInternal(userIdNum, {
+        role,
+        status,
+        kyc_status,
+        kyc_rejection_reason,
+        kyc_required,
+        custom_limits
+      }, client);
       await client.query('COMMIT');
+      invalidateUserCache(userIdNum);
       await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: userIdNum, changes: { role, status, kyc_status } });
       res.json({ success: true });
     } catch (e) {
@@ -752,6 +733,11 @@ router.patch("/users/:id/kyc-status", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { kyc_required } = req.body;
+    
+    if (typeof kyc_required !== 'boolean') {
+      return res.status(400).json({ error: 'kyc_required must be a boolean value' });
+    }
+
     const userIdNum = parseInt(id, 10);
     if (isNaN(userIdNum)) {
       return res.status(400).json({ error: 'Invalid User ID format' });
@@ -777,20 +763,12 @@ router.patch("/users/:id/kyc-verification", authenticateAdmin, async (req, res) 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-
-      const { syncKYCStatus } = await import('../services/kyc.js');
-      await syncKYCStatus(userIdNum, kyc_status, rejection_reason || null, client);
-      
-      await client.query(`
-        UPDATE users SET 
-          kyc_status = $1, 
-          kyc_rejection_reason = $2, 
-          kyc_required = CASE WHEN $1 = 'verified' THEN false ELSE kyc_required END,
-          updated_at = CURRENT_TIMESTAMP 
-        WHERE id = $3
-      `, [kyc_status, rejection_reason || null, userIdNum]);
-
+      await updateUserPermissionsInternal(userIdNum, {
+        kyc_status,
+        kyc_rejection_reason: rejection_reason
+      }, client);
       await client.query('COMMIT');
+      invalidateUserCache(userIdNum);
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -976,7 +954,12 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
       volChange = 100.0;
     }
 
-    const recentTx = await ledgerPool.query('SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT 50');
+    const pageLimit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
+    const pageOffset = Math.max(parseInt(req.query.offset as string, 10) || 0, 0);
+    const recentTx = await ledgerPool.query(
+      'SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [pageLimit, pageOffset]
+    );
     
     let transactions = recentTx.rows;
     try {
@@ -1010,7 +993,12 @@ router.get("/financial-radar", authenticateAdmin, async (req, res) => {
 
 router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
   try {
-    const walletData = await ledgerPool.query('SELECT * FROM wallets WHERE balance < 0');
+    const pageLimit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
+    const pageOffset = Math.max(parseInt(req.query.offset as string, 10) || 0, 0);
+    const walletData = await ledgerPool.query(
+      'SELECT * FROM wallets WHERE balance < 0 ORDER BY id ASC LIMIT $1 OFFSET $2',
+      [pageLimit, pageOffset]
+    );
     
     let anomalies = walletData.rows;
     
@@ -1039,11 +1027,15 @@ router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
 
 router.get("/wallet-alerts", authenticateAdmin, async (req, res) => {
   try {
+    const { getEconomySettings } = await import('../services/wallet.js');
+    const settings = await getEconomySettings();
+    const thresholdUSD = parseFloat(settings.min_payout_usd || 10) * 100;
+
     const alerts = await ledgerPool.query(`
       SELECT * FROM ledger_transactions 
-      WHERE amount > 1000 OR transaction_type = 'system_adjustment'
+      WHERE amount > $1 OR transaction_type = 'system_adjustment'
       ORDER BY created_at DESC LIMIT 20
-    `);
+    `, [thresholdUSD]);
     res.json(alerts.rows);
   } catch {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1059,7 +1051,13 @@ router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
     
     const walletId = walletRes.rows[0].id;
 
-    const history = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE wallet_id = $1 AND status = 'success'", [walletId]);
+    const history = await ledgerPool.query(`
+      SELECT sum(amount) as total 
+      FROM ledger_transactions 
+      WHERE wallet_id = $1 
+        AND transaction_type != 'refund' 
+        AND status IN ('success', 'pending')
+    `, [walletId]);
     const correctBalance = parseFloat(history.rows[0].total || 0);
     
     await ledgerPool.query('UPDATE wallets SET balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [correctBalance, walletId]);
@@ -1095,9 +1093,9 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
 
 router.delete("/financial/all", authenticateAdmin, async (req, res) => {
   try {
-    const confirmation = req.headers['x-confirm-action'] || req.body?.confirm;
+    const confirmation = req.headers['x-confirm-action'];
     if (confirmation !== 'DELETE_ALL') {
-      return res.status(400).json({ error: 'Action confirmation required. Please specify confirm: "DELETE_ALL" payload or header.' });
+      return res.status(400).json({ error: 'Action confirmation required. Please specify "x-confirm-action: DELETE_ALL" custom header.' });
     }
     const countRes = await ledgerPool.query('SELECT COUNT(*) FROM ledger_transactions');
     await ledgerPool.query('DELETE FROM ledger_transactions');
@@ -1192,9 +1190,9 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
 
 router.delete("/maintenance/clear-chats", authenticateAdmin, async (req, res) => {
   try {
-    const confirmation = req.headers['x-confirm-action'] || req.body?.confirm;
+    const confirmation = req.headers['x-confirm-action'];
     if (confirmation !== 'DELETE_ALL') {
-      return res.status(400).json({ error: 'Action confirmation required. Please specify confirm: "DELETE_ALL" payload or header.' });
+      return res.status(400).json({ error: 'Action confirmation required. Please specify "x-confirm-action: DELETE_ALL" custom header.' });
     }
     const countRes = await pool.query('SELECT COUNT(*) FROM chats');
     await pool.query('TRUNCATE TABLE messages CASCADE');
@@ -1346,7 +1344,7 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
       params.push(isLiveMode);
     }
 
-    query += `, stripe_status = 'verified', stripe_last_verified_at = CURRENT_TIMESTAMP`;
+    query += `, stripe_status = 'pending'`;
 
     await pool.query(query, params);
     
@@ -1367,7 +1365,9 @@ router.post("/settings/stripe/verify", authenticateAdmin, async (req, res) => {
     }
 
     const secretKey = decrypt(settings.rows[0].stripe_secret_key);
-    const stripe = new Stripe(secretKey, { apiVersion: '2025-01-27.acacia' as any });
+    const StripeModule = await import('stripe');
+    const StripeClass = StripeModule.default;
+    const stripe = new StripeClass(secretKey, { apiVersion: '2025-01-27.acacia' as any });
     
     await stripe.balance.retrieve();
     
@@ -1413,7 +1413,7 @@ router.post("/settings/paypal", authenticateAdmin, async (req, res) => {
       auditedMode = modeLower;
     }
 
-    query += `, paypal_status = 'verified', paypal_last_verified_at = CURRENT_TIMESTAMP`;
+    query += `, paypal_status = 'pending'`;
 
     await pool.query(query, params);
     

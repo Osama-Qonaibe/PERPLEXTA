@@ -104,9 +104,9 @@ export async function consolidateAllUserMemories(options?: {
   const targetUserId = options?.targetUserId ? (typeof options.targetUserId === 'string' ? parseInt(options.targetUserId, 10) : options.targetUserId) : undefined;
   
   // 1. Determine active provider & model from tool_orchestrator
-  // Prioritize sovereign_memory first, then chat, then fallback to anything active
-  let provider = 'google';
-  let model = 'gemini-1.5-flash';
+  // Prioritize sovereign_memory first, then chat, then fallback to anything active. No hardcoded default parameters are allowed under Orchestrator Absolutism.
+  let provider = '';
+  let model = '';
   try {
     const orchestratorRes = await pool.query(
       "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE tool_id = 'sovereign_memory' AND is_active = true"
@@ -132,7 +132,11 @@ export async function consolidateAllUserMemories(options?: {
       }
     }
   } catch (err) {
-    console.error('[Memory Service] Failed to fetch active orchestrator route, falling back default', err);
+    console.error('[Memory Service] Failed to fetch active orchestrator route.', err);
+  }
+
+  if (!provider || !model) {
+    throw new Error('Memory Service: Could not resolve a valid active AI provider/model from configuration database. Action aborted to ensure Orchestrator Absolutism.');
   }
 
   // Get active API Key

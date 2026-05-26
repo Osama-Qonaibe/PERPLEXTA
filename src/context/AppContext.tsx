@@ -140,22 +140,22 @@ const translations = {
     uploadDocument: 'رفع مستند',
     chat: 'محادثة',
     tools: 'الأدوات',
-    chat_fast: 'سريع',
-    chat_pro: 'احترافي',
-    chat_reasoning: 'تفكير',
+    chat_fast: 'المحادثة السريعة',
+    chat_pro: 'المحادثة المتقدمة',
+    chat_reasoning: 'نمط التفكير العميق',
     sovereign_search: 'البحث السيادي',
     sovereign_search_desc: 'البحث الاستخباراتي الذكي والتنقيب عن المعرفة العالمية في الوقت الفعلي بأعلى مستويات النزاهة.',
     perplexta_analysis: 'تحليل بيربليكستا',
     perplexta_analysis_desc: 'البحث التقني والتحليل الرقمي العميق',
-    legal_analysis: 'المساعد القانوني',
+    legal_analysis: 'التحليل القانوني',
     legal_analysis_desc: 'تحليل احترافي للوثائق القانونية، الأنظمة، والاستفسارات التشريعية بدقة عالية.',
-    notebook: 'مساعد الإعلانات',
+    notebook: 'المفكرة البحثية',
     image: 'توليد الصور',
     video: 'توليد فيديو',
     stt: 'تحويل الصوت الى نص',
     tts: 'تحويل النص الى صوت',
     learning: 'مساعد التعليم',
-    code: 'إنشاء كود',
+    code: 'تحليل الكود',
     canvas: 'استوديو الصوت الذكي',
     storage_mb: 'مساحة التخزين (MB)',
     sovereign_memory: 'الذاكرة السيادية',
@@ -823,22 +823,22 @@ const translations = {
     uploadImage: 'Upload Image',
     uploadDocument: 'Upload Document',
     chat: 'Chat',
-    chat_fast: 'Fast',
-    chat_pro: 'Pro',
-    chat_reasoning: 'Think',
+    chat_fast: 'Fast Chat',
+    chat_pro: 'Pro Chat',
+    chat_reasoning: 'Reasoning Mode',
     sovereign_search: 'Sovereign Search',
     sovereign_search_desc: 'Real-time sovereign web intelligence and strategic knowledge extraction with zero-tracking integrity.',
     perplexta_analysis: 'Perplexta Analysis',
     perplexta_analysis_desc: 'Technical Search & Deep Digital Analysis',
-    legal_analysis: 'Legal Assistant',
+    legal_analysis: 'Legal Analysis',
     legal_analysis_desc: 'Professional analysis of legal documents, regulations, and legislative inquiries with high precision.',
-    notebook: 'Ads Assistant',
+    notebook: 'Research Notebook',
     image: 'Image Generation',
     video: 'Video Generation',
     stt: 'Speech to Text',
     tts: 'Text to Speech',
     learning: 'Education Assistant',
-    code: 'Code Generation',
+    code: 'Code Analysis',
     canvas: 'Smart Audio Studio',
     storage_mb: 'Storage Space (MB)',
     sovereign_memory: 'Sovereign Memory',
@@ -2585,7 +2585,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
       if (res.ok) {
-        setNotifications(await res.json());
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          setNotifications(await res.json());
+        } else {
+          const text = await res.text();
+          console.warn('Received non-JSON response from /api/notifications:', text.substring(0, 100));
+        }
       } else if (res.status === 401 || res.status === 403) {
         console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
         logout(false);

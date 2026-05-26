@@ -18,7 +18,10 @@ export const authLimiter = rateLimit({
 
 export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 12,
+  keyGenerator: (req: any) => {
+    return req.user?.id ? `user_${req.user.id}` : (req.ip || 'anonymous');
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many messages. Please wait a moment.' }
@@ -46,5 +49,13 @@ export const adminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Security: Too many admin requests. Action throttled.' }
+});
+
+export const broadcastLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many broadcast attempts. Admin communications are limited to 5 runs per 15 minutes.' }
 });
 

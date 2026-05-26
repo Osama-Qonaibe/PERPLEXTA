@@ -206,18 +206,18 @@ export const SubscriptionPage: React.FC = () => {
       <div className="flex flex-col gap-1 p-2.5 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-all hover:border-emerald-500/30 group">
         <div className="flex items-center gap-2 mb-1">
           <div className="transition-transform group-hover:scale-110" style={{ color: color }}>{icon}</div>
-          <span className="text-[10px] font-black uppercase tracking-tighter text-gray-500 truncate">{label}</span>
+          <span className="text-[10px] font-black uppercase tracking-tighter text-[var(--text-muted)] truncate">{label}</span>
         </div>
         <div className="flex items-center justify-between gap-2">
           {daily !== null && (
             <div className="flex flex-col">
-              <span className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">{t('daily')}</span>
-              <span className="text-xs font-black text-gray-900 dark:text-white leading-none">{formatLimit(daily)}</span>
+              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase leading-none mb-0.5">{t('daily')}</span>
+              <span className="text-xs font-black text-[var(--text-primary)] leading-none">{formatLimit(daily)}</span>
             </div>
           )}
           {monthly !== null && monthly !== 0 && (
             <div className="flex flex-col items-end">
-              <span className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">{t('monthly')}</span>
+              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase leading-none mb-0.5">{t('monthly')}</span>
               <span className="text-xs font-black text-emerald-500 leading-none">{formatLimit(monthly)}</span>
             </div>
           )}
@@ -257,7 +257,7 @@ export const SubscriptionPage: React.FC = () => {
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('subscription')}</h1>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
                 {dir === 'rtl' ? 'اختر الخطة المثالية لاحتياجاتك' : 'CHOOSE YOUR PERFORMANCE TIER'}
               </p>
             </div>
@@ -268,7 +268,7 @@ export const SubscriptionPage: React.FC = () => {
               className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                 billingCycle === 'monthly' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                  : 'text-gray-500 hover:text-emerald-500'
+                  : 'text-[var(--text-secondary)] hover:text-emerald-500'
               }`}
             >
               {t('monthly')}
@@ -278,7 +278,7 @@ export const SubscriptionPage: React.FC = () => {
               className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                 billingCycle === 'annual' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                  : 'text-gray-500 hover:text-emerald-500'
+                  : 'text-[var(--text-secondary)] hover:text-emerald-500'
               }`}
             >
               {t('annual')}
@@ -310,16 +310,16 @@ export const SubscriptionPage: React.FC = () => {
               </div>
             )}
             <div className="mb-3 md:mb-4">
-              <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2">
+              <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2 text-[var(--text-primary)]">
                 <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#10b981' }}></span>
                 {dir === 'rtl' ? plan.nameAr : plan.nameEn}
               </h3>
-              <p className="text-[11px] md:text-sm text-gray-500 leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
+              <p className="text-[11px] md:text-sm text-[var(--text-secondary)] leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
             </div>
-            <div className="mb-4 md:mb-6">
+            <div className="mb-4 md:mb-6 text-[var(--text-primary)]">
               <div className="flex items-baseline gap-1.5 md:gap-2">
-                <span className="text-3xl md:text-4xl font-bold">${getDisplayPrice(plan, billingCycle).toFixed(2)}</span>
-                <span className="text-xs md:text-gray-500">/ {billingCycle === 'annual' ? t('annual') : t('monthly')}</span>
+                <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">${getDisplayPrice(plan, billingCycle).toFixed(2)}</span>
+                <span className="text-xs text-[var(--text-muted)]">/ {billingCycle === 'annual' ? t('annual') : t('monthly')}</span>
               </div>
               {billingCycle === 'monthly' && getSavingPercentage(plan) > 0 ? (
                 <div className="mt-1 text-[10px] md:text-xs font-medium" style={{ color: plan.color || '#10b981' }}>
@@ -354,13 +354,13 @@ export const SubscriptionPage: React.FC = () => {
               </button>
             </div>
             <div className="flex-1 space-y-2 md:space-y-3 mb-6 md:mb-8">
-              <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 md:mb-3">
+              <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 md:mb-3">
                 {dir === 'rtl' ? 'الميزات' : 'Features'}
               </p>
               {plan.features.map((feature: any) => (
                 <div key={feature.id} className="flex items-start gap-2.5 md:gap-3">
                   <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#10b981' }} />
-                  <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-tight">
+                  <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
                     {dir === 'rtl' ? feature.textAr : feature.textEn}
                   </span>
                 </div>
@@ -368,12 +368,12 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
               <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat')} value={plan.limits.chat} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis')} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('visualGen') || 'Visual Art'} value={plan.limits.image} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('codeAnalysis') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb')} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
-                <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('workspace')} value={plan.limits.workspace} color={plan.color || '#10b981'} />
+                <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat') || 'Chat'} value={plan.limits.chat} color={plan.color || '#10b981'} />
+                <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis') || 'Perplexta Analysis'} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
+                <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('image') || 'Image Generation'} value={plan.limits.image} color={plan.color || '#10b981'} />
+                <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('code') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
+                <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
+                <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('canvas') || 'Smart Audio Studio'} value={plan.limits.canvas !== undefined ? plan.limits.canvas : (plan.limits.workspace !== undefined ? plan.limits.workspace : (plan.limits.tts !== undefined ? plan.limits.tts : 0))} color={plan.color || '#10b981'} />
               </div>
             </div>
           </div>
@@ -403,16 +403,16 @@ export const SubscriptionPage: React.FC = () => {
                   </button>
                 </div>
                 <div className="p-6 space-y-6">
-                  <p className="text-sm text-gray-500 leading-relaxed">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                     {t('confirmSubscriptionDesc').replace('{plan}', dir === 'rtl' ? confirmingPlan.nameAr : confirmingPlan.nameEn)}
                   </p>
                   <div className="p-4 rounded-[var(--radius)] space-y-3 bg-[var(--bg-primary)]">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500">{t('currentBalance')}</span>
+                      <span className="text-[var(--text-muted)]">{t('currentBalance')}</span>
                       <span className="font-bold text-[var(--text-primary)]">${Number(balanceUSD || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500">{t('planPrice')}</span>
+                      <span className="text-[var(--text-muted)]">{t('planPrice')}</span>
                       <span className="font-bold text-emerald-500">-${getDisplayPrice(confirmingPlan, billingCycle).toFixed(2)}</span>
                     </div>
                     <div className="pt-3 border-t border-[var(--border-main)] flex justify-between items-center text-sm">
@@ -497,19 +497,15 @@ export const SubscriptionPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold mb-3">
+                <h2 className="text-xl md:text-2xl font-bold mb-3 text-[var(--text-primary)]">
                   {resultModal === 'success' ? t('subscriptionSuccess') : t('insufficientBalanceTitle')}
                 </h2>
-                <p className="text-gray-500 text-xs md:text-sm leading-relaxed mb-5 md:mb-8 px-2 md:px-4">
+                <p className="text-[var(--text-secondary)] text-xs md:text-sm leading-relaxed mb-5 md:mb-8 px-2 md:px-4">
                   {resultModal === 'success' ? t('subscriptionSuccessDesc') : t('insufficientBalanceDesc')}
                 </p>
                 {resultModal === 'success' && redirectCountdown !== null && (
                   <div 
-                    className="mb-5 md:mb-6 p-4 rounded-[var(--radius)] border flex flex-col items-center justify-center transition-all duration-300 shadow-sm"
-                    style={{ 
-                      backgroundColor: `${selectedPlanForModal?.color || '#10b981'}08`, 
-                      borderColor: `${selectedPlanForModal?.color || '#10b981'}25` 
-                    }}
+                    className="mb-5 md:mb-6 p-4 rounded-[var(--radius)] border flex flex-col items-center justify-center transition-all duration-300 shadow-sm bg-[var(--bg-secondary)] border-[var(--border-main)]"
                   >
                     <div 
                       className="flex items-center gap-2.5 text-xs md:text-sm font-black uppercase tracking-wider mb-2"
@@ -536,7 +532,7 @@ export const SubscriptionPage: React.FC = () => {
                 )}
                 {resultModal === 'insufficient' && (
                   <div className="p-4 rounded-[var(--radius)] mb-6 flex items-center justify-between bg-[var(--bg-overlay)]">
-                    <div className="flex items-center gap-2 text-gray-500 text-xs font-medium">
+                    <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs font-medium">
                       <Wallet size={14} />
                       {t('currentBalance')}
                     </div>
@@ -544,7 +540,7 @@ export const SubscriptionPage: React.FC = () => {
                   </div>
                 )}
                 <div className="p-4 md:p-6 rounded-[var(--radius)] mb-5 md:mb-8 border bg-[var(--bg-overlay)] border-[var(--border)]">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 text-start">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3 text-start">
                     {t('yourReferralLink')}
                   </p>
                   <div className="flex items-center gap-2 p-1.5 rounded-[var(--radius)] border bg-[var(--bg-base)] border-[var(--border)]">
@@ -556,7 +552,7 @@ export const SubscriptionPage: React.FC = () => {
                       {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                     </button>
                     <div className="flex-1 overflow-hidden text-start">
-                      <p className="text-[11px] md:text-xs font-mono text-gray-500 truncate px-2">{referralLink}</p>
+                      <p className="text-[11px] md:text-xs font-mono text-[var(--text-secondary)] truncate px-2">{referralLink}</p>
                     </div>
                   </div>
                 </div>

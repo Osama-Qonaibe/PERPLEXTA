@@ -7649,7 +7649,7 @@ const UserManagementView = ({
 
     setIsUpdating(true);
     try {
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
+      const res = await fetch(`/api/admin/users/${userId}/permissions`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -8008,7 +8008,7 @@ const UserManagementView = ({
     const newStatus = currentStatus === "active" ? "suspended" : "active";
     setIsUpdating(true);
     try {
-      const res = await fetch(`/api/admin/users/${userId}/status`, {
+      const res = await fetch(`/api/admin/users/${userId}/permissions`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

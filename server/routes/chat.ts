@@ -232,6 +232,8 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
 });
 
 router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, res) => {
+  let userMessageId = 0;
+  let assistantMessageId = 0;
   try {
     const subRes = await pool.query(`
       SELECT s.status, u.role 
@@ -251,15 +253,19 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
       return res.status(400).json({ error: 'chatId and content are required' });
     }
 
-    // 1. Add the user's message to the database
-    await addChatMessage(chatId, 'user', content, toolId || 'chat');
+    // 1. Add the user's message to the database with a captured ID so we can clean up on failure
+    const userMsgResult = await pool.query(
+      'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
+      [chatId, 'user', content, toolId || 'chat']
+    );
+    userMessageId = userMsgResult.rows[0].id;
 
     // 2. Insert blank assistant message
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool, model) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [chatId, 'assistant', '', toolId || 'chat', modelId]
     );
-    const assistantMessageId = assistantMsgResult.rows[0].id;
+    assistantMessageId = assistantMsgResult.rows[0].id;
 
     // 3. Import dependencies and execute AI logic
     const { executeTaskLogic } = await import('../services/orchestrator.js');
@@ -318,7 +324,29 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
     res.json({ success: true, messageId: assistantMessageId });
   } catch (error: any) {
     console.error('[SyncMessage Error]:', error);
-    res.status(500).json({ error: error.message || 'Failed to sync message in background' });
+    
+    // Cleanup polluted empty or failed messages from DB to avoid front-running abuse
+    if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
+      await pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup assistant empty message failed:', e));
+    }
+    if (typeof userMessageId !== 'undefined' && userMessageId > 0) {
+      await pool.query('DELETE FROM messages WHERE id = $1', [userMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup user message failed:', e));
+    }
+
+    let status = 500;
+    let errBody = { error: error.message || 'Failed to sync message in background' };
+    try {
+      const parsed = JSON.parse(error.message);
+      if (parsed.type === 'QUOTA_EXCEEDED') {
+        status = 429;
+        errBody = parsed;
+      } else if (parsed.type === 'SYSTEM_INACTIVE') {
+        status = 503;
+        errBody = parsed;
+      }
+    } catch (_) {}
+
+    res.status(status).json(errBody);
   }
 });
 
