@@ -108,12 +108,12 @@ export const SubscriptionPage: React.FC = () => {
     const m = Number(plan.monthlyPrice || 0);
     const a = Number(plan.annualPrice || 0);
     const d = Number(plan.discount || 0);
-    if (d > 0) return d;
     if (a > 0 && m > 0) {
       const fullPrice = m * 12;
       const saving = Math.round((1 - a / fullPrice) * 100);
       return saving > 0 ? saving : 0;
     }
+    if (d > 0) return d;
     return 0;
   };
 
