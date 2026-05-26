@@ -207,14 +207,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     navItems.unshift({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
   }
 
-  if (isInstallable) {
-    navItems.push({ 
-      icon: <Smartphone size={18} />, 
-      label: language === 'ar' ? 'تثبيت التطبيق' : 'Install App', 
-      path: '#' 
-    });
-  }
-
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
   if (user && (['admin', 'support', 'elite'].includes(user.role || '') || (adminEmail && user.email === adminEmail))) {
     navItems.push({ 

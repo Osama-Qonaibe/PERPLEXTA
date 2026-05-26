@@ -2455,11 +2455,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSocket = io(socketEndpoint, socketOptions);
     setSocket(newSocket);
 
-    newSocket.on('connect_error', (err: any) => {
+    newSocket.on('connect_error', async (err: any) => {
       console.warn('[Socket] Connection failure:', err.message);
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
-        console.error('[Socket] Direct auth rejection. Destroying connection parameters.');
-        logout(false);
+        console.error('[Socket] Direct auth rejection. Attempting automatic session token refresh...');
+        const refreshedToken = await silentRefreshToken();
+        if (!refreshedToken) {
+          console.error('[Socket] Session token refresh failed. Destroying connection parameters.');
+          logout(false);
+        }
       }
     });
 

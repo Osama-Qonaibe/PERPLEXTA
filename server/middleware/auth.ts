@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
 
-// In-memory caching for performance & DB optimization
 interface UserCacheEntry {
   status: string;
   role: string;
@@ -19,8 +18,8 @@ interface RevocationCacheEntry {
 const userStatusCache = new Map<string | number, UserCacheEntry>();
 const tokenBlacklistCache = new Map<string, RevocationCacheEntry>();
 
-const USER_CACHE_TTL = 30 * 1000; // 30 seconds
-const BLACKLIST_CACHE_TTL = 60 * 1000; // 60 seconds
+const USER_CACHE_TTL = 30 * 1000;
+const BLACKLIST_CACHE_TTL = 60 * 1000;
 
 export function invalidateUserCache(userId: string | number) {
   userStatusCache.delete(userId);
@@ -29,12 +28,11 @@ export function invalidateUserCache(userId: string | number) {
 export function addToBlacklistCache(token: string) {
   tokenBlacklistCache.set(token, {
     isRevoked: true,
-    expiryTime: Date.now() + 24 * 60 * 60 * 1000 // Lock in memory for 24 hours
+    expiryTime: Date.now() + 24 * 60 * 60 * 1000
   });
 }
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  // Execute token rate limiter check to prevent brute-forcing token signatures
   tokenLimiter(req, res, (limiterErr?: any) => {
     if (limiterErr) {
       return next(limiterErr);
@@ -81,7 +79,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
         const nowMs = Date.now();
 
-        // 1. Blacklist Check (with performance caching)
         const cachedBlacklist = tokenBlacklistCache.get(token);
         if (cachedBlacklist && cachedBlacklist.expiryTime > nowMs) {
           if (cachedBlacklist.isRevoked) {
@@ -113,7 +110,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           return;
         }
 
-        // 2. User Status & Role Check (with performance caching)
         let userData: any = null;
         const cachedUser = userStatusCache.get(userPayload.id);
 

@@ -33,10 +33,8 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // In production, strictly enforce allowed origins. In dev, allow all.
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -69,7 +67,6 @@ const publicPath = path.join(process.cwd(), 'public');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 const distPath = path.join(process.cwd(), 'dist');
 
-// Middleware to serve manifest and service worker files from either dist or public
 const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     const distFile = path.join(distPath, fileName);
@@ -110,7 +107,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const filename = req.params.filename;
     const filePath = path.join(uploadsPath, filename);
 
-    // Secure Verification: Absolute path traversal guarding
     const resolvedPath = path.resolve(filePath);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
@@ -123,12 +119,10 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const ext = path.extname(filename).toLowerCase();
     const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
-    // Avatars/visual images are accessed publicly to ensure perfect browser rendering behavior
     if (publicExtensions.includes(ext)) {
       return res.sendFile(resolvedPath);
     }
 
-    // High Security documents check: verify authentication & ownership
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
     if (!token && req.query.token) {
@@ -161,7 +155,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         return res.sendFile(resolvedPath);
       }
 
-      // Check database to ensure document ownership
       try {
         const isUserFileRes = await pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
         if (isUserFileRes.rows.length > 0) {
@@ -225,10 +218,8 @@ app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 
 if (process.env.NODE_ENV === "production") {
-  const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
-    // Check if path has a static file extension to prevent sending HTML index for missing assets
     const hasStaticExtension = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav)$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
       res.sendFile(path.join(distPath, 'index.html'));

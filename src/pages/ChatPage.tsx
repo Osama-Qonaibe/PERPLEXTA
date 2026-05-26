@@ -3239,6 +3239,37 @@ export const ChatPage: React.FC = () => {
             />
           </div>
 
+          {/* Voice to Text (STT) Button */}
+          <div className="relative flex-shrink-0 flex items-center">
+            <button 
+              onClick={toggleRecording}
+              disabled={isInputDisabled}
+              title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 relative group ${
+                isInputDisabled 
+                  ? 'opacity-30 cursor-not-allowed' 
+                  : isRecording
+                    ? 'bg-red-500/10 text-red-500 border-red-500/25 shadow-[0_0_15px_rgba(239,68,68,0.25)]' 
+                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 active:scale-95'
+              }`}
+            >
+              {isRecording ? (
+                <div className="relative flex items-center justify-center">
+                  <MicOff size={18} className="md:w-5 md:h-5 text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                </div>
+              ) : (
+                <Mic 
+                  size={18} 
+                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" 
+                />
+              )}
+            </button>
+          </div>
+
           {/* Attachment Button */}
           <div className="relative flex-shrink-0 flex items-center gap-1">
             <input 
@@ -3384,30 +3415,6 @@ export const ChatPage: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
-          
-          <div className="flex items-center flex-shrink-0">
-            <button 
-              onClick={toggleRecording}
-              className={`w-10 h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent transition-theme group ${
-                isRecording 
-                ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
-                : 'hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500'
-              }`}
-              title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل' : 'بدأ التسجيل الصوتي') : (isRecording ? 'Stop Recording' : 'Start Voice Input')}
-            >
-              {isRecording ? (
-                <div className="relative">
-                  <MicOff size={18} className="md:w-5 md:h-5 transition-theme transform scale-110" />
-                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                </div>
-              ) : (
-                <Mic size={18} className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
-              )}
-            </button>
           </div>
         </div>
       </motion.div>

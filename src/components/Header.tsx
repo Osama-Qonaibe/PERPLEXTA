@@ -41,6 +41,21 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const showMobileBanner = !isStandalone && isMobile && !isDismissed && isInstallable;
   
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  useEffect(() => {
+    const handleStreamingState = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent && customEvent.detail) {
+        setIsStreaming(!!customEvent.detail.isGenerating);
+      }
+    };
+    window.addEventListener('ai-streaming-state', handleStreamingState);
+    return () => {
+      window.removeEventListener('ai-streaming-state', handleStreamingState);
+    };
+  }, []);
+  
   // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -172,22 +187,102 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}>
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {siteSettings.logoBase64 ? (
-                    <div className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}>
+                    <motion.div 
+                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                      animate={isStreaming ? {
+                        scale: [1, 1.05, 1],
+                        borderColor: ["var(--border-main)", "rgba(16,185,129,0.8)", "var(--border-main)"],
+                        boxShadow: [
+                          "0 0 15px rgba(0,0,0,0.1)",
+                          "0 0 25px rgba(16,185,129,0.45)",
+                          "0 0 15px rgba(0,0,0,0.1)"
+                        ]
+                      } : {}}
+                      transition={isStreaming ? {
+                        duration: 1.8,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      } : {}}
+                    >
                       <img 
                         src={siteSettings.logoBase64} 
                         alt="Logo" 
                         className="w-full h-full object-cover block" 
                       />
-                    </div>
+                    </motion.div>
                   ) : (
-                    <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
+                    <motion.div
+                      className="w-10 h-10 flex items-center justify-center relative z-10 transition-theme"
+                      animate={isStreaming ? {
+                        scale: [1, 1.08, 1],
+                        filter: [
+                          "drop-shadow(0 0 0px rgba(16,185,129,0))",
+                          "drop-shadow(0 0 10px rgba(16,185,129,0.65))",
+                          "drop-shadow(0 0 0px rgba(16,185,129,0))"
+                        ]
+                      } : {}}
+                      transition={isStreaming ? {
+                        duration: 1.8,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      } : {}}
+                    >
+                      <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
+                    </motion.div>
                   )}
                   <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-theme rounded-full blur-2xl -z-10" />
                 </div>
-                {!isMobileView ? (
-                  <span className={`text-[17px] font-bold tracking-tight font-sans whitespace-nowrap overflow-hidden px-1 text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme`}>
-                    {t('appName')}
-                  </span>
+                 {!isMobileView ? (
+                  <div className="flex items-center select-none px-1">
+                    {/[\u0600-\u06FF]/.test(String(t('appName') || "Perplexta")) ? (
+                      <motion.span
+                        className="text-[17px] font-bold tracking-tight font-sans text-transparent bg-clip-text bg-[length:200%_auto] transition-theme"
+                        style={{
+                          backgroundImage: `linear-gradient(${dir === 'rtl' ? '90deg' : '90deg'}, var(--text-primary) 30%, rgb(16,185,129) 50%, var(--text-primary) 70%)`
+                        }}
+                        animate={isStreaming ? {
+                          backgroundPosition: dir === 'rtl' ? ["-100% 0", "100% 0"] : ["200% 0", "-200% 0"],
+                          filter: [
+                            "drop-shadow(0 0 1px rgba(16,185,129,0.1))",
+                            "drop-shadow(0 0 12px rgba(16,185,129,0.65))",
+                            "drop-shadow(0 0 1px rgba(16,185,129,0.1))"
+                          ]
+                        } : {
+                          backgroundPosition: "0 0"
+                        }}
+                        transition={isStreaming ? {
+                          duration: 2.0,
+                          repeat: Infinity,
+                          ease: "linear"
+                        } : {}}
+                      >
+                        {t('appName')}
+                      </motion.span>
+                    ) : (
+                      String(t('appName') || "Perplexta").split("").map((char, index) => (
+                        <motion.span 
+                          key={index}
+                          className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme"
+                          animate={isStreaming ? {
+                            color: ["var(--text-primary)", "rgb(16,185,129)", "var(--text-primary)"],
+                            textShadow: [
+                              "0 0 0px rgba(16,185,129,0)",
+                              "0 0 14px rgba(16,185,129,0.85)",
+                              "0 0 0px rgba(16,185,129,0)"
+                            ]
+                          } : {}}
+                          transition={isStreaming ? {
+                            duration: 1.6,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: index * 0.1,
+                          } : {}}
+                        >
+                          {char === " " ? "\u00A0" : char}
+                        </motion.span>
+                      ))
+                    )}
+                  </div>
                 ) : null}
               </NavLink>
           </div>
@@ -297,7 +392,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
             )}
           </AnimatePresence>
 
-           {!isStandalone && isInstallable && (
+           {!isStandalone && isInstallable && !isMobile && (
              <button
                onClick={installApp}
                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-emerald-500/20 hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"

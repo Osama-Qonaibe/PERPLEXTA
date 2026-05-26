@@ -90,7 +90,10 @@ const createUserSession = async (userId: number, token: string, req: express.Req
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
     
     await pool.query(
-      `INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at) VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (session_token)
+       DO UPDATE SET status = 'active', last_active_at = CURRENT_TIMESTAMP, expires_at = EXCLUDED.expires_at`,
       [userId, token, ipAddress, userAgent, expiresAt]
     );
   } catch (err) {
@@ -183,8 +186,8 @@ router.post("/signup", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
@@ -253,8 +256,8 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
@@ -334,8 +337,8 @@ router.post("/refresh-token", async (req, res) => {
     }
 
     const remember = decoded.remember === true || decoded.remember === 'true';
-    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
-    const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
 
     await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
 
@@ -657,8 +660,8 @@ router.get("/google/callback", async (req, res) => {
     }
 
     const remember = storedState?.remember === true || storedState?.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access' }, jwtSecret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh' }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
 
