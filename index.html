@@ -34,14 +34,7 @@
     <!-- Google Webmasters / Search Console Verification (Placeholder for admins) -->
     <meta name="google-site-verification" content="verification_placeholder" />
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TJ89GYPD40"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-TJ89GYPD40');
-    </script>
+    <!-- Dynamic Google Tag dynamically injected on system settings load -->
 
     <!-- Web Application Schema (JSON-LD) for Search Engine Rich Cards -->
     <script type="application/ld+json">
@@ -138,16 +131,23 @@
 
           // Dynamic Google Analytics Integration
           var gaId = settings.googleAnalyticsId || 'G-TJ89GYPD40';
-          if (gaId && gaId !== 'G-TJ89GYPD40') {
+          if (gaId) {
             var gaScript = document.createElement('script');
+            gaScript.id = 'ga-script';
             gaScript.async = true;
             gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
             document.head.appendChild(gaScript);
             
-            window.dataLayer = window.dataLayer || [];
+            var gaInlineScript = document.createElement('script');
+            gaInlineScript.id = 'ga-inline-script';
+            gaInlineScript.innerHTML = 
+              "window.dataLayer = window.dataLayer || [];\n" +
+              "function gtag(){dataLayer.push(arguments);}\n" +
+              "gtag('js', new Date());\n" +
+              "gtag('config', '" + gaId + "');";
+            document.head.appendChild(gaInlineScript);
+            
             window.gtag = function(){ dataLayer.push(arguments); };
-            gtag('js', new Date());
-            gtag('config', gaId);
           }
 
           if (settings.faviconBase64) {
