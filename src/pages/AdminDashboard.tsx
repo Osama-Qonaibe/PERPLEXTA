@@ -101,6 +101,8 @@ const CommandCenterView = ({
   const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [logStatusFilter, setLogStatusFilter] = useState("all");
+  const [logToolFilter, setLogToolFilter] = useState("all");
   const [apiHealth, setApiHealth] = useState<any[]>([]);
   const [serverHealth, setServerHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -164,12 +166,18 @@ const CommandCenterView = ({
         setActivity((prev) => [log, ...prev].slice(0, 50));
       };
 
+      const handleStatsUpdate = (newStats: any) => {
+        if (newStats) setStats(newStats);
+      };
+
       socket.on("new_system_activity", handleNewActivity);
       socket.on("new_ai_log", handleNewAiLog);
+      socket.on("admin_stats_update", handleStatsUpdate);
 
       return () => {
         socket.off("new_system_activity", handleNewActivity);
         socket.off("new_ai_log", handleNewAiLog);
+        socket.off("admin_stats_update", handleStatsUpdate);
       };
     }
   }, [token, socket]);
@@ -597,6 +605,102 @@ const CommandCenterView = ({
             </div>
           </div>
 
+          {/* Audit Log Filters Row */}
+          {(() => {
+            const statusOptions = [
+              { id: 'all', labelEn: 'All Status / Category', labelAr: 'جميع الحالات والتصنيفات' },
+              { id: 'success', labelEn: 'Success / Completed', labelAr: 'العمليات الناجحة والمكتملة' },
+              { id: 'failed', labelEn: 'Failed / Error', labelAr: 'العمليات الفاشلة والأخطاء' },
+              { id: 'system', labelEn: 'System Events', labelAr: 'أحداث النظام' },
+              { id: 'finance', labelEn: 'Financial Operations', labelAr: 'العمليات المالية' },
+              { id: 'communication', labelEn: 'Communications / Emails', labelAr: 'الاتصالات والرسائل البريدية' },
+              { id: 'ai_generation', labelEn: 'AI Generation / Tools', labelAr: 'توليد الذكاء الاصطناعي الأكاديمي' }
+            ];
+
+            const standardTools = [
+              { id: 'chat', labelEn: 'General Chat', labelAr: 'المحادثة العامة' },
+              { id: 'chat_fast', labelEn: 'Fast Chat', labelAr: 'المحادثة السريعة' },
+              { id: 'chat_pro', labelEn: 'Pro Chat', labelAr: 'المحادثة المتقدمة' },
+              { id: 'chat_reasoning', labelEn: 'Reasoning Mode', labelAr: 'نمط التفكير العميق' },
+              { id: 'perplexta_analysis', labelEn: 'Perplexta Analysis', labelAr: 'تحليل بيربليكستا' },
+              { id: 'image', labelEn: 'Image Generation', labelAr: 'توليد الصور' },
+              { id: 'code', labelEn: 'Code Analysis', labelAr: 'تحليل الكود' },
+              { id: 'legal_analysis', labelEn: 'Legal Analysis', labelAr: 'التحليل القانوني' }
+            ];
+
+            const uniqueToolsInLogs = Array.from(new Set(
+              activity
+                .filter(log => log && log.type === "ai_generation" && log.action)
+                .map(log => log.action)
+            ));
+
+            const availableToolFilters = [
+              ...standardTools,
+              ...uniqueToolsInLogs
+                .filter(toolId => !standardTools.find(st => st.id === toolId))
+                .map(toolId => ({
+                  id: toolId,
+                  labelEn: toolId.replace(/_/g, " ").toUpperCase(),
+                  labelAr: t(toolId) || toolId
+                }))
+            ];
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                {/* Status Selector */}
+                <div className="relative">
+                  <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                    {language === "ar" ? "تصفية حسب الحالة" : "Filter by Status"}
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={logStatusFilter}
+                      onChange={(e) => setLogStatusFilter(e.target.value)}
+                      className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                    >
+                      {statusOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>
+                          {dir === "rtl" ? opt.labelAr : opt.labelEn}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
+                    />
+                  </div>
+                </div>
+
+                {/* Tool Selector */}
+                <div className="relative">
+                  <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                    {language === "ar" ? "تصفية حسب الأداة" : "Filter by Tool"}
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={logToolFilter}
+                      onChange={(e) => setLogToolFilter(e.target.value)}
+                      className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                    >
+                      <option value="all">
+                        {dir === "rtl" ? "جميع الأدوات والخدمات" : "All Tools & Services"}
+                      </option>
+                      {availableToolFilters.map(tool => (
+                        <option key={tool.id} value={tool.id}>
+                          {dir === "rtl" ? tool.labelAr : tool.labelEn}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="mb-4 relative group">
             <Search
               className={`absolute ${dir === "rtl" ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 transition-theme ${search ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "text-gray-400 group-focus-within:text-emerald-500"}`}
@@ -620,121 +724,179 @@ const CommandCenterView = ({
           </div>
 
           <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
-            {activity.filter(log => {
-              if (!search.trim()) return true;
-              const term = search.toLowerCase();
-              return (
-                log.user_id?.toString().toLowerCase().includes(term) ||
-                log.user_name?.toLowerCase().includes(term) ||
-                log.action?.toLowerCase().includes(term) ||
-                log.detail?.toLowerCase().includes(term)
-              );
-            }).map((log, idx) => {
-              const isSelected = selectedActivityIds.includes(log.id);
-              const translateAction = (action: string) => {
-                const key = `log_${action}`;
-                const translation = t(key);
-                if (translation !== key) return translation;
+            {(() => {
+              const filteredList = activity.filter(log => {
+                if (!log) return false;
 
-                if (log.type === "ai_generation") {
-                  const toolName = t(log.action);
-                  return t("log_used_tool").replace(
-                    "{tool}",
-                    toolName !== log.action ? toolName : log.action,
-                  );
+                // 1. Filter by Status/Category
+                if (logStatusFilter !== "all") {
+                  if (logStatusFilter === "success") {
+                    const hasFailed = 
+                      (log.action && /failed|error|failure/i.test(log.action)) ||
+                      (log.detail && /failed|error|failure/i.test(log.detail)) ||
+                      (log.description && /failed|error|failure/i.test(log.description));
+                    if (hasFailed) return false;
+                  } else if (logStatusFilter === "failed") {
+                    const hasFailed = 
+                      (log.action && /failed|error|failure/i.test(log.action)) ||
+                      (log.detail && /failed|error|failure/i.test(log.detail)) ||
+                      (log.description && /failed|error|failure/i.test(log.description));
+                    if (!hasFailed) return false;
+                  } else {
+                    if (log.type !== logStatusFilter) return false;
+                  }
                 }
-                return action.replace(/_/g, " ");
-              };
 
-              const translateDetail = (detail: string) => {
-                if (!detail) return "";
-                if (detail.includes("Pruned notifications"))
-                  return t("log_notifications_prune_detail");
-                if (detail.includes("Logged into"))
-                  return t("log_login_detail");
-                if (detail.includes("Registered as"))
-                  return t("log_registration_detail");
-                return detail;
-              };
+                // 2. Filter by Tool
+                if (logToolFilter !== "all") {
+                  if (log.type !== "ai_generation" || log.action !== logToolFilter) {
+                    return false;
+                  }
+                }
 
-              return (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-3 group p-2 rounded-md transition-theme border border-transparent ${isSelected ? "bg-emerald-500/5 border-emerald-500/20" : "hover:bg-[var(--bg-secondary)]0/5"}`}
-                >
-                  <div className="pt-1 select-none">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {
-                        setSelectedActivityIds((prev) =>
-                          prev.includes(log.id)
-                            ? prev.filter((id) => id !== log.id)
-                            : [...prev, log.id],
-                        );
-                      }}
-                      className="w-4 h-4 rounded-sm border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
-                    />
-                  </div>
-                  <div
-                    className={`mt-0.5 p-1.5 rounded-md shrink-0 ${
-                      log.type === "ai_generation"
-                        ? "bg-blue-500/20 text-blue-500"
-                        : "bg-emerald-500/20 text-emerald-500"
-                    }`}
-                  >
-                    {log.type === "ai_generation" ? (
-                      <Zap size={15} />
-                    ) : (
-                      <Settings size={15} />
+                // 3. Search Filter
+                if (!search.trim()) return true;
+                const term = search.toLowerCase();
+                return (
+                  log.user_id?.toString().toLowerCase().includes(term) ||
+                  log.user_name?.toLowerCase().includes(term) ||
+                  log.action?.toLowerCase().includes(term) ||
+                  log.detail?.toLowerCase().includes(term)
+                );
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed border-[var(--border-main)] rounded-lg bg-[var(--bg-secondary)]/30">
+                    <div className="w-12 h-12 rounded-full bg-gray-500/10 dark:bg-gray-800/20 flex items-center justify-center text-gray-400 mb-3">
+                      <Search size={20} className="stroke-[1.5]" />
+                    </div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1">
+                      {language === "ar" ? "لم يتم العثور على سجلات" : "No Records Found"}
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)] max-w-xs leading-relaxed">
+                      {language === "ar" 
+                        ? "جرب تعديل المعايير المحددة أو تصفير كلمات البحث للحصول على نتائج مغايرة." 
+                        : "Try adjusting your filters or clearing your search term to view other entries."}
+                    </p>
+                    {(logStatusFilter !== "all" || logToolFilter !== "all" || search.trim()) && (
+                      <button
+                        onClick={() => {
+                          setLogStatusFilter("all");
+                          setLogToolFilter("all");
+                          setSearch("");
+                        }}
+                        className="mt-4 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-300"
+                      >
+                        {language === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
+                      </button>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-primary)] leading-snug truncate">
-                      <span className="text-emerald-500 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/10">
-                        {log.user_name || t("systemUser")}
-                      </span>{" "}
-                      <span className="ml-1 opacity-90">{translateAction(log.action)}</span>
-                    </p>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-1.5 transition-theme flex items-center gap-2">
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} className="opacity-50" />
-                        {getTimeAgo(log.created_at)}
-                      </span>
-                      {log.detail &&
-                      !log.detail.includes("-") &&
-                      !log.detail.includes("gpt")
-                        ? (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
-                            <span className="truncate max-w-[200px]">{translateDetail(log.detail)}</span>
-                          </>
-                        )
-                        : ""}
-                      {log.points > 0
-                        ? (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
-                            <span className="text-emerald-500 font-bold">{log.points} {language === "ar" ? "نقطة" : "pts"}</span>
-                          </>
-                        )
-                        : ""}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteActivity(log.id, log.type)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-theme"
+                );
+              }
+
+              return filteredList.map((log, idx) => {
+                const isSelected = selectedActivityIds.includes(log.id);
+                const translateAction = (action: string) => {
+                  const key = `log_${action}`;
+                  const translation = t(key);
+                  if (translation !== key) return translation;
+
+                  if (log.type === "ai_generation") {
+                    const toolName = t(log.action);
+                    return t("log_used_tool").replace(
+                      "{tool}",
+                      toolName !== log.action ? toolName : log.action,
+                    );
+                  }
+                  return action.replace(/_/g, " ");
+                };
+
+                const translateDetail = (detail: string) => {
+                  if (!detail) return "";
+                  if (detail.includes("Pruned notifications"))
+                    return t("log_notifications_prune_detail");
+                  if (detail.includes("Logged into"))
+                    return t("log_login_detail");
+                  if (detail.includes("Registered as"))
+                    return t("log_registration_detail");
+                  return detail;
+                };
+
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-3 group p-2 rounded-md transition-theme border border-transparent ${isSelected ? "bg-emerald-500/5 border-emerald-500/20" : "hover:bg-[var(--bg-secondary)]0/5"}`}
                   >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              );
-            })}
-            {activity.length === 0 && (
-              <p className="text-sm text-gray-500 italic">
-                {t("noActivityLogged")}
-              </p>
-            )}
+                    <div className="pt-1 select-none">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setSelectedActivityIds((prev) =>
+                            prev.includes(log.id)
+                              ? prev.filter((id) => id !== log.id)
+                              : [...prev, log.id],
+                          );
+                        }}
+                        className="w-4 h-4 rounded-sm border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                      />
+                    </div>
+                    <div
+                      className={`mt-0.5 p-1.5 rounded-md shrink-0 ${
+                        log.type === "ai_generation"
+                          ? "bg-blue-500/20 text-blue-500"
+                          : "bg-emerald-500/20 text-emerald-500"
+                      }`}
+                    >
+                      {log.type === "ai_generation" ? (
+                        <Zap size={15} />
+                      ) : (
+                        <Settings size={15} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-primary)] leading-snug truncate">
+                        <span className="text-emerald-500 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/10">
+                          {log.user_name || t("systemUser")}
+                        </span>{" "}
+                        <span className="ml-1 opacity-90">{translateAction(log.action)}</span>
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1.5 transition-theme flex items-center gap-2">
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} className="opacity-50" />
+                          {getTimeAgo(log.created_at)}
+                        </span>
+                        {log.detail &&
+                        !log.detail.includes("-") &&
+                        !log.detail.includes("gpt")
+                          ? (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
+                              <span className="truncate max-w-[200px]">{translateDetail(log.detail)}</span>
+                            </>
+                          )
+                          : ""}
+                        {log.points > 0
+                          ? (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
+                              <span className="text-emerald-500 font-bold">{log.points} {language === "ar" ? "نقطة" : "pts"}</span>
+                            </>
+                          )
+                          : ""}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteActivity(log.id, log.type)}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-theme"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 
@@ -9640,7 +9802,6 @@ const SmartEmailHubView = ({
     setIsOperationPending,
   ]);
 
-  // const { token, language, siteSettings } = useAppContext(); // Removed as it was moved up
 
   useEffect(() => {
     const fetchSettings = async () => {

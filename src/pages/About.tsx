@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  Newspaper,
   Info, 
   Target, 
   Globe, 
@@ -28,6 +30,45 @@ export const About: React.FC = () => {
   const navigate = useNavigate();
 
   const isAr = language === "ar";
+
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
+
+  const toggleCard = (index: number) => {
+    setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const newsList = [
+    {
+      date: "2026-05-20",
+      title: isAr ? "إطلاق تحديث ذكاء بيربليكستا 2.5" : "Perplexta Intelligence 2.5 Launched",
+      excerpt: isAr 
+        ? "مستوى جديد من استخراج المعرفة والوعي الذاتي بالسياق النشط مع معالجة PDF متطورة..."
+        : "A new level of knowledge extraction and stateful context tracking with robust PDF support...",
+      fullContent: isAr
+        ? "أطلقنا رسمياً التحديث 2.5 لنواة المعرفة في بيربليكستا. يأتي هذا التحديث بدعم كامل لمعالجة واستخلاص الملفات عالية الكثافة (حتى 100 ميجابايت)، وبروتوكول دمج الذاكرة التلقائي لحماية النواة من تراكم الجلسات، إلى جانب تصفية الأخطاء الهيكلية لاسترجاع الاستجابات الذكية بأسرع وتيرة."
+        : "We have officially deployed Perplexta Intelligence 2.5. This release introduces high-capacity context attachment capabilities (up to 100MB volumes), real-time proactive memory distillation, and robust PDF parsing APIs, paired with structural JSON parsing repair for reasoning models (like o1 and DeepSeek)."
+    },
+    {
+      date: "2026-05-15",
+      title: isAr ? "تأمين النظام بدستور بروتوكول الأمان الموحد" : "Military-Grade Secure Constitution Active",
+      excerpt: isAr
+        ? "دمج الدستور الأمني فائق الحماية CORE_PROTOCOL لضمان السيادة المطلقة لبيانات المهام..."
+        : "Integration of the Perplexta Global Edition constitution under advanced CORE_PROTOCOL...",
+      fullContent: isAr
+        ? "قامت المنصة بتفعيل الدستور الأمني الشامل ثنائي اللغة (العربية والإنجليزية). يفرض هذا الدستور حماية معيارية مشددة في الخادم وتشفير البيانات الحساسة بمستويات AES-256، مما يمنع تسريب تفاصيل الجلسات أو كسر السيادة الرقمية حتى في الاستعلامات المتقدمة."
+        : "Perplexta has activated its bilingual military-grade Global Constitution on the server. Managed under the CORE_PROTOCOL flag, this protocol guarantees robust AES-256 encryption on all sensitive API integrations, preventing data leaks and maintaining absolute digital sovereignty."
+    },
+    {
+      date: "2026-05-02",
+      title: isAr ? "بنية الحماية للمحفظة والتمويل المزدوج" : "Segregated Portfolio & Double-DB Architecture Active",
+      excerpt: isAr
+        ? "فصل شامل ومستقر بين قاعدة البيانات التشغيلية وسجلات المعاملات المالية Append-Only..."
+        : "Full stability with independent Operational Core DB and Append-Only Ledger transactions...",
+      fullContent: isAr
+        ? "أكملنا بنجاح ترحيل بنية البيانات المالية إلى نموذج الدفتر الحسابي المزدوج (Ledger DB). يضمن هذا النظام حماية الحسابات من التلاعب اللحظي، مع معالجة فورية وتلقائية لمعاملات البوابة المالية Stripe وتحويل نقاط الإحالة والودائع بمرونة تامة لنموذج Pay-with-Balance."
+        : "We are proud to announce the final deployment of our Dual-Database paradigm. Operational logs and financial wallets are now highly segregated between the Core DB and the append-only Ledger DB, providing absolute transaction safety, instant referral credit settlement, and seamless 1-click subscription payments via Stripe."
+    }
+  ];
 
   const ecosystem = [
     { name: isAr ? "بيربليكستا" : "perplexta", desc: isAr ? "المنصة الأحدث المتخصصة في التصميم، وصناعة الفيديو والصور بدعم تقني متكامل" : "The latest platform specialized in design, video and image creation with integrated technical support", url: "https://perplexta.com" },
@@ -332,6 +373,94 @@ export const About: React.FC = () => {
                 </div>
               </a>
             ))}
+          </div>
+        </section>
+
+        {/* News & Releases */}
+        <section className="space-y-10">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase flex items-center justify-center gap-2">
+              <Newspaper className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
+              {isAr ? "أحدث الأخبار وتحديثات النظام" : "Latest News & Releases"}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto font-medium">
+              {isAr ? "ابق على اطلاع بآخر أخبار المنصة، والترقيات الهيكلية، والتطورات الهندسية لبيئة تحليلاتنا." : "Stay updated with our latest platform announcements, architectural upgrades, and engineering milestones."}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {newsList.map((item, i) => {
+              const isExpanded = !!expandedCards[i];
+              return (
+                <div 
+                  key={i} 
+                  id={`news-card-${i}`}
+                  className="news-card p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-emerald-500/20 transition-all duration-300 group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
+                  onClick={() => toggleCard(i)}
+                >
+                  <div className="space-y-3">
+                    {/* Header: Date + Chevron indicator */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-black tracking-widest text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] bg-emerald-500/5 px-2.5 py-1 rounded-[4px] border border-emerald-500/15">
+                        {item.date}
+                      </span>
+                      <motion.div
+                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                      >
+                        <ChevronDown size={14} />
+                      </motion.div>
+                    </div>
+
+                    {/* News Title */}
+                    <h3 className="text-base font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors duration-300 leading-snug">
+                      {item.title}
+                    </h3>
+
+                    {/* Excerpt */}
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 font-semibold leading-relaxed">
+                      {item.excerpt}
+                    </p>
+
+                    {/* Collapsible content with smooth height and opacity transitions */}
+                    <motion.div
+                      initial={false}
+                      animate={{ 
+                        height: isExpanded ? "auto" : 0, 
+                        opacity: isExpanded ? 1 : 0 
+                      }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-4 border-t border-gray-200/50 dark:border-gray-800/45 text-xs text-gray-500 dark:text-gray-400 font-semibold leading-relaxed font-sans select-text whitespace-pre-line flex flex-col gap-3">
+                        <span>{item.fullContent}</span>
+                        <div className="flex justify-end pt-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCard(i);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-gray-500/5 hover:bg-emerald-500/10 dark:bg-gray-800/30 dark:hover:bg-emerald-500/15 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/30 dark:hover:border-emerald-500/45 text-[var(--text-primary)] hover:text-emerald-500 text-[10px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.2)] select-none"
+                          >
+                            <span>{isAr ? "▲ عرض أقل" : "▲ Show Less"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Read More Button with the "Emerald Glow" Hover Effect */}
+                  <div className="pt-2 flex items-center justify-start text-[10px] font-black uppercase tracking-wider text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 select-none">
+                    <span>
+                      {isExpanded 
+                        ? (isAr ? "عرض أقل ▲" : "Read Less ▲") 
+                        : (isAr ? "اقرأ المزيد ◀" : "Read More ◀")}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

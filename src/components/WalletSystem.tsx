@@ -35,7 +35,9 @@ interface WalletData {
 
 export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ theme, dir }) => {
   const navigate = useNavigate();
-  const { t, token, refreshUser } = useAppContext() as any;
+  const { t, token, refreshUser, siteSettings } = useAppContext() as any;
+  const isStripeActive = !!(siteSettings?.stripe_active || siteSettings?.stripe_status === 'verified');
+  const isPaypalActive = !!(siteSettings?.paypal_active || siteSettings?.paypal_status === 'verified');
   const [activeTab, setActiveTab ] = useState('transactions');
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -375,6 +377,24 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       return;
     }
 
+    if (amountVal < 10) {
+      toast.error(
+        dir === 'rtl'
+          ? 'تنبيه: الحد الأدنى لكل عملية إيداع هو 10 دولار أمريكي لحماية المحفظة.'
+          : 'Notice: Minimum deposit is $10 USD to protect the wallet.'
+      );
+      return;
+    }
+
+    if (amountVal > 1000) {
+      toast.error(
+        dir === 'rtl'
+          ? 'تنبيه: الحد الأقصى لكل عملية إيداع هو 1000 دولار أمريكي لحماية المحفظة من غسيل الأموال والإغراق.'
+          : 'Notice: Maximum deposit is $1,000 USD per transaction to protect the wallet.'
+      );
+      return;
+    }
+
     setIsSubmittingDeposit(true);
 
     // MANUAL FLOW: Crypto, Bank & PayPal methods
@@ -556,6 +576,57 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   // Predefined deposit selectors handler
   const selectPredefinedAmount = (val: string) => {
     setDepositAmount(val);
+  };
+
+  const handleDepositAmountChange = (val: string) => {
+    if (val === '') {
+      setDepositAmount('');
+      return;
+    }
+    
+    // Replace any non-numeric/non-decimal characters
+    const sanitizedVal = val.replace(/[^0-9.]/g, '');
+    
+    // Guard against multiple dots
+    const parts = sanitizedVal.split('.');
+    if (parts.length > 2) return;
+
+    const num = parseFloat(sanitizedVal);
+    if (!isNaN(num)) {
+      if (num > 1000) {
+        setDepositAmount('1000');
+        toast.warning(
+          dir === 'rtl' 
+            ? 'تنبيه: الحد الأقصى للإيداع هو 1000 دولار لحماية المحفظة.' 
+            : 'Maximum deposit limit ($1,000) automatically enforced.'
+        );
+      } else {
+        setDepositAmount(sanitizedVal);
+      }
+    } else {
+      setDepositAmount('');
+    }
+  };
+
+  const handleDepositAmountBlur = () => {
+    if (depositAmount === '') {
+      setDepositAmount('10');
+      toast.info(
+        dir === 'rtl' 
+          ? 'تم تطبيق الحد الأدنى للإيداع (10$) تلقائياً.' 
+          : 'Minimum deposit limit ($10) automatically enforced.'
+      );
+      return;
+    }
+    const num = parseFloat(depositAmount);
+    if (isNaN(num) || num < 10) {
+      setDepositAmount('10');
+      toast.info(
+        dir === 'rtl' 
+          ? 'تم تطبيق الحد الأدنى للإيداع (10$) تلقائياً.' 
+          : 'Minimum deposit limit ($10) automatically enforced.'
+      );
+    }
   };
 
   // Card formatting helpers
@@ -755,6 +826,32 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
               <form onSubmit={handleDepositSubmit} className="space-y-8">
                 
+                {/* STRICT TRANSACTION BOUNDARIES & COMPLIANCE WARNING */}
+                <div className="p-4 rounded-[var(--radius)] bg-emerald-500/[0.02] border border-emerald-500/10 space-y-2.5">
+                  <div className="flex items-center gap-2 text-emerald-500">
+                    <ShieldCheck size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      {dir === 'rtl' ? 'امتثال مالي صارم وضوابط أمنية' : 'Strict Financial Compliance & Security Protocol'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--text-muted)] font-black leading-relaxed uppercase">
+                    {dir === 'rtl' 
+                      ? 'تلتزم المحفظة بمعايير الامتثال الدولية الصارمة وقواعد مكافحة غسيل الأموال، ولا تقبل دفعات غير مصرح بها أو مسيئة للاستخدام داخل الموقع. تخضع كافة المعاملات للرقابة والتدقيق المستمر لحماية الحسابات من الإغراق.'
+                      : 'This wallet strictly adheres to international financial compliance and anti-money laundering (AML) controls. Unauthorized transactions or direct transfers outside platform services are rejected. All actions are fully audited on the immutable ledger.'}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-4 text-[9px] font-black text-emerald-500/80 border-t border-emerald-500/5 pt-2 uppercase tracking-wide">
+                    <div>
+                      {dir === 'rtl' ? 'الحد الأدنى لعملية الشحن:' : 'MIN LIMIT:'}{' '}
+                      <span className="text-[var(--text-primary)] font-mono font-black">$10.00 USD</span>
+                    </div>
+                    <div className="w-1 h-px bg-emerald-500/20 self-stretch hidden sm:block" />
+                    <div>
+                      {dir === 'rtl' ? 'الحد الأقصى لعملية الشحن:' : 'MAX LIMIT:'}{' '}
+                      <span className="text-[var(--text-primary)] font-mono font-black">$1,000.00 USD</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Predefined Amounts */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] block">
@@ -789,9 +886,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       <span className="text-[13px] font-black text-emerald-500">$</span>
                     </div>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
+                      onChange={(e) => handleDepositAmountChange(e.target.value)}
+                      onBlur={handleDepositAmountBlur}
                       placeholder="0.00"
                       className="block w-full pl-10 pr-12 py-4 bg-transparent border border-[var(--border)] rounded-[var(--radius)] text-sm font-black text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
@@ -808,10 +907,10 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     {[
-                      { id: 'card', name: dir === 'rtl' ? 'بطاقة ائتمان' : 'Credit/Debit Card', icon: <CreditCard size={18} /> },
-                      { id: 'crypto', name: dir === 'rtl' ? 'USDT (TRC20)' : 'USDT Crypto', icon: <Smartphone size={18} /> },
-                      { id: 'bank', name: dir === 'rtl' ? 'تحويل بنكي' : 'Bank IBAN wire', icon: <Building size={18} /> },
-                      { id: 'paypal', name: dir === 'rtl' ? 'بايبال ويب' : 'PayPal Secure', icon: <Globe size={18} /> }
+                      { id: 'card', name: dir === 'rtl' ? 'بطاقة ائتمان' : 'Credit/Debit Card', icon: <CreditCard size={18} />, active: isStripeActive },
+                      { id: 'crypto', name: dir === 'rtl' ? 'USDT (TRC20)' : 'USDT Crypto', icon: <Smartphone size={18} />, active: true },
+                      { id: 'bank', name: dir === 'rtl' ? 'تحويل بنكي' : 'Bank IBAN wire', icon: <Building size={18} />, active: true },
+                      { id: 'paypal', name: dir === 'rtl' ? 'بايبال ويب' : 'PayPal Secure', icon: <Globe size={18} />, active: isPaypalActive }
                     ].map((m) => (
                       <button
                         type="button"
@@ -829,7 +928,14 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           {m.icon}
                         </div>
                         <div>
-                          <p className="text-xs font-black font-sans leading-none">{m.name}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-black font-sans leading-none">{m.name}</p>
+                            {!m.active && (
+                              <span className="text-[7px] font-black bg-red-400/10 text-red-400 border border-red-500/20 px-1 py-0.5 rounded uppercase tracking-wider">
+                                {dir === 'rtl' ? 'مغلق' : 'Inactive'}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[8px] font-bold opacity-50 tracking-widest uppercase">
                             {m.id === 'card' ? 'Secure 3D' : m.id === 'crypto' ? 'Instant' : m.id === 'bank' ? 'Wire' : dir === 'rtl' ? 'مراجعة يدوية' : 'Manual'}
                           </span>
@@ -845,57 +951,75 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   {/* CREDIT CARD FIELDS */}
                   {depositMethod === 'card' && (
                     <div className="space-y-6">
-                      <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                        <ShieldCheck size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'بوابة دفع آمنة معتمدة بالكامل من Stripe' : 'Stripe Certified PCI-DSS 3D-Secure Gateway'}</span>
-                      </div>
-                      
-                      {/* Premium Graphic Card displaying the current checkout value empowered by Stripe */}
-                      <div className="relative w-full max-w-sm h-48 rounded-[var(--radius)] bg-gradient-to-br from-[#1a1a1c] via-[#2d2d30] to-[#121214] border border-gray-800/80 p-6 flex flex-col justify-between overflow-hidden shadow-2xl mx-auto">
-                        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-                        
-                        <div className="flex items-start justify-between">
+                      {!isStripeActive ? (
+                        <div className="p-8 rounded-[var(--radius)] border border-amber-500/20 bg-amber-500/5 text-center space-y-4">
+                          <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                            <Lock size={20} className="drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                          </div>
                           <div className="space-y-1">
-                            <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">{dir === 'rtl' ? 'الربط المالي الرسمي' : 'OFFICIAL INTEGRATION'}</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-black text-white tracking-widest">STRIPE</span>
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <h4 className="text-sm font-black text-white uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
+                            <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wide leading-relaxed">
+                              {dir === 'rtl' 
+                                ? 'بوابة دفع بطاقات الائتمان Stripe قيد التطوير والامتثال لأعلى معايير الأمان.'
+                                : 'Stripe credit card gateway is currently undergoing integration and optimization for maximum security standards.'}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-emerald-500 mb-2">
+                            <ShieldCheck size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'بوابة دفع آمنة معتمدة بالكامل من Stripe' : 'Stripe Certified PCI-DSS 3D-Secure Gateway'}</span>
+                          </div>
+                          
+                          {/* Premium Graphic Card displaying the current checkout value empowered by Stripe */}
+                          <div className="relative w-full max-w-sm h-48 rounded-[var(--radius)] bg-gradient-to-br from-[#1a1a1c] via-[#2d2d30] to-[#121214] border border-gray-800/80 p-6 flex flex-col justify-between overflow-hidden shadow-2xl mx-auto">
+                            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                            
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">{dir === 'rtl' ? 'الربط المالي الرسمي' : 'OFFICIAL INTEGRATION'}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm font-black text-white tracking-widest">STRIPE</span>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                </div>
+                              </div>
+                              <div className="font-sans font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-xl tracking-tight">
+                                stripe
+                              </div>
+                            </div>
+
+                            <div className="w-10 h-8 rounded-[4px] bg-gradient-to-tr from-amber-400/80 to-amber-200/50 relative border border-amber-500/30">
+                              <div className="absolute inset-2 border-r border-b border-amber-600/30" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="text-xs font-mono tracking-[0.3em] font-black text-gray-400">
+                                •••• •••• •••• ••••
+                              </div>
+                              <div className="flex justify-between items-end">
+                                <div>
+                                  <span className="text-[7px] text-gray-600 uppercase block leading-none">{dir === 'rtl' ? 'قيمة الإيداع بالدولار' : 'Deposit Value'}</span>
+                                  <span className="text-xs font-black text-emerald-500">$ {parseFloat(depositAmount || '0').toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
+                                </div>
+                                <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">3D SECURED</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="font-sans font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-xl tracking-tight">
-                            stripe
-                          </div>
-                        </div>
 
-                        <div className="w-10 h-8 rounded-[4px] bg-gradient-to-tr from-amber-400/80 to-amber-200/50 relative border border-amber-500/30">
-                          <div className="absolute inset-2 border-r border-b border-amber-600/30" />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="text-xs font-mono tracking-[0.3em] font-black text-gray-400">
-                            •••• •••• •••• ••••
-                          </div>
-                          <div className="flex justify-between items-end">
-                            <div>
-                              <span className="text-[7px] text-gray-600 uppercase block leading-none">{dir === 'rtl' ? 'قيمة الإيداع بالدولار' : 'Deposit Value'}</span>
-                              <span className="text-xs font-black text-emerald-500">$ {parseFloat(depositAmount || '0').toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
+                          <div className="p-4 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 flex gap-3 text-left rtl:text-right">
+                            <Lock size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-black text-white uppercase tracking-widest">{dir === 'rtl' ? 'بوابة Stripe الخارجية المشفرة' : 'FULLY EXTERNALIZED ENCRYPTED GATEWAY'}</p>
+                              <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider leading-relaxed">
+                                {dir === 'rtl' 
+                                  ? 'عند النقر على زر التأكيد بالأسفل، سيتم توجيهك بأمان كامل إلى صفحة دفع Stripe الرسمية والمؤمنة لتعبئة البيانات وإكمال المعاملة بدقة بالغة ورصيد فوري تزامني.'
+                                  : 'Upon clicking the confirm button below, you will transition to Stripe secure checkout. Your transaction is processed instantly onto the ledger.'}
+                              </p>
                             </div>
-                            <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">3D SECURED</span>
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 flex gap-3 text-left rtl:text-right">
-                        <Lock size={16} className="text-emerald-500 shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-white uppercase tracking-widest">{dir === 'rtl' ? 'بوابة Stripe الخارجية المشفرة' : 'FULLY EXTERNALIZED ENCRYPTED GATEWAY'}</p>
-                          <p className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider leading-relaxed">
-                            {dir === 'rtl' 
-                              ? 'عند النقر على زر التأكيد بالأسفل، سيتم توجيهك بأمان كامل إلى صفحة دفع Stripe الرسمية والمؤمنة لتعبئة البيانات وإكمال المعاملة بدقة بالغة ورصيد فوري تزامني.'
-                              : 'Upon clicking the confirm button below, you will transition to Stripe secure checkout. Your transaction is processed instantly onto the ledger.'}
-                          </p>
-                        </div>
-                      </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1108,86 +1232,104 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   {/* PAYPAL DIRECT GATEWAY */}
                   {depositMethod === 'paypal' && (
                     <div className="space-y-6">
-                      <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                        <Globe size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'رئاسة تسوية الدفع المباشر عبر PayPal اليدوي' : 'PayPal Secure Direct Settlement Ingestion Node'}</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-[var(--primary)] uppercase">
-                        <div className="md:col-span-2 p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
-                          <div>
-                            <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'بريد PayPal الخاص بمحفظة الاستلام' : 'PayPal Receiver Email'}</span>
-                            <span className="font-sans font-black text-xs text-emerald-500 tracking-wider font-mono">{wallet?.paypal_email || 'paypal@perplexta.com'}</span>
+                      {!isPaypalActive ? (
+                        <div className="p-8 rounded-[var(--radius)] border border-amber-500/20 bg-amber-500/5 text-center space-y-4">
+                          <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                            <Lock size={20} className="drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(wallet?.paypal_email || 'paypal@perplexta.com')}
-                            className="p-1 hover:bg-[var(--bg-surface)] text-emerald-500 rounded-[for-badge-radius] transition-colors"
-                          >
-                            <Copy size={14} />
-                          </button>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-black text-white uppercase tracking-wider">{dir === 'rtl' ? 'بوابة الدفع غير متاحة' : 'Payment Gateway Offline'}</h4>
+                            <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wide leading-relaxed">
+                              {dir === 'rtl' 
+                                ? 'بوابة دفع PayPal قيد التطوير والامتثال لأعلى معايير الأمان.'
+                                : 'PayPal gateway is currently undergoing integration and optimization for maximum security standards.'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-emerald-500 mb-2">
+                            <Globe size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{dir === 'rtl' ? 'رئاسة تسوية الدفع المباشر عبر PayPal اليدوي' : 'PayPal Secure Direct Settlement Ingestion Node'}</span>
+                          </div>
 
-                      <div className="p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] text-center">
-                        <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest leading-relaxed">
-                          {dir === 'rtl' 
-                            ? 'الرجاء تحويل القيمة المطلوبة إلى حساب بايبال الموضح أعلاه أولاً، ثم املأ رقم المعاملة المرجعي وأرفق صورة الإيصال لإرسال الطلب للمراجعة والموافقة يدويًا.' 
-                            : 'Ensure to send your transfer directly to the address above before transmitting the verification details below.'}
-                        </p>
-                      </div>
-
-                      {/* Manual Verification Form Fields for PayPal */}
-                      <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'رقم معاملة بايبال أو كود الحوالة (مطلوب)' : 'PayPal Transaction ID / Invoice Hash (Required)'}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={manualRefId}
-                            onChange={(e) => setManualRefId(e.target.value)}
-                            placeholder={dir === 'rtl' ? 'أدخل رقم المعاملة المرجعي هنا...' : 'Enter PayPal Transaction details...'}
-                            className="w-full bg-[var(--bg-base)] text-xs text-[var(--text-primary)] font-mono p-3 rounded-[var(--radius)] border border-[var(--border)] focus:outline-none focus:border-emerald-500/50 transition-colors"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
-                            {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload PayPal Payment Receipt (Optional)'}
-                          </label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="file"
-                              id="paypal-proof-upload"
-                              accept="image/*,application/pdf"
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  setManualProofFile(e.target.files[0]);
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor="paypal-proof-upload"
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
-                            >
-                              <Paperclip size={12} className="text-emerald-500" />
-                              {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
-                            </label>
-                            {manualProofFile && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-[var(--primary)] uppercase">
+                            <div className="md:col-span-2 p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] flex items-center justify-between">
+                              <div>
+                                <span className="text-[8px] text-[var(--text-muted)] tracking-widest block">{dir === 'rtl' ? 'بريد PayPal الخاص بمحفظة الاستلام' : 'PayPal Receiver Email'}</span>
+                                <span className="font-sans font-black text-xs text-emerald-500 tracking-wider font-mono">{wallet?.paypal_email || 'paypal@perplexta.com'}</span>
+                              </div>
                               <button
                                 type="button"
-                                onClick={() => setManualProofFile(null)}
-                                className="text-[10px] font-black text-rose-500 uppercase hover:underline"
+                                onClick={() => copyToClipboard(wallet?.paypal_email || 'paypal@perplexta.com')}
+                                className="p-1 hover:bg-[var(--bg-surface)] text-emerald-500 rounded-[for-badge-radius] transition-colors"
                               >
-                                {dir === 'rtl' ? 'إزالة' : 'REMOVE'}
+                                <Copy size={14} />
                               </button>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
+
+                          <div className="p-4 bg-[var(--bg-base)] rounded-[var(--radius)] border border-[var(--border)] text-center">
+                            <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest leading-relaxed">
+                              {dir === 'rtl' 
+                                ? 'الرجاء تحويل القيمة المطلوبة إلى حساب بايبال الموضح أعلاه أولاً، ثم املأ رقم المعاملة المرجعي وأرفق صورة الإيصال لإرسال الطلب للمراجعة والموافقة يدويًا.' 
+                                : 'Ensure to send your transfer directly to the address above before transmitting the verification details below.'}
+                            </p>
+                          </div>
+
+                          {/* Manual Verification Form Fields for PayPal */}
+                          <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
+                            <div className="space-y-1">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                                {dir === 'rtl' ? 'رقم معاملة بايبال أو كود الحوالة (مطلوب)' : 'PayPal Transaction ID / Invoice Hash (Required)'}
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={manualRefId}
+                                onChange={(e) => setManualRefId(e.target.value)}
+                                placeholder={dir === 'rtl' ? 'أدخل رقم المعاملة المرجعي هنا...' : 'Enter PayPal Transaction details...'}
+                                className="w-full bg-[var(--bg-base)] text-xs text-[var(--text-primary)] font-mono p-3 rounded-[var(--radius)] border border-[var(--border)] focus:outline-none focus:border-emerald-500/50 transition-colors"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                                {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload PayPal Payment Receipt (Optional)'}
+                              </label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="file"
+                                  id="paypal-proof-upload"
+                                  accept="image/*,application/pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      setManualProofFile(e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor="paypal-proof-upload"
+                                  className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
+                                >
+                                  <Paperclip size={12} className="text-emerald-500" />
+                                  {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
+                                </label>
+                                {manualProofFile && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setManualProofFile(null)}
+                                    className="text-[10px] font-black text-rose-500 uppercase hover:underline"
+                                  >
+                                    {dir === 'rtl' ? 'إزالة' : 'REMOVE'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1237,7 +1379,12 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
                   <button
                     type="submit"
-                    disabled={isSubmittingDeposit || !depositAmount}
+                    disabled={
+                      isSubmittingDeposit || 
+                      !depositAmount || 
+                      (depositMethod === 'card' && !isStripeActive) ||
+                      (depositMethod === 'paypal' && !isPaypalActive)
+                    }
                     className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-all duration-300 shadow-md hover:shadow-emerald-500/20"
                   >
                     {isSubmittingDeposit ? (

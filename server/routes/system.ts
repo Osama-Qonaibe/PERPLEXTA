@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { authenticateAdmin, authenticateToken } from '../middleware/auth.js';
 import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEconomySettings } from '../services/system.js';
 import { pool } from '../db/index.js';
+import { getStripe, getPayPalCredentials } from '../services/payments.js';
 
 const router = express.Router();
 
@@ -31,12 +32,24 @@ const checkOptionalAuth = (req: express.Request): boolean => {
 router.get("/settings", async (req, res) => {
   try {
     const settings = { ...await getSystemSettings() };
+
+    // Dynamically check activation based on configuration/cred availability
+    const stripeObj = await getStripe().catch(() => null);
+    const paypalObj = await getPayPalCredentials().catch(() => null);
+
+    const isStripeActive = !!stripeObj;
+    const isPaypalActive = !!paypalObj;
+
     const isAuth = checkOptionalAuth(req);
     if (!isAuth) {
       delete settings.stripe_publishable_key;
       delete settings.paypal_client_id;
     }
-    res.json(settings);
+    res.json({
+      ...settings,
+      stripe_active: isStripeActive,
+      paypal_active: isPaypalActive
+    });
   } catch (error) {
     res.status(500).json({ error: 'Internal Error' });
   }

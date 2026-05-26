@@ -90,14 +90,7 @@ export async function getPayPalAccessToken(clientId: string, clientSecret: strin
 export async function createPayPalOrder(amount: number, returnUrl: string, cancelUrl: string) {
   const creds = await getPayPalCredentials();
   if (!creds) {
-    // If not configured, provide a seamless simulated checkout session so the payment flows successfully in the preview!
-    const mockOrderId = `PAYPAL-MOCK-ORDER-${amount.toFixed(2)}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const approveUrl = `${returnUrl}&token=${mockOrderId}&amount=${amount}`;
-    console.log(`[PayPal] PayPal is not configured by the administrator. Using automatic simulated demo mode. Order ID: ${mockOrderId}`);
-    return {
-      orderId: mockOrderId,
-      approveUrl
-    };
+    throw new Error('PayPal is not configured by the administrator.');
   }
   
   try {
@@ -146,38 +139,19 @@ export async function createPayPalOrder(amount: number, returnUrl: string, cance
       approveUrl: approveLink
     };
   } catch (error: any) {
-    console.warn(`[PayPal Create Order] Failed to use configured PayPal credentials, falling back to simulated sandbox:`, error.message);
-    const mockOrderId = `PAYPAL-MOCK-ORDER-${amount.toFixed(2)}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const approveUrl = `${returnUrl}&token=${mockOrderId}&amount=${amount}`;
-    return {
-      orderId: mockOrderId,
-      approveUrl
-    };
+    console.error(`[PayPal Create Order] Failed:`, error.message);
+    throw error;
   }
 }
 
 export async function capturePayPalOrder(orderId: string, dbAmountFallback?: number) {
   if (orderId && orderId.startsWith('PAYPAL-MOCK-ORDER-')) {
-    const parts = orderId.split('-');
-    const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
-    return {
-      success: true,
-      captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-      amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
-    };
+    throw new Error('Simulated automatic payments are disabled.');
   }
 
   const creds = await getPayPalCredentials();
   if (!creds) {
-    const parts = orderId.split('-');
-    const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-    const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
-    return {
-      success: true,
-      captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-      amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
-    };
+    throw new Error('PayPal is not configured by the administrator.');
   }
   
   try {

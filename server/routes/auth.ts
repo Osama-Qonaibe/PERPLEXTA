@@ -217,6 +217,11 @@ router.post("/signup", authLimiter, async (req, res) => {
 
     await logSystemActivity(user.id, 'signup', 'User signed up', {}, req);
     sendSmartEmail(user.id, user.email, 'welcome_email', { userName: user.name || 'User', baseUrl: getBaseUrl(req) }, language as any).catch(console.error);
+    
+    // Broadcast updated stats to active admins
+    import('../services/admin.js').then(({ broadcastAdminStats }) => {
+      broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on signup:', err));
+    }).catch(err => console.error('[Socket] Failed to load admin service on signup:', err));
   } catch (error) {
     res.status(500).json({ error: 'Signup failed' });
   }
@@ -358,30 +363,35 @@ router.post("/refresh-token", async (req, res) => {
 });
 
 router.get("/google/url", async (req, res) => {
-  const { ref, lang, remember, mode, theme } = req.query;
-  
-  const nonce = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 600000);
+  try {
+    const { ref, lang, remember, mode, theme } = req.query;
+    
+    const nonce = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 600000);
 
-  await pool.query(
-    `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
-    [nonce, 'google', JSON.stringify({ 
-      ref: ref as string || null, 
-      lang: lang as string || 'ar', 
-      mode: mode as string || 'popup', 
-      remember: remember === 'true',
-      theme: theme as string || 'dark'
-    }), expiresAt]
-  );
+    await pool.query(
+      `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
+      [nonce, 'google', JSON.stringify({ 
+        ref: ref as string || null, 
+        lang: lang as string || 'ar', 
+        mode: mode as string || 'popup', 
+        remember: remember === 'true',
+        theme: theme as string || 'dark'
+      }), expiresAt]
+    );
 
-  const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID || '',
-    redirect_uri: getRedirectUri(req),
-    response_type: 'code',
-    scope: 'email profile',
-    state: nonce
-  });
-  res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      redirect_uri: getRedirectUri(req),
+      response_type: 'code',
+      scope: 'email profile',
+      state: nonce
+    });
+    res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+  } catch (error: any) {
+    console.error('[Google-URL Error]:', error?.message || error);
+    res.status(500).json({ error: 'Internal Server Error during Google OAuth URL creation' });
+  }
 });
 
 router.get("/google/test-reachability", async (req, res) => {

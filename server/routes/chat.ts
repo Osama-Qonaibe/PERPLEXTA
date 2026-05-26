@@ -231,4 +231,95 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
   }
 });
 
+router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, res) => {
+  try {
+    const subRes = await pool.query(`
+      SELECT s.status, u.role 
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+    `, [req.user.id]);
+    
+    const role = subRes.rows[0]?.role;
+    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to sync messages.' });
+    }
+
+    const { chatId, content, toolId, modelId } = req.body;
+    if (!chatId || !content) {
+      return res.status(400).json({ error: 'chatId and content are required' });
+    }
+
+    // 1. Add the user's message to the database
+    await addChatMessage(chatId, 'user', content, toolId || 'chat');
+
+    // 2. Insert blank assistant message
+    const assistantMsgResult = await pool.query(
+      'INSERT INTO messages (chat_id, role, content, tool, model) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [chatId, 'assistant', '', toolId || 'chat', modelId]
+    );
+    const assistantMessageId = assistantMsgResult.rows[0].id;
+
+    // 3. Import dependencies and execute AI logic
+    const { executeTaskLogic } = await import('../services/orchestrator.js');
+    const { io } = await import('../config/socket.js');
+
+    // Notify that assistant is typing/thinking
+    if (io) {
+      io.to(`user_${req.user.id}`).emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta' });
+    }
+
+    const generationStart = Date.now();
+
+    const result = await executeTaskLogic(
+      { 
+        tool_id: toolId || 'chat', 
+        prompt: content, 
+        chat_id: chatId,
+        system_prompt: req.user.custom_instructions || '',
+        model_id: modelId
+      }, 
+      req.user.id, 
+      undefined, 
+      (chunk) => {
+        if (io) {
+          io.to(`user_${req.user.id}`).emit('chat_chunk', { chunk, chatId, isFinal: false });
+        }
+      }
+    );
+
+    const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
+
+    await pool.query(
+      'UPDATE messages SET content = $1, generation_time = $2 WHERE id = $3',
+      [result.result, generationTimeSeconds, assistantMessageId]
+    );
+
+    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
+
+    if (io) {
+      io.to(`user_${req.user.id}`).emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
+      io.to(`user_${req.user.id}`).emit('chat_chunk', { chunk: '', chatId, isFinal: true });
+      io.to(`user_${req.user.id}`).emit('chat_response', { 
+        result: result.result, 
+        chatId, 
+        message_id: assistantMessageId,
+        tool: toolId || 'chat',
+        generation_time: generationTimeSeconds
+      });
+      io.to(`user_${req.user.id}`).emit('chat_updated');
+    }
+
+    // Broadcast updated stats to active admins in real-time
+    const { broadcastAdminStats } = await import('../services/admin.js');
+    broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on sync message:', err));
+
+    res.json({ success: true, messageId: assistantMessageId });
+  } catch (error: any) {
+    console.error('[SyncMessage Error]:', error);
+    res.status(500).json({ error: error.message || 'Failed to sync message in background' });
+  }
+});
+
 export default router;

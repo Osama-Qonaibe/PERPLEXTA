@@ -103,12 +103,10 @@ router.post("/stripe-deposit", authenticateToken, async (req: any, res) => {
     }
     const stripe = await getStripe();
     if (!stripe) {
-      // Provide a seamless simulated Stripe checkout link in preview environments
-      console.log(`[Stripe] Gateway is not configured. Falling back to simulated demo session with amount $${amount}`);
-      const mockSessionId = `MOCK-STRIPE-SESSION-${Number(amount).toFixed(2)}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const appUrl = process.env.APP_URL || 'http://localhost:3000';
-      const mockUrl = `${appUrl}/settings?tab=wallet&status=stripe-success&session_id=${mockSessionId}&amount=${amount}`;
-      return res.json({ url: mockUrl });
+      return res.status(400).json({ 
+        error: 'Stripe is not configured or activated by the administrator.', 
+        error_ar: 'عذراً، بوابة الدفع Stripe غير مهيأة أو غير مفعلة من قِبل مسؤول النظام حالياً.'
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -146,38 +144,6 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
     const { session_id } = req.query;
     if (!session_id) {
       return res.status(400).json({ error: 'Session ID is required' });
-    }
-
-    if (session_id.toString().startsWith('MOCK-STRIPE-SESSION-')) {
-      const parts = session_id.toString().split('-');
-      const amountIdx = parts.findIndex((p: string) => p === 'SESSION') + 1;
-      const parsedAmount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : parseFloat(req.query.amount as string || '0');
-      
-      const targetLedgerPool = ledgerPool || pool;
-      if (targetLedgerPool) {
-        const eventCheck = await targetLedgerPool.query('SELECT 1 FROM stripe_events WHERE stripe_event_id = $1', [session_id]);
-        if (eventCheck.rows.length === 0) {
-          try {
-            await targetLedgerPool.query(
-              'INSERT INTO stripe_events (stripe_event_id, type, status, metadata) VALUES ($1, $2, $3, $4)',
-              [session_id, 'stripe.mock_completed_sync', 'processed', JSON.stringify({ userId: req.user.id, amount: parsedAmount })]
-            );
-            await depositToWallet(req.user.id, parsedAmount, 'Stripe Gateway (Simulated)', `Simulated Stripe Checkout ${session_id}`);
-            
-            // Emit real-time WebSocket signals so the frontend syncs client states immediately
-            const { io } = await import('../config/socket.js');
-            if (io) {
-              io.to(`user_${req.user.id}`).emit('user_profile_updated');
-              io.to(`user_${req.user.id}`).emit('wallet_updated', { balance_usd: true });
-            }
-          } catch (e: any) {
-            if (e.code !== '23505') {
-              throw e;
-            }
-          }
-        }
-      }
-      return res.json({ success: true, amount: parsedAmount });
     }
 
     const stripe = await getStripe();
@@ -505,6 +471,9 @@ router.post("/webhook", async (req: any, res) => {
             if (io) {
               io.to(`user_${userId}`).emit('user_profile_updated');
             }
+            // Notify admins in real-time about the updated revenue
+            const { broadcastAdminStats } = await import('../services/admin.js');
+            broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on payment:', err));
           } else {
             console.warn(`[Stripe Webhook] Could not resolve user/plan IDs for invoice ${invoice.id}`);
           }

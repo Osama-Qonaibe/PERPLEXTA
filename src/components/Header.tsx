@@ -62,6 +62,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const titleEditRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -149,13 +150,20 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const shouldShowMenuButton = !isSidebarOpen && !isAdminPath && isMobileView;
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
       }
+      if (titleEditRef.current && !titleEditRef.current.contains(event.target as Node)) {
+        setIsEditingTitle(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const toggleLanguage = () => {
@@ -184,7 +192,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       <div className="w-full flex justify-between items-center h-full">
         <div className="flex items-center h-full">
           <div className={`flex items-center h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
-              <NavLink to="/" onClick={handleNewChat} className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}>
+              <NavLink 
+                to="/" 
+                onClick={handleNewChat} 
+                className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
+              >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {siteSettings.logoBase64 ? (
                     <motion.div 
@@ -315,6 +327,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               ) : chatId && chatTitle ? (
               <motion.div 
                 key="chat-title"
+                ref={titleEditRef}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -447,87 +460,87 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className={`absolute top-full mt-2 w-[calc(100vw-32px)] sm:w-80 max-h-[480px] overflow-hidden rounded-lg border shadow-2xl z-[60] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'} fixed sm:absolute`}
+                  className={`absolute top-full mt-2 w-[280px] xs:w-80 sm:w-96 max-h-[350px] sm:max-h-[480px] overflow-hidden rounded-lg border shadow-2xl z-[100] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'}`}
                 >
-                  <div className="p-4 border-b border-[var(--border-main)] flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-[var(--text-primary)]">{language === 'ar' ? 'الإشعارات' : 'Notifications'}</h3>
-                    <div className="flex items-center gap-3">
+                  <div className="p-3 sm:p-4 border-b border-[var(--border-main)] flex items-center justify-between">
+                    <h3 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">{language === 'ar' ? 'الإشعارات' : 'Notifications'}</h3>
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button 
                         onClick={unreadCount > 0 ? markAllAsRead : undefined}
                         disabled={unreadCount === 0}
-                        className={`text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
                           unreadCount > 0 
                             ? 'text-emerald-500 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
                         }`}
                       >
-                        <Check size={12} />
+                        <Check size={11} />
                         {language === 'ar' ? 'تحديد كالمقروء' : 'Mark all read'}
                       </button>
                       <button 
                         onClick={notifications.length > 0 ? clearAllNotifications : undefined}
                         disabled={notifications.length === 0}
-                        className={`text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
                           notifications.length > 0 
                             ? 'text-rose-500 hover:text-rose-400 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
                         }`}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={11} />
                         {language === 'ar' ? 'مسح الكل' : 'Clear all'}
                       </button>
                     </div>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+                  <div className="flex-1 overflow-y-auto py-1 custom-scrollbar">
                     {notifications.length > 0 ? (
                       notifications.map((notif) => (
                         <div
                           key={notif.id}
                           onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
-                          className={`w-full p-4 flex gap-3 text-right hover:bg-[var(--bg-primary)] transition-all duration-300 border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
+                          className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-all duration-300 border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
                             !notif.is_read ? 'bg-emerald-500/[0.03] border-r-2 border-r-emerald-500' : ''
                           }`}
                           dir={dir}
                         >
-                          <div className={`mt-1 h-8 w-8 rounded-sm flex items-center justify-center shrink-0 transition-theme ${
+                          <div className={`mt-0.5 h-7 w-7 sm:h-8 sm:w-8 rounded-sm flex items-center justify-center shrink-0 transition-theme ${
                             !notif.is_read ? 'bg-emerald-500/20 text-emerald-500 font-bold' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
                           }`}>
                             {getNotifIcon(notif.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className={`text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-primary)]'}`}>
-                                {language === 'ar' ? notif.title_ar : notif.title_en}
-                              </h4>
+                            <div className="flex items-center justify-between gap-1.5 flex-row-reverse">
                               {!notif.is_read && (
                                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                               )}
+                              <h4 className={`text-[11px] sm:text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-primary)]'}`}>
+                                {language === 'ar' ? notif.title_ar : notif.title_en}
+                              </h4>
                             </div>
-                            <p className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed transition-theme">
+                            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-2 leading-relaxed transition-theme">
                               {language === 'ar' ? notif.message_ar : notif.message_en}
                             </p>
-                            <div className="flex items-center justify-between mt-2.5">
-                              <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)] transition-theme">
-                                <Clock size={10} />
+                            <div className="flex items-center justify-between mt-1.5 sm:mt-2.5">
+                              <div className="flex items-center gap-1 text-[8px] sm:text-[9px] text-[var(--text-muted)] transition-theme">
+                                <Clock size={9} />
                                 <span>{new Date(notif.created_at).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
                                 {!notif.is_read && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                    className="p-1 text-emerald-500/60 hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.8)] opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.8)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                                     title={language === 'ar' ? 'تحديد كمقروء' : 'Mark as read'}
                                   >
-                                    <Check size={12} className="stroke-[3px]" />
+                                    <Check size={11} className="stroke-[3px]" />
                                   </button>
                                 )}
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                                  className="p-1 text-rose-500/60 hover:text-rose-500 hover:drop-shadow-[0_0_6px_rgba(239,68,68,0.8)] opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                  className="p-0.5 sm:p-1 text-rose-500/60 hover:text-rose-500 hover:drop-shadow-[0_0_6px_rgba(239,68,68,0.8)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                                   title={language === 'ar' ? 'حذف الإشعار' : 'Delete notification'}
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={11} />
                                 </button>
                               </div>
                             </div>
@@ -542,8 +555,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     )}
                   </div>
                   
-                  <div className="p-3 border-t border-[var(--border-main)] text-center">
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium transition-theme">
+                  <div className="p-2 sm:p-3 border-t border-[var(--border-main)] text-center bg-[var(--bg-secondary)]">
+                    <span className="text-[9px] sm:text-[10px] text-[var(--text-muted)] font-medium transition-theme">
                       {language === 'ar' ? 'البروتوكول الصامت للمنصة' : 'Silent Platform Protocol'}
                     </span>
                   </div>

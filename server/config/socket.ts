@@ -42,6 +42,14 @@ export function initSocket(httpServer: HttpServer) {
 
     socket.join(`user_${user.id}`);
     
+    if (user.role === 'admin') {
+      socket.join('admin_room');
+      // Broadcast initial stats to the joining admin immediately
+      import('../services/admin.js').then(({ broadcastAdminStats }) => {
+        broadcastAdminStats().catch(err => console.error('[Socket] Initial admin stats broadcast failed:', err));
+      }).catch(err => console.error('[Socket] Failed to load admin service for initial stats:', err));
+    }
+    
     socket.on("register_user", (userId: number) => {
       if (userId !== user.id) {
         console.warn(`[Socket] User ${user.id} attempted to join unauthorized room: user_${userId}`);
@@ -63,6 +71,16 @@ export function initSocket(httpServer: HttpServer) {
     socket.on("disconnect", () => {
     });
   });
+
+  // Periodic broadcast of admin dashboard statistics to active admins every 15 seconds
+  setInterval(() => {
+    const adminRoom = io.sockets.adapter.rooms.get('admin_room');
+    if (adminRoom && adminRoom.size > 0) {
+      import('../services/admin.js').then(({ broadcastAdminStats }) => {
+        broadcastAdminStats().catch(err => console.error('[Socket] Periodic broadcast failed:', err));
+      }).catch(err => console.error('[Socket] Failed to load admin service for periodic broadcast:', err));
+    }
+  }, 15000);
 
   return io;
 }

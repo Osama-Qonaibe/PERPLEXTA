@@ -155,6 +155,11 @@ export async function handleChatMessage(socket: any, data: any) {
       generation_time: generationTimeSeconds
     });
 
+    // Broadcast updated stats (including new ai generations count) to active admins in real-time
+    import('./admin.js').then(({ broadcastAdminStats }) => {
+      broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on new message:', err));
+    }).catch(err => console.error('[Socket] Failed to load admin service on new message:', err));
+
   } catch (error: any) {
     // Reset typing state on error
     socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });

@@ -240,3 +240,14 @@ export async function getServerHealth() {
     load
   };
 }
+
+export async function broadcastAdminStats() {
+  try {
+    const { io } = await import('../config/socket.js');
+    if (!io) return;
+    const stats = await getAdminStats();
+    io.to('admin_room').emit('admin_stats_update', stats);
+  } catch (error) {
+    console.error('[Socket] Failed to broadcast admin stats:', error);
+  }
+}

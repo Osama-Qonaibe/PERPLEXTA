@@ -1684,13 +1684,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInstallSuccess(false);
 
     const logsAr = [
-      '[معايرة] جاري الاتصال بقنوات الـ PWA المشفرة للبيانات ونظام الحقن...',
-      '[معالجة] توجيه مسارات الإرسال واستبيان سرعة وسائط التخزين المحلية للواجهة وبدء المزامنة الفورية...',
-      '[بناء الكاش] جاري بناء وتخزين أصول الواجهة الأساسية لحفظها في مصفوفة التصفح السريع...',
-      '[تأمين الميثاق] حقن ميثاق بيربليكستا الدستوري للتشغيل السيادي الآمن بموجب بروتوكول CORE_PROTOCOL الخاص بالمنصة...',
-      '[حقن الذاكرة] تفعيل بروتوكولات العقدة المستقلة ومزامنة الـ Service Worker لتمكين التشغيل السلس بلا إنترنت 24/7...',
-      '[فحص النزاهة] مطابقة مفاتيح التشفير AES-256 وقسائم الدفتر المالي المشفر وصفر-تأخير للمحفظة والملفات السحابية...',
-      '[اكتمال التنفيذ] المصافحة الرقمية تكتمل بنجاح! مصفوفة الوصول السريع لـ PERPLEXTA نشطة وجاهزة للعمل بنسبة 100%.'
+      '[معايرة] جاري الاتصال بقنوات الـ PWA المشفرة واستدعاء بروتوكول التشغيل الجوهري...',
+      '[معالجة] توجيه مسارات البث واستعلام أداء التخزين المحلي للواجهة وبدء المزامنة الفورية...',
+      '[بناء الكاش] جاري بناء وتخزين أصول النظام الأساسية لدمجها في مصفوفة التصفح السريع...',
+      '[تأمين السيادة] حقن الميثاق الدستوري الأعلى لبيربليكستا بموجب بروتوكول CORE_PROTOCOL الجوهري...',
+      '[تفعيل المزامنة] تهيئة الـ Service Worker المستقل لضمان وصول مستمر بلا انقطاع على مدار الساعة 24/7...',
+      '[فحص النزاهة] مطابقة شهادات التشفير الأمني وفك التسمية الرمزية لدفاتر المحفظة والبيانات المحلية...',
+      '[دخول النظام] المصافحة الرقمية تمت بنجاح! بيئة بيربليكستا السيادية نشطة ومثبتة بنسبة 100%.'
     ];
 
     const logsEn = [
@@ -2400,6 +2400,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 50);
     }
   };
+
+  // Automated 2-hour Inactivity Session Invalidation Service
+  useEffect(() => {
+    if (!user || !token) return;
+
+    // Initialize/set start timestamp
+    localStorage.setItem('perplexta_last_activity', Date.now().toString());
+
+    // Throttled update helper (only updates if at least 15 seconds have passed)
+    let lastWriteTime = Date.now();
+    const updateLastActivity = () => {
+      const now = Date.now();
+      if (now - lastWriteTime > 15000) {
+        localStorage.setItem('perplexta_last_activity', now.toString());
+        lastWriteTime = now;
+      }
+    };
+
+    // Activity listeners
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      window.addEventListener(event, updateLastActivity, { passive: true });
+    });
+
+    // Inactivity threshold: 2 hours (7,200,000 milliseconds)
+    const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
+    
+    // Check inactivity every 30 seconds
+    const interval = setInterval(() => {
+      const lastActivityStr = localStorage.getItem('perplexta_last_activity');
+      if (!lastActivityStr) {
+        localStorage.setItem('perplexta_last_activity', Date.now().toString());
+        return;
+      }
+
+      const lastActivity = parseInt(lastActivityStr, 10);
+      const now = Date.now();
+
+      if (!isNaN(lastActivity) && (now - lastActivity >= INACTIVITY_LIMIT)) {
+        clearInterval(interval);
+        toast.warning(
+          language === 'ar'
+            ? 'تم تسجيل الخروج تلقائياً بسبب عدم النشاط لمدة ساعتين لحماية حسابك.'
+            : 'Session expired due to 2 hours of inactivity.'
+        );
+        logout(true);
+      }
+    }, 30000);
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, updateLastActivity);
+      });
+      clearInterval(interval);
+    };
+  }, [user, token, language]);
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     const saved = localStorage.getItem('site_settings');

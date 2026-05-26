@@ -2305,6 +2305,24 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'sync-complete' && event.data.chatId === chatIdRef.current) {
+        if (chatIdRef.current) {
+          loadChat(chatIdRef.current);
+        }
+      }
+    };
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    }
+    return () => {
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+      }
+    };
+  }, [chatId]);
+
+  useEffect(() => {
     if (!socket) return;
 
     const applyFinalResponse = (data: any) => {
@@ -2715,6 +2733,77 @@ export const ChatPage: React.FC = () => {
       const input = document.getElementById('unified-upload') as HTMLInputElement;
       if (input) input.value = '';
     } catch (error: any) {
+        const isOffline = !navigator.onLine || 
+                         error.message.includes('fetch') || 
+                         error.message.includes('NetworkError') || 
+                         error.message.includes('connection') ||
+                         error.message.includes('Failed to fetch') ||
+                         error.message.includes('Socket');
+
+        if (isOffline) {
+          try {
+            const dbRequest = indexedDB.open('perplexta-pwa-db', 2);
+            dbRequest.onupgradeneeded = (evt: any) => {
+              const db = evt.target.result;
+              if (!db.objectStoreNames.contains('failed-messages')) {
+                db.createObjectStore('failed-messages', { keyPath: 'id' });
+              }
+            };
+            dbRequest.onsuccess = (evt: any) => {
+              const db = evt.target.result;
+              const transaction = db.transaction('failed-messages', 'readwrite');
+              const store = transaction.objectStore('failed-messages');
+              const failedId = 'failed_' + Date.now().toString();
+              const payload = {
+                id: failedId,
+                chatId: chatIdRef.current || chatId,
+                content: currentQuery,
+                toolId: toolToUse,
+                modelId: activeDropdown === 'model' ? selectedModel : undefined,
+                token: token || localStorage.getItem('app_token'),
+                timestamp: Date.now()
+              };
+              store.add(payload);
+              
+              if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                navigator.serviceWorker.ready.then(reg => {
+                  return (reg as any).sync.register('sync-failed-messages');
+                }).then(() => {
+                  console.log('[PWA Client] Registered background sync tag "sync-failed-messages"');
+                }).catch(e => console.warn('Background sync registration failed:', e));
+              }
+            };
+          } catch (e) {
+            console.error('Failed to store failed message in IndexedDB:', e);
+          }
+
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            const offlineLabelAr = 'أنت غير متصل بالإنترنت. تم حفظ رسالتك في قائمة الانتظار، وسيتم إرسالها تلقائياً عند استعادة الاتصال (مزامنة خلفية).';
+            const offlineLabelEn = 'You are offline. Your message has been queued and will be automatically delivered once connection is restored (Background Sync).';
+            const notification = dir === 'rtl' ? offlineLabelAr : offlineLabelEn;
+            if (lastMessage && lastMessage.role === 'assistant') {
+              newMessages[newMessages.length - 1] = { 
+                role: 'assistant', 
+                content: notification, 
+                tool: toolToUse,
+                created_at: new Date().toISOString()
+              };
+              return newMessages;
+            }
+            return [...prev, { role: 'assistant', content: notification, tool: toolToUse, created_at: new Date().toISOString() }];
+          });
+          setIsGenerating(false);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          setForensicMode(false);
+          setForensicReport(null);
+          const input = document.getElementById('unified-upload') as HTMLInputElement;
+          if (input) input.value = '';
+          return;
+        }
+
         if (error.name === 'AbortError') {
           setMessages(prev => {
             const newMessages = [...prev];

@@ -166,9 +166,9 @@ export const PWACinematicModal: React.FC = () => {
                 </div>
 
                 {/* Start Line and End Line Visual Matrix */}
-                <div className={`my-8 relative px-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                <div className="my-8 relative px-4 text-left" dir="ltr">
                   {/* Labels & Vertical Lines of Start and End */}
-                  <div className={`flex justify-between items-end mb-2.5 text-[9px] font-mono text-gray-400 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
+                  <div className="flex justify-between items-end mb-2.5 text-[9px] font-mono text-gray-400">
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-3 bg-emerald-500 inline-block drop-shadow-[0_0_4px_rgba(16,185,129,0.8)]" />
                       <span>{language === 'ar' ? '[خط البدء: التهيئة]' : '[START_LINE: INIT_BOOT]'}</span>
@@ -180,7 +180,7 @@ export const PWACinematicModal: React.FC = () => {
                   </div>
 
                   {/* Bounded physical horizontal track with boundary neon ticks */}
-                  <div className="relative h-7 w-full border-x border-emerald-500/30 bg-[#12141a]/60 rounded-sm overflow-hidden flex items-center px-0.5">
+                  <div className="relative h-7 w-full border-x border-emerald-500/30 bg-[#12141a]/60 rounded-sm overflow-hidden flex items-center px-0.5" dir="ltr">
                     {/* Visual grid ticks inside the bar */}
                     <div className="absolute inset-y-0 left-0 right-0 flex justify-between px-4 pointer-events-none opacity-10">
                       {Array.from({ length: 15 }).map((_, i) => (
@@ -199,7 +199,7 @@ export const PWACinematicModal: React.FC = () => {
                       transition={{ ease: "easeInOut" }}
                     >
                       {/* Laser leading head */}
-                      <div className={`absolute top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-full shadow-[0_0_12px_#fff,0_0_24px_rgba(16,185,129,1)] animate-pulse ${dir === 'rtl' ? 'left-0' : 'right-0'}`} />
+                      <div className="absolute top-1/2 -translate-y-1/2 w-1.5 h-6 bg-white rounded-full shadow-[0_0_12px_#fff,0_0_24px_rgba(16,185,129,1)] animate-pulse right-0" />
                     </motion.div>
 
                     {/* Right Absolute boundary line */}
@@ -209,7 +209,14 @@ export const PWACinematicModal: React.FC = () => {
                   {/* Progress meta tags */}
                   <div className="flex justify-between items-center mt-2 text-[8px] font-mono text-gray-500">
                     <span>00:00:01</span>
-                    <span>STATUS: {installProgress === 100 ? 'SUCCESS' : 'COMPILING_ASSETS'}</span>
+                    <span>
+                      STATUS:{' '}
+                      {installSuccess
+                        ? 'SUCCESS'
+                        : installProgress === 100
+                        ? (language === 'ar' ? 'جاري التحقق النهائي...' : 'FINALIZING...')
+                        : (language === 'ar' ? 'جاري تجميع الأصول...' : 'COMPILING_ASSETS')}
+                    </span>
                     <span>00:00:04</span>
                   </div>
                 </div>
@@ -225,7 +232,7 @@ export const PWACinematicModal: React.FC = () => {
                         className={`flex items-start gap-1.5 leading-relaxed ${index === installLogs.length - 1 ? 'text-emerald-400 drop-shadow-[0_0_3px_rgba(16,185,129,0.4)]' : 'text-gray-500'}`}
                       >
                         <span className="text-emerald-500 shrink-0">&gt;</span>
-                        <span className="flex-1 text-right" dir={dir}>{log}</span>
+                        <span className={`flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`} dir={dir}>{log}</span>
                       </motion.div>
                     ))}
                   </div>
