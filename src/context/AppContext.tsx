@@ -45,6 +45,7 @@ export interface SiteSettings {
   keywordsEn: string;
   keywordsAr: string;
   googleAnalyticsId: string;
+  seoImageUrl: string | null;
 }
 
 interface AppContextType {
@@ -505,6 +506,20 @@ const translations = {
     keywordsEn: 'الكلمات المفتاحية (بالإنجليزية، مفصولة بفاصلة)',
     googleAnalyticsId: 'معرف إحصاءات جوجل',
     googleAnalyticsDesc: 'مثال: G-XXXXXXXXXX',
+    seoPreviewImageTitle: 'صورة معاينة محركات البحث ومواقع التواصل (SEO Share Image / og:image)',
+    seoDragAndDrop: 'اسحب الملف إلى هنا أو اضغط للتصفح',
+    seoSupportedFormats: 'التنسيقات المدعومة: PNG, JPG, WEBP',
+    seoBestPracticesTitle: 'متطلبات تحسين محركات البحث وسلاسل القيمة الفنية لقوقل وميتا:',
+    seoBestPracticesRecSize: 'الأبعاد الموصى بها:',
+    seoBestPracticesRecSizeDesc: '1200 × 630 بكسل لبث دقة فائقة',
+    seoBestPracticesRatio: 'نسبة العرض إلى الارتفاع:',
+    seoBestPracticesRatioDesc: '1.91:1 (لتسهيل القراءة وتفادي القص)',
+    seoBestPracticesFileSize: 'الحجم الأقصى الفعال:',
+    seoBestPracticesFileSizeDesc: '2MB (لتحسين سرعة المحتوى ومؤشرات حيوية الويب)',
+    seoSocialPreviewTitle: 'مخطط معاينة بطاقة شبكات التواصل (Open Graph / Rich Link Preview):',
+    seoNoImageYet: 'لم يتم رفع صورة بعد',
+    seoPreviewFooterNote: '* يظهر هذا المخطط الهيكلي التفاعلي جودة وعرض الصورة مع الوصف عند مشاركة رابط المنصة عبر منصات التواصل مثل فيسبوك، واتساب، لينكدإن وتويتر.',
+    seoRemoveImage: 'حذف الصورة',
     monthlyRevenue: 'الإيرادات الشهرية',
     activeUsersToday: 'المستخدمون النشطون (اليوم)',
     aiGenerations: 'عمليات التوليد الرقمية',
@@ -1177,6 +1192,20 @@ const translations = {
     keywordsAr: 'Keywords (Arabic, comma-separated)',
     googleAnalyticsId: 'Google Analytics ID',
     googleAnalyticsDesc: 'Example: G-XXXXXXXXXX',
+    seoPreviewImageTitle: 'SEO & Social Share Preview Image (og:image)',
+    seoDragAndDrop: 'Drag & drop image here or click to browse',
+    seoSupportedFormats: 'Supported formats: PNG, JPG, WEBP',
+    seoBestPracticesTitle: 'Google & Meta Technical Best Practices:',
+    seoBestPracticesRecSize: 'Recommended Size:',
+    seoBestPracticesRecSizeDesc: '1200 × 630 px (retina ready)',
+    seoBestPracticesRatio: 'Aspect Ratio:',
+    seoBestPracticesRatioDesc: '1.91:1 (avoids vertical cropping)',
+    seoBestPracticesFileSize: 'Max File Size:',
+    seoBestPracticesFileSizeDesc: '2MB (optimizes search crawling and page speeds)',
+    seoSocialPreviewTitle: 'OG Link Preview (WhatsApp, Facebook, LinkedIn, Twitter):',
+    seoNoImageYet: 'No SEO preview image uploaded',
+    seoPreviewFooterNote: '* This interactive mockup illustrates the unified resolution and presentation of your page description with the asset when users share your domain link.',
+    seoRemoveImage: 'Remove Image',
 
     monthlyRevenue: 'Monthly Revenue',
     activeUsersToday: 'Active Users (Today)',
@@ -2469,7 +2498,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       seoDescriptionAr: '',
       keywordsEn: '',
       keywordsAr: '',
-      googleAnalyticsId: ''
+      googleAnalyticsId: '',
+      seoImageUrl: null
     };
   });
 
@@ -2790,7 +2820,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           keywordsAr: settingsData.keywords_ar || '',
           googleAnalyticsId: settingsData.google_analytics_id || '',
           logoBase64: settingsData.logo_url || null,
-          faviconBase64: settingsData.favicon_url || null
+          faviconBase64: settingsData.favicon_url || null,
+          seoImageUrl: settingsData.seo_image_url || null
         });
       } catch (err) {
          console.warn('Settings fetch failed (likely unauthorized or server starting):', err);
@@ -2865,6 +2896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const currentSiteName = language === 'ar' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
     const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
+    const resolvedDesc = (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc;
     
     document.title = currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
     
@@ -2874,7 +2906,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       metaDescription.setAttribute('name', 'description');
       document.head.appendChild(metaDescription);
     }
-    metaDescription.setAttribute('content', (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc);
+    metaDescription.setAttribute('content', resolvedDesc || '');
+
+    // Sync Open Graph values dynamically
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta'));
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement('meta');
+      ogDesc.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute('content', resolvedDesc || '');
+
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
+
+    // Sync Twitter values dynamically
+    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (!twitterTitle) {
+      twitterTitle = document.createElement('meta');
+      twitterTitle.setAttribute('name', 'twitter:title');
+      document.head.appendChild(twitterTitle);
+    }
+    twitterTitle.setAttribute('content', currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta'));
+
+    let twitterDesc = document.querySelector('meta[name="twitter:description"]');
+    if (!twitterDesc) {
+      twitterDesc = document.createElement('meta');
+      twitterDesc.setAttribute('name', 'twitter:description');
+      document.head.appendChild(twitterDesc);
+    }
+    twitterDesc.setAttribute('content', resolvedDesc || '');
+
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (!twitterImage) {
+      twitterImage = document.createElement('meta');
+      twitterImage.setAttribute('name', 'twitter:image');
+      document.head.appendChild(twitterImage);
+    }
+    twitterImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
 
     let metaKeywords = document.querySelector('meta[name="keywords"]');
     if (!metaKeywords) {
@@ -2882,7 +2964,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       metaKeywords.setAttribute('name', 'keywords');
       document.head.appendChild(metaKeywords);
     }
-    metaKeywords.setAttribute('content', (language === 'ar' ? siteSettings.keywordsAr : siteSettings.keywordsEn));
+    metaKeywords.setAttribute('content', (language === 'ar' ? siteSettings.keywordsAr : siteSettings.keywordsEn) || '');
 
     if (siteSettings.faviconBase64) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;

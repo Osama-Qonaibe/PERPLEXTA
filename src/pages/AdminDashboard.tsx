@@ -11796,7 +11796,7 @@ const SystemSettingsView = ({
   t: (key: string, replacements?: any) => string;
   dir: string;
 }) => {
-  const { siteSettings, setSiteSettings, token, setIsOperationPending } =
+  const { siteSettings, setSiteSettings, token, setIsOperationPending, language } =
     useAppContext();
 
   const [siteName, setSiteName] = useState(siteSettings.siteName);
@@ -11820,6 +11820,9 @@ const SystemSettingsView = ({
   );
   const [faviconBase64, setFaviconBase64] = useState<string | null>(
     siteSettings.faviconBase64,
+  );
+  const [seoImageUrl, setSeoImageUrl] = useState<string | null>(
+    siteSettings.seoImageUrl,
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -11865,6 +11868,7 @@ const SystemSettingsView = ({
           setGoogleAnalyticsId(data.google_analytics_id || "");
           setLogoBase64(data.logo_url || null);
           setFaviconBase64(data.favicon_url || null);
+          setSeoImageUrl(data.seo_image_url || null);
 
           setSiteSettings({
             ...siteSettings,
@@ -11879,6 +11883,7 @@ const SystemSettingsView = ({
             googleAnalyticsId: data.google_analytics_id || "",
             logoBase64: data.logo_url || null,
             faviconBase64: data.favicon_url || null,
+            seoImageUrl: data.seo_image_url || null,
           });
         }
       } catch (error) {
@@ -11890,14 +11895,15 @@ const SystemSettingsView = ({
 
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "logo" | "favicon",
+    type: "logo" | "favicon" | "seo",
   ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === "logo") setLogoBase64(reader.result as string);
-        else setFaviconBase64(reader.result as string);
+        else if (type === "favicon") setFaviconBase64(reader.result as string);
+        else if (type === "seo") setSeoImageUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -11932,6 +11938,7 @@ const SystemSettingsView = ({
           google_analytics_id: siteSettings.googleAnalyticsId,
           logo_url: logoBase64,
           favicon_url: faviconBase64,
+          seo_image_url: siteSettings.seoImageUrl,
         }),
       });
 
@@ -11990,6 +11997,7 @@ const SystemSettingsView = ({
           google_analytics_id: siteSettings.googleAnalyticsId,
           logo_url: logoBase64,
           favicon_url: faviconBase64,
+          seo_image_url: siteSettings.seoImageUrl,
         }),
       });
 
@@ -12042,6 +12050,7 @@ const SystemSettingsView = ({
           google_analytics_id: googleAnalyticsId,
           logo_url: siteSettings.logoBase64,
           favicon_url: siteSettings.faviconBase64,
+          seo_image_url: seoImageUrl,
         }),
       });
 
@@ -12053,6 +12062,7 @@ const SystemSettingsView = ({
           keywordsEn,
           keywordsAr,
           googleAnalyticsId,
+          seoImageUrl,
         });
         showToast(t("saveSuccess") || "SEO settings saved", "success");
       } else {
@@ -12495,6 +12505,142 @@ const SystemSettingsView = ({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* SEO Share Image Upload */}
+          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <ImageIcon size={16} className="text-emerald-500" />
+              {t("seoPreviewImageTitle")}
+            </h3>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Image Uploader */}
+              <div className="space-y-4">
+                <div
+                  className={`p-6 rounded-[var(--radius)] border border-dashed transition-all duration-300 ${
+                    theme === "dark" 
+                      ? "border-gray-800 bg-[#161618] hover:border-emerald-500/50" 
+                      : "border-gray-200 bg-gray-50/50 hover:border-emerald-500/50"
+                  } flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px] group`}
+                >
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => handleImageUpload(e, "seo")}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  
+                  {seoImageUrl ? (
+                    <div className="relative w-full h-full flex flex-col items-center">
+                      <img
+                        src={seoImageUrl}
+                        alt="SEO Preview"
+                        className="max-h-[160px] rounded-md object-contain aspect-[1.91/1] shadow-md border dark:border-gray-800"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSeoImageUrl(null);
+                        }}
+                        className="mt-3 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 transition-all z-20"
+                      >
+                        <Trash2 size={12} />
+                        {t("seoRemoveImage")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center p-4">
+                      <div className="mb-3 p-3 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform duration-300">
+                        <Upload size={24} />
+                      </div>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {t("seoDragAndDrop")}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-2">
+                        {t("seoSupportedFormats")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Google and Meta specifications card */}
+                <div className={`p-4 rounded-md border text-xs leading-relaxed space-y-2 ${
+                  theme === "dark" ? "bg-[#141416]/50 border-gray-800/80 text-gray-400" : "bg-gray-50/50 border-gray-100 text-gray-500"
+                }`}>
+                  <p className="font-semibold text-emerald-500">
+                    💡 {t("seoBestPracticesTitle")}
+                  </p>
+                  <ul className="list-disc leading-loose list-inside pr-1 space-y-1">
+                    <li>
+                      <strong>{t("seoBestPracticesRecSize")}</strong> {t("seoBestPracticesRecSizeDesc")}
+                    </li>
+                    <li>
+                      <strong>{t("seoBestPracticesRatio")}</strong> {t("seoBestPracticesRatioDesc")}
+                    </li>
+                    <li>
+                      <strong>{t("seoBestPracticesFileSize")}</strong> {t("seoBestPracticesFileSizeDesc")}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Real-time Rich Social Media Preview (Facebook / LinkedIn card simulation) */}
+              <div className="flex flex-col justify-start">
+                <div className="text-xs font-semibold mb-3 text-gray-500 dark:text-gray-400">
+                  ⚡ {t("seoSocialPreviewTitle")}
+                </div>
+
+                <div className={`rounded-lg overflow-hidden border shadow-sm flex flex-col ${
+                  theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-200"
+                }`}>
+                  {/* Image Section */}
+                  <div className="relative aspect-[1.91/1] w-full overflow-hidden bg-gray-100 dark:bg-zinc-900 border-b dark:border-gray-800 flex items-center justify-center">
+                    {seoImageUrl ? (
+                      <img 
+                        src={seoImageUrl} 
+                        alt="SEO Card Preview" 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-center p-4">
+                        <ImageIcon size={32} className="text-gray-300 dark:text-gray-700 mb-2" />
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">
+                          {t("seoNoImageYet")}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`absolute top-2 ${language === "ar" ? "right-2" : "left-2"} bg-black/60 rounded-md px-2 py-0.5 text-[8px] tracking-wide text-white uppercase font-mono z-20`}>
+                      {language === "ar" ? "معاينة 1200x630" : "Preview Image 1200x630"}
+                    </div>
+                  </div>
+
+                  {/* Body Section */}
+                  <div className={`p-4 flex flex-col font-sans ${language === "ar" ? "text-right" : "text-left"}`} dir={language === "ar" ? "rtl" : "ltr"}>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wider font-mono">
+                      {window.location.hostname || "perplexta.com"}
+                    </div>
+                    <div className={`text-sm font-semibold mt-1 line-clamp-1 ${
+                      theme === "dark" ? "text-white" : "text-gray-800"
+                    }`}>
+                      {language === "ar" ? (siteNameAr || "منصة بيربليكستا") : (siteName || "Perplexta Platform")}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
+                      {language === "ar" 
+                        ? (seoDescriptionAr || "يرجى كتابة وصف تعريفي مخصص ومكثف لزيادة جودة ظهور منصتك على محركات البحث وتسهيل أرشفة الرابط تلقائياً مع الصورة.") 
+                        : (seoDescriptionEn || "Please enter high quality descriptive analysis parameters to automatically enhance your brand's digital footprints across social ecosystems.")}
+                    </div>
+                  </div>
+                </div>
+                
+                <p className={`text-[10px] text-gray-400 mt-3 italic leading-relaxed ${dir === "rtl" ? "text-right" : "text-left"}`}>
+                  {t("seoPreviewFooterNote")}
+                </p>
+              </div>
             </div>
           </div>
         </div>

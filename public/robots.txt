@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /terms
+Allow: /privacy
+Allow: /about
+Allow: /subscription
+Disallow: /admin/
+Disallow: /settings
+Disallow: /api/
+Disallow: /reset-password
+
+# Dynamic Sitemap location
+Sitemap: /sitemap.xml

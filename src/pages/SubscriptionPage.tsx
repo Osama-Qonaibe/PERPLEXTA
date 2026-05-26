@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { CheckCircle2, MessageSquare, Image as ImageIcon, Video, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
+import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
@@ -13,7 +13,7 @@ const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export const SubscriptionPage: React.FC = () => {
-  const { t, theme, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
+  const { t, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
   const navigate = useNavigate();
 
   useEffect(() => {

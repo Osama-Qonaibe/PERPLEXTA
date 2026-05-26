@@ -520,6 +520,21 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`);
     });
 
+    // MIGRATION: SEO Upgrade and Robustness v19
+    await runVersioned('v19_seo_upgrade', 'Ensuring system_settings has robust SEO descriptions and keywords column extensions', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'seo_description_en', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'seo_description_ar', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'keywords_en', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'keywords_ar', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'site_description_en', 'TEXT');
+      await ensureColumn(tx, 'system_settings', 'site_description_ar', 'TEXT');
+    });
+
+    // MIGRATION: SEO Preview Image Support v20
+    await runVersioned('v20_seo_image', 'Adding seo_image_url column extension to support high-efficiency open graph representations', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'seo_image_url', 'TEXT');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);

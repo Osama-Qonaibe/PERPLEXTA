@@ -1,12 +1,63 @@
 <!doctype html>
-<html lang="en" dir="rtl">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>...</title>
+    <title>بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر</title>
+    
+    <!-- Primary SEO Meta Tags -->
+    <meta id="meta-description" name="description" content="بيربليكستا - منصة التحليل الفني والذكاء الاصطناعي الرائدة ومحرك التوجيه المتعدد بين الأنظمة الذكية لحل المسائل المعقدة ورفع الكفاءة التشغيلية والمالية." />
+    <meta id="meta-keywords" name="keywords" content="بيربليكستا, ذكاء اصطناعي, أوركسترا النماذج, أوتوميشن, تحليل البيانات, البرمجة الاحترافية, نماذج محادثة, ميموري, ليدجر مالي" />
+    <meta name="author" content="Perplexta Tech Platforms" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://perplexta.com" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://perplexta.com" />
+    <meta property="og:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
+    <meta property="og:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
+    <meta property="og:image" content="/app-assets/og-image.png" />
+    <meta property="og:site_name" content="بيربليكستا | Perplexta" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@perplexta" />
+    <meta name="twitter:creator" content="@perplexta" />
+    <meta name="twitter:url" content="https://perplexta.com" />
+    <meta name="twitter:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
+    <meta name="twitter:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
+    <meta name="twitter:image" content="/app-assets/og-image.png" />
+
+    <!-- Google Webmasters / Search Console Verification (Placeholder for admins) -->
+    <meta name="google-site-verification" content="verification_placeholder" />
+
+    <!-- Web Application Schema (JSON-LD) for Search Engine Rich Cards -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Perplexta Platform",
+        "alternateName": "بيربليكستا",
+        "description": "Professional Elite Technical Analysis & Multi-Model Orchestration Platform.",
+        "url": "https://perplexta.com",
+        "applicationCategory": "BusinessApplication",
+        "browserRequirements": "Requires HTML5 compatible browser with JavaScript enabled.",
+        "operatingSystem": "All",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
     <!-- PWA Settings -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0f0f11">
@@ -15,12 +66,50 @@
         try {
           var settings = JSON.parse(localStorage.getItem('site_settings') || '{}');
           var lang = localStorage.getItem('language') || 'ar';
+          
+          // Dynamic Language & Direction Setup
+          document.documentElement.lang = lang;
+          document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+          // Dynamic Title Setup
           var title = '...';
           if (settings) {
             title = lang === 'ar' ? (settings.siteNameAr || settings.siteName) : settings.siteName;
           }
-          if (title) document.title = title;
+          if (title && title !== '...') {
+            document.title = title;
+          } else {
+            document.title = lang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر' : 'Perplexta - Premium AI Platform';
+          }
           
+          // Dynamic Description & Keywords
+          var desc = lang === 'ar' ? (settings.seoDescriptionAr || settings.siteDescriptionAr) : (settings.seoDescriptionEn || settings.siteDescription);
+          if (desc) {
+            var metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute('content', desc);
+            
+            // Sync Open Graph & Twitter description
+            var ogDesc = document.querySelector('meta[property="og:description"]');
+            if (ogDesc) ogDesc.setAttribute('content', desc);
+            
+            var twDesc = document.querySelector('meta[name="twitter:description"]');
+            if (twDesc) twDesc.setAttribute('content', desc);
+          }
+          
+          if (title && title !== '...') {
+            var ogTitle = document.querySelector('meta[property="og:title"]');
+            if (ogTitle) ogTitle.setAttribute('content', title);
+            
+            var twTitle = document.querySelector('meta[name="twitter:title"]');
+            if (twTitle) twTitle.setAttribute('content', title);
+          }
+
+          var keywords = lang === 'ar' ? settings.keywordsAr : settings.keywordsEn;
+          if (keywords) {
+            var metaKeys = document.querySelector('meta[name="keywords"]');
+            if (metaKeys) metaKeys.setAttribute('content', keywords);
+          }
+
           if (settings.faviconBase64) {
              var link = document.createElement('link');
              link.rel = 'icon';
