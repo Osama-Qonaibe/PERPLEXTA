@@ -16,6 +16,17 @@ import { deductUsageFromWallet } from './wallet.js';
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 
+const AI_CALL_TIMEOUT_MS = 60000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`AI_TIMEOUT: ${label} exceeded ${ms}ms`)), ms)
+    )
+  ]);
+}
+
 function getDynamicHistoryLimit(totalMessages: number): number {
   if (totalMessages <= 4) return 4;
   if (totalMessages <= 8) return 6;
@@ -33,12 +44,24 @@ function cleanAIOutput(text: string): string {
     .trim();
 }
 
+async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: number, toolIdStr: string, walletCharged: boolean) {
+  try {
+    if (quotaCheck.allowed) {
+      await decrementUserUsage(userId, toolIdStr);
+    } else if (walletCharged) {
+      await incrementUserUsage(userId, toolIdStr);
+    }
+  } catch (e) {
+    console.error('[Orchestrator] safeDecrementOnFailure failed:', e);
+  }
+}
+
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
-  
+
   const sanitizePrompt = (p: string) => {
     if (!p) return p;
     return p.replace(/(SYSTEM[ _]MEMORY[ _]INGESTION|LIVE[ _]WEB[ _]CONTEXT|USER[ _]PROMPT|TECHNICAL[ _]DIRECTIVE|ASSISTANT[ _]MEMORY[ _]RECORDS|CONVERSATION[ _]CONTEXT[ _]SUMMARY):/gi, '[CLEANED_MARKER]');
@@ -51,7 +74,7 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
     try {
       const fileBuffer = Buffer.from(file_data.data, 'base64');
       const isImageVideoAudio = file_data.type?.startsWith('image/') || file_data.type?.startsWith('video/') || file_data.type?.startsWith('audio/');
-      
+
       if (file_data.type === 'application/pdf') {
         try {
           const forensicReport = forensicScanPDF(fileBuffer);
@@ -91,11 +114,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           finalPrompt = `${finalPrompt}\n\n[FILE CONTENT - ${file_data.name}]:\n${extractedText}`;
         }
       } else if (file_data.type === 'application/pdf') {
-         const { extractTextFromBuffer } = await import('./extractor.js');
-         const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
-         if (extractedText && extractedText.trim() !== '') {
-            finalPrompt = `${finalPrompt}\n\n[PDF CONTENT EXTRACTED - ${file_data.name}]:\n${extractedText}`;
-         }
+        const { extractTextFromBuffer } = await import('./extractor.js');
+        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
+        if (extractedText && extractedText.trim() !== '') {
+          finalPrompt = `${finalPrompt}\n\n[PDF CONTENT EXTRACTED - ${file_data.name}]:\n${extractedText}`;
+        }
       }
     } catch (err: any) {
       console.error('[Orchestrator File Extraction] Error parsing attached file buffer:', err);
@@ -103,7 +126,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   }
 
   if (!pool) throw new Error('System still initializing. Please wait.');
-  
+
   const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
     checkAndIncrementQuota(userId, toolIdStr),
@@ -111,11 +134,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     pool.query('SELECT language FROM users WHERE id = $1', [userId]),
     pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
     pool.query(
-      `SELECT fact FROM chat_memories 
-       WHERE user_id = $1 
-       ORDER BY 
-         CASE WHEN chat_id = $2 THEN 0 ELSE 1 END ASC, 
-         created_at DESC 
+      `SELECT fact FROM chat_memories
+       WHERE user_id = $1
+       ORDER BY
+         CASE WHEN chat_id = $2 THEN 0 ELSE 1 END ASC,
+         created_at DESC
        LIMIT 50`,
       [userId, chatIdNum]
     ).catch(() => ({ rows: [] }))
@@ -155,45 +178,48 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       type: "SYSTEM_INACTIVE"
     }));
   }
-  
+
   if (routeResult.rows.length === 0 || !routeResult.rows[0].primary_provider || !routeResult.rows[0].primary_model) {
-     await logSystemActivity(userId, 'INACTIVE_TOOL_ACCESS', `User attempted to access tool "${toolIdStr}" but it is currently inactive or undergoing maintenance.`, { toolId: toolIdStr });
-     throw new Error(JSON.stringify({
-        error: "This specialized service is temporarily unavailable for optimization. Our engineers have been notified.",
-        error_ar: "هذه الخدمة المتخصصة غير متاحة مؤقتاً لأغراض التحسين. تم إخطار مهندسينا بالفعل.",
-        type: "SYSTEM_INACTIVE"
-     }));
+    await logSystemActivity(userId, 'INACTIVE_TOOL_ACCESS', `User attempted to access tool "${toolIdStr}" but it is currently inactive or undergoing maintenance.`, { toolId: toolIdStr });
+    throw new Error(JSON.stringify({
+      error: "This specialized service is temporarily unavailable for optimization. Our engineers have been notified.",
+      error_ar: "هذه الخدمة المتخصصة غير متاحة مؤقتاً لأغراض التحسين. تم إخطار مهندسينا بالفعل.",
+      type: "SYSTEM_INACTIVE"
+    }));
   }
 
   const route = routeResult.rows[0];
-  
+
+  let walletCharged = false;
+
   if (!quotaCheck.allowed) {
     try {
       const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
+      walletCharged = true;
       if (io) {
         io.to(`user_${userId}`).emit('user_profile_updated');
-        io.to(`user_${userId}`).emit('wallet_charge_notice', { 
-          toolId: toolIdStr, 
-          charged: chargeRes.charged, 
-          amount: chargeRes.amount 
+        io.to(`user_${userId}`).emit('wallet_charge_notice', {
+          toolId: toolIdStr,
+          charged: chargeRes.charged,
+          amount: chargeRes.amount
         });
       }
       await incrementUserUsage(userId, toolIdStr);
     } catch (chargeErr: any) {
       const periodStrEn = quotaCheck.period === 'daily' ? 'Daily' : 'Monthly';
       const periodStrAr = quotaCheck.period === 'daily' ? 'يومي' : 'شهري';
-      
+
       const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Please upgrade your plan or recharge your digital wallet (Pay-per-Request: 10 Tool Points or equivalents) to execute excess actions.`;
       const msgAr = `تتطلب هذه العملية رصيداً أو عضوية ممتازة: لقد تجاوزت الحد ال${periodStrAr} المسموح به. يرجى شحن محفظتك الرقمية أو ترقية باقتك للاستمرار بالاستفادة بالدفع لكل معاملة (10 نقاط أو ما يعادلها).`;
-      
+
       await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quotaCheck.period} quota (${quotaCheck.currentUsage}/${quotaCheck.limit}) and wallet fallback failed: ${chargeErr.message}`, { toolIdStr, quota: quotaCheck });
 
-      throw new Error(JSON.stringify({ 
-        error: msgEn, 
-        error_ar: msgAr, 
+      throw new Error(JSON.stringify({
+        error: msgEn,
+        error_ar: msgAr,
         type: 'QUOTA_EXCEEDED',
-        limit: quotaCheck.limit, 
-        current: quotaCheck.currentUsage, 
+        limit: quotaCheck.limit,
+        current: quotaCheck.currentUsage,
         period: quotaCheck.period,
         cta: {
           upgrade: true,
@@ -202,11 +228,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       }));
     }
   }
-  
+
   const userLang = userRes.rows[0]?.language || 'ar';
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
-  
+
   if (toolIdStr === 'sovereign_search') {
     try {
       const searchResults = await performPerplextaSearch(cleanUserPrompt);
@@ -225,7 +251,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     const apiKey = await getProviderKey(providerId);
 
     if (!apiKey) {
-      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
       throw new Error(JSON.stringify({
         error: "Image generation service is temporarily unavailable. No active API key found.",
         error_ar: "خدمة توليد الصور غير متاحة حالياً. لا يوجد مفتاح API نشط.",
@@ -245,21 +271,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         const quality = imageSettings.quality === 'Ultra' ? 'hd' : 'standard';
         const style = imageSettings.style === 'واقعي' || imageSettings.style === 'Realistic' ? 'natural' : 'vivid';
 
-        const res = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: route.primary_model,
-            prompt: finalPrompt,
-            n: 1,
-            size,
-            quality,
-            style
-          })
-        });
+        const res = await withTimeout(
+          fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: route.primary_model, prompt: finalPrompt, n: 1, size, quality, style })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'openai-image'
+        );
         const data = await res.json() as any;
         if (!res.ok) throw new Error(data?.error?.message || `OpenAI image API error: ${res.status}`);
         imageUrl = data.data?.[0]?.url || '';
@@ -269,20 +289,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
         const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
 
-        const res = await fetch('https://api.together.xyz/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: route.primary_model,
-            prompt: finalPrompt,
-            n: 1,
-            width,
-            height
-          })
-        });
+        const res = await withTimeout(
+          fetch('https://api.together.xyz/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: route.primary_model, prompt: finalPrompt, n: 1, width, height })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'together-image'
+        );
         const data = await res.json() as any;
         if (!res.ok) throw new Error(data?.error?.message || `Together image API error: ${res.status}`);
         imageUrl = data.data?.[0]?.url || data.data?.[0]?.b64_json || '';
@@ -292,38 +307,35 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
         const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
 
-        const res = await fetch(`https://api.stability.ai/v1/generation/${route.primary_model}/text-to-image`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            text_prompts: [{ text: finalPrompt, weight: 1 }],
-            width,
-            height,
-            steps: imageSettings.quality === 'Ultra' ? 50 : 30,
-            samples: 1
-          })
-        });
+        const res = await withTimeout(
+          fetch(`https://api.stability.ai/v1/generation/${route.primary_model}/text-to-image`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              text_prompts: [{ text: finalPrompt, weight: 1 }],
+              width, height,
+              steps: imageSettings.quality === 'Ultra' ? 50 : 30,
+              samples: 1
+            })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'stability-image'
+        );
         const data = await res.json() as any;
         if (!res.ok) throw new Error(data?.message || `Stability AI error: ${res.status}`);
         const b64 = data.artifacts?.[0]?.base64;
         imageUrl = b64 ? `data:image/png;base64,${b64}` : '';
 
       } else if (providerId === 'replicate') {
-        const res = await fetch('https://api.replicate.com/v1/predictions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Token ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            version: route.primary_model,
-            input: { prompt: finalPrompt }
-          })
-        });
+        const res = await withTimeout(
+          fetch('https://api.replicate.com/v1/predictions', {
+            method: 'POST',
+            headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: route.primary_model, input: { prompt: finalPrompt } })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'replicate-image-init'
+        );
         const prediction = await res.json() as any;
         if (!res.ok) throw new Error(prediction?.detail || `Replicate error: ${res.status}`);
 
@@ -343,17 +355,19 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       if (!imageUrl) throw new Error('Image generation returned empty result');
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      await pool.query(
-        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-        [estimatedCost, providerId]
-      );
+      if (estimatedCost > 0) {
+        await pool.query(
+          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+          [estimatedCost, providerId]
+        );
+      }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Image generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
 
       return { result: imageUrl };
 
     } catch (imgErr: any) {
-      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
       console.error('[Orchestrator Image] Generation failed:', imgErr.message);
       throw new Error(JSON.stringify({
         error: `Image generation failed: ${imgErr.message}`,
@@ -366,19 +380,25 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   if (toolIdStr === 'tts') {
     try {
       const voiceId = reqBody.voice_id || route.primary_model || 'standard';
-      const audioBuffer = await perplextaTTS(cleanUserPrompt, voiceId);
+      const audioBuffer = await withTimeout(
+        perplextaTTS(cleanUserPrompt, voiceId),
+        AI_CALL_TIMEOUT_MS,
+        'tts'
+      );
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      await pool.query(
-        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-        [estimatedCost, route.primary_provider.toLowerCase()]
-      );
+      if (estimatedCost > 0) {
+        await pool.query(
+          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+          [estimatedCost, route.primary_provider.toLowerCase()]
+        );
+      }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `TTS generated via ElevenLabs voice=${voiceId}`, { toolIdStr });
 
       return { result: audioBuffer.toString('base64'), result_type: 'audio_base64' };
     } catch (ttsErr: any) {
-      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
       console.error('[Orchestrator TTS] Generation failed:', ttsErr.message);
       throw new Error(JSON.stringify({
         error: `TTS generation failed: ${ttsErr.message}`,
@@ -398,7 +418,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
-        if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+        await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
         throw new Error(JSON.stringify({
           error: "Speech-to-text service is temporarily unavailable. No active API key found.",
           error_ar: "خدمة تحويل الصوت إلى نص غير متاحة حالياً. لا يوجد مفتاح API نشط.",
@@ -413,11 +433,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       formData.append('model', route.primary_model || 'whisper-1');
       if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
 
-      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-        body: formData
-      });
+      const res = await withTimeout(
+        fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          body: formData
+        }),
+        AI_CALL_TIMEOUT_MS,
+        'stt'
+      );
 
       const data = await res.json() as any;
       if (!res.ok) throw new Error(data?.error?.message || `STT API error: ${res.status}`);
@@ -425,16 +449,18 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const transcription = data.text || '';
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      await pool.query(
-        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-        [estimatedCost, providerId]
-      );
+      if (estimatedCost > 0) {
+        await pool.query(
+          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+          [estimatedCost, providerId]
+        );
+      }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `STT transcription via ${route.primary_provider}/${route.primary_model}`, { toolIdStr });
 
       return { result: transcription };
     } catch (sttErr: any) {
-      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
       console.error('[Orchestrator STT] Transcription failed:', sttErr.message);
       throw new Error(JSON.stringify({
         error: `STT transcription failed: ${sttErr.message}`,
@@ -450,7 +476,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
-        if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+        await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
         throw new Error(JSON.stringify({
           error: "Video generation service is temporarily unavailable. No active API key found.",
           error_ar: "خدمة توليد الفيديو غير متاحة حالياً. لا يوجد مفتاح API نشط.",
@@ -461,17 +487,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       let videoUrl = '';
 
       if (providerId === 'replicate') {
-        const res = await fetch('https://api.replicate.com/v1/predictions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Token ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            version: route.primary_model,
-            input: { prompt: finalPrompt }
-          })
-        });
+        const res = await withTimeout(
+          fetch('https://api.replicate.com/v1/predictions', {
+            method: 'POST',
+            headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: route.primary_model, input: { prompt: finalPrompt } })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'replicate-video-init'
+        );
         const prediction = await res.json() as any;
         if (!res.ok) throw new Error(prediction?.detail || `Replicate video error: ${res.status}`);
 
@@ -487,20 +511,24 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           if (pollData.status === 'failed') throw new Error(`Replicate video generation failed: ${pollData.error || 'unknown'}`);
         }
       } else if (providerId === 'runway') {
-        const res = await fetch('https://api.runwayml.com/v1/image_to_video', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'X-Runway-Version': '2024-11-06'
-          },
-          body: JSON.stringify({
-            model: route.primary_model || 'gen3a_turbo',
-            promptText: finalPrompt,
-            duration: 5,
-            ratio: '1280:768'
-          })
-        });
+        const res = await withTimeout(
+          fetch('https://api.runwayml.com/v1/image_to_video', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'X-Runway-Version': '2024-11-06'
+            },
+            body: JSON.stringify({
+              model: route.primary_model || 'gen3a_turbo',
+              promptText: finalPrompt,
+              duration: 5,
+              ratio: '1280:768'
+            })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'runway-video-init'
+        );
         const task = await res.json() as any;
         if (!res.ok) throw new Error(task?.error || `Runway error: ${res.status}`);
 
@@ -522,16 +550,18 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       if (!videoUrl) throw new Error('Video generation returned empty result');
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      await pool.query(
-        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-        [estimatedCost, providerId]
-      );
+      if (estimatedCost > 0) {
+        await pool.query(
+          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+          [estimatedCost, providerId]
+        );
+      }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Video generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
 
       return { result: videoUrl };
     } catch (videoErr: any) {
-      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
       console.error('[Orchestrator Video] Generation failed:', videoErr.message);
       throw new Error(JSON.stringify({
         error: `Video generation failed: ${videoErr.message}`,
@@ -548,9 +578,9 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONTEXT:\n${chatRes.rows[0].context_summary}\n` : '';
-  
+
   let refinedSystemPromptSegment = system_prompt ? `[CUSTOM_INSTRUCTIONS]\n${system_prompt}` : '';
-  
+
   if (toolIdStr === 'sovereign_memory') {
     const memoryInstructions = `[MEMORY ENGINE]
 Extract long-term user facts from this conversation. For each worthy fact, output:
@@ -585,7 +615,7 @@ OBJECTIVE: ${taskDesc || 'Execute the user request with highest professional pre
 ${toolBoundary}
 ${contextSummary}${userMemoriesStr}
 ${refinedSystemPromptSegment}`.trim();
-  
+
   const modelsToTry = [
     { provider: route.primary_provider, model: route.primary_model },
     { provider: route.fallback_1_provider, model: route.fallback_1_model },
@@ -595,7 +625,7 @@ ${refinedSystemPromptSegment}`.trim();
 
   let generatedText = '';
   let successfulModel = null;
-  
+
   for (const target of modelsToTry) {
     try {
       const providerId = target.provider.toLowerCase();
@@ -623,26 +653,33 @@ ${refinedSystemPromptSegment}`.trim();
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
         continue;
       }
-      
-      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data }, urlKey ?? undefined);
+
+      generatedText = await withTimeout(
+        callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data }, urlKey ?? undefined),
+        AI_CALL_TIMEOUT_MS,
+        `${target.provider}/${target.model}`
+      );
       successfulModel = target;
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+      if (estimatedCost > 0) {
+        await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+      }
 
       if (chatIdNum > 0) {
         setImmediate(() => {
           updateChatContextSummary(chatIdNum, userId, target.provider, target.model, apiKey).catch(err => {
             console.error('[Orchestrator] Progressive summarization error:', err);
+            logSystemActivity(userId, 'SUMMARIZATION_FAILED', `Context summary update failed for chat ${chatIdNum}: ${err.message}`, { chatIdNum }).catch(() => {});
           });
         });
       }
-      
+
       try {
         const extractedFacts: { fact: string; category: string }[] = [];
         const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
         let match;
-        
+
         while ((match = memRegex.exec(generatedText)) !== null) {
           const category = match[1] || 'general';
           const fact = match[2]?.trim();
@@ -653,10 +690,11 @@ ${refinedSystemPromptSegment}`.trim();
           const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           const currentCount = parseInt(countRes.rows[0].count);
 
-          if (currentCount >= 50) {
+          if (currentCount >= 48) {
             setImmediate(() => {
               runMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey).catch(err => {
                 console.error('[Orchestrator] Memory consolidation error:', err);
+                logSystemActivity(userId, 'MEMORY_CONSOLIDATION_FAILED', `Memory consolidation failed for user ${userId}: ${err.message}`, { userId }).catch(() => {});
               });
             });
           }
@@ -681,49 +719,49 @@ ${refinedSystemPromptSegment}`.trim();
           if (io) {
             const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
             const newCount = parseInt(checkNewCount.rows[0].count);
-            if (newCount >= 45) {
+            if (newCount >= 48) {
               io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
             }
           }
         }
-        
+
         const cleanRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
         generatedText = generatedText.replace(cleanRegex, '').trim();
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
       }
-      
+
       break;
     } catch (e: any) {
       console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, e);
-      
+
       const errMessage = e.message || '';
-      const isQuotaOrAuthExhausted = 
-        errMessage.includes('429') || 
-        errMessage.includes('401') || 
-        errMessage.includes('403') || 
-        errMessage.includes('1113') || 
-        errMessage.includes('Insufficient balance') || 
-        errMessage.includes('resource package') || 
-        errMessage.includes('quota') || 
-        errMessage.includes('recharge') || 
+      const isQuotaOrAuthExhausted =
+        errMessage.includes('429') ||
+        errMessage.includes('401') ||
+        errMessage.includes('403') ||
+        errMessage.includes('1113') ||
+        errMessage.includes('Insufficient balance') ||
+        errMessage.includes('resource package') ||
+        errMessage.includes('quota') ||
+        errMessage.includes('recharge') ||
         errMessage.includes('balance') ||
         errMessage.includes('subscription') ||
         errMessage.includes('upgrade');
-        
-      if (isQuotaOrAuthExhausted) {
+
+      if (isQuotaOrAuthExhausted && !errMessage.includes('AI_TIMEOUT')) {
         try {
           const provLower = target.provider.toLowerCase();
           await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
           invalidateVaultCache(provLower);
-          
+
           console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
-          
+
           await logSecurityAlert(
-            userId, 
-            'PROVIDER_AUTO_DEACTIVATED', 
-            'high', 
-            `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`, 
+            userId,
+            'PROVIDER_AUTO_DEACTIVATED',
+            'high',
+            `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`,
             { provider: target.provider, error: errMessage }
           );
         } catch (dbErr) {
@@ -734,11 +772,9 @@ ${refinedSystemPromptSegment}`.trim();
   }
 
   if (!generatedText) {
-    if (quotaCheck.allowed) {
-      await decrementUserUsage(userId, toolIdStr);
-    }
+    await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
     await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
-    
+
     throw new Error(JSON.stringify({
       error: "The service for this tool is temporarily suspended due to scheduled technical maintenance or capacity limits. Please try again in a few moments.",
       error_ar: "تم إيقاف الخدمة المرتبطة بهذه الأداة مؤقتاً لأغراض الصيانة والتحديث الفني الجاري لتحسين الأداء. يُرجى المحاولة مرة أخرى بعد قليل.",
@@ -747,7 +783,7 @@ ${refinedSystemPromptSegment}`.trim();
   }
 
   if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
-     await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
+    await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
   }
 
   return { result: generatedText };
@@ -779,193 +815,77 @@ async function runMemoryConsolidation(userId: number, chatIdNum: number, provide
     }
   }
 
-  if (!associatedChatId) {
-    const latestMessageChatRes = await pool.query(
-      `SELECT c.id FROM chats c 
-       JOIN messages m ON m.chat_id = c.id 
-       WHERE c.user_id = $1 
-       ORDER BY m.created_at DESC 
-       LIMIT 1`,
-      [userId]
+  const consolidationPrompt = `You are a memory consolidation engine. Below are ${oldestRes.rows.length} raw memory facts extracted from a user's conversation history. Your task is to merge, deduplicate, and synthesize them into a smaller set of dense, precise facts. Output each consolidated fact as:
+<extracted_memory category="general|professional|preference|identity">consolidated fact</extracted_memory>
+
+Raw facts to consolidate:
+${factsToCondense}
+
+Produce the minimum number of consolidated facts needed to preserve all key information.`;
+
+  try {
+    const consolidatedText = await withTimeout(
+      callAIProvider(provider, model, apiKey, consolidationPrompt, 'You are a memory consolidation engine. Be concise and precise.', undefined, [], {}, undefined),
+      AI_CALL_TIMEOUT_MS,
+      'memory-consolidation'
     );
-    if (latestMessageChatRes.rows.length > 0) {
-      associatedChatId = latestMessageChatRes.rows[0].id;
-    } else {
-      const latestChatRes = await pool.query(
-        "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
-        [userId]
+
+    const consolidatedFacts: { fact: string; category: string }[] = [];
+    const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
+    let match;
+    while ((match = memRegex.exec(consolidatedText)) !== null) {
+      const category = match[1] || 'general';
+      const fact = match[2]?.trim();
+      if (fact) consolidatedFacts.push({ fact, category });
+    }
+
+    if (consolidatedFacts.length > 0) {
+      await pool.query('DELETE FROM chat_memories WHERE id = ANY($1)', [oldestIds]);
+
+      const insertPromises = consolidatedFacts.map(item =>
+        pool.query(
+          "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'consolidated')",
+          [userId, associatedChatId, item.fact, item.category]
+        )
       );
-      if (latestChatRes.rows.length > 0) {
-        associatedChatId = latestChatRes.rows[0].id;
-      }
+      await Promise.all(insertPromises);
+
+      console.log(`[Memory Consolidation] User ${userId}: Replaced ${oldestIds.length} facts with ${consolidatedFacts.length} consolidated facts.`);
     }
-  }
-
-  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nCondense the following user memories into ONE dense factual statement in the original language (Arabic or English).\nOutput ONLY the statement. Max 200 characters.`;
-
-  const condensePrompt = `Distill these memories into one dense fact:\n${factsToCondense}`;
-
-  let condensedFact = '';
-  try {
-    condensedFact = await callAIProvider(provider, model, apiKey, condensePrompt, condenseSystemPrompt);
-    condensedFact = cleanAIOutput(condensedFact);
-  } catch (condenseErr) {
-    console.error('[Orchestrator] AI consolidation failed, using fallback aggregation.', condenseErr);
-    condensedFact = oldestRes.rows.map((r: any) => r.fact).join('; ');
-    if (condensedFact.length > 255) {
-      condensedFact = condensedFact.substring(0, 252) + '...';
-    }
-  }
-
-  if (condensedFact) {
-    await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
-    await pool.query(
-      "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
-      [userId, associatedChatId || null, condensedFact]
-    );
-
-    if (io) {
-      io.to(`user_${userId}`).emit('memory_consolidation', { consolidatedCount: oldestRes.rows.length });
-    }
+  } catch (consolidationErr: any) {
+    console.error('[Memory Consolidation] AI call failed:', consolidationErr.message);
   }
 }
 
-function estimateAICallCost(provider: string, model: string, inputChars: number, outputChars: number): number {
-  const normProvider = provider.toLowerCase();
-  const normModel = model.toLowerCase();
-  
-  const inputTokens = Math.ceil(inputChars / 4);
-  const outputTokens = Math.ceil(outputChars / 4);
-
-  let inputRatePerMillion = 0.5;
-  let outputRatePerMillion = 1.5;
-
-  if (normProvider === 'google' || normProvider === 'gemini') {
-    if (normModel.includes('2.5-pro') || normModel.includes('ultra')) {
-      inputRatePerMillion = 1.25;
-      outputRatePerMillion = 10.00;
-    } else if (normModel.includes('2.0-flash') || normModel.includes('flash')) {
-      inputRatePerMillion = 0.10;
-      outputRatePerMillion = 0.40;
-    } else {
-      inputRatePerMillion = 0.075;
-      outputRatePerMillion = 0.30;
-    }
-  } else if (normProvider === 'openai') {
-    if (normModel.includes('gpt-4o-mini') || normModel.includes('4o-mini')) {
-      inputRatePerMillion = 0.15;
-      outputRatePerMillion = 0.60;
-    } else if (normModel.includes('o3') || normModel.includes('o1')) {
-      inputRatePerMillion = 10.00;
-      outputRatePerMillion = 40.00;
-    } else if (normModel.includes('o4-mini') || normModel.includes('o3-mini')) {
-      inputRatePerMillion = 1.10;
-      outputRatePerMillion = 4.40;
-    } else if (normModel.includes('gpt-4o') || normModel.includes('4o')) {
-      inputRatePerMillion = 2.50;
-      outputRatePerMillion = 10.00;
-    } else if (normModel.includes('gpt-4')) {
-      inputRatePerMillion = 5.00;
-      outputRatePerMillion = 15.00;
-    } else {
-      inputRatePerMillion = 0.50;
-      outputRatePerMillion = 1.50;
-    }
-  } else if (normProvider === 'anthropic') {
-    if (normModel.includes('claude-3-7') || normModel.includes('claude-4')) {
-      inputRatePerMillion = 3.00;
-      outputRatePerMillion = 15.00;
-    } else if (normModel.includes('sonnet')) {
-      inputRatePerMillion = 3.00;
-      outputRatePerMillion = 15.00;
-    } else if (normModel.includes('haiku')) {
-      inputRatePerMillion = 0.80;
-      outputRatePerMillion = 4.00;
-    } else if (normModel.includes('opus')) {
-      inputRatePerMillion = 15.00;
-      outputRatePerMillion = 75.00;
-    } else {
-      inputRatePerMillion = 3.00;
-      outputRatePerMillion = 15.00;
-    }
-  } else if (normProvider === 'deepseek') {
-    if (normModel.includes('r1')) {
-      inputRatePerMillion = 0.55;
-      outputRatePerMillion = 2.19;
-    } else {
-      inputRatePerMillion = 0.27;
-      outputRatePerMillion = 1.10;
-    }
-  } else if (normProvider === 'mistral') {
-    if (normModel.includes('large')) {
-      inputRatePerMillion = 2.00;
-      outputRatePerMillion = 6.00;
-    } else {
-      inputRatePerMillion = 0.10;
-      outputRatePerMillion = 0.30;
-    }
-  } else if (normProvider === 'xai' || normProvider === 'grok') {
-    if (normModel.includes('grok-3')) {
-      inputRatePerMillion = 3.00;
-      outputRatePerMillion = 15.00;
-    } else {
-      inputRatePerMillion = 5.00;
-      outputRatePerMillion = 15.00;
-    }
-  }
-
-  const inputCost = (inputTokens / 1000000) * inputRatePerMillion;
-  const outputCost = (outputTokens / 1000000) * outputRatePerMillion;
-  
-  return Math.max(0.00005, inputCost + outputCost);
-}
-
-async function updateChatContextSummary(chatId: number, userId: number, provider: string, model: string, apiKey: string) {
+async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
-    if (!pool) return;
-
-    const providerId = provider.toLowerCase();
-    const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
-    if (budgetRes.rows.length > 0) {
-      const { daily_budget, used_today, is_active } = budgetRes.rows[0];
-      if (!is_active) {
-        console.warn(`[Summary Service] Provider "${provider}" is inactive. Summarization skipped.`);
-        return;
-      }
-      const dailyBudget = parseFloat(daily_budget || '0');
-      const usedToday = parseFloat(used_today || '0');
-      if (dailyBudget > 0 && usedToday >= dailyBudget) {
-        console.warn(`[Summary Service] Provider "${provider}" reached daily budget limit (${usedToday}/${dailyBudget}). Summarization skipped.`);
-        return;
-      }
-    }
-
-    const msgRes = await pool.query(
-      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 40",
-      [chatId]
+    const recentMessages = await pool.query(
+      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 20",
+      [chatIdNum]
     );
-    const msgs = [...msgRes.rows].reverse();
-    if (msgs.length < 2) return;
 
-    const conversationText = msgs.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
-    
-    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nWrite a dense bulleted summary in the conversation's main language (Arabic or English) capturing key topics, decisions, and preferences.\nNo markdown headers. Max 300 characters.`;
-    
-    const summaryPrompt = `Summarize this conversation focusing on key decisions and preferences:\n${conversationText}`;
+    if (recentMessages.rows.length < 4) return;
 
-    const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
-    if (contextSummary) {
-      const cleanedSummary = cleanAIOutput(contextSummary);
-      const inputChars = summaryPrompt.length + summarySystemPrompt.length;
-      const outputChars = cleanedSummary.length;
-      const updateCost = estimateAICallCost(provider, model, inputChars, outputChars);
-      
-      await Promise.all([
-        pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [cleanedSummary, chatId]),
-        pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [updateCost, providerId])
-      ]);
+    const conversationText = [...recentMessages.rows].reverse()
+      .map((m: any) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
+      .join('\n');
+
+    const summaryPrompt = `Summarize this conversation in 2-3 dense sentences capturing the main topics, decisions, and user context. Be factual and brief.\n\n${conversationText}`;
+
+    const summary = await withTimeout(
+      callAIProvider(provider, model, apiKey, summaryPrompt, 'You are a concise conversation summarizer. Output only the summary, no preamble.', undefined, [], {}, undefined),
+      30000,
+      'context-summary'
+    );
+
+    if (summary && summary.trim()) {
+      await pool.query(
+        'UPDATE chats SET context_summary = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [summary.trim().substring(0, 1000), chatIdNum]
+      );
     }
-  } catch (err) {
-    console.error('[Memory Service] Progressive summarization failed:', err);
+  } catch (err: any) {
+    console.error('[updateChatContextSummary] Failed:', err.message);
+    throw err;
   }
 }
