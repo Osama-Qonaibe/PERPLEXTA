@@ -2,7 +2,7 @@ import express from 'express';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { decrypt } from '../utils/crypto.js';
-import { callAIProvider, getProviderKey, invalidateVaultCache } from './ai.js';
+import { callAIProvider, getProviderKey, getProviderUrlKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { extractTextFromFile, forensicScanPDF } from './extractor.js';
@@ -300,9 +300,9 @@ ${refinedSystemPromptSegment}
     try {
       const providerId = target.provider.toLowerCase();
 
-      // FIX 1: parallel DB queries instead of sequential
-      const [apiKey, budgetRes] = await Promise.all([
+      const [apiKey, urlKey, budgetRes] = await Promise.all([
         getProviderKey(providerId),
+        getProviderUrlKey(providerId),
         pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
       ]);
 
@@ -324,7 +324,7 @@ ${refinedSystemPromptSegment}
         continue;
       }
       
-      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data });
+      generatedText = await callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data }, urlKey ?? undefined);
       successfulModel = target;
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
@@ -336,7 +336,6 @@ ${refinedSystemPromptSegment}
         });
       }
       
-      // PERPLEXTA MEMORY PROTOCOL: EXTRACTION & CONSOLIDATION
       try {
         const memoryRegex = /<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
         let match;
@@ -351,12 +350,10 @@ ${refinedSystemPromptSegment}
         }
 
         if (extractedFacts.length > 0) {
-          // FIX 2: single count query for all facts
           const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           let currentCount = parseInt(countRes.rows[0].count);
 
           if (currentCount >= 50) {
-            // FIX 3: memory consolidation as fire-and-forget async (non-blocking)
             setImmediate(() => {
               runMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey).catch(err => {
                 console.error('[Orchestrator] Memory consolidation error:', err);
@@ -364,7 +361,6 @@ ${refinedSystemPromptSegment}
             });
           }
 
-          // FIX 4: batch insert all extracted facts in parallel
           const insertPromises = extractedFacts.map(item =>
             pool.query(
               "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
@@ -508,8 +504,7 @@ async function runMemoryConsolidation(userId: number, chatIdNum: number, provide
 Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
 Provide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
 
-  const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:
-${factsToCondense}`;
+  const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:\n${factsToCondense}`;
 
   let condensedFact = '';
   try {
@@ -628,8 +623,7 @@ async function updateChatContextSummary(chatId: number, userId: number, provider
 Your goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.
 Do NOT use markdown headers, just clear text bullets. Limit of 250 characters. Maintain the professional tone of Perplexta.`;
     
-    const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:
-${conversationText}`;
+    const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:\n${conversationText}`;
 
     const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
     if (contextSummary) {
