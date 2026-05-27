@@ -29,41 +29,41 @@ export const Privacy: React.FC = () => {
       icon: Lock,
       title: isAr ? "1. التشفير المطلق وانعدام الصلاحيات (معمارية المعرفة الصفرية)" : "1. Zero-Knowledge Architecture",
       content: isAr 
-        ? "نعلن بوضوح وصرامة تقنية تامة: لا تمتلك إدارة المنصة، ولا فريق المطورين، ولا أي جهة داخلية القدرة أو الصلاحية للوصول إلى محادثاتك، صورك، أكوادك، أو أي محتوى تقوم بتوليده."
-        : "We declare with absolute technical strictness: neither the platform management, nor the development team, nor any internal party possesses the capability or authority to access your conversations, images, codes, or any generated content.",
+        ? "نعلن بوضوح وصرامة تقنية تامة: لا تمتلك إدارة المنصة، ولا فريق المطورين، ولا أي جهة داخلية القدرة أو الصلاحية للوصول إلى محادثاتك، ملفاتك المرفوعة، صورك، أو أي محتوى تقوم بتوليده."
+        : "We declare with absolute technical strictness: neither the platform management, nor the development team, nor any internal party possesses the capability or authority to access your conversations, uploaded files, images, or any generated content.",
       subItems: [
         {
-          label: isAr ? "الناقل الأعمى" : "Blind Carrier",
-          desc: isAr ? "تعمل خوادمنا كمضيف آمن وناقل مشفر فقط" : "Our servers function exclusively as a secure host and encrypted carrier."
+          label: isAr ? "الناقل الأعمى للملفات والرسائل" : "Blind Carrier for Files & Texts",
+          desc: isAr ? "تعمل خوادمنا كمضيف آمن وناقل مشفر فقط، مع معالجة المستندات (PDF/Text) والصور بصورة لحظية." : "Our servers function exclusively as a secure host and encrypted carrier, processing documents (PDF/Text) and images in real-time."
         },
         {
           label: isAr ? "استحالة فك التشفير" : "Decryption Impossibility",
-          desc: isAr ? "حفظ البيانات بمفاتيح تشفير ديناميكية معزولة تجعل فك التشفير مستحيلاً من الناحية الهندسية" : "Data preservation using isolated dynamic encryption keys rendering decryption an engineering impossibility."
+          desc: isAr ? "حفظ البيانات بمفاتيح تشفير ديناميكية معزولة تجعل فك التشفير مستحيلاً من الناحية الهندسية." : "Data preservation using isolated dynamic encryption keys rendering decryption an engineering impossibility."
         },
         {
-          label: isAr ? "تشفير قواعد البيانات" : "Database Encryption",
-          desc: isAr ? "تشفير كافة النصوص والمخرجات لحظياً قبل التخزين في قواعد بيانات PostgreSQL" : "Real-time encryption of all prompts and outputs prior to storage in PostgreSQL databases."
+          label: isAr ? "التشفير اللحظي لقواعد البيانات" : "Real-time Database Encryption",
+          desc: isAr ? "تشفير كافة النصوص، الملفات، والمخرجات لحظياً قبل تخزينها المتين والموزع بأمان." : "Real-time encryption of all text prompts, files, and outputs prior to secure, robust, distributed storage."
         }
       ]
     },
     {
       icon: Database,
-      title: isAr ? "2. تصنيف البيانات التي نقوم بجمعها للتشغيل فقط" : "2. Data Classification for Operational Use",
+      title: isAr ? "2. تصنيف البيانات لمعالجة العمليات الحيوية والمالية" : "2. Data Classification for Essential Operations",
       content: isAr 
-        ? "نطبق سياسة الحد الأدنى الضروري ولا نجمع أي بيانات مخفية للاستغلال السلوكي أو غير المصرّح به."
-        : "We implement a minimum-necessary policy and abstain from collecting any concealed behavioral data.",
+        ? "نطبق سياسة الحد الأدنى الضروري ولا نجمع أي بيانات مخفية، ونعالِج البيانات المالية بشكل معزول تماماً."
+        : "We implement a minimum-necessary policy, abstaining from concealed data collection, and processing financial data in absolute isolation.",
       subItems: [
         {
-          label: isAr ? "البيانات المالية" : "Financial Data",
-          desc: isAr ? "عدم تخزين تفاصيل البطاقات الائتمانية حيث تتم المعالجة عبر بوابات طرف ثالث ممتثلة لمعايير PCI DSS" : "Zero storage of credit card details; processing is conducted via third-party gateways compliant with PCI DSS standards."
+          label: isAr ? "البيانات والعمليات المالية" : "Financial Operations Data",
+          desc: isAr ? "معالجة المدفوعات والاشتراكات والمحفظة تتم حصراً عبر بوابات عالمية آمنة (مثل Stripe)، دون تخزين بطاقات ائتمان." : "Payments, subscriptions, and wallet top-ups are processed exclusively via secure global gateways (e.g., Stripe) without storing credit cards."
         },
         {
           label: isAr ? "بيانات المصادقة" : "Authentication Data",
-          desc: isAr ? "جمع البريد الإلكتروني ومعرفات الدخول الآمنة فقط لتأمين الهوية الرقمية ومنع الاختراقات" : "Collection of email and secure identifiers solely to protect digital identity and prevent unauthorized access."
+          desc: isAr ? "جمع معلومات التسجيل الأساسية (البريد الإلكتروني) لتأمين الهوية الرقمية، الأرصدة، والمكافآت الخاصة بك." : "Collection of basic registration details (email) to secure your digital identity, balances, and exclusive rewards."
         },
         {
-          label: isAr ? "سجلات التشغيل التقنية" : "Telemetry Data",
-          desc: isAr ? "جمع سجلات الخادم الأساسية آلياً لضمان استقرار منطق التبديل الذكي ومنع توقف الخدمة" : "Automated collection of basic server logs to ensure the stability of Smart Switching Logic and service continuity."
+          label: isAr ? "توليد وتحليل الوسائط" : "Media Generation & Parsing",
+          desc: isAr ? "تحليل الأكواد ومعالجة الصوتيات وتوليد الفيديو يتم آلياً داخل بيئة منعزلة وتُحذف المؤقتات الفورية فور اكتمال الجيل." : "Code parsing, audio processing, and video generation occur automatically in an isolated environment; temp buffers are destroyed instantly upon completion."
         }
       ]
     },
@@ -71,71 +71,67 @@ export const Privacy: React.FC = () => {
       icon: Cpu,
       title: isAr ? "3. الغرض الحصري من المعالجة الآلية" : "3. Exclusive Purpose of Automated Processing",
       content: isAr 
-        ? "تتفاعل بنيتنا التحتية مع طلباتك آلياً دون أي تدخل بشري لضمان السرعة والسرية القصوى."
-        : "Our infrastructure interacts with requests autonomously without human intervention to guarantee extreme speed and confidentiality.",
+        ? "تتفاعل بنيتنا التحتية مع طلباتك آلياً باستخدام منطق التوجيه الذكي، دون تدخل بشري لضمان الكفاءة القصوى والسرية المطلقة."
+        : "Our infrastructure interacts with requests autonomously using smart routing logic, without human intervention to guarantee maximum efficiency and absolute confidentiality.",
       subItems: [
         {
-          label: isAr ? "المزامنة العمياء" : "Blind Sync",
-          desc: isAr ? "تأمين نقل حزم البيانات المشفرة بين بيئات العمل المتعددة لضمان عدم فقدان الأعمال" : "Securing the transfer of encrypted data packets across multiple environments to prevent data loss."
+          label: isAr ? "التوجيه اللحظي الذكي" : "Smart Real-time Routing",
+          desc: isAr ? "تحليل نوع المهمة برمجياً لتوجيهها بين محركات التعلم العميق وتوليد الصوت/الفيديو حسب الاحتياج بأفضل استقرار." : "Programmatic task analysis routing requests between deep learning engines and Audio/Video generators based on precise parameters."
         },
         {
-          label: isAr ? "الحماية الهيكلية" : "Structural Protection",
-          desc: isAr ? "مراقبة معدلات تدفق البيانات لحماية المنصة من الاستهلاك المفرط أو النشاط الضار" : "Monitoring data flow rates to safeguard the platform against excessive consumption or malicious activity."
-        },
-        {
-          label: isAr ? "التوجيه اللحظي" : "Real-time Routing",
-          desc: isAr ? "تحليل نوع المهمة برمجياً لتوجيهها نحو محرك الذكاء الاصطناعي الأنسب لضمان الكفاءة القصوى" : "Programmatic task analysis to direct requests to the most efficient AI engine for maximum performance."
+          label: isAr ? "حماية الحصص والموارد" : "Resource & Quota Protection",
+          desc: isAr ? "مراقبة معدلات الاستهلاك بدقة لحماية بيئة المنصة وضمان العدالة وفق نظام اشتراكات ومحافظ صارم." : "Precise monitoring of consumption rates to protect the platform environment and ensure fair utilization according to strict wallet/subscription architectures."
         }
       ]
     },
     {
       icon: Globe,
-      title: isAr ? "4. الالتزام الصارم بمعايير تقنيات جوجل" : "4. Strict Compliance with Google Technology Standards",
+      title: isAr ? "4. التوافق العالي مع شركاء البنية الذكية ومزودي السحابة" : "4. Unyielding Compliance with Enterprise Cloud & AI Partners",
       content: isAr 
-        ? "تعتمد ميزات المعالجة والنماذج التوليدية في المنصة على أحدث تقنيات جوجل السحابية مع الالتزام الكامل بسياساتهم الأمنية والخصوصية السلسة."
-        : "Processing features and generative models rely on the latest Google Cloud technologies with full adherence to their security and seamless privacy policies.",
+        ? "تعتمد ميزاتنا وتوليد الفيديو ومعالجة النصوص على أحدث الخوادم وتقنيات الذكاء الاصطناعي العالمية مع التقيد الصارم بسياسات الخصوصية الخاصة بعدم التدريب."
+        : "Our generation tools (video, text, audio) rely on state-of-the-art enterprise AI cloud technologies with strict adherence to Zero-Training privacy policies.",
       subItems: [
         {
-          label: isAr ? "خصوصية التدريب" : "Training Privacy",
-          desc: isAr ? "عدم استخدام بياناتك لتدريب نماذج Google الأساسية وفقاً لاتفاقيات مستوى الخدمة للمطورين" : "Your data is not utilized for training base Google models in accordance with developer Service Level Agreements."
+          label: isAr ? "الخصوصية ضد تدريب النماذج" : "Anti-Training Privacy Clause",
+          desc: isAr ? "عدم استخدام بياناتك (نصوص التدقيق القانوني، الملفات الخاصة، الأكواد) لتدريب أي نماذج ذكاء اصطناعي وفق اتفاقيات المطورين الرسمية." : "We guarantee your data (legal reviews, private files, code) is NEVER used to train base AI models, per official enterprise agreements."
         },
         {
-          label: isAr ? "بروتوكولات التشفير" : "Encryption Protocols",
-          desc: isAr ? "تخضع الطلبات المارة عبر واجهاتنا لنماذج Google لبروتوكولات تشفير فريدة وسرية مطلقة" : "Requests processed through our interfaces to Google models are subject to unique and absolute encryption protocols."
+          label: isAr ? "الأنفاق المشفرة للتصيير" : "Encrypted Rendering Tunnels",
+          desc: isAr ? "تمرير طلبات توليد الوسائط وصوت الذكاء الاصطناعي عبر قنوات مشفرة مؤمنة بالكامل وتحذف البيانات المعالجة تلقائياً." : "Routing media generation and AI acoustics requests through fully secured encrypted channels, with automatic processed data deletion."
         }
       ]
     },
     {
       icon: ShieldCheck,
-      title: isAr ? "5. سياسة المنع البات لبيع ومشاركة البيانات (سياسة عدم البيع)" : "5. Zero-Sell Policy",
+      title: isAr ? "5. سياسة المنع البات لبيع ومشاركة البيانات (الاحتفاظ العقيم)" : "5. Zero-Sell Policy & Sterile Retention",
       content: isAr 
-        ? "نحظر بيع أو تأجير أو المتاجرة ببياناتك أو هويتك الرقمية مع أي جهات إعلانية أو تسويقية تحت أي ظرف ولأي غرض تسويقي."
-        : "We strictly prohibit the sale, rental, or trading of your data or digital identity with any advertising or marketing entities under any circumstances.",
+        ? "نحظر بيع أو مشاركة بيانات مساحتك الشخصية، ملفاتك، أو أرصدة محفظتك مع أي جهة تسويقية أو تحليلية إطلاقاً."
+        : "Sale or sharing of your personal space data, files, or wallet balances with any marketing or analytics entities is strictly prohibited entirely.",
       subItems: [
         {
-          label: isAr ? "مزودي النماذج" : "AI Providers",
-          desc: isAr ? "اقتصار الحركة الآلية على إرسال الطلبات المشفرة للمعالجة الفورية وإرجاع النتيجة لك حصرياً" : "Data movement is limited to sending encrypted requests for immediate processing and exclusive result return."
+          label: isAr ? "مزودي النماذج الآمنة" : "Secure Model Providers",
+          desc: isAr ? "اقتصار التبادل التقني مع مزودي الخدمة (Google, OpenAI وغيرها) على واجهات برمجة مشفرة من المستوى المؤسسي بلا احتفاظ." : "Technical handshakes with providers (Google, OpenAI, etc.) are restricted to enterprise-level encrypted APIs with Zero Retention."
         },
         {
-          label: isAr ? "الامتثال القانوني" : "Legal Compliance",
-          desc: isAr ? "عدم الإفصاح عن السجلات التقنية إلا بموجب أمر قضائي ملزم من السلطات المختصة في المملكة المتحدة حصراً" : "Disclosure of technical records occurs only under a binding court order from UK competent authorities exclusively."
+          label: isAr ? "الامتثال القانوني المحض" : "Absolute Legal Compliance",
+          desc: isAr ? "لا تُفصَح السجلات التشغيلية المحدودة والخاصة بالمكافآت والتعاملات المشبوهة إلا بموجب قوانين بريطانيا النافذة ومكافحة غسل الأموال." : "Limited operational logs related to rewards and suspicious ledgers are disclosed strictly under UK laws and AML requirements."
         }
       ]
     },
     {
       icon: UserCheck,
-      title: isAr ? "6. حقوق السيادة والتحكم المطلق (حقوق بياناتك)" : "6. Your Data Rights",
+      title: isAr ? "6. حقوق السيادة والتحكم المطلق (حقوق بياناتك)" : "6. Your Paramount Data Rights",
       content: isAr 
-        ? "نمنحك أدوات التحكم الكاملة بمساحتك الرقمية لضمان سيادتك المطلقة، مما يتيح لك الأمان الكامل وحرية إدارة محتواك."
-        : "We provide comprehensive control tools over your digital space to ensure absolute sovereignty, giving you complete safety and freedom of content management.",
+        ? "نمنحك أدوات تحكم واسعة وحقيقية في كل بيانات ومرفقات مساحتك الرقمية."
+        : "We bestow upon you expansive, authentic control instruments over all your digital space data and attachments.",
       subItems: [
         {
-          label: isAr ? "حق التصدير الآمن" : "Right of Secure Export",
-          desc: isAr ? "طلب تصدير السجلات المشفرة بصيغة قابلة للقراءة لامتلاك نسخة محلية من أعمالك" : "Requesting the export of encrypted records in a readable format to maintain a local copy of your work."
+          label: isAr ? "حق الحذف الشامل الآمن" : "Right of Erasure and Safe Purge",
+          desc: isAr ? "إمكانية مسح الحساب، سجل المحادثات، وتدمير كافة المرفقات والملفات من شبكة الخوادم نهائياً من خلال واجهة الاستخدام." : "Ability to erase the account, chat history, and securely purge all attachments/files from the server grid via the user interface."
         },
         {
-          label: isAr ? "حق التدمير الشامل" : "Right of Total Destruction",
-          desc: isAr ? "إمكانية مسح الحساب وكافة الطلبات والمشاريع نهائياً بضغطة زر دون ترك أي أثر أو نسخة احتياطية" : "Ability to permanently erase account and all projects with a single click leaving no trace or backup."
+          label: isAr ? "سحب الأرصدة والمكافآت" : "Credits and Rewards Retraction",
+          desc: isAr ? "في حالة الإغلاق، تسقط الأرصدة الترويجية وتتم تصفية البيانات المرتبطة ببرنامج الإحالات بشكل آمن لا رجعة فيه." : "Upon closure, promotional balances are voided, and data tied to referral programs is securely, irreversibly liquidated."
         }
       ]
     }

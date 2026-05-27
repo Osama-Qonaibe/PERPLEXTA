@@ -27,8 +27,26 @@ function cleanOllamaUrl(rawUrl: string): string {
   while (url.endsWith('/')) {
     url = url.slice(0, -1);
   }
+  if (url.endsWith('/api/chat')) {
+    url = url.slice(0, -9);
+  }
+  while (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (url.endsWith('/api/tags')) {
+    url = url.slice(0, -9);
+  }
+  while (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
   if (url.endsWith('/api')) {
     url = url.slice(0, -4);
+  }
+  while (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (url.endsWith('/v1')) {
+    url = url.slice(0, -3);
   }
   while (url.endsWith('/')) {
     url = url.slice(0, -1);
@@ -96,7 +114,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       await handleApiError(response, 'xAI');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
-    } else if (provider === 'ollama') {
+    } else if (provider.includes('ollama')) {
         const cleanUrl = cleanOllamaUrl(urlKey || '');
         const targetHeaders: any = { 'Accept': 'application/json' };
         if (apiKey && apiKey.trim() !== '') {
@@ -114,14 +132,31 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             baseUrl = dbRes.rows[0]?.url_key;
         }
         if (baseUrl) {
-            const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+            let cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+            if (cleanUrl.endsWith('/chat/completions')) cleanUrl = cleanUrl.replace('/chat/completions', '');
+            else if (cleanUrl.endsWith('/models')) cleanUrl = cleanUrl.replace('/models', '');
+            else if (cleanUrl.endsWith('/api/chat')) cleanUrl = cleanUrl.replace('/api/chat', '');
+            
             try {
-                const response = await fetch(`${cleanUrl}/models`, {
+                // Try cleanUrl/models first
+                let response = await fetch(`${cleanUrl}/models`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
+                
+                // If it fails with 404, we attempt with /v1/models if not already ending in /v1
+                if (!response.ok && response.status === 404 && !cleanUrl.endsWith('/v1')) {
+                    response = await fetch(`${cleanUrl}/v1/models`, {
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                    });
+                }
+
                 if (response.ok) {
                     const data: any = await response.json();
-                    models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
+                    const modelsArray = Array.isArray(data) ? data : (data.data || []);
+                    models = modelsArray.map((m: any) => ({ 
+                        id: m.id || m.name || m.model, 
+                        name: m.name || m.id || m.model || 'Unknown Model' 
+                    })).filter((m: any) => m.id);
                 } else {
                     console.warn(`[SyncCustom] Custom provider models fetch returned not ok (${response.status})`);
                 }
@@ -234,7 +269,7 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 headers: { 'Authorization': `Bearer ${apiKey}` }
             });
             status.isValid = res.ok;
-        } else if (normProvider === 'ollama') {
+        } else if (normProvider.includes('ollama')) {
             const cleanUrl = cleanOllamaUrl(urlKey || '');
             const targetHeaders: any = { 'Accept': 'application/json' };
             let keyToUse = apiKey || '';
@@ -270,24 +305,26 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 baseUrl = dbRes.rows[0]?.url_key;
             }
             if (baseUrl) {
-                const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                let cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                if (cleanUrl.endsWith('/chat/completions')) cleanUrl = cleanUrl.replace('/chat/completions', '');
+                else if (cleanUrl.endsWith('/models')) cleanUrl = cleanUrl.replace('/models', '');
+                else if (cleanUrl.endsWith('/api/chat')) cleanUrl = cleanUrl.replace('/api/chat', '');
+
                 try {
-                    const res = await fetch(`${cleanUrl}/models`, {
+                    let res = await fetch(`${cleanUrl}/models`, {
                         headers: { 'Authorization': `Bearer ${apiKey}` }
                     });
                     
+                    if (!res.ok && res.status === 404 && !cleanUrl.endsWith('/v1')) {
+                        res = await fetch(`${cleanUrl}/v1/models`, {
+                            headers: { 'Authorization': `Bearer ${apiKey}` }
+                        });
+                    }
+
                     status.isValid = res.ok;
                     if (!res.ok) {
-                        status.message = `Custom Provider Connection failed (${res.status}): ${res.statusText}`;
-                        // Robust check: some setups allow completions but hide /models
-                        if (res.status === 404 || res.status === 405 || res.status === 403 || res.status === 401) {
-                            status.isValid = true;
-                            status.message = `Warning: Models endpoint returned ${res.status}, but provider accepts completions using fallback model lists.`;
-                        } else {
-                            // Let custom providers remain valid so they can be saved, but issue a warning
-                            status.isValid = true;
-                            status.message = `Warning: Base URL endpoint validation failed (${res.status}). Key saved anyway.`;
-                        }
+                        status.message = `Custom Provider Connection Warning (${res.status}): ${res.statusText}. Continuing save anyway.`;
+                        status.isValid = true;
                     }
                 } catch (fetchErr: any) {
                     // Let custom providers remain valid so they can be saved, but issue a warning
@@ -305,6 +342,141 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
     } catch (e: any) {
         return { isValid: false, usage: 0, limit: 0, message: e.message };
     }
+}
+
+function transformMessagesForOpenAI(messages: any[]): any[] {
+  return messages.map(msg => {
+    if (typeof msg.content === 'string') {
+      return { role: msg.role, content: msg.content };
+    }
+    if (Array.isArray(msg.content)) {
+      const content = msg.content.map((block: any) => {
+        if (block.type === 'text') {
+          return { type: 'text', text: block.text || '' };
+        }
+        if (block.type === 'image') {
+          const mime = block.mime_type || 'image/jpeg';
+          return {
+            type: 'image_url',
+            image_url: {
+              url: `data:${mime};base64,${block.data}`
+            }
+          };
+        }
+        // Unsupported media converted to text block to avoid 400 error crash
+        const nameStr = block.name ? ` "${block.name}"` : '';
+        return {
+          type: 'text',
+          text: `[Attached File:${nameStr} (${block.mime_type || 'unsupported-media-type'})]`
+        };
+      });
+      return { role: msg.role, content };
+    }
+    return { role: msg.role, content: String(msg.content || '') };
+  });
+}
+
+function transformMessagesForAnthropic(messages: any[]): any[] {
+  return messages.map(msg => {
+    if (typeof msg.content === 'string') {
+      return { role: msg.role, content: msg.content };
+    }
+    if (Array.isArray(msg.content)) {
+      const content = msg.content.map((block: any) => {
+        if (block.type === 'text') {
+          return { type: 'text', text: block.text || '' };
+        }
+        if (block.type === 'image') {
+          return {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: block.mime_type || 'image/jpeg',
+              data: block.data
+            }
+          };
+        }
+        if (block.type === 'file' && block.mime_type === 'application/pdf') {
+          return {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: block.data
+            }
+          };
+        }
+        // Unsupported media type
+        const nameStr = block.name ? ` "${block.name}"` : '';
+        return {
+          type: 'text',
+          text: `[Attached File:${nameStr} (${block.mime_type || 'unsupported-media-type'})]`
+        };
+      });
+      return { role: msg.role, content };
+    }
+    return { role: msg.role, content: String(msg.content || '') };
+  });
+}
+
+function transformMessagesForGemini(messages: any[]): any[] {
+  return messages.filter(m => m.role !== 'system').map(m => {
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    let parts: any[] = [];
+
+    if (typeof m.content === 'string') {
+      parts = [{ text: m.content }];
+    } else if (Array.isArray(m.content)) {
+      parts = m.content.map((block: any) => {
+        if (block.type === 'text') {
+          return { text: block.text || '' };
+        }
+        // Native Gemini Inline Data
+        return {
+          inline_data: {
+            mime_type: block.mime_type || 'image/jpeg',
+            data: block.data
+          }
+        };
+      });
+    } else {
+      parts = [{ text: String(m.content || '') }];
+    }
+
+    return { role, parts };
+  });
+}
+
+function transformMessagesForOllama(messages: any[]): any[] {
+  return messages.map(msg => {
+    if (typeof msg.content === 'string') {
+      return { role: msg.role, content: msg.content };
+    }
+    if (Array.isArray(msg.content)) {
+      let contentString = '';
+      const images: string[] = [];
+      msg.content.forEach((block: any) => {
+        if (block.type === 'text') {
+          contentString += (contentString ? '\n' : '') + (block.text || '');
+        } else if (block.type === 'image' && block.data) {
+          let rawBase64 = block.data;
+          if (rawBase64.includes(';base64,')) {
+            rawBase64 = rawBase64.split(';base64,')[1];
+          }
+          images.push(rawBase64);
+        } else {
+          const nameStr = block.name ? ` "${block.name}"` : '';
+          contentString += `\n[Attached File:${nameStr} (${block.mime_type || 'unsupported-media-type'})]`;
+        }
+      });
+      const transformed: any = { role: msg.role, content: contentString };
+      if (images.length > 0) {
+        transformed.images = images;
+      }
+      return transformed;
+    }
+    return { role: msg.role, content: String(msg.content || '') };
+  });
 }
 
 export async function callAIProvider(
@@ -411,6 +583,14 @@ export async function callAIProvider(
             } catch (e) {
               // Ignore parse errors for partial chunks
             }
+          } else if (normProvider.includes('ollama') && trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+             try {
+               const data = JSON.parse(trimmedLine);
+               let chunk = data.message?.content || '';
+               if (chunk) { resultText += chunk; onChunk(chunk); }
+             } catch (e) {
+               // Ignore parse errors
+             }
           }
         }
       }
@@ -439,12 +619,15 @@ export async function callAIProvider(
     else if (normProvider === 'xai' || normProvider === 'grok') url = 'https://api.x.ai/v1/chat/completions';
     
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
-    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
+    const mappedMessages = transformMessagesForOpenAI(processedMessages);
+    body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   } else if (normProvider === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
     headers['x-api-key'] = cleanApiKey;
     headers['anthropic-version'] = '2023-06-01';
-    body = { model: cleanModel, max_tokens: 4096, stream: isStreaming, messages: processedMessages.filter(m => m.role !== 'system') };
+    headers['anthropic-beta'] = 'pdfs-2024-09-25';
+    const mappedMessages = transformMessagesForAnthropic(processedMessages);
+    body = { model: cleanModel, max_tokens: 4096, stream: isStreaming, messages: mappedMessages.filter(m => m.role !== 'system') };
     if (systemPrompt) body.system = systemPrompt;
   } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
     const method = isStreaming ? 'streamGenerateContent' : 'generateContent';
@@ -455,14 +638,10 @@ export async function callAIProvider(
     url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}`;
     if (isStreaming) url += '?alt=sse';
     headers['x-goog-api-key'] = cleanApiKey;
-    body = { 
-      contents: processedMessages.filter(m => m.role !== 'system').map(m => ({ 
-        role: m.role === 'assistant' ? 'model' : 'user', 
-        parts: Array.isArray(m.content) ? m.content.map((c: any) => ({ text: c.text || c.data })) : [{ text: String(m.content) }] 
-      })) 
-    };
+    const geminiContents = transformMessagesForGemini(processedMessages);
+    body = { contents: geminiContents };
     if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
-  } else if (normProvider === 'ollama') {
+  } else if (normProvider.includes('ollama')) {
     let baseUrl = '';
     const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
     if (dbRes.rows.length > 0 && dbRes.rows[0].url_key) {
@@ -473,7 +652,8 @@ export async function callAIProvider(
     if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
       headers['Authorization'] = `Bearer ${cleanApiKey}`;
     }
-    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
+    const mappedMessages = transformMessagesForOllama(processedMessages);
+    body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   } else {
     // Default to OpenAI-style for unknown/custom providers
     let baseUrl = '';
@@ -481,14 +661,30 @@ export async function callAIProvider(
     if (dbRes.rows.length > 0 && dbRes.rows[0].url_key) {
       baseUrl = dbRes.rows[0].url_key;
     }
-    const cleanUrl = baseUrl ? (baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl) : 'https://api.openai.com/v1';
+    let cleanUrl = baseUrl ? (baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl) : 'https://api.openai.com/v1';
+    
+    // Auto-correct common mistakes in Base URL
+    if (cleanUrl.endsWith('/chat/completions')) {
+      cleanUrl = cleanUrl.replace('/chat/completions', '');
+    } else if (cleanUrl.endsWith('/models')) {
+      cleanUrl = cleanUrl.replace('/models', '');
+    } else if (cleanUrl.endsWith('/api/chat')) {
+      cleanUrl = cleanUrl.replace('/api/chat', '');
+    }
+    
     url = `${cleanUrl}/chat/completions`;
-    headers['Authorization'] = `Bearer ${cleanApiKey}`;
-    body = { model: cleanModel, messages: processedMessages, stream: isStreaming };
+    
+    // Always fallback to sending bearer token if some key was provided
+    if (cleanApiKey && cleanApiKey.trim() !== '') {
+      headers['Authorization'] = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
+    }
+    
+    const mappedMessages = transformMessagesForOpenAI(processedMessages);
+    body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   }
 
   let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-  if (!res.ok && normProvider === 'ollama' && (res.status === 401 || res.status === 403) && headers['Authorization']) {
+  if (!res.ok && normProvider.includes('ollama') && (res.status === 401 || res.status === 403) && headers['Authorization']) {
     console.warn(`[AI Service] Ollama returned ${res.status} with Authorization header. Retrying without Authorization...`);
     const headersNoAuth = { ...headers };
     delete headersNoAuth['Authorization'];

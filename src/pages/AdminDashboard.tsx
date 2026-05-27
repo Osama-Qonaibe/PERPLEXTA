@@ -3178,11 +3178,10 @@ const ApiKeysVaultView = ({
               {/* Key Field */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  {language === "ar" ? "المفتاح السري (API Key)" : "Secret API Key"}
+                  {language === "ar" ? "المفتاح السري (API Key) - اختياري" : "Secret API Key (Optional)"}
                 </label>
                 <input
                   type="password"
-                  required
                   placeholder="sk-••••••••••••••••"
                   value={newCustomKey}
                   onChange={(e) => setNewCustomKey(e.target.value)}
@@ -3216,9 +3215,9 @@ const ApiKeysVaultView = ({
               </button>
               <button
                 type="button"
-                disabled={isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl || !newCustomKey}
+                disabled={isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl}
                 onClick={async () => {
-                  if (!newCustomId || !newCustomName || !newCustomUrl || !newCustomKey) return;
+                  if (!newCustomId || !newCustomName || !newCustomUrl) return;
                   setIsCreatingCustom(true);
 
                   showToast(
@@ -3273,6 +3272,20 @@ const ApiKeysVaultView = ({
                       );
                       
                       await fetchKeys();
+                      
+                      // Fetch updated models list from server to stabilize dropdowns
+                      try {
+                        const modelsRes = await fetch("/api/admin/models", {
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (modelsRes.ok) {
+                          const modelsData = await modelsRes.json();
+                          setProviderModels(modelsData.providerModels);
+                        }
+                      } catch (err) {
+                        console.error("Failed to refresh models after adding custom provider", err);
+                      }
+                      
                       setShowAddCustom(false);
                     } else {
                       let errText = "Could not save custom provider";
@@ -3289,7 +3302,7 @@ const ApiKeysVaultView = ({
                   }
                 }}
                 className={`h-11 text-[10px] uppercase tracking-widest font-black rounded-sm text-white transition-all flex items-center justify-center gap-1.5 ${
-                  isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl || !newCustomKey
+                  isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl
                     ? "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
                     : "bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
                 }`}

@@ -232,9 +232,8 @@ export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: str
   }
 };
 
-export const extractTextFromFile = async (filePath: string, mimeType: string, originalName: string): Promise<string> => {
+export const extractTextFromBuffer = async (dataBuffer: Buffer, mimeType: string, originalName: string = ''): Promise<string> => {
   try {
-    const dataBuffer = await fs.readFile(filePath);
     if (!mimeType) mimeType = 'application/octet-stream';
 
     if (mimeType === 'application/pdf') {
@@ -271,6 +270,16 @@ export const extractTextFromFile = async (filePath: string, mimeType: string, or
     return 'Unsupported file type for text extraction.';
   } catch (error: any) {
     console.error(`[Extractor] Error: ${error.message}`);
+    return `Extraction Error: ${error.message}`;
+  }
+};
+
+export const extractTextFromFile = async (filePath: string, mimeType: string, originalName: string): Promise<string> => {
+  try {
+    const dataBuffer = await fs.readFile(filePath);
+    return await extractTextFromBuffer(dataBuffer, mimeType, originalName);
+  } catch (error: any) {
+    console.error(`[Extractor] Error reading file: ${error.message}`);
     return `Extraction Error: ${error.message}`;
   }
 };

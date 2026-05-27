@@ -1476,7 +1476,14 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       finalBudget = existingObj ? parseFloat(existingObj.daily_budget) : 0;
     }
 
-    if (!finalKey) return res.status(400).json({ error: 'Key is required' });
+    if (!finalKey && cleanProvider !== 'ollama' && !urlKey && ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'openrouter', 'mistral', 'together', 'xai', 'elevenlabs', 'serper'].includes(cleanProvider)) {
+      return res.status(400).json({ error: 'Key is required for this standard provider' });
+    }
+    
+    // Explicitly allow empty keys
+    if (finalKey === undefined || finalKey === null) {
+      finalKey = '';
+    }
 
     let checkingKey = finalKey;
     if (cleanProvider === 'ollama' && urlKey) {
@@ -1602,7 +1609,13 @@ router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
       }
     }
 
-    if (!keyToTest) return res.status(400).json({ error: 'No key provided for testing' });
+    if (!keyToTest && cleanId !== 'ollama' && !urlKey && ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'openrouter', 'mistral', 'together', 'xai', 'elevenlabs', 'serper'].includes(cleanId)) {
+      return res.status(400).json({ error: 'No key provided for testing' });
+    }
+    
+    if (keyToTest === undefined || keyToTest === null) {
+      keyToTest = '';
+    }
     
     const status = await checkProviderStatus(cleanId, keyToTest, urlKey);
     res.json({ success: true, status });

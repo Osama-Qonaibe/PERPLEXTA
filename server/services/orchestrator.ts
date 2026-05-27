@@ -29,13 +29,16 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const cleanUserPrompt = sanitizePrompt(prompt);
   let finalPrompt = cleanUserPrompt;
 
-  // Integrate Forensic scan on attached files inside the chat stream
-  if (file_data && file_data.type === 'application/pdf' && file_data.data) {
+  if (file_data && file_data.data) {
     try {
       const fileBuffer = Buffer.from(file_data.data, 'base64');
-      const forensicReport = forensicScanPDF(fileBuffer);
+      const isImageVideoAudio = file_data.type?.startsWith('image/') || file_data.type?.startsWith('video/') || file_data.type?.startsWith('audio/');
       
-      const forensicPromptSegment = `
+      // If it's a PDF, we run forensic mode optionally, or just always append metadata.
+      if (file_data.type === 'application/pdf') {
+        try {
+          const forensicReport = forensicScanPDF(fileBuffer);
+          const forensicPromptSegment = `
 [PDF BRIDGE - DEEP FORENSIC AUDIT DISCLOSURE]
 The user attached a sensitive document evaluated under the PDF Bridge's Forensic Mode. Review and analyze the structural layout, extracted metadata, and anomalies documented below:
 
@@ -50,29 +53,40 @@ The user attached a sensitive document evaluated under the PDF Bridge's Forensic
 - Modification State (Trailer Markers count): ${forensicReport.incrementalEofCount} (Multiple modifications: ${forensicReport.incrementalEofCount > 1 ? 'YES' : 'NO'})
 - Duplicate Page Root Registries Count: ${forensicReport.rootDefCount}
 
-Extracted PDF metadata:
-  * Title: ${forensicReport.metadata.title}
-  * Subject: ${forensicReport.metadata.subject}
-  * Author: ${forensicReport.metadata.author}
-  * Creator: ${forensicReport.metadata.creator}
-  * Producer: ${forensicReport.metadata.producer}
-  * Creation Date: ${forensicReport.metadata.creationDate}
-  * Modification Date: ${forensicReport.metadata.modDate}
-
 Detailed Scanner Diagnostics:
-${forensicReport.detailedLog.map(log => `  • ${log}`).join('\n')}
+${forensicReport.detailedLog.map((log: string) => `  • ${log}`).join('\n')}
 
 System-Level Anomalies:
-${forensicReport.anomalies.length > 0 ? forensicReport.anomalies.map(a => `  ⚠️ [ANOMALY] ${a}`).join('\n') : "  No critical binary anomalies detected."}
+${forensicReport.anomalies.length > 0 ? forensicReport.anomalies.map((a: string) => `  ⚠️ [ANOMALY] ${a}`).join('\n') : "  No critical binary anomalies detected."}
 
 Instruction: You MUST explicitly disclose this forensic audit to the user. Describe the detected metadata, verify the existence of hidden layers or OCG names, and raise any security warnings (for active scripts, incremental amendments, etc.) before or alongside your standard content evaluation.
 `;
-      finalPrompt = `${finalPrompt}\n\n${forensicPromptSegment}`;
+          finalPrompt = `${finalPrompt}\n\n${forensicPromptSegment}`;
+        } catch (err: any) {
+          console.error('[Orchestrator Forensic Engine] Base64 PDF forensic scan failed:', err.message);
+        }
+      }
+
+      // Read all textual files (PDF, docx, csv, txt, json, html) and append content to prompt
+      if (!isImageVideoAudio && file_data.type !== 'application/pdf') {
+        const { extractTextFromBuffer } = await import('./extractor.js');
+        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
+        if (extractedText && extractedText.trim() !== '') {
+          finalPrompt = `${finalPrompt}\n\n[FILE CONTENT - ${file_data.name}]:\n${extractedText}`;
+        }
+      } else if (file_data.type === 'application/pdf') {
+         // Also extract text from PDF and append if supported
+         const { extractTextFromBuffer } = await import('./extractor.js');
+         const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
+         if (extractedText && extractedText.trim() !== '') {
+            finalPrompt = `${finalPrompt}\n\n[PDF CONTENT EXTRACTED - ${file_data.name}]:\n${extractedText}`;
+         }
+      }
     } catch (err: any) {
-      console.error('[Orchestrator Forensic Engine] Base64 PDF forensic scan failed:', err.message);
+      console.error('[Orchestrator File Extraction] Error parsing attached file buffer:', err);
     }
   }
-  
+
   if (!pool) throw new Error('System still initializing. Please wait.');
   
   const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([

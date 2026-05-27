@@ -35,7 +35,7 @@ export const Terms: React.FC = () => {
       subItems: [
         {
           label: isAr ? "حظر الهندسة العكسية" : "Reverse Engineering Ban",
-          desc: isAr ? "يُحظر تماماً محاولة الهندسة العكسية لأي جزء من الكود البرمجي الخاص بمنطق التبديل الذكي (Hybrid Logic) أو واجهة الإدارة." : "Attempting to reverse engineer any part of the Hybrid Logic code or management interface is strictly prohibited."
+          desc: isAr ? "يُحظر تماماً محاولة الهندسة العكسية لأي جزء من الكود البرمجي الخاص بمنطق التبديل الذكي أو واجهة الإدارة." : "Attempting to reverse engineer any part of the smart switching logic or management interface is strictly prohibited."
         },
         {
           label: isAr ? "الأهلية القانونية" : "Legal Eligibility",
@@ -44,61 +44,61 @@ export const Terms: React.FC = () => {
       ]
     },
     {
+      icon: Cpu,
+      title: isAr ? "2. أدوات المنصة ونطاق الاستخدام" : "2. Platform Tools and Scope of Use",
+      content: isAr 
+        ? "توفر المنصة مجموعة متقدمة من الأدوات التي تشمل المحادثة الذكية، توليد الأكواد البرمجية، تحليل الملفات، وتوليد المحتوى المرئي والصوتي (الصور والفيديو)، بالإضافة للمساعد التعليمي والقانوني."
+        : "The platform provides a suite of advanced tools including smart chat, code generation, file analysis, visual/audio generation (images and video), and educational/legal assistants.",
+      subItems: [
+        {
+          label: isAr ? "الاستخدام المصرح للأدوات" : "Authorized Tool Usage",
+          desc: isAr ? "يحق لك استخدام الميزات لتحسين إنتاجيتك الخاصة، مع الالتزام بعدم الاعتماد الكلي عليها في اتخاذ قرارات مصيرية أو قانونية بحتة دون استشارة متخصص." : "You may use these features to enhance productivity, provided you do not rely solely on them for critical legal or life-altering decisions without professional consultation."
+        },
+        {
+          label: isAr ? "توليد الوسائط المتعددة" : "Multimedia Generation",
+          desc: isAr ? "يشترط استخدام أدوات توليد الفيديو، الصور، وتحويل النصوص إلى صوتيات (TTS/STT) لإنتاج محتوى يتوافق مع معايير الآداب العامة وقوانين النشر." : "The use of video, image, and audio generation tools (TTS/STT) is conditioned upon creating content that aligns with public decency and publishing laws."
+        }
+      ]
+    },
+    {
       icon: Ban,
-      title: isAr ? "2. سياسة الاستخدام العادل والامتثال" : "2. Fair Use and Compliance Policy",
+      title: isAr ? "3. سياسة الاستخدام العادل والامتثال" : "3. Fair Use and Compliance Policy",
       content: isAr 
         ? "نطبق سياسات صارمة لمنع التلاعب وضمان استقرار الموارد لضمان جودة الخدمة لجميع المستخدمين."
         : "We implement strict policies to prevent manipulation and ensure resource stability to maintain service quality for all users.",
       subItems: [
         {
           label: isAr ? "الاستخدام الآلي المحظور" : "Prohibited Automated Use",
-          desc: isAr ? "يُحظر استخدام أي أدوات آلية (Bots/Scripts) للوصول إلى خدماتنا أو محاولة التلاعب بمعدلات الاستهلاك." : "The use of automated tools (Bots/Scripts) to access our services or attempt to manipulate consumption rates is strictly prohibited."
+          desc: isAr ? "يُحظر استخدام أي أدوات آلية (Bots/Scripts) للوصول إلى خدماتنا أو محاولة التلاعب بمعدلات الاستهلاك لمختلف الأدوات." : "The use of automated tools (Bots/Scripts) to access our services or attempt to manipulate consumption rates of various tools is strictly prohibited."
         },
         {
           label: isAr ? "الأنشطة المحظورة" : "Prohibited Activities",
           desc: isAr ? "يُمنع استخدام المنصة لتوليد محتوى غير قانوني، يحرض على العنف، ينتهك الخصوصية، أو يحتوي على برمجيات خبيثة." : "Using the platform to generate illegal content, incite violence, violate privacy, or distribute malicious software is forbidden."
         },
         {
-          label: isAr ? "إجراءات تعليق الحساب" : "Account Suspension Procedures",
-          desc: isAr ? "تحتفظ شركة VIRALLINKUP LTD بالحق المطلق في تجميد أو إنهاء أي حساب يثبت تلاعبه بالأنظمة دون إشعار مسبق." : "VIRALLINKUP LTD reserves the absolute right to freeze or terminate any account proven to manipulate systems without prior notice."
-        }
-      ]
-    },
-    {
-      icon: Cpu,
-      title: isAr ? "3. المسؤولية عن مخرجات الذكاء الاصطناعي" : "3. AI Output Liability",
-      content: isAr 
-        ? "يقر المستخدم بأن المخرجات هي نتاج خوارزميات ذكاء اصطناعي متقدمة، وتُقدم للمستخدم على مسؤوليته الخاصة."
-        : "The user acknowledges that outputs are the product of advanced artificial intelligence algorithms and are provided at the user's own risk.",
-      subItems: [
-        {
-          label: isAr ? "دقة المخرجات" : "Output Accuracy",
-          desc: isAr ? "الإجابات والصور والأكواد هي نتاج تقنيات الـ AI المتكاملة بالمنصة؛ لا نضمن دقة أو ملاءمة النتائج لغرض محدد دائماً." : "Answers, images, and codes are products of advanced integrated artificial technologies; we do not guarantee exact accuracy or complete suitability for any specific custom purpose."
-        },
-        {
-          label: isAr ? "المسؤولية القانونية" : "Legal Liability",
-          desc: isAr ? "يتحمل المستخدم المسؤولية الكاملة عن استخدام المخرجات؛ ولا تتحمل الشركة أي مسؤولية عن أضرار مباشرة أو غير مباشرة ناتجة عنها." : "The user assumes full responsibility for the use of outputs; the company assumes no liability for any direct or indirect damages resulting therefrom."
+          label: isAr ? "تعليق الحساب والحصص" : "Quota and Account Suspension",
+          desc: isAr ? "تحتفظ شركة VIRALLINKUP LTD بالحق لتجميد أي حساب يثبت استنزافه للحصص المخصصة بطرق غير مشروعة." : "VIRALLINKUP LTD reserves the right to freeze any account proven to maliciously deplete assigned quotas."
         }
       ]
     },
     {
       icon: CreditCard,
-      title: isAr ? "4. الاشتراكات والمدفوعات" : "4. Subscriptions and Payments",
+      title: isAr ? "4. الاقتصاد الرقمي والاشتراكات" : "4. Digital Economy and Subscriptions",
       content: isAr 
-        ? "تخضع كافة العمليات المالية لمعايير الأمان البنكي والشفافية المطلقة للتداول الرقمي الآمن."
-        : "All financial operations are subject to standard banking security protocols and absolute transaction transparency.",
+        ? "تخضع كافة العمليات المالية من شحن المحفظة الرقمية، ودفع الاشتراكات، لمعايير الأمان البنكي والشفافية التامة."
+        : "All financial operations including digital wallet top-ups and subscription payments are subject to banking security standards and full transparency.",
       subItems: [
         {
-          label: isAr ? "الرسوم والاشتراكات" : "Fees and Subscriptions",
-          desc: isAr ? "يلتزم المستخدم بدفع رسوم الاشتراك المقررة؛ وتحتفظ الشركة بالحق في تعديل هيكل الأسعار وفقاً لمتطلبات السوق والنمو." : "Users are committed to paying the prescribed subscription fees; the company reserves the right to modify the pricing structure according to market requirement."
+          label: isAr ? "المحفظة الرقمية" : "Digital Wallet",
+          desc: isAr ? "يُستخدم نظام الدفتر المالي الآمن لتعقب عمليات الشحن والدفع بنقرة واحدة، ولا يتم تعديل الأرصدة إلا من خلال عمليات موثقة." : "Our secure ledger system tracks top-ups and 1-click payments. Balances are modified only through strictly audited operations."
         },
         {
-          label: isAr ? "استمرارية الخدمة" : "Service Continuity",
-          desc: isAr ? "نضمن كفاءة منطق التبديل بنسبة فائقة، ولا نتحمل مسؤولية التوقف الطويل الناتج عن مزودي الخدمات الأصليين." : "We guarantee switching logic efficiency at the highest levels, but assume no responsibility for downtime caused by upstream providers."
+          label: isAr ? "نظام المكافآت والإحالات" : "Rewards & Referrals",
+          desc: isAr ? "يمنحك نظام الإحالة الشفاف مكافآت تضاف لمحفظتك؛ ويخضع النظام لرقابة تامة لمنع التسجيل الوهمي." : "The transparent referral system grants rewards to your wallet; the system is strictly monitored to prevent fake registrations."
         },
         {
           label: isAr ? "سياسة الاسترداد" : "Refund Policy",
-          desc: isAr ? "نظراً للاستهلاك الفوري للموارد الرقمية، فإن جميع الاشتراكات غير قابلة للاسترداد ما لم ينص القانون على خلاف ذلك صراحة." : "Due to the immediate consumption of digital resources, all subscription fees are non-refundable unless otherwise required by law."
+          desc: isAr ? "نظراً للاستهلاك الفوري للموارد والحصص الرقمية، فإن جميع الاشتراكات والأرصدة المشحونة غير قابلة للاسترداد." : "Due to the immediate consumption of digital quotas and resources, all subscriptions and topped-up balances are non-refundable."
         }
       ]
     },
@@ -110,67 +110,29 @@ export const Terms: React.FC = () => {
         : "All trademarks and programming logic of PERPLEXTA are the exclusive property of VIRALLINKUP LTD.",
       subItems: [
         {
-          label: isAr ? "ملكية المحتوى" : "Content Ownership",
-          desc: isAr ? "يحتفظ المستخدم بملكية المحتوى المولد، مع منح المنصة ترخيصاً تقنياً محدوداً لتقديم الخدمة فقط." : "Users retain ownership of generated content, granting the platform a limited technical license to process it solely for service delivery."
+          label: isAr ? "ملكية مخرجاتك" : "Output Ownership",
+          desc: isAr ? "يحتفظ المستخدم بملكية المحتوى المولد الخاص به للاستخدام التجاري أو الشخصي وفق خطة الاشتراك الخاصة به." : "Users retain ownership of their generated content for commercial or personal use according to their subscription plan."
         },
         {
-          label: isAr ? "حماية الابتكار" : "Innovation Protection",
-          desc: isAr ? "يُحظر أي استخدام غير مصرح به للشعارات أو الخوارزميات الخاصة بالمنصة تحت طائلة المسؤولية القانونية." : "Any unauthorized use of the platform's logos or algorithms is strictly prohibited under penalty of legal liability."
-        }
-      ]
-    },
-    {
-      icon: Globe,
-      title: isAr ? "6. الامتثال لمعايير السحابة" : "6. Compliance with Cloud Standards",
-      content: isAr 
-        ? "يلتزم المستخدم تلقائياً بسياسات الاستخدام المقبول لشركاء البنية التحتية السحابية المتقدمة."
-        : "Users automatically adhere to the acceptable use policies of our advanced cloud infrastructure partners.",
-      subItems: [
-        {
-          label: isAr ? "سياسات الاستخدام" : "Use Policies",
-          desc: isAr ? "الالتزام التام بالضوابط العالمية فيما يخص الذكاء الاصطناعي التوليدي والآمن." : "Full compliance with global regulations regarding generative and safe artificial intelligence."
-        },
-        {
-          label: isAr ? "الانتهاكات" : "Violations",
-          desc: isAr ? "أي انتهاك للسياسات الخارجية يعتبر انتهاكاً مباشراً لشروطنا ويؤدي لتعليق الخدمة فوراً." : "Any violation of external cloud policies is considered a direct violation of our terms and leads to immediate service suspension."
-        }
-      ]
-    },
-    {
-      icon: Scale,
-      title: isAr ? "7. إخلاء المسؤولية والقانون الواجب التطبيق" : "7. Disclaimer and Governing Law",
-      content: isAr 
-        ? "تُقدم الخدمة 'كما هي' وتخضع للقوانين والأنظمة الرسمية السارية."
-        : "The service is provided 'as is' and is fully subject to active legal regulatory laws.",
-      subItems: [
-        {
-          label: isAr ? "القانون الواجب" : "Governing Law",
-          desc: isAr ? "تخضع هذه الاتفاقية وتفسر وفقاً لقوانين إنجلترا وويلز (England and Wales)." : "This agreement is governed by and construed in accordance with the laws of England and Wales."
-        },
-        {
-          label: isAr ? "فض النزاعات" : "Dispute Resolution",
-          desc: isAr ? "أي نزاع قانوني يتم فضه حصرياً أمام المحاكم المختصة في المملكة المتحدة." : "Any legal dispute shall be resolved exclusively before the competent courts in the United Kingdom."
+          label: isAr ? "حماية المنصة" : "Platform Protection",
+          desc: isAr ? "يُحظر أي استخدام غير مصرح به لشعاراتنا أو محاولة نسخ البنية المعمارية للمنصة." : "Any unauthorized use of our logos or attempts to copy the platform's architectural structure is strictly prohibited."
         }
       ]
     },
     {
       icon: Shield,
-      title: isAr ? "8. اتفاقية المكافآت والامتثال المالي" : "8. Rewards and Financial Compliance",
+      title: isAr ? "6. إخلاء المسؤولية والقانون الواجب التطبيق" : "6. Disclaimer and Governing Law",
       content: isAr 
-        ? "تُعد هذه الاتفاقية وثيقة قانونية ملزمة وجزءاً أصيلاً من شروط استخدام منصة بيربليكستا."
-        : "This agreement is a binding legal document and an integral part of the PERPLEXTA Terms of Use.",
+        ? "تُقدم الخدمة والأدوات 'كما هي' وتخضع للقوانين والأنظمة الرسمية السارية."
+        : "The service and tools are provided 'as is' and are fully subject to active legal regulatory laws.",
       subItems: [
         {
-          label: isAr ? "الأهلية والإحالات" : "Eligibility and Referrals",
-          desc: isAr ? "يُحظر إنشاء حسابات وهمية أو استخدام البوتات؛ التلاعب يؤدي لتجميد الحساب ومصادرة النقاط فوراً." : "Creating fake accounts or using bots is strictly prohibited; manipulation leads to immediate account freezing and points confiscation."
+          label: isAr ? "دقة الذكاء الاصطناعي" : "AI Accuracy",
+          desc: isAr ? "يرجي الانتباه إلى أن مخرجات الذكاء الاصطناعي خاضعة للتجربة والخطأ، ولا نقدم ضمانات لدقة التحليلات الطبية والمالية." : "Please note that AI outputs are subject to trial and error. We do not provide absolute guarantees for the accuracy of medical or financial analyses."
         },
         {
-          label: isAr ? "آلية التحويل" : "Transfer Mechanism",
-          desc: isAr ? "تخضع طلبات السحب لتدقيق بشري وتقني صارم، ولا تُعتبر النقاط رصيداً نهائياً إلا بعد الموافقة الأمنية." : "Withdrawal requests are subject to strict human and technical auditing; points are not final until security approval."
-        },
-        {
-          label: isAr ? "الامتثال الدولي (AML)" : "International Compliance (AML)",
-          desc: isAr ? "نلتزم بقوانين مكافحة غسل الأموال (UK AML)؛ ويُحظر التعامل مع الدول المدرجة على قوائم العقوبات الدولية." : "We comply with UK AML laws; transactions with countries on international sanctions lists are strictly prohibited."
+          label: isAr ? "القانون الواجب" : "Governing Law",
+          desc: isAr ? "تخضع هذه الاتفاقية وتفسر وفقاً لقوانين إنجلترا وويلز، ويتم فض النزاعات فيها." : "This agreement is governed by and construed in accordance with the laws of England and Wales."
         }
       ]
     }

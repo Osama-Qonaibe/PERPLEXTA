@@ -648,6 +648,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 };
 
 interface Message {
+  client_id?: string;
   id?: number;
   role: 'user' | 'assistant';
   content: string;
@@ -1603,6 +1604,7 @@ export const ChatPage: React.FC = () => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [playingTTSId, setPlayingTTSId] = useState<string | number | null>(null);
   const [chatRenameTitle, setChatRenameTitle] = useState('');
   const [openCitationsMap, setOpenCitationsMap] = useState<Record<number, boolean>>({});
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -1621,6 +1623,7 @@ export const ChatPage: React.FC = () => {
   const streamingBuffer = useRef('');
   const typewriterInterval = useRef<any>(null);
   const isGeneratingRef = useRef(false);
+  const isServerDoneRef = useRef(false);
   const generationStartTimeRef = useRef<number | null>(null);
   const finalResponseDataRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1738,19 +1741,35 @@ export const ChatPage: React.FC = () => {
     handleSendOrStop(newContent, truncated);
   };
 
-  const handleTTS = (text: string) => {
+  const detectLanguage = (text: string) => {
+    const arabicRegex = /[\u0600-\u06FF]/;
+    return arabicRegex.test(text) ? 'ar-SA' : 'en-US';
+  };
+
+  const handleTTS = (text: string, msgId: string | number) => {
     if (!window.speechSynthesis) {
       toast.error(dir === 'rtl' ? 'متصفحك لا يدعم تحويل النص إلى صوت' : 'Browser doesn\'t support TTS');
       return;
     }
     
+    if (playingTTSId === msgId) {
+      window.speechSynthesis.cancel();
+      setPlayingTTSId(null);
+      return;
+    }
+
     window.speechSynthesis.cancel();
     const cleanText = text.replace(/[*#_~`\[\]()>]/g, '').slice(0, 5000);
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = dir === 'rtl' ? 'ar-SA' : 'en-US';
+    utterance.lang = detectLanguage(cleanText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+    
+    utterance.onend = () => setPlayingTTSId(null);
+    utterance.onerror = () => setPlayingTTSId(null);
+
     window.speechSynthesis.speak(utterance);
+    setPlayingTTSId(msgId);
     toast.info(dir === 'rtl' ? 'جاري القراءة الصوتية...' : 'Reading aloud...');
   };
 
@@ -1761,7 +1780,10 @@ export const ChatPage: React.FC = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    };
   }, []);
 
   const [isExporting, setIsExporting] = useState(false);
@@ -2102,12 +2124,12 @@ export const ChatPage: React.FC = () => {
         // Dynamic pulling: scales up if queue builds up to maintain zero-latency
         const bufferLen = streamingBuffer.current.length;
         let pullAmount = 1;
-        if (!isGeneratingRef.current) {
+        if (isServerDoneRef.current) {
           // If generation is complete, pull larger chunks to flush the buffer rapidly and avoid artificial lag
           pullAmount = Math.min(bufferLen, Math.max(12, Math.ceil(bufferLen / 3)));
         } else if (bufferLen > 200) {
           // Keep up with rapid server models under high load
-          pullAmount = Math.min(bufferLen, 32);
+          pullAmount = Math.min(bufferLen, Math.max(32, Math.ceil(bufferLen / 5)));
         } else if (bufferLen > 100) {
           pullAmount = Math.min(bufferLen, 18);
         } else if (bufferLen > 50) {
@@ -2153,7 +2175,7 @@ export const ChatPage: React.FC = () => {
           }
           return prev;
         });
-      } else if (!isGeneratingRef.current) {
+      } else if (isServerDoneRef.current) {
         // Stop interval when buffer is empty and generation is done
         if (typewriterInterval.current) {
           clearInterval(typewriterInterval.current);
@@ -2351,6 +2373,7 @@ export const ChatPage: React.FC = () => {
 
     const onChatChunk = (data: any) => {
       if (data.isFinal) {
+        isServerDoneRef.current = true;
         // Prevent appending a duplicate whole response text if chunks have already stream-loaded.
         if (streamingBuffer.current.length === 0) {
           streamingBuffer.current += data.chunk || '';
@@ -2429,6 +2452,9 @@ export const ChatPage: React.FC = () => {
           if (triggerUpgradePrompt) {
             triggerUpgradePrompt(selectedTool || 'chat', parsed.limit, parsed.current, parsed.period);
           }
+        } else if (parsed.type === 'TOKEN_EXPIRED') {
+          errorMessage = dir === 'rtl' ? 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة أو تسجيل الدخول مرة أخرى.' : 'Session expired. Please refresh the page or login again.';
+          setTimeout(() => window.location.reload(), 3000);
         } else if (parsed.type === 'SYSTEM_INACTIVE') {
           isInactive = true;
           quotaData = parsed;
@@ -2572,9 +2598,13 @@ export const ChatPage: React.FC = () => {
         ? (selectedModel === 'fast' ? 'chat_fast' : selectedModel === 'pro' ? 'chat_pro' : selectedModel === 'thinking' ? 'chat_reasoning' : 'chat')
         : selectedTool);
 
+      const tempUserMsgId = `cli_${Date.now()}_u`;
+      const tempAstMsgId = `cli_${Date.now()}_a`;
+
       let updatedMessages: Message[] = [
         ...(overrideMessages || messages), 
         { 
+          client_id: tempUserMsgId,
           role: 'user', 
           content: currentQuery,
           tool: toolToUse,
@@ -2586,6 +2616,7 @@ export const ChatPage: React.FC = () => {
           } : undefined
         }, 
         { 
+          client_id: tempAstMsgId,
           role: 'assistant', 
           content: '', 
           tool: toolToUse, 
@@ -2603,6 +2634,7 @@ export const ChatPage: React.FC = () => {
       setMessages(updatedMessages);
       setIsGenerating(true);
       streamingBuffer.current = '';
+      isServerDoneRef.current = false;
       
       // Track analytics event for chat submission
       trackGAEvent('chat_submitted', 'chat_engagement', toolToUse);
@@ -3136,20 +3168,14 @@ export const ChatPage: React.FC = () => {
 
   const advancedTools = [
     { id: 'chat', label: t('chat'), icon: <MessageSquare size={18} />, isNew: false },
-    ...(!isMobile ? [
-      { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
-    ] : []),
-    { id: 'video', label: t('video'), icon: <Video size={18} />, isNew: false },
+    { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
     { id: 'image', label: t('image'), icon: <ImageIcon size={18} />, isNew: false },
+    { id: 'video', label: t('video'), icon: <Video size={18} />, isNew: true },
     { id: 'learning', label: t('learning'), icon: <BookOpen size={18} />, isNew: true },
+    { id: 'legal_analysis', label: t('legal_analysis'), icon: <Scale size={18} />, isNew: true },
     { id: 'perplexta_analysis', label: t('perplexta_analysis'), icon: <Search size={18} />, isNew: true },
-    ...(!isMobile ? [
-      { id: 'legal_analysis', label: t('legal_analysis'), icon: <Scale size={18} />, isNew: true },
-      { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
-    ] : []),
     { id: 'canvas', label: t('canvas'), icon: <Music size={18} />, isNew: true },
-    { id: 'sovereign_search', label: t('sovereign_search'), icon: <Search size={18} />, isNew: true },
-    { id: 'sovereign_memory', label: t('sovereign_memory'), icon: <Database size={18} />, isNew: true },
+    { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
     { id: 'tts', label: t('tts'), icon: <Volume2 size={18} />, isNew: true },
     { id: 'stt', label: t('stt'), icon: <Mic size={18} />, isNew: true },
   ];
@@ -3328,36 +3354,6 @@ export const ChatPage: React.FC = () => {
             />
           </div>
 
-          {/* Voice to Text (STT) Button */}
-          <div className="relative flex-shrink-0 flex items-center">
-            <button 
-              onClick={toggleRecording}
-              disabled={isInputDisabled}
-              title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 relative group ${
-                isInputDisabled 
-                  ? 'opacity-30 cursor-not-allowed' 
-                  : isRecording
-                    ? 'bg-red-500/10 text-red-500 border-red-500/25 shadow-[0_0_15px_rgba(239,68,68,0.25)]' 
-                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 active:scale-95'
-              }`}
-            >
-              {isRecording ? (
-                <div className="relative flex items-center justify-center">
-                  <MicOff size={18} className="md:w-5 md:h-5 text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                </div>
-              ) : (
-                <Mic 
-                  size={18} 
-                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" 
-                />
-              )}
-            </button>
-          </div>
 
           {/* Attachment Button */}
           <div className="relative flex-shrink-0 flex items-center gap-1">
@@ -3504,6 +3500,37 @@ export const ChatPage: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Voice to Text (STT) Button */}
+          <div className="relative flex-shrink-0 flex items-center">
+            <button 
+              onClick={toggleRecording}
+              disabled={isInputDisabled}
+              title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 relative group ${
+                isInputDisabled 
+                  ? 'opacity-30 cursor-not-allowed' 
+                  : isRecording
+                    ? 'bg-red-500/10 text-red-500 border-red-500/25 shadow-[0_0_15px_rgba(239,68,68,0.25)]' 
+                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 active:scale-95'
+              }`}
+            >
+              {isRecording ? (
+                <div className="relative flex items-center justify-center">
+                  <MicOff size={18} className="md:w-5 md:h-5 text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                </div>
+              ) : (
+                <Mic 
+                  size={18} 
+                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" 
+                />
+              )}
+            </button>
           </div>
         </div>
       </motion.div>
@@ -3941,7 +3968,7 @@ export const ChatPage: React.FC = () => {
               {messages.map((msg, idx) => {
                 return (
                   <div 
-                    key={msg.id || idx} 
+                    key={msg.client_id || msg.id || idx} 
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
                   >
@@ -4296,11 +4323,15 @@ export const ChatPage: React.FC = () => {
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </button>
                         <button 
-                          onClick={() => handleTTS(msg.content)}
-                          title={dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud'}
-                          className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          onClick={() => handleTTS(msg.content, msg.client_id || msg.id || idx)}
+                          title={playingTTSId === (msg.client_id || msg.id || idx) ? (dir === 'rtl' ? 'إيقاف الصوت' : 'Stop') : (dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud')}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
-                          <Volume2 size={13} />
+                          {playingTTSId === (msg.client_id || msg.id || idx) ? (
+                            <Square size={13} fill="currentColor" />
+                          ) : (
+                            <Volume2 size={13} />
+                          )}
                         </button>
                         <button 
                           onClick={() => handleRegenerate(idx)}

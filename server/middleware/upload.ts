@@ -43,8 +43,8 @@ const allowedMimeTypes: Record<string, string[]> = {
 export const upload = multer({ 
   storage,
   limits: {
-    // Hardening: Restrict max upload size to 15MB to prevent memory-exhaustion or storage-exhaustion DoS attacks
-    fileSize: 15 * 1024 * 1024
+    // Hardening: Restrict max upload size to 100MB to prevent memory-exhaustion or storage-exhaustion DoS attacks
+    fileSize: 100 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();

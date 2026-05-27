@@ -15,11 +15,17 @@ async function startServer() {
   try {
     console.log('[Server] Initializing Perplexta Ecosystem...');
     
-    await initializePerplextaPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
-    await runDatabaseMigrations();
-    await synchronizePerplextaPoolsFromRegistry();
-    await syncSystemTemplates();
-    await refreshCachedAppName();
+    let dbReady = false;
+    try {
+      await initializePerplextaPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
+      await runDatabaseMigrations();
+      await synchronizePerplextaPoolsFromRegistry();
+      await syncSystemTemplates();
+      await refreshCachedAppName();
+      dbReady = true;
+    } catch (dbErr) {
+      console.error('[Server] WARNING: Database sync failed. Starting in DEGRADED MODE:', dbErr);
+    }
     
     if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({
@@ -32,15 +38,16 @@ async function startServer() {
     
     const httpServer = createServer(app);
     const ioInstance = initSocket(httpServer);
-    setIo(ioInstance);
-    
-    initCronJobs();
+    if (dbReady) {
+      setIo(ioInstance);
+      initCronJobs();
+    }
 
     httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT}`);
+      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT}${!dbReady ? ' [DEGRADED MODE]' : ''}`);
     });
   } catch (err) {
-    console.error('[Server] FATAL: Critical Startup Failure. Database or Core Service unavailable:', err);
+    console.error('[Server] FATAL: Unexpected Application Failure:', err);
     process.exit(1);
   }
 }
