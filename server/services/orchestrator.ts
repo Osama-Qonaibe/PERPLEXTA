@@ -13,11 +13,24 @@ import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet } from './wallet.js';
 
+const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
+const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
+
 function getDynamicHistoryLimit(totalMessages: number): number {
-  if (totalMessages <= 4) return 2;
-  if (totalMessages <= 8) return 4;
-  if (totalMessages <= 14) return 6;
-  return 10;
+  if (totalMessages <= 4) return 4;
+  if (totalMessages <= 8) return 6;
+  if (totalMessages <= 14) return 8;
+  if (totalMessages <= 30) return 12;
+  return 16;
+}
+
+function cleanAIOutput(text: string): string {
+  return text
+    .replace(THINK_TAG_REGEX, '')
+    .replace(MEMORY_TAG_REGEX, '')
+    .replace(/```(?:json)?/gi, '')
+    .replace(/[{}]/g, '')
+    .trim();
 }
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
@@ -228,7 +241,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         const size =
           aspectRatio === '16:9' ? '1792x1024' :
           aspectRatio === '9:16' ? '1024x1792' :
-          aspectRatio === '4:3' ? '1024x1024' :
           '1024x1024';
         const quality = imageSettings.quality === 'Ultra' ? 'hd' : 'standard';
         const style = imageSettings.style === 'واقعي' || imageSettings.style === 'Realistic' ? 'natural' : 'vivid';
@@ -676,21 +688,19 @@ ${refinedSystemPromptSegment}
       }
       
       try {
-        const memoryRegex = /<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
-        let match;
         const extractedFacts: { fact: string; category: string }[] = [];
+        const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
+        let match;
         
-        while ((match = memoryRegex.exec(generatedText)) !== null) {
+        while ((match = memRegex.exec(generatedText)) !== null) {
           const category = match[1] || 'general';
           const fact = match[2]?.trim();
-          if (fact) {
-            extractedFacts.push({ fact, category });
-          }
+          if (fact) extractedFacts.push({ fact, category });
         }
 
         if (extractedFacts.length > 0) {
           const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-          let currentCount = parseInt(countRes.rows[0].count);
+          const currentCount = parseInt(countRes.rows[0].count);
 
           if (currentCount >= 50) {
             setImmediate(() => {
@@ -726,7 +736,8 @@ ${refinedSystemPromptSegment}
           }
         }
         
-        generatedText = generatedText.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
+        const cleanRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
+        generatedText = generatedText.replace(cleanRegex, '').trim();
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
       }
@@ -793,7 +804,7 @@ ${refinedSystemPromptSegment}
 
 async function runMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {
   const oldestRes = await pool.query(
-    'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
+    'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 15',
     [userId]
   );
 
@@ -839,28 +850,20 @@ async function runMemoryConsolidation(userId: number, chatIdNum: number, provide
     }
   }
 
-  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nYour objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).\nProvide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
+  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nYour objective is to execute AUTO-CONSOLIDATION on legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).\nProvide ONLY the single condensed statement with no intro/outro or formatting. Limit of 200 characters.`;
 
   const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:\n${factsToCondense}`;
 
   let condensedFact = '';
   try {
     condensedFact = await callAIProvider(provider, model, apiKey, condensePrompt, condenseSystemPrompt);
-    condensedFact = condensedFact.trim();
+    condensedFact = cleanAIOutput(condensedFact);
   } catch (condenseErr) {
     console.error('[Orchestrator] AI consolidation failed, using fallback aggregation.', condenseErr);
     condensedFact = oldestRes.rows.map((r: any) => r.fact).join('; ');
     if (condensedFact.length > 255) {
       condensedFact = condensedFact.substring(0, 252) + '...';
     }
-  }
-
-  if (condensedFact) {
-    condensedFact = condensedFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
-    condensedFact = condensedFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
-    condensedFact = condensedFact.replace(/```(?:json)?/gi, '');
-    condensedFact = condensedFact.replace(/[{}]/g, '');
-    condensedFact = condensedFact.trim();
   }
 
   if (condensedFact) {
@@ -883,22 +886,34 @@ function estimateAICallCost(provider: string, model: string, inputChars: number,
   const inputTokens = Math.ceil(inputChars / 4);
   const outputTokens = Math.ceil(outputChars / 4);
 
-  let inputRatePerMillion = 0.5; 
+  let inputRatePerMillion = 0.5;
   let outputRatePerMillion = 1.5;
 
   if (normProvider === 'google' || normProvider === 'gemini') {
-    if (normModel.includes('pro')) {
+    if (normModel.includes('2.5-pro') || normModel.includes('ultra')) {
       inputRatePerMillion = 1.25;
-      outputRatePerMillion = 5.00;
+      outputRatePerMillion = 10.00;
+    } else if (normModel.includes('2.0-flash') || normModel.includes('flash')) {
+      inputRatePerMillion = 0.10;
+      outputRatePerMillion = 0.40;
     } else {
       inputRatePerMillion = 0.075;
       outputRatePerMillion = 0.30;
     }
   } else if (normProvider === 'openai') {
-    if (normModel.includes('gpt-4o-mini')) {
+    if (normModel.includes('gpt-4o-mini') || normModel.includes('4o-mini')) {
       inputRatePerMillion = 0.15;
       outputRatePerMillion = 0.60;
-    } else if (normModel.includes('gpt-4') || normModel.includes('o1')) {
+    } else if (normModel.includes('o3') || normModel.includes('o1')) {
+      inputRatePerMillion = 10.00;
+      outputRatePerMillion = 40.00;
+    } else if (normModel.includes('o4-mini') || normModel.includes('o3-mini')) {
+      inputRatePerMillion = 1.10;
+      outputRatePerMillion = 4.40;
+    } else if (normModel.includes('gpt-4o') || normModel.includes('4o')) {
+      inputRatePerMillion = 2.50;
+      outputRatePerMillion = 10.00;
+    } else if (normModel.includes('gpt-4')) {
       inputRatePerMillion = 5.00;
       outputRatePerMillion = 15.00;
     } else {
@@ -906,19 +921,46 @@ function estimateAICallCost(provider: string, model: string, inputChars: number,
       outputRatePerMillion = 1.50;
     }
   } else if (normProvider === 'anthropic') {
-    if (normModel.includes('sonnet')) {
+    if (normModel.includes('claude-3-7') || normModel.includes('claude-4')) {
+      inputRatePerMillion = 3.00;
+      outputRatePerMillion = 15.00;
+    } else if (normModel.includes('sonnet')) {
       inputRatePerMillion = 3.00;
       outputRatePerMillion = 15.00;
     } else if (normModel.includes('haiku')) {
-      inputRatePerMillion = 0.25;
-      outputRatePerMillion = 1.25;
+      inputRatePerMillion = 0.80;
+      outputRatePerMillion = 4.00;
+    } else if (normModel.includes('opus')) {
+      inputRatePerMillion = 15.00;
+      outputRatePerMillion = 75.00;
     } else {
       inputRatePerMillion = 3.00;
       outputRatePerMillion = 15.00;
     }
   } else if (normProvider === 'deepseek') {
-    inputRatePerMillion = 0.14;
-    outputRatePerMillion = 0.28;
+    if (normModel.includes('r1')) {
+      inputRatePerMillion = 0.55;
+      outputRatePerMillion = 2.19;
+    } else {
+      inputRatePerMillion = 0.27;
+      outputRatePerMillion = 1.10;
+    }
+  } else if (normProvider === 'mistral') {
+    if (normModel.includes('large')) {
+      inputRatePerMillion = 2.00;
+      outputRatePerMillion = 6.00;
+    } else {
+      inputRatePerMillion = 0.10;
+      outputRatePerMillion = 0.30;
+    }
+  } else if (normProvider === 'xai' || normProvider === 'grok') {
+    if (normModel.includes('grok-3')) {
+      inputRatePerMillion = 3.00;
+      outputRatePerMillion = 15.00;
+    } else {
+      inputRatePerMillion = 5.00;
+      outputRatePerMillion = 15.00;
+    }
   }
 
   const inputCost = (inputTokens / 1000000) * inputRatePerMillion;
@@ -948,26 +990,27 @@ async function updateChatContextSummary(chatId: number, userId: number, provider
     }
 
     const msgRes = await pool.query(
-      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at ASC",
+      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 40",
       [chatId]
     );
-    const msgs = msgRes.rows;
+    const msgs = [...msgRes.rows].reverse();
     if (msgs.length < 2) return;
 
     const conversationText = msgs.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
     
-    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nYour goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.\nDo NOT use markdown headers, just clear text bullets. Limit of 250 characters. Maintain the professional tone of Perplexta.`;
+    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nYour goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.\nDo NOT use markdown headers, just clear text bullets. Limit of 300 characters. Maintain the professional tone of Perplexta.`;
     
     const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:\n${conversationText}`;
 
     const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
     if (contextSummary) {
+      const cleanedSummary = cleanAIOutput(contextSummary);
       const inputChars = summaryPrompt.length + summarySystemPrompt.length;
-      const outputChars = contextSummary.length;
+      const outputChars = cleanedSummary.length;
       const updateCost = estimateAICallCost(provider, model, inputChars, outputChars);
       
       await Promise.all([
-        pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [contextSummary.trim(), chatId]),
+        pool.query('UPDATE chats SET context_summary = $1 WHERE id = $2', [cleanedSummary, chatId]),
         pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [updateCost, providerId])
       ]);
     }
