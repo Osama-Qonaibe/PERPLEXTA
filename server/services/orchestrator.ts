@@ -192,6 +192,151 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     }
   }
 
+  if (toolIdStr === 'image') {
+    const imageSettings = reqBody.image_settings || {};
+    const providerId = route.primary_provider.toLowerCase();
+    const apiKey = await getProviderKey(providerId);
+
+    if (!apiKey) {
+      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      throw new Error(JSON.stringify({
+        error: "Image generation service is temporarily unavailable. No active API key found.",
+        error_ar: "خدمة توليد الصور غير متاحة حالياً. لا يوجد مفتاح API نشط.",
+        type: "SYSTEM_INACTIVE"
+      }));
+    }
+
+    let imageUrl = '';
+
+    try {
+      if (providerId === 'openai') {
+        const aspectRatio = imageSettings.aspectRatio || '1:1';
+        const size =
+          aspectRatio === '16:9' ? '1792x1024' :
+          aspectRatio === '9:16' ? '1024x1792' :
+          aspectRatio === '4:3' ? '1024x1024' :
+          '1024x1024';
+        const quality = imageSettings.quality === 'Ultra' ? 'hd' : 'standard';
+        const style = imageSettings.style === 'واقعي' || imageSettings.style === 'Realistic' ? 'natural' : 'vivid';
+
+        const res = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: route.primary_model,
+            prompt: finalPrompt,
+            n: 1,
+            size,
+            quality,
+            style
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok) throw new Error(data?.error?.message || `OpenAI image API error: ${res.status}`);
+        imageUrl = data.data?.[0]?.url || '';
+
+      } else if (providerId === 'together') {
+        const aspectRatio = imageSettings.aspectRatio || '1:1';
+        const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
+        const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
+
+        const res = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: route.primary_model,
+            prompt: finalPrompt,
+            n: 1,
+            width,
+            height
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok) throw new Error(data?.error?.message || `Together image API error: ${res.status}`);
+        imageUrl = data.data?.[0]?.url || data.data?.[0]?.b64_json || '';
+
+      } else if (providerId === 'stabilityai' || providerId === 'stability') {
+        const aspectRatio = imageSettings.aspectRatio || '1:1';
+        const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
+        const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
+
+        const res = await fetch(`https://api.stability.ai/v1/generation/${route.primary_model}/text-to-image`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            text_prompts: [{ text: finalPrompt, weight: 1 }],
+            width,
+            height,
+            steps: imageSettings.quality === 'Ultra' ? 50 : 30,
+            samples: 1
+          })
+        });
+        const data = await res.json() as any;
+        if (!res.ok) throw new Error(data?.message || `Stability AI error: ${res.status}`);
+        const b64 = data.artifacts?.[0]?.base64;
+        imageUrl = b64 ? `data:image/png;base64,${b64}` : '';
+
+      } else if (providerId === 'replicate') {
+        const res = await fetch('https://api.replicate.com/v1/predictions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            version: route.primary_model,
+            input: { prompt: finalPrompt }
+          })
+        });
+        const prediction = await res.json() as any;
+        if (!res.ok) throw new Error(prediction?.detail || `Replicate error: ${res.status}`);
+
+        let pollUrl = prediction.urls?.get;
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
+          const pollData = await poll.json() as any;
+          if (pollData.status === 'succeeded') {
+            imageUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
+            break;
+          }
+          if (pollData.status === 'failed') throw new Error('Replicate generation failed');
+        }
+      }
+
+      if (!imageUrl) throw new Error('Image generation returned empty result');
+
+      const estimatedCost = (route.cost_per_usage || 0) / 1000;
+      await pool.query(
+        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        [estimatedCost, providerId]
+      );
+
+      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Image generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
+
+      return { result: imageUrl };
+
+    } catch (imgErr: any) {
+      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      console.error('[Orchestrator Image] Generation failed:', imgErr.message);
+      throw new Error(JSON.stringify({
+        error: `Image generation failed: ${imgErr.message}`,
+        error_ar: `فشل توليد الصورة: ${imgErr.message}`,
+        type: "GENERATION_ERROR"
+      }));
+    }
+  }
+
   let userMemoriesStr = '';
   if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
     userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
@@ -500,9 +645,7 @@ async function runMemoryConsolidation(userId: number, chatIdNum: number, provide
     }
   }
 
-  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.
-Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
-Provide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
+  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nYour objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).\nProvide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
 
   const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:\n${factsToCondense}`;
 
@@ -619,9 +762,7 @@ async function updateChatContextSummary(chatId: number, userId: number, provider
 
     const conversationText = msgs.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
     
-    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.
-Your goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.
-Do NOT use markdown headers, just clear text bullets. Limit of 250 characters. Maintain the professional tone of Perplexta.`;
+    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nYour goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.\nDo NOT use markdown headers, just clear text bullets. Limit of 250 characters. Maintain the professional tone of Perplexta.`;
     
     const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:\n${conversationText}`;
 
