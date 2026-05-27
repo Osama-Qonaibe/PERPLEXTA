@@ -12,7 +12,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
@@ -49,6 +49,10 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   // Sandbox Mode state & execution variables
   const [sandboxMode, setSandboxMode] = useState(false);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  
+  
+  
   const [editableCode, setEditableCode] = useState(codeContent);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -506,8 +510,21 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   )}
                 </div>
 
-                <div className="text-[10px] font-mono text-[var(--text-muted)] select-none">
-                  {dir === 'rtl' ? 'محرر بيربليكستا النشط' : 'PERPLEXTA ACTIVE SANDBOX'}
+                <div className="flex items-center gap-2">
+                  {isPlaying && ['html', 'css'].includes(lang.toLowerCase()) && (
+                    <>
+                      <button
+                        onClick={() => { if (iframeSrc) { const blob = new Blob([iframeSrc], { type: 'text/html' }); const url = URL.createObjectURL(blob); window.open(url, '_blank'); } }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 border border-transparent"
+                      >
+                        <ExternalLink size={12} />
+                        <span>{dir === 'rtl' ? 'فتح في المتصفح' : 'Open in Browser'}</span>
+                      </button>
+                    </>
+                  )}
+                  <div className="text-[10px] font-mono text-[var(--text-muted)] select-none">
+                    {dir === 'rtl' ? 'محرر بيربليكستا النشط' : 'PERPLEXTA ACTIVE SANDBOX'}
+                  </div>
                 </div>
               </div>
 
