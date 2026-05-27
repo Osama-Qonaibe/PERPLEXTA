@@ -13,6 +13,13 @@ import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet } from './wallet.js';
 
+function getDynamicHistoryLimit(totalMessages: number): number {
+  if (totalMessages <= 4) return 2;
+  if (totalMessages <= 8) return 4;
+  if (totalMessages <= 14) return 6;
+  return 10;
+}
+
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
@@ -104,9 +111,16 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   let history: { role: string; content: string }[] = [];
   if (chatIdNum > 0) {
     try {
-      const historyRes = await pool.query(
-        "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 16",
+      const countRes = await pool.query(
+        "SELECT count(*) FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != ''",
         [chatIdNum]
+      );
+      const totalMessages = parseInt(countRes.rows[0].count);
+      const historyLimit = getDynamicHistoryLimit(totalMessages);
+
+      const historyRes = await pool.query(
+        "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT $2",
+        [chatIdNum, historyLimit]
       );
       const rawHistory = [...historyRes.rows].reverse();
       if (rawHistory.length > 0 && rawHistory[rawHistory.length - 1].role === 'user') {
@@ -654,8 +668,10 @@ ${refinedSystemPromptSegment}
       await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
 
       if (chatIdNum > 0) {
-        updateChatContextSummary(chatIdNum, userId, target.provider, target.model, apiKey).catch(err => {
-          console.error('[Orchestrator] Progressive summarization error:', err);
+        setImmediate(() => {
+          updateChatContextSummary(chatIdNum, userId, target.provider, target.model, apiKey).catch(err => {
+            console.error('[Orchestrator] Progressive summarization error:', err);
+          });
         });
       }
       
