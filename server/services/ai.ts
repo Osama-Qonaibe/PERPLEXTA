@@ -128,8 +128,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         // Fallback for custom or arbitrary providers (treated as OpenAI-compatible)
         let baseUrl = urlKey;
         if (!baseUrl) {
-            const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [provider]);
-            baseUrl = dbRes.rows[0]?.url_key;
+            baseUrl = await getProviderUrlKey(provider) || undefined;
         }
         if (baseUrl) {
             let cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -190,7 +189,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
 }
 
 const vaultCache = new Map<string, string>();
-
+const urlKeyCache = new Map<string, string>();
 
 export async function getProviderKey(provider: string): Promise<string | null> {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
@@ -201,9 +200,14 @@ export async function getProviderKey(provider: string): Promise<string | null> {
 
   let decryptedKey: string | null = null;
   try {
-    const result = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
-    if (result.rows.length > 0 && result.rows[0].encrypted_key) {
-      decryptedKey = decrypt(result.rows[0].encrypted_key);
+    const result = await pool.query('SELECT encrypted_key, url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
+    if (result.rows.length > 0) {
+      if (result.rows[0].encrypted_key) {
+        decryptedKey = decrypt(result.rows[0].encrypted_key);
+      }
+      if (result.rows[0].url_key) {
+        urlKeyCache.set(normProvider, result.rows[0].url_key);
+      }
     }
   } catch (_) {}
 
@@ -217,12 +221,32 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   return null;
 }
 
+export async function getProviderUrlKey(provider: string): Promise<string | null> {
+  const normProvider = provider.toLowerCase().replace(/\s+/g, '');
+  
+  if (urlKeyCache.has(normProvider)) {
+    return urlKeyCache.get(normProvider)!;
+  }
+
+  let urlKey: string | null = null;
+  try {
+    const result = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
+    if (result.rows.length > 0 && result.rows[0].url_key) {
+      urlKey = result.rows[0].url_key;
+      urlKeyCache.set(normProvider, urlKey);
+    }
+  } catch (_) {}
+
+  return urlKey;
+}
 
 export function invalidateVaultCache(provider?: string) {
   if (provider) {
     vaultCache.delete(provider.toLowerCase());
+    urlKeyCache.delete(provider.toLowerCase());
   } else {
     vaultCache.clear();
+    urlKeyCache.clear();
   }
 }
 
@@ -301,8 +325,7 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
             // General OpenAI-compatible custom provider check
             let baseUrl = urlKey;
             if (!baseUrl) {
-                const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
-                baseUrl = dbRes.rows[0]?.url_key;
+                baseUrl = await getProviderUrlKey(normProvider) || undefined;
             }
             if (baseUrl) {
                 let cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -642,11 +665,7 @@ export async function callAIProvider(
     body = { contents: geminiContents };
     if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   } else if (normProvider.includes('ollama')) {
-    let baseUrl = '';
-    const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
-    if (dbRes.rows.length > 0 && dbRes.rows[0].url_key) {
-      baseUrl = dbRes.rows[0].url_key;
-    }
+    let baseUrl = await getProviderUrlKey(normProvider) || '';
     const cleanUrl = cleanOllamaUrl(baseUrl);
     url = `${cleanUrl}/api/chat`;
     if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
@@ -656,11 +675,7 @@ export async function callAIProvider(
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   } else {
     // Default to OpenAI-style for unknown/custom providers
-    let baseUrl = '';
-    const dbRes = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
-    if (dbRes.rows.length > 0 && dbRes.rows[0].url_key) {
-      baseUrl = dbRes.rows[0].url_key;
-    }
+    let baseUrl = await getProviderUrlKey(normProvider) || '';
     let cleanUrl = baseUrl ? (baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl) : 'https://api.openai.com/v1';
     
     // Auto-correct common mistakes in Base URL
