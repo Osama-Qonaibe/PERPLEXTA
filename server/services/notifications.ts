@@ -32,8 +32,8 @@ export async function logSecurityAlert(userId: number | null, alertType: string,
   try {
     const ip = req ? (req.headers['x-forwarded-for'] || req.socket.remoteAddress) : null;
     await pool.query(`
-      INSERT INTO security_alerts (user_id, alert_type, type, severity, description, metadata, ip_address)
-      VALUES ($1, $2, $2, $3, $4, $5, $6)
+      INSERT INTO security_alerts (user_id, type, severity, description, metadata, ip_address)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `, [userId, alertType, severity, description, JSON.stringify(metadata), ip]);
   } catch (err) {
     console.error('[SecurityLog] Failed:', err);

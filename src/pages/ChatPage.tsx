@@ -3932,7 +3932,7 @@ export const ChatPage: React.FC = () => {
                   key="onboarding-view"
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
+                  exit={{ opacity: 0, filter: "blur(3px)" }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                   className="hidden md:flex flex-1 flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
                 >
@@ -3976,9 +3976,9 @@ export const ChatPage: React.FC = () => {
             ) : (
               <motion.div
                 key="chat-thread-view"
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4"
               >
