@@ -19,10 +19,8 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
   
-  // Simple sanitization to prevent prompt injection by neutralizing internal markers
   const sanitizePrompt = (p: string) => {
     if (!p) return p;
-    // Replace markers that could be used for hijacking context
     return p.replace(/(SYSTEM[ _]MEMORY[ _]INGESTION|LIVE[ _]WEB[ _]CONTEXT|USER[ _]PROMPT|TECHNICAL[ _]DIRECTIVE|ASSISTANT[ _]MEMORY[ _]RECORDS|CONVERSATION[ _]CONTEXT[ _]SUMMARY):/gi, '[CLEANED_MARKER]');
   };
 
@@ -34,7 +32,6 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
       const fileBuffer = Buffer.from(file_data.data, 'base64');
       const isImageVideoAudio = file_data.type?.startsWith('image/') || file_data.type?.startsWith('video/') || file_data.type?.startsWith('audio/');
       
-      // If it's a PDF, we run forensic mode optionally, or just always append metadata.
       if (file_data.type === 'application/pdf') {
         try {
           const forensicReport = forensicScanPDF(fileBuffer);
@@ -67,7 +64,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         }
       }
 
-      // Read all textual files (PDF, docx, csv, txt, json, html) and append content to prompt
       if (!isImageVideoAudio && file_data.type !== 'application/pdf') {
         const { extractTextFromBuffer } = await import('./extractor.js');
         const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
@@ -75,7 +71,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           finalPrompt = `${finalPrompt}\n\n[FILE CONTENT - ${file_data.name}]:\n${extractedText}`;
         }
       } else if (file_data.type === 'application/pdf') {
-         // Also extract text from PDF and append if supported
          const { extractTextFromBuffer } = await import('./extractor.js');
          const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
          if (extractedText && extractedText.trim() !== '') {
@@ -147,7 +142,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   
   if (!quotaCheck.allowed) {
     try {
-      // Attempt transaction-safe ledger deduction of points or balance for tool overage
       const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
       if (io) {
         io.to(`user_${userId}`).emit('user_profile_updated');
@@ -157,7 +151,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           amount: chargeRes.amount 
         });
       }
-      // Increment since they weren't allowed originally but succeeded via wallet
       await incrementUserUsage(userId, toolIdStr);
     } catch (chargeErr: any) {
       const periodStrEn = quotaCheck.period === 'daily' ? 'Daily' : 'Monthly';
@@ -300,20 +293,21 @@ ${refinedSystemPromptSegment}
     { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
-  // Removed unmanaged fallback to system-provided model to satisfy database-driven Orchestrator Absolutism constraints.
-
   let generatedText = '';
   let successfulModel = null;
   
   for (const target of modelsToTry) {
     try {
       const providerId = target.provider.toLowerCase();
-      const apiKey = await getProviderKey(providerId);
-      if (!apiKey) {
-        continue;
-      }
 
-      const budgetRes = await pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId]);
+      // FIX 1: parallel DB queries instead of sequential
+      const [apiKey, budgetRes] = await Promise.all([
+        getProviderKey(providerId),
+        pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
+      ]);
+
+      if (!apiKey) continue;
+
       let isProviderActive = budgetRes.rows.length === 0 || budgetRes.rows[0].is_active;
       let dailyBudget = 0;
       let usedToday = 0;
@@ -323,9 +317,7 @@ ${refinedSystemPromptSegment}
         usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
       }
 
-      if (!isProviderActive) {
-        continue;
-      }
+      if (!isProviderActive) continue;
 
       if (dailyBudget > 0 && usedToday >= dailyBudget) {
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
@@ -359,137 +351,46 @@ ${refinedSystemPromptSegment}
         }
 
         if (extractedFacts.length > 0) {
-          for (const item of extractedFacts) {
-            // Retrieve current count of user memories
-            const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-            const currentCount = parseInt(countRes.rows[0].count);
-            
-            if (currentCount >= 50) {
-              // Execute AUTO-CONSOLIDATION at 50 records limit
-              const oldestRes = await pool.query(
-                'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
-                [userId]
-              );
-              
-              if (oldestRes.rows.length > 0) {
-                const oldestIds = oldestRes.rows.map((r: any) => r.id);
-                const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
-                
-                // Count frequencies of chat_ids among the memories to find the most relevant one
-                const chatIdCounts: Record<number, number> = {};
-                for (const m of oldestRes.rows) {
-                  if (m.chat_id) {
-                    chatIdCounts[m.chat_id] = (chatIdCounts[m.chat_id] || 0) + 1;
-                  }
-                }
-                let associatedChatId = chatIdNum || null;
-                let maxCount = 0;
-                for (const [cidStr, count] of Object.entries(chatIdCounts)) {
-                  if (count > maxCount) {
-                    maxCount = count;
-                    associatedChatId = parseInt(cidStr, 10);
-                  }
-                }
-                
-                // Fallback to the chat_id from the most recent message to persist context
-                if (!associatedChatId) {
-                  const latestMessageChatRes = await pool.query(
-                    `SELECT c.id FROM chats c 
-                     JOIN messages m ON m.chat_id = c.id 
-                     WHERE c.user_id = $1 
-                     ORDER BY m.created_at DESC 
-                     LIMIT 1`,
-                    [userId]
-                  );
-                  if (latestMessageChatRes.rows.length > 0) {
-                    associatedChatId = latestMessageChatRes.rows[0].id;
-                  } else {
-                    // Ultimate fallback to user's most recently active chat
-                    const latestChatRes = await pool.query(
-                      "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
-                      [userId]
-                    );
-                    if (latestChatRes.rows.length > 0) {
-                      associatedChatId = latestChatRes.rows[0].id;
-                    }
-                  }
-                }
-                
-                const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.
-Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
-Provide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
-                
-                const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:
-${factsToCondense}`;
-                
-                let condensedFact = '';
-                try {
-                  condensedFact = await callAIProvider(
-                    target.provider,
-                    target.model,
-                    apiKey,
-                    condensePrompt,
-                    condenseSystemPrompt
-                  );
-                  condensedFact = condensedFact.trim();
-                } catch (condenseErr) {
-                  console.error('[Orchestrator] AI consolidation failed, using fallback aggregation.', condenseErr);
-                  condensedFact = oldestRes.rows.map((r: any) => r.fact).join('; ');
-                  if (condensedFact.length > 255) {
-                    condensedFact = condensedFact.substring(0, 252) + '...';
-                  }
-                }
+          // FIX 2: single count query for all facts
+          const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+          let currentCount = parseInt(countRes.rows[0].count);
 
-                // Clean condensedFact from reasoning thinker blocks, nested code fences or JSON structures
-                if (condensedFact) {
-                  condensedFact = condensedFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
-                  condensedFact = condensedFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
-                  condensedFact = condensedFact.replace(/```(?:json)?/gi, '');
-                  condensedFact = condensedFact.replace(/[{}]/g, '');
-                  condensedFact = condensedFact.trim();
-                }
-                
-                if (condensedFact) {
-                  // Delete the 10 oldest records
-                  await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
-                  
-                  // Insert single consolidated high-density memory with complete lineage context
-                  await pool.query(
-                    "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
-                    [userId, associatedChatId || null, condensedFact]
-                  );
-                  
-                  if (io) {
-                    io.to(`user_${userId}`).emit('memory_consolidation', { consolidatedCount: oldestRes.rows.length });
-                  }
-                }
-              }
-            }
-            
-            // Insert the newly extracted memory fact
-            const insertRes = await pool.query(
+          if (currentCount >= 50) {
+            // FIX 3: memory consolidation as fire-and-forget async (non-blocking)
+            setImmediate(() => {
+              runMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey).catch(err => {
+                console.error('[Orchestrator] Memory consolidation error:', err);
+              });
+            });
+          }
+
+          // FIX 4: batch insert all extracted facts in parallel
+          const insertPromises = extractedFacts.map(item =>
+            pool.query(
               "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
               [userId, chatIdNum || null, item.fact, item.category]
-            );
-            
-            if (io) {
-              io.to(`user_${userId}`).emit('memory_extracted', { 
-                fact: item.fact, 
-                category: item.category, 
-                id: insertRes.rows[0].id 
-              });
-              
-              // Recalculate count for proactive warning
-              const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-              const newCount = parseInt(checkNewCount.rows[0].count);
-              if (newCount >= 45) {
-                io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
+            ).then(insertRes => {
+              if (io) {
+                io.to(`user_${userId}`).emit('memory_extracted', {
+                  fact: item.fact,
+                  category: item.category,
+                  id: insertRes.rows[0].id
+                });
               }
+            })
+          );
+
+          await Promise.all(insertPromises);
+
+          if (io) {
+            const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+            const newCount = parseInt(checkNewCount.rows[0].count);
+            if (newCount >= 45) {
+              io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
             }
           }
         }
         
-        // Always clean extraction tags from final generated text to prevent rendering in client chat bubble, using the most comprehensive pattern
         generatedText = generatedText.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '').trim();
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
@@ -555,11 +456,98 @@ ${factsToCondense}`;
   return { result: generatedText };
 };
 
+async function runMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {
+  const oldestRes = await pool.query(
+    'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
+    [userId]
+  );
+
+  if (oldestRes.rows.length === 0) return;
+
+  const oldestIds = oldestRes.rows.map((r: any) => r.id);
+  const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
+
+  const chatIdCounts: Record<number, number> = {};
+  for (const m of oldestRes.rows) {
+    if (m.chat_id) {
+      chatIdCounts[m.chat_id] = (chatIdCounts[m.chat_id] || 0) + 1;
+    }
+  }
+  let associatedChatId = chatIdNum || null;
+  let maxCount = 0;
+  for (const [cidStr, count] of Object.entries(chatIdCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      associatedChatId = parseInt(cidStr, 10);
+    }
+  }
+
+  if (!associatedChatId) {
+    const latestMessageChatRes = await pool.query(
+      `SELECT c.id FROM chats c 
+       JOIN messages m ON m.chat_id = c.id 
+       WHERE c.user_id = $1 
+       ORDER BY m.created_at DESC 
+       LIMIT 1`,
+      [userId]
+    );
+    if (latestMessageChatRes.rows.length > 0) {
+      associatedChatId = latestMessageChatRes.rows[0].id;
+    } else {
+      const latestChatRes = await pool.query(
+        "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
+        [userId]
+      );
+      if (latestChatRes.rows.length > 0) {
+        associatedChatId = latestChatRes.rows[0].id;
+      }
+    }
+  }
+
+  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.
+Your objective is to execute AUTO-CONSOLIDATION on 10 legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).
+Provide ONLY the single condensed statement with no intro/outro or formatting. Limit of 150 characters.`;
+
+  const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:
+${factsToCondense}`;
+
+  let condensedFact = '';
+  try {
+    condensedFact = await callAIProvider(provider, model, apiKey, condensePrompt, condenseSystemPrompt);
+    condensedFact = condensedFact.trim();
+  } catch (condenseErr) {
+    console.error('[Orchestrator] AI consolidation failed, using fallback aggregation.', condenseErr);
+    condensedFact = oldestRes.rows.map((r: any) => r.fact).join('; ');
+    if (condensedFact.length > 255) {
+      condensedFact = condensedFact.substring(0, 252) + '...';
+    }
+  }
+
+  if (condensedFact) {
+    condensedFact = condensedFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    condensedFact = condensedFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
+    condensedFact = condensedFact.replace(/```(?:json)?/gi, '');
+    condensedFact = condensedFact.replace(/[{}]/g, '');
+    condensedFact = condensedFact.trim();
+  }
+
+  if (condensedFact) {
+    await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
+    await pool.query(
+      "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
+      [userId, associatedChatId || null, condensedFact]
+    );
+
+    if (io) {
+      io.to(`user_${userId}`).emit('memory_consolidation', { consolidatedCount: oldestRes.rows.length });
+    }
+  }
+}
+
 function estimateAICallCost(provider: string, model: string, inputChars: number, outputChars: number): number {
   const normProvider = provider.toLowerCase();
   const normModel = model.toLowerCase();
   
-  // Roughly 4 characters per token
   const inputTokens = Math.ceil(inputChars / 4);
   const outputTokens = Math.ceil(outputChars / 4);
 
