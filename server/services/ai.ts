@@ -4,6 +4,14 @@ import { existsSync, mkdirSync } from 'fs';
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
 
+const CUSTOM_PROVIDER_TIMEOUT_MS = 60000;
+
+function createTimeoutSignal(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 export async function handleApiError(response: Response, provider: string) {
   if (!response.ok) {
     let errorDetail = '';
@@ -619,6 +627,7 @@ export async function callAIProvider(
   let url = '';
   let headers: any = { 'Content-Type': 'application/json' };
   let body: any = {};
+  let fetchSignal: AbortSignal | undefined;
 
   if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok') {
     if (normProvider === 'openai') url = 'https://api.openai.com/v1/chat/completions';
@@ -659,6 +668,26 @@ export async function callAIProvider(
     }
     const mappedMessages = transformMessagesForOllama(processedMessages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
+    const { signal, clear: clearOllamaTimer } = createTimeoutSignal(CUSTOM_PROVIDER_TIMEOUT_MS);
+    fetchSignal = signal;
+    try {
+      let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: fetchSignal });
+      clearOllamaTimer();
+      if (!res.ok && (res.status === 401 || res.status === 403) && headers['Authorization']) {
+        console.warn(`[AI Service] Ollama returned ${res.status} with Authorization header. Retrying without Authorization...`);
+        const headersNoAuth = { ...headers };
+        delete headersNoAuth['Authorization'];
+        const { signal: retrySignal, clear: clearRetryTimer } = createTimeoutSignal(CUSTOM_PROVIDER_TIMEOUT_MS);
+        res = await fetch(url, { method: 'POST', headers: headersNoAuth, body: JSON.stringify(body), signal: retrySignal });
+        clearRetryTimer();
+      }
+      return handleResponse(res);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error(`Ollama provider timed out after ${CUSTOM_PROVIDER_TIMEOUT_MS / 1000}s. Check your Ollama server.`);
+      }
+      throw err;
+    }
   } else {
     const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
     let cleanUrl = resolvedUrl ? (resolvedUrl.endsWith('/') ? resolvedUrl.slice(0, -1) : resolvedUrl) : 'https://api.openai.com/v1';
@@ -679,14 +708,21 @@ export async function callAIProvider(
     
     const mappedMessages = transformMessagesForOpenAI(processedMessages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
+
+    const { signal, clear: clearCustomTimer } = createTimeoutSignal(CUSTOM_PROVIDER_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
+      clearCustomTimer();
+      return handleResponse(res);
+    } catch (err: any) {
+      clearCustomTimer();
+      if (err.name === 'AbortError') {
+        throw new Error(`Custom provider timed out after ${CUSTOM_PROVIDER_TIMEOUT_MS / 1000}s. Check your provider URL and availability.`);
+      }
+      throw err;
+    }
   }
 
-  let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-  if (!res.ok && normProvider.includes('ollama') && (res.status === 401 || res.status === 403) && headers['Authorization']) {
-    console.warn(`[AI Service] Ollama returned ${res.status} with Authorization header. Retrying without Authorization...`);
-    const headersNoAuth = { ...headers };
-    delete headersNoAuth['Authorization'];
-    res = await fetch(url, { method: 'POST', headers: headersNoAuth, body: JSON.stringify(body) });
-  }
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
   return handleResponse(res);
 }
