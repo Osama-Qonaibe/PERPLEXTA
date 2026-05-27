@@ -122,6 +122,13 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       await handleApiError(response, 'xAI');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
+    } else if (provider === 'groq') {
+      const response = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+      });
+      await handleApiError(response, 'Groq');
+      const data: any = await response.json();
+      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider.includes('ollama')) {
         const cleanUrl = cleanOllamaUrl(urlKey || '');
         const targetHeaders: any = { 'Accept': 'application/json' };
@@ -295,6 +302,12 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 headers: { 'Authorization': `Bearer ${apiKey}` }
             });
             status.isValid = res.ok;
+        } else if (normProvider === 'groq') {
+            const res = await fetch('https://api.groq.com/openai/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `Groq: ${res.statusText}`;
         } else if (normProvider.includes('ollama')) {
             const cleanUrl = cleanOllamaUrl(urlKey || '');
             const targetHeaders: any = { 'Accept': 'application/json' };
@@ -629,12 +642,13 @@ export async function callAIProvider(
   let body: any = {};
   let fetchSignal: AbortSignal | undefined;
 
-  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok') {
+  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok' || normProvider === 'groq') {
     if (normProvider === 'openai') url = 'https://api.openai.com/v1/chat/completions';
     else if (normProvider === 'deepseek') url = 'https://api.deepseek.com/chat/completions';
     else if (normProvider === 'together') url = 'https://api.together.xyz/v1/chat/completions';
     else if (normProvider === 'openrouter') url = 'https://openrouter.ai/api/v1/chat/completions';
     else if (normProvider === 'xai' || normProvider === 'grok') url = 'https://api.x.ai/v1/chat/completions';
+    else if (normProvider === 'groq') url = 'https://api.groq.com/openai/v1/chat/completions';
     
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
     const mappedMessages = transformMessagesForOpenAI(processedMessages);
