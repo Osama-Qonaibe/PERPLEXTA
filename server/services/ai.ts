@@ -125,7 +125,6 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         const data = await response.json();
         models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
     } else {
-        // Fallback for custom or arbitrary providers (treated as OpenAI-compatible)
         let baseUrl = urlKey;
         if (!baseUrl) {
             baseUrl = await getProviderUrlKey(provider) || undefined;
@@ -137,12 +136,10 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             else if (cleanUrl.endsWith('/api/chat')) cleanUrl = cleanUrl.replace('/api/chat', '');
             
             try {
-                // Try cleanUrl/models first
                 let response = await fetch(`${cleanUrl}/models`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
                 
-                // If it fails with 404, we attempt with /v1/models if not already ending in /v1
                 if (!response.ok && response.status === 404 && !cleanUrl.endsWith('/v1')) {
                     response = await fetch(`${cleanUrl}/v1/models`, {
                         headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
@@ -164,7 +161,6 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             }
         }
 
-        // If models list is empty, inject organic generic models matching the custom provider
         if (models.length === 0) {
             models = [
                 { id: 'custom-model', name: 'Custom Standard Model' },
@@ -210,8 +206,6 @@ export async function getProviderKey(provider: string): Promise<string | null> {
       }
     }
   } catch (_) {}
-
-  // Removed unmanaged GEMINI_API_KEY environment fallback to protect API Key Vault & budget auditing integrity.
 
   if (decryptedKey) {
     vaultCache.set(normProvider, decryptedKey);
@@ -322,7 +316,6 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 status.message = `Ollama: Failed to connect to ${cleanUrl} (${err.message})`;
             }
         } else {
-            // General OpenAI-compatible custom provider check
             let baseUrl = urlKey;
             if (!baseUrl) {
                 baseUrl = await getProviderUrlKey(normProvider) || undefined;
@@ -350,12 +343,10 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                         status.isValid = true;
                     }
                 } catch (fetchErr: any) {
-                    // Let custom providers remain valid so they can be saved, but issue a warning
                     status.isValid = true;
                     status.message = `Warning: Custom provider endpoint unreachable: ${fetchErr.message}. Custom provider key saved without live validation.`;
                 }
             } else {
-                // If no Base URL is configured, skip verification to allow flexible local/fallback usage
                 status.isValid = true;
                 status.message = 'Warning: No API Base URL provided. Verification skipped. Please configure base URL to fetch models dynamically.';
             }
@@ -386,7 +377,6 @@ function transformMessagesForOpenAI(messages: any[]): any[] {
             }
           };
         }
-        // Unsupported media converted to text block to avoid 400 error crash
         const nameStr = block.name ? ` "${block.name}"` : '';
         return {
           type: 'text',
@@ -429,7 +419,6 @@ function transformMessagesForAnthropic(messages: any[]): any[] {
             }
           };
         }
-        // Unsupported media type
         const nameStr = block.name ? ` "${block.name}"` : '';
         return {
           type: 'text',
@@ -454,7 +443,6 @@ function transformMessagesForGemini(messages: any[]): any[] {
         if (block.type === 'text') {
           return { text: block.text || '' };
         }
-        // Native Gemini Inline Data
         return {
           inline_data: {
             mime_type: block.mime_type || 'image/jpeg',
@@ -510,13 +498,13 @@ export async function callAIProvider(
   systemPrompt?: string, 
   onChunk?: (chunk: string) => void, 
   history: { role: string, content: string }[] = [],
-  options: any = {}
+  options: any = {},
+  preloadedUrlKey?: string
 ) {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
   const cleanApiKey = apiKey ? apiKey.trim() : '';
   if (!cleanApiKey) throw new Error(`No valid API key provided for ${provider}`);
 
-  // Strip provider prefix if present (e.g., "google/gemini-1.5-pro" -> "gemini-1.5-pro")
   let cleanModel = model;
   if (cleanModel.includes('/') && !cleanModel.startsWith('models/')) {
     const parts = cleanModel.split('/');
@@ -604,7 +592,6 @@ export async function callAIProvider(
               }
               if (chunk) { resultText += chunk; onChunk(chunk); }
             } catch (e) {
-              // Ignore parse errors for partial chunks
             }
           } else if (normProvider.includes('ollama') && trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
              try {
@@ -612,7 +599,6 @@ export async function callAIProvider(
                let chunk = data.message?.content || '';
                if (chunk) { resultText += chunk; onChunk(chunk); }
              } catch (e) {
-               // Ignore parse errors
              }
           }
         }
@@ -665,8 +651,8 @@ export async function callAIProvider(
     body = { contents: geminiContents };
     if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
   } else if (normProvider.includes('ollama')) {
-    let baseUrl = await getProviderUrlKey(normProvider) || '';
-    const cleanUrl = cleanOllamaUrl(baseUrl);
+    const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
+    const cleanUrl = cleanOllamaUrl(resolvedUrl);
     url = `${cleanUrl}/api/chat`;
     if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
       headers['Authorization'] = `Bearer ${cleanApiKey}`;
@@ -674,11 +660,9 @@ export async function callAIProvider(
     const mappedMessages = transformMessagesForOllama(processedMessages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   } else {
-    // Default to OpenAI-style for unknown/custom providers
-    let baseUrl = await getProviderUrlKey(normProvider) || '';
-    let cleanUrl = baseUrl ? (baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl) : 'https://api.openai.com/v1';
+    const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
+    let cleanUrl = resolvedUrl ? (resolvedUrl.endsWith('/') ? resolvedUrl.slice(0, -1) : resolvedUrl) : 'https://api.openai.com/v1';
     
-    // Auto-correct common mistakes in Base URL
     if (cleanUrl.endsWith('/chat/completions')) {
       cleanUrl = cleanUrl.replace('/chat/completions', '');
     } else if (cleanUrl.endsWith('/models')) {
@@ -689,7 +673,6 @@ export async function callAIProvider(
     
     url = `${cleanUrl}/chat/completions`;
     
-    // Always fallback to sending bearer token if some key was provided
     if (cleanApiKey && cleanApiKey.trim() !== '') {
       headers['Authorization'] = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
     }
