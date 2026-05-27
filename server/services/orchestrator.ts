@@ -543,97 +543,48 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   let userMemoriesStr = '';
   if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
-    userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
+    userMemoriesStr = "\nMEMORY:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
   }
 
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
-  const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONVERSATION CONTEXT SUMMARY:\n${chatRes.rows[0].context_summary}\n` : '';
+  const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONTEXT:\n${chatRes.rows[0].context_summary}\n` : '';
   
-  let refinedSystemPromptSegment = system_prompt ? `[REFined_INSTRUCTIONS]\n${system_prompt}` : '';
+  let refinedSystemPromptSegment = system_prompt ? `[CUSTOM_INSTRUCTIONS]\n${system_prompt}` : '';
   
   if (toolIdStr === 'sovereign_memory') {
-    const memoryInstructions = `
-[SOVEREIGN CORE MEMORY PROTOCOL]
-You are acting as the Sovereign Memory Synthesis Engine (الذاكرة السيادية الجوهرية) of Perplexta.
-Your direct mandate is to synthesize the user's current message, context, and conversation history against their long-term knowledge records listed under ASSISTANT_MEMORY_RECORDS.
-
-1. CRITICAL EXTRACTIVE CORE: Analyze the input and extract precisely any strategic, high-value, or long-term operational user profile details (such as developer preferences, tech stack, workspace paths, personal goals, behavioral insights, identity context, system settings, or custom rules).
-2. MEMORY ACCRETION PATTERN: For each newly discovered fact or preference that is worthy of long-term preservation, append it in your response inside special tags EXACTLY like this:
-   <extracted_memory category="general|professional|preference|identity">The exact fact or preference</extracted_memory>
-   
-   Examples / أمثلة:
-   - <extracted_memory category="professional">User is working on a high-capacity Node.js and PostgreSQL backend</extracted_memory>
-   - <extracted_memory category="preference">User prefers clear explanation of root causes without long retrospectives</extracted_memory>
-   - <extracted_memory category="identity">User is a security engineer who strictly prevents unauthorized API leakage</extracted_memory>
-   - <extracted_memory category="general">المستخدم يفضل تبسيط الشروح وحل المشاكل التقنية فوراً</extracted_memory>
-
-3. DENSE CONVERSATIONAL REPORTS: Discuss the user's sovereign memory state, tell them what you have ingested, synthesised, or pruned, and provide a premium, elite Arabic/English synthesis of their unified context in response to their prompt. Adhere to Tajawal typography standards and professional elite posture. Do not list raw XML files, tags or internal JSON attributes in the conversational message segment.
-
-CRITICAL MANDATE: You MUST output the <extracted_memory> tags inside your final response when detecting any facts/preferences worthy of memory. If you do not include <extracted_memory> tags, the memory engine will not persist the fact.
-تنبيه هام ومصيري: يجب تفكيك المدخلات وصياغتها داخل وسم <extracted_memory category="...">الحقيقة أو التفضيل المستخلص</extracted_memory> في نهاية الإجابة لضمان قيام الخادم بالتقاطها وحفظها في قاعدة البيانات بأعلى دقة ممكنة.
-`.trim();
+    const memoryInstructions = `[MEMORY ENGINE]
+Extract long-term user facts from this conversation. For each worthy fact, output:
+<extracted_memory category="general|professional|preference|identity">fact here</extracted_memory>
+Discuss memory state and provide a dense synthesis. Do not show raw XML in your reply text.
+يجب إخراج وسم <extracted_memory> لكل حقيقة مستخلصة لضمان حفظها في قاعدة البيانات.`.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
   } else if (isChatOnly) {
-    const conversationalMemoryInstructions = `
-[SOVEREIGN COGNITIVE MEMORY ACQUISITION]
-* Always dynamically monitor the dialogue for user-specific preferences, tech stack, personal workspace parameters, goals, system settings, rules, or identity facts.
-* If you discover any durable fact, style preference, specialized rule, or user characteristic that is highly beneficial for long-term personalized recall, encapsulate it inside XML tags like this: <extracted_memory category="general|professional|preference|identity">Fact or preference details</extracted_memory>
-* These tags are parsed securely in the background and stored in the user's permanent memory database to guide future chats. Do NOT mention this mechanism in your conversational message. Keep the tags neat.
-`.trim();
+    const conversationalMemoryInstructions = `[MEMORY ACQUISITION]
+If you detect any durable user fact, preference, or rule, silently output: <extracted_memory category="general|professional|preference|identity">fact</extracted_memory>
+Do not mention this in your reply.`.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${conversationalMemoryInstructions}` : conversationalMemoryInstructions;
   }
 
   if (toolIdStr === 'sovereign_search') {
-    const searchInstructions = `
-[SOVEREIGN CORE INTELLIGENCE SEARCH PROTOCOL]
-You are acting as the Sovereign Intelligence Search Engine (البحث الاستخباراتي السيادي) of Perplexta.
-Your mandate is to perform a deep-dive, real-time extraction and analysis of the search context against the user's prompt.
-
-1. CRITICAL ANALYSIS: Synthesise the live web search context, eliminate tracking biases, and organize findings with perfect analytical rigor.
-2. ELITE REPORTING: Structure your response using clear headers, bulleted high-density insights, and precise source attributions. Match the elite, premium Arabic/English posture of Perplexta.
-`.trim();
+    const searchInstructions = `[SEARCH ENGINE]
+Synthesize the live web context against the user query. Eliminate bias, structure findings with headers and bullets, cite sources precisely.`.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
   }
 
-  const toolSeparationProtocol = `
-[STRICT_TASK_AND_TOOL_ISOLATION_MANDATE]
-- CURRENT_ACTIVE_TOOL: "${toolIdStr}"
-- COGNITIVE_BOUNDARY_RULE: 
-  ${isChatOnly ? `
-  * You are operating in a standard CHAT/CONVERSATIONAL mode.
-  * Your sole purpose is to engage in professional dialogue, explain concepts, answer questions, and assist conversationally.
-  * You MUST NOT execute or simulate specialized tools (such as Image Generation, Video Engine Rendering, Live Search Scraping, High-Dimensional Audio Synthesizing, or Legal Auditing).
-  * If the user asks for these specific media, search, or code generation tasks, politely advise them in a premium tone (in their preferred language) to activate the corresponding tool from the "Advanced Tools" menu in the input bar.` : `
-  * You are operating as a SPECIALIZED engineering tool ("${toolIdStr}").
-  * You MUST strictly keep your focus within the domain of this active tool.
-  * Do not answer general lifestyle chat queries or unrelated general conversational paths. Focus 100% on producing high-fidelity outputs for the active tool's specific domain.`}
-- FUSION_CONTROL: Do not let any tool duplicate the role of another. No overlapping capabilities are permitted. Keep the boundaries absolute.
-`.trim();
+  const toolBoundary = isChatOnly
+    ? `Active tool: chat. Do NOT simulate image/video/search/audio generation — direct user to the appropriate tool instead.`
+    : `Active tool: "${toolIdStr}". Stay strictly within this tool's domain.`;
 
-  const finalSystemPrompt = `
-${protocol}
+  const finalSystemPrompt = `${protocol}
 
-[MISSION_OBJECTIVE]
-${taskDesc || 'Execute the user request with highest professional precision.'}
+OBJECTIVE: ${taskDesc || 'Execute the user request with highest professional precision.'}
 
-[TOOL_CONTROL_POLICY]
-${toolSeparationProtocol}
-
-[CONVERSATION_CONTEXT]
-${contextSummary || 'No previous summary available.'}
-${userMemoriesStr}
-
-[CORE_DIRECTIVE]
-- Prioritize user intent.
-- Maintain the professional tone defined in the Protocol.
-- Do not mention being an AI or your technical limitations.
-- If system_prompt is provided below, treat it as a priority refinement.
-
-${refinedSystemPromptSegment}
-`.trim();
+${toolBoundary}
+${contextSummary}${userMemoriesStr}
+${refinedSystemPromptSegment}`.trim();
   
   const modelsToTry = [
     { provider: route.primary_provider, model: route.primary_model },
@@ -850,9 +801,9 @@ async function runMemoryConsolidation(userId: number, chatIdNum: number, provide
     }
   }
 
-  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nYour objective is to execute AUTO-CONSOLIDATION on legacy user profile memories, condensing them into a SINGLE high-density, unified, and highly descriptive factual statement in the original language of the records (Arabic or English).\nProvide ONLY the single condensed statement with no intro/outro or formatting. Limit of 200 characters.`;
+  const condenseSystemPrompt = `You are the Perplexta Memory Distillation Engine.\nCondense the following user memories into ONE dense factual statement in the original language (Arabic or English).\nOutput ONLY the statement. Max 200 characters.`;
 
-  const condensePrompt = `Please distill the following list of old user profile memories into exactly one single dense fact summary:\n${factsToCondense}`;
+  const condensePrompt = `Distill these memories into one dense fact:\n${factsToCondense}`;
 
   let condensedFact = '';
   try {
@@ -998,9 +949,9 @@ async function updateChatContextSummary(chatId: number, userId: number, provider
 
     const conversationText = msgs.map((m: any) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
     
-    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nYour goal is to write a highly dense, progressive, bulleted text summary in the main language used (Arabic or English) capturing the central topics, user preferences, instructions, and outcomes.\nDo NOT use markdown headers, just clear text bullets. Limit of 300 characters. Maintain the professional tone of Perplexta.`;
+    const summarySystemPrompt = `You are the Perplexta Conversation Summarizer.\nWrite a dense bulleted summary in the conversation's main language (Arabic or English) capturing key topics, decisions, and preferences.\nNo markdown headers. Max 300 characters.`;
     
-    const summaryPrompt = `Please summarize the current state of this conversation so far, focusing on key decisions and preferences:\n${conversationText}`;
+    const summaryPrompt = `Summarize this conversation focusing on key decisions and preferences:\n${conversationText}`;
 
     const contextSummary = await callAIProvider(provider, model, apiKey, summaryPrompt, summarySystemPrompt);
     if (contextSummary) {
