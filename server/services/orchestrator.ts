@@ -337,6 +337,184 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     }
   }
 
+  if (toolIdStr === 'tts') {
+    try {
+      const voiceId = reqBody.voice_id || route.primary_model || 'standard';
+      const audioBuffer = await perplextaTTS(cleanUserPrompt, voiceId);
+
+      const estimatedCost = (route.cost_per_usage || 0) / 1000;
+      await pool.query(
+        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        [estimatedCost, route.primary_provider.toLowerCase()]
+      );
+
+      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `TTS generated via ElevenLabs voice=${voiceId}`, { toolIdStr });
+
+      return { result: audioBuffer.toString('base64'), result_type: 'audio_base64' };
+    } catch (ttsErr: any) {
+      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      console.error('[Orchestrator TTS] Generation failed:', ttsErr.message);
+      throw new Error(JSON.stringify({
+        error: `TTS generation failed: ${ttsErr.message}`,
+        error_ar: `فشل توليد الصوت: ${ttsErr.message}`,
+        type: "GENERATION_ERROR"
+      }));
+    }
+  }
+
+  if (toolIdStr === 'stt') {
+    try {
+      if (!file_data || !file_data.data) {
+        throw new Error('No audio file provided for speech-to-text.');
+      }
+
+      const providerId = route.primary_provider.toLowerCase();
+      const apiKey = await getProviderKey(providerId);
+
+      if (!apiKey) {
+        if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+        throw new Error(JSON.stringify({
+          error: "Speech-to-text service is temporarily unavailable. No active API key found.",
+          error_ar: "خدمة تحويل الصوت إلى نص غير متاحة حالياً. لا يوجد مفتاح API نشط.",
+          type: "SYSTEM_INACTIVE"
+        }));
+      }
+
+      const audioBuffer = Buffer.from(file_data.data, 'base64');
+      const formData = new FormData();
+      const audioBlob = new Blob([audioBuffer], { type: file_data.type || 'audio/webm' });
+      formData.append('file', audioBlob, file_data.name || 'audio.webm');
+      formData.append('model', route.primary_model || 'whisper-1');
+      if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
+
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: formData
+      });
+
+      const data = await res.json() as any;
+      if (!res.ok) throw new Error(data?.error?.message || `STT API error: ${res.status}`);
+
+      const transcription = data.text || '';
+
+      const estimatedCost = (route.cost_per_usage || 0) / 1000;
+      await pool.query(
+        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        [estimatedCost, providerId]
+      );
+
+      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `STT transcription via ${route.primary_provider}/${route.primary_model}`, { toolIdStr });
+
+      return { result: transcription };
+    } catch (sttErr: any) {
+      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      console.error('[Orchestrator STT] Transcription failed:', sttErr.message);
+      throw new Error(JSON.stringify({
+        error: `STT transcription failed: ${sttErr.message}`,
+        error_ar: `فشل تحويل الصوت إلى نص: ${sttErr.message}`,
+        type: "GENERATION_ERROR"
+      }));
+    }
+  }
+
+  if (toolIdStr === 'video') {
+    try {
+      const providerId = route.primary_provider.toLowerCase();
+      const apiKey = await getProviderKey(providerId);
+
+      if (!apiKey) {
+        if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+        throw new Error(JSON.stringify({
+          error: "Video generation service is temporarily unavailable. No active API key found.",
+          error_ar: "خدمة توليد الفيديو غير متاحة حالياً. لا يوجد مفتاح API نشط.",
+          type: "SYSTEM_INACTIVE"
+        }));
+      }
+
+      let videoUrl = '';
+
+      if (providerId === 'replicate') {
+        const res = await fetch('https://api.replicate.com/v1/predictions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            version: route.primary_model,
+            input: { prompt: finalPrompt }
+          })
+        });
+        const prediction = await res.json() as any;
+        if (!res.ok) throw new Error(prediction?.detail || `Replicate video error: ${res.status}`);
+
+        const pollUrl = prediction.urls?.get;
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
+          const pollData = await poll.json() as any;
+          if (pollData.status === 'succeeded') {
+            videoUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
+            break;
+          }
+          if (pollData.status === 'failed') throw new Error(`Replicate video generation failed: ${pollData.error || 'unknown'}`);
+        }
+      } else if (providerId === 'runway') {
+        const res = await fetch('https://api.runwayml.com/v1/image_to_video', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'X-Runway-Version': '2024-11-06'
+          },
+          body: JSON.stringify({
+            model: route.primary_model || 'gen3a_turbo',
+            promptText: finalPrompt,
+            duration: 5,
+            ratio: '1280:768'
+          })
+        });
+        const task = await res.json() as any;
+        if (!res.ok) throw new Error(task?.error || `Runway error: ${res.status}`);
+
+        const taskId = task.id;
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const poll = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': '2024-11-06' }
+          });
+          const pollData = await poll.json() as any;
+          if (pollData.status === 'SUCCEEDED') {
+            videoUrl = pollData.output?.[0] || '';
+            break;
+          }
+          if (pollData.status === 'FAILED') throw new Error(`Runway video generation failed: ${pollData.failure || 'unknown'}`);
+        }
+      }
+
+      if (!videoUrl) throw new Error('Video generation returned empty result');
+
+      const estimatedCost = (route.cost_per_usage || 0) / 1000;
+      await pool.query(
+        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        [estimatedCost, providerId]
+      );
+
+      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Video generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
+
+      return { result: videoUrl };
+    } catch (videoErr: any) {
+      if (quotaCheck.allowed) await decrementUserUsage(userId, toolIdStr);
+      console.error('[Orchestrator Video] Generation failed:', videoErr.message);
+      throw new Error(JSON.stringify({
+        error: `Video generation failed: ${videoErr.message}`,
+        error_ar: `فشل توليد الفيديو: ${videoErr.message}`,
+        type: "GENERATION_ERROR"
+      }));
+    }
+  }
+
   let userMemoriesStr = '';
   if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
     userMemoriesStr = "\nASSISTANT_MEMORY_RECORDS:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
