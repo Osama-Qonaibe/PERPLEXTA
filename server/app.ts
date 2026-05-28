@@ -218,7 +218,17 @@ app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res, filePath) => {
+      if (/\.(js|css)$/.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
   app.get('*', (req, res) => {
     const hasStaticExtension = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav)$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
