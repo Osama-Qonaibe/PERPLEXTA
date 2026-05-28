@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { MainLayout } from './layouts/MainLayout';
@@ -52,7 +52,7 @@ const CenteredLoader = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f0f11]"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--bg-primary)]"
     >
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
@@ -151,7 +151,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const { theme, isAuthReady } = useAppContext();
 
   return (
-    <Suspense fallback={<CenteredLoader />}>
+    <Suspense fallback={null}>
       <GoogleAnalytics />
       <Toaster 
         position="top-center" 
