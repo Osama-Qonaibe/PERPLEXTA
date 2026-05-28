@@ -37,12 +37,12 @@ export const PERPLEXTA_TRANSITION = {
 
 export const SIDEBAR_TRANSITION = {
   type: "tween" as const,
-  duration: 0.85,
+  duration: 1.7,
   ease: [0.25, 1, 0.2, 1] as [number, number, number, number]
 };
 
 export const SIDEBAR_MOTION_TRANSITION = {
-  width:   { type: "tween" as const, duration: 0.85, ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
-  x:       { type: "tween" as const, duration: 0.85, ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
-  opacity: { type: "tween" as const, duration: 0.6,  ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
+  width:   { type: "tween" as const, duration: 1.7, ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
+  x:       { type: "tween" as const, duration: 1.7, ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
+  opacity: { type: "tween" as const, duration: 1.2, ease: [0.25, 1, 0.2, 1] as [number, number, number, number] },
 };
