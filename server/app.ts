@@ -125,9 +125,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
-    if (!token && req.query.token) {
-      token = req.query.token as string;
-    }
 
     if (token) {
       token = token.trim();

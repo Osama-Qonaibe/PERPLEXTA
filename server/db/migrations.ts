@@ -1378,7 +1378,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   await targetPool.query(`UPDATE plans SET is_active = true WHERE is_active IS NULL`);
   await targetPool.query(`UPDATE plans SET is_visible = true WHERE is_visible IS NULL`);
 
-  const masterAdmin = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '';
+  const masterAdmin = process.env.ADMIN_EMAIL || '';
   const adminEmails = [...new Set([masterAdmin].filter(Boolean))];
 
   for (const email of adminEmails) {
