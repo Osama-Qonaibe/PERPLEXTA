@@ -24,8 +24,6 @@ import { perplextaPageTransition, PERPLEXTA_TRANSITION } from '../constants/moti
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 };
-
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
     <div className="flex items-center gap-2">
@@ -384,7 +382,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                     )}
                   </AnimatePresence>
                   {copied && (
-                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap animate-bounce font-sans pointer-events-none">
+                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap font-sans pointer-events-none">
                       {dir === 'rtl' ? 'تم النسخ!' : 'Copied!'}
                     </span>
                   )}
@@ -411,12 +409,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           <div className="relative">
              <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full" />
              <div className="relative w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                >
                   <Volume2 size={32} />
-                </motion.div>
              </div>
           </div>
 
@@ -604,7 +597,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               <div className="w-full p-4 bg-[var(--bg-secondary)] rounded-b-md border-t border-gray-100 dark:border-gray-800/40">
                 {codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
                   <div className="flex flex-col items-center gap-4 py-8">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 animate-pulse">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
                       <Music size={32} />
                     </div>
                     <span className="text-sm font-bold text-emerald-500 tracking-widest uppercase">Sonic Draft Ready</span>
@@ -909,9 +902,9 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
       <div className="space-y-1 sm:space-y-2 ps-2.5 sm:ps-5 border-s-2 border-emerald-500/10 ml-0.5 sm:ml-2">
         {steps.map((step, idx) => (
           <motion.div 
-            initial={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.05, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: idx * 0.05, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             key={idx} 
             className="flex items-center gap-2 sm:gap-4 group"
           >
@@ -992,7 +985,7 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
             <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {citations.map((cite, idx) => (
                 <motion.a 
-                  initial={{ opacity: 0, scale: 0.98 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   key={idx}
@@ -1098,9 +1091,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
         return (
           <motion.div
           key={section.id}
-          initial={{ opacity: 0, scale: 0.98, y: 30 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ 
             duration: 0.3, 
             delay: idx * 0.1,
@@ -1253,7 +1245,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
       {/* Global Studio Certification */}
       <motion.div 
         initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         className="flex flex-col items-center justify-center gap-3 pt-6 pb-12"
       >
@@ -3213,7 +3205,6 @@ export const ChatPage: React.FC = () => {
       {renderImageSettings()}
       {renderAudioSettings()}
       <motion.div 
-        transition={springConfig}
         className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
           isFocused 
             ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
@@ -4706,7 +4697,7 @@ export const ChatPage: React.FC = () => {
                     {forensicReport.anomalies.length > 0 ? (
                       <div className="p-4 rounded-md bg-red-950/20 border border-red-900/40 text-red-200">
                         <div className="flex items-center gap-2 mb-2 font-black text-xs tracking-wider uppercase">
-                          <AlertTriangle size={14} className="text-red-500 animate-bounce" />
+                          <AlertTriangle size={14} className="text-red-500" />
                           <span>{dir === 'rtl' ? 'تنبيهات أمنية هيكلية' : 'Structural Security Violations'}</span>
                         </div>
                         <ul className="text-[11px] list-disc list-inside space-y-1 text-red-300">
