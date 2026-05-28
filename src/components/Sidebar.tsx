@@ -5,16 +5,15 @@ import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClos
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { PERPLEXTA_TRANSITION, SIDEBAR_TRANSITION } from '../constants/motions';
+import { PERPLEXTA_TRANSITION, SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
 import { useSwipeToClose } from '../utils/swipe';
 const sidebarTransition = SIDEBAR_TRANSITION;
-const sidebarSpring = SIDEBAR_TRANSITION;
+const sidebarSpring = SIDEBAR_MOTION_TRANSITION;
 const elasticSpring = SIDEBAR_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isInstallable, installApp, isInstalling } = useAppContext();
   
-  // Use locked language for stable transitions
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
@@ -133,7 +132,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           console.error(`Received non-JSON response for chats (200 OK):`, text.substring(0, 200));
         }
       } else if (res.status === 401) {
-        // Just ignore, session likely ended
       } else {
         const text = await res.text();
         console.error(`Failed to fetch chats: ${res.status} ${res.statusText}`, text.substring(0, 100));
@@ -191,9 +189,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }, [token]);
 
   useEffect(() => {
-    // Perplexta: The sidebar state is preserved regardless of window dimensions to ensure 
-    // a consistent, professional, and user-centric experience. Auto-closing on resize 
-    // was considered intrusive by the elite technical segment.
     return () => {};
   }, []);
 
@@ -221,7 +216,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     const isAlreadyAtNewChat = window.location.pathname === '/';
     
     if (isAlreadyAtNewChat) {
-      // Perplexta: Silent fail if already at base. No movement allowed.
       if (isMobile) setIsSidebarOpen(false);
       return;
     }
@@ -243,9 +237,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           x: isMobile && !isSidebarOpen ? (dir === 'rtl' ? 300 : -300) : 0,
           opacity: isMobile && !isSidebarOpen ? 0 : 1
         }}
-        transition={{ 
-          ...sidebarSpring
-        }}
+        transition={sidebarSpring}
         onTouchStart={swipeHandlers.onTouchStart}
         onTouchMove={swipeHandlers.onTouchMove}
         onTouchEnd={swipeHandlers.onTouchEnd}
@@ -273,7 +265,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         <div className="w-full h-full overflow-hidden relative flex flex-col items-stretch px-0">
           <div className={`h-full flex flex-col flex-nowrap ${isMobile ? 'w-[175px]' : 'w-[220px]'} justify-between`}>
             
-            {/* 1. FIXED HEADER - Navigation list */}
             <div className={`flex-shrink-0 ${isMobile ? 'pt-4' : 'pt-6'}`}>
               <nav className={isMobile ? "space-y-1" : "space-y-1"}>
                 {navItems.map((item, index) => (
@@ -354,7 +345,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               </nav>
             </div>
 
-            {/* 2. DYNAMIC SCROLLABLE CONTENT - Recent Chats list */}
             <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
               <div className={`pt-2 mt-2 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-8 overflow-hidden ${isMobile ? 'px-3.5' : ''}`}>
                 <div className={`${isMobile ? 'w-8' : 'w-[80px]'} flex-shrink-0`} />
@@ -549,7 +539,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               </div>
             </div>
 
-            {/* Context Summary Widget - Premium Collapsible Accordion */}
             {isSidebarOpen && activeChatId && (
               <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10 flex flex-col transition-all duration-300`}>
                 <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
@@ -657,7 +646,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               </div>
             )}
 
-            {/* 3. FIXED FOOTER - User identity or action dropdown & legal info */}
             <div className={`mt-auto pt-4 pb-5 border-t border-[var(--border-main)] transition-theme ${isMobile ? 'space-y-1.5' : 'space-y-1'} flex-shrink-0 relative`} ref={dropdownRef}>
               {user ? (
                 <>
@@ -670,7 +658,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-lg shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
                       >
                         <div className={`p-2 ${isMobile ? 'space-y-1.5' : 'space-y-1'}`}>
-                          {/* Account Settings Tab */}
                           <button 
                             onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} 
                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
@@ -691,7 +678,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          {/* Consumption/Usage Tab */}
                           <button 
                             onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} 
                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
@@ -714,7 +700,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <div className={`h-px bg-[var(--border)] my-1 mx-2 transition-theme`}></div>
 
-                          {/* Wallet Tab */}
                           <button 
                             onClick={() => { navigate('/settings?tab=wallet'); setIsDropdownOpen(false); }} 
                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
@@ -735,7 +720,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          {/* Memory Center Tab */}
                           <button 
                             onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} 
                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-850 group/item`}
@@ -863,7 +847,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </div>
               )}
               
-              {/* Legal Info links */}
               <div className={`flex flex-col w-full h-4 overflow-hidden flex-shrink-0 mt-2 ${isMobile ? 'px-2' : 'px-6'} relative`}>
                 <AnimatePresence mode="wait">
                   {isSidebarOpen && (
@@ -904,4 +887,3 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     </>
   );
 };
-
