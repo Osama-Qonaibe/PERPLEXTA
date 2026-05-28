@@ -878,7 +878,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           </div>
         </div>
       </motion.aside>
-      {isMobile && isSidebarOpen && (
+
+      {isSidebarOpen && (
         <div
           className="fixed inset-0 z-[149] bg-transparent"
           onClick={() => setIsSidebarOpen(false)}
