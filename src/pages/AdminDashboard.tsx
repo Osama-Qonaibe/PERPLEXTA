@@ -11868,19 +11868,15 @@ const SystemSettingsView = ({
           setSiteNameAr(data.site_name_ar || "");
           setSiteDescription(data.site_description_en || "");
           setSiteDescriptionAr(data.site_description_ar || "");
-          const seoData =
-            data.seo_description && data.seo_description.startsWith("{")
-              ? JSON.parse(data.seo_description)
-              : { en: data.seo_description || "", ar: "" };
-          const kwsData =
-            data.keywords && data.keywords.startsWith("{")
-              ? JSON.parse(data.keywords)
-              : { en: data.keywords || "", ar: "" };
+          const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
+          const seoArVal = data.seo_description_ar || "";
+          const kwsEnVal = data.keywords_en || "";
+          const kwsArVal = data.keywords_ar || "";
 
-          setSeoDescriptionEn(seoData.en || "");
-          setSeoDescriptionAr(seoData.ar || "");
-          setKeywordsEn(kwsData.en || "");
-          setKeywordsAr(kwsData.ar || "");
+          setSeoDescriptionEn(seoEnVal);
+          setSeoDescriptionAr(seoArVal);
+          setKeywordsEn(kwsEnVal);
+          setKeywordsAr(kwsArVal);
           setGoogleAnalyticsId(data.google_analytics_id || "");
           setGoogleSiteVerification(data.google_site_verification || "");
           setLogoBase64(data.logo_url || null);
@@ -11893,10 +11889,10 @@ const SystemSettingsView = ({
             siteNameAr: data.site_name_ar || "",
             siteDescription: data.site_description_en || "",
             siteDescriptionAr: data.site_description_ar || "",
-            seoDescriptionEn: seoData.en || "",
-            seoDescriptionAr: seoData.ar || "",
-            keywordsEn: kwsData.en || "",
-            keywordsAr: kwsData.ar || "",
+            seoDescriptionEn: seoEnVal,
+            seoDescriptionAr: seoArVal,
+            keywordsEn: kwsEnVal,
+            keywordsAr: kwsArVal,
             googleAnalyticsId: data.google_analytics_id || "",
             logoBase64: data.logo_url || null,
             faviconBase64: data.favicon_url || null,
