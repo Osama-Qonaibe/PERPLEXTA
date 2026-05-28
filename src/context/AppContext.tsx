@@ -2384,6 +2384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = (forceRedirect = true) => {
     localStorage.setItem('app_loader_type', 'logout');
+    refreshPromiseRef.current = null;
     setIsAuthReady(false);
     setIsAuthModalOpen(false);
 
