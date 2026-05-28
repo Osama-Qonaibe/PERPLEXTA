@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import { getProviderKey } from './ai.js';
 import * as _pdfFunc from 'pdf-parse';
 import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 // @ts-ignore
 import { convert } from 'html-to-text';
@@ -71,7 +71,6 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
   const anomalies: string[] = [];
   const detailedLog: string[] = [];
 
-  // 1. PDF Version check
   let pdfVersion = 'N/A';
   const verMatch = textStr.slice(0, 1024).match(/%PDF-(\d+\.\d+)/);
   if (verMatch) {
@@ -81,7 +80,6 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
     anomalies.push('Standard PDF header %PDF- not found in first 1024 bytes. Possible structural obfuscation.');
   }
 
-  // 2. Structural counters
   const totalObjectsCount = (textStr.match(/\b\d+\s+\d+\s+obj\b/g) || []).length;
   const interactiveJavascriptCount = (textStr.match(/\/JS\b|\/JavaScript\b/gi) || []).length;
   const optionalContentGroupsCount = (textStr.match(/\/OCG\b|\/OCGs\b/g) || []).length;
@@ -95,7 +93,6 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
   detailedLog.push(`[Layer Discovery] Located ${optionalContentGroupsCount} Optional Content Groups (OCG) structures.`);
   detailedLog.push(`[Stream Ingestion] Identified ${flateStreamsCount} Flate-encoded compressed binary streams.`);
 
-  // 3. Extract hidden Layer Names (Optional Content Groups)
   const hiddenLayers: string[] = [];
   const ocgNameMatches = textStr.match(/\/Name\s*\((.*?)\)|\/Name\s*\/([a-zA-Z0-9_-]+)/g);
   if (ocgNameMatches && optionalContentGroupsCount > 0) {
@@ -122,7 +119,6 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
     detailedLog.push(`[Hidden Layer Warning] OCG definitions detected, but layer labeling is obfuscated or stored in external resource dictionaries.`);
   }
 
-  // 4. Trace Suspicious Elements / Forensic Anomalies
   if (interactiveJavascriptCount > 0) {
     anomalies.push(`Interactive JavaScript dictionary reference detected (${interactiveJavascriptCount} occurrences). Possible active scripting layer.`);
     detailedLog.push(`[ALERT - Forensic] Identified active scripts in document scope.`);
@@ -140,7 +136,6 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
     detailedLog.push(`[ALERT - Forensic] Multiple root descriptors found. Structure contains double page tree routing.`);
   }
 
-  // 5. Native Metadata Extraction via Raw Buffer Parsing
   const extractMetaField = (field: string): string => {
     const bracketRegex = new RegExp(`\\/${field}\\s*\\(([^\\)]+)\\)`, 'i');
     const bracketMatch = textStr.match(bracketRegex);
@@ -187,15 +182,7 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
     flateStreamsCount,
     hiddenLayers,
     anomalies,
-    metadata: {
-      author,
-      creator,
-      producer,
-      title,
-      subject,
-      creationDate,
-      modDate,
-    },
+    metadata: { author, creator, producer, title, subject, creationDate, modDate },
     detailedLog,
   };
 };
@@ -206,10 +193,10 @@ export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: str
     apiKey = (process.env.GEMINI_API_KEY || '').trim();
   }
   if (!apiKey) return 'API Key missing for multimodal sense.';
-  
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   const base64Data = dataBuffer.toString('base64');
-  
+
   const body = {
     contents: [{
       parts: [
@@ -232,6 +219,24 @@ export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: str
   }
 };
 
+const extractExcelText = async (dataBuffer: Buffer, mimeType: string): Promise<string> => {
+  const workbook = new ExcelJS.Workbook();
+  if (mimeType.includes('csv') || mimeType === 'text/plain') {
+    await workbook.csv.read(require('stream').Readable.from(dataBuffer));
+  } else {
+    await workbook.xlsx.load(dataBuffer);
+  }
+  let fullText = '';
+  workbook.eachSheet((sheet) => {
+    fullText += `--- Sheet: ${sheet.name} ---\n`;
+    sheet.eachRow((row) => {
+      const values = (row.values as any[]).slice(1).map((v: any) => (v === null || v === undefined ? '' : String(v)));
+      fullText += values.join('\t') + '\n';
+    });
+  });
+  return fullText;
+};
+
 export const extractTextFromBuffer = async (dataBuffer: Buffer, mimeType: string, originalName: string = ''): Promise<string> => {
   try {
     if (!mimeType) mimeType = 'application/octet-stream';
@@ -247,12 +252,7 @@ export const extractTextFromBuffer = async (dataBuffer: Buffer, mimeType: string
     }
 
     if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) {
-      const workbook = XLSX.read(dataBuffer, { type: 'buffer' });
-      let fullText = '';
-      workbook.SheetNames.forEach((name: string) => {
-        fullText += `--- Sheet: ${name} ---\n${XLSX.utils.sheet_to_txt(workbook.Sheets[name])}\n`;
-      });
-      return fullText;
+      return await extractExcelText(dataBuffer, mimeType);
     }
 
     if (mimeType === 'text/html' || mimeType === 'application/rtf') {
