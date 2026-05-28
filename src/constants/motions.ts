@@ -20,8 +20,8 @@ export const perplextaPageTransition: Variants = {
 
 export const perplextaItemTransition: Variants = {
   initial: { opacity: 0 },
-  animate: { 
-    opacity: 1, 
+  animate: {
+    opacity: 1,
     transition: {
       duration: 0.15,
       ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
@@ -29,14 +29,20 @@ export const perplextaItemTransition: Variants = {
   }
 };
 
-export const PERPLEXTA_TRANSITION = { 
-  type: "tween" as const, 
-  duration: 0.2, 
+export const PERPLEXTA_TRANSITION = {
+  type: "tween" as const,
+  duration: 0.2,
   ease: [0.22, 1, 0.36, 1] as [number, number, number, number]
 };
 
 export const SIDEBAR_TRANSITION = {
   type: "tween" as const,
-  duration: 0.45,
+  duration: 0.55,
   ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
+};
+
+export const SIDEBAR_MOTION_TRANSITION = {
+  width: { type: "tween" as const, duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+  x:     { type: "tween" as const, duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+  opacity: { type: "tween" as const, duration: 0.4,  ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
 };
