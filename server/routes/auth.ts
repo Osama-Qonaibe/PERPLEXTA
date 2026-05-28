@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fetch from 'node-fetch';
-import dns from 'dns';
 import { pool, ledgerPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
@@ -65,6 +64,13 @@ const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: b
   }
 };
 
+const ALLOWED_GOOGLE_PICTURE_HOSTS = [
+  'lh3.googleusercontent.com',
+  'lh4.googleusercontent.com',
+  'lh5.googleusercontent.com',
+  'lh6.googleusercontent.com',
+];
+
 const isValidGooglePicture = (url: any): boolean => {
   if (typeof url !== 'string') {
     console.log(`[isValidGooglePicture] Failed: url is not a string (type is ${typeof url})`);
@@ -74,6 +80,10 @@ const isValidGooglePicture = (url: any): boolean => {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:') {
       console.log(`[isValidGooglePicture] Failed: protocol is "${parsed.protocol}", expected https:`);
+      return false;
+    }
+    if (!ALLOWED_GOOGLE_PICTURE_HOSTS.includes(parsed.hostname)) {
+      console.log(`[isValidGooglePicture] Failed: hostname "${parsed.hostname}" is not an allowed Google hostname`);
       return false;
     }
     return true;
@@ -218,7 +228,6 @@ router.post("/signup", authLimiter, async (req, res) => {
     await logSystemActivity(user.id, 'signup', 'User signed up', {}, req);
     sendSmartEmail(user.id, user.email, 'welcome_email', { userName: user.name || 'User', baseUrl: getBaseUrl(req) }, language as any).catch(console.error);
     
-    // Broadcast updated stats to active admins
     import('../services/admin.js').then(({ broadcastAdminStats }) => {
       broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on signup:', err));
     }).catch(err => console.error('[Socket] Failed to load admin service on signup:', err));
@@ -394,74 +403,6 @@ router.get("/google/url", async (req, res) => {
   }
 });
 
-router.get("/google/test-reachability", async (req, res) => {
-  const targetHost = 'lh3.googleusercontent.com';
-  const targetUrl = `https://${targetHost}`;
-  const report: any = {
-    timestamp: new Date().toISOString(),
-    targetHost,
-    targetUrl,
-    dnsLookup: null,
-    fetchResult: null,
-    errorMessage: null,
-    environment: {
-      nodeVersion: process.version,
-      platform: process.platform,
-      env: process.env.NODE_ENV || 'production'
-    }
-  };
-
-  try {
-    console.log(`[GoogleReachabilityDiagnostic] Testing reachability for ${targetHost}`);
-    
-    await new Promise<void>((resolve) => {
-      dns.lookup(targetHost, { all: true }, (err, addresses) => {
-        if (err) {
-          console.error(`[GoogleReachabilityDiagnostic] DNS resolution failed:`, err);
-          report.dnsLookup = { success: false, error: err.message, code: err.code };
-        } else {
-          console.log(`[GoogleReachabilityDiagnostic] DNS resolved addresses:`, addresses);
-          report.dnsLookup = { success: true, addresses };
-        }
-        resolve();
-      });
-    });
-
-    console.log(`[GoogleReachabilityDiagnostic] Fetching target URL ${targetUrl}`);
-    const startTime = Date.now();
-    const fetchRes = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
-      },
-      timeout: 8000
-    } as any);
-    const duration = Date.now() - startTime;
-
-    report.fetchResult = {
-      success: true,
-      ok: fetchRes.ok,
-      status: fetchRes.status,
-      statusText: fetchRes.statusText,
-      durationMs: duration,
-      headers: Object.fromEntries(fetchRes.headers.entries())
-    };
-    
-    console.log(`[GoogleReachabilityDiagnostic] HTTP request returned status ${fetchRes.status} in ${duration}ms`);
-  } catch (err: any) {
-    console.error(`[GoogleReachabilityDiagnostic] Fetch failed:`, err);
-    report.errorMessage = err.message;
-    report.errorRaw = {
-      message: err.message,
-      code: err.code,
-      stack: err.stack
-    };
-  }
-
-  res.json(report);
-});
-
 router.post("/logout", authenticateToken, async (req: any, res) => {
   try {
     const token = req.token;
@@ -568,14 +509,6 @@ router.get("/google/callback", async (req, res) => {
         const parentUser = await pool.query('SELECT id FROM users WHERE UPPER(referral_code) = $1', [ref.trim().toUpperCase()]);
         if (parentUser.rows.length > 0) {
           referredBy = parentUser.rows[0].id;
-        } else {
-          const numericId = parseInt(ref.trim(), 10);
-          if (!isNaN(numericId)) {
-            const parentUserById = await pool.query('SELECT id FROM users WHERE id = $1', [numericId]);
-            if (parentUserById.rows.length > 0) {
-              referredBy = parentUserById.rows[0].id;
-            }
-          }
         }
       }
 
@@ -707,31 +640,39 @@ router.get("/google/callback", async (req, res) => {
 
     const lang = storedState.lang || user.language || 'ar';
     let targetRef = storedState.ref || '/';
-    if (typeof targetRef !== 'string' || !targetRef.startsWith('/') || targetRef.startsWith('//') || targetRef.startsWith('\\\\')) {
+    if (
+      typeof targetRef !== 'string' ||
+      !targetRef.startsWith('/') ||
+      targetRef.startsWith('//') ||
+      targetRef.startsWith('\\') ||
+      targetRef.toLowerCase().includes('javascript:')
+    ) {
       targetRef = '/';
     }
     const allowedOrigin = getBaseUrl(req);
     
-    const rawPayload = JSON.stringify({ 
-      token: accessToken, 
+    const pagePayload = JSON.stringify({
+      token: accessToken,
       refreshToken,
       ...userPayload,
-      lang: lang,
+      lang,
       ref: targetRef,
       remember: !!storedState.remember
     });
 
-    const safePayload = rawPayload
-      .replace(/</g, '\\u003c')
-      .replace(/>/g, '\\u003e')
-      .replace(/\//g, '\\u002f')
-      .replace(/\u2028/g, '\\u2028')
-      .replace(/\u2029/g, '\\u2029');
-    
-    res.send(`
+    const isPopupMode = storedState.mode === 'popup';
+    const titleText = lang === 'ar' ? 'جاري التحقق...' : 'Authenticating...';
+    const successText = lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful';
+    const secureText = lang === 'ar' ? 'اتصال آمن' : 'SECURE SESSION';
+    const closeBtnText = lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue';
+    const direction = lang === 'ar' ? 'rtl' : 'ltr';
+    const allowedOriginJson = JSON.stringify(allowedOrigin);
+    const targetRefJson = JSON.stringify(targetRef);
+
+    res.send(`<!DOCTYPE html>
       <html>
         <head>
-          <title>${lang === 'ar' ? 'جاري التحقق...' : 'Authenticating...'}</title>
+          <title>${titleText}</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -748,102 +689,101 @@ router.get("/google/callback", async (req, res) => {
             }
             @keyframes spin { to { transform: rotate(360deg); } }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-            @keyframes emeraldPulse { 
+            @keyframes emeraldPulse {
               0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
               70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
               100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
             }
-            
-            body { 
-              background: var(--bg-dark); 
-              color: white; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              height: 100vh; 
-              margin: 0; 
-              font-family: 'Tajawal', sans-serif; 
+            body {
+              background: var(--bg-dark);
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              font-family: 'Tajawal', sans-serif;
               overflow: hidden;
-              direction: ${lang === 'ar' ? 'rtl' : 'ltr'};
+              direction: ${direction};
             }
             .auth-card {
-              text-align: center; 
-              padding: clamp(2rem, 8vw, 3.5rem); 
-              background: var(--bg-panel); 
-              border: 1px solid rgba(16, 185, 129, 0.25); 
-              border-radius: var(--radius-xl); 
-              backdrop-filter: blur(20px); 
-              box-shadow: 0 30px 60px rgba(0,0,0,0.7); 
-              max-width: 90%; 
-              width: 440px; 
+              text-align: center;
+              padding: clamp(2rem, 8vw, 3.5rem);
+              background: var(--bg-panel);
+              border: 1px solid rgba(16, 185, 129, 0.25);
+              border-radius: var(--radius-xl);
+              backdrop-filter: blur(20px);
+              box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+              max-width: 90%;
+              width: 440px;
               animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
               position: relative;
             }
             .spinner-container {
-              position: relative; 
-              width: 90px; 
-              height: 90px; 
+              position: relative;
+              width: 90px;
+              height: 90px;
               margin: 0 auto clamp(1.5rem, 5vw, 2rem);
             }
             .spinner-bg {
-              position: absolute; 
-              inset: 0; 
-              border: 5px solid rgba(16, 185, 129, 0.08); 
+              position: absolute;
+              inset: 0;
+              border: 5px solid rgba(16, 185, 129, 0.08);
               border-radius: 50%;
             }
             .spinner-active {
-              position: absolute; 
-              inset: 0; 
-              border: 5px solid transparent; 
-              border-top-color: var(--emerald-500); 
-              border-radius: 50%; 
+              position: absolute;
+              inset: 0;
+              border: 5px solid transparent;
+              border-top-color: var(--emerald-500);
+              border-radius: 50%;
               animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
               filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
             }
             .spinner-icon {
-              position: absolute; 
-              inset: 0; 
-              display: flex; 
-              align-items: center; 
+              position: absolute;
+              inset: 0;
+              display: flex;
+              align-items: center;
               justify-content: center;
               animation: emeraldPulse 2s infinite;
               border-radius: 50%;
             }
             .title {
-              color: white; 
-              margin: 0 0 1rem 0; 
-              font-size: clamp(1.5rem, 6vw, 1.875rem); 
+              color: white;
+              margin: 0 0 1rem 0;
+              font-size: clamp(1.5rem, 6vw, 1.875rem);
               font-weight: 700;
               letter-spacing: -0.025em;
               text-shadow: 0 2px 4px rgba(0,0,0,0.3);
             }
             .description {
-              color: #a1a1aa; 
-              margin: 0 0 clamp(1.5rem, 6vw, 2.5rem) 0; 
-              font-size: clamp(1rem, 3.5vw, 1.125rem); 
+              color: #a1a1aa;
+              margin: 0 0 clamp(1.5rem, 6vw, 2.5rem) 0;
+              font-size: clamp(1rem, 3.5vw, 1.125rem);
               line-height: 1.6;
               font-weight: 400;
             }
             .btn {
-              background: #10b981; 
-              color: white; 
-              border: none; 
-              padding: 1rem 2.5rem; 
-              border-radius: var(--radius-sm); 
-              font-weight: 700; 
-              cursor: pointer; 
-              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-              font-family: inherit; 
-              font-size: 1.125rem; 
+              background: #10b981;
+              color: white;
+              border: none;
+              padding: 1rem 2.5rem;
+              border-radius: var(--radius-sm);
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              font-family: inherit;
+              font-size: 1.125rem;
               box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
               width: 100%;
               text-transform: uppercase;
               letter-spacing: 0.05em;
             }
-            .btn:hover { 
-              transform: translateY(-3px); 
-              box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6); 
-              filter: brightness(1.1); 
+            .btn:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6);
+              filter: brightness(1.1);
               background: #10b981;
             }
             .btn:active {
@@ -863,89 +803,66 @@ router.get("/google/callback", async (req, res) => {
                 </svg>
               </div>
             </div>
-            <h2 class="title">
-              ${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}
-            </h2>
+            <h2 class="title">${successText}</h2>
             <div class="status-badge" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: #10b981; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0.8;">
-               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-               <span>${lang === 'ar' ? 'اتصال آمن' : 'SECURE SESSION'}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>${secureText}</span>
             </div>
-            <button id="closeBtn" class="btn" style="margin-top: 2rem;">
-              ${lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue'}
-            </button>
+            <button id="closeBtn" class="btn" style="margin-top: 2rem;">${closeBtnText}</button>
           </div>
-          
+
+          <script id="__auth_data__" type="application/json">${pagePayload}</script>
           <script nonce="${res.locals.nonce}">
             (function() {
               const closeBtn = document.getElementById('closeBtn');
-              const closeAction = () => {
-                try {
-                   window.close();
-                } catch (e) {
-                   
-                }
-              };
-              
-              if (closeBtn) closeBtn.onclick = closeAction;
+              if (closeBtn) closeBtn.onclick = function() { try { window.close(); } catch(e) {} };
 
               try {
-                const data = JSON.parse('${safePayload}');
-                const allowedOrigin = ${JSON.stringify(allowedOrigin)};
-                const targetRefRaw = ${JSON.stringify(targetRef)};
-                const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
-                
+                const data = JSON.parse(document.getElementById('__auth_data__').textContent);
+                const allowedOrigin = ${allowedOriginJson};
+                const targetRefRaw = ${targetRefJson};
+                const safeRef = (typeof targetRefRaw === 'string' && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
+
                 try {
                   localStorage.setItem('app_token', data.token);
-                  if (data.refreshToken) {
-                    localStorage.setItem('app_refresh_token', data.refreshToken);
-                  }
+                  if (data.refreshToken) localStorage.setItem('app_refresh_token', data.refreshToken);
                   localStorage.setItem('app_oauth_user', JSON.stringify(data));
                   localStorage.setItem('language', data.lang);
-                  if (data.remember) {
-                    localStorage.setItem('app_remember', 'true');
-                  }
+                  if (data.remember) localStorage.setItem('app_remember', 'true');
                   localStorage.setItem('app_oauth_trigger', Date.now().toString());
-
-                  document.title = "${lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful'}";
                 } catch (e) {}
 
-                let isPopup = ${storedState.mode === 'popup' ? 'true' : 'false'};
+                let isPopup = ${isPopupMode};
                 try {
-                  if (!isPopup) {
-                    isPopup = !!(window.opener && window.opener !== window);
-                  }
+                  if (!isPopup) isPopup = !!(window.opener && window.opener !== window);
                 } catch (e) {}
 
                 if (isPopup) {
-                   try {
-                     window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
-                   } catch (e) {
-                     try { window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*'); } catch (err) {}
-                   }
+                  try {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
+                  } catch (e) {}
                 }
-                
+
                 try {
                   const authChannel = new BroadcastChannel('app_oauth_channel');
                   authChannel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
                 } catch (e) {}
 
-                setTimeout(() => {
+                setTimeout(function() {
                   if (isPopup) {
                     window.close();
                   } else {
-                    const currentOrigin = window.location.origin;
-                    window.location.href = currentOrigin + (targetRef.startsWith('/') ? '' : '/') + targetRef;
+                    window.location.href = window.location.origin + safeRef;
                   }
                 }, 1500);
               } catch (err) {
                 console.error('Auth processing failed', err);
-                window.location.href = "/";
+                window.location.href = '/';
               }
             })();
           </script>
         </body>
-      </html>
-    `);
+      </html>`);
   } catch (error) {
     console.error('[GoogleAuth] Callback Error:', error);
     res.status(500).send('Authentication processing failed');
@@ -960,7 +877,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
     const recentReset = await pool.query(
-      'SELECT id FROM password_resets WHERE email = $1 AND created_at > CURRENT_TIMESTAMP - INTERVAL \'2 minutes\'',
+      "SELECT id FROM password_resets WHERE email = $1 AND created_at > CURRENT_TIMESTAMP - INTERVAL '2 minutes'",
       [email]
     );
     if (recentReset.rows.length > 0) {
