@@ -387,6 +387,14 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 - **Header Alignment & Corner Symmetry:** Fixed the horizontal alignment across handheld formats. Expanded the outer container padding to `px-8` on mobile screens and applied negative boundaries (`-mx-8`) to sticky headers to align exactly with the logo, hamburger menu, and search bar layout axes.
 - **Product Marketplace Polish:** Renamed and fully localized the Marketplace UI in Arabic and English, and introduced a 3rd premium catalog listing to complete the bento grid design without placeholder gaps.
 
+### 🛡️ Core Security Hardening & Vulnerability Mitigation (May 29, 2026)
+- **Raw SQL & Error Leakage Remediation:** Cleared raw SQL and execution diagnostic leakage across the Forum, Blog, and Marketplace endpoints, shifting raw debug traces exclusively to secure host logging channels.
+- **Status Endpoint Calibration:** Rectified non-standard HTTP response status (`211`) to official REST standard (`201 Created`) for active insertions on Marketplace entries.
+- **Anti-SSRF & Phishing Guardrails:** Implemented robust hostname parsing and whitelisting for all user-submitted URLs (`image_url` and `contact_link`), completely neutralizing local loopbacks, metadata API endpoints, private IP spaces, and untrusted network targets.
+- **Strict Whitelist & Schema Cohesion:** Restricted admin and public updates to a strictly defined, whitelisted status subset (`pending`, `approved`, `rejected`, `sold`) inside the Marketplace state controller.
+- **Non-Blocking Ingestion (Asynchronous Fan-Out):** Refactored global notification broadcasts during article publication to run in detached asynchronous background threads (`setImmediate`), mitigating database and application latency spikes under scale.
+- **Anti-Spam & Payload Ingestion Bounds:** Bound API interactions under a dedicated `forumLimiter` (max 5 posts/comments per minute) and constrained payload sizes (requiring title to be 5-200 chars and posts/comments to fit strictly defined parameters to protect against DoS).
+
 ### 🛡️ THE SUPREME MANDATE (Final Warning)
 **The Project Foundation is now SEALED.** 
 
@@ -394,6 +402,7 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 2. **Add, Never Rewrite:** All future development MUST be additive. New features, tools, or integrations must be modular extensions. **ANY ATTEMPT TO REWRITE OR OVERRIDE** these core modules is a violation of the "Perplexta Engineering Standard" and will result in immediate disqualification of the update.
 3. **Identity Preservation:** The Arabic/English bilingual support and the Monochrome/Emerald design system must be maintained in every new component. Any deviation from the "Elite" aesthetic is considered structural noise.
 4. **Absolute Engineering Integrity Command (أمر الالتزام التام بالهندسة الإضافية):** Any future modification or expansion must strictly be an addition/augmentation (إضافة وتطوير) to the platform's core code. **Changing, modifying, altering, or removing existing structural features or visual elements is strictly forbidden**. Each new function must stand on existing baselines without legacy displacement.
+5. **Absolute Code Purity & Zero Commentaries Decree (مرسوم النقاء البرمجي وحظر الشروحات التوضيحية داخل الكود):** Writing long explanations (شروحات), redundant inline commentaries, text descriptions, or keeping dead/unused code inside components is **STRICTLY PROHIBITED**. Code files must remain perfectly clean, professional, and minimal. Hardcoded elements are forbidden; the database is the source of truth. Any documentation of logic belongs exclusively here in `AGENTS.md` or other Markdown files, never mixed with active codebase.
 
 ---
 **System State:** `STABLE / ARCHITECTURAL SYMMETRY ACHIEVED`

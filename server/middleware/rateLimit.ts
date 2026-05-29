@@ -59,3 +59,14 @@ export const broadcastLimiter = rateLimit({
   message: { error: 'Too many broadcast attempts. Admin communications are limited to 5 runs per 15 minutes.' }
 });
 
+export const forumLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  keyGenerator: (req: any) => {
+    return req.user?.id ? `user_${req.user.id}` : ipKeyGenerator(req.ip || 'anonymous');
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many post or comment requests. Please wait a minute.' }
+});
+

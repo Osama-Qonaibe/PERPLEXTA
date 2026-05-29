@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
+import { forumLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -19,7 +20,8 @@ router.get('/categories', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch categories', details: error.message });
+    console.error('Failed to fetch categories:', error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
   }
 });
 
@@ -45,15 +47,24 @@ router.get('/categories/:categoryId/posts', async (req, res) => {
     `, [categoryId]);
     res.json(result.rows);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch category posts', details: error.message });
+    console.error('Failed to fetch category posts:', error);
+    res.status(500).json({ error: 'Failed to fetch category posts' });
   }
 });
 
 // 3. Create a post
-router.post('/posts', authenticateToken, async (req: any, res) => {
+router.post('/posts', authenticateToken, forumLimiter, async (req: any, res) => {
   const { category_id, title, content } = req.body;
   if (!category_id || !title || !content) {
     return res.status(400).json({ error: 'Category ID, title and content are required' });
+  }
+
+  // Content security check: Prevent DoS or DB bloat from extreme inputs
+  if (typeof title !== 'string' || title.trim().length < 5 || title.length > 200) {
+    return res.status(400).json({ error: 'Post title must be between 5 and 200 characters' });
+  }
+  if (typeof content !== 'string' || content.trim().length < 10 || content.length > 30000) {
+    return res.status(400).json({ error: 'Post content must be between 10 and 30000 characters' });
   }
 
   try {
@@ -73,7 +84,8 @@ router.post('/posts', authenticateToken, async (req: any, res) => {
 
     res.status(201).json(postWithAuthor.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to create post', details: error.message });
+    console.error('Failed to create post:', error);
+    res.status(500).json({ error: 'Failed to create post' });
   }
 });
 
@@ -109,16 +121,22 @@ router.get('/posts/:id', async (req, res) => {
       comments: commentsRes.rows
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch post details', details: error.message });
+    console.error('Failed to fetch post details:', error);
+    res.status(500).json({ error: 'Failed to fetch post details' });
   }
 });
 
 // 5. Add a comment to a post
-router.post('/posts/:id/comments', authenticateToken, async (req: any, res) => {
+router.post('/posts/:id/comments', authenticateToken, forumLimiter, async (req: any, res) => {
   const { id } = req.params;
   const { content } = req.body;
   if (!content) {
     return res.status(400).json({ error: 'Comment content is required' });
+  }
+
+  // Content security check: Prevent DoS or DB bloat from extreme inputs
+  if (typeof content !== 'string' || content.trim().length < 2 || content.length > 10000) {
+    return res.status(400).json({ error: 'Comment content must be between 2 and 10000 characters' });
   }
 
   try {
@@ -165,7 +183,8 @@ router.post('/posts/:id/comments', authenticateToken, async (req: any, res) => {
 
     res.status(201).json(commentWithAuthor.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to add comment', details: error.message });
+    console.error('Failed to add comment:', error);
+    res.status(500).json({ error: 'Failed to add comment' });
   }
 });
 
@@ -188,7 +207,8 @@ router.delete('/posts/:id', authenticateToken, async (req: any, res) => {
     await pool.query('DELETE FROM forum_posts WHERE id = $1', [id]);
     res.json({ success: true, message: 'Post deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to delete post', details: error.message });
+    console.error('Failed to delete post:', error);
+    res.status(500).json({ error: 'Failed to delete post' });
   }
 });
 
@@ -211,7 +231,8 @@ router.delete('/comments/:id', authenticateToken, async (req: any, res) => {
     await pool.query('DELETE FROM forum_comments WHERE id = $1', [id]);
     res.json({ success: true, message: 'Comment deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to delete comment', details: error.message });
+    console.error('Failed to delete comment:', error);
+    res.status(500).json({ error: 'Failed to delete comment' });
   }
 });
 
@@ -229,7 +250,8 @@ router.patch('/posts/:id/pin', authenticateToken, authenticateAdmin, async (req:
     }
     res.json(result.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to pin/unpin post', details: error.message });
+    console.error('Failed to pin/unpin post:', error);
+    res.status(500).json({ error: 'Failed to pin/unpin post' });
   }
 });
 
@@ -247,7 +269,8 @@ router.patch('/posts/:id/lock', authenticateToken, authenticateAdmin, async (req
     }
     res.json(result.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to lock/unlock post', details: error.message });
+    console.error('Failed to lock/unlock post:', error);
+    res.status(500).json({ error: 'Failed to lock/unlock post' });
   }
 });
 

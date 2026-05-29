@@ -5,6 +5,53 @@ import { io } from '../config/socket.js';
 
 const router = express.Router();
 
+// Helper to validate URLs (protects from SSRF / Phishing)
+function isSafeUrl(urlStr: string): boolean {
+  if (!urlStr) return true;
+  try {
+    if (urlStr.startsWith('/')) {
+      return !urlStr.includes('..') && !urlStr.includes('\\');
+    }
+    if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+      return false;
+    }
+    const parsed = new URL(urlStr);
+    const hostname = parsed.hostname.toLowerCase();
+    const blockedHosts = [
+      'localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254',
+      '::1', '::', 'metadata.google.internal'
+    ];
+    if (blockedHosts.includes(hostname)) {
+      return false;
+    }
+    if (
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('172.16.') ||
+      hostname.startsWith('172.17.') ||
+      hostname.startsWith('172.18.') ||
+      hostname.startsWith('172.19.') ||
+      hostname.startsWith('172.20.') ||
+      hostname.startsWith('172.21.') ||
+      hostname.startsWith('172.22.') ||
+      hostname.startsWith('172.23.') ||
+      hostname.startsWith('172.24.') ||
+      hostname.startsWith('172.25.') ||
+      hostname.startsWith('172.26.') ||
+      hostname.startsWith('172.27.') ||
+      hostname.startsWith('172.28.') ||
+      hostname.startsWith('172.29.') ||
+      hostname.startsWith('172.30.') ||
+      hostname.startsWith('172.31.')
+    ) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 // Helper to slugify
 function slugify(text: string) {
   return text
@@ -43,7 +90,8 @@ router.get('/articles', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch blog articles', details: error.message });
+    console.error('Failed to fetch blog articles:', error);
+    res.status(500).json({ error: 'Failed to fetch blog articles' });
   }
 });
 
@@ -90,7 +138,8 @@ router.get('/articles/:slug', async (req, res) => {
       comments: commentsRes.rows
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch article details', details: error.message });
+    console.error('Failed to fetch article details:', error);
+    res.status(500).json({ error: 'Failed to fetch article details' });
   }
 });
 
@@ -100,6 +149,11 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
   
   if (!title_en || !title_ar || !content_en || !content_ar || !category_en || !category_ar) {
     return res.status(400).json({ error: 'Titles, contents, and categories are required in English and Arabic' });
+  }
+
+  // SSRF Protection: Validate image_url
+  if (image_url && !isSafeUrl(image_url)) {
+    return res.status(400).json({ error: 'Insecure or invalid image URL' });
   }
 
   // Generate or use provided slug
@@ -114,37 +168,40 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
 
     const liveArticle = result.rows[0];
 
-    // Bulk creation of notifications for ALL active users
-    try {
-      await pool.query(`
-        INSERT INTO notifications (user_id, type, title_en, title_ar, message_en, message_ar, metadata)
-        SELECT id, 'blog_notification', $1, $2, $3, $4, $5
-        FROM users
-        WHERE status = 'active'
-      `, [
-        'New Article Published',
-        'تم نشر مقالة جديدة',
-        `Read our newest post: "${title_en}"`,
-        `اقرأ مقالنا الجديد: "${title_ar}"`,
-        JSON.stringify({ slug: finalSlug, article_id: liveArticle.id })
-      ]);
+    // Bulk creation of notifications for ALL active users (run asynchronously in background to unblock response)
+    setImmediate(async () => {
+      try {
+        await pool.query(`
+          INSERT INTO notifications (user_id, type, title_en, title_ar, message_en, message_ar, metadata)
+          SELECT id, 'blog_notification', $1, $2, $3, $4, $5
+          FROM users
+          WHERE status = 'active'
+        `, [
+          'New Article Published',
+          'تم نشر مقالة جديدة',
+          `Read our newest post: "${title_en}"`,
+          `اقرأ مقالنا الجديد: "${title_ar}"`,
+          JSON.stringify({ slug: finalSlug, article_id: liveArticle.id })
+        ]);
 
-      // Emit global WebSocket event to trigger live toast
-      if (io) {
-        io.emit('new_blog_article', {
-          id: liveArticle.id,
-          slug: finalSlug,
-          title_en,
-          title_ar
-        });
+        // Emit global WebSocket event to trigger live toast
+        if (io) {
+          io.emit('new_blog_article', {
+            id: liveArticle.id,
+            slug: finalSlug,
+            title_en,
+            title_ar
+          });
+        }
+      } catch (notifErr) {
+        console.error('[Blog Notification Dispatch] Failed to send global notifications in background:', notifErr);
       }
-    } catch (notifErr) {
-      console.error('[Blog Notification Dispatch] Failed to send global notifications:', notifErr);
-    }
+    });
 
     res.status(201).json(liveArticle);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to create article', details: error.message });
+    console.error('Failed to create article:', error);
+    res.status(500).json({ error: 'Failed to create article' });
   }
 });
 
@@ -155,6 +212,11 @@ router.put('/articles/:id', authenticateToken, authenticateAdmin, async (req: an
 
   if (!title_en || !title_ar || !content_en || !content_ar || !category_en || !category_ar) {
     return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // SSRF Protection: Validate image_url
+  if (image_url && !isSafeUrl(image_url)) {
+    return res.status(400).json({ error: 'Insecure or invalid image URL' });
   }
 
   const finalSlug = slug ? slugify(slug) : slugify(title_en) + '-' + id;
@@ -174,7 +236,8 @@ router.put('/articles/:id', authenticateToken, authenticateAdmin, async (req: an
 
     res.json(result.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to update article', details: error.message });
+    console.error('Failed to update article:', error);
+    res.status(500).json({ error: 'Failed to update article' });
   }
 });
 
@@ -188,7 +251,8 @@ router.delete('/articles/:id', authenticateToken, authenticateAdmin, async (req:
     }
     res.json({ success: true, message: 'Article deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to delete article', details: error.message });
+    console.error('Failed to delete article:', error);
+    res.status(500).json({ error: 'Failed to delete article' });
   }
 });
 
@@ -217,7 +281,8 @@ router.post('/articles/:id/comments', authenticateToken, async (req: any, res) =
 
     res.status(201).json(commentWithAuthor.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to add comment to article', details: error.message });
+    console.error('Failed to add comment to article:', error);
+    res.status(500).json({ error: 'Failed to add comment to article' });
   }
 });
 
@@ -240,7 +305,8 @@ router.delete('/comments/:id', authenticateToken, async (req: any, res) => {
     await pool.query('DELETE FROM blog_comments WHERE id = $1', [id]);
     res.json({ success: true, message: 'Comment deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to delete comment', details: error.message });
+    console.error('Failed to delete comment:', error);
+    res.status(500).json({ error: 'Failed to delete comment' });
   }
 });
 
@@ -275,7 +341,8 @@ router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
       ...statsRes.rows[0]
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to record rating', details: error.message });
+    console.error('Failed to record rating:', error);
+    res.status(500).json({ error: 'Failed to record rating' });
   }
 });
 
