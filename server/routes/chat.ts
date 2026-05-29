@@ -283,7 +283,7 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
         tool_id: toolId || 'chat', 
         prompt: content, 
         chat_id: chatId,
-        system_prompt: req.user.custom_instructions || '',
+        system_prompt: '',
         model_id: modelId
       }, 
       req.user.id, 

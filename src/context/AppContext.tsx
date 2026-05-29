@@ -749,7 +749,7 @@ const translations = {
     darkMode: 'داكن',
     arabic: 'العربية',
     english: 'English',
-    termsOfUse: 'شروط الاستخدام',
+    termsOfUse: 'شروط الخدمة',
     privacyPolicy: 'سياسة الخصوصية',
     cookiesPolicy: 'سياسة الكوكيز',
     log_user_login: 'قام بتسجيل الدخول',
@@ -1419,7 +1419,7 @@ const translations = {
     darkMode: 'Dark',
     arabic: 'العربية',
     english: 'English',
-    termsOfUse: 'Terms of Use',
+    termsOfUse: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     cookiesPolicy: 'Cookies Policy',
 

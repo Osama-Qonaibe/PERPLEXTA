@@ -195,6 +195,9 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import memoryRoutes from './routes/memory.js';
 import kycRoutes from './routes/kyc.js';
 import emailRoutes from './routes/email.js';
+import forumRoutes from './routes/forum.js';
+import blogRoutes from './routes/blog.js';
+import marketplaceRoutes from './routes/marketplace.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
@@ -211,6 +214,9 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/memories', memoryRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/mail-services-v3', emailRoutes);
+app.use('/api/forum', forumRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api', systemRoutes);
 app.use('/api', toolRoutes);
 

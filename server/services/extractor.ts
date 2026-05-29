@@ -222,9 +222,9 @@ export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: str
 const extractExcelText = async (dataBuffer: Buffer, mimeType: string): Promise<string> => {
   const workbook = new ExcelJS.Workbook();
   if (mimeType.includes('csv') || mimeType === 'text/plain') {
-    await workbook.csv.read(require('stream').Readable.from(dataBuffer));
+    await workbook.csv.read(require('stream').Readable.from(dataBuffer as any));
   } else {
-    await workbook.xlsx.load(dataBuffer);
+    await workbook.xlsx.load(dataBuffer as any);
   }
   let fullText = '';
   workbook.eachSheet((sheet) => {

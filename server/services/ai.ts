@@ -242,7 +242,7 @@ export async function getProviderUrlKey(provider: string): Promise<string | null
     const result = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
     if (result.rows.length > 0 && result.rows[0].url_key) {
       urlKey = result.rows[0].url_key;
-      urlKeyCache.set(normProvider, urlKey);
+      urlKeyCache.set(normProvider, urlKey as string);
     }
   } catch (_) {}
 

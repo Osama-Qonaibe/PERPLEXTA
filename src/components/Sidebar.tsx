@@ -210,6 +210,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       path: '/admin',
       className: 'hidden md:flex'
     });
+    navItems.push({
+      icon: <Settings2 size={18} />,
+      label: language === 'ar' ? 'لوحة تحكم المنتدى' : 'Forum Admin',
+      path: '/admin-community'
+    });
   }
 
   const handleNewChat = () => {
@@ -318,331 +323,335 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 ))}
 
 
-                <div className={`mt-4 py-2 border-t border-[var(--border-main)] transition-theme`}>
-                  <button 
-                    onClick={handleNewChat}
-                    className={`flex items-center transition-all duration-300 w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}
-                  >
-                    <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
-                      <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-all duration-300 bg-emerald-500/5 border-emerald-500/10 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/20`} />
-                      <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-all duration-300 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
-                    </div>
-                    <AnimatePresence mode="wait" initial={false}>
-                      {isSidebarOpen && (
-                        <motion.span
-                          initial={false}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                          transition={sidebarTransition}
-                          className={`font-black ${isMobile ? 'text-sm' : 'text-sm'} text-emerald-500 whitespace-nowrap ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
-                        >
-                          {t('newChat')}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </button>
-                </div>
+                {user && token && (
+                  <div className={`mt-4 py-2 border-t border-[var(--border-main)] transition-theme`}>
+                    <button 
+                      onClick={handleNewChat}
+                      className={`flex items-center transition-all duration-300 w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}
+                    >
+                      <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
+                        <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-all duration-300 bg-emerald-500/5 border-emerald-500/10 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/20`} />
+                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-all duration-300 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
+                      </div>
+                      <AnimatePresence mode="wait" initial={false}>
+                        {isSidebarOpen && (
+                          <motion.span
+                            initial={false}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
+                            transition={sidebarTransition}
+                            className={`font-black ${isMobile ? 'text-sm' : 'text-sm'} text-emerald-500 whitespace-nowrap ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                          >
+                            {t('newChat')}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </button>
+                  </div>
+                )}
               </nav>
             </div>
 
-            <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className={`pt-2 mt-2 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-8 overflow-hidden ${isMobile ? 'px-3.5' : ''}`}>
-                <div className={`${isMobile ? 'w-8' : 'w-[80px]'} flex-shrink-0`} />
-                <AnimatePresence initial={false}>
-                  {isSidebarOpen && (
-                    <motion.h3 
-                      initial={false}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={elasticSpring}
-                      className="flex-1 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap truncate text-start transition-theme"
-                    >
-                      {dir === 'rtl' ? 'المحادثات السابقة' : 'Recent Chats'}
-                    </motion.h3>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-4 min-h-0">
-                <div className="min-h-[200px]">
-                  {isChatsLoading ? (
-                    <div className="space-y-1 px-3 py-2 animate-pulse w-full">
-                      {[...Array(5)].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className={`flex items-center gap-3 w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} rounded-[4px] bg-gray-150/20 dark:bg-gray-800/10 border border-transparent`}
-                        >
-                          <div className="w-4 h-4 rounded-[4px] bg-gray-200/60 dark:bg-gray-800/60 shrink-0" />
-                          {isSidebarOpen && (
-                            <div className="h-2.5 bg-gray-200/40 dark:bg-gray-800/40 rounded w-1/2" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : recentChats.length > 0 ? (
-                    <div className={isMobile ? "space-y-1" : "space-y-1"}>
-                        {recentChats.map((chat) => (
-                      <motion.div
-                        key={chat.id}
-                        animate={streamingChatId === chat.id ? {
-                          backgroundColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.06)", "rgba(16,185,129,0)"],
-                          borderColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.25)", "rgba(16,185,129,0)"]
-                        } : {}}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                        className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300 group relative border border-transparent rounded-[4px]`}
+            {user && token && (
+              <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className={`pt-2 mt-2 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-8 overflow-hidden ${isMobile ? 'px-3.5' : ''}`}>
+                  <div className={`${isMobile ? 'w-8' : 'w-[80px]'} flex-shrink-0`} />
+                  <AnimatePresence initial={false}>
+                    {isSidebarOpen && (
+                      <motion.h3 
+                        initial={false}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={elasticSpring}
+                        className="flex-1 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap truncate text-start transition-theme"
                       >
-                        {editingChatId === chat.id ? (
-                          <div className="flex items-center w-full h-full pr-1">
-                            <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                              <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-overlay)] transition-all duration-300`} />
-                              <MessageSquare size={isMobile ? 16 : 16} className="text-emerald-500 relative z-10" />
-                            </div>
-                            <div className="flex-1 flex items-center gap-1 min-w-0">
-                              <input
-                                type="text"
-                                value={newTitle}
-                                onChange={(e) => setNewTitle(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleRename(chat.id);
-                                  if (e.key === 'Escape') setEditingChatId(null);
-                                }}
-                                className={`bg-[var(--bg-input)] text-[var(--text-primary)] ${isMobile ? 'text-[13px] px-2 py-1' : 'text-xs px-2 py-1'} rounded w-full outline-none border border-[var(--border-accent)] min-w-0 transition-theme`}
-                                autoFocus
-                              />
-                              <div className="flex items-center">
-                                <button 
-                                  onClick={() => handleRename(chat.id)}
-                                  className={`p-1.5 text-emerald-500 hover:text-emerald-400 transition-theme`}
-                                  title={t('save')}
-                                >
-                                  <Check size={isMobile ? 16 : 14} />
-                                </button>
-                                <button 
-                                  onClick={() => setEditingChatId(null)}
-                                  className={`p-1.5 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-theme`}
-                                  title={t('cancel')}
-                                >
-                                  <X size={isMobile ? 16 : 14} />
-                                </button>
-                              </div>
-                            </div>
+                        {dir === 'rtl' ? 'المحادثات السابقة' : 'Recent Chats'}
+                      </motion.h3>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-4 min-h-0">
+                  <div className="min-h-[200px]">
+                    {isChatsLoading ? (
+                      <div className="space-y-1 px-3 py-2 animate-pulse w-full">
+                        {[...Array(5)].map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`flex items-center gap-3 w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} rounded-[4px] bg-gray-150/20 dark:bg-gray-800/10 border border-transparent`}
+                          >
+                            <div className="w-4 h-4 rounded-[4px] bg-gray-200/60 dark:bg-gray-800/60 shrink-0" />
+                            {isSidebarOpen && (
+                              <div className="h-2.5 bg-gray-200/40 dark:bg-gray-800/40 rounded w-1/2" />
+                            )}
                           </div>
-                        ) : (
-                          <>
-                            <div
-                              onClick={() => {
-                                navigate(`/chat/${chat.id}`);
-                                if (window.innerWidth < 768) setIsSidebarOpen(false);
-                              }}
-                              className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
-                            >
+                        ))}
+                      </div>
+                    ) : recentChats.length > 0 ? (
+                      <div className={isMobile ? "space-y-1" : "space-y-1"}>
+                          {recentChats.map((chat) => (
+                        <motion.div
+                          key={chat.id}
+                          animate={streamingChatId === chat.id ? {
+                            backgroundColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.06)", "rgba(16,185,129,0)"],
+                            borderColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.25)", "rgba(16,185,129,0)"]
+                          } : {}}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                          className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300 group relative border border-transparent rounded-[4px]`}
+                        >
+                          {editingChatId === chat.id ? (
+                            <div className="flex items-center w-full h-full pr-1">
                               <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
-                                <MessageSquare 
-                                  size={isMobile ? 16 : 16} 
-                                  className={`relative z-10 transition-all duration-300 ${
-                                    streamingChatId === chat.id 
-                                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' 
-                                      : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                                  }`} 
-                                />
+                                <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-overlay)] transition-all duration-300`} />
+                                <MessageSquare size={isMobile ? 16 : 16} className="text-emerald-500 relative z-10" />
                               </div>
-                              <AnimatePresence mode="wait" initial={false}>
+                              <div className="flex-1 flex items-center gap-1 min-w-0">
+                                <input
+                                  type="text"
+                                  value={newTitle}
+                                  onChange={(e) => setNewTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRename(chat.id);
+                                    if (e.key === 'Escape') setEditingChatId(null);
+                                  }}
+                                  className={`bg-[var(--bg-input)] text-[var(--text-primary)] ${isMobile ? 'text-[13px] px-2 py-1' : 'text-xs px-2 py-1'} rounded w-full outline-none border border-[var(--border-accent)] min-w-0 transition-theme`}
+                                  autoFocus
+                                />
+                                <div className="flex items-center">
+                                  <button 
+                                    onClick={() => handleRename(chat.id)}
+                                    className={`p-1.5 text-emerald-500 hover:text-emerald-400 transition-theme`}
+                                    title={t('save')}
+                                  >
+                                    <Check size={isMobile ? 16 : 14} />
+                                  </button>
+                                  <button 
+                                    onClick={() => setEditingChatId(null)}
+                                    className={`p-1.5 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-theme`}
+                                    title={t('cancel')}
+                                  >
+                                    <X size={isMobile ? 16 : 14} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                onClick={() => {
+                                  navigate(`/chat/${chat.id}`);
+                                  if (window.innerWidth < 768) setIsSidebarOpen(false);
+                                }}
+                                className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
+                              >
+                                <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
+                                  <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
+                                  <MessageSquare 
+                                    size={isMobile ? 16 : 16} 
+                                    className={`relative z-10 transition-all duration-300 ${
+                                      streamingChatId === chat.id 
+                                        ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' 
+                                        : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                    }`} 
+                                  />
+                                </div>
+                                <AnimatePresence mode="wait" initial={false}>
+                                  {isSidebarOpen && (
+                                    <motion.span
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={sidebarTransition}
+                                      className={`font-medium ${isMobile ? 'text-[13px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
+                                        streamingChatId === chat.id 
+                                          ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
+                                          : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                      }`}
+                                    >
+                                      {chat.title}
+                                    </motion.span>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                              <AnimatePresence>
                                 {isSidebarOpen && (
-                                  <motion.span
+                                  <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={sidebarTransition}
-                                    className={`font-medium ${isMobile ? 'text-[13px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
-                                      streamingChatId === chat.id 
-                                        ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
-                                        : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                                    }`}
+                                    className={`flex items-center gap-1 ${deletingChatConfirmId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-300 ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
                                   >
-                                    {chat.title}
-                                  </motion.span>
+                                    {deletingChatConfirmId === chat.id ? (
+                                      <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/20 rounded-[4px] px-1 py-0.5">
+                                        <span className="text-[9px] text-pink-500 font-bold whitespace-nowrap px-0.5 select-none animate-pulse">
+                                          {language === 'ar' ? 'تأكيد؟' : 'Sure?'}
+                                        </span>
+                                        <button 
+                                          type="button"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await handleDelete(e, chat.id);
+                                            setDeletingChatConfirmId(null);
+                                          }}
+                                          className="w-5 h-5 flex items-center justify-center rounded-[3px] text-pink-500 hover:bg-pink-500/20 transition-all duration-300"
+                                          title={language === 'ar' ? 'تأكيد الحذف' : 'Confirm deletion'}
+                                        >
+                                          <Check size={11} />
+                                        </button>
+                                        <button 
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeletingChatConfirmId(null);
+                                          }}
+                                          className="w-5 h-5 flex items-center justify-center rounded-[3px] text-gray-400 hover:text-emerald-500 transition-all duration-300"
+                                          title={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                        >
+                                          <X size={11} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button 
+                                          onClick={() => { setEditingChatId(chat.id); setNewTitle(chat.title); setDeletingChatConfirmId(null); }}
+                                          className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                                        >
+                                          <Edit2 size={isMobile ? 14 : 13} />
+                                        </button>
+                                        <button 
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeletingChatConfirmId(chat.id);
+                                          }}
+                                          className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300"
+                                        >
+                                          <Trash2 size={isMobile ? 14 : 13} />
+                                        </button>
+                                      </>
+                                    )}
+                                  </motion.div>
                                 )}
                               </AnimatePresence>
-                            </div>
-                            <AnimatePresence>
-                              {isSidebarOpen && (
-                                <motion.div 
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  className={`flex items-center gap-1 ${deletingChatConfirmId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-300 ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
-                                >
-                                  {deletingChatConfirmId === chat.id ? (
-                                    <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/20 rounded-[4px] px-1 py-0.5">
-                                      <span className="text-[9px] text-pink-500 font-bold whitespace-nowrap px-0.5 select-none animate-pulse">
-                                        {language === 'ar' ? 'تأكيد؟' : 'Sure?'}
-                                      </span>
-                                      <button 
-                                        type="button"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          await handleDelete(e, chat.id);
-                                          setDeletingChatConfirmId(null);
-                                        }}
-                                        className="w-5 h-5 flex items-center justify-center rounded-[3px] text-pink-500 hover:bg-pink-500/20 transition-all duration-300"
-                                        title={language === 'ar' ? 'تأكيد الحذف' : 'Confirm deletion'}
-                                      >
-                                        <Check size={11} />
-                                      </button>
-                                      <button 
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setDeletingChatConfirmId(null);
-                                        }}
-                                        className="w-5 h-5 flex items-center justify-center rounded-[3px] text-gray-400 hover:text-emerald-500 transition-all duration-300"
-                                        title={language === 'ar' ? 'إلغاء' : 'Cancel'}
-                                      >
-                                        <X size={11} />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <button 
-                                        onClick={() => { setEditingChatId(chat.id); setNewTitle(chat.title); setDeletingChatConfirmId(null); }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
-                                      >
-                                        <Edit2 size={isMobile ? 14 : 13} />
-                                      </button>
-                                      <button 
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setDeletingChatConfirmId(chat.id);
-                                        }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300"
-                                      >
-                                        <Trash2 size={isMobile ? 14 : 13} />
-                                      </button>
-                                    </>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            {isSidebarOpen && activeChatId && (
-              <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10 flex flex-col transition-all duration-300`}>
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <BrainCircuit size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] flex-shrink-0" />
-                    <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate font-sans">
-                      {language === 'ar' ? 'ملخص السياق النشط' : 'Context Summary'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    {!isEditingContext && (
-                      <button
-                        onClick={() => setIsEditingContext(true)}
-                        className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-all duration-300"
-                        title={language === 'ar' ? 'تعديل المعرفة' : 'Edit Context'}
-                      >
-                        <Edit2 size={11} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setIsContextCollapsed(!isContextCollapsed)}
-                      className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-all duration-300 transform ${isContextCollapsed ? 'rotate-180' : ''}`}
-                    >
-                      <ChevronLeft size={12} className="rotate-270" style={{ transform: isContextCollapsed ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
-                    </button>
-                  </div>
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {!isContextCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      {isEditingContext ? (
-                        <div className="flex flex-col gap-2 mt-2">
-                          <textarea
-                            value={editedContext}
-                            onChange={(e) => setEditedContext(e.target.value)}
-                            className="w-full h-24 text-[11px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-emerald-500/20 focus:border-emerald-500/40 outline-none resize-none transition-theme"
-                            placeholder={language === 'ar' ? 'اكتب سياق المعرفة هنا...' : 'Type active context summary here...'}
-                            disabled={isSavingContext}
-                            autoFocus
-                          />
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                setIsEditingContext(false);
-                                setEditedContext(currentChat?.context_summary || '');
-                              }}
-                              disabled={isSavingContext}
-                              className="text-[10px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300 rounded-[4px] px-2 py-1 flex items-center gap-1"
-                            >
-                              <X size={10} />
-                              {language === 'ar' ? 'إلغاء' : 'Cancel'}
-                            </button>
-                            <button
-                              onClick={handleSaveContext}
-                              disabled={isSavingContext}
-                              className="text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-300 rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold"
-                            >
-                              {isSavingContext ? (
-                                <Loader2 size={10} className="animate-spin" />
-                              ) : (
-                                <Check size={10} />
-                              )}
-                              {language === 'ar' ? 'حفظ' : 'Save'}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1.5 mt-2">
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 font-sans leading-relaxed tracking-wide select-text whitespace-pre-wrap max-h-[140px] overflow-y-auto custom-scrollbar p-2 bg-white/40 dark:bg-black/20 border border-gray-100 dark:border-gray-800/40 rounded-[4px]">
-                            {editedContext ? (
-                              editedContext
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                {language === 'ar'
-                                  ? 'لم يتم إنشاء ملخص سياق بعد لهذه المحادثة. يبدأ النموذج بالتلخيص قريباً.'
-                                  : 'No active context summary generated yet for this chat.'}
-                              </span>
-                            )}
-                          </div>
-                          {!editedContext && (
-                            <button
-                              onClick={() => setIsEditingContext(true)}
-                              className="self-start text-[9px] font-bold text-emerald-500 hover:text-emerald-400 transition-theme flex items-center gap-1 mt-1"
-                            >
-                              <Plus size={10} />
-                              {language === 'ar' ? 'إضافة ملخص يدوي' : 'Add summary manually'}
-                            </button>
+                            </>
                           )}
-                          <span className="text-[9px] text-gray-400 dark:text-gray-500/80 leading-snug">
-                            {language === 'ar'
-                              ? '💡 يمثل هذا السياق النشط الذي يتم تضمينه في ذاكرة الذكاء الاصطناعي لفهم محتوى المحادثة الحالي.'
-                              : '💡 This represents the active context synthesized for the AI model to track key objectives.'}
-                          </span>
-                        </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {isSidebarOpen && activeChatId && (
+                  <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10 flex flex-col transition-all duration-300`}>
+                    <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <BrainCircuit size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] flex-shrink-0" />
+                        <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate font-sans">
+                          {language === 'ar' ? 'ملخص السياق النشط' : 'Context Summary'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {!isEditingContext && (
+                          <button
+                            onClick={() => setIsEditingContext(true)}
+                            className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-all duration-300"
+                            title={language === 'ar' ? 'تعديل المعرفة' : 'Edit Context'}
+                          >
+                            <Edit2 size={11} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setIsContextCollapsed(!isContextCollapsed)}
+                          className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-all duration-300 transform ${isContextCollapsed ? 'rotate-180' : ''}`}
+                        >
+                          <ChevronLeft size={12} className="rotate-270" style={{ transform: isContextCollapsed ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {!isContextCollapsed && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          {isEditingContext ? (
+                            <div className="flex flex-col gap-2 mt-2">
+                              <textarea
+                                value={editedContext}
+                                onChange={(e) => setEditedContext(e.target.value)}
+                                className="w-full h-24 text-[11px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-emerald-500/20 focus:border-emerald-500/40 outline-none resize-none transition-theme"
+                                placeholder={language === 'ar' ? 'اكتب سياق المعرفة هنا...' : 'Type active context summary here...'}
+                                disabled={isSavingContext}
+                                autoFocus
+                              />
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => {
+                                    setIsEditingContext(false);
+                                    setEditedContext(currentChat?.context_summary || '');
+                                  }}
+                                  disabled={isSavingContext}
+                                  className="text-[10px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300 rounded-[4px] px-2 py-1 flex items-center gap-1"
+                                >
+                                  <X size={10} />
+                                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                </button>
+                                <button
+                                  onClick={handleSaveContext}
+                                  disabled={isSavingContext}
+                                  className="text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-300 rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold"
+                                >
+                                  {isSavingContext ? (
+                                    <Loader2 size={10} className="animate-spin" />
+                                  ) : (
+                                    <Check size={10} />
+                                  )}
+                                  {language === 'ar' ? 'حفظ' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 mt-2">
+                              <div className="text-[11px] text-gray-500 dark:text-gray-400 font-sans leading-relaxed tracking-wide select-text whitespace-pre-wrap max-h-[140px] overflow-y-auto custom-scrollbar p-2 bg-white/40 dark:bg-black/20 border border-gray-100 dark:border-gray-800/40 rounded-[4px]">
+                                {editedContext ? (
+                                  editedContext
+                                ) : (
+                                  <span className="text-gray-400 italic">
+                                    {language === 'ar'
+                                      ? 'لم يتم إنشاء ملخص سياق بعد لهذه المحادثة. يبدأ النموذج بالتلخيص قريباً.'
+                                      : 'No active context summary generated yet for this chat.'}
+                                  </span>
+                                )}
+                              </div>
+                              {!editedContext && (
+                                <button
+                                  onClick={() => setIsEditingContext(true)}
+                                  className="self-start text-[9px] font-bold text-emerald-500 hover:text-emerald-400 transition-theme flex items-center gap-1 mt-1"
+                                >
+                                  <Plus size={10} />
+                                  {language === 'ar' ? 'إضافة ملخص يدوي' : 'Add summary manually'}
+                                </button>
+                              )}
+                              <span className="text-[9px] text-gray-400 dark:text-gray-500/80 leading-snug">
+                                {language === 'ar'
+                                  ? '💡 يمثل هذا السياق النشط الذي يتم تضمينه في ذاكرة الذكاء الاصطناعي لفهم محتوى المحادثة الحالي.'
+                                  : '💡 This represents the active context synthesized for the AI model to track key objectives.'}
+                              </span>
+                            </div>
+                          )}
+                        </motion.div>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
             )}
 
@@ -820,7 +829,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               ) : (
                   <div 
                     className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-all duration-300`}
-                    onClick={() => setIsAuthModalOpen(true)}
+                    onClick={() => {
+                      setIsAuthModalOpen(true);
+                      if (isMobile) {
+                        setIsSidebarOpen(false);
+                      }
+                    }}
                   >
                     <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                       <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />

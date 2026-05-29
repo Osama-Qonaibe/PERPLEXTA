@@ -22,7 +22,9 @@ import { encrypt } from '../utils/browserCrypto';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition, PERPLEXTA_TRANSITION } from '../constants/motions';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
+import { TypewriterMotive } from '../components/TypewriterMotive';
+import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
@@ -1639,14 +1641,29 @@ export const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (behavior === 'auto' || isGenerating) {
+      const container = document.getElementById('chat-messages-container');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+        return;
+      }
+    }
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
+  const lastMessageContent = messages[messages.length - 1]?.content;
+
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => scrollToBottom('smooth'), 100);
+      scrollToBottom(isGenerating ? 'auto' : 'smooth');
     }
-  }, [messages.length, chatId]);
+  }, [messages.length, lastMessageContent, chatId, isGenerating]);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setIsOtherTyping(false);
+    }
+  }, [isGenerating]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
@@ -1823,15 +1840,34 @@ export const ChatPage: React.FC = () => {
 
         // Create a dedicated export element to handle styling better
         const exportEl = document.createElement('div');
-        exportEl.style.padding = '20px';
-        exportEl.style.width = '750px'; // Closer to A4 ratio width
+        exportEl.style.padding = '40px 30px';
+        exportEl.style.width = '800px'; // Wider for cleaner layout in A4 ratio
         exportEl.style.backgroundColor = theme === 'dark' ? '#0f0f11' : '#ffffff';
         exportEl.style.color = theme === 'dark' ? '#ffffff' : '#000000';
         exportEl.dir = dir;
-        exportEl.style.fontFamily = 'Tajawal, sans-serif';
-        exportEl.style.position = 'absolute';
-        exportEl.style.left = '-9999px';
+        exportEl.style.position = 'fixed';
+        exportEl.style.left = '0';
         exportEl.style.top = '0';
+        exportEl.style.zIndex = '-9999';
+        exportEl.style.opacity = '1';
+
+        // Inject styles directly inside exportEl to ensure Tajawal loads inside isolated SVG/foreignObject elements
+        const fontStyle = document.createElement('style');
+        fontStyle.textContent = `
+          @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+          * {
+            font-family: 'Tajawal', 'Inter', sans-serif !important;
+            box-sizing: border-box;
+          }
+          .msg-body-text {
+            font-family: 'Tajawal', 'Inter', sans-serif !important;
+            font-size: 15px !important;
+            line-height: 1.8 !important;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+          }
+        `;
+        exportEl.appendChild(fontStyle);
 
         const header = document.createElement('div');
         header.innerHTML = `
@@ -1864,10 +1900,7 @@ export const ChatPage: React.FC = () => {
           
           const content = document.createElement('div');
           content.innerText = msg.content;
-          content.style.fontSize = '15px';
-          content.style.lineHeight = '1.8';
-          content.style.whiteSpace = 'pre-wrap';
-          content.style.wordBreak = 'break-word';
+          content.className = 'msg-body-text';
           
           msgEl.appendChild(roleLabel);
           msgEl.appendChild(content);
@@ -1884,34 +1917,43 @@ export const ChatPage: React.FC = () => {
 
         document.body.appendChild(exportEl);
         
-        const canvas = await html2canvas(exportEl, {
-          scale: 2, // High quality
-          useCORS: true,
-          logging: false,
+        // Wait for system to perform fonts lookup and DOM layout rendering cleanly
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Use toPng to generate a high quality pixel render of the DOM with correct native Arabic shaping
+        const imgData = await toPng(exportEl, {
           backgroundColor: theme === 'dark' ? '#0f0f11' : '#ffffff',
-          windowWidth: 800
+          pixelRatio: 2, // Double DPI quality to prevent pixelation inside generated PDFs
+          style: {
+            transform: 'scale(1)',
+          }
         });
         
         document.body.removeChild(exportEl);
         
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
-        
         const imgWidth = 210; // A4 width in mm
         const pageHeight = 297; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        const img = new Image();
+        img.src = imgData;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
+
+        const imgHeight = (img.height * imgWidth) / img.width;
         let heightLeft = imgHeight;
         let position = 0;
 
         // Add first page
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
         // Add subsequent pages if content is longer than one page
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
 
@@ -2715,7 +2757,7 @@ export const ChatPage: React.FC = () => {
         }
 
       const encryptedQuery = await encrypt(currentQuery);
-      const encryptedCustomInstructions = user?.custom_instructions ? await encrypt(user.custom_instructions) : '';
+      const encryptedCustomInstructions = '';
 
         if (!socket) {
           throw new Error(dir === 'rtl' ? 'لم يتم العثور على اتصال' : 'Socket connection not found');
@@ -2876,40 +2918,7 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  const suggestions = [
-    { 
-      icon: <ImageIcon size={24} />, 
-      label: t('image'), 
-      toolId: 'image',
-      hoverColor: 'group-hover:text-emerald-500', 
-      dropShadow: 'group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-      desc: dir === 'rtl' ? 'توليد صور بجودة 8K من بيربليكستا' : 'Perplexta 8K Image Generation'
-    },
-    { 
-      icon: <Video size={24} />, 
-      label: t('video'), 
-      toolId: 'video',
-      hoverColor: 'group-hover:text-emerald-500', 
-      dropShadow: 'group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-      desc: dir === 'rtl' ? 'توليد فيديو سينمائي فائق' : 'Ultra Cinematic Video Prod'
-    },
-    { 
-      icon: <Search size={24} />, 
-      label: t('perplexta_analysis'), 
-      toolId: 'perplexta_analysis',
-      hoverColor: 'group-hover:text-emerald-500', 
-      dropShadow: 'group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-      desc: t('perplexta_analysis_desc')
-    },
-    { 
-      icon: <Music size={24} />, 
-      label: t('canvas'), 
-      toolId: 'canvas',
-      hoverColor: 'group-hover:text-emerald-500', 
-      dropShadow: 'group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]',
-      desc: dir === 'rtl' ? 'استوديو الصوت واللحن الذكي' : 'Smart Audio & Melody Studio'
-    },
-  ];
+
 
   const models = [
     { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-emerald-500', dotColor: 'bg-emerald-500' },
@@ -3196,11 +3205,7 @@ export const ChatPage: React.FC = () => {
 
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-8 md:px-6 max-w-4xl mx-auto">
-      {isMobile && messages.length === 0 && hasActiveSub && (
-        <h1 className="text-[17px] font-black text-[var(--text-primary)] text-center tracking-tight mb-4 leading-tight px-0 uppercase drop-shadow-sm select-none">
-          {t('howCanIHelp')}
-        </h1>
-      )}
+
       {renderVideoSettings()}
       {renderImageSettings()}
       {renderAudioSettings()}
@@ -3543,19 +3548,21 @@ export const ChatPage: React.FC = () => {
         </div>
       </motion.div>
       
-      <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">
-        {dir === 'rtl' ? (
-          <>
-            <span className="md:hidden">{t('appName')} قد يخطئ. فدقق.</span>
-            <span className="hidden md:inline">{t('appName')} قد تخطئ أحياناً. يرجى التحقق من المعلومات المهمة.</span>
-          </>
-        ) : (
-          <>
-            <span className="md:hidden">{t('appName')} may err. Verify.</span>
-            <span className="hidden md:inline">{t('appName')} can make mistakes. Consider verifying important information.</span>
-          </>
-        )}
-      </div>
+      {user && token && (
+        <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">
+          {dir === 'rtl' ? (
+            <>
+              <span className="md:hidden">{t('appName')} قد يخطئ. فدقق.</span>
+              <span className="hidden md:inline">{t('appName')} قد تخطئ أحياناً. يرجى التحقق من المعلومات المهمة.</span>
+            </>
+          ) : (
+            <>
+              <span className="md:hidden">{t('appName')} may err. Verify.</span>
+              <span className="hidden md:inline">{t('appName')} can make mistakes. Consider verifying important information.</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -3648,8 +3655,28 @@ export const ChatPage: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {messages.length > 0 && (
-            <div className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]">
+          {(!user || !token) ? (
+            <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100vh-120px)] sm:min-h-[calc(100vh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
+              <div className="w-full text-[var(--text-primary)] my-auto">
+                <TypewriterMotive />
+                {renderInputArea()}
+                <ToolsGallerySlider />
+              </div>
+              
+              {/* Visual Copyright Footer for Visitors in Arabic & English */}
+              <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-text">
+                <p className="text-[9.5px] sm:text-[10px] text-gray-400 dark:text-gray-500 font-sans tracking-wide leading-relaxed px-4">
+                  {dir === 'rtl' 
+                    ? "حقوق الطبع والنشر © 2026 لصالح شركة فيرال لينك اب المحدودة. جميع الحقوق محفوظة."
+                    : "Copyright © 2026 ViralLinkUp Ltd. All rights reserved."
+                  }
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.length > 0 && (
+                <div className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]">
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
@@ -3822,9 +3849,9 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-behavior-auto' : 'scroll-smooth'}`}
+            className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-auto' : 'scroll-smooth'}`}
           >
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {isChatMessagesLoading ? (
               <motion.div
                 key="chat-messages-skeleton"
@@ -3919,50 +3946,7 @@ export const ChatPage: React.FC = () => {
                   </div>
                 </motion.div>
               ) : (
-                <motion.div
-                  key="onboarding-view"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="hidden md:flex flex-1 flex-col items-center justify-center min-h-full py-12 overflow-hidden select-none w-full"
-                >
-                <div className="w-full max-w-4xl px-8 md:px-6 flex flex-col items-center">
-                  <h1 
-                    className="text-lg md:text-3xl font-black text-[var(--text-primary)] text-center tracking-tight mb-3 md:mb-8 leading-tight px-0 md:px-4 uppercase drop-shadow-sm select-none"
-                  >
-                    {t('howCanIHelp')}
-                  </h1>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
-                    {suggestions.map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setQuery(item.label);
-                          setSelectedTool((item as any).toolId);
-                          setActiveDropdown('tool');
-                        }}
-                        className="group flex items-center h-[54px] md:h-[70px] gap-3 md:gap-4 p-3 md:p-4 rounded-md border transition-theme text-start relative overflow-hidden bg-transparent border-[var(--border)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] shadow-sm active:scale-100"
-                      >
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-sm flex items-center justify-center transition-theme relative z-10 bg-transparent text-gray-400 ${item.hoverColor} ${item.dropShadow}`}>
-                          {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 16 : 20, className: 'md:w-5 md:h-5' } as any)}
-                        </div>
-                        <div className="flex flex-col items-start gap-0 relative z-10 flex-1 min-w-0">
-                          <span className="text-[12px] md:text-[14px] font-black tracking-tight leading-tight transition-theme truncate w-full text-[var(--text-primary)] group-hover:text-emerald-500">
-                            {item.label}
-                          </span>
-                          <span className="text-[7px] md:text-[9px] text-gray-500 font-bold uppercase tracking-[0.1em] opacity-40 group-hover:opacity-100 group-hover:text-emerald-500/70 transition-theme truncate w-full">
-                            {item.desc}
-                          </span>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 via-transparent to-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="absolute -inset-px rounded-md border border-emerald-500/0 group-hover:border-emerald-500/10 transition-theme pointer-events-none" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
+                <div key="onboarding-view" className="flex-1 w-full" />
               )
             ) : (
               <motion.div
@@ -4570,6 +4554,8 @@ export const ChatPage: React.FC = () => {
           {renderInputArea()}
         </div>
       </div>
+            </>
+          )}
       </div>
 
       <AnimatePresence>

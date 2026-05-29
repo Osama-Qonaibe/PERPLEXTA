@@ -12,6 +12,10 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { About } from './pages/About';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { ForumPage } from './pages/ForumPage';
+import { BlogPage } from './pages/BlogPage';
+import { AdminCommunityPage } from './pages/AdminCommunityPage';
+import { MarketplacePage } from './pages/MarketplacePage';
 import { IncentiveCard } from './components/IncentiveCard';
 import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
@@ -167,6 +171,10 @@ export default function App() {
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
                 <Route path="subscription" element={<SubscriptionPage />} />
                 <Route path="chat/:id" element={<ChatPage />} />
+                <Route path="forum" element={<ForumPage />} />
+                <Route path="marketplace" element={<MarketplacePage />} />
+                <Route path="blog" element={<BlogPage />} />
+                <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
                 <Route path="terms" element={<Terms />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="about" element={<About />} />
@@ -184,6 +192,7 @@ export default function App() {
                 <Route path="orchestrator" element={<AdminDashboard />} />
                 <Route path="finance" element={<AdminDashboard />} />
                 <Route path="plans" element={<AdminDashboard />} />
+                <Route path="marketplace" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminDashboard />} />
                 <Route path="memories" element={<AdminDashboard />} />
                 <Route path="emails" element={<AdminDashboard />} />

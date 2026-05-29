@@ -579,7 +579,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONTEXT:\n${chatRes.rows[0].context_summary}\n` : '';
 
-  let refinedSystemPromptSegment = system_prompt ? `[CUSTOM_INSTRUCTIONS]\n${system_prompt}` : '';
+  let refinedSystemPromptSegment = '';
 
   if (toolIdStr === 'sovereign_memory') {
     const memoryInstructions = `[MEMORY ENGINE]
@@ -588,13 +588,13 @@ Extract long-term user facts from this conversation. For each worthy fact, outpu
 Discuss memory state and provide a dense synthesis. Do not show raw XML in your reply text.
 يجب إخراج وسم <extracted_memory> لكل حقيقة مستخلصة لضمان حفظها في قاعدة البيانات.`.trim();
 
-    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${memoryInstructions}` : memoryInstructions;
+    refinedSystemPromptSegment = memoryInstructions;
   } else if (isChatOnly) {
     const conversationalMemoryInstructions = `[MEMORY ACQUISITION]
 If you detect any durable user fact, preference, or rule, silently output: <extracted_memory category="general|professional|preference|identity">fact</extracted_memory>
 Do not mention this in your reply.`.trim();
 
-    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${conversationalMemoryInstructions}` : conversationalMemoryInstructions;
+    refinedSystemPromptSegment = conversationalMemoryInstructions;
   }
 
   if (toolIdStr === 'sovereign_search') {
@@ -703,7 +703,7 @@ ${refinedSystemPromptSegment}`.trim();
             pool.query(
               "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
               [userId, chatIdNum || null, item.fact, item.category]
-            ).then(insertRes => {
+            ).then((insertRes: any) => {
               if (io) {
                 io.to(`user_${userId}`).emit('memory_extracted', {
                   fact: item.fact,

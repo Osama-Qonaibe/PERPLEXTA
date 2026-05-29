@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { MarketplaceManagementView } from "../components/MarketplaceManagementView";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
@@ -13,6 +14,7 @@ import {
   Landmark,
   Cloud,
   CreditCard,
+  ShoppingBag,
   Users,
   Settings,
   Mail,
@@ -12773,6 +12775,8 @@ export const AdminDashboard: React.FC = () => {
         return t("financeVault");
       case "plans":
         return t("plansSubscriptions");
+      case "marketplace":
+        return language === "ar" ? "إدارة الماركت بليس" : "Marketplace Admin";
       case "users":
         return t("userManagement");
       case "memories":
@@ -12814,6 +12818,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "إدارة الباقات والاشتراكات والأسعار"
           : "SUBSCRIPTION PLANS & PRICING";
+      case "marketplace":
+        return language === "ar"
+          ? "مراجعة واعتماد معروضات وبضائع المنتدى"
+          : "APPROVAL & CONTROL CENTRAL OF ASSETS";
       case "users":
         return language === "ar"
           ? "إدارة الهوية والتحقق والصلاحيات"
@@ -12855,6 +12863,8 @@ export const AdminDashboard: React.FC = () => {
         return <Landmark size={28} className={iconClass} />;
       case "plans":
         return <CreditCard size={28} className={iconClass} />;
+      case "marketplace":
+        return <ShoppingBag size={28} className={iconClass} />;
       case "users":
         return <Users size={28} className={iconClass} />;
       case "memories":
@@ -12967,7 +12977,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "marketplace", "users", "emails", "broadcast", "settings"].includes(
             path,
           )
             ? ""
@@ -13003,6 +13013,8 @@ export const AdminDashboard: React.FC = () => {
             <FinanceVaultView theme={theme} t={t} dir={dir} />
           ) : path === "plans" ? (
             <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
+          ) : path === "marketplace" ? (
+            <MarketplaceManagementView theme={theme} t={t} dir={dir} />
           ) : path === "users" ? (
             <UserManagementView theme={theme} t={t} dir={dir} />
           ) : path === "memories" ? (

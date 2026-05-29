@@ -82,7 +82,8 @@ export async function handleChatMessage(socket: any, data: any) {
       const decoded = jwt.verify(token, jwtSecret) as any;
       authenticatedUserId = decoded.id;
     } catch (e) {
-      if (e.name === 'TokenExpiredError') {
+      const err = e as any;
+      if (err.name === 'TokenExpiredError') {
         console.warn('[ChatService] Token Expired');
         return socket.emit('chat_error', { message: JSON.stringify({ error: 'TokenExpiredError', type: 'TOKEN_EXPIRED' }) });
       }
@@ -102,9 +103,6 @@ export async function handleChatMessage(socket: any, data: any) {
   }
 
   let customInstructions = '';
-  if (data_s) {
-    customInstructions = decrypt(data_s);
-  }
 
   let assistantMessageId: number | undefined;
   try {

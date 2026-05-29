@@ -15,7 +15,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'profile' | 'intelligence' | 'preferences'>('profile');
+  const [activeCategory, setActiveCategory] = useState<'profile' | 'preferences'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, token, setIsOperationPending, language, setLanguage, setTheme } = useAppContext();
 
@@ -71,17 +71,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
     }
   };
 
-  const PRESETS = [
-    { id: 'precise', icon: <Target size={16} />, en: 'Perplexta Precise', ar: 'بيربليكستا الدقيق', desc_en: 'Strategic, concise, high authority.', desc_ar: 'استراتيجي، موجز، ذو سلطة عالية.' },
-    { id: 'direct', icon: <Zap size={16} />, en: 'Direct & Concise', ar: 'مباشر وقليل الشروحات', desc_en: 'Straight to the point, minimal fluff.', desc_ar: 'مباشر، يركز على الجوهر، أقل قدر من المقدمات.' },
-    { id: 'executive', icon: <Zap size={16} />, en: 'Executive Brief', ar: 'الموجز التنفيذي', desc_en: 'Action-oriented, bullet points, ROI focused.', desc_ar: 'موجه للعمل، نقاط مختصرة، يركز على النتائج.' },
-    { id: 'creative', icon: <Sparkles size={16} />, en: 'Creative Catalyst', ar: 'المحفز الإبداعي', desc_en: 'Brainstorming-focused, expansive, vibrant.', desc_ar: 'يركز على العصف الذهني، توسعي، حيوي.' },
-    { id: 'academic', icon: <BookOpen size={16} />, en: 'Academic Integrity', ar: 'النزاهة الأكاديمية', desc_en: 'Citations-ready, formal, rigorous.', desc_ar: 'جاهز للاقتباس، رسمي، صارم.' },
-    { id: 'coder', icon: <Code2 size={16} />, en: 'Brutalist Code', ar: 'البرمجة الصريحة', desc_en: 'Direct, code-first, minimal chatter.', desc_ar: 'مباشر، الكود أولاً، أقل قدر من الحديث.' },
-    { id: 'mckinsey', icon: <LayoutGrid size={16} />, en: 'Strategic Consultant', ar: 'المستشار الاستراتيجي', desc_en: 'Framework-driven, MECE structure, synthesis focused.', desc_ar: 'يعتمد على الأطر، هيكلية شاملة، يركز على التركيب والنتائج.' },
-    { id: 'minimalist', icon: <Zap size={16} />, en: 'Extreme Minimalist', ar: 'التبسيط المطلق', desc_en: 'One-sentence answers where possible, ultra-dense.', desc_ar: 'إجابات من جملة واحدة قدر الإمكان، كثافة قصوى في المعلومة.' },
-  ];
-
   const handleStartEdit = (field: string, value: string) => {
     setEditingField(field);
     setEditValue(value);
@@ -105,27 +94,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
     await onUpdate({ [editingField]: editValue });
     setEditingField(null);
-  };
-
-  const handlePresetSelect = (preset: typeof PRESETS[0]) => {
-    const instruction = dir === 'rtl' ? `أسلوب الاستجابة: ${preset.ar}. ${preset.desc_ar}` : `Response Style: ${preset.en}. ${preset.desc_en}`;
-    
-    let newInstructions = user.custom_instructions || '';
-    // Optimized removal of any existing preset styles
-    const lines = newInstructions.split('\n');
-    const filteredLines = lines.filter((l: string) => 
-      !l.includes('Response Style:') && 
-      !l.includes('أسلوب الاستجابة:') &&
-      !PRESETS.some(p => l.includes(p.en) || l.includes(p.ar))
-    );
-    
-    const finalInstructions = instruction + '\n' + filteredLines.join('\n');
-    onUpdate({ custom_instructions: finalInstructions.trim() });
-  };
-
-  const isActivePreset = (preset: typeof PRESETS[0]) => {
-    const instructions = (user.custom_instructions || '').toLowerCase();
-    return instructions.includes(preset.en.toLowerCase()) || instructions.includes(preset.ar.toLowerCase());
   };
 
   const renderEditableField = (label: string, field: string, value: string, icon: React.ReactNode, type: string = 'text', multiline: boolean = false) => {
@@ -195,7 +163,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
   const navItems = [
     { id: 'profile', icon: <User size={18} />, label: t('profile') },
-    { id: 'intelligence', icon: <Sparkles size={18} />, label: t('intelligenceCalibration') },
     { id: 'preferences', icon: <Monitor size={18} />, label: t('preferences') },
   ];
 
@@ -318,90 +285,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     {user.subscription?.status === 'active' && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
                   </p>
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {activeCategory === 'intelligence' && (
-          <motion.div
-            key="intelligence"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-2"
-          >
-            <div className="p-8 rounded-[var(--radius)] bg-emerald-500/5 border border-emerald-500/10 mb-6 group hover:bg-emerald-500/[0.08] transition-all duration-300">
-              <div className="flex items-start gap-6">
-                <div className="p-5 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500 shadow-emerald-500/20 shadow-lg group-hover:scale-110 transition-transform">
-                  <Sparkles size={32} className="drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-xl font-black tracking-tight text-emerald-500 uppercase">{dir === 'rtl' ? 'معايرة ذكاء بيربليكستا' : 'Perplexta Intelligence'}</h3>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium max-w-lg">
-                    {dir === 'rtl' 
-                      ? 'قم بتخصيص كيفية تفاعل المساعد معك بناءً على هويتك المهنية وأسلوب الردود المفضل لديك لضمان تجربة استخباراتية فائقة.' 
-                      : 'Customize how the assistant interacts based on your professional identity and preferred response style for a superior intelligence experience.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {renderEditableField(t('professionalIdentity'), 'custom_instructions', user.custom_instructions || '', <Briefcase size={20} />, 'text', true)}
-
-            <div className="py-8">
-              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
-                <Zap size={14} className="text-amber-500" />
-                {t('eliteResponseStyles').toUpperCase()}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PRESETS.map((preset) => {
-                  const active = isActivePreset(preset);
-                  return (
-                    <button
-                      key={preset.id}
-                      onClick={() => handlePresetSelect(preset)}
-                      className={`p-5 rounded-[var(--radius)] border transition-all duration-300 text-start group relative overflow-hidden ${
-                        active 
-                          ? 'border-emerald-500 bg-emerald-500/[0.03] shadow-lg shadow-emerald-500/5' 
-                          : 'border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/5'
-                      }`}
-                    >
-                      {active && (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                          className="absolute top-0 right-0 p-2 text-emerald-500"
-                        >
-                          <Check size={16} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                        </motion.div>
-                      )}
-                      
-                      <div className="flex items-center gap-4 mb-2 relative z-10">
-                        <div className={`p-2.5 rounded-[var(--radius)] transition-colors ${
-                          active ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-primary)] text-[var(--text-muted)] group-hover:text-emerald-500'
-                        }`}>
-                            {preset.icon}
-                        </div>
-                        <div>
-                          <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 transition-all ${active ? 'text-emerald-500 opacity-100' : 'text-[var(--text-muted)] opacity-50'}`}>
-                            {active ? t('activeNow') : (dir === 'rtl' ? 'أسلوب متاح' : 'Style Preset')}
-                          </p>
-                          <h4 className={`font-black text-sm transition-colors ${
-                            active ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)] group-hover:text-emerald-500'
-                          }`}>
-                            {dir === 'rtl' ? preset.ar : preset.en}
-                          </h4>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-[var(--text-secondary)] font-medium leading-relaxed relative z-10">
-                        {dir === 'rtl' ? preset.desc_ar : preset.desc_en}
-                      </p>
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </motion.div>

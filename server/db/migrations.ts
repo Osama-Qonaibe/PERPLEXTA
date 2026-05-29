@@ -568,6 +568,271 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'google_site_verification', 'VARCHAR(255)');
     });
 
+    // MIGRATION: Forum and Blog Engine v22
+    await runVersioned('v22_forum_and_blog_schema', 'Created Forum and Blog core tables with initial categories', async (tx) => {
+      // 1. Create forum categories
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS forum_categories (
+          id SERIAL PRIMARY KEY,
+          slug VARCHAR(100) UNIQUE NOT NULL,
+          name_en VARCHAR(255) NOT NULL,
+          name_ar VARCHAR(255) NOT NULL,
+          description_en TEXT,
+          description_ar TEXT,
+          icon VARCHAR(100) DEFAULT 'MessageSquare',
+          color VARCHAR(50) DEFAULT 'emerald',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2. Create forum posts
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS forum_posts (
+          id SERIAL PRIMARY KEY,
+          category_id INTEGER NOT NULL REFERENCES forum_categories(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          is_pinned BOOLEAN DEFAULT false,
+          is_locked BOOLEAN DEFAULT false,
+          views INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 3. Create forum comments
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS forum_comments (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 4. Create blog articles
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS blog_articles (
+          id SERIAL PRIMARY KEY,
+          author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          title_en VARCHAR(255) NOT NULL,
+          title_ar VARCHAR(255) NOT NULL,
+          content_en TEXT NOT NULL,
+          content_ar TEXT NOT NULL,
+          image_url TEXT,
+          category_en VARCHAR(100) NOT NULL,
+          category_ar VARCHAR(100) NOT NULL,
+          views INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 5. Create blog comments
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS blog_comments (
+          id SERIAL PRIMARY KEY,
+          article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Seed categories if database is clean
+      const checkCata = await tx.query('SELECT COUNT(*) FROM forum_categories');
+      if (parseInt(checkCata.rows[0].count, 10) === 0) {
+        await tx.query(`
+          INSERT INTO forum_categories (slug, name_en, name_ar, description_en, description_ar, icon, color) VALUES
+          ('general', 'General Chat', 'النقاشات العامة', 'Exchange thoughts, chat with peers, and discuss standard platform techniques.', 'تبادل الأفكار والنقاش مع الأعضاء حول مختلف المواضيع العامة والمنصة.', 'MessageSquare', 'emerald'),
+          ('analysis', 'Market Intelligence', 'استخبارات السوق', 'Post deep-dives into currencies, assets, geopolitics, and global financial intelligence.', 'تحليلات عميقة حول الأسواق والعملات والذكاء المالي العالمي.', 'TrendingUp', 'blue'),
+          ('technical-support', 'Technical & Code Help', 'الدعم الفني والبرمجة', 'Collaborate on algorithmic trading, API issues, and code block setups.', 'المساعدة في البرمجيات وحلول الربط البرمجي وتنفيذ الشيفرات الذكية.', 'Code', 'amber'),
+          ('announcements', 'Announcements & Updates', 'الإعلانات والتحديثات', 'Official news and system releases directly from the ViralLinkUp Team.', 'آخر الأخبار الرسمية والتحديثات الصادرة عن إدارة فيرال لينك اب.', 'Megaphone', 'rose')
+        `);
+      }
+    });
+
+    // MIGRATION: Blog Ratings Engine v23
+    await runVersioned('v23_blog_ratings_and_sharing', 'Creating blog ratings database structure', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS blog_ratings (
+          id SERIAL PRIMARY KEY,
+          article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE (article_id, user_id)
+        )
+      `);
+    });
+
+    // MIGRATION: Seeding professional placeholder blog articles v24
+    await runVersioned('v24_seed_blog_platform_data', 'Seeding elite magazine articles to database', async (tx) => {
+      const articlesCount = await tx.query('SELECT COUNT(*) FROM blog_articles');
+      if (parseInt(articlesCount.rows[0].count, 10) === 0) {
+        // Find best author
+        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+        if (!authorId) {
+          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
+          if (userRes.rows.length > 0) {
+            authorId = userRes.rows[0].id;
+          }
+        }
+
+        if (authorId) {
+          await tx.query(`
+            INSERT INTO blog_articles (author_id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, views)
+            VALUES
+            (
+              $1,
+              'algorithmic-scaling-quantum-modeling-2026',
+              'Algorithmic Scaling and Quantum Market Modeling in 2026',
+              'تطوير النمذجة الرياضية الكمية وتوسيع خوارزميات التداول لعام ٢٠٢٦',
+              'In the rapidly fragmenting global liquidity landscape of 2026, quantitative trading houses are shifting from classical statistical arbitrage toward post-classical quantum stochastic simulations. By leveraging cloud-routed qubits, automated execution layers can process multi-asset orders at sub-millisecond ranges, maximizing return thresholds while avoiding volatility spikes.\n\nThe integration of decentralized ledger structures ensures that transaction receipts are mathematically hardened against downstream latency, establishing a high-performance framework for professional asset managers globally.',
+              'في ظل التفتت المتسارع لساحات السيولة العالمية لعام ٢٠٢٦، تشهد بيوت التداول الكمي تحولاً جذرياً من أساليب التحكيم الإحصائي التقليدية إلى محاكاة العمليات التصادفيه الكمية.\n\nإن الاعتماد على البنية السحابية الموزعة يتيح لخوارزميات التداول معالجة الأوامر المالية المتعددة في أجزاء من المليثانية، مما يسهم في تعظيم هوامش العائد الوقائي وتفادي جيوب التذبذب الحاد.\n\nتكامل هذه التقنية مع هياكل الدفاتر اللامركزية يضمن حماية البيانات المالية ضد تسريبات زمن الوصول، مما يمهد الطريق لتدشين جيل جديد من الخدمات الإدارية للعملاء المحترفين وصناديق التحوط النخبوية.',
+              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1080&h=1080&fit=crop',
+              'Quantitative Development',
+              'التطوير الكمي',
+              134
+            ),
+            (
+              $1,
+              'decentralized-ledger-cryptography-threat-vectors',
+              'Decentralized Ledger Cryptography: Evaluating Post-Quantum Threat Vectors',
+              'تشفير الدفاتر اللامركزية: تقييم نواقل التهديد الكمي لشبكات الأصول الرقمية',
+              'Modern blockchain networks rely heavily on elliptic curve signatures to safeguard ledger state. However, the rise of powerful quantum computing arrays threatens this cryptographic paradigm. This research paper evaluates post-quantum cryptography (PQC) integration, comparing lattice-based digital signatures with existing asymmetric schemas inside the dual ledger architecture.\n\nEnsuring absolute zero-knowledge verification while maintaining sub-second consensus remains the cornerstone of elite web3 financial platforms.',
+              'تعتمد شبكات الدفاتر الموزعة المعاصرة على توقيعات المنحنى الإهليلجي لحماية سلامة الأرصدة والحسابات. ومع ذلك، فإن النضوج المتسارع للحوسبة الكمية يمثل تهديداً مباشراً لهذا النموذج الأمني العالمي.\n\nيستعرض هذا التقرير البحثي التحول نحو بروتوكول التشفير بعد الكمي (PQC)، مع مقارنة موثوقة للتوقيعات المستندة إلى الشبكات ضد أنظمة التشفير غير المتماثل الحالية.\n\nإن تشييد نظام خالي من المعرفة (Zero-Knowledge) مع الحفاظ على سرعة تسوية قياسية يمثل صمام الأمان لبوابات الخدمات الرقمية الفاخرة التي تسعى لحظر أي اختراقات مستقبلية.',
+              'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=1080&h=1080&fit=crop',
+              'Cryptographic Intelligence',
+              'الذكاء التشفيري',
+              98
+            ),
+            (
+              $1,
+              'geopolitical-liquidity-fractures-multi-asset-hedging',
+              'Geopolitical Liquidity Fractures: Hedging Mechanisms for Multi-Asset Portfolios',
+              'تصدعات السيولة الجيوسياسية: آليات التحوط الوقائي للمحافظ الاستثمارية المتعددة',
+              'Sanction compliance registries, multi-currency pricing hubs, and shifting regional coalitions are introducing unprecedented friction inside global cross-border payments. To inoculate professional portfolios against capital controls, asset managers must design proactive multi-asset hedges.\n\nThis article outlines specific mathematical allocations between commodity futures, gold-linked digital reserves, and sovereign debt instruments to neutralize macroeconomic volatility.',
+              'إن اتساع سلاسل العقوبات العالمية، وتباين تسعير العملات الإقليمية، وتغير التحالفات التجارية الكبرى قد فرض ضغوطاً غير مسبوقة على خطوط حركة المدفوعات والتمويل العابر للحدود.\n\nلحظر ركود السيولة ومقاومة الرقابة المفاجئة على رأس المال المالي، يتعين على مديري الثروات صياغة استراتيجيات تحوط متعددة الأصول ذات كفاءة رياضية عالية.\n\nتسلط هذه الصحيفة الضوء على حصص التخصيص المثلى بين عقود السلع الأساسية، والأصول المدعومة بالسبائك المادية كالملاذات التكنولوجية المتطورة، والسندات السيادية لتأمين الحد الضروري من استدامة النمو المالي.',
+              'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&h=1080&fit=crop',
+              'Macro Strategies',
+              'الاستراتيجيات الكلية',
+              245
+            )
+          `, [authorId]);
+        }
+      }
+    });
+
+    // MIGRATION: Marketplace Core Schema v25
+    await runVersioned('v25_marketplace_schema', 'Created Marketplace core tables and basic seed structure', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS marketplace_items (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title_en VARCHAR(255) NOT NULL,
+          title_ar VARCHAR(255) NOT NULL,
+          description_en TEXT NOT NULL,
+          description_ar TEXT NOT NULL,
+          price NUMERIC(15, 2) NOT NULL,
+          category_en VARCHAR(100) NOT NULL,
+          category_ar VARCHAR(100) NOT NULL,
+          image_url TEXT,
+          status VARCHAR(20) DEFAULT 'approved', -- approved, pending, sold, rejected
+          views INTEGER DEFAULT 0,
+          contact_link TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      const itemsCount = await tx.query('SELECT COUNT(*) FROM marketplace_items');
+      if (parseInt(itemsCount.rows[0].count, 10) === 0) {
+        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+        if (!authorId) {
+          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
+          if (userRes.rows.length > 0) {
+            authorId = userRes.rows[0].id;
+          }
+        }
+        
+        if (authorId) {
+          await tx.query(`
+            INSERT INTO marketplace_items (user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar, image_url, contact_link, status)
+            VALUES
+            (
+              $1,
+              'Elite Quant Trading Workstation API Key Proxy v4',
+              'بوابة الربط الخوارزمي الممتازة للمنصات الكمية v4',
+              'A high-performance low-latency API proxy server configured for raw high-frequency websocket connection structures with dual failover fail-safes. Fully customizable and production ready.',
+              'خادم وسيط عالي الأداء ومنخفض زمن الوصول لربط خوارزميات التداول وبث البيانات الفورية بالاعتماد على بروتوكول websocket فائق السرعة مع صمامات أمان مزدوجة ضد الهبوط والمقاطعة.',
+              499.00,
+              'Code & APIs',
+              'الأكواد والربط البرمجي',
+              'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
+              'https://t.me/perplexta_support',
+              'approved'
+            ),
+            (
+              $1,
+              'Sovereign Real-time Web Intelligence Feed Core',
+              'نواة بروتوكول استخلاص المعارف والاستخبارات الفورية',
+              'Direct pipeline system configured to ingest strategic knowledge assets, compress geopolitical data, and pipe distilled representations directly to local logical models.',
+              'أنبوب تغذية ونظام متكامل لتلقيم واستخلاص الأبحاث الإستراتيجية والبيانات الجيوسياسية مع ضغطها وتوصيل النواقل المعرفية المكثفة لنماذج الاستجابة المحلية.',
+              299.00,
+              'Strategic Intelligence',
+              'الاستخبارات والمعرفة',
+              'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1080&fit=crop',
+              'https://t.me/perplexta_support',
+              'approved'
+            )
+          `, [authorId]);
+        }
+      }
+    });
+
+    // MIGRATION: Marketplace Seed Extension v26
+    await runVersioned('v26_marketplace_seed_extension_v2', 'Added third default premium marketplace item for layout completeness', async (tx) => {
+      const itemsCount = await tx.query('SELECT COUNT(*) FROM marketplace_items');
+      if (parseInt(itemsCount.rows[0].count, 10) === 2) {
+        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+        if (!authorId) {
+          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
+          if (userRes.rows.length > 0) {
+            authorId = userRes.rows[0].id;
+          }
+        }
+
+        if (authorId) {
+          await tx.query(`
+            INSERT INTO marketplace_items (user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar, image_url, contact_link, status)
+            VALUES
+            (
+              $1,
+              'Deep-Seek Quantum Sentiment Neural Model v2',
+              'النموذج العصبي الذكي لتحليل معنويات السوق الكمية v2',
+              'An enterprise-grade pre-trained Transformer model engineered for continuous sentiment analytics across digital networks, providing high-precision predictive signals with native multilingual parsing.',
+              'نموذج محول مدرب مسبقاً من الفئة المؤسسية مصمم للتحليل الحي والمستمر لمعنويات ونبض الأسواق عبر الشبكات الرقمية، ليمنحك إشارات تنبؤية فائقة الدقة والسرعة مع فهم عميق للنصوص متعددة اللغات.',
+              199.00,
+              'AI Models',
+              'نماذج الذكاء',
+              'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1080&fit=crop',
+              'https://t.me/perplexta_support',
+              'approved'
+            )
+          `, [authorId]);
+        }
+      }
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1232,6 +1497,26 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         admin_id INTEGER,
         change_log JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'marketplace_items',
+      query: `CREATE TABLE IF NOT EXISTS marketplace_items (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title_en VARCHAR(255) NOT NULL,
+        title_ar VARCHAR(255) NOT NULL,
+        description_en TEXT NOT NULL,
+        description_ar TEXT NOT NULL,
+        price NUMERIC(15, 2) NOT NULL,
+        category_en VARCHAR(100) NOT NULL,
+        category_ar VARCHAR(100) NOT NULL,
+        image_url TEXT,
+        status VARCHAR(20) DEFAULT 'approved',
+        views INTEGER DEFAULT 0,
+        contact_link TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     }
   ];
