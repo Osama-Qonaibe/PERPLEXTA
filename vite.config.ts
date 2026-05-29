@@ -43,6 +43,18 @@ export default defineConfig(({ mode }) => {
             },
             {
               src: 'app-assets/icon.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable'
+            },
+            {
+              src: 'app-assets/icon.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: 'app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
