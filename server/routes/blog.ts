@@ -315,7 +315,7 @@ router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { rating } = req.body;
 
-  if (rating === undefined || rating < 1 || rating > 5) {
+  if (rating === undefined || rating < 1 || rating > 5 || !Number.isInteger(Number(rating))) {
     return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
   }
 
