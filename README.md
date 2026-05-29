@@ -1,149 +1,102 @@
 <div align="center">
 
-<img src="public/logo.svg" alt="Perplexta Logo" width="80" height="80" />
+# Perplexta
 
-# Perplexta Platform
+**A full-stack AI-powered conversation platform built for production.**
 
-**منصة المحادثة الذكية المتكاملة · Intelligent AI Conversation Platform**
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)](https://react.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169e1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-Private-red)](LICENSE)
-
----
-
-[🇦🇪 العربية](#-نظرة-عامة) · [🇬🇧 English](#-overview)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646cff?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Express](https://img.shields.io/badge/Express-4-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-8-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
 </div>
 
 ---
 
-## 🇦🇪 نظرة عامة
+## Overview
 
-**Perplexta** منصة SaaS متكاملة للمحادثة مع الذكاء الاصطناعي، مبنية على معمارية Full-Stack حديثة. توفر المنصة محادثات AI مدعومة بـ Google Gemini، نظام محافظ رقمية، بوابة دفع عبر Stripe، لوحة إدارة شاملة، وسوق إضافات قابل للتوسع.
-
-## 🇬🇧 Overview
-
-**Perplexta** is a full-featured AI SaaS platform powered by Google Gemini, offering persistent conversations, a digital wallet system, Stripe-based subscriptions, a comprehensive admin dashboard, and an extensible plugin marketplace — all in a single deployable stack.
+Perplexta is a production-grade AI conversation platform. It features a React + Vite frontend, an Express + Node.js backend, dual PostgreSQL databases (core & ledger), real-time communication via Socket.IO, and integrated payment processing through Stripe. The platform supports subscription plans, a user wallet system, file uploads, a community forum, a blog, and a full admin dashboard.
 
 ---
 
-## ✨ Features / المميزات
+## Tech Stack
 
-| Feature | الميزة |
-|---------|--------|
-| AI Chat with Google Gemini (streaming) | محادثة AI مع Google Gemini (بث مباشر) |
-| Persistent conversation history | حفظ سجل المحادثات |
-| File upload & AI analysis (PDF, DOCX, images) | رفع الملفات وتحليلها بالذكاء الاصطناعي |
-| Subscription plans + Stripe payments | خطط اشتراك + بوابة Stripe |
-| Digital wallet with transaction ledger | محفظة رقمية مع دفتر حسابات |
-| Plugin / Tools marketplace | سوق إضافات وأدوات |
-| Community forum & blog | منتدى مجتمعي ومدونة |
-| Real-time notifications (Socket.IO) | إشعارات فورية عبر Socket.IO |
-| Google OAuth 2.0 authentication | تسجيل دخول بـ Google OAuth 2.0 |
-| Role-based access control (RBAC) | نظام صلاحيات متعدد الأدوار |
-| Full admin dashboard | لوحة إدارة شاملة |
-| KYC verification flow | نظام التحقق من الهوية KYC |
-| PWA support (offline-ready) | دعم PWA للعمل بدون إنترنت |
-| Docker & Docker Compose deployment | نشر عبر Docker و Docker Compose |
-| Export to PDF / Excel | تصدير البيانات إلى PDF و Excel |
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19, Vite 6, TypeScript, Tailwind CSS v4, React Router v7, TanStack Query v5 |
+| **Backend** | Node.js, Express 4, TypeScript, tsx |
+| **Database** | PostgreSQL (pg v8) — dual database architecture |
+| **AI** | Google Generative AI (`@google/genai`) |
+| **Auth** | JWT (`jsonwebtoken`), bcryptjs, Google OAuth |
+| **Payments** | Stripe SDK v22 |
+| **Real-time** | Socket.IO v4 |
+| **File Processing** | Multer, pdf-parse, mammoth, html-to-text |
+| **Email** | Nodemailer |
+| **Jobs** | node-cron |
+| **Security** | Helmet, express-rate-limit, AES-256 encryption |
+| **Containerization** | Docker, docker-compose |
+| **Export** | jsPDF, ExcelJS, html2canvas |
 
 ---
 
-## 🏗️ Architecture / البنية التقنية
+## Project Structure
 
 ```
 perplexta/
-├── src/                        # React 19 + Vite Frontend
-│   ├── components/             # Reusable UI components
-│   ├── pages/                  # Route-based page components
-│   ├── layouts/                # Layout wrappers
-│   ├── context/                # React Context providers
-│   ├── lib/                    # API client, utilities
-│   ├── utils/                  # Helper functions
-│   └── constants/              # App-wide constants
-│
-├── server/                     # Express.js Backend (TypeScript)
+├── src/                        # React frontend
+│   └── (pages, components, hooks, context)
+├── server/                     # Express backend
+│   ├── index.ts                # Server entry point
+│   ├── app.ts                  # Express app setup
+│   ├── config/                 # Configuration (DB, env)
+│   ├── db/                     # Database schemas & migrations
 │   ├── routes/                 # API route handlers
+│   │   ├── admin.ts            # Admin panel endpoints
 │   │   ├── auth.ts             # Authentication & OAuth
-│   │   ├── chat.ts             # AI chat endpoints
-│   │   ├── admin.ts            # Admin panel APIs
-│   │   ├── payments.ts         # Stripe integration
-│   │   ├── wallet.ts           # Digital wallet
-│   │   ├── marketplace.ts      # Plugin marketplace
+│   │   ├── chat.ts             # AI chat sessions
+│   │   ├── payments.ts         # Stripe & billing
+│   │   ├── wallet.ts           # User wallet & transactions
+│   │   ├── marketplace.ts      # Marketplace module
 │   │   ├── forum.ts            # Community forum
 │   │   ├── blog.ts             # Blog system
-│   │   ├── files.ts            # File upload & processing
-│   │   ├── notifications.ts    # Push notifications
+│   │   ├── files.ts            # File upload & parsing
 │   │   ├── messages.ts         # Direct messaging
-│   │   ├── memory.ts           # AI memory/context
+│   │   ├── notifications.ts    # Notification system
+│   │   ├── memory.ts           # AI memory persistence
 │   │   ├── tools.ts            # AI tools
-│   │   ├── kyc.ts              # Identity verification
-│   │   ├── users.ts            # User management
-│   │   ├── email.ts            # Email service
-│   │   ├── subscriptions.ts    # Plan subscriptions
-│   │   └── plans.ts            # Pricing plans
-│   ├── db/                     # Database connection & queries
+│   │   ├── kyc.ts              # KYC verification
+│   │   ├── email.ts            # Email delivery
+│   │   ├── plans.ts            # Subscription plans
+│   │   ├── subscriptions.ts    # Subscription management
+│   │   ├── system.ts           # System health & config
+│   │   └── users.ts            # User management
 │   ├── services/               # Business logic services
-│   ├── middleware/             # Auth, rate-limit middleware
-│   ├── config/                 # App configuration
-│   ├── jobs/                   # Cron jobs (node-cron)
-│   ├── utils/                  # Server utilities
-│   ├── app.ts                  # Express app setup
-│   └── index.ts                # Server entry point
-│
+│   ├── middleware/             # Auth, rate limiting, etc.
+│   ├── jobs/                   # Scheduled cron jobs
+│   └── utils/                  # Shared utilities
 ├── public/                     # Static assets
+├── .env.example                # Environment variable template
 ├── Dockerfile                  # Docker image definition
-├── docker-compose.yml          # Multi-container deployment
-├── vite.config.ts              # Vite + PWA configuration
+├── docker-compose.yml          # Multi-container orchestration
+├── vite.config.ts              # Vite build configuration
 ├── tsconfig.json               # TypeScript configuration
-└── .env.example                # Environment variables template
+└── package.json                # Dependencies & scripts
 ```
 
 ---
 
-## 🗄️ Databases / قواعد البيانات
+## Getting Started
 
-المنصة تستخدم قاعدتَي بيانات PostgreSQL منفصلتين:
+### Prerequisites
 
-| Database | Purpose | الغرض |
-|----------|---------|--------|
-| `platform_core` | Users, chats, plans, forum, blog | المستخدمون، المحادثات، الخطط، المنتدى |
-| `platform_ledger` | Wallets, transactions, payments | المحافظ، المعاملات المالية |
+- Node.js 20+
+- PostgreSQL 14+
+- A Google Cloud project (for AI + OAuth)
+- A Stripe account (for payments)
 
----
-
-## ⚙️ Tech Stack / التقنيات المستخدمة
-
-### Frontend
-- **React 19** · **Vite 6** · **TypeScript 5.8**
-- **Tailwind CSS v4** · **Lucide React** · **Motion**
-- **TanStack Query v5** · **React Router v7**
-- **Socket.IO Client** · **PWA** (vite-plugin-pwa)
-- **react-markdown** · **PrismJS** · **jsPDF** · **ExcelJS**
-
-### Backend
-- **Node.js** · **Express 4** · **TypeScript**
-- **PostgreSQL** (pg driver) · **Socket.IO**
-- **JWT** (jsonwebtoken) · **bcryptjs**
-- **Helmet** · **express-rate-limit** · **CORS**
-- **Multer** · **pdf-parse** · **mammoth** · **nodemailer**
-- **Stripe SDK** · **Google GenAI SDK**
-- **node-cron** · **dotenv**
-
----
-
-## 🚀 Quick Start / البدء السريع
-
-### Prerequisites / المتطلبات
-- Node.js `>= 20`
-- PostgreSQL `>= 15`
-- Google Gemini API Key
-- Stripe Account (optional)
-
-### 1. Clone & Install / الاستنساخ والتثبيت
+### 1. Clone & Install
 
 ```bash
 git clone https://github.com/Osama-Qonaibe/perplexta.git
@@ -151,23 +104,34 @@ cd perplexta
 npm install
 ```
 
-### 2. Environment Setup / إعداد المتغيرات البيئية
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your values — see [Environment Variables](#️-environment-variables--المتغيرات-البيئية) section below.
+Edit `.env` and fill in all required values. See the [Environment Variables](#environment-variables) section below.
 
-### 3. Development / التطوير
+### 3. Set Up Databases
+
+Create two PostgreSQL databases:
+
+```sql
+CREATE DATABASE platform_core;
+CREATE DATABASE platform_ledger;
+```
+
+The server will auto-run migrations on startup.
+
+### 4. Run in Development
 
 ```bash
 npm run dev
 ```
 
-App runs at: `http://localhost:3000`
+The app will be available at `http://localhost:3000`.
 
-### 4. Production Build / بناء الإنتاج
+### 5. Build for Production
 
 ```bash
 npm run build
@@ -176,33 +140,22 @@ npm start
 
 ---
 
-## 🐳 Docker Deployment / النشر بـ Docker
+## Docker Deployment
 
-### Using Docker Compose (Recommended)
+### Using docker-compose (Recommended)
 
 ```bash
 # Copy and configure environment
 cp .env.example .env
 
-# Start all services (app + 2 PostgreSQL databases)
-docker compose up -d
+# Start all services
+docker-compose up -d
 
 # View logs
-docker compose logs -f app
-
-# Stop services
-docker compose down
+docker-compose logs -f
 ```
 
-Services started:
-
-| Service | Container | Port |
-|---------|-----------|------|
-| App | `platform_app` | `3000` |
-| Core DB | `platform_db_core` | internal |
-| Ledger DB | `platform_db_ledger` | internal |
-
-### Manual Docker Build
+### Using Docker directly
 
 ```bash
 docker build -t perplexta .
@@ -211,113 +164,123 @@ docker run -p 3000:3000 --env-file .env perplexta
 
 ---
 
-## 🔐 Environment Variables / المتغيرات البيئية
+## Environment Variables
 
-Copy `.env.example` to `.env` and fill in the values:
+Copy `.env.example` to `.env` and configure the following:
 
-```env
-# ── Network ──────────────────────────────────────
-PORT=3000
-NODE_ENV=production
-APP_URL=https://yourdomain.com
-VITE_APP_URL=https://yourdomain.com
-CORS_ALLOWED_ORIGINS=https://yourdomain.com
+### Network
 
-# ── Databases ─────────────────────────────────────
-DATABASE_URL=postgresql://user:password@localhost:5432/platform_core
-LEDGER_DATABASE_URL=postgresql://user:password@localhost:5432/platform_ledger
-DB_SSL_REQUIRED=false
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Server listen port | `3000` |
+| `NODE_ENV` | Environment mode | `production` |
+| `APP_URL` | Primary application URL | `http://localhost:3000` |
+| `VITE_APP_URL` | Frontend app URL (must match APP_URL) | `http://localhost:3000` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed CORS origins | — |
 
-# ── Security ──────────────────────────────────────
-ENCRYPTION_KEY=your_secure_32_chars_key_here_!   # Exactly 32 characters
-JWT_SECRET=your_secure_jwt_secret_here
+### Database
 
-# ── Admin ─────────────────────────────────────────
-ADMIN_EMAIL=admin@example.com
-VITE_ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=change_after_first_login
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Core database (users, chats, plans) |
+| `LEDGER_DATABASE_URL` | Finance database (wallets, transactions) |
+| `DB_SSL_REQUIRED` | Set `false` for local, `true` for cloud DBs |
 
-# ── Google Gemini AI ──────────────────────────────
-# Add your Gemini API key via the Admin Panel after setup
+### Security
 
-# ── Google OAuth ──────────────────────────────────
-GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
+| Variable | Description |
+|---|---|
+| `ENCRYPTION_KEY` | AES-256 master key — **must be exactly 32 characters** |
+| `JWT_SECRET` | JWT signing secret — **change before production** |
 
-# ── Stripe (Optional) ─────────────────────────────
-STRIPE_SECRET_KEY=sk_live_...
-```
+### Admin
 
-> ⚠️ **Security**: Never commit `.env` to version control. Change all default passwords before production deployment.
+| Variable | Description |
+|---|---|
+| `ADMIN_EMAIL` | Master administrator email |
+| `VITE_ADMIN_EMAIL` | Admin email for frontend dashboard access |
+| `ADMIN_PASSWORD` | Initial admin password — **change after first login** |
 
----
+### Integrations
 
-## 🔑 API Routes / مسارات API
-
-| Module | Prefix | Description |
-|--------|--------|-------------|
-| Auth | `/api/auth` | Register, login, Google OAuth, password reset |
-| Chat | `/api/chat` | AI conversations, history, streaming |
-| Users | `/api/users` | Profile management |
-| Payments | `/api/payments` | Stripe checkout, webhooks |
-| Wallet | `/api/wallet` | Balance, deposits, withdrawals |
-| Subscriptions | `/api/subscriptions` | Plan management |
-| Plans | `/api/plans` | Available pricing plans |
-| Marketplace | `/api/marketplace` | Plugin store |
-| Forum | `/api/forum` | Community posts & threads |
-| Blog | `/api/blog` | Blog posts (public + admin) |
-| Files | `/api/files` | Upload & AI processing |
-| Notifications | `/api/notifications` | User notifications |
-| Messages | `/api/messages` | Direct messaging |
-| Memory | `/api/memory` | AI conversation memory |
-| Tools | `/api/tools` | AI productivity tools |
-| KYC | `/api/kyc` | Identity verification |
-| Email | `/api/email` | Email sending |
-| System | `/api/system` | Health check, system info |
-| Admin | `/api/admin` | Full admin panel APIs |
+| Variable | Description |
+|---|---|
+| `STRIPE_SECRET_KEY` | Stripe secret key (configurable via Admin Panel) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 
 ---
 
-## 🔒 Security / الأمان
+## NPM Scripts
 
-- **Helmet.js** — HTTP security headers
-- **express-rate-limit** — API rate limiting
-- **bcryptjs** — Password hashing
-- **JWT** — Stateless session tokens
-- **AES-256** — Encryption for sensitive data (`ENCRYPTION_KEY`)
-- **CORS** — Restricted to allowed origins
-- **RBAC** — Role-based access control (user / admin)
-- **uuid override** — `uuid ^11.1.1` enforced via npm overrides to patch `exceljs` dependency vulnerability
-
----
-
-## 📜 Available Scripts / الأوامر المتاحة
-
-```bash
-npm run dev       # Start development server (tsx watch)
-npm run build     # Build frontend + bundle server (ESM + CJS)
-npm start         # Start production server
-npm run preview   # Preview Vite production build
-npm run clean     # Remove dist/ directory
-npm run lint      # TypeScript type checking (tsc --noEmit)
-```
+| Script | Description |
+|---|---|
+| `npm run dev` | Start development server (frontend + backend) |
+| `npm run build` | Build frontend (Vite) and bundle server (esbuild) |
+| `npm start` | Run production build |
+| `npm run preview` | Preview production build locally |
+| `npm run clean` | Remove `dist/` directory |
+| `npm run lint` | TypeScript type-check (no emit) |
 
 ---
 
-## 🤝 Contributing / المساهمة
+## API Overview
 
-This is a private repository. Contributions are by invitation only.
+All API routes are prefixed with `/api`.
 
-هذا مستودع خاص. المساهمات بدعوة فقط.
+| Prefix | Module |
+|---|---|
+| `/api/auth` | Registration, login, Google OAuth, password reset |
+| `/api/chat` | AI chat sessions and message history |
+| `/api/users` | User profile management |
+| `/api/payments` | Stripe checkout, subscriptions, webhooks |
+| `/api/wallet` | User wallet balance and transaction ledger |
+| `/api/plans` | Subscription plan listing |
+| `/api/subscriptions` | Active subscription status |
+| `/api/marketplace` | Marketplace listings and purchases |
+| `/api/forum` | Community forum posts and replies |
+| `/api/blog` | Blog posts and categories |
+| `/api/files` | File upload and document parsing |
+| `/api/messages` | Direct user-to-user messaging |
+| `/api/notifications` | In-app notification feed |
+| `/api/memory` | AI conversation memory |
+| `/api/tools` | AI tool integrations |
+| `/api/email` | Transactional email delivery |
+| `/api/kyc` | KYC identity verification |
+| `/api/system` | Health checks and system configuration |
+| `/api/admin` | Full admin panel (protected) |
 
 ---
 
-## 📄 License / الرخصة
+## Security
 
-**Private** — All rights reserved © 2026 Perplexta Platform.
+- **Authentication:** JWT access tokens with bcryptjs password hashing.
+- **Encryption:** AES-256 for sensitive data at rest.
+- **HTTP Security:** Helmet middleware sets secure headers on every response.
+- **Rate Limiting:** `express-rate-limit` applied globally to prevent abuse.
+- **CORS:** Strict origin allowlist via `CORS_ALLOWED_ORIGINS`.
+- **Dependency Hardening:** `uuid` overridden to `^11.1.1` in `package.json` to resolve inherited vulnerabilities.
 
 ---
 
-<div align="center">
-Built with ❤️ by <a href="https://github.com/Osama-Qonaibe">Osama Qonaibe</a>
-</div>
+## Database Architecture
+
+The platform uses a **dual-database** design for isolation:
+
+- **`platform_core`** — Stores users, chat sessions, plans, blog posts, forum content, marketplace, notifications, and KYC data.
+- **`platform_ledger`** — Stores wallets, transaction history, and financial records. Isolated to limit blast radius in case of a data incident.
+
+---
+
+## Real-time Features
+
+Socket.IO powers live features including:
+- Real-time AI response streaming
+- Live notification delivery
+- Direct messaging between users
+
+---
+
+## License
+
+This project is private. All rights reserved.
