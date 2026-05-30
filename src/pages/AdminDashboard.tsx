@@ -528,6 +528,75 @@ const CommandCenterView = ({
         </div>
       </div>
 
+      {/* Database Pool Connectivity Monitors */}
+      <div className="p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col gap-6 shadow-sm transition-theme">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Database className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={20} />
+            <h2 className="text-lg font-bold">
+              {language === "ar" ? "مراقب اتصال قواعد البيانات النشطة" : "Database Pool Connectivity Monitor"}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500/50 uppercase tracking-widest">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            {language === "ar" ? "التحقق المباشر من البث المباشر" : "Active Pool Polling"}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {['core', 'ledger', 'external', 'security'].map((dbId) => {
+            const dbInfo = serverHealth?.databases?.[dbId] || { status: 'loading' };
+            const isConnected = dbInfo.status === 'connected';
+            const isLoading = dbInfo.status === 'loading';
+            
+            return (
+              <div 
+                key={dbId}
+                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/30"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database size={16} className={`${isConnected ? 'text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]' : isLoading ? 'text-gray-400 animate-pulse' : 'text-red-500 animate-pulse'}`} />
+                    <span className="font-bold text-xs uppercase tracking-tight">
+                      {dbId === 'core' && (language === "ar" ? "قاعدة البيانات الأساسية" : "Core DB")}
+                      {dbId === 'ledger' && (language === "ar" ? "دفتر الأرباح المالي" : "Ledger DB")}
+                      {dbId === 'external' && (language === "ar" ? "قاعدة المجتمع والمدونة" : "External DB")}
+                      {dbId === 'security' && (language === "ar" ? "قاعدة الأمان والحماية" : "Security DB")}
+                    </span>
+                  </div>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${isConnected ? 'bg-emerald-500/10 text-emerald-500' : isLoading ? 'bg-gray-500/10 text-gray-500' : 'bg-red-500/10 text-red-500'}`}>
+                    {isLoading ? (language === "ar" ? "جاري الاستعلام" : "Loading") : isConnected ? (language === "ar" ? "متصل" : "Connected") : (language === "ar" ? "غير متصل" : "Offline")}
+                  </span>
+                </div>
+
+                <div className="mt-1 flex flex-col gap-1 text-[10px] text-[var(--text-muted)] font-mono">
+                  <div className="flex justify-between">
+                    <span>Target:</span>
+                    <span className="font-semibold text-[var(--text-main)] uppercase">{dbId}</span>
+                  </div>
+                  {isConnected && (
+                    <div className="flex justify-between">
+                      <span>Latency:</span>
+                      <span className="text-emerald-500 font-semibold">{dbInfo.latencyMs}ms</span>
+                    </div>
+                  )}
+                  {!isConnected && !isLoading && (
+                    <div className="text-red-500 font-semibold truncate leading-normal" title={dbInfo.error}>
+                      Error: {dbInfo.error || "Connection test failed"}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`absolute bottom-0 left-0 right-0 h-1 ${isConnected ? 'bg-emerald-500' : isLoading ? 'bg-gray-500/40 animate-pulse' : 'bg-red-500'}`} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
           className={`p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm`}

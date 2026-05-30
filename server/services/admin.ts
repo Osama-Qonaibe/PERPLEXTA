@@ -258,6 +258,40 @@ export async function getServerHealth() {
   const cpuCount = cpus.length;
   const cpuLoad = Math.min(100, Math.round((load[0] / cpuCount) * 100));
 
+  const dbStatus: any = {};
+
+  try {
+    const start = Date.now();
+    await pool.query('SELECT 1');
+    dbStatus.core = { status: 'connected', latencyMs: Date.now() - start };
+  } catch (err: any) {
+    dbStatus.core = { status: 'disconnected', error: err.message };
+  }
+
+  try {
+    const start = Date.now();
+    await (ledgerPool || pool).query('SELECT 1');
+    dbStatus.ledger = { status: 'connected', latencyMs: Date.now() - start };
+  } catch (err: any) {
+    dbStatus.ledger = { status: 'disconnected', error: err.message };
+  }
+
+  try {
+    const start = Date.now();
+    await (externalPool || pool).query('SELECT 1');
+    dbStatus.external = { status: 'connected', latencyMs: Date.now() - start };
+  } catch (err: any) {
+    dbStatus.external = { status: 'disconnected', error: err.message };
+  }
+
+  try {
+    const start = Date.now();
+    await (securityPool || pool).query('SELECT 1');
+    dbStatus.security = { status: 'connected', latencyMs: Date.now() - start };
+  } catch (err: any) {
+    dbStatus.security = { status: 'disconnected', error: err.message };
+  }
+
   return {
     cpu: cpuLoad,
     memory: {
@@ -267,7 +301,8 @@ export async function getServerHealth() {
     },
     uptime: process.uptime(),
     platform: os.platform(),
-    load
+    load,
+    databases: dbStatus
   };
 }
 
