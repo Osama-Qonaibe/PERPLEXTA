@@ -77,8 +77,9 @@ DATABASE_URL=postgres://user:password@localhost:5432/perplexta_core
 LEDGER_DATABASE_URL=postgres://user:password@localhost:5432/perplexta_ledger
 JWT_SECRET=your_jwt_signing_secret_here
 ENCRYPTION_KEY=32_character_aes_encryption_key_here
-GEMINI_API_KEY=your_google_gemini_api_key
 ```
+
+*(Note: AI Provider API keys such as Gemini and OpenAI are strictly database-driven and dynamically loaded via the encrypted API Keys Vault, avoiding any static local configurations or hardcoded models.)*
 
 ### 2. تثبيت الحزم البرمجية | Install Dependencies
 ```bash
