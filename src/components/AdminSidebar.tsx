@@ -24,7 +24,6 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
       { icon: <Cpu size={18} />, label: t('toolOrchestrator'), path: '/admin/orchestrator' },
       { icon: <Landmark size={18} />, label: t('financeVault'), path: '/admin/finance' },
       { icon: <CreditCard size={18} />, label: t('plansSubscriptions'), path: '/admin/plans' },
-      { icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'إدارة الماركت بليس' : 'Marketplace Admin', path: '/admin/marketplace' },
     ] : []),
     { icon: <Users size={18} />, label: t('userManagement'), path: '/admin/users' },
     ...(!isSupport ? [

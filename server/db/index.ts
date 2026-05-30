@@ -4,8 +4,20 @@ import { encrypt, decrypt } from "../utils/crypto.js";
 
 export let pool: any;
 export let ledgerPool: any;
+export let externalPool: any;
+export let securityPool: any;
 let currentCoreUrl: string = '';
 let currentLedgerUrl: string = '';
+let currentExternalUrl: string = '';
+let currentSecurityUrl: string = '';
+
+export function getExternalPool() {
+  return externalPool || pool;
+}
+
+export function getSecurityPool() {
+  return securityPool || pool;
+}
 
 function validateDatabaseUrl(url: string, name: string) {
   if (!url) {
@@ -40,7 +52,7 @@ export function createInternalPool(connectionString: string, max = 1) {
   });
 }
 
-export async function initializePerplextaPools(coreUrl: string, ledgerUrl: string) {
+export async function initializePerplextaPools(coreUrl: string, ledgerUrl: string, externalUrl?: string, securityUrl?: string) {
   const redactedUrl = (url: string) => {
     try {
       const u = new URL(url);
@@ -58,14 +70,20 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
     console.warn('[DB] ⚠️ DATABASE_URL is missing. Operating in Degraded Mode (No DB).');
     pool = null;
     ledgerPool = null;
+    externalPool = null;
+    securityPool = null;
     return;
   }
 
   const finalLedgerUrl = ledgerUrl || coreUrl;
+  const finalExternalUrl = externalUrl || coreUrl;
+  const finalSecurityUrl = securityUrl || coreUrl;
   
   try {
     validateDatabaseUrl(coreUrl, 'DATABASE_URL');
     validateDatabaseUrl(finalLedgerUrl, 'LEDGER_DATABASE_URL');
+    validateDatabaseUrl(finalExternalUrl, 'EXTERNAL_DATABASE_URL');
+    validateDatabaseUrl(finalSecurityUrl, 'SECURITY_DATABASE_URL');
   } catch (validationError: any) {
     console.error(`[DB] Validation Failed: ${validationError.message}`);
     if (process.env.NODE_ENV === 'production' && coreUrl) {
@@ -73,6 +91,8 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
     }
     pool = null;
     ledgerPool = null;
+    externalPool = null;
+    securityPool = null;
     return;
   }
 
@@ -82,6 +102,12 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
   if (ledgerPool) {
     ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
   }
+  if (externalPool) {
+    externalPool.end().catch((err: any) => console.error('[DB] Error closing old external pool:', err));
+  }
+  if (securityPool) {
+    securityPool.end().catch((err: any) => console.error('[DB] Error closing old security pool:', err));
+  }
 
   const sslConfig = process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
     ? { rejectUnauthorized: false }
@@ -89,6 +115,8 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
 
   currentCoreUrl = coreUrl;
   currentLedgerUrl = finalLedgerUrl;
+  currentExternalUrl = finalExternalUrl;
+  currentSecurityUrl = finalSecurityUrl;
 
   try {
     pool = new Pool({
@@ -107,8 +135,26 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       connectionTimeoutMillis: 20000,
     });
 
+    externalPool = new Pool({
+      connectionString: finalExternalUrl,
+      ssl: sslConfig,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 20000,
+    });
+
+    securityPool = new Pool({
+      connectionString: finalSecurityUrl,
+      ssl: sslConfig,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 20000,
+    });
+
     pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));
     ledgerPool.on('connect', () => console.log('[DB] Ledger PostgreSQL connected successfully.'));
+    externalPool.on('connect', () => console.log('[DB] External Categories PostgreSQL connected successfully.'));
+    securityPool.on('connect', () => console.log('[DB] Security PostgreSQL connected successfully.'));
     
     pool.on('error', (err: any) => {
       console.error('[DB] Unexpected error on idle core client:', err.message);
@@ -118,10 +164,20 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       console.error('[DB] Unexpected error on idle ledger client:', err.message);
     });
 
+    externalPool.on('error', (err: any) => {
+      console.error('[DB] Unexpected error on idle external client:', err.message);
+    });
+
+    securityPool.on('error', (err: any) => {
+      console.error('[DB] Unexpected error on idle security client:', err.message);
+    });
+
     console.log('[DB] Verifying connectivity...');
     await Promise.all([
       pool.query('SELECT 1'),
-      ledgerPool.query('SELECT 1')
+      ledgerPool.query('SELECT 1'),
+      externalPool.query('SELECT 1'),
+      securityPool.query('SELECT 1')
     ]);
     console.log('[DB] Perplexta Pools verified and active.');
 
@@ -132,6 +188,8 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
     }
     pool = null;
     ledgerPool = null;
+    externalPool = null;
+    securityPool = null;
   }
 }
 
@@ -140,16 +198,18 @@ export async function synchronizePerplextaPoolsFromRegistry() {
   console.log('[DB] Checking for active remote database overrides...');
   
   try {
-    const result = await pool.query("SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core', 'ledger')");
+    const result = await pool.query("SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core', 'ledger', 'external', 'security')");
     
     if (result.rows.length === 0) {
       console.log('[DB] No active overrides found in registry. Checking if revert to ENV is needed...');
       const defaultCore = process.env.DATABASE_URL || '';
       const defaultLedger = process.env.LEDGER_DATABASE_URL || defaultCore;
+      const defaultExternal = process.env.EXTERNAL_DATABASE_URL || defaultCore;
+      const defaultSecurity = process.env.SECURITY_DATABASE_URL || defaultCore;
       
-      if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger) {
+      if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger || currentExternalUrl !== defaultExternal || currentSecurityUrl !== defaultSecurity) {
         console.log('[DB] No active registry overrides. Reverting Perplexta Pools to environment defaults.');
-        await initializePerplextaPools(defaultCore, defaultLedger);
+        await initializePerplextaPools(defaultCore, defaultLedger, defaultExternal, defaultSecurity);
       } else {
         console.log('[DB] No overrides found. Already using environment defaults.');
       }
@@ -158,6 +218,8 @@ export async function synchronizePerplextaPoolsFromRegistry() {
 
     const coreReg = result.rows.find((r: any) => r.id === 'core');
     const ledgerReg = result.rows.find((r: any) => r.id === 'ledger');
+    const externalReg = result.rows.find((r: any) => r.id === 'external');
+    const securityReg = result.rows.find((r: any) => r.id === 'security');
 
     const getUrlFromReg = (reg: any) => {
       if (!reg) return null;
@@ -182,12 +244,14 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       return null;
     };
 
-    let coreUrl = getUrlFromReg(coreReg) || process.env.DATABASE_URL;
+    let coreUrl = getUrlFromReg(coreReg) || process.env.DATABASE_URL || '';
     let ledgerUrl = getUrlFromReg(ledgerReg) || (process.env.LEDGER_DATABASE_URL || coreUrl);
+    let externalUrl = getUrlFromReg(externalReg) || (process.env.EXTERNAL_DATABASE_URL || coreUrl);
+    let securityUrl = getUrlFromReg(securityReg) || (process.env.SECURITY_DATABASE_URL || coreUrl);
     
     if (!coreUrl) return;
 
-    if (coreUrl === currentCoreUrl && ledgerUrl === currentLedgerUrl) {
+    if (coreUrl === currentCoreUrl && ledgerUrl === currentLedgerUrl && externalUrl === currentExternalUrl && securityUrl === currentSecurityUrl) {
       console.log('[DB] Synchronized: In-memory pools already match active configuration.');
       return;
     }
@@ -204,7 +268,7 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     }
 
     console.log('[DB] Registry connections verified. Swapping pools...');
-    await initializePerplextaPools(coreUrl, ledgerUrl || coreUrl);
+    await initializePerplextaPools(coreUrl, ledgerUrl || coreUrl, externalUrl || coreUrl, securityUrl || coreUrl);
     console.log('[DB] Perplexta Pools synchronized with active registry configuration.');
   } catch (syncErr: any) {
     console.warn('[DB] Registry synchronization skipped:', syncErr.message);

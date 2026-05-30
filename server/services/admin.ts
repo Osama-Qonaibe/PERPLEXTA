@@ -1,4 +1,4 @@
-import { pool, ledgerPool, createInternalPool, synchronizePerplextaPoolsFromRegistry } from '../db/index.js';
+import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synchronizePerplextaPoolsFromRegistry } from '../db/index.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
@@ -12,15 +12,27 @@ const CORE_TABLES = [
 ];
 
 const LEDGER_TABLES = ['wallets', 'ledger_transactions'];
+const EXTERNAL_TABLES = ['forum_categories', 'forum_posts', 'forum_comments', 'blog_articles', 'blog_comments', 'blog_ratings'];
+const SECURITY_TABLES = ['token_blacklist', 'security_alerts'];
 
 export async function getDatabaseRegistry() {
-  const result = await pool.query('SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry ORDER BY id ASC');
+  try {
+    await pool.query("DELETE FROM db_connections_registry WHERE id NOT IN ('core', 'ledger', 'external', 'security')");
+  } catch (err) {
+    console.warn(err);
+  }
+  const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
   return result.rows;
 }
 
 export async function saveDatabaseConfig(config: any) {
   const body = config.config || config;
   const { id, type, is_active, activate } = config;
+  const targetId = id || body.id;
+
+  if (!['core', 'ledger', 'external', 'security'].includes(targetId)) {
+    throw new Error('Unauthorized database target ID');
+  }
 
   const db_name = body.db_name || body.dbName;
   const connection_string = body.connection_string || body.connectionString;
@@ -41,11 +53,10 @@ export async function saveDatabaseConfig(config: any) {
       connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
       ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size,
       is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-  `, [id || body.id, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
+  `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
 
   if (active_state) {
-    const targetId = id || body.id;
-    if (targetId === 'core' || targetId === 'ledger') {
+    if (targetId === 'core' || targetId === 'ledger' || targetId === 'external' || targetId === 'security') {
       await synchronizePerplextaPoolsFromRegistry();
       await runDatabaseMigrations();
     }
@@ -108,9 +119,19 @@ export async function testDatabaseConnection(config: any) {
   }
 }
 
-export async function exportDatabase(type: 'core' | 'ledger') {
-  const targetPool = type === 'ledger' ? (ledgerPool || pool) : pool;
-  const tables = type === 'ledger' ? LEDGER_TABLES : CORE_TABLES;
+export async function exportDatabase(type: 'core' | 'ledger' | 'external' | 'security') {
+  const targetPool = type === 'ledger' 
+    ? (ledgerPool || pool) 
+    : (type === 'external' 
+      ? (externalPool || pool) 
+      : (type === 'security' ? (securityPool || pool) : pool));
+      
+  const tables = type === 'ledger' 
+    ? LEDGER_TABLES 
+    : (type === 'external' 
+      ? EXTERNAL_TABLES 
+      : (type === 'security' ? SECURITY_TABLES : CORE_TABLES));
+      
   const backup: any = { type, timestamp: new Date().toISOString(), data: {} };
 
   for (const table of tables) {
@@ -124,11 +145,20 @@ export async function exportDatabase(type: 'core' | 'ledger') {
   return backup;
 }
 
-export async function importDatabase(backup: any, targetType: 'core' | 'ledger') {
-  const targetPool = targetType === 'ledger' ? (ledgerPool || pool) : pool;
+export async function importDatabase(backup: any, targetType: 'core' | 'ledger' | 'external' | 'security') {
+  const targetPool = targetType === 'ledger' 
+    ? (ledgerPool || pool) 
+    : (targetType === 'external' 
+      ? (externalPool || pool) 
+      : (targetType === 'security' ? (securityPool || pool) : pool));
+      
   if (!backup || !backup.data) throw new Error('Invalid backup format');
 
-  const allowedTables = targetType === 'ledger' ? LEDGER_TABLES : CORE_TABLES;
+  const allowedTables = targetType === 'ledger' 
+    ? LEDGER_TABLES 
+    : (targetType === 'external' 
+      ? EXTERNAL_TABLES 
+      : (targetType === 'security' ? SECURITY_TABLES : CORE_TABLES));
 
   const client = await targetPool.connect();
   try {

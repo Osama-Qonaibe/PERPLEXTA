@@ -1,9 +1,46 @@
 import express from 'express';
-import { pool } from '../db/index.js';
+import { pool as corePool, getExternalPool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { io } from '../config/socket.js';
 
 const router = express.Router();
+
+const pool = {
+  query: (text: string, params?: any[]) => getExternalPool().query(text, params),
+  connect: () => getExternalPool().connect()
+};
+
+async function hydrateAuthors(items: any[], userIdKey = 'user_id') {
+  if (!items || items.length === 0) return items;
+  const userIds = Array.from(new Set(items.map(item => item[userIdKey]).filter(Boolean)));
+  if (userIds.length === 0) return items;
+  
+  try {
+    const userResult = await corePool.query(
+      'SELECT id, name, avatar, role FROM users WHERE id = ANY($1)',
+      [userIds]
+    );
+    const userMap = new Map();
+    userResult.rows.forEach((u: any) => {
+      userMap.set(u.id, u);
+    });
+    
+    items.forEach(item => {
+      const u = userMap.get(item[userIdKey]);
+      item.author_name = u ? u.name : 'Unknown User';
+      item.author_avatar = u ? u.avatar : null;
+      item.author_role = u ? u.role : 'user';
+    });
+  } catch (err) {
+    console.warn('[Blog Schema Hydration] Failed to hydrate user details:', err);
+    items.forEach(item => {
+      item.author_name = 'Unknown User';
+      item.author_avatar = null;
+      item.author_role = 'user';
+    });
+  }
+  return items;
+}
 
 // Helper to validate URLs (protects from SSRF / Phishing)
 function isSafeUrl(urlStr: string): boolean {
@@ -69,13 +106,10 @@ router.get('/articles', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT b.*, 
-             u.name as author_name, 
-             u.avatar as author_avatar,
              COALESCE(comment_counts.count, 0) as comment_count,
              COALESCE(ratings.avg_rate, 0.0) as avg_rating,
              COALESCE(ratings.rate_count, 0) as ratings_count
       FROM blog_articles b
-      JOIN users u ON b.author_id = u.id
       LEFT JOIN (
         SELECT article_id, COUNT(*) as count 
         FROM blog_comments 
@@ -88,6 +122,7 @@ router.get('/articles', async (req, res) => {
       ) ratings ON b.id = ratings.article_id
       ORDER BY b.created_at DESC
     `);
+    await hydrateAuthors(result.rows, 'author_id');
     res.json(result.rows);
   } catch (error: any) {
     console.error('Failed to fetch blog articles:', error);
@@ -104,13 +139,9 @@ router.get('/articles/:slug', async (req, res) => {
 
     const articleRes = await pool.query(`
       SELECT b.*, 
-             u.name as author_name, 
-             u.avatar as author_avatar, 
-             u.role as author_role,
              COALESCE(ratings.avg_rate, 0.0) as avg_rating,
              COALESCE(ratings.rate_count, 0) as ratings_count
       FROM blog_articles b
-      JOIN users u ON b.author_id = u.id
       LEFT JOIN (
         SELECT article_id, ROUND(AVG(rating), 1)::float as avg_rate, COUNT(*) as rate_count
         FROM blog_ratings
@@ -122,16 +153,16 @@ router.get('/articles/:slug', async (req, res) => {
     if (articleRes.rows.length === 0) {
       return res.status(404).json({ error: 'Article not found' });
     }
-
+    await hydrateAuthors(articleRes.rows, 'author_id');
     const article = articleRes.rows[0];
 
     const commentsRes = await pool.query(`
-      SELECT bc.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role
+      SELECT bc.*
       FROM blog_comments bc
-      JOIN users u ON bc.user_id = u.id
       WHERE bc.article_id = $1
       ORDER BY bc.created_at DESC
     `, [article.id]);
+    await hydrateAuthors(commentsRes.rows, 'user_id');
 
     res.json({
       article,
@@ -171,7 +202,7 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
     // Bulk creation of notifications for ALL active users (run asynchronously in background to unblock response)
     setImmediate(async () => {
       try {
-        await pool.query(`
+        await corePool.query(`
           INSERT INTO notifications (user_id, type, title_en, title_ar, message_en, message_ar, metadata)
           SELECT id, 'blog_notification', $1, $2, $3, $4, $5
           FROM users
@@ -272,14 +303,10 @@ router.post('/articles/:id/comments', authenticateToken, async (req: any, res) =
       RETURNING *
     `, [id, req.user.id, content]);
 
-    const commentWithAuthor = await pool.query(`
-      SELECT bc.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role
-      FROM blog_comments bc
-      JOIN users u ON bc.user_id = u.id
-      WHERE bc.id = $1
-    `, [commentRes.rows[0].id]);
+    const rawComment = commentRes.rows[0];
+    await hydrateAuthors([rawComment], 'user_id');
 
-    res.status(201).json(commentWithAuthor.rows[0]);
+    res.status(201).json(rawComment);
   } catch (error: any) {
     console.error('Failed to add comment to article:', error);
     res.status(500).json({ error: 'Failed to add comment to article' });

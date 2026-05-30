@@ -18,7 +18,6 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: false,
-        includeAssets: ['app-assets/icon.png'],
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
           navigateFallback: '/index.html',
@@ -46,7 +45,7 @@ export default defineConfig(({ mode }) => {
               src: 'app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any'
+              purpose: 'maskable'
             }
           ],
           shortcuts: [

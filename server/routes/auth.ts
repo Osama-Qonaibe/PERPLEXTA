@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fetch from 'node-fetch';
-import { pool, ledgerPool } from '../db/index.js';
+import { pool, ledgerPool, getSecurityPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
 import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
@@ -325,7 +325,7 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'InvalidTokenType', message: 'Invalid token type' });
     }
 
-    const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [refreshToken]);
+    const blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [refreshToken]);
     if (blacklistCheck.rows.length > 0) {
       console.warn(`[Security Alert] Replay attempt with blacklisted refresh token from user ID: ${decoded.id}`);
       await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE user_id = $1", [decoded.id]);
@@ -357,7 +357,7 @@ router.post("/refresh-token", async (req, res) => {
     await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
 
     const expirySec = decoded.exp ? Math.floor(decoded.exp) : Math.floor(Date.now() / 1000) + 3600;
-    await pool.query(
+    await getSecurityPool().query(
       "INSERT INTO token_blacklist (token, expires_at) VALUES ($1, TO_TIMESTAMP($2)) ON CONFLICT (token) DO NOTHING",
       [refreshToken, expirySec]
     );
@@ -410,7 +410,7 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
       const decoded: any = jwt.verify(token, jwtSecret);
       const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
-      await pool.query(
+      await getSecurityPool().query(
         'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
         [token, expiresAt]
       );
@@ -427,12 +427,12 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
         try {
           const rfDecoded: any = jwt.verify(refreshToken, jwtSecret);
           const rfExpiry = rfDecoded?.exp ? new Date(rfDecoded.exp * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-          await pool.query(
+          await getSecurityPool().query(
             'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
             [refreshToken, rfExpiry]
           );
         } catch {
-          await pool.query(
+          await getSecurityPool().query(
             'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
             [refreshToken, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
           );

@@ -1,4 +1,4 @@
-import { pool } from '../db/index.js';
+import { pool, getSecurityPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 
 export async function createNotification(userId: number | string, type: string, titleEn: string, titleAr: string, messageEn: string, messageAr: string, metadata: any = {}) {
@@ -31,7 +31,7 @@ export async function markNotificationsAsRead(userId: string | number) {
 export async function logSecurityAlert(userId: number | null, alertType: string, severity: string, description: string, metadata: any = {}, req?: any) {
   try {
     const ip = req ? (req.headers['x-forwarded-for'] || req.socket.remoteAddress) : null;
-    await pool.query(`
+    await getSecurityPool().query(`
       INSERT INTO security_alerts (user_id, type, severity, description, metadata, ip_address)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [userId, alertType, severity, description, JSON.stringify(metadata), ip]);

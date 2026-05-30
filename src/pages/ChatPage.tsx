@@ -3667,8 +3667,8 @@ export const ChatPage: React.FC = () => {
               <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-text">
                 <p className="text-[9.5px] sm:text-[10px] text-gray-400 dark:text-gray-500 font-sans tracking-wide leading-relaxed px-4">
                   {dir === 'rtl' 
-                    ? "حقوق الطبع والنشر © 2026 لصالح شركة فيرال لينك اب المحدودة. جميع الحقوق محفوظة."
-                    : "Copyright © 2026 ViralLinkUp Ltd. All rights reserved."
+                    ? "الملكية الفكرية محفوظة لـ Perplexta 2026 ©"
+                    : "Intellectual Property Protected by Perplexta 2026 ©"
                   }
                 </p>
               </div>

@@ -212,7 +212,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     });
     navItems.push({
       icon: <Settings2 size={18} />,
-      label: language === 'ar' ? 'لوحة تحكم المنتدى' : 'Forum Admin',
+      label: language === 'ar' ? 'إدارة الأقسام الخارجية' : 'External Admin',
       path: '/admin-community'
     });
   }

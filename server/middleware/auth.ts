@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { pool } from '../db/index.js';
+import { pool, getSecurityPool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
 
 interface UserCacheEntry {
@@ -87,7 +87,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           }
         } else {
           try {
-            const blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+            const blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
             const isRevoked = blacklistCheck.rows.length > 0;
             tokenBlacklistCache.set(token, {
               isRevoked,

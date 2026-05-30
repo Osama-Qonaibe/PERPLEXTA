@@ -1,7 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import bcrypt from 'bcryptjs';
-import { pool, ledgerPool, initializePerplextaPools, createInternalPool } from './index.js';
+import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
 export async function runSystemMaintenance() {
@@ -140,6 +140,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   if (!pool) return;
   const client = await pool.connect();
   let ledgerClient: any = null;
+  let externalClient: any = null;
+  let securityClient: any = null;
   
   if (ledgerPool && ledgerPool !== pool) {
     try {
@@ -148,6 +150,26 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     } catch (e) {
       console.warn('[Migrations] Failed to connect to secondary Ledger DB. Falling back to Core for ledger tables.');
       ledgerClient = null;
+    }
+  }
+
+  if (externalPool && externalPool !== pool) {
+    try {
+      externalClient = await externalPool.connect();
+      console.log('[Migrations] Connecting to secondary External DB for dual-path forum/blog synchronization...');
+    } catch (e) {
+      console.warn('[Migrations] Failed to connect to secondary External DB:', e);
+      externalClient = null;
+    }
+  }
+
+  if (securityPool && securityPool !== pool) {
+    try {
+      securityClient = await securityPool.connect();
+      console.log('[Migrations] Connecting to secondary Security DB for dual-path blacklist/alert synchronization...');
+    } catch (e) {
+      console.warn('[Migrations] Failed to connect to secondary Security DB:', e);
+      securityClient = null;
     }
   }
   
@@ -161,6 +183,71 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
+    // Dynamic schema checks for newly added target databases
+    if (externalClient) {
+      try {
+        const checkTable = await externalClient.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'forum_categories'
+          )
+        `);
+        if (!checkTable.rows[0].exists) {
+          console.log('[Migrations] forum_categories table does not exist on active external database. Forcing re-run of forum/blog migrations...');
+          await client.query(`
+            DELETE FROM migration_history 
+            WHERE migration_name IN (
+              'v22_forum_and_blog_schema',
+              'v23_blog_ratings_and_sharing',
+              'v24_seed_blog_platform_data',
+              'v27_update_forum_categories_for_pioneers_and_developers',
+              'v28_refine_forum_categories_names'
+            )
+          `);
+        }
+      } catch (e: any) {
+        console.warn('[Migrations] Failed to inspect external database structure:', e.message);
+      }
+    }
+
+    if (securityClient) {
+      try {
+        const checkSecTable = await securityClient.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'security_alerts'
+          )
+        `);
+        if (!checkSecTable.rows[0].exists) {
+          console.log('[Migrations] Creating core security tables on the active security database...');
+          await securityClient.query(`
+            CREATE TABLE IF NOT EXISTS token_blacklist (
+              id SERIAL PRIMARY KEY,
+              token TEXT UNIQUE NOT NULL,
+              expires_at TIMESTAMP NOT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+          await securityClient.query(`
+            CREATE TABLE IF NOT EXISTS security_alerts (
+              id SERIAL PRIMARY KEY,
+              user_id INTEGER,
+              type VARCHAR(100) NOT NULL,
+              severity VARCHAR(50) DEFAULT 'medium',
+              description TEXT,
+              metadata JSONB DEFAULT '{}',
+              is_resolved BOOLEAN DEFAULT false,
+              ip_address VARCHAR(100),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+        }
+      } catch (e: any) {
+        console.warn('[Migrations] Failed to initialize security database tables:', e.message);
+      }
+    }
+
     if (type === 'scratch') {
       console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
       const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
@@ -171,6 +258,18 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         const ledgerTables = ['wallets', 'ledger_transactions', 'referrals', 'referral_tree', 'kyc_requests', 'withdrawal_requests', 'payout_accounts', 'economy_settings', 'coupon_usages', 'deposit_requests', 'coupons', 'stripe_events'];
         for (const t of ledgerTables) {
           await ledgerClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+        }
+      }
+      if (externalClient) {
+        const externalTables = ['forum_categories', 'forum_posts', 'forum_comments', 'blog_articles', 'blog_comments', 'blog_ratings'];
+        for (const t of externalTables) {
+          await externalClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+        }
+      }
+      if (securityClient) {
+        const securityTables = ['token_blacklist', 'security_alerts'];
+        for (const t of securityTables) {
+          await securityClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
         }
       }
       await client.query('DELETE FROM migration_history');
@@ -205,15 +304,94 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         console.log(`[Migrations] Applying ${name}: ${description}...`);
         await client.query('BEGIN');
         if (ledgerClient) await ledgerClient.query('BEGIN');
+        if (externalClient) await externalClient.query('BEGIN');
+        if (securityClient) await securityClient.query('BEGIN');
         try {
-          await fn(client, ledgerClient);
+          const findClientForQuery = (sql: string, params?: any[]) => {
+            const queryLower = sql.toLowerCase();
+            
+            const isTableMatched = (tableName: string) => {
+              if (queryLower.includes(tableName)) return true;
+              if (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName)) return true;
+              return false;
+            };
+
+            // External tables query check
+            if (
+              isTableMatched('forum_categories') ||
+              isTableMatched('forum_posts') ||
+              isTableMatched('forum_comments') ||
+              isTableMatched('blog_articles') ||
+              isTableMatched('blog_comments') ||
+              isTableMatched('blog_ratings')
+            ) {
+              return externalClient || client;
+            }
+            
+            // Security tables query check
+            if (
+              isTableMatched('token_blacklist') ||
+              isTableMatched('security_alerts')
+            ) {
+              return securityClient || client;
+            }
+            
+            // Ledger tables check
+            const ledgerTables = [
+              'wallets', 'ledger_transactions', 'referrals', 'referral_tree', 
+              'kyc_requests', 'withdrawal_requests', 'payout_accounts', 
+              'economy_settings', 'coupon_usages', 'deposit_requests', 
+              'coupons', 'stripe_events'
+            ];
+            if (ledgerTables.some(t => isTableMatched(t))) {
+              return ledgerClient || client;
+            }
+            
+            return client;
+          };
+
+          const wrappedClient = {
+            release: () => {},
+            query: async (text: any, params?: any[]) => {
+              let sqlString = '';
+              if (typeof text === 'string') {
+                sqlString = text;
+              } else if (text && typeof text === 'object' && text.text) {
+                sqlString = text.text;
+              }
+              const targetClient = findClientForQuery(sqlString, params);
+              return targetClient.query(text, params);
+            }
+          };
+
+          const wrappedLedgerClient = {
+            release: () => {},
+            query: async (text: any, params?: any[]) => {
+              let sqlString = '';
+              if (typeof text === 'string') {
+                sqlString = text;
+              } else if (text && typeof text === 'object' && text.text) {
+                sqlString = text.text;
+              }
+              const targetClient = findClientForQuery(sqlString, params);
+              const finalClient = targetClient === client ? (ledgerClient || client) : targetClient;
+              return finalClient.query(text, params);
+            }
+          };
+
+          await fn(wrappedClient, wrappedLedgerClient);
+          
           await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
           await client.query('COMMIT');
           if (ledgerClient) await ledgerClient.query('COMMIT');
+          if (externalClient) await externalClient.query('COMMIT');
+          if (securityClient) await securityClient.query('COMMIT');
           console.log(`[Migrations] Successfully applied ${name}.`);
         } catch (e) {
           await client.query('ROLLBACK');
           if (ledgerClient) await ledgerClient.query('ROLLBACK');
+          if (externalClient) await externalClient.query('ROLLBACK');
+          if (securityClient) await securityClient.query('ROLLBACK');
           console.error(`[Migrations] Failed to apply ${name}:`, e);
           throw e;
         }
@@ -649,10 +827,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       if (parseInt(checkCata.rows[0].count, 10) === 0) {
         await tx.query(`
           INSERT INTO forum_categories (slug, name_en, name_ar, description_en, description_ar, icon, color) VALUES
-          ('general', 'General Chat', 'النقاشات العامة', 'Exchange thoughts, chat with peers, and discuss standard platform techniques.', 'تبادل الأفكار والنقاش مع الأعضاء حول مختلف المواضيع العامة والمنصة.', 'MessageSquare', 'emerald'),
-          ('analysis', 'Market Intelligence', 'استخبارات السوق', 'Post deep-dives into currencies, assets, geopolitics, and global financial intelligence.', 'تحليلات عميقة حول الأسواق والعملات والذكاء المالي العالمي.', 'TrendingUp', 'blue'),
-          ('technical-support', 'Technical & Code Help', 'الدعم الفني والبرمجة', 'Collaborate on algorithmic trading, API issues, and code block setups.', 'المساعدة في البرمجيات وحلول الربط البرمجي وتنفيذ الشيفرات الذكية.', 'Code', 'amber'),
-          ('announcements', 'Announcements & Updates', 'الإعلانات والتحديثات', 'Official news and system releases directly from the ViralLinkUp Team.', 'آخر الأخبار الرسمية والتحديثات الصادرة عن إدارة فيرال لينك اب.', 'Megaphone', 'rose')
+          ('pioneers-devs-designers', 'Developers & Graphic Designers', 'مطورين ومصممين غرافيك', 'A dedicated realm for developers, graphic designers, and platform pioneers to deliberate architecture and visual arts.', 'مساحة تجمع المطورين، المصممين ورواد الأعمال لمناقشة المشاريع وتطوير الواجهات والحلول الرقمية.', 'Laptop', 'emerald'),
+          ('prompt-engineering', 'Prompt Engineering (Prompts)', 'هندسة الاوامر (Prompts)', 'Exchange elite prompt engineering, model shortcuts, and executive automation scripts.', 'شارك أفضل هندسة للأوامر الذكية، الأوامر البرمجية البديعة، وحيل تشغيل النماذج والذكاء الاصطناعي.', 'Terminal', 'emerald'),
+          ('troubleshooting', 'Troubleshooting', 'مشاركة الاخطاء وحلولها', 'A space to post logs, production crashes, structural bugs, and their swift solutions.', 'نقاشات تقنية حول المشاكل الفنية، الأخطاء الشائعة وحلولها البرمجية السريعة والفعالة.', 'HelpCircle', 'emerald'),
+          ('expertise-sharing', 'Expertise & Knowledge Sharing', 'مشاركة الخبرات والمعرفة', 'Broadcast technical papers, lessons learned, and high-level industrial tips.', 'شارك الاستراتيجيات التقنية، الدروس المستفادة، والنصائح المهنية لتسريع نمو مهارات الأعضاء.', 'BookOpen', 'emerald'),
+          ('our-works', 'Our Works & Showcases', 'معرض أعمالنا ومشاريعنا', 'Expose your repositories, design mockups, and client-facing creations to elite peer review.', 'اعرض تصاميمك، أكوادك البرمجية، والمشروعات التي نفذتها لتلقي آراء وتقييمات مجتمع نخبة بيربليكستا.', 'Briefcase', 'emerald'),
+          ('web-hosting', 'Web Hosting & Deployment', 'استضافة المواقع والرفع', 'Discuss server nodes, cloud resources, domain management, DNS routing, and static deployments.', 'كل ما يخص خوادم الاستضافة، الحوسبة السحابية، ورفع النطاقات وإعدادات الشبكات والـ DNS.', 'Server', 'emerald')
         `);
       }
     });
@@ -833,6 +1013,111 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
+    // MIGRATION: Update Forum Categories v27
+    await runVersioned('v27_update_forum_categories_for_pioneers_and_developers', 'Upgrading forum categories and re-mapping legacy post associations safely', async (tx) => {
+      // 1. Ensure new categories exist
+      await tx.query(`
+        INSERT INTO forum_categories (slug, name_en, name_ar, description_en, description_ar, icon, color) VALUES
+        ('pioneers-devs-designers', 'Pioneers, Developers & Designers', 'رواد المنصة، المطورين ومصممي الجرافيك', 'A dedicated realm for developers, graphic designers, and platform pioneers to deliberate architecture and visual arts.', 'مساحة تجمع المطورين، المصممين ورواد الأعمال لمناقشة المشاريع وتطوير الواجهات والحلول الرقمية.', 'Laptop', 'emerald'),
+        ('prompt-engineering', 'Prompt Engineering & Commands', 'الهندسة الفورية وأوامر التنفيذ (Prompts)', 'Exchange elite prompt engineering, model shortcuts, and executive automation scripts.', 'شارك أفضل هندسة للأوامر الذكية، الأوامر البرمجية البديعة، وحيل تشغيل النماذج والذكاء الاصطناعي.', 'Terminal', 'emerald'),
+        ('troubleshooting', 'Experiences & Troubleshooting', 'مشاركة التجارب والأخطاء وحلولها', 'A space to post logs, production crashes, structural bugs, and their swift solutions.', 'نقاشات تقنية حول المشاكل الفنية، الأخطاء الشائعة وحلولها البرمجية السريعة والفعالة.', 'HelpCircle', 'emerald'),
+        ('expertise-sharing', 'Expertise & Knowledge Sharing', 'مشاركة الخبرات والمعرفة', 'Broadcast technical papers, lessons learned, and high-level industrial tips.', 'شارك الاستراتيجيات التقنية، الدروس المستفادة، والنصائح المهنية لتسريع نمو مهارات الأعضاء.', 'BookOpen', 'emerald'),
+        ('our-works', 'Our Works & Showcases', 'معرض أعمالنا ومشاريعنا', 'Expose your repositories, design mockups, and client-facing creations to elite peer review.', 'اعرض تصاميمك، أكوادك البرمجية، والمشروعات التي نفذتها لتلقي آراء وتقييمات مجتمع نخبة بيربليكستا.', 'Briefcase', 'emerald'),
+        ('web-hosting', 'Web Hosting & Deployment', 'استضافة المواقع والرفع', 'Discuss server nodes, cloud resources, domain management, DNS routing, and static deployments.', 'كل ما يخص خوادم الاستضافة، الحوسبة السحابية، ورفع النطاقات وإعدادات الشبكات والـ DNS.', 'Server', 'emerald')
+        ON CONFLICT (slug) DO UPDATE SET
+          name_en = EXCLUDED.name_en,
+          name_ar = EXCLUDED.name_ar,
+          description_en = EXCLUDED.description_en,
+          description_ar = EXCLUDED.description_ar,
+          icon = EXCLUDED.icon,
+          color = EXCLUDED.color
+      `);
+
+      // 2. Fetch ID mappings
+      const categoriesRes = await tx.query('SELECT id, slug FROM forum_categories');
+      const catMap: { [key: string]: number } = {};
+      categoriesRes.rows.forEach((row: { id: number; slug: string }) => {
+        catMap[row.slug] = row.id;
+      });
+
+      const targetId = catMap['pioneers-devs-designers'];
+      const troubleshootingId = catMap['troubleshooting'];
+      const expertiseId = catMap['expertise-sharing'];
+
+      if (targetId) {
+        // Remap general and announcements
+        const generalId = catMap['general'];
+        const announcementsId = catMap['announcements'];
+        if (generalId) {
+          await tx.query('UPDATE forum_posts SET category_id = $1 WHERE category_id = $2', [targetId, generalId]);
+        }
+        if (announcementsId) {
+          await tx.query('UPDATE forum_posts SET category_id = $1 WHERE category_id = $2', [targetId, announcementsId]);
+        }
+      }
+
+      if (troubleshootingId) {
+        const supportId = catMap['technical-support'];
+        if (supportId) {
+          await tx.query('UPDATE forum_posts SET category_id = $1 WHERE category_id = $2', [troubleshootingId, supportId]);
+        }
+      }
+
+      if (expertiseId) {
+        const analysisId = catMap['analysis'];
+        if (analysisId) {
+          await tx.query('UPDATE forum_posts SET category_id = $1 WHERE category_id = $2', [expertiseId, analysisId]);
+        }
+      }
+
+      // 3. Purge legacy categories
+      await tx.query("DELETE FROM forum_categories WHERE slug IN ('general', 'analysis', 'technical-support', 'announcements')");
+    });
+
+    // MIGRATION: Refine Forum Categories Names v28
+    await runVersioned('v28_refine_forum_categories_names', 'Shortening and refining forum categories translation and names', async (tx) => {
+      await tx.query(`
+        UPDATE forum_categories 
+        SET name_ar = 'مطورين ومصممين غرافيك', 
+            name_en = 'Developers & Graphic Designers' 
+        WHERE slug = 'pioneers-devs-designers'
+      `);
+      await tx.query(`
+        UPDATE forum_categories 
+        SET name_ar = 'هندسة الاوامر (Prompts)', 
+            name_en = 'Prompt Engineering (Prompts)' 
+        WHERE slug = 'prompt-engineering'
+      `);
+      await tx.query(`
+        UPDATE forum_categories 
+        SET name_ar = 'مشاركة الاخطاء وحلولها', 
+            name_en = 'Troubleshooting' 
+        WHERE slug = 'troubleshooting'
+      `);
+    });
+
+    // MIGRATION: External and Security Databases Seeding v29
+    await runVersioned('v29_external_and_security_db_seeds', 'Seeding External and Security databases in db_connections_registry', async (tx) => {
+      const coreUrl = process.env.DATABASE_URL;
+      const externalUrl = process.env.EXTERNAL_DATABASE_URL || coreUrl;
+      const securityUrl = process.env.SECURITY_DATABASE_URL || coreUrl;
+
+      if (externalUrl) {
+          const externalEncrypted = encrypt(externalUrl);
+          await tx.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('external', 'external', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [externalEncrypted]
+          );
+      }
+      if (securityUrl) {
+          const securityEncrypted = encrypt(securityUrl);
+          await tx.query(
+            `INSERT INTO db_connections_registry (id, provider, connection_string, is_active) VALUES ('security', 'security', $1, true) ON CONFLICT (id) DO NOTHING`,
+            [securityEncrypted]
+          );
+      }
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -840,6 +1125,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   } finally {
     client.release();
     if (ledgerClient) ledgerClient.release();
+    if (externalClient) externalClient.release();
+    if (securityClient) securityClient.release();
   }
 }
 

@@ -1,9 +1,46 @@
 import express from 'express';
-import { pool } from '../db/index.js';
+import { pool as corePool, getExternalPool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { forumLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
+
+const pool = {
+  query: (text: string, params?: any[]) => getExternalPool().query(text, params),
+  connect: () => getExternalPool().connect()
+};
+
+async function hydrateAuthors(items: any[], userIdKey = 'user_id') {
+  if (!items || items.length === 0) return items;
+  const userIds = Array.from(new Set(items.map(item => item[userIdKey]).filter(Boolean)));
+  if (userIds.length === 0) return items;
+  
+  try {
+    const userResult = await corePool.query(
+      'SELECT id, name, avatar, role FROM users WHERE id = ANY($1)',
+      [userIds]
+    );
+    const userMap = new Map();
+    userResult.rows.forEach((u: any) => {
+      userMap.set(u.id, u);
+    });
+    
+    items.forEach(item => {
+      const u = userMap.get(item[userIdKey]);
+      item.author_name = u ? u.name : 'Unknown User';
+      item.author_avatar = u ? u.avatar : null;
+      item.author_role = u ? u.role : 'user';
+    });
+  } catch (err) {
+    console.warn('[Forum Schema Hydration] Failed to hydrate user details:', err);
+    items.forEach(item => {
+      item.author_name = 'Unknown User';
+      item.author_avatar = null;
+      item.author_role = 'user';
+    });
+  }
+  return items;
+}
 
 // 1. Get all categories
 router.get('/categories', async (req, res) => {
@@ -31,12 +68,8 @@ router.get('/categories/:categoryId/posts', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT p.*, 
-             u.name as author_name, 
-             u.avatar as author_avatar, 
-             u.role as author_role,
              COALESCE(comment_counts.count, 0) as comment_count
       FROM forum_posts p
-      JOIN users u ON p.user_id = u.id
       LEFT JOIN (
         SELECT post_id, COUNT(*) as count 
         FROM forum_comments 
@@ -45,10 +78,33 @@ router.get('/categories/:categoryId/posts', async (req, res) => {
       WHERE p.category_id = $1
       ORDER BY p.is_pinned DESC, p.created_at DESC
     `, [categoryId]);
+    await hydrateAuthors(result.rows);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Failed to fetch category posts:', error);
     res.status(500).json({ error: 'Failed to fetch category posts' });
+  }
+});
+
+// 2.5 Get all posts across all categories
+router.get('/posts', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.*, 
+             COALESCE(comment_counts.count, 0) as comment_count
+      FROM forum_posts p
+      LEFT JOIN (
+        SELECT post_id, COUNT(*) as count 
+        FROM forum_comments 
+        GROUP BY post_id
+      ) comment_counts ON p.id = comment_counts.post_id
+      ORDER BY p.is_pinned DESC, p.created_at DESC
+    `);
+    await hydrateAuthors(result.rows);
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Failed to fetch all posts:', error);
+    res.status(500).json({ error: 'Failed to fetch all posts' });
   }
 });
 
@@ -74,15 +130,10 @@ router.post('/posts', authenticateToken, forumLimiter, async (req: any, res) => 
       RETURNING *
     `, [category_id, req.user.id, title, content]);
 
-    // Fetch author info to append
-    const postWithAuthor = await pool.query(`
-      SELECT p.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role, 0 as comment_count
-      FROM forum_posts p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.id = $1
-    `, [result.rows[0].id]);
+    const resultWithCount = { ...result.rows[0], comment_count: 0 };
+    await hydrateAuthors([resultWithCount]);
 
-    res.status(201).json(postWithAuthor.rows[0]);
+    res.status(201).json(resultWithCount);
   } catch (error: any) {
     console.error('Failed to create post:', error);
     res.status(500).json({ error: 'Failed to create post' });
@@ -97,9 +148,8 @@ router.get('/posts/:id', async (req, res) => {
     await pool.query('UPDATE forum_posts SET views = views + 1 WHERE id = $1', [id]);
 
     const postRes = await pool.query(`
-      SELECT p.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role, c.name_en as category_name_en, c.name_ar as category_name_ar
+      SELECT p.*, c.name_en as category_name_en, c.name_ar as category_name_ar
       FROM forum_posts p
-      JOIN users u ON p.user_id = u.id
       JOIN forum_categories c ON p.category_id = c.id
       WHERE p.id = $1
     `, [id]);
@@ -107,14 +157,15 @@ router.get('/posts/:id', async (req, res) => {
     if (postRes.rows.length === 0) {
       return res.status(404).json({ error: 'Post not found' });
     }
+    await hydrateAuthors(postRes.rows);
 
     const commentsRes = await pool.query(`
-      SELECT tc.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role
+      SELECT tc.*
       FROM forum_comments tc
-      JOIN users u ON tc.user_id = u.id
       WHERE tc.post_id = $1
       ORDER BY tc.created_at ASC
     `, [id]);
+    await hydrateAuthors(commentsRes.rows);
 
     res.json({
       post: postRes.rows[0],
@@ -155,19 +206,14 @@ router.post('/posts/:id/comments', authenticateToken, forumLimiter, async (req: 
       RETURNING *
     `, [id, req.user.id, content]);
 
-    // Fetch comment with author info
-    const commentWithAuthor = await pool.query(`
-      SELECT tc.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role
-      FROM forum_comments tc
-      JOIN users u ON tc.user_id = u.id
-      WHERE tc.id = $1
-    `, [commentRes.rows[0].id]);
+    const rawComment = commentRes.rows[0];
+    await hydrateAuthors([rawComment]);
 
     // Send notifications to post author if the comment is by another user
     const postAuthorId = postCheck.rows[0].user_id;
     if (postAuthorId !== req.user.id) {
       const commenterName = req.user.name || 'someone';
-      await pool.query(`
+      await corePool.query(`
         INSERT INTO notifications (user_id, type, title_en, title_ar, message_en, message_ar, metadata)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, [
@@ -181,7 +227,7 @@ router.post('/posts/:id/comments', authenticateToken, forumLimiter, async (req: 
       ]);
     }
 
-    res.status(201).json(commentWithAuthor.rows[0]);
+    res.status(201).json(rawComment);
   } catch (error: any) {
     console.error('Failed to add comment:', error);
     res.status(500).json({ error: 'Failed to add comment' });

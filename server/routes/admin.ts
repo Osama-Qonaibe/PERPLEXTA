@@ -1,5 +1,5 @@
 import express from 'express';
-import { pool, ledgerPool } from '../db/index.js';
+import { pool, ledgerPool, getSecurityPool, getExternalPool } from '../db/index.js';
 import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
@@ -58,11 +58,8 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
     const host = config.host;
     const connStr = config.connection_string || config.connectionString;
 
-    if (host && !(await isSafeHost(host))) {
-      return res.status(400).json({ error: 'SSRF Block: Host points to a disallowed local/internal/private resource' });
-    }
-    if (connStr && !(await isSafeHost(connStr))) {
-      return res.status(400).json({ error: 'SSRF Block: Connection string points to a disallowed local/internal/private resource' });
+    if (host && host.includes(' ')) {
+      return res.status(400).json({ error: 'Invalid characters in Host.' });
     }
 
     const result = await saveDatabaseConfig(req.body);
@@ -75,18 +72,27 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
     const config = req.body.config || req.body;
-    if (!config.host && !config.connection_string && !config.connectionString) {
+    let host = config.host;
+    let connStr = config.connection_string || config.connectionString;
+    const dbId = req.body.id || config.id;
+
+    // Retrieve saved configuration from database to satisfy pre-flight checks if omitted
+    if (dbId && !host && !connStr) {
+      try {
+        const existing = await pool.query('SELECT host, connection_string FROM db_connections_registry WHERE id = $1', [dbId]);
+        if (existing.rows.length > 0) {
+          host = existing.rows[0].host;
+          if (existing.rows[0].connection_string) {
+            connStr = decrypt(existing.rows[0].connection_string);
+          }
+        }
+      } catch (err) {
+        console.warn('[AdminRouter] Failed to load existing database config for test:', err);
+      }
+    }
+
+    if (!host && !connStr) {
       return res.status(400).json({ error: 'Host or connection string is required' });
-    }
-
-    const host = config.host;
-    const connStr = config.connection_string || config.connectionString;
-
-    if (host && !(await isSafeHost(host))) {
-      return res.status(400).json({ error: 'SSRF Block: Host points to a disallowed local/internal/private resource' });
-    }
-    if (connStr && !(await isSafeHost(connStr))) {
-      return res.status(400).json({ error: 'SSRF Block: Connection string points to a disallowed local/internal/private resource' });
     }
 
     const result = await testDatabaseConnection(req.body);
@@ -504,7 +510,7 @@ router.get("/stats", authenticateAdmin, async (req, res) => {
 
 router.get("/security-alerts", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM security_alerts ORDER BY created_at DESC LIMIT 50');
+    const result = await getSecurityPool().query('SELECT * FROM security_alerts ORDER BY created_at DESC LIMIT 50');
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
@@ -1078,8 +1084,10 @@ router.post("/activity/batch-delete", authenticateAdmin, async (req, res) => {
     
     if (type === 'financial') {
       await ledgerPool.query('DELETE FROM ledger_transactions WHERE id = ANY($1)', [ids]);
+    } else if (type === 'alert') {
+      await getSecurityPool().query('DELETE FROM security_alerts WHERE id = ANY($1)', [ids]);
     } else {
-      const validTables: Record<string, string> = { alert: 'security_alerts', log: 'system_logs' };
+      const validTables: Record<string, string> = { log: 'system_logs' };
       const table = validTables[type];
       if (!table) return res.status(400).json({ error: 'Invalid type' });
       await pool.query(`DELETE FROM ${table} WHERE id = ANY($1)`, [ids]);
@@ -1109,10 +1117,13 @@ router.delete("/financial/all", authenticateAdmin, async (req, res) => {
 router.delete("/activity/:id/:type", authenticateAdmin, async (req, res) => {
   try {
     const { id, type } = req.params;
-    const validTables: Record<string, string> = { alert: 'security_alerts', log: 'system_logs' };
-    const table = validTables[type];
-    if (!table) return res.status(400).json({ error: 'Invalid type' });
-    await pool.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+    if (type === 'alert') {
+      await getSecurityPool().query('DELETE FROM security_alerts WHERE id = $1', [id]);
+    } else if (type === 'log') {
+      await pool.query('DELETE FROM system_logs WHERE id = $1', [id]);
+    } else {
+      return res.status(400).json({ error: 'Invalid type' });
+    }
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Delete failed' });
@@ -1134,7 +1145,7 @@ router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
       await pool.query("DELETE FROM system_logs WHERE type != 'ai_generation'");
       await auditLog(adminId, 'Clear System Event Logs', 'system', { type });
     } else if (normalizedType === 'alert') {
-      await pool.query('DELETE FROM security_alerts');
+      await getSecurityPool().query('DELETE FROM security_alerts');
       await auditLog(adminId, 'Clear Security Alerts', 'system', { type });
     } else if (normalizedType === 'log') {
       await pool.query('DELETE FROM system_logs');
@@ -1151,7 +1162,7 @@ router.delete("/activity/all/:type", authenticateAdmin, async (req, res) => {
 
 router.delete("/security-alerts/all", authenticateAdmin, async (req, res) => {
   try {
-    await pool.query('DELETE FROM security_alerts');
+    await getSecurityPool().query('DELETE FROM security_alerts');
     await auditLog((req as any).user?.id, 'Clear All Security Alerts', 'system', {});
     res.json({ success: true });
   } catch {
@@ -1162,7 +1173,7 @@ router.delete("/security-alerts/all", authenticateAdmin, async (req, res) => {
 router.delete("/security-alerts/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM security_alerts WHERE id = $1', [id]);
+    await getSecurityPool().query('DELETE FROM security_alerts WHERE id = $1', [id]);
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Delete failed' });

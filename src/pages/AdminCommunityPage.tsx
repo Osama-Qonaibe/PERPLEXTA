@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, Plus, BookOpen, MessageSquare, Trash2, Send, ArrowLeft, Image, Edit, FileText, ChevronRight, Upload } from 'lucide-react';
+import { ShieldCheck, Plus, BookOpen, MessageSquare, Trash2, Send, ArrowLeft, Image, Edit, FileText, ChevronRight, Upload, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
+import { MarketplaceManagementView } from '../components/MarketplaceManagementView';
 
 interface Category {
   id: number;
@@ -24,8 +25,8 @@ interface Article {
 }
 
 export const AdminCommunityPage: React.FC = () => {
-  const { language, token, user } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'blog' | 'forum'>('blog');
+  const { language, token, user, theme, t } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'blog' | 'forum' | 'marketplace'>('blog');
   
   // Lists
   const [categories, setCategories] = useState<Category[]>([]);
@@ -285,18 +286,34 @@ export const AdminCommunityPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8" dir={isRtl ? 'rtl' : 'ltr'}>
-      {/* Back trigger */}
-      <div className="flex justify-between items-center mb-8 border-b border-gray-200/5 dark:border-gray-800/10 pb-4 select-none">
-        <a
-          href="/blog"
-          className="group flex items-center gap-1.5 text-xs font-black text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
-        >
-          <ArrowLeft size={16} className={`group-hover:scale-115 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
-          {isRtl ? 'رؤية قسم المقالات الإخبارية' : 'Back to News Portal'}
-        </a>
+      {/* Sticky-like Admin Header - Elegant Control Layer */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200/5 dark:border-gray-800/10 select-none">
+        <div className="flex items-center gap-4">
+          <a
+            href="/admin"
+            className="p-2.5 rounded-md transition-theme duration-300 flex items-center justify-center bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] text-gray-400 hover:text-[var(--text-primary)] border border-[var(--border-main)] shadow-sm hover:shadow-md"
+            title={isRtl ? 'العودة للمركز الرئيسي' : 'Back to Control Center'}
+          >
+            {isRtl ? (
+              <ArrowLeft size={20} className="rotate-180" />
+            ) : (
+              <ArrowLeft size={20} />
+            )}
+          </a>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-theme font-sans">
+              {isRtl ? 'إدارة الأقسام الخارجية' : 'External Admin Console'}
+            </h1>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 opacity-80">
+              {isRtl 
+                ? 'المركز الأمني للمقالات، المنتدى التفاعلي، وبضائع الماركت بليس' 
+                : 'MODERATION CONSOLE FOR FORUM, BLOG, & MARKETPLACE'}
+            </p>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-2 text-[10px] uppercase font-mono tracking-wider text-emerald-500 font-bold select-none bg-emerald-500/10 border border-emerald-500/10 px-3 py-1 rounded-[4px]">
-          <ShieldCheck size={12} />
+        <div className="flex items-center gap-2 self-start md:self-auto text-[10px] uppercase font-mono tracking-wider text-emerald-500 font-bold select-none bg-emerald-500/10 border border-emerald-500/10 px-3 py-1.5 rounded-[4px]">
+          <ShieldCheck size={12} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
           <span>{isRtl ? 'مشرف معتمد' : 'Staff Moderation Mode'}</span>
         </div>
       </div>
@@ -306,24 +323,35 @@ export const AdminCommunityPage: React.FC = () => {
         <div className="lg:col-span-3 space-y-3 select-none">
           <button
             onClick={() => setActiveTab('blog')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <BookOpen size={16} />
+              <BookOpen size={16} className={`transition-all duration-300 ${activeTab === 'blog' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
               {isRtl ? 'المقالات والأخبار' : 'Publish Articles'}
             </span>
-            <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
+            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-emerald-500' : 'text-gray-400'}`} />
           </button>
 
           <button
             onClick={() => setActiveTab('forum')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'forum' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'forum' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <MessageSquare size={16} />
+              <MessageSquare size={16} className={`transition-all duration-300 ${activeTab === 'forum' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
               {isRtl ? 'أقسام المنتدى' : 'Forum Categories'}
             </span>
-            <ChevronRight size={14} className={isRtl ? 'rotate-180' : ''} />
+            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'forum' ? 'text-emerald-500' : 'text-gray-400'}`} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('marketplace')}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'marketplace' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+          >
+            <span className="flex items-center gap-2">
+              <ShoppingBag size={16} className={`transition-all duration-300 ${activeTab === 'marketplace' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+              {isRtl ? 'إدارة الماركت بليس' : 'Marketplace Admin'}
+            </span>
+            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'marketplace' ? 'text-emerald-500' : 'text-gray-400'}`} />
           </button>
         </div>
 
@@ -539,7 +567,7 @@ export const AdminCommunityPage: React.FC = () => {
                 )}
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'forum' ? (
             <div className="space-y-8">
               {/* Category form card */}
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-6 sm:p-8">
@@ -642,6 +670,12 @@ export const AdminCommunityPage: React.FC = () => {
                 ) : (
                   <p className="text-xs text-gray-500 text-center py-4 font-sans font-medium">{isRtl ? 'لا توجد أقسام متوفرة.' : 'No categories created.'}</p>
                 )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="p-6 sm:p-8 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-xl">
+                <MarketplaceManagementView theme={theme || 'dark'} t={t} dir={isRtl ? 'rtl' : 'ltr'} />
               </div>
             </div>
           )}

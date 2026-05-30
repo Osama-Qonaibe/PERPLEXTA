@@ -3,7 +3,8 @@ import { useAppContext } from '../context/AppContext';
 import { 
   MessageSquare, Pin, Lock, Eye, Trash2, Send, ArrowLeft, Plus, MessageCircle, 
   Calendar, User, UserCheck, ShieldCheck, Flag, ShieldAlert, BookOpen, AlertCircle,
-  Cpu, TrendingUp, RefreshCw, Terminal, Globe, Activity, Code, Shield, Zap, Search, Layers, Filter
+  Cpu, TrendingUp, RefreshCw, Terminal, Globe, Activity, Code, Shield, Zap, Search, Layers, Filter, SlidersHorizontal,
+  Laptop, Server, Briefcase, HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -48,7 +49,8 @@ interface Comment {
 }
 
 export const ForumPage: React.FC = () => {
-  const { language, token, user } = useAppContext();
+  const { language, token, user, theme } = useAppContext();
+  const isThemeDark = theme === 'dark';
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -115,42 +117,98 @@ export const ForumPage: React.FC = () => {
     );
   };
 
+  const renderCategoryIcon = (slug: string, active: boolean, size = 15) => {
+    const baseClass = active 
+      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300'
+      : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-300';
+
+    switch (slug) {
+      case 'pioneers-devs-designers':
+        return <Laptop size={size} className={baseClass} />;
+      case 'prompt-engineering':
+        return <Terminal size={size} className={baseClass} />;
+      case 'troubleshooting':
+        return <HelpCircle size={size} className={baseClass} />;
+      case 'expertise-sharing':
+        return <BookOpen size={size} className={baseClass} />;
+      case 'our-works':
+        return <Briefcase size={size} className={baseClass} />;
+      case 'web-hosting':
+        return <Server size={size} className={baseClass} />;
+      default:
+        return <MessageSquare size={size} className={baseClass} />;
+    }
+  };
+
   const isRtl = language === 'ar';
 
   // Category specific abstract patterns helper
   const getCategoryTheme = (slug: string, id: number) => {
     const term = slug?.toLowerCase() || '';
-    if (term.includes('dev') || term.includes('code') || term.includes('program') || id === 1) {
+    if (term.includes('pioneer') || term.includes('dev') || term.includes('design') || id === 1) {
       return {
-        icon: <Cpu size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
+        icon: <Laptop size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
         accentColor: 'text-emerald-500',
         glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
         bgAccent: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/15',
         online: 18,
-        tags: ['React', 'Node.js', 'PostgreSQL', 'API Gateway', 'Zero Trust', 'Webhooks']
+        tags: ['Pioneers', 'React', 'Tailwind', 'Vector Art', 'Creative UI']
       };
     }
-    if (term.includes('prompt') || term.includes('ai') || term.includes('gpt') || id === 2) {
+    if (term.includes('prompt') || term.includes('command') || term.includes('exec') || id === 2) {
       return {
-        icon: <Terminal size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(20,184,166,0.5)]" />,
+        icon: <Terminal size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
         accentColor: 'text-emerald-500',
         glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
         bgAccent: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/15',
         online: 26,
-        tags: ['Prompt Engineering', 'System Intent', 'LLM Guard Rails', 'Gemini API', 'Context Window']
+        tags: ['Prompt Engineering', 'AI commands', 'System Prompts', 'Automation']
       };
     }
-    if (term.includes('market') || term.includes('ads') || term.includes('campaign') || id === 3) {
+    if (term.includes('trouble') || term.includes('error') || term.includes('bug') || id === 3) {
       return {
-        icon: <TrendingUp size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />,
+        icon: <HelpCircle size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
         accentColor: 'text-emerald-500',
         glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
         bgAccent: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/15',
-        online: 14,
-        tags: ['Lead Gen', 'SEO Analytics', 'Conversion Rate', 'Growth Hacking', 'Copywriting']
+        online: 15,
+        tags: ['Server Down', 'Debugging', 'Error logs', 'Bug fixes']
+      };
+    }
+    if (term.includes('expert') || term.includes('share') || term.includes('know') || id === 4) {
+      return {
+        icon: <BookOpen size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
+        accentColor: 'text-emerald-500',
+        glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
+        bgAccent: 'bg-emerald-500/10',
+        borderColor: 'border-emerald-500/15',
+        online: 22,
+        tags: ['Case Studies', 'Tech strategies', 'SEO Hacks', 'Data Science']
+      };
+    }
+    if (term.includes('work') || term.includes('portfolio') || term.includes('show') || id === 5) {
+      return {
+        icon: <Briefcase size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
+        accentColor: 'text-emerald-500',
+        glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
+        bgAccent: 'bg-emerald-500/10',
+        borderColor: 'border-emerald-500/15',
+        online: 19,
+        tags: ['Portfolio', 'UI Showcase', 'Code Snippets', 'Live Demos']
+      };
+    }
+    if (term.includes('host') || term.includes('deploy') || term.includes('server') || id === 6) {
+      return {
+        icon: <Server size={20} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />,
+        accentColor: 'text-emerald-500',
+        glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.12)]',
+        bgAccent: 'bg-emerald-500/10',
+        borderColor: 'border-emerald-500/15',
+        online: 12,
+        tags: ['Cloud VPS', 'DNS Routing', 'SSL Protection', 'Static Deploy']
       };
     }
     // Fallback default
@@ -281,16 +339,18 @@ export const ForumPage: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    handleSelectCategory(null);
   }, []);
 
   // Fetch posts under selected category
-  const handleSelectCategory = async (cat: Category) => {
+  const handleSelectCategory = async (cat: Category | null) => {
     setSelectedCategory(cat);
     setSelectedPost(null);
     setIsCreatingThread(false);
     setPostsLoading(true);
     try {
-      const res = await fetch(`/api/forum/categories/${cat.id}/posts`);
+      const url = cat ? `/api/forum/categories/${cat.id}/posts` : '/api/forum/posts';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setPosts(data);
@@ -473,363 +533,377 @@ export const ForumPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 relative" dir={isRtl ? 'rtl' : 'ltr'}>
-      {/* Toast Notification for self-reporting warnings */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[90%] bg-[#121215]/95 backdrop-blur border border-emerald-500/35 rounded-lg p-4 shadow-[0_0_30px_rgba(16,185,129,0.18)]"
-          >
-            <div className="flex gap-3 items-start">
-              <ShieldCheck size={18} className="text-emerald-500 shrink-0 mt-0.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-              <div>
-                <span className="block text-[10px] font-mono font-bold text-emerald-500 tracking-wider mb-0.5">
-                  {isRtl ? 'حماية النظام الذكية' : 'PERPLEXTA SECURE SHIELD'}
-                </span>
-                <p className="text-xs text-gray-200 font-sans leading-relaxed font-semibold">
-                  {isRtl ? toastMessage.textAr : toastMessage.textEn}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div
+      className={`h-[calc(100vh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
+        isThemeDark ? 'bg-[#050505] text-white' : 'bg-[var(--bg-base)] text-gray-900'
+      }`}
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      <div className={`absolute inset-0 pointer-events-none opacity-[0.25] ${
+        isThemeDark
+          ? 'bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)]'
+          : 'bg-[radial-gradient(rgba(0,0,0,0.015)_1px,transparent_1px)]'
+        } bg-[size:28px_28px]`}
+      />
 
-      <AnimatePresence mode="wait">
-        {/* VIEW 1: Categories Overview Grid */}
-        {!selectedCategory && (
-          <motion.div
-            key="categories-grid"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-gray-200/5 dark:border-gray-800/20 pb-6">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center gap-2">
-                  <MessageCircle size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                  {isRtl ? 'منتدى النقاشات الفنية والمالية' : 'Perplexta Tech & Financial Forum'}
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed font-sans font-medium">
-                  {isRtl 
-                    ? 'شارك خبراتك في التداول، ناقش تحليلات السوق، وتواصل مباشرة مع مجتمع الخبراء.' 
-                    : 'Share quantitative trade techniques, deliberate analytics, and interface with professional peers.'}
-                </p>
-              </div>
-
-              {token && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Open modal for the first category as fallback or prompt to select category
-                    const defaultCat = categories[0] || null;
-                    if (defaultCat) {
-                      setSelectedCategory(defaultCat);
-                      setIsCreatingThread(true);
-                    } else {
-                      triggerToast('لا يوجد قسم متوفر مضاف حالياً', 'No active category available');
-                    }
-                  }}
-                  className="hidden sm:flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/18 text-emerald-400 border border-emerald-500/20 px-5 h-10 font-bold text-xs rounded-[4px] shadow-sm cursor-pointer hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-300 font-sans"
-                >
-                  <Plus size={14} className="text-emerald-500" />
-                  {isRtl ? 'إنشاء موضوع جديد' : 'New Discussion'}
-                </button>
-              )}
-            </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-5 animate-pulse h-48 flex flex-col justify-between">
-                    <div>
-                      <div className="w-10 h-10 rounded-[4px] bg-gray-200/10 mb-4" />
-                      <div className="h-5 bg-gray-200/10 rounded w-1/2 mb-2" />
-                      <div className="h-3 bg-gray-200/10 rounded w-full" />
-                    </div>
-                    <div className="flex justify-between mt-4">
-                      <div className="h-4 bg-gray-200/10 rounded w-8" />
-                      <div className="h-4 bg-gray-200/10 rounded w-8" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : categories.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categories.map((cat, index) => {
-                  const theme = getCategoryTheme(cat.slug, cat.id);
-                  return (
-                    <motion.div
-                      key={cat.id}
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleSelectCategory(cat)}
-                      className={`flex flex-col justify-between bg-[#1a1a1c] border border-gray-800/60 hover:border-emerald-500/30 rounded-lg p-5 md:p-6 hover:${theme.glowColor} transition-all duration-300 group cursor-pointer`}
-                    >
-                      <div>
-                        {/* Custom Category Geometric Icon */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="w-11 h-11 rounded-[4px] flex items-center justify-center bg-emerald-500/10 border border-emerald-500/10 text-emerald-500 group-hover:scale-105 transition-transform duration-300">
-                            {theme.icon}
-                          </div>
-                          
-                          {/* Pulsing micro indicator for active/online members */}
-                          <div className="flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10 text-[9px] font-mono text-emerald-400 font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>{theme.online} {isRtl ? 'نشط الآن' : 'active now'}</span>
-                          </div>
-                        </div>
-
-                        <h3 className="font-sans font-black text-sm text-[var(--text-primary)] group-hover:text-emerald-400 transition-colors">
-                          {isRtl ? cat.name_ar : cat.name_en}
-                        </h3>
-                        <p className="text-[11px] text-gray-400 mt-2 leading-relaxed font-sans line-clamp-3 select-text text-right sm:text-justify font-medium">
-                          {isRtl ? cat.description_ar : cat.description_en}
-                        </p>
-                      </div>
-
-                      <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100/5 dark:border-gray-800/10 text-[9px] font-mono text-gray-405 font-bold select-none">
-                        <span className="flex items-center gap-1 bg-gray-800/30 px-2 py-1 rounded-[3px] border border-gray-800/50">
-                          {isRtl ? 'النقاشات الحالية:' : 'Discussions:'} <span className="text-emerald-400 font-bold">{cat.post_count}</span>
-                        </span>
-                        <span className="flex items-center gap-1 bg-gray-800/30 px-2 py-1 rounded-[3px] border border-gray-800/50">
-                          {isRtl ? 'التعليقات والردود:' : 'Replies:'} <span className="text-emerald-400 font-bold">{cat.comment_count}</span>
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="py-20 text-center border border-dashed border-gray-800 rounded-lg max-w-xl mx-auto p-8 select-none">
-                <AlertCircle size={48} className="mx-auto text-gray-400 mb-3" />
-                <h3 className="font-bold text-sm tracking-tight mb-1 text-[var(--text-primary)]">{isRtl ? 'لا توجد أقسام متوفرة' : 'No categories available'}</h3>
-                <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'سوف يقوم الإداريون بإنشاء الأقسام قريباً.' : 'Administrators will initiate discussion categories shortly.'}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* VIEW 2: Category Posts Modern Discourse-Like Feed */}
-        {selectedCategory && !selectedPost && !isCreatingThread && (
-          <motion.div
-            key="category-posts"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-full"
-          >
-            {/* Top Navigation & Actions Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200/5 dark:border-gray-800/20 pb-4">
-              <button
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setSearchQuery('');
-                }}
-                className="group flex items-center gap-1.5 text-xs font-black text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer"
-              >
-                <ArrowLeft size={16} className={`group-hover:scale-115 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
-                {isRtl ? 'تصفح جميع ساحات النقاش' : 'Browse All Discussion Fields'}
-              </button>
-
-              <div className="flex items-center gap-3">
-                <span className="hidden sm:inline-block text-[11px] font-mono text-gray-500">
-                  {isRtl ? 'الساحة الحالية:' : 'Active Zone:'} <b className="text-emerald-400">{isRtl ? selectedCategory.name_ar : selectedCategory.name_en}</b>
-                </span>
-                {token ? (
-                  <button
-                    onClick={() => setIsCreatingThread(true)}
-                    className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 px-4 h-9 font-bold text-white text-xs rounded-[4px] shadow-md cursor-pointer transition-theme font-sans"
-                  >
-                    <Plus size={14} />
-                    {isRtl ? 'موضوع جديد' : 'New Topic'}
-                  </button>
-                ) : (
-                  <div className="text-[10px] text-amber-500 bg-amber-500/5 border border-amber-500/10 px-3 py-1.5 rounded-[4px] font-sans font-medium">
-                    {isRtl ? 'يرجى تسجيل الدخول لكتابة موضوع ومناقشة الخبراء' : 'Log in to draft a new technical topic'}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Smart Search Filter bar */}
-            <div className="mb-6 bg-[#1a1a1c] border border-gray-800/60 rounded-lg p-4 shadow-sm">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                <div className="space-y-1 sm:max-w-md w-full">
-                  <span className="block text-[9px] font-mono font-bold text-emerald-400 tracking-wider">
-                    {isRtl ? 'البحث الذكي في ساحة النقاش' : 'INTELLIGENT DATABASE LOOKUP'}
+      {/* Main Content Card Wrapper - Integrated full screen with no outer margins */}
+      <div className={`w-full h-full flex flex-col overflow-hidden relative z-10 ${
+        isThemeDark
+          ? 'bg-[#080808]/95 shadow-black/80'
+          : 'bg-white shadow-gray-200/50'
+      }`}>
+        {/* Toast Notification for self-reporting warnings */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[90%] bg-[#121215]/95 backdrop-blur border border-emerald-500/35 rounded-lg p-4 shadow-[0_0_30px_rgba(16,185,129,0.18)]"
+            >
+              <div className="flex gap-3 items-start">
+                <ShieldCheck size={18} className="text-emerald-500 shrink-0 mt-0.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                <div>
+                  <span className="block text-[10px] font-mono font-bold text-emerald-500 tracking-wider mb-0.5">
+                    {isRtl ? 'حماية النظام الذكية' : 'PERPLEXTA SECURE SHIELD'}
                   </span>
-                  <div className="relative">
-                    <span className={`absolute inset-y-0 ${isRtl ? 'left-3' : 'right-3'} flex items-center pointer-events-none text-gray-500`}>
-                      <Search size={14} />
-                    </span>
+                  <p className="text-xs text-gray-200 font-sans leading-relaxed font-semibold">
+                    {isRtl ? toastMessage.textAr : toastMessage.textEn}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {/* UNIFIED VIEW: Modern Category Navigation Feed with Shortcuts and Persistent Sidebar */}
+          {!selectedPost && !isCreatingThread && (
+            <motion.div
+              key="forum-unified-hub"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              {/* Page Header */}
+              <div className={`p-6 md:px-8 border-b relative select-none flex-shrink-0 ${
+                isThemeDark ? 'border-white/5 bg-[#080808]' : 'border-gray-200/80 bg-white'
+              }`}>
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center gap-2">
+                      <MessageCircle size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                      {isRtl ? 'منتدى النقاشات الفنية والمالية' : 'Perplexta Tech & Financial Forum'}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed font-sans font-medium">
+                      {isRtl 
+                        ? 'شارك خبراتك في التداول، ناقش تحليلات السوق، وتواصل مباشرة مع مجتمع الخبراء.' 
+                        : 'Share quantitative trade techniques, deliberate analytics, and interface with professional peers.'}
+                    </p>
+                  </div>
+
+                  {token && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const defaultCat = categories[0] || null;
+                        if (defaultCat) {
+                          setSelectedCategory(defaultCat);
+                          setIsCreatingThread(true);
+                        } else {
+                          triggerToast('لا يوجد قسم متوفر مضاف حالياً', 'No active category available');
+                        }
+                      }}
+                      className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/18 text-emerald-400 border border-emerald-500/20 px-5 h-10 font-bold text-xs rounded-[4px] shadow-sm cursor-pointer hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-300 font-sans shrink-0 hover:scale-[1.02]"
+                    >
+                      <Plus size={14} className="text-emerald-500" />
+                      {isRtl ? 'إنشاء موضوع جديد' : 'New Discussion'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Sub-header Filter and Search bar - Unified with BlogPage/Marketplace */}
+                <div className={`mt-6 p-2 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border ${
+                  isThemeDark ? 'bg-[#07080a] border-white/5' : 'bg-[#fafafa] border-gray-200/80'
+                }`}>
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
+                    <button
+                      onClick={() => handleSelectCategory(null)}
+                      className={`group px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap cursor-pointer transition-all duration-300 shrink-0 ${
+                        selectedCategory === null
+                          ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.25)] font-black'
+                          : (isThemeDark ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/5' : 'text-gray-650 hover:text-emerald-500 hover:bg-emerald-500/5')
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <Layers size={13} className={`shrink-0 ${selectedCategory === null ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'} transition-all duration-300`} />
+                        <span>{isRtl ? 'جميع الأقسام' : 'All Categories'}</span>
+                      </span>
+                    </button>
+
+                    {categories.map((cat) => {
+                      const isSelected = selectedCategory?.id === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleSelectCategory(cat)}
+                          className={`group px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap cursor-pointer transition-all duration-300 shrink-0 ${
+                            isSelected
+                              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.25)] font-black'
+                              : (isThemeDark ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/5' : 'text-gray-650 hover:text-emerald-500 hover:bg-emerald-500/5')
+                          }`}
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14)}</span>
+                            <span>{isRtl ? cat.name_ar : cat.name_en}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className={`flex items-center border rounded-[4px] px-2.5 py-1 w-full sm:w-28 md:w-32 lg:w-36 flex-shrink-0 transition-all ${
+                    isThemeDark 
+                      ? 'bg-[#000000]/40 border-gray-800/80 focus-within:border-emerald-500/35 focus-within:shadow-[0_0_12px_rgba(16,185,129,0.08)]' 
+                      : 'bg-white border-gray-200 focus-within:border-emerald-500/35 focus-within:shadow-[0_0_12px_rgba(16,185,129,0.08)]'
+                  }`}>
+                    <Search size={12} className="text-gray-400 shrink-0" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={isRtl ? 'ابحث بكلمة مفتاحية، رمز أو اسم عضو...' : 'Search by keyword, code segment or author...'}
-                      className={`w-full h-10 bg-[#121215] border border-gray-800/60 text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/15 rounded-[4px] text-xs font-sans font-medium transition-all duration-300 ${isRtl ? 'pl-4 pr-9' : 'pr-4 pl-9'}`}
+                      placeholder={isRtl ? 'ابحث...' : 'Search...'}
+                      className={`flex-1 bg-transparent text-[11px] placeholder-gray-500 outline-none px-1.5 ${
+                        isThemeDark ? 'text-white' : 'text-gray-800'
+                      }`}
                     />
+                    <div className="text-[9px] font-mono text-emerald-500 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded shrink-0 border border-emerald-500/10">
+                      {posts.filter(p => !reportedPosts.includes(p.id)).filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.content.toLowerCase().includes(searchQuery.toLowerCase())).length}
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center sm:justify-end gap-3 text-[11px] font-mono text-gray-400">
-                  <span>{isRtl ? 'النقاشات المطابقة:' : 'Matching results:'}</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/15">
-                    {posts.filter(p => !reportedPosts.includes(p.id)).filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.content.toLowerCase().includes(searchQuery.toLowerCase())).length}
-                  </span>
-                </div>
               </div>
-            </div>
 
-            {postsLoading ? (
-              <div className="space-y-4 animate-pulse">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="p-5 h-28 bg-[#1a1a1c] border border-gray-800/60 rounded-lg" />
-                ))}
-              </div>
-            ) : (() => {
-              const activePosts = posts.filter(p => !reportedPosts.includes(p.id));
-              const filtered = activePosts.filter(p => 
-                p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                p.content.toLowerCase().includes(searchQuery.toLowerCase())
-              );
+              {/* Flex Container for Persistent Sidebar + Feed */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Right/Left Sidebar for Navigation (swaps naturally based on dir="rtl" or "ltr") */}
+                <aside className={`hidden lg:flex flex-col w-60 shrink-0 p-4 space-y-4 border-r border-l select-none overflow-hidden ${
+                  isThemeDark ? 'bg-[#0a0a0c]/40 border-white/5' : 'bg-gray-50/50 border-gray-150'
+                }`}>
+                  <div className="flex-1 overflow-y-auto scrollbar-none pr-0.5 pb-2">
+                    <div className="text-[9px] font-black uppercase tracking-wider text-gray-450 px-1 mb-3">
+                      {isRtl ? 'جميع الأقسام' : 'ALL DEPARTMENTS'}
+                    </div>
 
-              if (activePosts.length === 0) {
-                return (
-                  <div className="py-20 text-center border border-dashed border-gray-800 p-8 rounded-lg max-w-xl mx-auto select-none">
-                    <MessageSquare size={48} className="mx-auto text-gray-500 mb-3" />
-                    <h3 className="font-bold text-sm tracking-tight mb-1 text-white">{isRtl ? 'لا توجد مواضيع منشورة بعد في هذا القسم' : 'No topics posted in this zone'}</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'كن أول من يفتتح نقاشاً ذكياً وحيوياً هنا بالضغط على زر "موضوع جديد"!' : 'Initiate the very first conversation in this space.'}</p>
-                  </div>
-                );
-              }
-
-              if (filtered.length === 0) {
-                return (
-                  <div className="py-16 text-center border border-dashed border-gray-800 p-8 rounded-lg max-w-xl mx-auto select-none">
-                    <Search size={36} className="mx-auto text-gray-500 mb-3" />
-                    <h3 className="font-bold text-sm tracking-tight mb-1 text-white">{isRtl ? 'لا توجد نتائج بحث مطابقة' : 'No matching results found'}</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'جرب البحث بكلمة مفتاحية مختلفة.' : 'Try scanning with a different terminology or filter query.'}</p>
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="mt-4 px-4 h-8 bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 rounded-[4px] text-[11px] font-bold"
-                    >
-                      {isRtl ? 'إعادة ضبط البحث' : 'Clear search query'}
-                    </button>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="space-y-4">
-                  {filtered.map((post, idx) => {
-                    const postTags = getPostTags(post.title, post.content, selectedCategory.slug, selectedCategory.id);
-                    return (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04 }}
-                        className="p-5 bg-[#1a1a1c] border border-gray-850 hover:border-emerald-500/35 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.03)] group transition-all duration-300"
+                    <div className="space-y-3.5">
+                      <div
+                        onClick={() => handleSelectCategory(null)}
+                        className={`group flex items-center justify-between rounded-[4px] px-3.5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300 border ${
+                          selectedCategory === null
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)] shadow-sm'
+                            : (isThemeDark 
+                                ? 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-gray-400' 
+                                : 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-slate-650')
+                        }`}
                       >
-                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleSelectPost(post)}>
-                          <div className="flex flex-wrap items-center gap-2 mb-2 select-none">
-                            {post.is_pinned && (
-                              <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">
-                                <Pin size={8} />
-                                {isRtl ? 'مثبت' : 'Pinned'}
-                              </span>
-                            )}
-                            {post.is_locked && (
-                              <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-rose-450 bg-rose-500/10 border border-rose-500/15 px-1.5 py-0.5 rounded-[3px]">
-                                <Lock size={8} />
-                                {isRtl ? 'مغلق' : 'Locked'}
-                              </span>
-                            )}
-                            <span className="text-[9px] text-gray-500 font-mono flex items-center gap-1">
-                              <Calendar size={10} />
-                              {new Date(post.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}
-                            </span>
-                          </div>
+                        <span className="flex items-center gap-2 truncate">
+                          <Layers size={14} className={`shrink-0 ${selectedCategory === null ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'} transition-all duration-300`} />
+                          <span className="truncate">{isRtl ? 'جميع الأقسام' : 'All Categories'}</span>
+                        </span>
+                      </div>
 
-                          <h2 className="text-sm font-black text-white group-hover:text-emerald-400 font-sans tracking-tight leading-snug truncate transition-colors">
-                            {post.title}
-                          </h2>
-                          <p className="text-[11px] text-gray-400 mt-1 lines-clamp-2 select-text text-justify overflow-hidden leading-relaxed">
-                            {post.content.slice(0, 180)}
-                            {post.content.length > 180 ? '...' : ''}
-                          </p>
-
-                          {/* Smart tags section */}
-                          <div className="flex flex-wrap gap-1.5 mt-3 select-none">
-                            {postTags.map((tag, tagIdx) => (
-                              <span 
-                                key={tagIdx} 
-                                className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-[3px] bg-emerald-500/5 text-emerald-400/90 border border-emerald-500/10"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Author Metadata Column */}
-                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t border-gray-800/40 md:border-t-0 pt-3 md:pt-0 shrink-0">
-                          {/* Compact author tag */}
-                          <div className="flex items-center gap-2 select-none">
-                            {post.author_avatar ? (
-                              <img src={post.author_avatar} alt={post.author_name} className="w-6 h-6 rounded-full border border-gray-800 shrink-0" />
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black tracking-widest shrink-0">
-                                {post.author_name[0].toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <span className="block text-[11px] text-gray-300 font-bold max-w-[80px] truncate leading-tight">{post.author_name}</span>
-                              <span className="text-[8px] text-emerald-500 font-mono tracking-wider">{post.author_role === 'admin' ? (isRtl ? 'مشرف' : 'Staff') : (isRtl ? 'عضو' : 'Peer')}</span>
-                            </div>
-                          </div>
-
-                          {/* Thread statistics */}
-                          <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 select-none">
-                            <span className="flex items-center gap-1" title={isRtl ? 'المشاهدات' : 'Views'}>
-                              <Eye size={12} />
-                              {post.views}
-                            </span>
-                            <span className="flex items-center gap-1" title={isRtl ? 'الردود' : 'Replies'}>
-                              <MessageCircle size={12} />
-                              {post.comment_count}
-                            </span>
-                          </div>
-
-                          {/* Security reporting button */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReportPost(post.id);
-                            }}
-                            className="p-1.5 text-gray-600 hover:text-rose-500 transition-colors cursor-pointer"
-                            title={isRtl ? 'إبلاغ عن محتوى معارض للسياسات أو تسريب برمجي' : 'Flag publication for server safety audit'}
+                      {categories.map((cat) => {
+                        const isSelected = selectedCategory?.id === cat.id;
+                        return (
+                          <div
+                            key={cat.id}
+                            onClick={() => handleSelectCategory(cat)}
+                            className={`group flex items-center justify-between rounded-[4px] px-3.5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300 border ${
+                              isSelected
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)] shadow-sm'
+                                : (isThemeDark 
+                                    ? 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-gray-400' 
+                                    : 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-slate-655')
+                            }`}
                           >
-                            <Flag size={13} />
+                            <span className="flex items-center gap-2 truncate font-medium">
+                              <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14)}</span>
+                              <span className="truncate">{isRtl ? cat.name_ar : cat.name_en}</span>
+                            </span>
+                            <span className={`text-[10px] font-mono font-bold bg-emerald-500/5 px-2 py-0.5 rounded shrink-0 border transition-all duration-330 ${
+                              isSelected 
+                                ? 'text-emerald-400 border-emerald-500/25 bg-emerald-500/10 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]' 
+                                : 'text-gray-400 border-transparent group-hover:text-emerald-400 group-hover:border-emerald-500/10 group-hover:bg-emerald-500/5'
+                            }`}>
+                              {cat.post_count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Central posts / threads display feed stream */}
+                <main className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-none space-y-6">
+                  {postsLoading ? (
+                    <div className="space-y-4 animate-pulse">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`p-5 h-28 border rounded-lg ${isThemeDark ? 'bg-[#1a1a1c] border-white/5' : 'bg-gray-50 border-gray-200'}`} />
+                      ))}
+                    </div>
+                  ) : (() => {
+                    const activePosts = posts.filter(p => !reportedPosts.includes(p.id));
+                    const filtered = activePosts.filter(p => 
+                      p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                      p.content.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+
+                    if (activePosts.length === 0) {
+                      return (
+                        <div className="py-20 text-center border border-dashed border-gray-800 p-8 rounded-lg max-w-xl mx-auto select-none">
+                          <MessageSquare size={48} className="mx-auto text-gray-500 mb-3" />
+                          <h3 className="font-bold text-sm tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">{isRtl ? 'لا توجد مواضيع منشورة بعد' : 'No topics posted in this zone'}</h3>
+                          <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'كن أول من يفتتح نقاشاً ذكياً وحيوياً هنا بالضغط على زر "موضوع جديد"!' : 'Initiate the very first conversation in this space.'}</p>
+                        </div>
+                      );
+                    }
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="py-16 text-center border border-dashed border-gray-800 p-8 rounded-lg max-w-xl mx-auto select-none">
+                          <Search size={36} className="mx-auto text-gray-500 mb-3" />
+                          <h3 className="font-bold text-sm tracking-tight mb-1 text-white">{isRtl ? 'لا توجد نتائج بحث مطابقة' : 'No matching results found'}</h3>
+                          <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'جرب البحث بكلمة مفتاحية مختلفة.' : 'Try scanning with a different terminology or filter query.'}</p>
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="mt-4 px-4 h-8 bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 rounded-[4px] text-[11px] font-bold cursor-pointer"
+                          >
+                            {isRtl ? 'إعادة ضبط البحث' : 'Clear search query'}
                           </button>
                         </div>
-                      </motion.div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        {filtered.map((post, idx) => {
+                          const postTags = getPostTags(
+                            post.title, 
+                            post.content, 
+                            categories.find(c => c.id === post.category_id)?.slug || '', 
+                            post.category_id
+                          );
+                          return (
+                            <motion.div
+                              key={post.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.04 }}
+                              className={`p-5 border rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.03)] group transition-all duration-300 ${
+                                isThemeDark ? 'bg-[#1a1a1c] border-gray-850 hover:border-emerald-500/35' : 'bg-[#fafafa] border-gray-200 hover:border-emerald-500/30'
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleSelectPost(post)}>
+                                <div className="flex flex-wrap items-center gap-2 mb-2 select-none">
+                                  {post.is_pinned && (
+                                    <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">
+                                      <Pin size={8} />
+                                      {isRtl ? 'مثبت' : 'Pinned'}
+                                    </span>
+                                  )}
+                                  {post.is_locked && (
+                                    <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-rose-450 bg-rose-500/10 border border-rose-500/15 px-1.5 py-0.5 rounded-[3px]">
+                                      <Lock size={8} />
+                                      {isRtl ? 'مغلق' : 'Locked'}
+                                    </span>
+                                  )}
+                                  <span className="text-[9px] text-gray-500 font-mono flex items-center gap-1">
+                                    <Calendar size={10} />
+                                    {new Date(post.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}
+                                  </span>
+                                </div>
+
+                                <h2 className={`text-sm font-black font-sans tracking-tight leading-snug truncate group-hover:text-emerald-400 transition-colors ${
+                                  isThemeDark ? 'text-white' : 'text-gray-900'
+                                }`}>
+                                  {post.title}
+                                </h2>
+                                <p className={`text-[11px] mt-1 lines-clamp-2 select-text text-justify overflow-hidden leading-relaxed ${
+                                  isThemeDark ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                  {post.content.slice(0, 180)}
+                                  {post.content.length > 180 ? '...' : ''}
+                                </p>
+
+                                {/* Smart tags section */}
+                                <div className="flex flex-wrap gap-1.5 mt-3 select-none">
+                                  {postTags.map((tag, tagIdx) => (
+                                    <span 
+                                      key={tagIdx} 
+                                      className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-[3px] bg-emerald-500/5 text-emerald-400/90 border border-emerald-500/10"
+                                    >
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Author Metadata Column */}
+                              <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t border-gray-800/40 md:border-t-0 pt-3 md:pt-0 shrink-0">
+                                {/* Compact author tag */}
+                                <div className="flex items-center gap-2 select-none">
+                                  {post.author_avatar ? (
+                                    <img src={post.author_avatar} alt={post.author_name} className="w-6 h-6 rounded-full border border-gray-800 shrink-0" />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black tracking-widest shrink-0">
+                                      {post.author_name[0].toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className={`block text-[11px] font-bold max-w-[80px] truncate leading-tight ${isThemeDark ? 'text-gray-300' : 'text-gray-800'}`}>{post.author_name}</span>
+                                    <span className="text-[8px] text-emerald-500 font-mono tracking-wider">{post.author_role === 'admin' ? (isRtl ? 'مشرف' : 'Staff') : (isRtl ? 'عضو' : 'Peer')}</span>
+                                  </div>
+                                </div>
+
+                                {/* Thread statistics */}
+                                <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 select-none">
+                                  <span className="flex items-center gap-1" title={isRtl ? 'المشاهدات' : 'Views'}>
+                                    <Eye size={12} />
+                                    {post.views}
+                                  </span>
+                                  <span className="flex items-center gap-1" title={isRtl ? 'الردود' : 'Replies'}>
+                                    <MessageCircle size={12} />
+                                    {post.comment_count}
+                                  </span>
+                                </div>
+
+                                {/* Security reporting button */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReportPost(post.id);
+                                  }}
+                                  className="p-1.5 text-gray-500 hover:text-rose-500 transition-colors cursor-pointer"
+                                  title={isRtl ? 'إبلاغ عن محتوى معارض للسياسات أو تسريب برمجي' : 'Flag publication for server safety audit'}
+                                >
+                                  <Flag size={13} />
+                                </button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     );
-                  })}
-                </div>
-              );
-            })()}
-          </motion.div>
-        )}
+                  })()}
+                </main>
+              </div>
+            </motion.div>
+          )}
 
         {/* VIEW 3: Create Post Thread Page with Markdown Editor */}
         {selectedCategory && isCreatingThread && (
@@ -838,46 +912,58 @@ export const ForumPage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="max-w-3xl mx-auto bg-[#1a1a1c] border border-gray-800/80 rounded-lg p-6 md:p-8 shadow-xl"
+            className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-8 border-b border-gray-800/60 pb-4 select-none">
-              <div className="flex items-center gap-2">
-                <Code size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                <h2 className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 font-sans">
-                  {isRtl ? `كتابة منشور جديد في: ${selectedCategory.name_ar}` : `Write New Discussion under: ${selectedCategory.name_en}`}
-                </h2>
+            {/* Thread Creator Header - Sticky Header */}
+            <header className={`p-6 md:px-8 border-b relative select-none flex-shrink-0 ${
+              isThemeDark ? 'border-white/5 bg-[#080808]' : 'border-gray-200/80 bg-white'
+            }`}>
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Code size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <h2 className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 font-sans">
+                    {isRtl ? `كتابة موضوع جديد: ${selectedCategory.name_ar}` : `Write New Topic: ${selectedCategory.name_en}`}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsCreatingThread(false);
+                    setNewTitle('');
+                    setNewContent('');
+                  }}
+                  className="text-xs text-gray-500 hover:text-rose-450 font-bold transition-colors cursor-pointer"
+                >
+                  {isRtl ? 'إلغاء' : 'Cancel'}
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setIsCreatingThread(false);
-                  setNewTitle('');
-                  setNewContent('');
-                }}
-                className="text-xs text-gray-500 hover:text-rose-400 font-bold transition-colors cursor-pointer"
-              >
-                {isRtl ? 'إلغاء' : 'Cancel'}
-              </button>
-            </div>
+            </header>
 
-            <form onSubmit={handleSubmitThread} className="space-y-5">
-              <div>
-                <label className="block text-[10px] font-sans font-black uppercase text-gray-450 mb-2 select-none">
-                  {isRtl ? 'عنوان الموضوع' : 'Discussion Title'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder={isRtl ? 'اكتب عنواناً معبراً ودقيقاً لتحليلك الفني...' : 'Write an outstanding professional title...'}
-                  maxLength={100}
-                  className="w-full h-11 bg-[#121215] border border-gray-800/60 text-white focus:border-emerald-500 rounded-[4px] px-4 text-xs sm:text-sm placeholder-gray-600 outline-none transition-theme font-sans font-medium"
-                />
-              </div>
+            <main className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-none">
+              <div className={`max-w-3xl mx-auto border rounded-lg p-6 md:p-8 shadow-xl ${
+                isThemeDark ? 'bg-[#121214] border-white/5' : 'bg-white border-gray-200'
+              }`}>
+                <form onSubmit={handleSubmitThread} className="space-y-5">
+                  <div>
+                    <label className={`block text-[10px] font-sans font-black uppercase mb-2 select-none ${isThemeDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {isRtl ? 'عنوان الموضوع' : 'Discussion Title'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder={isRtl ? 'اكتب عنواناً معبراً ودقيقاً لتحليلك الفني...' : 'Write an outstanding professional title...'}
+                      maxLength={100}
+                      className={`w-full h-11 border text-white rounded-[4px] px-4 text-xs sm:text-sm placeholder-gray-650 outline-none transition-theme font-sans font-medium ${
+                        isThemeDark ? 'bg-[#121215] border-white/5 focus:border-emerald-500' : 'bg-gray-50 border-gray-250 focus:border-emerald-500 text-gray-900'
+                      }`}
+                    />
+                  </div>
 
-              {/* Minimal Markdown Editor controls */}
-              <div className="border border-gray-800/60 rounded-[4px] overflow-hidden bg-[#121215]">
-                <div className="flex justify-between items-center bg-[#18181b] border-b border-gray-800/60 px-4 py-2 select-none">
+                  {/* Minimal Markdown Editor controls */}
+                  <div className={`border rounded-[4px] overflow-hidden ${isThemeDark ? 'border-white/5 bg-[#121215]' : 'border-gray-255 bg-white'}`}>
+                    <div className={`flex justify-between items-center border-b px-4 py-2 select-none ${isThemeDark ? 'bg-[#18181b] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -911,10 +997,10 @@ export const ForumPage: React.FC = () => {
                       placeholder={isRtl 
                         ? 'اكتب تفاصيل نقاشك هنا. تفضل باستخدام لغة مارك داون (Markdown) والأكواد البرمجية كالتالي:\n\n# عنوان رئيسي\n**نص عريض**\n```javascript\nconst code = "here";\n```' 
                         : 'Draft your content. Use standard markdown structure and code segments like:\n\n# Main Title\n**Bold Text**\n```python\nprint("quantitative code")\n```'}
-                      className="w-full bg-transparent text-white placeholder-gray-600 outline-none resize-none text-xs sm:text-sm font-sans font-medium min-h-[220px]"
+                      className="w-full bg-transparent text-white placeholder-gray-650 outline-none resize-none text-[11px] sm:text-xs font-sans font-medium min-h-[180px]"
                     />
                   ) : (
-                    <div className="min-h-[220px] bg-[#0e0e11] p-3 rounded-[3px]">
+                    <div className={`p-3 rounded-[3px] min-h-[180px] ${isThemeDark ? 'bg-black/40' : 'bg-gray-50'}`}>
                       {renderMarkdownPreview(newContent)}
                     </div>
                   )}
@@ -922,7 +1008,7 @@ export const ForumPage: React.FC = () => {
               </div>
 
               {/* Character Limit and guidelines */}
-              <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 select-none">
+              <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 select-none pb-2">
                 <span>{isRtl ? 'تنبيه: لا تقم بنشر أكواد السيرفر أو مفاتيح APIs حيوية.' : 'Notice: Avoid attaching internal backend controllers or credentials.'}</span>
                 <span>{newContent.length} {isRtl ? 'رمز تم تقديمه' : 'characters entered'}</span>
               </div>
@@ -935,7 +1021,9 @@ export const ForumPage: React.FC = () => {
                     setNewTitle('');
                     setNewContent('');
                   }}
-                  className="px-5 h-11 border border-gray-800 hover:bg-gray-800 text-gray-300 font-bold rounded-[4px] text-xs font-sans transition-all cursor-pointer"
+                  className={`px-5 h-11 border font-bold rounded-[4px] text-xs font-sans transition-all cursor-pointer ${
+                    isThemeDark ? 'border-white/10 text-gray-300 hover:bg-white/5' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
                 >
                   {isRtl ? 'إلغاء المنشور' : 'Cancel draft'}
                 </button>
@@ -955,270 +1043,285 @@ export const ForumPage: React.FC = () => {
                 </button>
               </div>
             </form>
+            </div>
+            </main>
           </motion.div>
         )}
 
         {/* VIEW 4: Discussion Post Detailed Screen & Nested Commentary Flow */}
-        {selectedCategory && selectedPost && (
+        {selectedPost && (
           <motion.div
             key="post-thread-detail"
             initial={{ opacity: 0, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="max-w-4xl mx-auto"
+            className="flex-1 flex flex-col overflow-hidden"
           >
-            {/* Navigation back and admin tools */}
-            <div className="flex justify-between items-center mb-6 border-b border-gray-200/5 dark:border-gray-800/10 pb-4">
-              <button
-                onClick={() => setSelectedPost(null)}
-                className="group flex items-center gap-1.5 text-xs font-black text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer"
-              >
-                <ArrowLeft size={16} className={`group-hover:scale-115 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
-                {isRtl ? 'العودة لمواضيع الساحة الحالية' : 'Back to Active Zone Threads'}
-              </button>
-
-              <div className="flex gap-2 select-none">
-                {/* Regular reporting security flag */}
+            {/* Navigation back and admin tools - Header */}
+            <header className={`p-6 md:px-8 border-b relative select-none flex-shrink-0 ${
+              isThemeDark ? 'border-white/5 bg-[#080808]' : 'border-gray-200/80 bg-white'
+            }`}>
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+              <div className="flex justify-between items-center">
                 <button
-                  type="button"
-                  onClick={() => handleReportPost(selectedPost.id)}
-                  className="p-1.5 border border-gray-800 bg-[#1a1a1c] text-gray-400 hover:text-rose-450 hover:border-rose-500/30 rounded-[4px] text-xs flex items-center gap-1 cursor-pointer font-sans"
-                  title={isRtl ? 'إبلاغ عن محتوى معارض' : 'Report threat to server security'}
+                  onClick={() => setSelectedPost(null)}
+                  className="group flex items-center gap-1.5 text-xs font-black text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer"
                 >
-                  <Flag size={13} />
-                  <span className="hidden sm:inline">{isRtl ? 'إبلاغ أمني' : 'Report Shield'}</span>
+                  <ArrowLeft size={16} className={`group-hover:scale-115 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
+                  {isRtl ? 'العودة لمواضيع الساحة الحالية' : 'Back to Active Zone Threads'}
                 </button>
 
-                {user?.role === 'admin' && (
-                  <>
-                    <button
-                      onClick={() => handleTogglePin(selectedPost)}
-                      className={`p-1.5 border rounded-[4px] transition-colors text-xs flex items-center gap-1 cursor-pointer font-sans ${selectedPost.is_pinned ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-bold' : 'bg-transparent border-gray-800 text-gray-405 hover:text-white'}`}
-                    >
-                      <Pin size={13} />
-                      <span>{selectedPost.is_pinned ? (isRtl ? 'إزالة التثبيت' : 'Unpin') : (isRtl ? 'تثبيت' : 'Pin')}</span>
-                    </button>
+                <div className="flex gap-2 select-none shrink-0">
+                  {/* Regular reporting security flag */}
+                  <button
+                    type="button"
+                    onClick={() => handleReportPost(selectedPost.id)}
+                    className={`p-1.5 border text-xs flex items-center gap-1 cursor-pointer font-sans rounded-[4px] ${
+                      isThemeDark ? 'border-white/10 bg-[#121214] text-gray-400 hover:text-rose-400 hover:border-rose-500/30' : 'border-gray-200 bg-white text-gray-500 hover:text-rose-600 hover:border-rose-300'
+                    }`}
+                    title={isRtl ? 'إبلاغ عن محتوى معارض' : 'Report threat to server security'}
+                  >
+                    <Flag size={13} />
+                    <span className="hidden sm:inline">{isRtl ? 'إبلاغ أمني' : 'Report Shield'}</span>
+                  </button>
 
-                    <button
-                      onClick={() => handleToggleLock(selectedPost)}
-                      className={`p-1.5 border rounded-[4px] transition-colors text-xs flex items-center gap-1 cursor-pointer font-sans ${selectedPost.is_locked ? 'bg-rose-500/15 border-rose-500/30 text-rose-450 font-bold' : 'bg-transparent border-gray-800 text-gray-405 hover:text-white'}`}
-                    >
-                      <Lock size={13} />
-                      <span>{selectedPost.is_locked ? (isRtl ? 'فتح القفل' : 'Unlock') : (isRtl ? 'قفل التعليقات' : 'Lock')}</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {postDetailLoading ? (
-              <div className="h-64 bg-[#1a1a1c] border border-gray-800/60 rounded-lg animate-pulse" />
-            ) : (
-              <div className="space-y-6">
-                {/* Core original thread card */}
-                <div className="bg-[#1a1a1c] border border-gray-850 rounded-lg p-6 md:p-8 shadow-xl">
-                  {/* Author metadata header */}
-                  <div className="flex items-center justify-between border-b border-gray-800/40 pb-4 mb-5 select-none">
-                    <div className="flex items-center gap-3">
-                      {selectedPost.author_avatar ? (
-                        <img src={selectedPost.author_avatar} alt={selectedPost.author_name} className="w-10 h-10 rounded-full border border-gray-800 shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
-                          {selectedPost.author_name[0].toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-[12px] font-black text-white flex items-center gap-1.5">
-                          <span>{selectedPost.author_name}</span>
-                          <span className={`text-[8px] tracking-wide font-black uppercase px-2 py-0.5 rounded-[3px] ${selectedPost.author_role === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/15' : 'text-gray-400 bg-gray-800/60 border border-gray-800'}`}>
-                            {selectedPost.author_role === 'admin' ? (isRtl ? 'إشراف وتدقيق' : 'Staff Monitor') : (isRtl ? 'عضو خبير' : 'Verified Peer')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-[9px] text-gray-500 font-mono mt-1">
-                          <Calendar size={10} />
-                          <span>{new Date(selectedPost.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {(user?.role === 'admin' || user?.id === selectedPost.user_id) && (
+                  {user?.role === 'admin' && (
+                    <>
                       <button
-                        onClick={() => handleDeletePost(selectedPost.id)}
-                        className="p-2 text-gray-500 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer transition-colors"
-                        title={isRtl ? 'حذف الموضوع' : 'Delete Thread'}
+                        onClick={() => handleTogglePin(selectedPost)}
+                        className={`p-1.5 border rounded-[4px] transition-colors text-xs flex items-center gap-1 cursor-pointer font-sans ${selectedPost.is_pinned ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-bold' : (isThemeDark ? 'bg-transparent border-white/10 text-gray-400 hover:text-white' : 'bg-transparent border-gray-255 text-gray-750 hover:bg-gray-100')}`}
                       >
-                        <Trash2 size={15} />
+                        <Pin size={13} />
+                        <span>{selectedPost.is_pinned ? (isRtl ? 'إزالة التثبيت' : 'Unpin') : (isRtl ? 'تثبيت' : 'Pin')}</span>
                       </button>
-                    )}
-                  </div>
 
-                  {/* Body text area with Markdown supported rendering preview */}
-                  <h1 className="text-base sm:text-lg font-black text-white leading-snug tracking-tight mb-4 select-text font-sans">
-                    {selectedPost.title}
-                  </h1>
-                  
-                  {/* Clean rendered body contents */}
-                  <div className="bg-[#121215]/40 border border-gray-850/50 p-4 rounded-lg select-text">
-                    {renderMarkdownPreview(selectedPost.content)}
-                  </div>
-                </div>
-
-                {/* Replies panel */}
-                <div className="bg-[#1a1a1c] border border-gray-850 rounded-lg p-6 md:p-8">
-                  <h2 className="text-xs sm:text-sm font-black text-white mb-6 uppercase border-b border-gray-800/40 pb-3 font-mono tracking-wider flex justify-between items-center">
-                    <span>{isRtl ? 'الردود التقنية ومقترحات الحلول' : 'Technical discussion feed'} ({comments.filter(c => !reportedComments.includes(c.id)).length})</span>
-                    <span className="text-[10px] text-emerald-400/85">SECURE CONNECTION PORT</span>
-                  </h2>
-
-                  {/* Add commentary reply */}
-                  {selectedPost.is_locked ? (
-                    <div className="p-4 bg-rose-500/5 border border-rose-500/10 rounded-sm text-center mb-8 select-none">
-                      <p className="text-xs text-rose-450 font-black flex items-center justify-center gap-1.5 font-sans">
-                        <Lock size={12} />
-                        {isRtl ? 'هذا الموضوع مغلق أمنياً من قبل الإشراف لكتابة ردود جديدة.' : 'This conversation zone is locked and preserved by administrative rules.'}
-                      </p>
-                    </div>
-                  ) : token ? (
-                    <form onSubmit={handleSubmitComment} className="mb-8">
-                      {/* Markdown Editor implementation inside comments too */}
-                      <div className="border border-gray-800/60 rounded-[4px] overflow-hidden bg-[#121215]">
-                        <div className="flex justify-between items-center bg-[#18181b] border-b border-gray-800/60 px-4 py-1.5 select-none text-[11px] text-gray-400">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setCommentEditorTab('write')}
-                              className={`px-2 py-0.5 text-[10px] rounded-[3px] font-bold transition-all cursor-pointer ${commentEditorTab === 'write' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-500 hover:text-white'}`}
-                            >
-                              {isRtl ? 'اكتب تعليقاً' : 'Write Reply'}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!newComment.trim()}
-                              onClick={() => setCommentEditorTab('preview')}
-                              className={`px-2 py-0.5 text-[10px] rounded-[3px] font-bold transition-all cursor-pointer disabled:opacity-40 ${commentEditorTab === 'preview' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-500 hover:text-white'}`}
-                            >
-                              {isRtl ? 'معاينة التعليق' : 'Preview Live'}
-                            </button>
-                          </div>
-                          <span>{1500 - newComment.length} {isRtl ? 'رمز متبقي' : 'chars limit'}</span>
-                        </div>
-
-                        <div className="p-3">
-                          {commentEditorTab === 'write' ? (
-                            <textarea
-                              rows={3}
-                              required
-                              value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
-                              placeholder={isRtl ? 'اكتب ردك التقني هنا بحرية... يدعم الكود البرمجي عبر الرموز' : 'Participate with your technical trade analysis, coding reply here...'}
-                              maxLength={1500}
-                              className="w-full bg-transparent text-white placeholder-gray-600 outline-none resize-none text-xs sm:text-sm leading-relaxed font-sans font-medium"
-                            />
-                          ) : (
-                            <div className="bg-[#0b0b0d] p-3 rounded-[3px] min-h-[80px]">
-                              {renderMarkdownPreview(newComment)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end mt-2 leading-none">
-                        <button
-                          type="submit"
-                          disabled={submittingComment || !newComment.trim()}
-                          className="flex items-center gap-1.5 px-5 h-9 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 font-bold text-white text-xs cursor-pointer transition-theme uppercase"
-                        >
-                          {submittingComment ? (
-                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <Send size={11} className={isRtl ? 'rotate-180' : ''} />
-                              <span>{isRtl ? 'نشر الرد' : 'Submit Reply'}</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-sm text-center mb-8 select-none">
-                      <p className="text-xs text-emerald-400 font-sans font-semibold leading-relaxed">
-                        {isRtl ? 'يرجى تسجيل الدخول لكتابة رد على هذا الموضوع.' : 'Log in to write a commentary reply on this discussion.'}
-                      </p>
-                    </div>
+                      <button
+                        onClick={() => handleToggleLock(selectedPost)}
+                        className={`p-1.5 border rounded-[4px] transition-colors text-xs flex items-center gap-1 cursor-pointer font-sans ${selectedPost.is_locked ? 'bg-rose-500/15 border-rose-500/30 text-rose-455 font-bold' : (isThemeDark ? 'bg-transparent border-white/10 text-gray-400 hover:text-white' : 'bg-transparent border-gray-255 text-gray-750 hover:bg-gray-100')}`}
+                      >
+                        <Lock size={13} />
+                        <span>{selectedPost.is_locked ? (isRtl ? 'فتح القفل' : 'Unlock') : (isRtl ? 'قفل التعليقات' : 'Lock')}</span>
+                      </button>
+                    </>
                   )}
+                </div>
+              </div>
+            </header>
 
-                  {/* Replies comments lists */}
-                  {comments.filter(c => !reportedComments.includes(c.id)).length > 0 ? (
-                    <div className="space-y-4 max-h-[550px] overflow-y-auto custom-scrollbar pr-1">
-                      {comments.filter(c => !reportedComments.includes(c.id)).map((comment, index) => (
-                        <div
-                          key={comment.id}
-                          className="group/reply flex gap-3 p-4 bg-[#121215] border border-gray-850 rounded-[4px] hover:border-emerald-500/20 transition-all duration-300"
-                        >
-                          {comment.author_avatar ? (
-                            <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-full border border-gray-800 shrink-0" />
+            {/* Scrollable details view */}
+            <main className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-none space-y-6">
+              <div className="max-w-4xl mx-auto space-y-6">
+                {postDetailLoading ? (
+                  <div className={`h-64 border rounded-lg animate-pulse ${isThemeDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-200'}`} />
+                ) : (
+                  <div className="space-y-6">
+                    {/* Core original thread card */}
+                    <div className={`border rounded-lg p-6 md:p-8 shadow-xl ${isThemeDark ? 'bg-[#121214] border-white/5' : 'bg-white border-gray-200'}`}>
+                      {/* Author metadata header */}
+                      <div className="flex items-center justify-between border-b border-gray-500/5 pb-4 mb-5 select-none">
+                        <div className="flex items-center gap-3">
+                          {selectedPost.author_avatar ? (
+                            <img src={selectedPost.author_avatar} alt={selectedPost.author_name} className="w-10 h-10 rounded-full border border-gray-800 shrink-0" />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
-                              {comment.author_name[0].toUpperCase()}
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                              {selectedPost.author_name[0].toUpperCase()}
                             </div>
                           )}
+                          <div>
+                            <div className="text-[12px] font-black text-white flex items-center gap-1.5">
+                              <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>{selectedPost.author_name}</span>
+                              <span className={`text-[8px] tracking-wide font-black uppercase px-2 py-0.5 rounded-[3px] ${selectedPost.author_role === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/15' : 'text-gray-400 bg-gray-800/60 border border-gray-800'}`}>
+                                {selectedPost.author_role === 'admin' ? (isRtl ? 'إشراف وتدقيق' : 'Staff Monitor') : (isRtl ? 'عضو خبير' : 'Verified Peer')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[9px] text-gray-500 font-mono mt-1">
+                              <Calendar size={10} />
+                              <span>{new Date(selectedPost.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-1.5 mb-2 select-none">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[12px] font-black text-white">{comment.author_name}</span>
-                                {comment.author_role === 'admin' ? (
-                                  <span className="text-[8px] tracking-wide font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">{isRtl ? 'إشراف' : 'Staff'}</span>
-                                ) : (
-                                  <span className="text-[8px] tracking-wide font-bold uppercase text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded-[3px]">{isRtl ? 'عضو' : 'Peer'}</span>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-mono text-gray-500">{new Date(comment.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                                
-                                {/* Micro inline security operations */}
+                        {(user?.role === 'admin' || user?.id === selectedPost.user_id) && (
+                          <button
+                            onClick={() => handleDeletePost(selectedPost.id)}
+                            className="p-2 text-gray-450 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer transition-colors"
+                            title={isRtl ? 'حذف الموضوع' : 'Delete Thread'}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Body text area with Markdown supported rendering preview */}
+                      <h1 className={`text-base sm:text-lg font-black leading-snug tracking-tight mb-4 select-text font-sans ${isThemeDark ? 'text-white' : 'text-gray-900'}`}>
+                        {selectedPost.title}
+                      </h1>
+                      
+                      {/* Clean rendered body contents */}
+                      <div className={`p-4 rounded-lg select-text border ${isThemeDark ? 'bg-black/30 border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                        {renderMarkdownPreview(selectedPost.content)}
+                      </div>
+                    </div>
+
+                    {/* Replies panel */}
+                    <div className={`border rounded-lg p-6 md:p-8 ${isThemeDark ? 'bg-[#121214] border-white/5' : 'bg-white border-gray-200'}`}>
+                      <h2 className={`text-xs sm:text-sm font-black mb-6 uppercase border-b pb-3 font-mono tracking-wider flex justify-between items-center ${isThemeDark ? 'text-white border-white/5' : 'text-gray-900 border-gray-200'}`}>
+                        <span>{isRtl ? 'الردود التقنية ومقترحات الحلول' : 'Technical discussion feed'} ({comments.filter(c => !reportedComments.includes(c.id)).length})</span>
+                        <span className="text-[10px] text-emerald-400/85 font-black font-sans">PERPLEXTA ENGINE PORT</span>
+                      </h2>
+
+                      {/* Add commentary reply */}
+                      {selectedPost.is_locked ? (
+                        <div className="p-4 bg-rose-500/5 border border-rose-500/10 rounded-sm text-center mb-8 select-none">
+                          <p className="text-xs text-rose-455 font-black flex items-center justify-center gap-1.5 font-sans">
+                            <Lock size={12} />
+                            {isRtl ? 'هذا الموضوع مغلق أمنياً من قبل الإشراف لكتابة ردود جديدة.' : 'This conversation zone is locked and preserved by administrative rules.'}
+                          </p>
+                        </div>
+                      ) : token ? (
+                        <form onSubmit={handleSubmitComment} className="mb-8">
+                          {/* Markdown Editor implementation inside comments too */}
+                          <div className={`border rounded-[4px] overflow-hidden ${isThemeDark ? 'bg-black/30 border-white/10' : 'bg-white border-gray-300'}`}>
+                            <div className={`flex justify-between items-center border-b px-4 py-1.5 select-none text-[11px] ${isThemeDark ? 'bg-[#18181b]/80 border-white/10 text-gray-400' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
+                              <div className="flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => handleReportComment(comment.id)}
-                                  className="p-1 text-gray-500 hover:text-rose-500 transition-colors"
-                                  title={isRtl ? 'إبلاغ عن رد مخالف' : 'Flag reply for moderation review'}
+                                  onClick={() => setCommentEditorTab('write')}
+                                  className={`px-2 py-0.5 text-[10px] rounded-[3px] font-bold transition-all cursor-pointer ${commentEditorTab === 'write' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-500 hover:text-gray-850'}`}
                                 >
-                                  <Flag size={10} />
+                                  {isRtl ? 'اكتب تعليقاً' : 'Write Reply'}
                                 </button>
-
-                                {(user?.role === 'admin' || user?.id === comment.user_id) && (
-                                  <button
-                                    onClick={() => handleDeleteComment(comment.id)}
-                                    className="opacity-0 group-hover/reply:opacity-100 p-1 text-gray-500 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all cursor-pointer"
-                                    title={isRtl ? 'حذف الرد' : 'Delete Reply'}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  disabled={!newComment.trim()}
+                                  onClick={() => setCommentEditorTab('preview')}
+                                  className={`px-2 py-0.5 text-[10px] rounded-[3px] font-bold transition-all cursor-pointer disabled:opacity-40 ${commentEditorTab === 'preview' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-500 hover:text-gray-850'}`}
+                                >
+                                  {isRtl ? 'معاينة التعليق' : 'Preview Live'}
+                                </button>
                               </div>
+                              <span className="font-mono font-bold text-[9px]">{1500 - newComment.length} {isRtl ? 'رمز متبقي' : 'chars limit'}</span>
                             </div>
-                            
-                            {/* Comment output with dynamic rendering */}
-                            <div className="text-[11px] sm:text-xs text-gray-300">
-                              {renderMarkdownPreview(comment.content)}
+
+                            <div className="p-3">
+                              {commentEditorTab === 'write' ? (
+                                <textarea
+                                  rows={3}
+                                  required
+                                  value={newComment}
+                                  onChange={(e) => setNewComment(e.target.value)}
+                                  placeholder={isRtl ? 'اكتب ردك التقني هنا بحرية... يدعم الكود البرمجي عبر الرموز' : 'Participate with your technical trade analysis, coding reply here...'}
+                                  maxLength={1500}
+                                  className={`w-full bg-transparent placeholder-gray-600 outline-none resize-none text-xs sm:text-sm leading-relaxed font-sans font-medium ${isThemeDark ? 'text-white' : 'text-gray-900'}`}
+                                />
+                              ) : (
+                                <div className={`p-3 rounded-[3px] min-h-[85px] ${isThemeDark ? 'bg-[#0b0b0d]' : 'bg-gray-100/50'}`}>
+                                  {renderMarkdownPreview(newComment)}
+                                </div>
+                              )}
                             </div>
                           </div>
+
+                          <div className="flex justify-end mt-2 leading-none">
+                            <button
+                              type="submit"
+                              disabled={submittingComment || !newComment.trim()}
+                              className="flex items-center gap-1.5 px-5 h-9 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 font-bold text-white text-xs cursor-pointer transition-theme uppercase"
+                            >
+                              {submittingComment ? (
+                                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                <>
+                                  <Send size={11} className={isRtl ? 'rotate-180' : ''} />
+                                  <span>{isRtl ? 'نشر الرد' : 'Submit Reply'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-sm text-center mb-8 select-none">
+                          <p className="text-xs text-emerald-400 font-sans font-semibold leading-relaxed">
+                            {isRtl ? 'يرجى تسجيل الدخول لكتابة رد على هذا الموضوع.' : 'Log in to write a commentary reply on this discussion.'}
+                          </p>
                         </div>
-                      ))}
+                      )}
+
+                      {/* Replies comments lists */}
+                      {comments.filter(c => !reportedComments.includes(c.id)).length > 0 ? (
+                        <div className="space-y-4 max-h-[550px] overflow-y-auto custom-scrollbar pr-1">
+                          {comments.filter(c => !reportedComments.includes(c.id)).map((comment, index) => (
+                            <div
+                              key={comment.id}
+                              className={`group/reply flex gap-3 p-4 border rounded-[4px] hover:border-emerald-500/20 transition-all duration-300 ${isThemeDark ? 'bg-black/30 border-white/5' : 'bg-white border-gray-250/70'}`}
+                            >
+                              {comment.author_avatar ? (
+                                <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-full border border-gray-800 shrink-0" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                  {comment.author_name[0].toUpperCase()}
+                                </div>
+                              )}
+
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between gap-1.5 mb-2 select-none">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[12px] font-black ${isThemeDark ? 'text-white' : 'text-gray-900'}`}>{comment.author_name}</span>
+                                    {comment.author_role === 'admin' ? (
+                                      <span className="text-[8px] tracking-wide font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">{isRtl ? 'إشراف' : 'Staff'}</span>
+                                    ) : (
+                                      <span className="text-[8px] tracking-wide font-bold uppercase text-gray-400 bg-gray-805 px-1.5 py-0.5 rounded-[3px]">{isRtl ? 'عضو' : 'Peer'}</span>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-mono text-gray-500">{new Date(comment.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    
+                                    {/* Micro inline security operations */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReportComment(comment.id)}
+                                      className="p-1 text-gray-500 hover:text-rose-500 transition-colors"
+                                      title={isRtl ? 'إبلاغ عن رد مخالف' : 'Flag reply for moderation review'}
+                                    >
+                                      <Flag size={10} />
+                                    </button>
+
+                                    {(user?.role === 'admin' || user?.id === comment.user_id) && (
+                                      <button
+                                        onClick={() => handleDeleteComment(comment.id)}
+                                        className="opacity-0 group-hover/reply:opacity-100 p-1 text-gray-500 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all cursor-pointer"
+                                        title={isRtl ? 'حذف الرد' : 'Delete Reply'}
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Comment output with dynamic rendering */}
+                                <div className={`text-[11px] sm:text-xs ${isThemeDark ? 'text-gray-300' : 'text-gray-750'}`}>
+                                  {renderMarkdownPreview(comment.content)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center text-gray-500 select-none">
+                          <MessageSquare size={32} className="mx-auto text-gray-650 mb-2" />
+                          <p className="text-xs font-sans font-medium">{isRtl ? 'لا توجد ردود بعد. شارك برأيك وساهم في إثراء الموضوع بالتصميم الهندسي!' : 'No conversation replies here yet. Share your technical feedback!'}</p>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="py-10 text-center text-gray-500 select-none">
-                      <MessageSquare size={32} className="mx-auto text-gray-600 mb-2" />
-                      <p className="text-xs font-sans font-medium">{isRtl ? 'لا توجد ردود بعد. شارك برأيك وساهم في إثراء الموضوع بالتصميم الهندسي!' : 'No conversation replies here yet. Share your technical feedback!'}</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
+            </main>
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
 
       {/* FLOATING ACTION BUTTON (FAB) & DYNAMIC SHORTCUT */}
       {token && !isCreatingThread && !selectedPost && (

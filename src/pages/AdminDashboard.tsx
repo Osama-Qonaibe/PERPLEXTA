@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { MarketplaceManagementView } from "../components/MarketplaceManagementView";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
@@ -3356,22 +3355,43 @@ const DatabaseOrchestrationView = ({
       if (response.ok) {
         const data = await response.json();
         setDatabases(
-          data.map((db: any) => ({
-            ...db,
-            type: db.type === "postgres" ? "local" : db.type || "local",
-            titleKey: `${db.provider}DbTitle`,
-            descKey: `${db.provider.includes("shadow") ? "shadow" : "primary"}DbDesc`,
-            icon: db.provider.includes("core") ? Database : Landmark,
-            // Color coding: Blue for Core, Amber/Orange for Ledger, Teal for Shadows
-            color: db.provider.includes("shadow")
-              ? "teal"
-              : db.provider.includes("core")
-                ? "blue"
-                : "amber",
-            isTesting: false,
-            showPassword: false,
-            connectionTested: db.status === "healthy",
-          })),
+          data.map((db: any) => {
+            let icon = Database;
+            let color = "blue";
+            let titleKey = db.provider === 'core' ? 'coreDbTitle' :
+                           db.provider === 'ledger' ? 'ledgerDbTitle' :
+                           db.provider === 'external' ? 'externalDbTitle' :
+                           db.provider === 'security' ? 'securityDbTitle' : `${db.provider}DbTitle`;
+            let descKey = db.provider === 'core' ? 'coreDbDesc' :
+                          db.provider === 'ledger' ? 'ledgerDbDesc' :
+                          db.provider === 'external' ? 'externalDbDesc' :
+                          db.provider === 'security' ? 'securityDbDesc' : 'primaryDbDesc';
+
+            if (db.id === 'ledger') {
+              icon = Landmark;
+              color = "amber";
+            } else if (db.id === 'external') {
+              icon = Globe;
+              color = "emerald";
+            } else if (db.id === 'security') {
+              icon = Shield;
+              color = "rose";
+            } else if (db.provider.includes("shadow")) {
+              color = "teal";
+            }
+
+            return {
+              ...db,
+              type: db.type === "postgres" ? "local" : db.type || "local",
+              titleKey,
+              descKey,
+              icon,
+              color,
+              isTesting: false,
+              showPassword: false,
+              connectionTested: db.status === "healthy",
+            };
+          }),
         );
       }
     } catch (error) {
@@ -3602,7 +3622,7 @@ const DatabaseOrchestrationView = ({
       const db = databases.find((d) => d.id === dbId);
       if (!db) return;
 
-      const targetType = db.id.includes("ledger") ? "ledger" : "core";
+      const targetType = db.id === "ledger" ? "ledger" : (db.id === "external" ? "external" : (db.id === "security" ? "security" : "core"));
 
       const dbName = db.db_name || db.dbName || targetType;
       const displayLabel = dbName.replace(/[^a-z0-9_-]/gi, "_").toLowerCase();
@@ -3663,7 +3683,7 @@ const DatabaseOrchestrationView = ({
     const db = databases.find((d) => d.id === dbId);
     if (!db) return;
 
-    const targetType = db.id.includes("ledger") ? "ledger" : "core";
+    const targetType = db.id === "ledger" ? "ledger" : (db.id === "external" ? "external" : (db.id === "security" ? "security" : "core"));
     const dbName = db.db_name || db.dbName || targetType;
 
     const confirmMsg =
@@ -3797,10 +3817,11 @@ const DatabaseOrchestrationView = ({
                   <div>
                     <h3 className="font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
                       {t(db.titleKey)}
-                      <span className="px-1.5 py-0.5 rounded-xs bg-[var(--bg-secondary)]0/10 text-gray-500 text-[8px] font-black uppercase border border-[var(--border-main)]">
-                        {db.id.includes("ledger")
-                          ? "Ledger (Financial)"
-                          : "Core (Operational)"}
+                      <span className="px-1.5 py-0.5 rounded-xs bg-[var(--bg-secondary)] text-gray-500 text-[8px] font-black uppercase border border-[var(--border-main)]">
+                        {db.id === 'ledger' ? (language === 'ar' ? 'الخزينة (المالية)' : 'Ledger (Financial)') :
+                         db.id === 'external' ? (language === 'ar' ? 'الأقسام الخارجية (المجتمعية)' : 'External (Social)') :
+                         db.id === 'security' ? (language === 'ar' ? 'الحماية (الأمنية)' : 'Security (Defense)') :
+                         (language === 'ar' ? 'الرئيسية (التشغيلية)' : 'Core (Operational)')}
                       </span>
                     </h3>
                     <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
@@ -12775,8 +12796,6 @@ export const AdminDashboard: React.FC = () => {
         return t("financeVault");
       case "plans":
         return t("plansSubscriptions");
-      case "marketplace":
-        return language === "ar" ? "إدارة الماركت بليس" : "Marketplace Admin";
       case "users":
         return t("userManagement");
       case "memories":
@@ -12818,10 +12837,6 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "إدارة الباقات والاشتراكات والأسعار"
           : "SUBSCRIPTION PLANS & PRICING";
-      case "marketplace":
-        return language === "ar"
-          ? "مراجعة واعتماد معروضات وبضائع المنتدى"
-          : "APPROVAL & CONTROL CENTRAL OF ASSETS";
       case "users":
         return language === "ar"
           ? "إدارة الهوية والتحقق والصلاحيات"
@@ -12863,8 +12878,6 @@ export const AdminDashboard: React.FC = () => {
         return <Landmark size={28} className={iconClass} />;
       case "plans":
         return <CreditCard size={28} className={iconClass} />;
-      case "marketplace":
-        return <ShoppingBag size={28} className={iconClass} />;
       case "users":
         return <Users size={28} className={iconClass} />;
       case "memories":
@@ -12977,7 +12990,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "marketplace", "users", "emails", "broadcast", "settings"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings"].includes(
             path,
           )
             ? ""
@@ -13013,8 +13026,6 @@ export const AdminDashboard: React.FC = () => {
             <FinanceVaultView theme={theme} t={t} dir={dir} />
           ) : path === "plans" ? (
             <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
-          ) : path === "marketplace" ? (
-            <MarketplaceManagementView theme={theme} t={t} dir={dir} />
           ) : path === "users" ? (
             <UserManagementView theme={theme} t={t} dir={dir} />
           ) : path === "memories" ? (

@@ -234,6 +234,11 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Admin Dashboard Intelligence**: Integrated a high-precision search engine for the `Activity Stream` within the Command Center. Admins can now filter logs in real-time by User ID, Action type, or Description, significantly reducing the "Audit Latency" for platform management.
     - **Robust Auto-Scroll**: Implemented a resilient `messagesEndRef` mechanism and `scrollToBottom` hook. The chat now maintains perfect vertical position during streaming and history navigation with a specialized 100ms anchor sync.
     - **Component Integrity**: Resolved critical "Uncaught ReferenceError" related to `PERPLEXTA_TRANSITION` and `messagesEndRef`, hardening the codebase against runtime exceptions.
+- **Forum Categories Re-engineering & Visual Alignment (Completed Today - May 30, 2026):**
+    - **Rebuilt Categories & Translations Database**: Safely updated database schema migrations (`v28_refine_forum_categories_names`) to shorten and focus forum sections to professional bilingual mappings (e.g. *جميع الأقسام*, *هندسة الاوامر (Prompts)*, *مطورين ومصممين غرافيك*, *مشاركة الاخطاء وحلولها*), preserving and updating older forum posts correctly.
+    - **Optimal Search Alignment**: Shifted the forum search bar width to a ultra-proportional layout (`sm:w-36 md:w-40 lg:w-44`) matching the toolbar grid, completely preventing visual overflow of buttons.
+    - **Dynamic High-Fidelity Icons Resolver**: Implemented a centralized React icon-rendering function `renderCategoryIcon` providing premium emerald glow, micro-shadow animations, and consistent Lucide representations in both toolbar filters and the persistent categories aside panel.
+    - **High-End Sidebar Spacing**: Integrated precise and comfortable padding (`px-3.5 py-2.5`) on categories list inside the main forum aside sidebar, perfectly matching the majestic visual standards of the market/editorial sections.
 - **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MAJESTIC CALM ACHIEVED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
@@ -382,10 +387,11 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 - **Zero-Jitter Media & Content Flow:** Purged redundant animations from message streams to prioritize zero-distraction reading and analysis.
 - **High-Precision UI Anchoring:** Secured the `ChatPage` content layout with a robust scroll-management engine, ensuring the view remains perfect during high-speed AI responses.
 
-### 📱 Visual Symmetry, Mobile Alignment, and Marketplace Polish (May 29, 2026)
+### 📱 Visual Symmetry, Mobile Alignment, and Marketplace Polish (May 29-30, 2026)
 - **Mobile Viewport Optimization:** Re-engineered the layout system on the Blog page and the Marketplace page specifically for mobile viewport density. Compacted title fonts (`text-[15px]`) and scaled icons and margins to eliminate overlapping or overflow elements while preserving readability.
 - **Header Alignment & Corner Symmetry:** Fixed the horizontal alignment across handheld formats. Expanded the outer container padding to `px-8` on mobile screens and applied negative boundaries (`-mx-8`) to sticky headers to align exactly with the logo, hamburger menu, and search bar layout axes.
-- **Product Marketplace Polish:** Renamed and fully localized the Marketplace UI in Arabic and English, and introduced a 3rd premium catalog listing to complete the bento grid design without placeholder gaps.
+- **Product Marketplace Redesign & Subcategory Mapping:** Performed a surgical overhaul of the Marketplace Page (`src/pages/MarketplacePage.tsx`) to implement a pristine, high-fidelity responsive bento catalog aligning precisely with aesthetic standards. Integrated parent-child category accordions, reactive price filters, dynamic licensing price calculations (multiplier-driven), and professional checkout logic synced to global contexts. Added intelligent fallback mapping to seamlessly parse legacy seed items into the new bento structure.
+- **Gallery Upload Precision:** Reinforced the file ingestion pipeline in the marketplace with a central-cropped canvas generator (1080x1080 aspect ratio) to enforce pixel-perfect gallery covers.
 
 ### 🛡️ Core Security Hardening & Vulnerability Mitigation (May 29, 2026)
 - **Raw SQL & Error Leakage Remediation:** Cleared raw SQL and execution diagnostic leakage across the Forum, Blog, and Marketplace endpoints, shifting raw debug traces exclusively to secure host logging channels.
