@@ -256,16 +256,70 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       return;
     }
 
-    console.log('[DB] Verifying registry connection strings...');
+    console.log('[DB] Verifying registry connection strings for all 4 databases...');
     const testCorePool = createInternalPool(coreUrl);
+    const testLedgerPool = createInternalPool(ledgerUrl);
+    const testExternalPool = createInternalPool(externalUrl);
+    const testSecurityPool = createInternalPool(securityUrl);
+
     try {
       await testCorePool.query('SELECT 1');
-      await testCorePool.end();
     } catch (testErr: any) {
-      console.warn(`[DB] Registry Core DB connection failed: ${testErr.message}. Falling back to environment.`);
-      await testCorePool.end().catch(() => {});
+      console.warn(`[DB] Registry Core DB connection failed: ${testErr.message}. Aborting synchronization.`);
+      await Promise.all([
+        testCorePool.end().catch(() => {}),
+        testLedgerPool.end().catch(() => {}),
+        testExternalPool.end().catch(() => {}),
+        testSecurityPool.end().catch(() => {}),
+      ]);
       return;
     }
+
+    try {
+      await testLedgerPool.query('SELECT 1');
+    } catch (testErr: any) {
+      console.warn(`[DB] Registry Ledger DB connection failed: ${testErr.message}. Aborting synchronization.`);
+      await Promise.all([
+        testCorePool.end().catch(() => {}),
+        testLedgerPool.end().catch(() => {}),
+        testExternalPool.end().catch(() => {}),
+        testSecurityPool.end().catch(() => {}),
+      ]);
+      return;
+    }
+
+    try {
+      await testExternalPool.query('SELECT 1');
+    } catch (testErr: any) {
+      console.warn(`[DB] Registry External DB connection failed: ${testErr.message}. Aborting synchronization.`);
+      await Promise.all([
+        testCorePool.end().catch(() => {}),
+        testLedgerPool.end().catch(() => {}),
+        testExternalPool.end().catch(() => {}),
+        testSecurityPool.end().catch(() => {}),
+      ]);
+      return;
+    }
+
+    try {
+      await testSecurityPool.query('SELECT 1');
+    } catch (testErr: any) {
+      console.warn(`[DB] Registry Security DB connection failed: ${testErr.message}. Aborting synchronization.`);
+      await Promise.all([
+        testCorePool.end().catch(() => {}),
+        testLedgerPool.end().catch(() => {}),
+        testExternalPool.end().catch(() => {}),
+        testSecurityPool.end().catch(() => {}),
+      ]);
+      return;
+    }
+
+    await Promise.all([
+      testCorePool.end().catch(() => {}),
+      testLedgerPool.end().catch(() => {}),
+      testExternalPool.end().catch(() => {}),
+      testSecurityPool.end().catch(() => {}),
+    ]);
 
     console.log('[DB] Registry connections verified. Swapping pools...');
     await initializePerplextaPools(coreUrl, ledgerUrl || coreUrl, externalUrl || coreUrl, securityUrl || coreUrl);
