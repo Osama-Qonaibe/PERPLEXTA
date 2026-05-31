@@ -19,27 +19,36 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
     const [subRes, currentUsage] = await Promise.all([
       pool.query(`
-        SELECT p.limits 
+        SELECT u.role, s.plan_id, s.status, p.limits 
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
-        LEFT JOIN plans p ON (s.plan_id = p.id OR (s.plan_id IS NULL AND p.name_en = 'Starter'))
+        LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
       `, [userId]),
       getUserStorageUsage(userId)
     ]);
 
-    const limits = subRes.rows[0]?.limits || {};
+    const row = subRes.rows[0] || {};
+    const hasActiveSub = row.plan_id && row.status === 'active';
+    const limits = row.limits || {};
     const storageLimit = limits['storage_mb'];
     
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
     
-    if (limitMb && limitMb !== 'unlimited') {
-      const limitBytes = parseInt(limitMb) * 1024 * 1024;
+    // Non-admin without any active subscription gets 0 limit
+    if (row.role !== 'admin' && !hasActiveSub) {
+      limitMb = '0';
+    }
+    
+    if (limitMb !== 'unlimited') {
+      const allowedMb = limitMb ? parseInt(limitMb, 10) : 0;
+      const limitBytes = allowedMb * 1024 * 1024;
       if (currentUsage + size > limitBytes) {
         return res.status(402).json({ 
           error: 'Storage quota exceeded', 
-          message_ar: 'تجاوزت سعة التخزين المسموح بها',
-          limit_mb: limitMb 
+          message_ar: 'تجاوزت سعة التخزين المسموح بها ويرجى الاشتراك بخطة للاستمرار',
+          message_en: 'Storage limit exceeded. Please activate a subscription plan to upload.',
+          limit_mb: allowedMb 
         });
       }
     }

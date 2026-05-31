@@ -213,7 +213,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'v23_blog_ratings_and_sharing',
               'v24_seed_blog_platform_data',
               'v27_update_forum_categories_for_pioneers_and_developers',
-              'v28_refine_forum_categories_names'
+              'v28_refine_forum_categories_names',
+              'v30_forum_category_colors_differentiation'
             )
           `);
         }
@@ -787,7 +788,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS forum_posts (
           id SERIAL PRIMARY KEY,
           category_id INTEGER NOT NULL REFERENCES forum_categories(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           title VARCHAR(255) NOT NULL,
           content TEXT NOT NULL,
           is_pinned BOOLEAN DEFAULT false,
@@ -803,7 +804,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS forum_comments (
           id SERIAL PRIMARY KEY,
           post_id INTEGER NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           content TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -814,7 +815,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`
         CREATE TABLE IF NOT EXISTS blog_articles (
           id SERIAL PRIMARY KEY,
-          author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          author_id INTEGER NOT NULL,
           slug VARCHAR(255) UNIQUE NOT NULL,
           title_en VARCHAR(255) NOT NULL,
           title_ar VARCHAR(255) NOT NULL,
@@ -834,7 +835,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS blog_comments (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           content TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -862,7 +863,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS blog_ratings (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           UNIQUE (article_id, user_id)

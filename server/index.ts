@@ -17,7 +17,12 @@ async function startServer() {
     
     let dbReady = false;
     try {
-      await initializePerplextaPools(process.env.DATABASE_URL || '', process.env.LEDGER_DATABASE_URL || '');
+      await initializePerplextaPools(
+        process.env.DATABASE_URL || '',
+        process.env.LEDGER_DATABASE_URL || '',
+        process.env.EXTERNAL_DATABASE_URL || '',
+        process.env.SECURITY_DATABASE_URL || ''
+      );
       await runDatabaseMigrations();
       await synchronizePerplextaPoolsFromRegistry();
       await syncSystemTemplates();
