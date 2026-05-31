@@ -195,70 +195,76 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
-    // Dynamic schema checks for newly added target databases
-    if (externalClient) {
-      try {
-        const checkTable = await externalClient.query(`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'forum_categories'
+    // Dynamic schema checks for active target databases
+    const activeExternalClient = externalClient || client;
+    try {
+      const checkTable = await activeExternalClient.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'forum_categories'
+        )
+      `);
+      if (!checkTable.rows[0].exists) {
+        console.log('[Migrations] forum_categories table does not exist on active external database. Forcing re-run of forum/blog migrations...');
+        await client.query(`
+          DELETE FROM migration_history 
+          WHERE migration_name IN (
+            'v22_forum_and_blog_schema',
+            'v23_blog_ratings_and_sharing',
+            'v24_seed_blog_platform_data',
+            'v27_update_forum_categories_for_pioneers_and_developers',
+            'v28_refine_forum_categories_names',
+            'v30_forum_category_colors_differentiation'
           )
         `);
-        if (!checkTable.rows[0].exists) {
-          console.log('[Migrations] forum_categories table does not exist on active external database. Forcing re-run of forum/blog migrations...');
-          await client.query(`
-            DELETE FROM migration_history 
-            WHERE migration_name IN (
-              'v22_forum_and_blog_schema',
-              'v23_blog_ratings_and_sharing',
-              'v24_seed_blog_platform_data',
-              'v27_update_forum_categories_for_pioneers_and_developers',
-              'v28_refine_forum_categories_names',
-              'v30_forum_category_colors_differentiation'
-            )
-          `);
-        }
-      } catch (e: any) {
-        console.warn('[Migrations] Failed to inspect external database structure:', e.message);
       }
+    } catch (e: any) {
+      console.warn('[Migrations] Failed to inspect external database structure:', e.message);
     }
 
-    if (securityClient) {
-      try {
-        const checkSecTable = await securityClient.query(`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'security_alerts'
+    const activeSecurityClient = securityClient || client;
+    try {
+      const checkSecTable = await activeSecurityClient.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'token_blacklist'
+        )
+      `);
+      if (!checkSecTable.rows[0].exists) {
+        console.log('[Migrations] token_blacklist table does not exist on active security database. Forcing re-run of baseline security migrations and Direct Seed...');
+        await client.query(`
+          DELETE FROM migration_history 
+          WHERE migration_name IN (
+            'v11_ensure_baseline_tables'
           )
         `);
-        if (!checkSecTable.rows[0].exists) {
-          console.log('[Migrations] Creating core security tables on the active security database...');
-          await securityClient.query(`
-            CREATE TABLE IF NOT EXISTS token_blacklist (
-              id SERIAL PRIMARY KEY,
-              token TEXT UNIQUE NOT NULL,
-              expires_at TIMESTAMP NOT NULL,
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-          await securityClient.query(`
-            CREATE TABLE IF NOT EXISTS security_alerts (
-              id SERIAL PRIMARY KEY,
-              user_id INTEGER,
-              type VARCHAR(100) NOT NULL,
-              severity VARCHAR(50) DEFAULT 'medium',
-              description TEXT,
-              metadata JSONB DEFAULT '{}',
-              is_resolved BOOLEAN DEFAULT false,
-              ip_address VARCHAR(100),
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-        }
-      } catch (e: any) {
-        console.warn('[Migrations] Failed to initialize security database tables:', e.message);
+        
+        await activeSecurityClient.query(`
+          CREATE TABLE IF NOT EXISTS token_blacklist (
+            id SERIAL PRIMARY KEY,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        
+        await activeSecurityClient.query(`
+          CREATE TABLE IF NOT EXISTS security_alerts (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            type VARCHAR(100) NOT NULL,
+            severity VARCHAR(50) DEFAULT 'medium',
+            description TEXT,
+            metadata JSONB DEFAULT '{}',
+            is_resolved BOOLEAN DEFAULT false,
+            ip_address VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
       }
+    } catch (e: any) {
+      console.warn('[Migrations] Failed to inspect/initialize security database tables:', e.message);
     }
 
     if (type === 'scratch') {

@@ -23,8 +23,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'",
-        (req: any, res: any) => `'nonce-${res.locals.nonce}'`,
-        ...(process.env.NODE_ENV !== 'production' ? ["'unsafe-inline'", "'unsafe-eval'"] : []),
+        "'unsafe-inline'",
+        "'unsafe-eval'",
         "https://www.googletagmanager.com",
         "https://*.stripe.com",
         "https://*.googleapis.com"
