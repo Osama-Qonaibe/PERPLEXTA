@@ -33,7 +33,7 @@ export async function getChatMessages(chatId: string, userId: string) {
 
 export async function addChatMessage(chatId: string, role: string, content: string, tool?: string) {
   if (!pool) throw new Error('Database initializing');
-  await pool.query('INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4)', [chatId, role, content, tool]);
+  await pool.query('INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5)', [chatId, role, content, tool || 'chat', tool || 'chat']);
   await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
   return { success: true };
 }
@@ -112,8 +112,8 @@ export async function handleChatMessage(socket: any, data: any) {
     socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta' });
 
     const assistantMsgResult = await pool.query(
-      'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
-      [finalChatId, 'assistant', '', finalToolId]
+      'INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [finalChatId, 'assistant', '', finalToolId, finalToolId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 

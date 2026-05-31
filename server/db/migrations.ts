@@ -1137,6 +1137,18 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
+    // MIGRATION: Forum Category Colors Differentiation v30
+    await runVersioned('v30_forum_category_colors_differentiation', 'Applying distinctive colors to forum categories to align with market and professional visuals', async (tx) => {
+      await tx.query(`
+        UPDATE forum_categories SET color = 'indigo' WHERE slug = 'pioneers-devs-designers';
+        UPDATE forum_categories SET color = 'emerald' WHERE slug = 'prompt-engineering';
+        UPDATE forum_categories SET color = 'rose' WHERE slug = 'troubleshooting';
+        UPDATE forum_categories SET color = 'amber' WHERE slug = 'expertise-sharing';
+        UPDATE forum_categories SET color = 'violet' WHERE slug = 'our-works';
+        UPDATE forum_categories SET color = 'cyan' WHERE slug = 'web-hosting';
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);

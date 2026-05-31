@@ -255,15 +255,15 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
 
     // 1. Add the user's message to the database with a captured ID so we can clean up on failure
     const userMsgResult = await pool.query(
-      'INSERT INTO messages (chat_id, role, content, tool) VALUES ($1, $2, $3, $4) RETURNING id',
-      [chatId, 'user', content, toolId || 'chat']
+      'INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [chatId, 'user', content, toolId || 'chat', toolId || 'chat']
     );
     userMessageId = userMsgResult.rows[0].id;
 
     // 2. Insert blank assistant message
     const assistantMsgResult = await pool.query(
-      'INSERT INTO messages (chat_id, role, content, tool, model) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [chatId, 'assistant', '', toolId || 'chat', modelId]
+      'INSERT INTO messages (chat_id, role, content, tool, tool_id, model) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [chatId, 'assistant', '', toolId || 'chat', toolId || 'chat', modelId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 

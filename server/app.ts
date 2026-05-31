@@ -9,7 +9,8 @@ import { csrfProtection } from './middleware/csrf.js';
 
 const app = express();
 
-app.set('trust proxy', 1);
+const trustProxyVal = process.env.TRUST_PROXIES || '1';
+app.set('trust proxy', trustProxyVal === '1' ? 1 : (isNaN(Number(trustProxyVal)) ? trustProxyVal.split(',').map(s => s.trim()) : Number(trustProxyVal)));
 
 app.use((req, res, next) => {
   res.locals.nonce = crypto.randomBytes(16).toString('base64');
@@ -230,7 +231,9 @@ app.use('/api/mail-services-v3', emailRoutes);
 app.use('/api/forum', forumRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/system', systemRoutes);
 app.use('/api', systemRoutes);
+app.use('/api/tools', toolRoutes);
 app.use('/api', toolRoutes);
 
 if (process.env.NODE_ENV === "production") {
