@@ -87,7 +87,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           }
         } else {
           try {
-            const blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+            let blacklistCheck;
+            try {
+              blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+            } catch (secErr) {
+              console.warn('[Auth] Security DB blacklist check failed, trying core pool fallback:', secErr instanceof Error ? secErr.message : secErr);
+              if (pool && getSecurityPool() !== pool) {
+                blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+              } else {
+                throw secErr;
+              }
+            }
             const isRevoked = blacklistCheck.rows.length > 0;
             tokenBlacklistCache.set(token, {
               isRevoked,

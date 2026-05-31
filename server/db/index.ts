@@ -99,13 +99,13 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
   if (pool) {
     pool.end().catch((err: any) => console.error('[DB] Error closing old core pool:', err));
   }
-  if (ledgerPool) {
+  if (ledgerPool && ledgerPool !== pool) {
     ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
   }
-  if (externalPool) {
+  if (externalPool && externalPool !== pool) {
     externalPool.end().catch((err: any) => console.error('[DB] Error closing old external pool:', err));
   }
-  if (securityPool) {
+  if (securityPool && securityPool !== pool) {
     securityPool.end().catch((err: any) => console.error('[DB] Error closing old security pool:', err));
   }
 
@@ -122,64 +122,70 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
     pool = new Pool({
       connectionString: coreUrl,
       ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 20000,
     });
 
-    ledgerPool = new Pool({
+    ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
       connectionString: finalLedgerUrl,
       ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 20000,
     });
 
-    externalPool = new Pool({
+    externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
       connectionString: finalExternalUrl,
       ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 20000,
     });
 
-    securityPool = new Pool({
+    securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
       connectionString: finalSecurityUrl,
       ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 70,
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 20000,
     });
 
     pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));
-    ledgerPool.on('connect', () => console.log('[DB] Ledger PostgreSQL connected successfully.'));
-    externalPool.on('connect', () => console.log('[DB] External Categories PostgreSQL connected successfully.'));
-    securityPool.on('connect', () => console.log('[DB] Security PostgreSQL connected successfully.'));
+    
+    if (ledgerPool !== pool) {
+      ledgerPool.on('connect', () => console.log('[DB] Ledger PostgreSQL connected successfully.'));
+      ledgerPool.on('error', (err: any) => {
+        console.error('[DB] Unexpected error on idle ledger client:', err.message);
+      });
+    }
+
+    if (externalPool !== pool) {
+      externalPool.on('connect', () => console.log('[DB] External Categories PostgreSQL connected successfully.'));
+      externalPool.on('error', (err: any) => {
+        console.error('[DB] Unexpected error on idle external client:', err.message);
+      });
+    }
+
+    if (securityPool !== pool) {
+      securityPool.on('connect', () => console.log('[DB] Security PostgreSQL connected successfully.'));
+      securityPool.on('error', (err: any) => {
+        console.error('[DB] Unexpected error on idle security client:', err.message);
+      });
+    }
     
     pool.on('error', (err: any) => {
       console.error('[DB] Unexpected error on idle core client:', err.message);
     });
 
-    ledgerPool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle ledger client:', err.message);
-    });
-
-    externalPool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle external client:', err.message);
-    });
-
-    securityPool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle security client:', err.message);
-    });
-
     console.log('[DB] Verifying connectivity...');
     try {
-      await Promise.all([
-        pool.query('SELECT 1'),
-        ledgerPool.query('SELECT 1'),
-        externalPool.query('SELECT 1'),
-        securityPool.query('SELECT 1')
-      ]);
+      const queries = [pool.query('SELECT 1')];
+      if (ledgerPool !== pool) queries.push(ledgerPool.query('SELECT 1'));
+      if (externalPool !== pool) queries.push(externalPool.query('SELECT 1'));
+      if (securityPool !== pool) queries.push(securityPool.query('SELECT 1'));
+      
+      await Promise.all(queries);
       console.log('[DB] Perplexta Pools verified and active.');
     } catch (verifyError: any) {
       console.warn('[DB] ⚠️ Warmup/Connectivity pre-flight check returned warning/failure, but pools remain active for lazy-connection on demand retry:', verifyError.message);
