@@ -21,6 +21,7 @@ interface UsageItem {
 
 interface UsageData {
   plan: {
+    id: number | null;
     name_en: string;
     name_ar: string;
     limits: any;
@@ -155,17 +156,23 @@ export const UsageRadar: React.FC = () => {
               {/* Status Badges Row */}
               <div className="flex flex-wrap items-center justify-center gap-3">
                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/60 border border-white/5 backdrop-blur-md">
-                    <Zap size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">{t('active') || 'Active'}</span>
+                    <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"} />
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500" : "text-emerald-500"}`}>
+                      {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
+                    </span>
                  </div>
                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/60 border border-white/5 backdrop-blur-md text-gray-400">
                     <Clock size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">{t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">
+                      {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'بدون فترة' : 'None') : (t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period)}
+                    </span>
                  </div>
-                 <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md text-emerald-500">
-                    <Calendar size={12} />
-                    <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
-                 </div>
+                 {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
+                   <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md text-emerald-500">
+                      <Calendar size={12} />
+                      <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
+                   </div>
+                 )}
               </div>
            </div>
         </div>

@@ -6724,6 +6724,7 @@ const ALL_TOOLS = [
   "sovereign_memory",
   "sovereign_search",
   "storage_mb",
+  "marketplace_listings",
 ];
 
 const PlansSubscriptionsView = ({
@@ -7338,12 +7339,12 @@ const PlansSubscriptionsView = ({
                             </div>
                             <div
                               className={
-                                key === "storage_mb"
+                                key === "storage_mb" || key === "marketplace_listings"
                                   ? "grid grid-cols-1"
                                   : "grid grid-cols-2 gap-2"
                               }
                             >
-                              {key !== "storage_mb" && (
+                              {key !== "storage_mb" && key !== "marketplace_listings" && (
                                 <div className="space-y-1">
                                   <label className="text-[8px] font-black text-gray-500 uppercase ml-1 opacity-60">
                                     {t("daily")}
@@ -7394,7 +7395,9 @@ const PlansSubscriptionsView = ({
                                 <label className="text-[8px] font-black text-gray-500 uppercase ml-1 opacity-60">
                                   {key === "storage_mb"
                                     ? t("usageLoad") || "Total Capacity"
-                                    : t("monthly")}
+                                    : key === "marketplace_listings"
+                                      ? t("marketplace_listings") || "Max Listings"
+                                      : t("monthly")}
                                 </label>
                                 <div className="relative">
                                   <input
@@ -12907,6 +12910,60 @@ export const AdminDashboard: React.FC = () => {
     if (token) fetchProviderModels();
   }, [token]);
 
+  const [pulseData, setPulseData] = useState<any>(null);
+  const [isPulseOpen, setIsPulseOpen] = useState(false);
+  const [pulseErrorCount, setPulseErrorCount] = useState(0);
+
+  const fetchPulseData = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/pulse", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPulseData(data);
+        setPulseErrorCount(0);
+      } else {
+        setPulseErrorCount((prev) => prev + 1);
+      }
+    } catch {
+      setPulseErrorCount((prev) => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchPulseData();
+      const interval = setInterval(fetchPulseData, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
+
+  const formatPulseUptime = (seconds: number) => {
+    if (!seconds) return "0s";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const formatPulseRelative = (isoString: string | null) => {
+    if (!isoString) return language === "ar" ? "معلق" : "Pending";
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    
+    if (diffSec < 10) return language === "ar" ? "الآن" : "Just now";
+    if (diffSec < 60) return language === "ar" ? `منذ ${diffSec} ثانية` : `${diffSec}s ago`;
+    if (diffMin < 60) return language === "ar" ? `منذ ${diffMin} دقيقة` : `${diffMin}m ago`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return language === "ar" ? `منذ ${diffHour} ساعة` : `${diffHour}h ago`;
+    return new Date(isoString).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
+  };
+
   const getTitle = () => {
     switch (path) {
       case "dashboard":
@@ -13045,6 +13102,20 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const isOptimal = pulseData && pulseData.status === 'optimal' && pulseErrorCount < 3;
+  const isDegraded = pulseData && pulseData.status === 'degraded' && pulseErrorCount < 3;
+  const pulseColor = isOptimal ? '#10b981' : isDegraded ? '#f59e0b' : '#f43f5e';
+  const pulseText = isOptimal 
+    ? (language === 'ar' ? 'ممتاز' : 'Optimal') 
+    : isDegraded 
+    ? (language === 'ar' ? 'منخفض' : 'Degraded') 
+    : (language === 'ar' ? 'معطل' : 'Disrupted');
+  const pulseGlowClass = isOptimal 
+    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+    : isDegraded 
+    ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
+    : 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]';
+
   return (
     <motion.div 
       initial="initial"
@@ -13101,13 +13172,169 @@ export const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          <div
-            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]"
-          >
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-tighter">
-              Live Monitor
-            </span>
+          <div className="relative">
+            <button
+              onClick={() => setIsPulseOpen(!isPulseOpen)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-300 hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
+            >
+              <div className="relative flex items-center justify-center">
+                <div 
+                  className="w-2 h-2 rounded-full absolute animate-ping opacity-75" 
+                  style={{ backgroundColor: pulseColor }} 
+                />
+                <div 
+                  className="w-2 h-2 rounded-full relative" 
+                  style={{ backgroundColor: pulseColor }} 
+                />
+              </div>
+              <span className={`text-[10px] font-black uppercase tracking-tighter ${pulseGlowClass}`}>
+                {language === 'ar' ? 'نبض النظام' : 'System Pulse'}: {pulseText}
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {isPulseOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsPulseOpen(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme duration-[var(--theme-transition-duration)] ${
+                      theme === 'dark' 
+                        ? 'bg-[#0f0f11] border-gray-800/80 text-white' 
+                        : 'bg-white border-gray-200 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <Activity size={16} className={pulseGlowClass} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">
+                          {language === 'ar' ? 'فحص تشخيصي للنبض' : 'Pulse System Diagnostics'}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-[var(--text-muted)] font-mono">
+                        {pulseData ? formatPulseUptime(pulseData.uptime) : '0s'}
+                      </span>
+                    </div>
+
+                    <div className="mb-4 bg-black/10 dark:bg-black/40 rounded p-2 border border-[var(--border)] overflow-hidden">
+                      <svg className="w-full h-10 stroke-current opacity-90" viewBox="0 0 100 20" fill="none">
+                        <motion.path
+                          d="M 0,10 Q 15,10 20,10 T 30,10 T 32,5 T 34,15 T 36,1 T 38,19 T 40,10 T 50,10 T 60,10 T 62,3 T 64,17 T 66,10 T 80,10 T 90,10 T 100,10"
+                          stroke={pulseColor}
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          initial={{ strokeDasharray: "200", strokeDashoffset: "200" }}
+                          animate={{ strokeDashoffset: ["200", "0"] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        />
+                      </svg>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                          {language === 'ar' ? 'عقد قواعد البيانات ومزامنتها' : 'Database Node Synchronization'}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'قاعدة البيانات المركزية' : 'Core Engine DB'}</span>
+                            <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.core?.status === 'connected' ? `Connected (${pulseData.databases.core.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'دفتر الحسابات والمالية' : 'Ledger Vault DB'}</span>
+                            <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.ledger?.status === 'connected' ? `Connected (${pulseData.databases.ledger.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'السحابة الخارجية' : 'External Sync Registry'}</span>
+                            <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.external?.status === 'connected' ? `Connected (${pulseData.databases.external.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'حماية وأمن البيانات' : 'Security Registry'}</span>
+                            <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.security?.status === 'connected' ? `Connected (${pulseData.databases.security.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                          {language === 'ar' ? 'العمليات الخلفية النشطة' : 'Background Process Handlers'}
+                        </div>
+                        <div className="space-y-1 text-[9px] text-[var(--text-muted)] font-medium font-sans">
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'الصيانة والمسح اليومي' : 'Daily Maintenance & Trash Purge'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.dailyMaintenance ? `${formatPulseRelative(pulseData.cronTasks.dailyMaintenance.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'نبض المزامنة الذكية' : 'Database Pulse Tracker'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.databaseHeartbeat ? `${formatPulseRelative(pulseData.cronTasks.databaseHeartbeat.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'تنظيف الجلسات المؤقتة' : 'Auth Token & Session Purge'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.expiredTokensCleanup ? `${formatPulseRelative(pulseData.cronTasks.expiredTokensCleanup.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'تدقيق الاشتراكات الفعالة' : 'Subscription Renewal Audits'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.subscriptionAudit ? `${formatPulseRelative(pulseData.cronTasks.subscriptionAudit.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'ضغط وتقليص ذاكرة الذكاء' : 'Memory Distillation Cycle'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.memoryCompaction ? `${formatPulseRelative(pulseData.cronTasks.memoryCompaction.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-[var(--border)]/40">
+                        <div className="grid grid-cols-2 gap-4 text-[9px] text-[var(--text-muted)] font-bold">
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span>CPU UTILIZATION</span>
+                              <span>{pulseData?.cpu ?? 0}%</span>
+                            </div>
+                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span>HEAP ALLOC</span>
+                              <span>{pulseData?.memory?.percent ?? 0}%</span>
+                            </div>
+                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                              <div className="h-full bg-purple-500" style={{ width: `${pulseData?.memory?.percent ?? 0}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

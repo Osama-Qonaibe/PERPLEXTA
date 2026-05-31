@@ -43,6 +43,46 @@ router.get("/health", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/pulse", authenticateAdmin, async (req, res) => {
+  try {
+    const health = await getServerHealth();
+    let status = 'optimal';
+    
+    const dbStatuses = health.databases || {};
+    const anyDbDown = Object.values(dbStatuses).some((db: any) => db.status === 'disconnected');
+    
+    let cronData = {};
+    try {
+      const { cronTracker } = await import('../jobs/cron.js');
+      cronData = cronTracker || {};
+    } catch (importErr) {
+      console.warn('[AdminRouter] Failed to dynamically load cronTracker:', importErr);
+    }
+    
+    const anyCronError = Object.values(cronData).some((cron: any) => cron.status === 'error');
+    
+    if (anyDbDown) {
+      status = 'disrupted';
+    } else if (anyCronError) {
+      status = 'degraded';
+    }
+    
+    res.json({
+      status,
+      timestamp: new Date().toISOString(),
+      heartbeatIntervalMs: 5000,
+      cpu: health.cpu,
+      memory: health.memory,
+      uptime: health.uptime,
+      databases: dbStatuses,
+      cronTasks: cronData
+    });
+  } catch (error: any) {
+    console.error('[AdminRouter] Pulse diagnostic failed:', error);
+    res.status(500).json({ error: 'Pulse Diagnostics Failed' });
+  }
+});
+
 router.get("/databases/registry", authenticateAdmin, async (req, res) => {
   try {
     const registry = await getDatabaseRegistry();

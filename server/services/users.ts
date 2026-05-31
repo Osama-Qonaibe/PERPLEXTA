@@ -81,6 +81,12 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     name_ar: 'سعة التخزين',
     desc_en: 'Secure storage for your intelligence assets.',
     desc_ar: 'تخزين آمن لأصولك الاستخباراتية.'
+  },
+  'marketplace_listings': {
+    name_en: 'Marketplace Listings',
+    name_ar: 'منتجات السوق الأساسية',
+    desc_en: 'List and showcase your custom intelligence tools or data assets.',
+    desc_ar: 'إدراج وعرض أدوات الذكاء المخصصة أو أصول البيانات الخاصة بك.'
   }
 };
 
@@ -88,7 +94,7 @@ export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
 
   const planRes = await pool.query(`
-    SELECT p.id, p.name_en, p.name_ar, p.limits, p.color, s.status, s.billing_period, s.current_period_end, s.created_at as subscription_start
+    SELECT u.role, p.id, p.name_en, p.name_ar, p.limits, p.color, s.status, s.billing_period, s.current_period_end, s.created_at as subscription_start
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
     LEFT JOIN plans p ON p.id = s.plan_id
@@ -99,14 +105,35 @@ export async function getUserUsage(userId: string | number) {
   if (planRes.rows.length === 0) throw new Error('User profile not found');
   
   let plan = planRes.rows[0];
-  
-  if (!plan.id) {
-    const starterRes = await pool.query("SELECT * FROM plans WHERE name_en = 'Starter' OR name_en = 'starter' LIMIT 1");
-    if (starterRes.rows.length > 0) {
-      plan = { ...plan, ...starterRes.rows[0] };
-    } else {
-      plan = { ...plan, name_en: 'Starter', name_ar: 'البداية', limits: {}, color: '#10b981' };
-    }
+  const userRole = plan.role;
+  const hasActiveSub = plan.id && plan.status === 'active';
+
+  if (userRole !== 'admin' && !hasActiveSub) {
+    plan = {
+      ...plan,
+      id: null,
+      name_en: 'No Active Subscription',
+      name_ar: 'لا يوجد اشتراك نشط',
+      limits: {},
+      color: '#ef4444',
+      status: 'inactive',
+      billing_period: 'None',
+      current_period_end: null,
+      subscription_start: null
+    };
+  } else if (userRole === 'admin' && !plan.id) {
+    plan = {
+      ...plan,
+      id: -1,
+      name_en: 'Sovereign Administrator',
+      name_ar: 'الرئيس التنفيذي للمنصة',
+      limits: {},
+      color: '#10b981',
+      status: 'active',
+      billing_period: 'Lifetime',
+      current_period_end: null,
+      subscription_start: null
+    };
   }
 
   const dailyUsageRes = await pool.query(`
@@ -134,6 +161,9 @@ export async function getUserUsage(userId: string | number) {
 
   const storageUsageMB = await getUserStorageUsage(userId.toString());
 
+  const marketplaceCountRes = await pool.query('SELECT COUNT(*) FROM marketplace_items WHERE user_id = $1', [userId]);
+  const marketplaceCount = parseInt(marketplaceCountRes.rows[0]?.count || '0', 10);
+
   const ALL_TOOLS = Object.keys(TOOL_INFO);
 
   const usageItems = ALL_TOOLS.map(toolId => {
@@ -143,14 +173,19 @@ export async function getUserUsage(userId: string | number) {
     let dailyLimit = null;
     let monthlyLimit = null;
     
-    if (limits === 'unlimited') {
-      dailyLimit = null;
-      monthlyLimit = null;
-    } else if (typeof limits === 'object' && limits !== null) {
-      dailyLimit = limits.daily !== undefined ? parseInt(limits.daily) : null;
-      monthlyLimit = limits.monthly !== undefined ? parseInt(limits.monthly) : null;
-    } else if (limits !== undefined && limits !== null) {
-      dailyLimit = parseInt(limits);
+    if (userRole !== 'admin' && !hasActiveSub) {
+      dailyLimit = 0;
+      monthlyLimit = 0;
+    } else {
+      if (limits === 'unlimited') {
+        dailyLimit = null;
+        monthlyLimit = null;
+      } else if (typeof limits === 'object' && limits !== null) {
+        dailyLimit = limits.daily !== undefined ? parseInt(limits.daily) : null;
+        monthlyLimit = limits.monthly !== undefined ? parseInt(limits.monthly) : null;
+      } else if (limits !== undefined && limits !== null) {
+        dailyLimit = parseInt(limits);
+      }
     }
 
     let dailyUsage = dailyUsageMap[toolId] || 0;
@@ -159,6 +194,9 @@ export async function getUserUsage(userId: string | number) {
     if (toolId === 'storage_mb') {
       dailyUsage = storageUsageMB;
       monthlyUsage = storageUsageMB; 
+    } else if (toolId === 'marketplace_listings') {
+      dailyUsage = marketplaceCount;
+      monthlyUsage = marketplaceCount;
     }
 
     return {
@@ -180,6 +218,7 @@ export async function getUserUsage(userId: string | number) {
 
   return {
     plan: {
+      id: plan.id,
       name_en: plan.name_en,
       name_ar: plan.name_ar,
       limits: plan.limits,
@@ -197,7 +236,7 @@ export async function getUserProfile(userId: string) {
   if (!pool) throw new Error('Database initializing');
   
   const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code,
+    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code, u.custom_limits,
            s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color, p.limits
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -211,15 +250,21 @@ export async function getUserProfile(userId: string) {
   const walletRes = await (ledgerPool || pool).query('SELECT balance, points FROM wallets WHERE user_id = $1', [userId]);
   const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
   
-  const subscription = row.plan_id ? {
-    plan_id: row.plan_id,
-    status: row.sub_status,
-    current_period_end: row.current_period_end,
-    plan_name_en: row.plan_name_en,
-    plan_name_ar: row.plan_name_ar,
-    plan_color: row.plan_color,
-    limits: row.limits
-  } : null;
+  let subscription = null;
+  const customLimits = typeof row.custom_limits === 'object' && row.custom_limits !== null ? row.custom_limits : (typeof row.custom_limits === 'string' ? JSON.parse(row.custom_limits || '{}') : {});
+
+  if (row.plan_id) {
+    const rawLimits = typeof row.limits === 'object' && row.limits !== null ? row.limits : (typeof row.limits === 'string' ? JSON.parse(row.limits || '{}') : {});
+    subscription = {
+      plan_id: row.plan_id,
+      status: row.sub_status,
+      current_period_end: row.current_period_end,
+      plan_name_en: row.plan_name_en,
+      plan_name_ar: row.plan_name_ar,
+      plan_color: row.plan_color,
+      limits: { ...rawLimits, ...customLimits }
+    };
+  }
   
   return {
     id: row.id,
@@ -234,6 +279,7 @@ export async function getUserProfile(userId: string) {
     kyc_status: row.kyc_status,
     created_at: row.created_at,
     referral_code: row.referral_code,
+    custom_limits: customLimits,
     subscription,
     balance: wallet.balance,
     points: parseInt(wallet.points)

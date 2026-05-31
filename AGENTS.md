@@ -416,6 +416,10 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 - **Enterprise Pool Swap Pre-Audit (Four-Point Verification):** Implemented a rigorous synchronizer in `synchronizePerplextaPoolsFromRegistry` (`server/db/index.ts`) that initiates concurrent test pools for all 4 endpoints (`Core`, `Ledger`, `External`, `Security`) and runs query tests sequentially before any active pool swap is permitted. If any of the four connections fails, the swap aborts cleanly, protecting system integrity.
 - **Database Target Confinement:** Confined DB save and query actions in `server/services/admin.ts` strictly to standard authorized identifiers (`core`, `ledger`, `external`, `security`) to prevent unauthorized entries.
 - **Platform Documentation Sync:** Created a state-of-the-art bilingual `README.md` containing architectural flow diagrams, system blueprints, local running steps, and production build guides adhering to the strict "Zero-Clutter" policy.
+- **Strict Registration Plan Isolation & Marketplace Limits Tracking (May 31, 2026):**
+    - **Decoupled Default Plan Assignment:** Resolved a critical bug where new users registering were automatically assigned to the "Starter" plan. Registration is now strictly isolated; new users do not belong to any active subscription plan on signup, prompting a beautiful, high-conversion upgrade layout.
+    - **Strict Quota & Ingestion Enforcements:** Synchronized the Marketplace listing limit check. Users without an active plan are assigned a listing quota of `0` by default, fully preventing unauthorized asset publications.
+    - **Observable Usage Radar Integration:** Exposed the `marketplace_listings` quota under the user's Settings page "Usage Radar". Full-stack registration and marketplace listing limits are now 100% visible, fully auditable, and dynamically tracked.
 
 **System State:** `STABLE / RESILIENT MESH ACTIVE`
 **Final Authorization:** All core protocols are now active and enforced by the Global Constitution.

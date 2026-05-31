@@ -238,7 +238,6 @@ app.use('/api', toolRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(distPath, {
-    index: false,
     etag: false,
     lastModified: false,
     setHeaders: (res, filePath) => {

@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { pool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
-import { deductFromWallet, adjustWalletBalance, getEconomySettings } from '../services/wallet.js';
+import { deductFromWallet, adjustWalletBalance, refundToWallet, getEconomySettings } from '../services/wallet.js';
 import { getStripe } from '../services/payments.js';
 
 const router = express.Router();
@@ -170,6 +170,45 @@ router.post('/items', authenticateToken, async (req: any, res) => {
   }
 
   try {
+    // Check space limits for the user (only for non-admin users)
+    if (!isUserAdmin) {
+      const subRes = await pool.query(`
+        SELECT p.limits 
+        FROM users u
+        LEFT JOIN subscriptions s ON u.id = s.user_id
+        LEFT JOIN plans p ON s.plan_id = p.id
+        WHERE u.id = $1
+      `, [userId]);
+
+      const planLimits = subRes.rows[0]?.limits || {};
+      const maxListings = planLimits['marketplace_listings'];
+      let limitVal: number | null = null;
+      
+      if (typeof maxListings === 'object' && maxListings !== null) {
+        const rawVal = maxListings.monthly !== undefined ? maxListings.monthly : maxListings.daily;
+        if (rawVal !== 'unlimited' && rawVal !== undefined && rawVal !== null) {
+          limitVal = parseInt(rawVal, 10);
+        }
+      } else if (maxListings !== undefined && maxListings !== null && maxListings !== 'unlimited') {
+        limitVal = parseInt(maxListings, 10);
+      } else if (maxListings === undefined || maxListings === null) {
+        limitVal = 0; // If they have no active plan, list limit is 0
+      }
+
+      if (limitVal !== null) {
+        const countRes = await pool.query('SELECT COUNT(*) FROM marketplace_items WHERE user_id = $1', [userId]);
+        const currentListingCount = parseInt(countRes.rows[0].count, 10);
+        
+        if (currentListingCount >= limitVal) {
+          return res.status(402).json({
+            error: 'Marketplace listing quota exceeded',
+            message: `Your current subscription plan only allows listing up to ${limitVal} products simultaneously on the marketplace. Please upgrade your subscription plan to publish more assets.`,
+            message_ar: `تسمح خطة اشتراكك الحالية بنشر ما يصل إلى ${limitVal} من المنتجات كحد أقصى في السوق في نفس الوقت. يرجى ترقية اشتراكك لتتمكن من نشر المزيد.`
+          });
+        }
+      }
+    }
+
     const result = await pool.query(`
       INSERT INTO marketplace_items (
         user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar, 
@@ -435,6 +474,30 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       RETURNING *
     `, [userId, itemId, finalPrice, lic, referrerId, commissionPaid, secureToken]);
 
+    // 5.5. Credit the publisher/seller of the item (if they are not the buyer)
+    if (item.user_id && Number(item.user_id) !== Number(userId)) {
+      const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
+      if (sellerProceeds > 0) {
+        const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()})`;
+        await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
+
+        // Notify the seller/publisher
+        try {
+          const { createNotification } = await import('../services/notifications.js');
+          await createNotification(
+            Number(item.user_id),
+            'success',
+            'Your Product was Sold!',
+            'تم بيع منتجك بنجاح!',
+            `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
+            `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
+          );
+        } catch (nErr) {
+          console.warn('Failed to notify seller in /buy:', nErr);
+        }
+      }
+    }
+
     res.json({
       success: true,
       message: 'Product purchase finalized successfully',
@@ -573,6 +636,30 @@ export async function fulfillMarketplacePurchase(
     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *
   `, [userId, itemId, pricePaid, lic, referrerId, commissionPaid, secureToken]);
+
+  // 3.5. Credit the publisher/seller of the item (if they are not the buyer)
+  if (item.user_id && Number(item.user_id) !== Number(userId)) {
+    const sellerProceeds = Math.max(0, Math.round((pricePaid - commissionPaid) * 100) / 100);
+    if (sellerProceeds > 0) {
+      const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()}) (Stripe Checkout)`;
+      await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
+
+      // Notify the seller/publisher
+      try {
+        const { createNotification } = await import('../services/notifications.js');
+        await createNotification(
+          Number(item.user_id),
+          'success',
+          'Your Product was Sold!',
+          'تم بيع منتجك بنجاح!',
+          `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
+          `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
+        );
+      } catch (nErr) {
+        console.warn('Failed to notify seller in fulfillMarketplacePurchase:', nErr);
+      }
+    }
+  }
 
   // Create notifications as well
   try {
@@ -779,6 +866,30 @@ router.post('/cart/buy', authenticateToken, async (req: any, res) => {
       `, [userId, item.id, finalPrice, lic, referrerId, commissionPaid, secureToken]);
 
       purchases.push(purchaseRes.rows[0]);
+
+      // 5.5. Credit the publisher/seller of the item (if they are not the buyer)
+      if (item.user_id && Number(item.user_id) !== Number(userId)) {
+        const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
+        if (sellerProceeds > 0) {
+          const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()}) (Cart Purchase)`;
+          await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
+
+          // Notify the seller/publisher
+          try {
+            const { createNotification } = await import('../services/notifications.js');
+            await createNotification(
+              Number(item.user_id),
+              'success',
+              'Your Product was Sold!',
+              'تم بيع منتجك بنجاح!',
+              `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
+              `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
+            );
+          } catch (nErr) {
+            console.warn('Failed to notify seller in cart /buy:', nErr);
+          }
+        }
+      }
 
       try {
         const { createNotification } = await import('../services/notifications.js');

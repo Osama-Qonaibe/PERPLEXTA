@@ -6,7 +6,8 @@ import {
   Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
   Rocket, Megaphone, Gamepad2, BookOpen, RefreshCw, Code, Package, Eye, Play,
   Plus, X, Upload, Check, ExternalLink, ArrowLeft, ArrowRight, Wallet, CreditCard,
-  ChevronDown, SlidersHorizontal, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart
+  ChevronDown, SlidersHorizontal, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart,
+  Edit, ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -658,6 +659,28 @@ export const MarketplacePage: React.FC = () => {
 
   const [referralCode, setReferralCode] = useState<string>('');
 
+  const canPublish = (() => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    
+    const limits = user.subscription?.limits || {};
+    const maxListings = limits['marketplace_listings'];
+    
+    let limitVal = 0;
+    if (typeof maxListings === 'object' && maxListings !== null) {
+      const rawVal = maxListings.monthly !== undefined ? maxListings.monthly : maxListings.daily;
+      if (rawVal === 'unlimited') return true;
+      if (rawVal !== undefined && rawVal !== null) {
+        limitVal = parseInt(rawVal, 10);
+      }
+    } else if (maxListings === 'unlimited') {
+      return true;
+    } else if (maxListings !== undefined && maxListings !== null) {
+      limitVal = parseInt(maxListings, 10);
+    }
+    return limitVal > 0;
+  })();
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref') || params.get('aff') || params.get('referral');
@@ -682,6 +705,63 @@ export const MarketplacePage: React.FC = () => {
   });
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<MarketplaceItem | null>(null);
+
+  const resetForm = () => {
+    setEditingProduct(null);
+    setItemTitleAr('');
+    setItemTitleEn('');
+    setItemDescAr('');
+    setItemDescEn('');
+    setItemPrice('');
+    setItemDiscount('');
+    setItemReferralPercent('20');
+    setItemHighlightTag('');
+    setItemLicenseType('mit');
+    setItemContact('');
+    setItemImage(null);
+    setItemLinkPreview('');
+    setItemLinkVideo('');
+    setItemLinkDownload('');
+    setItemLang('');
+    setItemTools('');
+    setItemFeatures('');
+    setSelectedHighlights([]);
+    setSelectedLicenses(['regular']);
+  };
+
+  const startEditing = (prod: MarketplaceItem) => {
+    setEditingProduct(prod);
+    setItemTitleAr(prod.title_ar || '');
+    setItemTitleEn(prod.title_en || '');
+    setItemDescAr(prod.description_ar || '');
+    setItemDescEn(prod.description_en || '');
+    setItemPrice(prod.price?.toString() || '0');
+    setItemDiscount('0');
+    setItemReferralPercent(prod.referral_percent?.toString() || '20');
+    
+    const foundCat = children.find(c => c.nEn.toLowerCase() === prod.category_en.toLowerCase()) || children[0];
+    setItemCategory(foundCat ? foundCat.id : 'saas');
+    
+    setItemContact(prod.contact_link || '');
+    setItemImage(prod.image_url || null);
+    setItemLinkPreview(prod.preview_url || '');
+    setItemLinkVideo(prod.video_url || '');
+    setItemLinkDownload(prod.download_url || '');
+    
+    const formatArr = (val: any) => {
+      if (Array.isArray(val)) return val.join(', ');
+      if (typeof val === 'string') return val;
+      return '';
+    };
+    setItemFeatures(formatArr(prod.features));
+    setItemTools(formatArr(prod.technologies));
+    setItemHighlightTag(prod.highlight_tag || '');
+    setItemLicenseType(prod.license_type || 'mit');
+
+    setSelectedProduct(null);
+    setIsCreateOpen(true);
+  };
   const [itemTitleAr, setItemTitleAr] = useState('');
   const [itemTitleEn, setItemTitleEn] = useState('');
   const [itemDescAr, setItemDescAr] = useState('');
@@ -771,7 +851,9 @@ export const MarketplacePage: React.FC = () => {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/marketplace/items');
+      const url = user?.role === 'admin' ? '/api/marketplace/admin/items' : '/api/marketplace/items';
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(url, { headers });
       const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
       const availableDefaults = DEFAULT_ITEMS.filter(di => !deletedVirtuals.includes(di.id));
 
@@ -794,7 +876,7 @@ export const MarketplacePage: React.FC = () => {
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [user?.role, token]);
 
   const getSubcategoryKey = (item: MarketplaceItem): string => {
     const cat = item.category_en.toLowerCase();
@@ -975,8 +1057,11 @@ export const MarketplacePage: React.FC = () => {
       const discountPct = parseFloat(itemDiscount) || 0;
       const finalPrice = parsedPrice - (parsedPrice * (discountPct / 100));
 
-      const res = await fetch('/api/marketplace/items', {
-        method: 'POST',
+      const url = editingProduct ? `/api/marketplace/items/${editingProduct.id}` : '/api/marketplace/items';
+      const method = editingProduct ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -1004,10 +1089,11 @@ export const MarketplacePage: React.FC = () => {
 
       if (res.ok) {
         setSubmitSuccess(true);
-        toast.success(t.successMsg);
+        toast.success(editingProduct ? (language === 'ar' ? 'تم حفظ التعديلات بنجاح' : 'Changes saved successfully') : t.successMsg);
         setTimeout(() => {
           setIsCreateOpen(false);
           setSubmitSuccess(false);
+          setEditingProduct(null);
           setItemTitleAr('');
           setItemTitleEn('');
           setItemDescAr('');
@@ -1029,9 +1115,13 @@ export const MarketplacePage: React.FC = () => {
           setSelectedLicenses(['regular']);
           fetchItems();
         }, 2000);
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || 'Operation failed');
       }
     } catch (err) {
       console.error(err);
+      toast.error('Connection error');
     } finally {
       setSubmitting(false);
     }
@@ -1484,13 +1574,18 @@ export const MarketplacePage: React.FC = () => {
                       <span>{language === 'ar' ? 'حقيبة تنزيلاتي ومشترياتي' : 'My Purchases & Downloads'}</span>
                     </button>
 
-                    <button
-                      onClick={() => setIsCreateOpen(true)}
-                      className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
-                    >
-                      <Plus size={14} />
-                      <span>{t.listNewAsset}</span>
-                    </button>
+                    {canPublish && (
+                      <button
+                        onClick={() => {
+                          resetForm();
+                          setIsCreateOpen(true);
+                        }}
+                        className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
+                      >
+                        <Plus size={14} />
+                        <span>{t.listNewAsset}</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => setIsCartOpen(true)}
@@ -1747,6 +1842,23 @@ export const MarketplacePage: React.FC = () => {
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
                             <div className={`absolute inset-0 bg-gradient-to-t ${isThemeDark ? 'from-[#090a0c]' : 'from-white/40'} via-transparent to-transparent opacity-60`} />
+
+                            {/* Status Badge overlay for admins or listing owners */}
+                            {(user?.role === 'admin' || (item.user_id === user?.id && item.status !== 'approved')) && (
+                              <div className="absolute top-2 left-10 z-10">
+                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-[4px] backdrop-blur-md border uppercase inline-flex items-center gap-1 ${
+                                  item.status === 'approved' 
+                                    ? 'bg-emerald-500/80 border-emerald-400 text-black'
+                                    : item.status === 'rejected'
+                                      ? 'bg-rose-500/80 border-rose-400 text-white'
+                                      : 'bg-amber-500/80 border-amber-400 text-black'
+                                }`}>
+                                  {language === 'ar' 
+                                    ? (item.status === 'approved' ? 'مقبول / منشور' : item.status === 'rejected' ? 'مرفوض / محجوب' : 'معلق للمراجعة') 
+                                    : (item.status || 'pending')}
+                                </span>
+                              </div>
+                            )}
 
                             <div className="absolute bottom-2 right-2 flex items-center gap-1.5 select-none">
                               <span className="text-[8px] font-black px-2 py-0.5 rounded bg-black/70 backdrop-blur-md border border-white/10 text-white flex items-center gap-1">
@@ -2122,6 +2234,121 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   </div>
 
+                  {user?.role === 'admin' && (
+                    <div className="p-3.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs select-none">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold uppercase tracking-wide text-amber-500 flex items-center gap-1">
+                            <ShieldAlert size={12} />
+                            {language === 'ar' ? 'لوحة إشراف المدير (تراقب)' : 'Admin Control Panel'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase ${
+                            selectedProduct.status === 'approved' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : selectedProduct.status === 'rejected'
+                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {selectedProduct.status || 'pending'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-relaxed">
+                          {language === 'ar' 
+                            ? 'بصفتك مديراً، يمكنك الموافقة على هذا المنتج ونشره فوراً، أو رفضه، أو تعديل كامل محتواه.' 
+                            : 'As an administrator, you can approve, reject, or completely edit this product listing.'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/marketplace/admin/items/${selectedProduct.id}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ status: 'approved' })
+                              });
+                              if (res.ok) {
+                                toast.success(language === 'ar' ? 'تمت الموافقة ونشر المنتج بنجاح!' : 'Product approved and published successfully!');
+                                setSelectedProduct({ ...selectedProduct, status: 'approved' });
+                                fetchItems();
+                              } else {
+                                toast.error('Failed to approve');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                        >
+                          <Check size={12} />
+                          <span>{language === 'ar' ? 'موافقة ونشر' : 'Approve & Publish'}</span>
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/marketplace/admin/items/${selectedProduct.id}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ status: 'rejected' })
+                              });
+                              if (res.ok) {
+                                toast.success(language === 'ar' ? 'تم رفض المنتج وحجبه بنجاح' : 'Product rejected successfully');
+                                setSelectedProduct({ ...selectedProduct, status: 'rejected' });
+                                fetchItems();
+                              } else {
+                                toast.error('Failed to reject');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          className="h-8 px-2.5 rounded-[4px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                        >
+                          <X size={12} />
+                          <span>{language === 'ar' ? 'رفض' : 'Reject'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            startEditing(selectedProduct);
+                          }}
+                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                        >
+                          <Edit size={12} />
+                          <span>{language === 'ar' ? 'تعديل' : 'Edit'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {user?.role !== 'admin' && selectedProduct.user_id === user?.id && (
+                    <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 text-[10px] text-amber-500 select-none">
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span>
+                        {selectedProduct.status === 'pending' || !selectedProduct.status
+                          ? (language === 'ar' 
+                              ? 'لقد قمت بإدراج هذا المنتج وهو معلق حالياً بانتظار مراجعة وقبول مدير المنصة قبل نشره للعامة.' 
+                              : 'You uploaded this asset. It is currently pending review by our administration team before going live.')
+                          : selectedProduct.status === 'rejected'
+                            ? (language === 'ar' 
+                                ? 'تم رفض إدراج هذا المنتج من قبل مدير المنصة.' 
+                                : 'This listing was rejected has been hidden by admins.')
+                            : (language === 'ar'
+                                ? 'منتجك معتمد ومنشور بنجاح للعامة!'
+                                : 'Your listing is live and visible to the public!')
+                        }
+                      </span>
+                    </div>
+                  )}
+
                   <p className={`text-[10px] md:text-xs leading-relaxed font-medium ${
                     isThemeDark ? 'text-gray-400/90' : 'text-gray-550'
                   }`}>
@@ -2443,16 +2670,19 @@ export const MarketplacePage: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedProduct(null);
-                      setIsCreateOpen(true);
-                    }}
-                    className="flex-shrink-0 relative z-10 text-[9px] font-black bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg transition-all active:scale-95 flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
-                  >
-                    <Plus size={10} />
-                    <span>{t.ctaBtn}</span>
-                  </button>
+                  {canPublish && (
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(null);
+                        resetForm();
+                        setIsCreateOpen(true);
+                      }}
+                      className="flex-shrink-0 relative z-10 text-[9px] font-black bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg transition-all active:scale-95 flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
+                    >
+                      <Plus size={10} />
+                      <span>{t.ctaBtn}</span>
+                    </button>
+                  )}
                 </div>
 
               </div>
@@ -2747,7 +2977,7 @@ export const MarketplacePage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-[var(--border-main)] dark:border-white/5 pb-3">
                 <h3 className="font-black text-xs text-emerald-400 flex items-center gap-1.5 select-none text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
                   <Grid size={13} />
-                  <span>{t.insertModalTitle}</span>
+                  <span>{editingProduct ? (language === 'ar' ? 'تعديل بيانات منتج السوق الأساسية' : 'Edit Base Marketplace Product Details') : t.insertModalTitle}</span>
                 </h3>
                 <button
                   onClick={() => setIsCreateOpen(false)}
@@ -3135,7 +3365,7 @@ export const MarketplacePage: React.FC = () => {
                       {submitting ? (
                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        t.publishBtn
+                        editingProduct ? (language === 'ar' ? 'حفظ التغييرات' : 'Save Changes') : t.publishBtn
                       )}
                     </button>
                   </div>
