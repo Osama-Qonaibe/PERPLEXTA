@@ -104,6 +104,8 @@ const CommandCenterView = ({
   const [search, setSearch] = useState("");
   const [logStatusFilter, setLogStatusFilter] = useState("all");
   const [logToolFilter, setLogToolFilter] = useState("all");
+  const [logStartDate, setLogStartDate] = useState("");
+  const [logEndDate, setLogEndDate] = useState("");
   const [apiHealth, setApiHealth] = useState<any[]>([]);
   const [serverHealth, setServerHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -716,54 +718,84 @@ const CommandCenterView = ({
             ];
 
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                {/* Status Selector */}
-                <div className="relative">
-                  <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
-                    {language === "ar" ? "تصفية حسب الحالة" : "Filter by Status"}
-                  </label>
+              <div className="space-y-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Status Selector */}
                   <div className="relative">
-                    <select
-                      value={logStatusFilter}
-                      onChange={(e) => setLogStatusFilter(e.target.value)}
-                      className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
-                    >
-                      {statusOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>
-                          {dir === "rtl" ? opt.labelAr : opt.labelEn}
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                      {language === "ar" ? "تصفية حسب الحالة" : "Filter by Status"}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={logStatusFilter}
+                        onChange={(e) => setLogStatusFilter(e.target.value)}
+                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                      >
+                        {statusOptions.map(opt => (
+                          <option key={opt.id} value={opt.id}>
+                            {dir === "rtl" ? opt.labelAr : opt.labelEn}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={14}
+                        className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tool Selector */}
+                  <div className="relative">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                      {language === "ar" ? "تصفية حسب الأداة" : "Filter by Tool"}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={logToolFilter}
+                        onChange={(e) => setLogToolFilter(e.target.value)}
+                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                      >
+                        <option value="all">
+                          {dir === "rtl" ? "جميع الأدوات والخدمات" : "All Tools & Services"}
                         </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
-                    />
+                        {availableToolFilters.map(tool => (
+                          <option key={tool.id} value={tool.id}>
+                            {dir === "rtl" ? tool.labelAr : tool.labelEn}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={14}
+                        className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Tool Selector */}
-                <div className="relative">
-                  <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
-                    {language === "ar" ? "تصفية حسب الأداة" : "Filter by Tool"}
-                  </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Start Date */}
                   <div className="relative">
-                    <select
-                      value={logToolFilter}
-                      onChange={(e) => setLogToolFilter(e.target.value)}
-                      className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
-                    >
-                      <option value="all">
-                        {dir === "rtl" ? "جميع الأدوات والخدمات" : "All Tools & Services"}
-                      </option>
-                      {availableToolFilters.map(tool => (
-                        <option key={tool.id} value={tool.id}>
-                          {dir === "rtl" ? tool.labelAr : tool.labelEn}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className={`absolute ${dir === "rtl" ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none text-gray-500`}
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                      {language === "ar" ? "تاريخ البدء" : "Start Date"}
+                    </label>
+                    <input
+                      type="date"
+                      value={logStartDate}
+                      onChange={(e) => setLogStartDate(e.target.value)}
+                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
+                    />
+                  </div>
+
+                  {/* End Date */}
+                  <div className="relative">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
+                      {language === "ar" ? "تاريخ الانتهاء" : "End Date"}
+                    </label>
+                    <input
+                      type="date"
+                      value={logEndDate}
+                      onChange={(e) => setLogEndDate(e.target.value)}
+                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
                     />
                   </div>
                 </div>
@@ -824,7 +856,21 @@ const CommandCenterView = ({
                   }
                 }
 
-                // 3. Search Filter
+                // 3. Date Range Filter
+                if (logStartDate) {
+                  const sDate = new Date(logStartDate);
+                  sDate.setHours(0, 0, 0, 0);
+                  const logDate = new Date(log.created_at);
+                  if (logDate < sDate) return false;
+                }
+                if (logEndDate) {
+                  const eDate = new Date(logEndDate);
+                  eDate.setHours(23, 59, 59, 999);
+                  const logDate = new Date(log.created_at);
+                  if (logDate > eDate) return false;
+                }
+
+                // 4. Search Filter
                 if (!search.trim()) return true;
                 const term = search.toLowerCase();
                 return (
@@ -849,11 +895,13 @@ const CommandCenterView = ({
                         ? "جرب تعديل المعايير المحددة أو تصفير كلمات البحث للحصول على نتائج مغايرة." 
                         : "Try adjusting your filters or clearing your search term to view other entries."}
                     </p>
-                    {(logStatusFilter !== "all" || logToolFilter !== "all" || search.trim()) && (
+                    {(logStatusFilter !== "all" || logToolFilter !== "all" || logStartDate || logEndDate || search.trim()) && (
                       <button
                         onClick={() => {
                           setLogStatusFilter("all");
                           setLogToolFilter("all");
+                          setLogStartDate("");
+                          setLogEndDate("");
                           setSearch("");
                         }}
                         className="mt-4 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-300"
