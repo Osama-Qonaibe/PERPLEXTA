@@ -1,4 +1,4 @@
-import { pool, ledgerPool } from '../db/index.js';
+import { getPool, getLedgerPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
 import bcrypt from 'bcryptjs';
@@ -91,6 +91,7 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
 };
 
 export async function getUserUsage(userId: string | number) {
+  const pool = getPool();
   if (!pool) throw new Error('Database initializing');
 
   const planRes = await pool.query(`
@@ -233,6 +234,8 @@ export async function getUserUsage(userId: string | number) {
 }
 
 export async function getUserProfile(userId: string) {
+  const pool = getPool();
+  const ledgerPool = getLedgerPool();
   if (!pool) throw new Error('Database initializing');
   
   const result = await pool.query(`
@@ -287,6 +290,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function updateUserProfile(userId: string | number, data: any) {
+  const pool = getPool();
   if (!pool) throw new Error('Database initializing');
   
   const { name, avatar, language, theme, custom_instructions, password, email } = data;
