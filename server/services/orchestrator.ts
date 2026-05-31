@@ -874,7 +874,7 @@ async function updateChatContextSummary(chatIdNum: number, userId: number, provi
 
     const summary = await withTimeout(
       callAIProvider(provider, model, apiKey, summaryPrompt, 'You are a concise conversation summarizer. Output only the summary, no preamble.', undefined, [], {}, undefined),
-      30000,
+      60000,
       'context-summary'
     );
 
