@@ -11,6 +11,14 @@ let currentLedgerUrl: string = '';
 let currentExternalUrl: string = '';
 let currentSecurityUrl: string = '';
 
+export function getPool() {
+  return pool;
+}
+
+export function getLedgerPool() {
+  return ledgerPool;
+}
+
 export function getExternalPool() {
   return externalPool || pool;
 }
