@@ -8,36 +8,8 @@ import { runDatabaseMigrations, setIo } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
-import { pool } from './db/index.js';
-import { encrypt } from './utils/crypto.js';
-import { syncProviderModelsInternal } from './services/ai.js';
 
 const PORT = Number(process.env.PORT) || 3000;
-
-async function seedOllamaProvider() {
-  const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
-  const ollamaKey = process.env.OLLAMA_API_KEY || '';
-
-  try {
-    const existing = await pool.query(
-      'SELECT provider FROM api_keys_vault WHERE provider = $1',
-      ['ollama']
-    );
-    if (existing.rows.length > 0) return;
-
-    const encryptedKey = encrypt(ollamaKey);
-    await pool.query(
-      `INSERT INTO api_keys_vault (provider, encrypted_key, url_key, daily_budget, is_active, updated_at)
-       VALUES ($1, $2, $3, 0, true, CURRENT_TIMESTAMP)`,
-      ['ollama', encryptedKey, ollamaUrl]
-    );
-
-    await syncProviderModelsInternal('ollama', ollamaKey, ollamaUrl);
-    console.log(`[Seed] Ollama provider registered: ${ollamaUrl}`);
-  } catch (err) {
-    console.warn('[Seed] Ollama auto-seed skipped:', err);
-  }
-}
 
 async function startServer() {
   try {
@@ -50,7 +22,6 @@ async function startServer() {
       await synchronizePerplextaPoolsFromRegistry();
       await syncSystemTemplates();
       await refreshCachedAppName();
-      await seedOllamaProvider();
       dbReady = true;
     } catch (dbErr) {
       console.error('[Server] WARNING: Database sync failed. Starting in DEGRADED MODE:', dbErr);
