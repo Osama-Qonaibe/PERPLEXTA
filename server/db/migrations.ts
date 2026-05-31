@@ -1149,6 +1149,47 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    // MIGRATION: Marketplace Portfolio & Product Referrals v31
+    await runVersioned('v31_marketplace_purchases_and_referrals', 'Enabling real transactional purchases, secure file downloads, and affiliate product referral chains', async (tx) => {
+      // 1. Extend marketplace_items with functional download structures
+      await ensureColumn(tx, 'marketplace_items', 'download_url', 'TEXT');
+      await ensureColumn(tx, 'marketplace_items', 'preview_url', 'TEXT');
+      await ensureColumn(tx, 'marketplace_items', 'video_url', 'TEXT');
+      await ensureColumn(tx, 'marketplace_items', 'features', 'TEXT');
+      await ensureColumn(tx, 'marketplace_items', 'technologies', 'TEXT');
+
+      // 2. Create marketplace_purchases table to record secure ownership & affiliate commissions
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS marketplace_purchases (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          item_id INTEGER NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
+          price_paid NUMERIC(10, 2) NOT NULL,
+          license_type VARCHAR(50) DEFAULT 'standard',
+          referrer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          commission_paid NUMERIC(10, 2) DEFAULT 0.00,
+          download_token VARCHAR(100) UNIQUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // 3. Make sure indexes exist for fast retrieval
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(user_id);`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_item ON marketplace_purchases(item_id);`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_referrer ON marketplace_purchases(referrer_id);`);
+    });
+
+    // MIGRATION: Marketplace Product Customized Referral Percentages v32
+    await runVersioned('v32_marketplace_referral_percent', 'Enabling product creators to define custom product affiliate/referral commission percentages', async (tx) => {
+      await ensureColumn(tx, 'marketplace_items', 'referral_percent', 'NUMERIC(5, 2)');
+    });
+
+    // MIGRATION: Marketplace Product Highlights & Licenses v33
+    await runVersioned('v33_marketplace_highlights_and_licenses', 'Adding highlight_tag and license_type columns to marketplace_items for advanced item attributes', async (tx) => {
+      await ensureColumn(tx, 'marketplace_items', 'highlight_tag', 'VARCHAR(50)');
+      await ensureColumn(tx, 'marketplace_items', 'license_type', 'VARCHAR(50)');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1833,6 +1874,14 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         status VARCHAR(20) DEFAULT 'approved',
         views INTEGER DEFAULT 0,
         contact_link TEXT,
+        download_url TEXT,
+        preview_url TEXT,
+        video_url TEXT,
+        features TEXT,
+        technologies TEXT,
+        referral_percent NUMERIC(5, 2),
+        highlight_tag VARCHAR(50),
+        license_type VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`

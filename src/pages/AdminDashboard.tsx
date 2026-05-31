@@ -3590,6 +3590,14 @@ const DatabaseOrchestrationView = ({
     const db = databases.find((d) => d.id === id);
     if (!db) return;
 
+    const confirmMsg = language === "ar"
+      ? "هل أنت متأكد من حفظ وتغيير إعدادات وسلاسل الاتصال لقاعدة البيانات هذه؟ قد يؤثر استبدال سلاسل الاتصال النشطة على العمليات الجارية."
+      : "Are you sure you want to save and overwrite the active connection strings for this database? Overwriting active configurations can disrupt live operations.";
+    
+    if (!window.confirm(confirmMsg)) {
+      return;
+    }
+
     if (!db.connectionTested) {
       showToast(
         dir === "rtl"

@@ -5,6 +5,7 @@ import { AccountSettings } from '../components/AccountSettings';
 import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
+import { MarketplacePortfolio } from '../components/MarketplacePortfolio';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { 
@@ -15,7 +16,7 @@ import {
   Command, Terminal, MousePointer2, Type,
   MessageSquare, Image as ImageIcon, Video, LayoutGrid,
   Activity, Clock, Zap, ShieldCheck, Brain, MapPin, 
-  FileText, Mic, Volume2, Code
+  FileText, Mic, Volume2, Code, ShoppingBag
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -199,6 +200,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'account', icon: <User size={18} />, label: t('profile') },
     { id: 'usage', icon: <Activity size={18} />, label: t('consumption') },
     { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
+    { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'سوق المنصة' : 'Marketplace Hub' },
     { id: 'memory', icon: <BrainCircuit size={18} />, label: t('memoryCenter') },
   ];
 
@@ -321,6 +323,11 @@ export const SettingsPage: React.FC = () => {
               {/* Wallet Tab */}
               {activeTab === 'wallet' && (
                 <WalletSystem theme={theme} dir={dir} />
+              )}
+
+              {/* Marketplace Portfolio & Affiliate Tab */}
+              {activeTab === 'marketplace_purchases' && (
+                <MarketplacePortfolio />
               )}
 
               {/* Memory Center Tab */}

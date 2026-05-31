@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ShoppingBag, Check, X, Shield, Trash2, ExternalLink, Calendar, Search, Filter, Eye, AlertCircle } from 'lucide-react';
+import { 
+  ShoppingBag, Check, X, Shield, Trash2, ExternalLink, Calendar, Search, Filter, Eye, AlertCircle,
+  Edit, Award, Share2, Upload, AlertTriangle, Flame, Star, Sparkles, Gift, Scale, TrendingUp
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
+import { DEFAULT_ITEMS } from '../pages/MarketplacePage';
 
 interface MarketplaceItem {
   id: number;
@@ -21,7 +26,136 @@ interface MarketplaceItem {
   seller_avatar?: string;
   seller_role?: string;
   created_at: string;
+  download_url?: string;
+  preview_url?: string;
+  video_url?: string;
+  features?: string;
+  technologies?: string;
+  referral_percent?: number;
+  highlight_tag?: string;
+  license_type?: string;
 }
+
+const getHighlightDetails = (tag: string, className?: string) => {
+  const norm = (tag || '').toLowerCase().trim();
+  switch (norm) {
+    case 'trending':
+      return {
+        labelAr: 'رائج',
+        labelEn: 'Trending',
+        colorClass: 'bg-orange-500/10 border-orange-500/20 text-orange-550 dark:text-orange-400',
+        icon: <Flame className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'exclusive':
+      return {
+        labelAr: 'عرض حصري',
+        labelEn: 'Exclusive',
+        colorClass: 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400',
+        icon: <Star className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'free':
+      return {
+        labelAr: 'مجاني',
+        labelEn: 'Free / OSS',
+        colorClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+        icon: <Gift className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'best_seller':
+    case 'bestseller':
+      return {
+        labelAr: 'الأكثر مبيعاً',
+        labelEn: 'Best Seller',
+        colorClass: 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400',
+        icon: <TrendingUp className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'new':
+      return {
+        labelAr: 'جديد',
+        labelEn: 'New',
+        colorClass: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
+        icon: <Sparkles className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'featured':
+      return {
+        labelAr: 'مميز',
+        labelEn: 'Featured',
+        colorClass: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-500',
+        icon: <Award className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    default:
+      return null;
+  }
+};
+
+const getLicenseName = (type: string, isAr: boolean) => {
+  const norm = (type || '').toLowerCase().trim();
+  switch (norm) {
+    case 'mit':
+      return isAr ? 'رخصة MIT برمجية' : 'MIT License';
+    case 'apache_2':
+    case 'apache_2.0':
+    case 'apache2':
+    case 'apache':
+      return 'Apache 2.0';
+    case 'gpl_3':
+    case 'gpl3':
+    case 'gpl':
+      return 'GNU GPL v3';
+    case 'bsd_3':
+    case 'bsd3':
+    case 'bsd':
+      return 'BSD 3-Clause';
+    case 'cc_by_sa':
+    case 'cc_by':
+    case 'cc':
+      return 'CC BY-SA 4.0';
+    case 'commercial_extended':
+      return isAr ? 'تجاري ممتد (Extended)' : 'Commercial Extended';
+    case 'commercial_standard':
+    default:
+      return isAr ? 'تجاري قياسي (Standard)' : 'Commercial Standard';
+  }
+};
+
+interface ParentCategory {
+  id: string;
+  nAr: string;
+  nEn: string;
+  ic: string;
+  co: string;
+}
+
+interface ChildCategory {
+  id: string;
+  parent: string;
+  nAr: string;
+  nEn: string;
+  ic: string;
+  co: string;
+}
+
+const parents: ParentCategory[] = [
+  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', ic: 'code', co: '#10b981' },
+  { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', ic: 'trading-bots', co: '#f59e0b' },
+  { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', ic: 'templates', co: '#ec4899' },
+  { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', ic: 'startup-box', co: '#8b5cf6' },
+  { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', ic: 'ebooks', co: '#14b8a6' },
+  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', ic: 'free', co: '#10b981' }
+];
+
+const children: ChildCategory[] = [
+  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', ic: 'saas', co: '#10b981' },
+  { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', ic: 'mobile', co: '#06b6d4' },
+  { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', ic: 'plugins', co: '#6366f1' },
+  { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', ic: 'ai-agents', co: '#f43f5e' },
+  { id: 'trading-bots', parent: 'fintech', nAr: 'بوتات التداول', nEn: 'Trading Bots', ic: 'trading-bots', co: '#f59e0b' },
+  { id: 'indicators', parent: 'fintech', nAr: 'مؤشرات فنية', nEn: 'Technical Indicators', ic: 'indicators', co: '#eab308' },
+  { id: 'templates', parent: 'ui', nAr: 'قوالب ومواقع', nEn: 'Templates & Sites', ic: 'templates', co: '#ec4899' },
+  { id: 'figma', parent: 'ui', nAr: 'ملفات Figma', nEn: 'Figma Files', ic: 'figma', co: '#a855f7' },
+  { id: 'startup-box', parent: 'bundles', nAr: 'Startup-in-a-Box', nEn: 'Startup-in-a-Box', ic: 'startup-box', co: '#8b5cf6' },
+  { id: 'marketing-kits', parent: 'bundles', nAr: 'أكياس تسويقية', nEn: 'Marketing Kits', ic: 'marketing-kits', co: '#f97316' },
+  { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', ic: 'game-bundles', co: '#ef4444' }
+];
 
 export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: string }> = ({ theme, t, dir }) => {
   const { token, language } = useAppContext();
@@ -30,6 +164,183 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [actioningId, setActioningId] = useState<number | null>(null);
+
+  // Editing logic states
+  const [editingItem, setEditingItem] = useState<MarketplaceItem | null>(null);
+  const [editTitleAr, setEditTitleAr] = useState('');
+  const [editTitleEn, setEditTitleEn] = useState('');
+  const [editDescAr, setEditDescAr] = useState('');
+  const [editDescEn, setEditDescEn] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editDiscount, setEditDiscount] = useState('0');
+  const [editCategorySelect, setEditCategorySelect] = useState('saas');
+  const [editImage, setEditImage] = useState('');
+  const [editContact, setEditContact] = useState('');
+  const [editLinkDownload, setEditLinkDownload] = useState('');
+  const [editLinkPreview, setEditLinkPreview] = useState('');
+  const [editLinkVideo, setEditLinkVideo] = useState('');
+  const [editFeatures, setEditFeatures] = useState('');
+  const [editTools, setEditTools] = useState('');
+  const [editReferralPercent, setEditReferralPercent] = useState('20');
+  const [editHighlightTag, setEditHighlightTag] = useState('');
+  const [editLicenseType, setEditLicenseType] = useState('mit');
+  const [updating, setUpdating] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setUploadError('');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          const srcWidth = img.width;
+          const srcHeight = img.height;
+          const minSide = Math.min(srcWidth, srcHeight);
+
+          const sx = (srcWidth - minSide) / 2;
+          const sy = (srcHeight - minSide) / 2;
+
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
+
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              setUploadError(language === 'ar' ? 'فشل معالجة الصورة.' : 'Failed to crop image.');
+              setUploadingImage(false);
+              return;
+            }
+
+            const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            const formData = new FormData();
+            formData.append('file', croppedFile);
+
+            try {
+              const res = await fetch('/api/files/upload', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                },
+                body: formData
+              });
+
+              if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.file) {
+                  setEditImage(`/uploads/${data.file.file_url}`);
+                } else {
+                  setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
+                }
+              } else {
+                setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
+              }
+            } catch (err) {
+              console.error(err);
+              setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
+            } finally {
+              setUploadingImage(false);
+            }
+          }, 'image/jpeg', 0.9);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStartEdit = (item: MarketplaceItem) => {
+    setEditingItem(item);
+    setEditTitleAr(item.title_ar || '');
+    setEditTitleEn(item.title_en || '');
+    setEditDescAr(item.description_ar || '');
+    setEditDescEn(item.description_en || '');
+    setEditPrice(item.price ? item.price.toString() : '');
+    setEditDiscount('0');
+    
+    // Find child category
+    const matchingChild = children.find(c => c.nEn === item.category_en || c.nAr === item.category_ar);
+    setEditCategorySelect(matchingChild ? matchingChild.id : 'saas');
+    
+    setEditImage(item.image_url || '');
+    setEditContact(item.contact_link || '');
+    setEditLinkDownload(item.download_url || '');
+    setEditLinkPreview(item.preview_url || '');
+    setEditLinkVideo(item.video_url || '');
+    setEditFeatures(item.features || '');
+    setEditTools(item.technologies || '');
+    setEditReferralPercent(item.referral_percent !== undefined && item.referral_percent !== null ? item.referral_percent.toString() : '20');
+    setEditHighlightTag(item.highlight_tag || '');
+    setEditLicenseType(item.license_type || 'mit');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    setUpdating(true);
+
+    const catObj = children.find(c => c.id === editCategorySelect) || children[0];
+    
+    try {
+      const parsedPrice = parseFloat(editPrice) || 0;
+      const discountPct = parseFloat(editDiscount) || 0;
+      const finalPrice = parsedPrice - (parsedPrice * (discountPct / 100));
+
+      const isVirtual = editingItem.id < 0;
+      const url = isVirtual ? '/api/marketplace/items' : `/api/marketplace/items/${editingItem.id}`;
+      const method = isVirtual ? 'POST' : 'PATCH';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title_ar: editTitleAr,
+          title_en: editTitleEn,
+          description_ar: editDescAr,
+          description_en: editDescEn,
+          price: finalPrice,
+          category_en: catObj.nEn,
+          category_ar: catObj.nAr,
+          image_url: editImage,
+          contact_link: editContact || 'https://t.me/perplexta_support',
+          download_url: editLinkDownload || null,
+          preview_url: editLinkPreview || null,
+          video_url: editLinkVideo || null,
+          features: editFeatures || null,
+          technologies: editTools || null,
+          referral_percent: editReferralPercent ? parseFloat(editReferralPercent) : 20,
+          highlight_tag: editHighlightTag || null,
+          license_type: editLicenseType || 'mit'
+        })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'ar' ? 'تم حفظ وتزامن المنتج بنجاح مع قاعدة البيانات' : 'Product successfully saved and synchronized with database');
+        setEditingItem(null);
+        fetchAllItems();
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || (language === 'ar' ? 'فشل حفظ وتزامن المنتج' : 'Failed to save product'));
+      }
+    } catch (err) {
+      console.error('Update item failed:', err);
+      toast.error(language === 'ar' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const fetchAllItems = async () => {
     setLoading(true);
@@ -41,7 +352,10 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       });
       if (res.ok) {
         const data = await res.json();
-        setItems(data);
+        const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
+        const availableDefaults = DEFAULT_ITEMS.filter((di: any) => !deletedVirtuals.includes(di.id));
+        const combined = [...data, ...availableDefaults.filter((di: any) => !data.some((db: any) => db.title_en === di.title_en))];
+        setItems(combined);
       }
     } catch (err) {
       console.error('Failed to fetch admin marketplace items:', err);
@@ -55,6 +369,50 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
   }, [token]);
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
+    if (id < 0) {
+      const itemToCreate = items.find(it => it.id === id);
+      if (!itemToCreate) return;
+      setActioningId(id);
+      try {
+        const res = await fetch('/api/marketplace/items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title_ar: itemToCreate.title_ar,
+            title_en: itemToCreate.title_en,
+            description_ar: itemToCreate.description_ar,
+            description_en: itemToCreate.description_en,
+            price: itemToCreate.price,
+            category_en: itemToCreate.category_en,
+            category_ar: itemToCreate.category_ar,
+            image_url: itemToCreate.image_url,
+            contact_link: itemToCreate.contact_link || 'https://t.me/perplexta_support',
+            status: newStatus,
+            download_url: itemToCreate.download_url || null,
+            preview_url: itemToCreate.preview_url || null,
+            video_url: itemToCreate.video_url || null,
+            features: itemToCreate.features || null,
+            technologies: itemToCreate.technologies || null,
+            referral_percent: itemToCreate.referral_percent || 20,
+            highlight_tag: itemToCreate.highlight_tag || null,
+            license_type: itemToCreate.license_type || 'mit'
+          })
+        });
+        if (res.ok) {
+          toast.success(language === 'ar' ? 'تم مزامنة حالة المنتج مع قاعدة البيانات' : 'Product status synchronized with database');
+          fetchAllItems();
+        }
+      } catch (err) {
+        console.error('Failed to sync virtual item status:', err);
+      } finally {
+        setActioningId(null);
+      }
+      return;
+    }
+
     setActioningId(id);
     try {
       const res = await fetch(`/api/marketplace/admin/items/${id}/status`, {
@@ -67,8 +425,8 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       });
 
       if (res.ok) {
-        // Optimistically update status
         setItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+        toast.success(language === 'ar' ? 'تم تحديث الحالة بنجاح' : 'Status updated successfully');
       }
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -79,6 +437,16 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
   const handleDeleteItem = async (id: number) => {
     if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا المعروض نهائياً؟' : 'Are you sure you want to permanently delete this listing?')) return;
+    
+    if (id < 0) {
+      const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
+      deletedVirtuals.push(id);
+      localStorage.setItem('perplexta_deleted_virtual_items', JSON.stringify(deletedVirtuals));
+      setItems(prev => prev.filter(item => item.id !== id));
+      toast.success(language === 'ar' ? 'تم حذف المعروض بنجاح' : 'Listing deleted successfully');
+      return;
+    }
+
     setActioningId(id);
     try {
       const res = await fetch(`/api/marketplace/items/${id}`, {
@@ -90,6 +458,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
       if (res.ok) {
         setItems(prev => prev.filter(item => item.id !== id));
+        toast.success(language === 'ar' ? 'تم حذف المعروض بنجاح' : 'Listing deleted successfully');
       }
     } catch (err) {
       console.error('Failed to delete item:', err);
@@ -222,6 +591,24 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         <div className="text-[9px] text-gray-500/70 font-mono">
                           Listed at: {new Date(item.created_at).toLocaleDateString()}
                         </div>
+                        
+                        {/* Live highlights and license information */}
+                        <div className="flex flex-wrap items-center gap-1 mt-1 select-none">
+                          {item.highlight_tag && (() => {
+                            const details = getHighlightDetails(item.highlight_tag);
+                            if (!details) return null;
+                            return (
+                              <span className={`px-1.5 py-0.5 rounded-[3px] border text-[8px] font-black flex items-center gap-0.5 shrink-0 ${details.colorClass}`}>
+                                {details.icon}
+                                <span>{language === 'ar' ? details.labelAr : details.labelEn}</span>
+                              </span>
+                            );
+                          })()}
+                          <span className="px-1.5 py-0.5 rounded-[3px] border text-[8px] font-black flex items-center gap-0.5 shrink-0 bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                            <Scale size={8} strokeWidth={3} />
+                            <span>{getLicenseName(item.license_type || 'commercial_standard', language === 'ar')}</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -308,6 +695,15 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       )}
 
                       <button
+                        onClick={() => handleStartEdit(item)}
+                        disabled={actioningId === item.id}
+                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-500 transition-all duration-300 border border-transparent"
+                        title={language === 'ar' ? 'تعديل المعروض' : 'Edit listing'}
+                      >
+                        <Edit size={14} className="mx-auto" />
+                      </button>
+
+                      <button
                         onClick={() => handleDeleteItem(item.id)}
                         disabled={actioningId === item.id}
                         className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300 border border-transparent"
@@ -323,6 +719,449 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
           </table>
         </div>
       )}
+
+      {/* Edit Listing Modal Overlay */}
+      <AnimatePresence>
+        {editingItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              transition={{ duration: 0.3 }}
+              className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px] border p-6 ${
+                theme === 'dark' ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b pb-4 mb-5 border-gray-800">
+                <div className="flex items-center gap-2">
+                  <Edit size={16} className="text-emerald-500 font-black glow-icon" />
+                  <h3 className="text-sm font-black tracking-wider uppercase">
+                    {language === 'ar' ? 'تعديل بيانات المعروض' : 'Edit Marketplace Asset'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Form body */}
+              <form onSubmit={handleSaveEdit} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                {/* Titles */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'اسم المعروض (بالعربية) *' : 'Asset Title (Arabic) *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editTitleAr}
+                      onChange={(e) => setEditTitleAr(e.target.value)}
+                      placeholder="الأكواد والربط البرمجي ERPv4"
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-right ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'اسم المعروض (بالإنجليزية) *' : 'English Title *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editTitleEn}
+                      onChange={(e) => setEditTitleEn(e.target.value)}
+                      placeholder="ERP Integration Suite v4"
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Category & Pricing */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'التصنيف الرئيسي *' : 'Main Category *'}
+                    </label>
+                    <select
+                      value={editCategorySelect}
+                      onChange={(e) => setEditCategorySelect(e.target.value)}
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    >
+                      {parents.map(p => (
+                        <optgroup key={p.id} label={language === 'ar' ? p.nAr : p.nEn}>
+                          {children.filter(c => c.parent === p.id).map(c => (
+                            <option key={c.id} value={c.id}>
+                              {language === 'ar' ? c.nAr : c.nEn}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'السعر ($) *' : 'Price ($) *'}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        placeholder="99"
+                        className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                        }`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'الخصم (%)' : 'Discount (%)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={editDiscount}
+                        onChange={(e) => setEditDiscount(e.target.value)}
+                        placeholder="0"
+                        className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                        }`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'النهائي' : 'Final'}
+                      </label>
+                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
+                        theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/20 border-emerald-500/10'
+                      }`}>
+                        ${Math.round((Number(editPrice) || 0) * (1 - (Number(editDiscount) || 0) / 100))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Affiliate & Referral Configuration */}
+                <div className={`p-4 border rounded-[4px] space-y-3 ${
+                  theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                      <Share2 size={13} />
+                      <span>{language === 'ar' ? 'نظام التسويق بالعمولة (الإحالة)' : 'Affiliate & Referral Settings'}</span>
+                    </h4>
+                    <span className="text-[9px] text-gray-400 font-bold">
+                      {language === 'ar' ? '* عمولة مخصصة لهذا المنتج بالتحديد' : '* Custom commission for this specific asset'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'نسبة عمولة الإحالة (%)' : 'Referral Commission Rate (%)'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={editReferralPercent}
+                          onChange={(e) => setEditReferralPercent(e.target.value)}
+                          placeholder="20"
+                          className={`w-full h-10 pl-3 pr-8 border rounded-[4px] outline-none text-xs text-left ${
+                            theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                          }`}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400 select-none">%</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'قيمة عمولة المنتج لكل عملية بيع' : 'Referral Commission Value'}
+                      </label>
+                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
+                        theme === 'dark' ? 'bg-black/60 border-white/5' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        ${Math.round((Number(editPrice) || 0) * (1 - (Number(editDiscount) || 0) / 100) * (Number(editReferralPercent) || 0) / 100 * 100) / 100}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Highlights and Licensing Setup */}
+                <div className={`p-4 border rounded-[4px] space-y-3 ${
+                  theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                      <Award size={13} />
+                      <span>{language === 'ar' ? 'التمييز وتراخيص الاستخدام' : 'Highlight Tag & License Type'}</span>
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Highlight Tag */}
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'تمييز المعروض (شارة)' : 'Highlight/Featured Tag'}
+                      </label>
+                      <select
+                        value={editHighlightTag}
+                        onChange={(e) => setEditHighlightTag(e.target.value)}
+                        className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        }`}
+                      >
+                        <option value="">{language === 'ar' ? 'بدون تمييز' : 'No Highlight'}</option>
+                        <option value="trending">{language === 'ar' ? 'رائج' : 'Trending'}</option>
+                        <option value="exclusive">{language === 'ar' ? 'عرض حصري' : 'Exclusive Offer'}</option>
+                        <option value="free">{language === 'ar' ? 'مجاني' : 'Free'}</option>
+                        <option value="best_seller">{language === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller'}</option>
+                        <option value="new">{language === 'ar' ? 'جديد' : 'New'}</option>
+                      </select>
+                    </div>
+
+                    {/* License Type */}
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'نوع ترخيص الملكية الفكرية' : 'Intellectual Property License'}
+                      </label>
+                      <select
+                        value={editLicenseType}
+                        onChange={(e) => setEditLicenseType(e.target.value)}
+                        className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        }`}
+                      >
+                        <option value="mit">MIT License</option>
+                        <option value="apache_2">Apache 2.0</option>
+                        <option value="gpl_3">GNU GPL v3</option>
+                        <option value="bsd_3">BSD 3-Clause</option>
+                        <option value="cc_by_sa">Creative Commons BY-SA 4.0</option>
+                        <option value="commercial_standard">{language === 'ar' ? 'تجاري قياسي' : 'Proprietary Commercial Standard'}</option>
+                        <option value="commercial_extended">{language === 'ar' ? 'تجاري ممتد / مكرر' : 'Proprietary Commercial Extended'}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover image selector and URLs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'غلاف المعرض (صورة العرض) *' : 'Asset Image / Photo Cover URL *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editImage || ''}
+                      onChange={(e) => setEditImage(e.target.value)}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs mb-1.5 ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+
+                    <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
+                      theme === 'dark' ? 'border-white/10 hover:border-emerald-500/30 hover:bg-white/5' : 'border-gray-200 hover:border-emerald-500/35 hover:bg-gray-50'
+                    }`}>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      
+                      {editImage ? (
+                        <div className="absolute inset-0 w-full h-full object-cover animate-fade-in">
+                          <img src={editImage} className="w-full h-full object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
+                        </div>
+                      ) : uploadingImage ? (
+                        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <div className="text-center select-none text-gray-500 animate-pulse">
+                          <Upload className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                          <p className="text-[8px] font-bold">{language === 'ar' ? 'اسحب صورتك أو اختر لرفعها' : 'Drag & drop image or click to select'}</p>
+                        </div>
+                      )}
+                    </label>
+                    {uploadError && <p className="text-[8px] text-red-500">{uploadError}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'رابط المعاينة المباشرة' : 'Live Preview URL'}
+                      </label>
+                      <input
+                        type="url"
+                        value={editLinkPreview}
+                        onChange={(e) => setEditLinkPreview(e.target.value)}
+                        placeholder="https://demo.example.com"
+                        className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                        }`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        {language === 'ar' ? 'رابط الفيديو التوضيحي' : 'Video Explanation URL'}
+                      </label>
+                      <input
+                        type="url"
+                        value={editLinkVideo}
+                        onChange={(e) => setEditLinkVideo(e.target.value)}
+                        placeholder="https://youtube.com/watch?v=..."
+                        className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Secure Download Link and Contact Link */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'رابط تحميل الملف الآمن' : 'Secure Download Link (ZIP/Source)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editLinkDownload}
+                      onChange={(e) => setEditLinkDownload(e.target.value)}
+                      placeholder="https://..."
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'رابط التواصل الدائم *' : 'Contact / Telegram Link *'}
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      value={editContact}
+                      onChange={(e) => setEditContact(e.target.value)}
+                      placeholder="https://t.me/your_telegram_account"
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Tech Specs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'الميزات والخصائص المضمنة' : 'Key Features & Capabilities'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editFeatures}
+                      onChange={(e) => setEditFeatures(e.target.value)}
+                      placeholder="High Speed&#10;Open-source"
+                      className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'الأدوات وإطار العمل المستعمل (فواصل فاصلة)' : 'Tools & Frameworks Used'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editTools}
+                      onChange={(e) => setEditTools(e.target.value)}
+                      placeholder="React, Django, Express"
+                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Descriptions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      {language === 'ar' ? 'الوصف (العربية) *' : 'Description (Arabic) *'}
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={editDescAr}
+                      onChange={(e) => setEditDescAr(e.target.value)}
+                      placeholder="شرح موجز لخصائص برمجيتك أو منصتك وما تقدمه..."
+                      className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-gray-150 uppercase tracking-widest">
+                      Description (English) *
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={editDescEn}
+                      onChange={(e) => setEditDescEn(e.target.value)}
+                      placeholder="A concise summary detailing the core architecture and value preposition..."
+                      className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none text-left ${
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-4 flex items-center justify-end gap-2 border-t border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="px-4 h-10 border border-gray-700 hover:bg-gray-800/20 rounded-[4px] text-xs font-black transition-colors duration-300 text-gray-400"
+                  >
+                    {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updating || uploadingImage}
+                    className="px-5 h-10 bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+                  >
+                    {updating ? (
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      language === 'ar' ? 'حفظ التغييرات وتزامنها' : 'Save & Synchronize Changes'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

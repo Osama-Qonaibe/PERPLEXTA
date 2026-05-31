@@ -352,6 +352,22 @@ router.post("/webhook", async (req: any, res) => {
               }
             }
           }
+        } else if (session.metadata?.type === 'marketplace_purchase') {
+          const { userId, itemId, licenseType, referralCode, pricePaid } = session.metadata || {};
+          if (userId && itemId) {
+            try {
+              const { fulfillMarketplacePurchase } = await import('./marketplace.js');
+              await fulfillMarketplacePurchase(
+                userId,
+                itemId,
+                licenseType || 'standard',
+                referralCode || null,
+                Number(pricePaid || 0)
+              );
+            } catch (err: any) {
+              console.error('[Stripe Webhook] Marketplace purchase fulfillment failed:', err);
+            }
+          }
         } else {
           const { userId, planId, billingCycle } = session.metadata || {};
           if (userId && planId) {

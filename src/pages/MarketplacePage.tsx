@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
   Rocket, Megaphone, Gamepad2, BookOpen, RefreshCw, Code, Package, Eye, Play,
   Plus, X, Upload, Check, ExternalLink, ArrowLeft, ArrowRight, Wallet, CreditCard,
-  ChevronDown, SlidersHorizontal, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift
+  ChevronDown, SlidersHorizontal, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +28,21 @@ interface MarketplaceItem {
   seller_avatar?: string;
   seller_role?: string;
   created_at: string;
+  preview_url?: string;
+  video_url?: string;
+  download_url?: string;
+  features?: string;
+  technologies?: string;
+  referral_percent?: number;
+  highlight_tag?: string;
+  license_type?: string;
+}
+
+interface CartItem {
+  id: string; // unique combination of itemId and license_type, e.g., "12_regular"
+  product: MarketplaceItem;
+  licenseType: string;
+  price: number;
 }
 
 interface ParentCategory {
@@ -113,6 +129,156 @@ const getCategoryIcon = (id: string, className?: string) => {
       return <Package className={className} />;
     default:
       return <Grid className={className} />;
+  }
+};
+
+const getHighlightDetails = (tag: string, className?: string) => {
+  const norm = tag.toLowerCase().trim();
+  switch (norm) {
+    case 'trending':
+      return {
+        labelAr: 'رائج',
+        labelEn: 'Trending',
+        colorClass: 'bg-orange-500/10 border-orange-500/25 text-orange-600 dark:text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.12)] animate-pulse',
+        icon: <Flame className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'exclusive':
+      return {
+        labelAr: 'عرض حصري',
+        labelEn: 'Exclusive',
+        colorClass: 'bg-purple-500/10 border-purple-500/25 text-purple-650 dark:text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.12)]',
+        icon: <Star className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'free':
+      return {
+        labelAr: 'مجاني',
+        labelEn: 'Free / OSS',
+        colorClass: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.12)]',
+        icon: <Gift className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'best_seller':
+    case 'bestseller':
+      return {
+        labelAr: 'الأكثر مبيعاً',
+        labelEn: 'Best Seller',
+        colorClass: 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.12)]',
+        icon: <TrendingUp className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'new':
+      return {
+        labelAr: 'جديد',
+        labelEn: 'New',
+        colorClass: 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.12)]',
+        icon: <Sparkles className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+    case 'featured':
+    default:
+      return {
+        labelAr: 'مميز',
+        labelEn: 'Featured',
+        colorClass: 'bg-amber-500/10 border-amber-500/25 text-amber-600 dark:text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.12)]',
+        icon: <Award className={className || "w-2.5 h-2.5"} strokeWidth={3} />
+      };
+  }
+};
+
+const getLicenseDetails = (type: string) => {
+  const norm = (type || 'commercial_standard').toLowerCase().trim();
+  switch (norm) {
+    case 'mit':
+      return {
+        nameAr: 'رخصة MIT البرمجية المفتوحة',
+        nameEn: 'MIT Open Source License',
+        descAr: 'رخصة مرنة تتيح للمطورين التعديل والاستخدام التجاري بحرية كاملة مع شرط بسيط وهو الحفاظ على إشعار حقوق الملكية الأصلي.',
+        descEn: 'A highly permissive license that allows modification, private/commercial usage, and distribution. Requires preservation of the original copyright notice.',
+        permissions: [
+          { ar: 'الاستخدام التجاري مسموح', en: 'Commercial Use Allowed', ok: true },
+          { ar: 'حق التعديل وإعادة التوزيع والنسخ', en: 'Modification & Distribution', ok: true },
+          { ar: 'لا توجد ضمانات أو مسؤولية قانونية', en: 'No Warranties Included', ok: false },
+        ]
+      };
+    case 'apache_2':
+    case 'apache_2.0':
+    case 'apache2':
+    case 'apache':
+      return {
+        nameAr: 'رخصة Apache 2.0 المفتوحة',
+        nameEn: 'Apache License 2.0',
+        descAr: 'رخصة مفتوحة المصدر مرنة ومتقدمة توفر حماية صريحة لبراءات الاختراع والمسؤولية للمطورين والمنظمات على حد سواء.',
+        descEn: 'A permissive open-source license with trademark protections and explicit grants of patent rights by contributors.',
+        permissions: [
+          { ar: 'الاستخدام التجاري والتعديل متاح', en: 'Commercial Use & Modification', ok: true },
+          { ar: 'حقوق صريحة لبراءات الاختراع', en: 'Patent Rights Granted', ok: true },
+          { ar: 'يجب توثيق دقيق للتغييرات المدخلة', en: 'State Changes Log Required', ok: false },
+        ]
+      };
+    case 'gpl_3':
+    case 'gpl3':
+    case 'gpl':
+      return {
+        nameAr: 'رخصة جي بي إل العامة الثالثة (GNU GPL v3)',
+        nameEn: 'GNU GPL v3 Open Source License',
+        descAr: 'رخصة قوية لحماية البرمجيات الحرة (Copyleft). تشترط إتاحة الشفرة المصدرية لأي تعديلات أو إضافات يتم نشرها وتوزيعها.',
+        descEn: 'A strong copyleft license that requires any larger works or modifications of the codebase to be open for source inspections under GPLv3.',
+        permissions: [
+          { ar: 'الاستخدام والتوزيع مجاني للجميع', en: 'Free Use & Distribution', ok: true },
+          { ar: 'إتاحة المصدر البرمجي إجبارية للمشتقات', en: 'Source Disclosure Required', ok: true },
+          { ar: 'منع إغلاق الشفرة البرمجية لاحقاً', en: 'Lock-in Protection Active', ok: false },
+        ]
+      };
+    case 'bsd_3':
+    case 'bsd3':
+    case 'bsd':
+      return {
+        nameAr: 'رخصة BSD ثلاثية الشروط المفتوحة',
+        nameEn: 'BSD 3-Clause permissive license',
+        descAr: 'رخصة مفتوحة مرنة للغاية شبيهة بـ MIT، تمنع استخدام اسم المالك الأصلي في تسويق المشتقات دون إذن صريح مسبق.',
+        descEn: 'A simple, highly permissive license with zero endorsement of child projects. Requires attribution and copyright notices intact.',
+        permissions: [
+          { ar: 'الاستخدام التجاري والتعديل المطلق', en: 'Commercial Use & Mod Absolute', ok: true },
+          { ar: 'منع استخدام العلامة التجارية دون إذن', en: 'No Trademark Usage allowed', ok: false },
+          { ar: 'حفظ حقوق الملكية وناشري المنتج', en: 'Attribution Protection Enabled', ok: true },
+        ]
+      };
+    case 'cc_by_sa':
+    case 'cc_by':
+    case 'cc':
+      return {
+        nameAr: 'رخصة المشاع الإبداعي النسبي (BY-SA 4.0)',
+        nameEn: 'Creative Commons Attribution-ShareAlike',
+        descAr: 'تتيح مشاركة وتعديل التصاميم والمواد الرقمية لأي غرض (بما فيها التجاري) بشرط نَسْب الفضل لصاحبه وبنفس الترخيص.',
+        descEn: 'Permits copying and adapting digital materials for any purpose including commercial, requiring accurate author attributions is preserved.',
+        permissions: [
+          { ar: 'النشر والتثبيت والتعديل مسموح', en: 'Share & Reuse Authorized', ok: true },
+          { ar: 'المشاركة يجب أن تتم تحت نفس الترخيص', en: 'ShareAlike requirements apply', ok: true },
+          { ar: 'يجب الإشارة المباشرة لمؤلف العمل', en: 'Attribution Credits Mandatory', ok: false },
+        ]
+      };
+    case 'commercial_extended':
+      return {
+        nameAr: 'الترخيص التجاري الممتد المطور (Extended)',
+        nameEn: 'Proprietary Commercial Extended License',
+        descAr: 'ترخيص تجاري مرن ومتقدم للمؤسسات ومطوري الحلول المجمعة. يتيح لك البناء والتثبيت في عدد غير محدود من المشاريع التجارية.',
+        descEn: 'Premium enterprise-ready commercial license. Allows compiling, modifying, and integrating into unlimited commercial instances.',
+        permissions: [
+          { ar: 'عدد غير محدود من المشاريع والتطبيقات', en: 'Unlimited Projects & Domains', ok: true },
+          { ar: 'حق دمج الكود ضمن حلول وحزم تجارية', en: 'Integration in Bundled Products', ok: true },
+          { ar: 'منع إعادة بيع الكود بمفرده كمنتج مستقل', en: 'No standalone code resale allowed', ok: false },
+        ]
+      };
+    case 'commercial_standard':
+    default:
+      return {
+        nameAr: 'الترخيص التجاري القياسي الخاص (Standard)',
+        nameEn: 'Proprietary Commercial Standard License',
+        descAr: 'ترخيص تجاري لحماية الملكية الفكرية، مخصص للتثبيت والاستخدام في مشروع تجاري أو شخصي واحد فقط. يمنع بيعه أو توزيع الكود.',
+        descEn: 'Standard proprietary license for single-use project cases. Authorizes running inside one end product, prohibiting sublicensing or resells.',
+        permissions: [
+          { ar: 'الاستخدام في مشروع وعميل فردي واحد', en: 'Use within a Single End Product', ok: true },
+          { ar: 'حق التعديل الكامل لملائمة حاجاتك', en: 'Full Customization Authorized', ok: true },
+          { ar: 'منع النسخ أو التشغيل في مواقع متعددة', en: 'Multi-domain/multi-site is restricted', ok: false },
+        ]
+      };
   }
 };
 
@@ -231,7 +397,7 @@ const dict = {
   }
 };
 
-const DEFAULT_ITEMS: MarketplaceItem[] = [
+export const DEFAULT_ITEMS: MarketplaceItem[] = [
   {
     id: -1,
     user_id: 1,
@@ -483,11 +649,28 @@ const DEFAULT_ITEMS: MarketplaceItem[] = [
 
 export const MarketplacePage: React.FC = () => {
   const { language, token, user, theme, balanceUSD, refreshUser } = useAppContext();
+  const navigate = useNavigate();
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState('all');
+
+  const [referralCode, setReferralCode] = useState<string>('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref') || params.get('aff') || params.get('referral');
+    if (ref) {
+      setReferralCode(ref);
+      localStorage.setItem('perplexta_marketplace_ref', ref);
+    } else {
+      const stored = localStorage.getItem('perplexta_marketplace_ref');
+      if (stored) {
+        setReferralCode(stored);
+      }
+    }
+  }, []);
 
   const [openParents, setOpenParents] = useState<Record<string, boolean>>({
     code: true,
@@ -505,6 +688,7 @@ export const MarketplacePage: React.FC = () => {
   const [itemDescEn, setItemDescEn] = useState('');
   const [itemPrice, setItemPrice] = useState('');
   const [itemDiscount, setItemDiscount] = useState('');
+  const [itemReferralPercent, setItemReferralPercent] = useState('20');
   const [itemCategory, setItemCategory] = useState('saas');
   const [itemContact, setItemContact] = useState('');
   const [itemImage, setItemImage] = useState<string | null>(null);
@@ -521,12 +705,65 @@ export const MarketplacePage: React.FC = () => {
   const [itemFeatures, setItemFeatures] = useState('');
   const [selectedHighlights, setSelectedHighlights] = useState<string[]>([]);
   const [selectedLicenses, setSelectedLicenses] = useState<string[]>(['regular']);
+  const [itemHighlightTag, setItemHighlightTag] = useState('');
+  const [itemLicenseType, setItemLicenseType] = useState('mit');
 
   const [selectedProduct, setSelectedProduct] = useState<MarketplaceItem | null>(null);
   const [selectedLicenseType, setSelectedLicenseType] = useState<string>('regular');
   const [buyingProgress, setBuyingProgress] = useState<'idle' | 'purchasing' | 'success' | 'insufficient'>('idle');
 
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('perplexta_marketplace_cart');
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('perplexta_marketplace_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setSelectedLicenseType(selectedProduct.license_type || 'mit');
+    }
+  }, [selectedProduct]);
+
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxScale, setLightboxScale] = useState(1);
+  const [lightboxRotation, setLightboxRotation] = useState(0);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isLightboxOpen) return;
+      if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+      } else if (e.key === 'ArrowRight' || e.key === 'Right') {
+        if (selectedProduct) {
+          const assets = getPreviewAssets(selectedProduct);
+          setLightboxIndex((prev) => (prev + 1) % assets.length);
+          setLightboxScale(1);
+          setLightboxRotation(0);
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+        if (selectedProduct) {
+          const assets = getPreviewAssets(selectedProduct);
+          setLightboxIndex((prev) => (prev - 1 + assets.length) % assets.length);
+          setLightboxScale(1);
+          setLightboxRotation(0);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, selectedProduct]);
 
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const t = language === 'ar' ? dict.ar : dict.en;
@@ -535,16 +772,21 @@ export const MarketplacePage: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch('/api/marketplace/items');
+      const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
+      const availableDefaults = DEFAULT_ITEMS.filter(di => !deletedVirtuals.includes(di.id));
+
       if (res.ok) {
         const data = await res.json();
-        const combined = [...data, ...DEFAULT_ITEMS.filter(di => !data.some((db: any) => db.title_en === di.title_en))];
+        const combined = [...data, ...availableDefaults.filter(di => !data.some((db: any) => db.title_en === di.title_en))];
         setItems(combined);
       } else {
-        setItems(DEFAULT_ITEMS);
+        setItems(availableDefaults);
       }
     } catch (err) {
       console.error(err);
-      setItems(DEFAULT_ITEMS);
+      const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
+      const availableDefaults = DEFAULT_ITEMS.filter(di => !deletedVirtuals.includes(di.id));
+      setItems(availableDefaults);
     } finally {
       setLoading(false);
     }
@@ -582,11 +824,14 @@ export const MarketplacePage: React.FC = () => {
 
   const getProductHighlights = (item: MarketplaceItem): string[] => {
     const list: string[] = [];
-    if (item.views > 15) list.push('trending');
-    if (item.id % 3 === 0) list.push('featured');
-    if (item.id % 5 === 0) list.push('exclusive');
+    if (item.highlight_tag) {
+      list.push(item.highlight_tag);
+    }
+    if (item.views > 15 && !list.includes('trending')) list.push('trending');
+    if (item.id % 3 === 0 && !list.includes('featured')) list.push('featured');
+    if (item.id % 5 === 0 && !list.includes('exclusive')) list.push('exclusive');
     if (list.length === 0) list.push('new');
-    return list;
+    return Array.from(new Set(list));
   };
 
   const getProductFeatures = (item: MarketplaceItem, isAr: boolean) => {
@@ -745,7 +990,15 @@ export const MarketplacePage: React.FC = () => {
           category_en: catObj.nEn,
           category_ar: catObj.nAr,
           image_url: itemImage || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
-          contact_link: itemContact || 'https://t.me/perplexta_support'
+          contact_link: itemContact || 'https://t.me/perplexta_support',
+          download_url: itemLinkDownload,
+          preview_url: itemLinkPreview,
+          video_url: itemLinkVideo,
+          features: itemFeatures,
+          technologies: itemTools,
+          referral_percent: itemReferralPercent ? parseFloat(itemReferralPercent) : null,
+          highlight_tag: itemHighlightTag || null,
+          license_type: itemLicenseType || null
         })
       });
 
@@ -761,6 +1014,9 @@ export const MarketplacePage: React.FC = () => {
           setItemDescEn('');
           setItemPrice('');
           setItemDiscount('');
+          setItemReferralPercent('20');
+          setItemHighlightTag('');
+          setItemLicenseType('mit');
           setItemContact('');
           setItemImage(null);
           setItemLinkPreview('');
@@ -847,12 +1103,89 @@ export const MarketplacePage: React.FC = () => {
   });
 
   const getLicensePriceMultiplier = (license: string): number => {
-    switch (license) {
-      case 'extended': return 2.5;
-      case 'gpl': return 1.5;
-      case 'plr': return 5;
-      default: return 1;
+    return 1;
+  };
+
+  const getPreviewAssets = (product: MarketplaceItem) => {
+    const assets: { type: 'image' | 'iframe' | 'pdf'; url: string; titleEn: string; titleAr: string }[] = [];
+
+    // Main Image
+    assets.push({
+      type: 'image',
+      url: product.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
+      titleEn: 'Main Product Presentation',
+      titleAr: 'المخطط التعريفي والواجهة للمنتج'
+    });
+
+    // Custom Preview URL from user
+    if (product.preview_url && product.preview_url.trim()) {
+      const url = product.preview_url.trim();
+      const lowerUrl = url.toLowerCase();
+      
+      let type: 'image' | 'iframe' | 'pdf' = 'iframe';
+      let titleEn = 'Interactive Web Demonstration / Live Frame';
+      let titleAr = 'نموذج محاكاة تفاعلي مباشر وبوابة عرض';
+
+      if (lowerUrl.endsWith('.pdf') || lowerUrl.includes('/pdf/') || lowerUrl.includes('drive.google.com') || lowerUrl.includes('document')) {
+        type = 'pdf';
+        titleEn = 'Product Feature Specification / Documentation PDF';
+        titleAr = 'كراسة المواصفات الرقمية والتوثيق المرجعي (PDF)';
+      } else if (/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(lowerUrl) || lowerUrl.includes('unsplash.com') || lowerUrl.includes('images.')) {
+        type = 'image';
+        titleEn = 'Core System Blueprint & Software Workspace';
+        titleAr = 'هيكل النظام ولوحة التحكم المعمارية';
+      }
+
+      assets.push({
+        type,
+        url,
+        titleEn,
+        titleAr
+      });
     }
+
+    // Category specific premium static mockups for complete design presentation and immersive galleries
+    const categoryKey = getSubcategoryKey(product);
+    
+    const categoryMocks: Record<string, { url: string; en: string; ar: string }[]> = {
+      saas: [
+        { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&fit=crop', en: 'Analytical Control Dashboard & Real-Time Node Tracking', ar: 'شاشة مراقبة العمليات البرمجية والمقاييس الذكية' },
+        { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&fit=crop', en: 'Platform Component Orchestrator & Task Pipelines Layout', ar: 'مخطط مكونات الواجهة وتوزيع وتصميم الإجراءات' },
+        { url: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=1200&fit=crop', en: 'System Settings, API Sandbox & Performance Monitor', ar: 'لوحة التحكم ببارامترات التشغيل ومراقبة جودة الضخ الرقمي' }
+      ],
+      mobile: [
+        { url: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1200&fit=crop', en: 'Premium Native App Screens & Fluid Interaction Mockups', ar: 'المخطط السيميائي والواجهات التفاعلية للهواتف المحمولة' },
+        { url: 'https://images.unsplash.com/photo-1555421689-491a97ff2040?w=1200&fit=crop', en: 'Workspace Dark Mode Visual Architecture & User Profiles', ar: 'بنية الواجهات الداكنة ولوحة الحساب السحابي للعميل' }
+      ],
+      templates: [
+        { url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200&fit=crop', en: 'Component Grid Layout & Adaptive Style Presets Canvas', ar: 'مصفوفة الترتيب الشبكي والجماليات المخصصة لكتل البرمجة' },
+        { url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1200&fit=crop', en: 'UI Wireframing & Responsive Structural Design Library', ar: 'مكتبة الواجهات وعناصر figma الجاهزة متعددة الهيكلية' }
+      ],
+      'ai-agents': [
+        { url: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=1200&fit=crop', en: 'Neural Flow Controller & Prompt Sequence Model Settings', ar: 'لوحة تحكم المسارات العصبية وتسلسل النماذج التوليدية' },
+        { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&fit=crop', en: 'Autonomous Automation Execution Frame and Web-Scraping Pipeline', ar: 'إطار المعالجة الذاتية التلقائية وصندوق أدوات الأتمتة' }
+      ],
+      'trading-bots': [
+        { url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&fit=crop', en: 'Quant High-Frequency Technical Graphs & Trade Logger', ar: 'رسوم بيانية كمية سريعة وسجل المعاملات الفورية للماتريكس' },
+        { url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&fit=crop', en: 'Risk Assessor Engine Dashboard & Profit/Loss Visualizers', ar: 'واجهة مقيمي المخاطر المالية ونواتج الأرباح والنسب' }
+      ]
+    };
+
+    const mocks = categoryMocks[categoryKey] || [
+      { url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1200&fit=crop', en: 'Digital Workspace Structure Overview', ar: 'نظرة عامة على هيكلية ووثائق المنتج البرمجي والمرافق' },
+      { url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&fit=crop', en: 'Functional Blueprint & System Specifications Sheet', ar: 'كراسة الإجراءات الهندسية ومحيط العمل والمنظومة البرمجية' }
+    ];
+
+    mocks.forEach((m) => {
+      assets.push({
+        type: 'image',
+        url: m.url,
+        titleEn: m.en,
+        titleAr: m.ar
+      });
+    });
+
+    return assets;
   };
 
   const getComputedPrice = (): number => {
@@ -862,11 +1195,13 @@ export const MarketplacePage: React.FC = () => {
     return Math.round(base * multi);
   };
 
-  const handleBuyWithWallet = () => {
+  const handleBuyWithWallet = async () => {
     if (!user) {
       toast.error(language === 'ar' ? 'يرجى تسجيل الدخول أولاً لإجراء هذه المعاملة' : 'Please log in to complete this transaction.');
       return;
     }
+
+    if (!selectedProduct) return;
 
     const price = getComputedPrice();
     if (balanceUSD < price) {
@@ -875,10 +1210,34 @@ export const MarketplacePage: React.FC = () => {
     }
 
     setBuyingProgress('purchasing');
-    setTimeout(() => {
+    try {
+      const storedRef = referralCode || localStorage.getItem('perplexta_marketplace_ref') || '';
+      const response = await fetch('/api/marketplace/buy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          itemId: selectedProduct.id,
+          licenseType: selectedLicenseType,
+          referralCode: storedRef
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete acquisition.');
+      }
+
       setBuyingProgress('success');
       toast.success(t.purchaseDone);
       refreshUser();
+      
+      // Clear referral trackers as they have successfully bought the product and allocated the rewards
+      localStorage.removeItem('perplexta_marketplace_ref');
+      setReferralCode('');
+
       setTimeout(() => {
         if (selectedProduct?.contact_link) {
           window.open(selectedProduct.contact_link, '_blank');
@@ -886,7 +1245,184 @@ export const MarketplacePage: React.FC = () => {
         setSelectedProduct(null);
         setBuyingProgress('idle');
       }, 3000);
-    }, 2000);
+
+    } catch (err: any) {
+      setBuyingProgress('idle');
+      toast.error(err.message || (language === 'ar' ? 'حدث خطأ أثناء معالجة الدفع.' : 'An error occurred during payment processing.'));
+    }
+  };
+
+  const handleBuyWithStripe = async () => {
+    if (!user) {
+      toast.error(language === 'ar' ? 'يرجى تسجيل الدخول أولاً لإجراء هذه المعاملة' : 'Please log in to complete this transaction.');
+      return;
+    }
+
+    if (!selectedProduct) return;
+
+    setBuyingProgress('purchasing');
+    try {
+      const storedRef = referralCode || localStorage.getItem('perplexta_marketplace_ref') || '';
+      const response = await fetch('/api/marketplace/create-stripe-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          itemId: selectedProduct.id,
+          licenseType: selectedLicenseType,
+          referralCode: storedRef
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete Stripe setup.');
+      }
+
+      if (data.url) {
+        toast.info(language === 'ar' ? 'جاري توجيهك إلى بوابة الدفع الآمنة (Stripe)...' : 'Redirecting you to secure Stripe payment gateway...');
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (err: any) {
+      setBuyingProgress('idle');
+      toast.error(err.message || (language === 'ar' ? 'حدث خطأ أثناء الاتصال ببوابة الدفع.' : 'An error occurred connecting to the payment gateway.'));
+    }
+  };
+
+  const handleAddToCart = (product: MarketplaceItem, licenseType: string) => {
+    const base = Number(product.price);
+    const multiplier = getLicensePriceMultiplier(licenseType);
+    const price = Math.round(base * multiplier);
+    
+    const idStr = `${product.id}_${licenseType}`;
+    
+    if (cart.some(item => item.id === idStr)) {
+      toast.error(language === 'ar' ? 'هذا المنتج مرخصًا بالكامل موجود بالفعل في سلتك' : 'This product under this license is already in your cart.');
+      return;
+    }
+    
+    const newItem: CartItem = {
+      id: idStr,
+      product,
+      licenseType,
+      price
+    };
+    
+    setCart([...cart, newItem]);
+    toast.success(language === 'ar' ? 'تمت إضافة المنتج إلى سلة المشتريات مسبقًا!' : 'Product added to shopping cart successfully!');
+  };
+
+  const handleRemoveFromCart = (idStr: string) => {
+    setCart(cart.filter(item => item.id !== idStr));
+    toast.success(language === 'ar' ? 'تم إزالة المنتج من السلة' : 'Item removed from cart.');
+  };
+
+  const handleCartCheckoutWithWallet = async () => {
+    if (!user) {
+      toast.error(language === 'ar' ? 'يرجى تسجيل الدخول أولاً لإجراء هذه المعاملة' : 'Please log in to complete this transaction.');
+      return;
+    }
+
+    if (cart.length === 0) return;
+
+    const total = cart.reduce((sum, item) => sum + item.price, 0);
+    if (balanceUSD < total) {
+      setBuyingProgress('insufficient');
+      return;
+    }
+
+    setBuyingProgress('purchasing');
+    try {
+      const storedRef = referralCode || localStorage.getItem('perplexta_marketplace_ref') || '';
+      const requestItems = cart.map(item => ({
+        itemId: item.product.id,
+        licenseType: item.licenseType
+      }));
+
+      const response = await fetch('/api/marketplace/cart/buy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          items: requestItems,
+          referralCode: storedRef
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete acquisition.');
+      }
+
+      setBuyingProgress('success');
+      toast.success(language === 'ar' ? 'تم شراء المنتجات المحددة بنجاح!' : 'All cart items have been purchased successfully!');
+      setCart([]);
+      refreshUser();
+
+      localStorage.removeItem('perplexta_marketplace_ref');
+      setReferralCode('');
+
+      setTimeout(() => {
+        setBuyingProgress('idle');
+        setIsCartOpen(false);
+      }, 2500);
+
+    } catch (err: any) {
+      setBuyingProgress('idle');
+      toast.error(err.message || (language === 'ar' ? 'حدث خطأ أثناء معالجة الدفع.' : 'An error occurred during payment processing.'));
+    }
+  };
+
+  const handleCartCheckoutWithStripe = async () => {
+    if (!user) {
+      toast.error(language === 'ar' ? 'يرجى تسجيل الدخول أولاً لإجراء هذه المعاملة' : 'Please log in to complete this transaction.');
+      return;
+    }
+
+    if (cart.length === 0) return;
+
+    setBuyingProgress('purchasing');
+    try {
+      const storedRef = referralCode || localStorage.getItem('perplexta_marketplace_ref') || '';
+      const requestItems = cart.map(item => ({
+        itemId: item.product.id,
+        licenseType: item.licenseType
+      }));
+
+      const response = await fetch('/api/marketplace/cart/create-stripe-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          items: requestItems,
+          referralCode: storedRef
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate checkout.');
+      }
+
+      if (data.url) {
+        toast.info(language === 'ar' ? 'جاري توجيهك إلى بوابة الدفع الآمنة (Stripe)...' : 'Redirecting to secure Stripe payment gateway...');
+        setCart([]);
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (err: any) {
+      setBuyingProgress('idle');
+      toast.error(err.message || (language === 'ar' ? 'حدث خطأ أثناء الاتصال بمزود الدفع.' : 'An error occurred connecting to the payment gateway.'));
+    }
   };
 
   const isThemeDark = theme === 'dark';
@@ -939,13 +1475,36 @@ export const MarketplacePage: React.FC = () => {
 
               <div className="flex items-center gap-3">
                 {user && (
-                  <button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
-                  >
-                    <Plus size={14} />
-                    <span>{t.listNewAsset}</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => navigate('/settings?tab=marketplace_purchases')}
+                      className="h-10 px-4 rounded-[4px] bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] cursor-pointer"
+                    >
+                      <ShoppingBag size={14} />
+                      <span>{language === 'ar' ? 'حقيبة تنزيلاتي ومشترياتي' : 'My Purchases & Downloads'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsCreateOpen(true)}
+                      className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
+                    >
+                      <Plus size={14} />
+                      <span>{t.listNewAsset}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsCartOpen(true)}
+                      className="w-10 h-10 rounded-[4px] border border-emerald-500/25 bg-emerald-500/5 text-emerald-500 flex items-center justify-center relative active:scale-95 cursor-pointer transition-all duration-300 hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      title={language === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
+                    >
+                      <ShoppingCart size={16} />
+                      {cart.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
+                          {cart.length}
+                        </span>
+                      )}
+                    </button>
+                  </>
                 )}
                 
                 <button
@@ -1218,31 +1777,20 @@ export const MarketplacePage: React.FC = () => {
                                     : `$${parseFloat(item.price.toString()).toLocaleString()}`}
                                 </span>
                                 {/* Badge under price with exceptional premium visual shadow values */}
-                                <div className="flex flex-wrap gap-1">
-                                  {isTrending && (
-                                    <span className="bg-orange-500/10 border border-orange-500/25 text-orange-500 text-[7px] font-black px-1.5 py-0.5 rounded-[3px] flex items-center gap-0.5 shadow-[0_0_10px_rgba(249,115,22,0.15)] shrink-0 animate-pulse">
-                                      <Flame size={7} strokeWidth={3.5} />
-                                      <span>{t.trending}</span>
-                                    </span>
-                                  )}
-                                  {isFeatured && (
-                                    <span className="bg-yellow-500/10 border border-yellow-500/25 text-yellow-500 text-[7px] font-black px-1.5 py-0.5 rounded-[3px] flex items-center gap-0.5 shadow-[0_0_10px_rgba(234,179,8,0.15)] shrink-0">
-                                      <Award size={7} strokeWidth={3.5} />
-                                      <span>{t.featured}</span>
-                                    </span>
-                                  )}
-                                  {isExclusive && (
-                                    <span className="bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[7px] font-black px-1.5 py-0.5 rounded-[3px] flex items-center gap-0.5 shadow-[0_0_10px_rgba(168,85,247,0.15)] shrink-0">
-                                      <Star size={7} strokeWidth={3.5} />
-                                      <span>{t.exclusive}</span>
-                                    </span>
-                                  )}
-                                  {isNew && (
-                                    <span className="bg-blue-500/10 border border-blue-500/25 text-blue-500 text-[7px] font-black px-1.5 py-0.5 rounded-[3px] flex items-center gap-0.5 shadow-[0_0_10px_rgba(59,130,246,0.15)] shrink-0">
-                                      <Sparkles size={7} strokeWidth={3.5} />
-                                      <span>{t.new}</span>
-                                    </span>
-                                  )}
+                                <div className="flex flex-wrap gap-1 mt-1 select-none">
+                                  {getProductHighlights(item).map((tag) => {
+                                    const details = getHighlightDetails(tag);
+                                    if (!details) return null;
+                                    return (
+                                      <span
+                                        key={tag}
+                                        className={`px-1.5 py-0.5 rounded-[4px] border text-[8.5px] font-black flex items-center gap-0.5 transition-all duration-300 transform hover:scale-105 shrink-0 ${details.colorClass}`}
+                                      >
+                                        {details.icon}
+                                        <span>{language === 'ar' ? details.labelAr : details.labelEn}</span>
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               </div>
                               
@@ -1458,20 +2006,41 @@ export const MarketplacePage: React.FC = () => {
                 isThemeDark ? 'bg-[#090a0c] border-white/10 text-white shadow-black/90' : 'bg-white border-gray-200 text-gray-900 shadow-gray-300/40'
               }`}
             >
-              <div className="relative h-56 md:h-64 object-cover overflow-hidden bg-black/60 sticky top-0 z-[101] shrink-0">
+              <div 
+                onClick={() => {
+                  setLightboxIndex(0);
+                  setIsLightboxOpen(true);
+                  setLightboxScale(1);
+                  setLightboxRotation(0);
+                }}
+                className="relative h-56 md:h-64 object-cover overflow-hidden bg-black/60 sticky top-0 z-[101] shrink-0 group cursor-pointer"
+              >
                 <img
                   src={selectedProduct.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   alt=""
+                  referrerPolicy="no-referrer"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-t ${isThemeDark ? 'from-[#090a0c]' : 'from-white'} via-transparent to-transparent opacity-85`} />
+                
+                {/* Glowing Overlay indicating "Click to view screenshots/documents" */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-1.5 px-4 py-2 bg-black/75 rounded-lg border border-emerald-500/30 backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    <Eye size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                    <span className="text-[10px] font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">
+                      {language === 'ar' ? 'انقر للمعاينة والتكبير التفاعلي بملء الشاشة' : 'Click for Interactive Fullscreen Zoom & Preview'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={`absolute inset-0 bg-gradient-to-t ${isThemeDark ? 'from-[#090a0c]' : 'from-white'} via-transparent to-transparent opacity-85 z-1`} />
                 
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedProduct(null);
                     setBuyingProgress('idle');
                   }}
-                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-all hover:bg-black/80 text-white cursor-pointer z-10"
+                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-all hover:bg-black/80 hover:text-emerald-500 text-white cursor-pointer z-20"
                 >
                   <X size={15} />
                 </button>
@@ -1481,7 +2050,7 @@ export const MarketplacePage: React.FC = () => {
               <div className="p-6 -mt-10 relative z-10 space-y-6 flex-1">
                 
                 {/* Title block */}
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1 shrink-0">
                       {getCategoryIcon(getSubcategoryKey(selectedProduct), 'w-2.5 h-2.5 text-emerald-400')}
@@ -1499,28 +2068,131 @@ export const MarketplacePage: React.FC = () => {
                       {language === 'ar' ? selectedProduct.title_ar : selectedProduct.title_en}
                     </h2>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedProduct.preview_url && (
+                        <a
+                          href={selectedProduct.preview_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
+                            isThemeDark
+                              ? 'border-emerald-500/35 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          }`}
+                          title={language === 'ar' ? 'معاينة مباشرة' : 'Live Preview'}
+                        >
+                          <Eye size={13} className="text-emerald-500" />
+                          <span>{language === 'ar' ? 'معاينة مباشرة' : 'Live Preview'}</span>
+                        </a>
+                      )}
+
+                      {selectedProduct.video_url && (
+                        <a
+                          href={selectedProduct.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
+                            isThemeDark
+                              ? 'border-blue-500/35 bg-blue-500/5 text-blue-400 hover:bg-blue-500/15'
+                              : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                          }`}
+                          title={language === 'ar' ? 'فيديو توضيحي' : 'Video Explanation'}
+                        >
+                          <Play size={13} className="fill-current text-blue-500" />
+                          <span>{language === 'ar' ? 'فيديو توضيحي' : 'Video Explanation'}</span>
+                        </a>
+                      )}
+
                       {selectedProduct.contact_link && (
                         <a
                           href={selectedProduct.contact_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`w-9 h-9 rounded-lg border flex items-center justify-center transition-colors ${
-                            isThemeDark ? 'border-white/5 bg-white/5 text-gray-350 hover:text-white hover:bg-white/15' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
+                            isThemeDark
+                              ? 'border-white/5 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10'
+                              : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
                           }`}
-                          title={t.viewLink}
+                          title={language === 'ar' ? 'تواصل بالبائع' : 'Contact Seller'}
                         >
-                          <Eye size={14} />
+                          <Megaphone size={13} strokeWidth={2.5} />
+                          <span>{language === 'ar' ? 'تواصل بالبائع' : 'Contact Seller'}</span>
                         </a>
                       )}
                     </div>
                   </div>
 
-                  <p className={`text-[10px] md:text-xs leading-relaxed font-medium leading-relaxed ${
+                  <p className={`text-[10px] md:text-xs leading-relaxed font-medium ${
                     isThemeDark ? 'text-gray-400/90' : 'text-gray-550'
                   }`}>
                     {language === 'ar' ? selectedProduct.description_ar : selectedProduct.description_en}
                   </p>
+
+                  {/* Screenshots & Document Grid Previewer inside Details modal */}
+                  <div className="space-y-2 pt-1 border-t border-dashed border-gray-100 dark:border-white/5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
+                        {language === 'ar' ? 'معرض الصور وملفات التوثيق للمعاينة' : 'Screenshot Gallery & Preview Files'}
+                      </h4>
+                      <span 
+                        onClick={() => {
+                          setLightboxIndex(0);
+                          setIsLightboxOpen(true);
+                          setLightboxScale(1);
+                          setLightboxRotation(0);
+                        }}
+                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer select-none transition-all hover:underline"
+                      >
+                        <Eye size={10} className="text-emerald-500" />
+                        {language === 'ar' ? 'تصفح بملء الشاشة' : 'Browse Screen Lightbox'}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-4 gap-2 select-none">
+                      {getPreviewAssets(selectedProduct).map((asset, idx) => {
+                        const isPdf = asset.type === 'pdf';
+                        const isWeb = asset.type === 'iframe';
+                        
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setLightboxIndex(idx);
+                              setIsLightboxOpen(true);
+                              setLightboxScale(1);
+                              setLightboxRotation(0);
+                            }}
+                            className={`relative h-14 sm:h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-emerald-500/50 group transition-all duration-300 ${
+                              isThemeDark ? 'bg-black/40 border-white/5' : 'bg-gray-100 border-gray-200'
+                            }`}
+                          >
+                            {isPdf ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-gradient-to-br from-red-500/10 to-red-600/5 group-hover:from-emerald-500/10 transition-colors">
+                                <BookOpen size={16} className="text-red-400 group-hover:text-emerald-400 transition-colors" />
+                                <span className="text-[7px] font-black text-red-500/85 group-hover:text-emerald-500 mt-0.5 uppercase">PDF DOC</span>
+                              </div>
+                            ) : isWeb ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-gradient-to-br from-purple-500/10 to-purple-600/5 group-hover:from-emerald-500/10 transition-colors">
+                                <Smartphone size={16} className="text-purple-400 group-hover:text-emerald-400 transition-colors" />
+                                <span className="text-[7px] font-black text-purple-500/85 group-hover:text-emerald-500 mt-0.5 uppercase">WEB DEMO</span>
+                              </div>
+                            ) : (
+                              <img
+                                src={asset.url}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                referrerPolicy="no-referrer"
+                                alt=""
+                              />
+                            )}
+                            
+                            <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                              <Eye size={11} className="text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.8)]" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Features & Tech Bento Grid */}
@@ -1570,43 +2242,62 @@ export const MarketplacePage: React.FC = () => {
                   {/* License checklist Column */}
                   <div className="md:col-span-3 space-y-3">
                     <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
-                      {t.licenseTitle}
+                      {language === 'ar' ? 'تفاصيل ترخيص المنتج الحصري' : 'Exclusive Product License Details'}
                     </h4>
                     
-                    <div className="space-y-1.5">
-                      {[
-                        { type: 'regular', name: 'Regular License', multi: 1 },
-                        { type: 'extended', name: 'Extended License', multi: 2.5 },
-                        { type: 'gpl', name: 'GPL / OSS Free Use', multi: 1.5 },
-                        { type: 'plr', name: 'PLR / MRR Commercial Rights', multi: 5 }
-                      ].map(lic => {
-                        const isActive = selectedLicenseType === lic.type;
-                        const licPrice = Math.round(Number(selectedProduct.price) * lic.multi);
-                        return (
-                          <div
-                            key={lic.type}
-                            onClick={() => setSelectedLicenseType(lic.type)}
-                            className={`rounded-lg border p-2.5 flex items-center justify-between cursor-pointer transition-all duration-300 ${
-                              isActive
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black'
-                                : (isThemeDark ? 'border-white/5 bg-transparent text-gray-400 hover:bg-white/5' : 'border-gray-150 bg-white text-gray-600 hover:bg-gray-50')
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
-                                isActive ? 'border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-400' : 'border-gray-500'
-                              }`}>
-                                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-current" />}
-                              </div>
-                              <span className="text-[10px] font-black">{lic.name}</span>
-                            </div>
-                            <span className="text-[10px] font-black select-none text-emerald-500">
-                              {licPrice <= 0 ? (language === 'ar' ? 'مجانًا' : 'FREE') : `$${licPrice.toLocaleString()}`}
+                    {(() => {
+                      const licKey = selectedProduct.license_type || 'commercial_standard';
+                      const details = getLicenseDetails(licKey);
+                      return (
+                        <div className={`p-4 rounded-xl border transition-all duration-300 ${
+                          isThemeDark
+                            ? 'bg-emerald-400/5 border-emerald-500/15'
+                            : 'bg-emerald-500/5 border-emerald-500/15'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="p-1 rounded bg-emerald-500/10 text-emerald-500 shrink-0">
+                              <Check size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                            </span>
+                            <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                              {language === 'ar' ? details.nameAr : details.nameEn}
                             </span>
                           </div>
-                        );
-                      })}
-                    </div>
+
+                          <p className={`text-[10px] leading-relaxed mb-3.5 italic ${
+                            isThemeDark ? 'text-gray-300' : 'text-gray-650'
+                          }`}>
+                            {language === 'ar' ? details.descAr : details.descEn}
+                          </p>
+
+                          <div className="space-y-1.5 pt-2 border-t border-emerald-555/10 dark:border-emerald-500/10">
+                            <div className="text-[8px] font-black uppercase text-gray-400/80 tracking-wider mb-1">
+                              {language === 'ar' ? 'صلاحيات الاستخدام:' : 'License Permissions:'}
+                            </div>
+                            {details.permissions.map((p, pIdx) => (
+                              <div key={pIdx} className="flex items-center gap-1.5 text-[9px] font-bold">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.ok ? 'bg-emerald-500' : 'bg-orange-400'}`} />
+                                <span className={isThemeDark ? 'text-gray-350' : 'text-gray-650'}>
+                                  {language === 'ar' ? p.ar : p.en}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Viraly LinkUp Limited Copyright Signature */}
+                          <div className="mt-3.5 pt-2.5 border-t border-emerald-500/10 flex flex-col gap-1 text-[8px] leading-relaxed text-gray-500 font-medium">
+                            <div className="flex items-center justify-between font-black text-emerald-600/90 dark:text-emerald-450">
+                              <span>{language === 'ar' ? 'حماية الملكية والناشر' : 'PROPRIETARY IP PROTECTION'}</span>
+                              <span className="font-sans font-black select-none">© VIRALY LINKUP LTD</span>
+                            </div>
+                            <p className="italic text-gray-400/80">
+                              {language === 'ar'
+                                ? 'حقوق الملكية البرمجية والفكرية لهذا الإصدار محفوظة بالكامل لشركة فيرالي لينك اب المحدودة والناشر المعتمد ولا يجوز إعادة التوزيع خارج الأطر المرخصة.'
+                                : 'All software copyright and intellectual property rights are fully secured and owned by Viraly LinkUp Limited and authorized publishers under international provisions.'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Pricing summary widget */}
@@ -1676,6 +2367,14 @@ export const MarketplacePage: React.FC = () => {
                           ) : (
                             <>
                               <button
+                                onClick={() => handleAddToCart(selectedProduct, selectedLicenseType)}
+                                className="w-full h-9 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/35 text-emerald-500 transition-all font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                              >
+                                <ShoppingCart size={12} />
+                                <span>{language === 'ar' ? 'إضافة إلى السلة' : 'Add to Shopping Cart'}</span>
+                              </button>
+
+                              <button
                                 onClick={handleBuyWithWallet}
                                 className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
                               >
@@ -1683,19 +2382,41 @@ export const MarketplacePage: React.FC = () => {
                                 <span>{t.buyWithBalance}</span>
                               </button>
 
-                              <a
-                                href={selectedProduct.contact_link || 'https://t.me/perplexta_support'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`w-full h-9 rounded-lg border transition-all font-bold text-[10px] flex items-center justify-center gap-1 active:scale-95 ${
+                              <button
+                                onClick={handleBuyWithStripe}
+                                className={`w-full h-9 rounded-lg border transition-all font-bold text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
                                   isThemeDark
-                                    ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white'
-                                    : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50'
+                                    ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
+                                    : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
                                 }`}
                               >
                                 <CreditCard size={12} />
-                                <span>{t.creditCard}</span>
-                              </a>
+                                <span>{language === 'ar' ? 'الدفع بالبطاقة الائتمانية (Stripe)' : 'Pay with Credit Card (Stripe)'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (!user) {
+                                    toast.error(language === 'ar' ? 'يرجى تسجيل الدخول أولاً للحصول على رابط الإحالة الخاص بك' : 'Please log in first to get your affiliate referral link.');
+                                    return;
+                                  }
+                                  const refLink = `${window.location.origin}/marketplace?ref=${user.referral_code}`;
+                                  navigator.clipboard.writeText(refLink);
+                                  toast.success(
+                                    language === 'ar'
+                                      ? 'تم نسخ رابط إحالة المنتج! اربح 20٪ عمولة فورية عند شراء أي مستخدم عبر الرابط.'
+                                      : 'Product referral link copied! Earn 20% commission on any purchase made through this link.'
+                                  );
+                                }}
+                                className={`w-full h-9 rounded-lg border transition-all font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
+                                  isThemeDark
+                                    ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15'
+                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                }`}
+                              >
+                                <Gift size={12} className="text-emerald-400 animate-pulse" />
+                                <span>{language === 'ar' ? 'رابط الإحالة (عمولة 20٪)' : 'Referral Link (25% Earn)'}</span>
+                              </button>
                             </>
                           )}
                         </div>
@@ -1736,6 +2457,269 @@ export const MarketplacePage: React.FC = () => {
 
               </div>
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Immersive Lightbox Preview Studio */}
+      <AnimatePresence>
+        {isLightboxOpen && selectedProduct && (
+          <div className="fixed inset-0 z-[150] flex flex-col bg-black/95 backdrop-blur-xl text-white select-none overflow-hidden font-sans">
+            
+            {/* Soft background ambient gradient */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+
+            {/* Top Toolbar */}
+            <div className="relative z-10 w-full h-16 border-b border-white/5 bg-black/40 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/15">
+                  {lightboxIndex + 1} / {getPreviewAssets(selectedProduct).length}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-black truncate max-w-[280px] sm:max-w-md">
+                    {language === 'ar' ? selectedProduct.title_ar : selectedProduct.title_en}
+                  </span>
+                  <span className="text-[9px] text-gray-400 font-bold">
+                    {language === 'ar' 
+                      ? getPreviewAssets(selectedProduct)[lightboxIndex]?.titleAr 
+                      : getPreviewAssets(selectedProduct)[lightboxIndex]?.titleEn}
+                  </span>
+                </div>
+              </div>
+
+              {/* Precise button toolbar layout */}
+              <div className="flex items-center gap-1">
+                {getPreviewAssets(selectedProduct)[lightboxIndex]?.type === 'image' && (
+                  <>
+                    <button
+                      onClick={() => setLightboxScale(prev => Math.min(prev + 0.25, 3))}
+                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      title={language === 'ar' ? 'تكبير' : 'Zoom In'}
+                    >
+                      <Plus size={16} />
+                    </button>
+                    <button
+                      onClick={() => setLightboxScale(prev => Math.max(prev - 0.25, 0.5))}
+                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      title={language === 'ar' ? 'تصغير' : 'Zoom Out'}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setLightboxRotation(prev => (prev + 90) % 360)}
+                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      title={language === 'ar' ? 'تدوير' : 'Rotate'}
+                    >
+                      <RefreshCw size={14} className="hover:animate-spin" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLightboxScale(1);
+                        setLightboxRotation(0);
+                      }}
+                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      title={language === 'ar' ? 'إعادة ضبط' : 'Reset View'}
+                    >
+                      <SlidersHorizontal size={14} />
+                    </button>
+                  </>
+                )}
+
+                <div className="w-px h-5 bg-white/10 mx-1" />
+
+                <button
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Main Stage Display Area */}
+            <div className="relative flex-1 w-full flex items-center justify-center p-4 sm:p-10 select-none overflow-hidden bg-black/20">
+              
+              {/* Previous Floating Button */}
+              <button
+                onClick={() => {
+                  const assets = getPreviewAssets(selectedProduct);
+                  setLightboxIndex(prev => (prev - 1 + assets.length) % assets.length);
+                  setLightboxScale(1);
+                  setLightboxRotation(0);
+                }}
+                className="absolute left-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-all duration-300 rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+              >
+                <ArrowLeft size={18} />
+              </button>
+
+              {/* Dynamic Presentation Body */}
+              <div className="w-full h-full flex items-center justify-center relative select-text">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={lightboxIndex}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    {(() => {
+                      const currentAsset = getPreviewAssets(selectedProduct)[lightboxIndex];
+                      if (!currentAsset) return null;
+
+                      if (currentAsset.type === 'pdf') {
+                        return (
+                          <div className="w-full max-w-4xl h-full flex flex-col rounded-2xl border border-white/10 bg-[#0c0d0f]/95 overflow-hidden shadow-2xl">
+                            <div className="h-11 bg-[#121316] border-b border-white/5 px-4 flex items-center justify-between text-xs font-bold font-mono shrink-0">
+                              <span className="text-red-400 flex items-center gap-1.5 uppercase tracking-wide">
+                                <BookOpen size={13} strokeWidth={2.5} />
+                                Document Viewer (PDF)
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={currentAsset.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-black text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-1"
+                                >
+                                  <ExternalLink size={10} />
+                                  {language === 'ar' ? 'فتح في علامة تبويب جديدة' : 'Open in New Tab'}
+                                </a>
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 bg-black/40 relative">
+                              <iframe
+                                src={`https://docs.google.com/gview?url=${encodeURIComponent(currentAsset.url)}&embedded=true`}
+                                className="w-full h-full border-0 rounded-b-2xl"
+                                title="PDF Documentation Frame"
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (currentAsset.type === 'iframe') {
+                        return (
+                          <div className="w-full max-w-5xl h-full flex flex-col rounded-2xl border border-white/10 bg-[#0c0d10] overflow-hidden shadow-2xl">
+                            <div className="h-11 bg-[#121316] border-b border-white/5 px-4 flex items-center justify-between shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                              </div>
+                              
+                              <div className="w-1/2 max-w-md h-6 rounded bg-[#1c1d22] border border-white/5 flex items-center justify-center px-4 overflow-hidden">
+                                <span className="text-[9px] font-mono text-gray-400 select-all truncate">
+                                  {currentAsset.url}
+                                </span>
+                              </div>
+                              
+                              <a
+                                href={currentAsset.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-black text-gray-300 hover:text-white hover:bg-white/10 flex items-center gap-1 shrink-0"
+                              >
+                                {language === 'ar' ? 'الرابط المباشر' : 'Live Preview'}
+                                <ExternalLink size={10} />
+                              </a>
+                            </div>
+
+                            <div className="flex-1 bg-white relative">
+                              <iframe
+                                src={currentAsset.url}
+                                className="w-full h-full border-0"
+                                sandbox="allow-scripts allow-popups allow-forms allow-same-origin"
+                                title="Interactive Live Demo"
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="relative max-w-5xl max-h-[80vh] overflow-hidden flex items-center justify-center rounded-xl p-2">
+                          <img
+                            src={currentAsset.url}
+                            className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl pointer-events-none transition-transform duration-300"
+                            style={{
+                              transform: `scale(${lightboxScale}) rotate(${lightboxRotation}deg)`,
+                            }}
+                            referrerPolicy="no-referrer"
+                            alt=""
+                          />
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Next Floating Button */}
+              <button
+                onClick={() => {
+                  const assets = getPreviewAssets(selectedProduct);
+                  setLightboxIndex(prev => (prev + 1) % assets.length);
+                  setLightboxScale(1);
+                  setLightboxRotation(0);
+                }}
+                className="absolute right-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-all duration-300 rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
+
+            {/* Bottom Carousel Strip */}
+            <div className="h-24 border-t border-white/5 bg-black/50 backdrop-blur-md px-6 flex items-center justify-center gap-3 overflow-x-auto shrink-0 select-none">
+              {getPreviewAssets(selectedProduct).map((asset, idx) => {
+                const isActive = lightboxIndex === idx;
+                const isPdf = asset.type === 'pdf';
+                const isWeb = asset.type === 'iframe';
+                
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setLightboxIndex(idx);
+                      setLightboxScale(1);
+                      setLightboxRotation(0);
+                    }}
+                    className={`relative h-14 w-20 rounded-lg overflow-hidden border cursor-pointer transition-all duration-300 flex-shrink-0 flex items-center justify-center ${
+                      isActive 
+                        ? 'border-emerald-500 bg-emerald-500/10 scale-105 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                        : 'border-white/5 opacity-50 hover:opacity-100'
+                    }`}
+                  >
+                    {isPdf ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-red-950/20">
+                        <BookOpen size={14} className="text-red-400" />
+                        <span className="text-[6px] font-black text-red-400/80 uppercase mt-0.5">PDF</span>
+                      </div>
+                    ) : isWeb ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-purple-950/20">
+                        <Smartphone size={14} className="text-purple-400" />
+                        <span className="text-[6px] font-black text-purple-400/80 uppercase mt-0.5">WEB</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={asset.url}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        alt=""
+                      />
+                    )}
+
+                    {isActive && (
+                      <div className="absolute inset-0 border border-emerald-500/30 bg-emerald-500/5" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
         )}
       </AnimatePresence>
@@ -1889,6 +2873,111 @@ export const MarketplacePage: React.FC = () => {
                         }`}>
                           ${Math.round((Number(itemPrice) || 0) * (1 - (Number(itemDiscount) || 0) / 100))}
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Immersive Affiliate & Referral Configuration */}
+                  <div className={`p-4 border rounded-[4px] space-y-3 ${
+                    isThemeDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                        <Share2 size={13} />
+                        <span>{language === 'ar' ? 'نظام التسويق بالعمولة (الإحالة)' : 'Affiliate & Referral Settings'}</span>
+                      </h4>
+                      <span className="text-[9px] text-gray-400 font-bold">
+                        {language === 'ar' ? '* عمولة مخصصة لهذا المنتج بالتحديد' : '* Custom commission for this specific asset'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                          {language === 'ar' ? 'نسبة عمولة الإحالة (%)' : 'Referral Commission Rate (%)'}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={itemReferralPercent}
+                            onChange={(e) => setItemReferralPercent(e.target.value)}
+                            placeholder="20"
+                            className={`w-full h-10 pl-3 pr-8 border rounded-[4px] outline-none text-xs ${
+                              isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                            }`}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400 select-none">%</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                          {language === 'ar' ? 'قيمة عمولة المنتج لكل عملية بيع' : 'Referral Commission Value'}
+                        </label>
+                        <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
+                          isThemeDark ? 'bg-black/60 border-white/5' : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          ${Math.round((Number(itemPrice) || 0) * (1 - (Number(itemDiscount) || 0) / 100) * (Number(itemReferralPercent) || 0) / 100 * 100) / 100}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Highlights and Licensing Setup */}
+                  <div className={`p-4 border rounded-[4px] space-y-3 ${
+                    isThemeDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                        <Award size={13} />
+                        <span>{language === 'ar' ? 'التمييز وتراخيص الاستخدام' : 'Highlight Tag & License Type'}</span>
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Highlight Tag */}
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                          {language === 'ar' ? 'تمييز المعروض (شارة)' : 'Highlight/Featured Tag'}
+                        </label>
+                        <select
+                          value={itemHighlightTag}
+                          onChange={(e) => setItemHighlightTag(e.target.value)}
+                          className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          }`}
+                        >
+                          <option value="">{language === 'ar' ? 'بدون تمييز' : 'No Highlight'}</option>
+                          <option value="trending">{language === 'ar' ? 'رائج' : 'Trending'}</option>
+                          <option value="exclusive">{language === 'ar' ? 'عرض حصري' : 'Exclusive Offer'}</option>
+                          <option value="free">{language === 'ar' ? 'مجاني' : 'Free'}</option>
+                          <option value="best_seller">{language === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller'}</option>
+                          <option value="new">{language === 'ar' ? 'جديد' : 'New'}</option>
+                        </select>
+                      </div>
+
+                      {/* License Type */}
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                          {language === 'ar' ? 'نوع ترخيص الملكية الفكرية' : 'Intellectual Property License'}
+                        </label>
+                        <select
+                          value={itemLicenseType}
+                          onChange={(e) => setItemLicenseType(e.target.value)}
+                          className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          }`}
+                        >
+                          <option value="mit">MIT License</option>
+                          <option value="apache_2">Apache 2.0</option>
+                          <option value="gpl_3">GNU GPL v3</option>
+                          <option value="bsd_3">BSD 3-Clause</option>
+                          <option value="cc_by_sa">Creative Commons BY-SA 4.0</option>
+                          <option value="commercial_standard">{language === 'ar' ? 'تجاري قياسي' : 'Proprietary Commercial Standard'}</option>
+                          <option value="commercial_extended">{language === 'ar' ? 'تجاري ممتد / مكرر' : 'Proprietary Commercial Extended'}</option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -2054,6 +3143,202 @@ export const MarketplacePage: React.FC = () => {
                 </form>
               )}
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Shopping Cart Drawer */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs cursor-pointer"
+              onClick={() => setIsCartOpen(false)}
+            />
+
+            {/* Sidebar drawer container */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={`w-full max-w-md h-full flex flex-col z-10 shadow-2xl relative border-l ${
+                isThemeDark ? 'bg-[#0a0a0c] border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-[var(--border-main)] dark:border-white/5 flex items-center justify-between select-none">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-[4px] bg-emerald-500/10 text-emerald-500">
+                    <ShoppingCart size={18} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black tracking-tight select-none">
+                      {language === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
+                    </h3>
+                    <p className="text-[10px] text-gray-500 font-bold">
+                      {cart.length === 1
+                        ? (language === 'ar' ? 'منتج واحد مضاف حاليا' : '1 item added')
+                        : language === 'ar'
+                        ? `${cart.length} منتجات مضافة`
+                        : `${cart.length} items added`}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className={`w-9 h-9 rounded-[4px] border border-transparent hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center transition-all ${
+                    isThemeDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 select-none">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/5 border border-dashed border-emerald-500/10 flex items-center justify-center text-gray-500">
+                      <ShoppingCart size={24} className="opacity-40" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-gray-400">
+                        {language === 'ar' ? 'سلتك فارغة تماماً' : 'Your Shopping Cart is Empty'}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 leading-relaxed max-w-xs">
+                        {language === 'ar' ? 'تصفح البرمجيات والأنظمة الفريدة المتوفرة في سوق بيربليكستا لإضافتها هنا' : 'Explore unique software assets and tools in the Perplexta Marketplace to add them here.'}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  cart.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`p-3 rounded-lg border flex items-start gap-3 transition-colors ${
+                        isThemeDark ? 'bg-black/40 border-white/5' : 'bg-gray-50 border-gray-150'
+                      }`}
+                    >
+                      {/* Product image */}
+                      <div className="w-12 h-12 rounded-[4px] overflow-hidden shrink-0 bg-black/10 border border-white/5">
+                        <img
+                          src={item.product.image_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe'}
+                          alt={item.product.title_en}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Info & action */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-1">
+                          <h4 className="text-[11px] font-black truncate leading-tight">
+                            {language === 'ar' ? item.product.title_ar : item.product.title_en}
+                          </h4>
+                          <button
+                            onClick={() => handleRemoveFromCart(item.id)}
+                            className="p-1 rounded-[4px] hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 transition-colors shrink-0 -mt-0.5 cursor-pointer"
+                            title={language === 'ar' ? 'إزالة' : 'Remove'}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
+                        <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">
+                          {item.licenseType === 'mit' ? 'MIT' : item.licenseType === 'apache_2' ? 'Apache 2.0' : item.licenseType === 'gpl_3' ? 'GNU GPL v3' : item.licenseType === 'bsd_3' ? 'BSD 3' : item.licenseType === 'cc_by_sa' ? 'CC BY-SA 4.0' : item.licenseType === 'commercial_standard' ? (language === 'ar' ? 'تجاري قياسي' : 'Proprietary Commercial Standard') : (language === 'ar' ? 'تجاري ممتد / مكرر' : 'Proprietary Commercial Extended')}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-2.5">
+                          {/* Price Display */}
+                          <span className="text-[11px] font-black font-sans text-emerald-400">
+                            {item.price <= 0 ? (language === 'ar' ? 'مجانًا' : 'FREE') : `$${item.price.toLocaleString()}`}
+                          </span>
+
+                          <span className="text-[9px] text-purple-400 font-bold font-sans">
+                            {item.price <= 0 ? '' : `${(item.price * 10).toLocaleString()} ${language === 'ar' ? 'نقطة رصيد' : 'Points'}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer and checkout forms */}
+              {cart.length > 0 && (
+                <div className="p-5 border-t border-[var(--border-main)] dark:border-white/5 space-y-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between select-none">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{language === 'ar' ? 'المجموع الكلي' : 'Grand Total'}</span>
+                      <span className="text-base font-black font-sans text-emerald-400">
+                        ${cart.reduce((sum, item) => sum + item.price, 0).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between select-none">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{language === 'ar' ? 'القيمة الإجمالية بالنقاط' : 'Grand Total Points'}</span>
+                      <span className="text-xs font-black font-sans text-purple-400">
+                        {(cart.reduce((sum, item) => sum + item.price, 0) * 10).toLocaleString()} {language === 'ar' ? 'نقطة' : 'Points'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={`h-px w-full ${isThemeDark ? 'bg-white/5' : 'bg-gray-150'}`} />
+
+                  {buyingProgress === 'purchasing' ? (
+                    <div className="flex flex-col items-center justify-center py-4 text-center space-y-2 select-none">
+                      <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[10px] text-gray-400 font-bold animate-pulse">{t.purchaseProgress}</span>
+                    </div>
+                  ) : buyingProgress === 'success' ? (
+                    <div className="flex flex-col items-center justify-center py-4 text-center text-emerald-400 space-y-1.5 select-none">
+                      <Check size={20} className="animate-bounce" />
+                      <span className="text-[10px] font-black">{language === 'ar' ? 'تهانينا! تم شراء المنتجات بنجاح!' : 'Congratulations! All items purchased successfully!'}</span>
+                    </div>
+                  ) : buyingProgress === 'insufficient' ? (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-1 pb-1">
+                        <AlertCircle size={14} className="text-rose-500 shrink-0 mt-0.5" />
+                        <span className="text-[10px] text-rose-400 font-black leading-normal">{t.insufficientHeadline}</span>
+                      </div>
+                      <p className="text-[9px] text-gray-500 leading-relaxed">{t.insufficientBody}</p>
+                      <button
+                        onClick={() => setBuyingProgress('idle')}
+                        className="w-full h-9 rounded-[4px] border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 text-[10px] font-black transition-colors cursor-pointer"
+                      >
+                        {language === 'ar' ? 'الرجوع ومحاولة أخرى' : 'Go Back & Retry'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleCartCheckoutWithWallet}
+                        className="w-full h-10 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10 transition-all duration-300"
+                      >
+                        <Wallet size={14} />
+                        <span>{language === 'ar' ? 'شراء كافة المنتجات بالرصيد المحفظة' : 'Buy Cart with Wallet Balance'}</span>
+                      </button>
+
+                      <button
+                        onClick={handleCartCheckoutWithStripe}
+                        className={`w-full h-10 rounded-[4px] border transition-all font-bold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
+                          isThemeDark
+                            ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
+                            : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
+                        }`}
+                      >
+                        <CreditCard size={14} />
+                        <span>{language === 'ar' ? 'شراء عبر بوابة الدفع الآمنة (Stripe)' : 'Pay with Credit Card (Stripe)'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           </div>
         )}

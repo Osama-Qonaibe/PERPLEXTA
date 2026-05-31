@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -246,10 +246,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         onTouchStart={swipeHandlers.onTouchStart}
         onTouchMove={swipeHandlers.onTouchMove}
         onTouchEnd={swipeHandlers.onTouchEnd}
-        className={`fixed top-[72px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
+        className={`fixed top-[72px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100vh-72px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
           isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
         }`}
-        style={{ contain: 'layout' }}
+        style={{ contain: 'layout', maxHeight: 'calc(100vh - 72px)' }}
       >
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -724,6 +724,26 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
                                   <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
+
+                          <button 
+                            onClick={() => { navigate('/settings?tab=marketplace_purchases'); setIsDropdownOpen(false); }} 
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                          >
+                            <ShoppingBag size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-all duration-300" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={sidebarTransition}
+                                  className="overflow-hidden whitespace-nowrap text-start"
+                                >
+                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{language === 'ar' ? 'مشترياتي الرقمية' : 'Digital Purchases'}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
