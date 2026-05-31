@@ -4,17 +4,30 @@ import helmet from 'helmet';
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
-import { globalLimiter, adminLimiter } from './middleware/rateLimit.js';
+import { globalLimiter, adminLimiter, authLimiter } from './middleware/rateLimit.js';
+import { csrfProtection } from './middleware/csrf.js';
 
 const app = express();
 
 app.set('trust proxy', 1);
 
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: [
+        "'self'",
+        (req: any, res: any) => `'nonce-${res.locals.nonce}'`,
+        ...(process.env.NODE_ENV !== 'production' ? ["'unsafe-inline'", "'unsafe-eval'"] : []),
+        "https://www.googletagmanager.com",
+        "https://*.stripe.com",
+        "https://*.googleapis.com"
+      ],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
       connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
@@ -100,7 +113,7 @@ app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 app.use(express.static(publicPath));
 
 import jwt from 'jsonwebtoken';
-import { pool } from './db/index.js';
+import { pool, ledgerPool } from './db/index.js';
 
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
@@ -158,7 +171,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
           return res.sendFile(resolvedPath);
         }
 
-        const isProofRes = await pool.query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
+        const isProofRes = await (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
         if (isProofRes.rows.length > 0) {
           return res.sendFile(resolvedPath);
         }
@@ -176,6 +189,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 });
 
 app.use('/api', globalLimiter);
+app.use('/api', csrfProtection);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -199,13 +213,12 @@ import forumRoutes from './routes/forum.js';
 import blogRoutes from './routes/blog.js';
 import marketplaceRoutes from './routes/marketplace.js';
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
@@ -232,10 +245,23 @@ if (process.env.NODE_ENV === "production") {
       }
     }
   }));
+
+  let cachedIndexHtml = '';
+  try {
+    cachedIndexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+  } catch (err) {
+    console.warn('[Server] Could not pre-load index.html for noncing:', err);
+  }
+
   app.get('*', (req, res) => {
     const hasStaticExtension = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav)$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (cachedIndexHtml) {
+        const noncedHtml = cachedIndexHtml.replace(/<script\b/g, `<script nonce="${res.locals.nonce || ''}"`);
+        res.type('html').send(noncedHtml);
+      } else {
+        res.sendFile(path.join(distPath, 'index.html'));
+      }
     } else {
       res.status(404).type('text/plain').send('Not Found');
     }

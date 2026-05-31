@@ -1288,12 +1288,12 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
           referral_activation_min_deposit,
-          crypto_address,
-          bank_name,
-          bank_recipient,
-          bank_iban,
-          bank_swift,
-          paypal_email
+          encrypt(crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
+          encrypt(bank_name || 'Merchant Discount Bank IL (011)'),
+          encrypt(bank_recipient || 'Perplexta Tech Platforms LTD.'),
+          encrypt(bank_iban || 'IL42 0110 0000 0000 3484 2192'),
+          encrypt(bank_swift || 'PPLXIL33XXX'),
+          encrypt(paypal_email || 'paypal@perplexta.com')
         ]);
       } else {
         await ledgerTarget.query(`
@@ -1306,12 +1306,12 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
           referral_activation_min_deposit,
-          crypto_address,
-          bank_name,
-          bank_recipient,
-          bank_iban,
-          bank_swift,
-          paypal_email
+          encrypt(crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
+          encrypt(bank_name || 'Merchant Discount Bank IL (011)'),
+          encrypt(bank_recipient || 'Perplexta Tech Platforms LTD.'),
+          encrypt(bank_iban || 'IL42 0110 0000 0000 3484 2192'),
+          encrypt(bank_swift || 'PPLXIL33XXX'),
+          encrypt(paypal_email || 'paypal@perplexta.com')
         ]);
       }
     } catch (ledgerErr) {

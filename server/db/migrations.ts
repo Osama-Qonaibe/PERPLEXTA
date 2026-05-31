@@ -118,6 +118,18 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
         throw new Error(`Invalid identifier: ${tableName}.${columnName}`);
       }
       
+      // Strict parameter whitelist checks to eliminate dynamic query evaluation security flags (SEC-02)
+      if (!/^[a-zA-Z0-9_(),\s]+$/i.test(type)) {
+        throw new Error(`Invalid SQL type identifier: ${type}`);
+      }
+      if (defaultVal !== undefined) {
+        const defaultStr = String(defaultVal).trim();
+        // Allow ONLY alphanumeric, standard SQL constants, quotes with clean contents, brackets/braces
+        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
+          throw new Error(`Invalid default value expression: ${defaultStr}`);
+        }
+      }
+      
       let query = `ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`;
       if (defaultVal !== undefined) {
         query += ` DEFAULT ${defaultVal}`;
@@ -644,12 +656,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     // MIGRATION: Payment Gateways Settings Expansion v13
     await runVersioned('v13_payment_gateways_expansion', 'Adding crypto deposit address, bank details, and PayPal address to economy_settings', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
-      await ensureColumn(ledgerTarget, 'economy_settings', 'crypto_address', 'TEXT', `'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'`);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_name', 'VARCHAR(255)', `'Merchant Discount Bank IL (011)'`);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_recipient', 'VARCHAR(255)', `'Perplexta Tech Platforms LTD.'`);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_iban', 'VARCHAR(255)', `'IL42 0110 0000 0000 3484 2192'`);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_swift', 'VARCHAR(100)', `'PPLXIL33XXX'`);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'paypal_email', 'VARCHAR(255)', `'paypal@perplexta.com'`);
+      const encAddress = `'${encrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy')}'`;
+      const encBankName = `'${encrypt(process.env.DEFAULT_BANK_NAME || 'Merchant Discount Bank IL (011)')}'`;
+      const encBankRecipient = `'${encrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Perplexta Tech Platforms LTD.')}'`;
+      const encBankIBAN = `'${encrypt(process.env.DEFAULT_BANK_IBAN || 'IL42 0110 0000 0000 3484 2192')}'`;
+      const encBankSwift = `'${encrypt(process.env.DEFAULT_BANK_SWIFT || 'PPLXIL33XXX')}'`;
+      const encPaypalEmail = `'${encrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal@perplexta.com')}'`;
+
+      await ensureColumn(ledgerTarget, 'economy_settings', 'crypto_address', 'TEXT', encAddress);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_name', 'VARCHAR(255)', encBankName);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_recipient', 'VARCHAR(255)', encBankRecipient);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_iban', 'VARCHAR(255)', encBankIBAN);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_swift', 'VARCHAR(100)', encBankSwift);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'paypal_email', 'VARCHAR(255)', encPaypalEmail);
     });
 
     // MIGRATION: PayPal Credentials to system_settings v14
@@ -1367,12 +1386,12 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         min_payout_usd NUMERIC(10, 2) DEFAULT '10.00',
         min_deposit_usd NUMERIC(10, 2) DEFAULT '5.00',
         referral_activation_min_deposit NUMERIC(10, 2) DEFAULT '10.00',
-        crypto_address TEXT DEFAULT 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy',
-        bank_name VARCHAR(255) DEFAULT 'Merchant Discount Bank IL (011)',
-        bank_recipient VARCHAR(255) DEFAULT 'Perplexta Tech Platforms LTD.',
-        bank_iban VARCHAR(255) DEFAULT 'IL42 0110 0000 0000 3484 2192',
-        bank_swift VARCHAR(100) DEFAULT 'PPLXIL33XXX',
-        paypal_email VARCHAR(255) DEFAULT 'paypal@perplexta.com'
+        crypto_address TEXT DEFAULT '${encrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy')}',
+        bank_name VARCHAR(255) DEFAULT '${encrypt(process.env.DEFAULT_BANK_NAME || 'Merchant Discount Bank IL (011)')}',
+        bank_recipient VARCHAR(255) DEFAULT '${encrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Perplexta Tech Platforms LTD.')}',
+        bank_iban VARCHAR(255) DEFAULT '${encrypt(process.env.DEFAULT_BANK_IBAN || 'IL42 0110 0000 0000 3484 2192')}',
+        bank_swift VARCHAR(100) DEFAULT '${encrypt(process.env.DEFAULT_BANK_SWIFT || 'PPLXIL33XXX')}',
+        paypal_email VARCHAR(255) DEFAULT '${encrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal@perplexta.com')}'
       )`
     },
     {
