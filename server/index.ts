@@ -16,20 +16,31 @@ async function startServer() {
     console.log('[Server] Initializing Perplexta Ecosystem...');
     
     let dbReady = false;
-    try {
-      await initializePerplextaPools(
-        process.env.DATABASE_URL || '',
-        process.env.LEDGER_DATABASE_URL || '',
-        process.env.EXTERNAL_DATABASE_URL || '',
-        process.env.SECURITY_DATABASE_URL || ''
-      );
-      await runDatabaseMigrations();
-      await synchronizePerplextaPoolsFromRegistry();
-      await syncSystemTemplates();
-      await refreshCachedAppName();
-      dbReady = true;
-    } catch (dbErr) {
-      console.error('[Server] WARNING: Database sync failed. Starting in DEGRADED MODE:', dbErr);
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (attempts < maxAttempts && !dbReady) {
+      attempts++;
+      try {
+        await initializePerplextaPools(
+          process.env.DATABASE_URL || '',
+          process.env.LEDGER_DATABASE_URL || '',
+          process.env.EXTERNAL_DATABASE_URL || '',
+          process.env.SECURITY_DATABASE_URL || ''
+        );
+        await runDatabaseMigrations();
+        await synchronizePerplextaPoolsFromRegistry();
+        await syncSystemTemplates();
+        await refreshCachedAppName();
+        dbReady = true;
+      } catch (dbErr) {
+        console.error(`[Server] Database sync attempt ${attempts}/${maxAttempts} failed:`, dbErr instanceof Error ? dbErr.message : dbErr);
+        if (attempts < maxAttempts) {
+          console.log(`[Server] Retrying database connection in 4 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 4000));
+        } else {
+          console.error('[Server] All database sync attempts exhausted. Entering Degraded Mode.');
+        }
+      }
     }
     
     if (process.env.NODE_ENV !== 'production') {

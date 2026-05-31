@@ -173,13 +173,17 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
     });
 
     console.log('[DB] Verifying connectivity...');
-    await Promise.all([
-      pool.query('SELECT 1'),
-      ledgerPool.query('SELECT 1'),
-      externalPool.query('SELECT 1'),
-      securityPool.query('SELECT 1')
-    ]);
-    console.log('[DB] Perplexta Pools verified and active.');
+    try {
+      await Promise.all([
+        pool.query('SELECT 1'),
+        ledgerPool.query('SELECT 1'),
+        externalPool.query('SELECT 1'),
+        securityPool.query('SELECT 1')
+      ]);
+      console.log('[DB] Perplexta Pools verified and active.');
+    } catch (verifyError: any) {
+      console.warn('[DB] ⚠️ Warmup/Connectivity pre-flight check returned warning/failure, but pools remain active for lazy-connection on demand retry:', verifyError.message);
+    }
 
   } catch (poolCreationError: any) {
     console.error('[DB] Critical error during Pool creation:', poolCreationError.message);

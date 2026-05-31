@@ -605,7 +605,7 @@ export const ForumPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {token && (
+                  {token && user && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1178,7 +1178,7 @@ export const ForumPage: React.FC = () => {
                             {isRtl ? 'هذا الموضوع مغلق أمنياً من قبل الإشراف لكتابة ردود جديدة.' : 'This conversation zone is locked and preserved by administrative rules.'}
                           </p>
                         </div>
-                      ) : token ? (
+                      ) : token && user ? (
                         <form onSubmit={handleSubmitComment} className="mb-8">
                           {/* Markdown Editor implementation inside comments too */}
                           <div className={`border rounded-[4px] overflow-hidden ${isThemeDark ? 'bg-black/30 border-white/10' : 'bg-white border-gray-300'}`}>
@@ -1324,7 +1324,7 @@ export const ForumPage: React.FC = () => {
     </div>
 
       {/* FLOATING ACTION BUTTON (FAB) & DYNAMIC SHORTCUT */}
-      {token && !isCreatingThread && !selectedPost && (
+      {token && user && !isCreatingThread && !selectedPost && (
         <div className="fixed bottom-6 right-6 z-40 select-none">
           <motion.button
             whileHover={{ scale: 1.1 }}
