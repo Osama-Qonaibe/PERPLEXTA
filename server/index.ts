@@ -7,6 +7,8 @@ try {
 } catch (dnsErr) {
   console.warn('[Server] Failed to set DNS result order:', dnsErr);
 }
+import fs from 'fs';
+import path from 'path';
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';
@@ -51,7 +53,11 @@ async function startServer() {
       }
     }
     
-    if (process.env.NODE_ENV !== 'production') {
+    const isProductionRun = process.env.NODE_ENV === 'production' || 
+                            !fs.existsSync(path.join(process.cwd(), 'src')) ||
+                            (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')));
+    
+    if (!isProductionRun) {
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa'

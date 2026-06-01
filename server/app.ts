@@ -279,7 +279,9 @@ app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api', toolRoutes);
 
-const isProduction = process.env.NODE_ENV === 'production' || !fs.existsSync(path.join(process.cwd(), 'src'));
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     !fs.existsSync(path.join(process.cwd(), 'src')) ||
+                     (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')));
 
 if (isProduction) {
   app.use(express.static(distPath, {
