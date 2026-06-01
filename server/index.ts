@@ -53,9 +53,11 @@ async function startServer() {
       }
     }
     
-    const isProductionRun = process.env.NODE_ENV === 'production' || 
-                            !fs.existsSync(path.join(process.cwd(), 'src')) ||
-                            (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')));
+    const isProductionRun = (process.env.NODE_ENV === 'production' || 
+                             !fs.existsSync(path.join(process.cwd(), 'src')) ||
+                             fs.existsSync(path.join(process.cwd(), 'dist/index.html')) ||
+                             (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')))) &&
+                            process.env.NODE_ENV !== 'development';
     
     if (!isProductionRun) {
       const vite = await createViteServer({

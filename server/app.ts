@@ -131,11 +131,16 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
     }
     
     if (targetFile) {
-      const contentType = getContentType(targetFile);
-      if (contentType) {
-        res.setHeader('Content-Type', contentType);
+      try {
+        const content = fs.readFileSync(targetFile);
+        const contentType = getContentType(targetFile);
+        if (contentType) {
+          res.setHeader('Content-Type', contentType);
+        }
+        return res.send(content);
+      } catch (err) {
+        console.error(`[Server] serveStaticResource failure for ${targetFile}:`, err);
       }
-      return res.sendFile(targetFile);
     }
     
     res.status(404).type('text/plain').send('Not Found');
@@ -279,9 +284,11 @@ app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api', toolRoutes);
 
-const isProduction = process.env.NODE_ENV === 'production' || 
-                     !fs.existsSync(path.join(process.cwd(), 'src')) ||
-                     (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')));
+const isProduction = (process.env.NODE_ENV === 'production' || 
+                      !fs.existsSync(path.join(process.cwd(), 'src')) ||
+                      fs.existsSync(path.join(distPath, 'index.html')) ||
+                      (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')))) &&
+                     process.env.NODE_ENV !== 'development';
 
 if (isProduction) {
   app.use(express.static(distPath, {

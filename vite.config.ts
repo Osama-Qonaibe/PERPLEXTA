@@ -11,7 +11,6 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'VITE_');
   return {
-    root: __dirname,
     plugins: [
       react(),
       tailwindcss(),
