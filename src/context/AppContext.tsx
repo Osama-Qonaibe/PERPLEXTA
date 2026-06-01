@@ -2396,8 +2396,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = (forceRedirect = true) => {
     localStorage.setItem('app_loader_type', 'logout');
     refreshPromiseRef.current = null;
-    setIsAuthReady(false);
-    setIsAuthModalOpen(false);
 
     const storedRefreshToken = localStorage.getItem('app_refresh_token');
 
@@ -2421,9 +2419,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {
         console.error('Socket disconnect error during logout', e);
       }
+    }
+
+    if (forceRedirect) {
+      window.location.href = '/';
+      return;
+    }
+
+    setIsAuthReady(false);
+    setIsAuthModalOpen(false);
+    if (socket) {
       setSocket(null);
     }
-    
     setToken(null);
     setRefreshTokenState(null);
     setUser(null);
@@ -2431,12 +2438,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBalanceUSD(0);
     setNotifications([]);
     setMilestoneData(null);
-    
-    if (forceRedirect) {
-      setTimeout(() => {
-        window.location.replace('/');
-      }, 50);
-    }
   };
 
   // Automated 2-hour Inactivity Session Invalidation Service
