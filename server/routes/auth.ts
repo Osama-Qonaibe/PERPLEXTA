@@ -42,16 +42,6 @@ const getRedirectUri = (req: express.Request) => {
   return `${getBaseUrl(req)}/api/auth/google/callback`;
 };
 
-const safeLedgerQuery = async (queryText: string, params: any[] = []) => {
-  try {
-    const targetPool = ledgerPool || pool;
-    return await targetPool.query(queryText, params);
-  } catch (err) {
-    console.warn(`[safeLedgerQuery] Query failure, trying core pool:`, err instanceof Error ? err.message : err);
-    return await pool.query(queryText, params);
-  }
-};
-
 const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {
   console.log(`[GoogleAvatarDiagnostic] [${context}]`);
   console.log(`  - Timestamp: ${new Date().toISOString()}`);
@@ -177,12 +167,12 @@ router.post("/signup", authLimiter, async (req, res) => {
 
     const user = result.rows[0];
     
-    await safeLedgerQuery(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+    await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
 
     if (referredBy) {
       let bonusPoints = 1000;
       try {
-        const econRes = await safeLedgerQuery('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
+        const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
         if (econRes.rows.length > 0) {
           bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
         }
@@ -191,11 +181,11 @@ router.post("/signup", authLimiter, async (req, res) => {
       }
 
       try {
-        await safeLedgerQuery(
+        await ledgerPool.query(
           `INSERT INTO referrals (referrer_id, referred_id, bonus_points, status) VALUES ($1, $2, $3, 'pending') ON CONFLICT (referred_id) DO NOTHING`,
           [referredBy, user.id, bonusPoints]
         );
-        await safeLedgerQuery(
+        await ledgerPool.query(
           `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
           [referredBy, user.id]
         );
@@ -535,12 +525,12 @@ router.get("/google/callback", async (req, res) => {
       );
       user = insertResult.rows[0];
       
-      await safeLedgerQuery(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+      await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
 
       if (referredBy) {
         let bonusPoints = 1000;
         try {
-          const econRes = await safeLedgerQuery('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
+          const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
           if (econRes.rows.length > 0) {
             bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
           }
@@ -549,11 +539,11 @@ router.get("/google/callback", async (req, res) => {
         }
 
         try {
-          await safeLedgerQuery(
+          await ledgerPool.query(
             `INSERT INTO referrals (referrer_id, referred_id, bonus_points, status) VALUES ($1, $2, $3, 'pending') ON CONFLICT (referred_id) DO NOTHING`,
             [referredBy, user.id, bonusPoints]
           );
-          await safeLedgerQuery(
+          await ledgerPool.query(
             `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
             [referredBy, user.id]
           );

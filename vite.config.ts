@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'VITE_');
   return {
+    root: __dirname,
     plugins: [
       react(),
       tailwindcss(),
@@ -84,7 +85,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: '0.0.0.0',
-      allowedHosts: true,
+      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
       headers: {
         'Content-Security-Policy': "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; connect-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; frame-ancestors * 'self';"
       },
@@ -92,7 +93,7 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       host: '0.0.0.0',
-      allowedHosts: true,
+      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
     },
   };
 });

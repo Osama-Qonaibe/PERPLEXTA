@@ -1,4 +1,4 @@
-const CACHE_NAME = 'perplexta-cache-v4';
+const CACHE_NAME = 'perplexta-cache-v3';
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -77,18 +77,12 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request)
         .then(networkResponse => {
-          // Cache successful asset responses (never cache HTML fallback responses for static assets)
+          // Cache successful asset responses
           if (networkResponse.status === 200 || networkResponse.status === 304) {
-            const contentType = networkResponse.headers.get('content-type') || '';
-            const isHtml = contentType.includes('text/html');
-            const isStaticAsset = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf)$/i.test(url.pathname);
-            
-            if (!(isStaticAsset && isHtml)) {
-              const cacheCopy = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, cacheCopy);
-              });
-            }
+            const cacheCopy = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, cacheCopy);
+            });
           }
           return networkResponse;
         })

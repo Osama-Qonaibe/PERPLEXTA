@@ -1,14 +1,4 @@
 import 'dotenv/config';
-import dns from 'dns';
-try {
-  if (dns && typeof dns.setDefaultResultOrder === 'function') {
-    dns.setDefaultResultOrder('ipv4first');
-  }
-} catch (dnsErr) {
-  console.warn('[Server] Failed to set DNS result order:', dnsErr);
-}
-import fs from 'fs';
-import path from 'path';
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';
@@ -53,13 +43,7 @@ async function startServer() {
       }
     }
     
-    const isProductionRun = (process.env.NODE_ENV === 'production' || 
-                             !fs.existsSync(path.join(process.cwd(), 'src')) ||
-                             fs.existsSync(path.join(process.cwd(), 'dist/index.html')) ||
-                             (process.argv[1] && (process.argv[1].includes('dist/server.cjs') || process.argv[1].includes('dist/server.mjs')))) &&
-                            process.env.NODE_ENV !== 'development';
-    
-    if (!isProductionRun) {
+    if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa'
