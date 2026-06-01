@@ -1,5 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @variant dark (&:where(.dark, .dark *));
@@ -75,8 +74,8 @@
 }
 
 @theme {
-  --font-sans: "Cabinet Grotesk", "Tajawal", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Cabinet Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: "Space Grotesk", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
   --text-xs: var(--fs-xs);
   --text-sm: var(--fs-sm);
@@ -229,7 +228,7 @@ html {
 }
 
 body {
-  font-family: "Cabinet Grotesk", "Tajawal", sans-serif;
+  font-family: "Space Grotesk", "Tajawal", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -342,9 +341,9 @@ input,
 .markdown-body h2,
 .markdown-body h3,
 .markdown-body h4 {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   line-height: 1.35;
   margin-top: 1.85rem;
   margin-bottom: 0.85rem;
@@ -377,7 +376,7 @@ input,
 }
 
 .markdown-body strong {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   background-color: rgba(16, 185, 129, 0.04);
   padding: 1px 5px;
@@ -409,7 +408,7 @@ input,
 
 .markdown-body li::marker {
   color: var(--accent-emerald);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .markdown-body ul > li {
@@ -496,7 +495,7 @@ input,
 
 .markdown-body th {
   background-color: rgba(16, 185, 129, 0.05);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent-emerald);
   text-transform: uppercase;
   font-size: clamp(10.5px, 10.5px + 0.14vw, 12px);
