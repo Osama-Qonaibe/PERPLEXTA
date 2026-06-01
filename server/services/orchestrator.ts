@@ -229,7 +229,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     }
   }
 
-  const userLang = userRes.rows[0]?.language || 'ar';
+  const userLang = userRes.rows[0]?.language || 'en';
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 

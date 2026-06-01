@@ -382,7 +382,7 @@ router.get("/google/url", async (req, res) => {
       `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
       [nonce, 'google', JSON.stringify({ 
         ref: ref as string || null, 
-        lang: lang as string || 'ar', 
+        lang: lang as string || 'en', 
         mode: mode as string || 'popup', 
         remember: remember === 'true',
         theme: theme as string || 'dark'
@@ -500,7 +500,7 @@ router.get("/google/callback", async (req, res) => {
 
     if (result.rows.length === 0) {
       const role = lowerEmail === (process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'user';
-      const finalLang = storedState.lang || 'ar';
+      const finalLang = storedState.lang || 'en';
       const finalTheme = storedState.theme || 'dark';
       
       let referredBy: number | null = null;
@@ -638,7 +638,7 @@ router.get("/google/callback", async (req, res) => {
       } : null
     };
 
-    const lang = storedState.lang || user.language || 'ar';
+    const lang = storedState.lang || user.language || 'en';
     let targetRef = storedState.ref || '/';
     if (
       typeof targetRef !== 'string' ||

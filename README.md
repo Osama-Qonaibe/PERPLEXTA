@@ -31,10 +31,91 @@
                      - Chats & Real-time Logs    - Payout Transactions
 ```
 
-### 1. نظام قواعد البيانات الثنائي | Dual-Database Architecture
-For absolute integrity and maximum protection of core assets:
-*   **Operational Core Database:** Manages user identity, session management, historical conversations, AI activity auditing, and customizable interface presets.
-*   **The Ledger Database (The Vault):** A strictly isolated environment written using an **Append-Only ledger methodology**. Direct alteration or erasure of user balances is physically impossible. Every balance change relies on dynamic Debit/Credit records verified by secure server-side isolation layers with cross-pool synchronization.
+### 1. نظام قواعد البيانات الرباعي المعزول | Multi-Database Architecture & Isolation Strategy
+Perplexta Platform utilizes a highly secure, advanced **Four-Pool Database Architecture (Multi-Tenant Segregation)**. This decouples system responsibilities to ensure maximum database integrity, ultra-low transactional latency, flawless GDPR/KYC data handling, and defense-in-depth isolation.
+
+تعتمد المنصة على بنية تحتية هندسية متطورة تتكون من **أربعة أحواض قواعد بيانات معزولة ومستقلة (Database Pools)**. يضمن هذا الفصل الهيكلي تلبية أعلى معايير الأمان المالي، تحقيق أداء فائق السرعة للمعالجة المتزامنة (Zero-Latency Async)، وضمان المتانة الأمنية للمنصة ضد أي اختراقات أو عثرات تشغيلية.
+
+---
+
+## 📊 دليل تفصيلي لقواعد البيانات والربط الهيكلي | Comprehensive Database Schema & Segregation Report
+
+```
+                      ┌─────────────────────────────────────────┐
+                      │    EXPRESS BACKEND GATEWAY CONNECTOR    │
+                      └─────────────────────────────────────────┘
+                                   │    │    │    │
+         ┌─────────────────────────┘    │    │    └─────────────────────────┐
+         ▼                              ▼    ▼                              ▼
+┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
+│     Core Pool     │    │    Ledger Pool    │    │   External Pool   │    │   Security Pool   │
+│   (Operational)   │    │    (The Vault)    │    │  (Social/Market)  │    │ (Audit & Defense) │
+└───────────────────┘    └───────────────────┘    └───────────────────┘    └───────────────────┘
+```
+
+### 🗄️ 1. قاعدة البيانات التشغيلية والأساسية (Core Pool - `DATABASE_URL`)
+* **الهدف الهيكلي (Architecture Role):** إدارة الهوية العامة للمستخدمين، وتدفق محادثات الذكاء الاصطناعي، والملفات، الإشعارات، وتهيئات المحرك الأساسية (Orchestrator).
+* **معايير الأمان والأداء:** اتصال سريع بزمن استجابة منخفض جداً لإتاحة البث الفوري للمحادثات (Fast Chat Streaming) ومعالجة الملفات المرفقة بكفاءة.
+
+| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
+| :--- | :--- | :--- |
+| `users` | يخزن بيانات الهوية، الرتب والمستويات التشغيلية، وحالة الـ KYC، وضبط واجهة المستخدم واللغة الافتراضية. | `id`, `email`, `password_hash`, `role`, `language`, `theme`, `kyc_status` |
+| `chats` | يربط كل جلسة محادثة بالمستخدم مع تحديد نموذج الذكاء الاصطناعي النشط. | `id`, `user_id`, `title`, `active_model`, `updated_at` |
+| `messages` | المستودع الحقيقي لنصوص الرسائل المُرسلة والمُستقبلة مع تفاصيل استهلاك الـ Tokens وعداد الصرف. | `id`, `chat_id`, `role`, `content`, `tokens_used`, `tracking_metadata` |
+| `user_files` | نظام ملفات مستخدم آمن لتسجيل المرفقات المستخلصة من PDF بنظام التشفير، وحفظ النصوص المنتزعة كبيانات سياقية. | `id`, `user_id`, `filename`, `file_size`, `extracted_text`, `created_at` |
+| `tool_orchestrator` | لوحة التحكم الذكية لتوجيه نماذج الذكاء الاصطناعي الأساسية والاحتياطية لكل أداة (Silent Failover). | `id`, `tool_id`, `primary_model`, `fallback_1_model`, `fallback_2_model` |
+| `api_keys_vault` | قبو مشفر بمستوى عسكري (AES-256) يحفظ مفاتيح مزودي الذكاء الاصطناعي دون أي تسريب في السيرفر. | `id`, `provider`, `encrypted_key_data`, `is_active` |
+| `system_settings` | خصائص الموقع الثنائية اللغة (AR/EN)، بيانات السيو (SEO)، وإعدادات بوابة الدفع وتصاريح تشغيل خادم المزامنة. | `id`, `site_name`, `site_name_ar`, `seo_description`, `stripe_webhook_secret` |
+| `system_broadcasts` | الإعلانات الإدارية والبث الحي للمستخدين النشطين في واجهة التشغيل. | `id`, `title_en`, `title_ar`, `content_en`, `content_ar` |
+| `support_tickets` | بطاقات الفحص والدعم الفني ومراحل معالجة وحل إشكاليات المستخدم النهائي. | `id`, `user_id`, `subject`, `status` (Open/Closed), `priority` |
+
+---
+
+### 💳 2. محفظة الدفتر المالي المعزولة (Ledger Pool - `LEDGER_DATABASE_URL`)
+* **الهدف الهيكلي (Architecture Role):** عزل متكامل لكافة العمليات المالية، والاشتراكات، والعمولات، ونظام شجرة الإحالات (Referral Tree) بنمط سجل الصياغة التراكمي (Append-Only Ledger).
+* **معايير الأمان والأداء:** لا توجد عمليات حذف أو تعديل للقيم بشكل مباشر لحماية الحسابات من أي التواء مالي أو هجوم تزوير. كافة العمليات المالية هي عبارة عن حركات حسابية متوازنة لضمان المحاسبة العادلة (Audit Trail).
+
+| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
+| :--- | :--- | :--- |
+| `wallets` | السجل الموحد لرصيد المحفظة الفعلي والترويجي لكل عميل (يتم تحديثه فقط عبر حركات الدفتر التراكمي). | `id`, `user_id`, `balance`, `promo_balance`, `updated_at` |
+| `ledger_transactions` | الدفتر العام التراكمي: حركة حسابية دقيقة لتتبع الإيداع، الخصم، شراء الخدمات، والعمولات المسجلة زمنياً. | `id`, `wallet_id`, `amount`, `type` (Credit/Debit), `description`, `reference_id` |
+| `subscriptions` | اشتراكات المستخدمين الحالية، والمستوى البلاتيني/الذهبي، وفترة الانتهاء، وضوابط الاستهلاك المستهدف. | `id`, `user_id`, `plan_id`, `status` (Active/Canceled), `current_period_end` |
+| `plans` | قوالب الحزم التشغيلية المخصصة بما في ذلك عتبة حدود الحسابات الخاصة بكل أداة وقيم الاشتراك السنوي/الشهري. | `id`, `name`, `price_monthly`, `price_yearly`, `tool_quotas_json` |
+| `referrals` | شجرة المبتدئين والعوائد الإحالية (Referral Tree)، توثيق عمليات الشراء وحساب حصص الشركاء والمشرفين. | `id`, `referrer_id`, `referred_id`, `points_rewarded`, `payout_status` |
+| `deposits` | سجلات طلبات الشحن اليدوية والآلية وبوابات الدفع البنكية والمشفرة قبل الاعتماد وإدراج الحركات بالدفتر المالي. | `id`, `user_id`, `amount`, `gateway`, `status` (Pending/Approved/Rejected) |
+| `coupons` | نظام الخصومات الترويجية والقسائم المحددة بنطاق عوائد ومستويات مالية ترويجية. | `id`, `code`, `discount_percent`, `max_uses`, `expires_at` |
+
+---
+
+### 🌐 3. قاعدة البيانات الخارجية والمجتمعية (External Pool - `EXTERNAL_DATABASE_URL`)
+* **الهدف الهيكلي (Architecture Role):** السيطرة الكاملة على منتديات النقاش، والمقالات وبلوج التحليل المتقدم، وبوابة المتجر المتكامل في المنصة (Marketplace).
+* **معايير الأمان والأداء:** تسمح بالاستعلامات الضخمة للمنتديات والمشاركة المجتمعية بدون التأثير على قاعدة محركات المحادثات أو البيانات المالية.
+
+| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
+| :--- | :--- | :--- |
+| `forum_categories` | تصنيفات وأقسام منتدى المجتمع الفني والمالي مع الأيقونات المرتبطة والصفات اللونية. | `id`, `name_en`, `name_ar`, `color`, `slug` |
+| `forum_posts` | مواضيع النقاش المفتوحة ومقاود الترشيح ومواصفات الإشراف والحظر. | `id`, `category_id`, `user_id`, `title`, `content`, `views_count`, `is_locked` |
+| `forum_comments` | الردود الفنية على مواضيع المنتدى الداعمة لتنسيق غني وتتبع الاستشهادات. | `id`, `post_id`, `user_id`, `content` |
+| `blog_articles` | مقالات التحليل المالي والتقني الاحترافية المكتوبة بأقلام النخبة أو المعتمدة تشغيلياً. | `id`, `title_en`, `title_ar`, `content_en`, `content_ar`, `author_id`, `tags` |
+| `marketplace_items` | الأدوات ومنتجات المحاكاة المتاحة في المتجر مع ضبط الأسعار ومعدل الإحالة المجتمعي. | `id`, `title`, `description`, `price`, `file_path` (Secure S3 or Direct), `referral_percent` |
+| `marketplace_purchases` | الفواتير التقنية لتثبيت المبيعات وتأمين المرفقات والتحقق من التوقيع الرقمي للمالك. | `id`, `item_id`, `buyer_id`, `price_paid`, `is_claimed` |
+
+---
+
+### 🛡️ 4. حوض الحماية وأمن السيرفر (Security Pool - `SECURITY_DATABASE_URL`)
+* **الهدف الهيكلي (Architecture Role):** مراقبة نشاط التطبيق، وتتبع الجلسات المتعددة، وتقييد معدلات الطلب الآلي، والتحصينات الدفاعية لمنع هجمات الاستغلال.
+* **معايير الأمان والأداء:** حماية عالية المستوى تفحص كافة الرموز (Tokens) ومصدر عناوين الـ IP قبل تفعيل خدمات المحادثة أو المعاملات البنكية لسرعة اتخاذ القرارات الأمنية.
+
+| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
+| :--- | :--- | :--- |
+| `user_sessions` | تتبع بصمات الجسلات والـ IP النشط والموقع الجغرافي المسجل لكل جلسة مستخدم لضمان عدم السخرة العابرة للحدود. | `id`, `user_id`, `ip_address`, `user_agent`, `platform`, `is_active` |
+| `token_blacklist` | سلة حجز الرموز التالفة والملغاة (Revoked Tokens) لعمليات المصادقة لإنهاء الجلسات فور الخروج الآمن. | `id`, `token`, `expires_at`, `blacklisted_at` |
+| `security_alerts` | سجلات الحوادث الاستخباراتية للأمن (IDS): تتبع محاولات الولوج الخاطئ، فحص انتهاك هجمات الحقن أو تجاوز الحدود. | `id`, `user_id`, `alert_type`, `severity` (Low/Med/High), `details`, `ip_address` |
+| `password_resets` | الرموز الآمنة وذات المدة القصيرة المخصصة لتغيير وارتجاع بيانات تسجيل الدخول للمستخدمين الفاقدين للوصول. | `id`, `user_id`, `token`, `expires_at` |
+
+---
+
+### 🏁 3. محرك التوجيه الذاتي الصامت | Silent Failover Orchestrator
 
 ### 2. محرك التوجيه الذاتي الصامت | Silent Failover Orchestrator
 Eradicating API downtimes completely:

@@ -1539,7 +1539,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
-    try { return (localStorage.getItem('language') as Language) || 'ar'; } catch (e) { return 'ar'; }
+    try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
   const [theme, setTheme] = useState<Theme>(() => {
     try {
@@ -2259,7 +2259,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogle = async () => {
     try {
       const ref = localStorage.getItem('app_ref');
-      const lang = localStorage.getItem('language') || 'ar';
+      const lang = localStorage.getItem('language') || 'en';
       const theme = localStorage.getItem('theme') || 'dark';
       
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

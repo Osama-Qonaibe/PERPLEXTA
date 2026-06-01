@@ -188,10 +188,10 @@ export async function handleChatMessage(socket: any, data: any) {
     try {
       const parsed = JSON.parse(error.message);
       
-      let userLang = 'ar';
+      let userLang = 'en';
       try {
         const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
-        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'ar';
+        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'en';
       } catch (_) {}
       
       if (userLang === 'ar' && parsed.error_ar) {

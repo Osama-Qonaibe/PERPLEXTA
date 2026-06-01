@@ -1197,6 +1197,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'marketplace_items', 'license_type', 'VARCHAR(50)');
     });
 
+    await runVersioned('v34_default_language_en', 'Changing default user language to English', async (tx) => {
+      await tx.query("ALTER TABLE users ALTER COLUMN language SET DEFAULT 'en'");
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1229,7 +1233,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         kyc_rejection_reason TEXT,
         kyc_submitted_at TIMESTAMP,
         referred_by INTEGER,
-        language VARCHAR(5) DEFAULT 'ar',
+        language VARCHAR(5) DEFAULT 'en',
         theme VARCHAR(10) DEFAULT 'dark',
         memory TEXT,
         support_notes TEXT,
