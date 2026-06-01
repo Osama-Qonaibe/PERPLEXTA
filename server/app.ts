@@ -81,25 +81,61 @@ const publicPath = path.join(process.cwd(), 'public');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 const distPath = path.join(process.cwd(), 'dist');
 
+const getContentType = (filePath: string): string | null => {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case '.js':
+      return 'application/javascript; charset=utf-8';
+    case '.css':
+      return 'text/css; charset=utf-8';
+    case '.json':
+      return 'application/json; charset=utf-8';
+    case '.webmanifest':
+      return 'application/manifest+json; charset=utf-8';
+    case '.png':
+      return 'image/png';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.gif':
+      return 'image/gif';
+    case '.svg':
+      return 'image/svg+xml; charset=utf-8';
+    case '.ico':
+      return 'image/x-icon';
+    case '.xml':
+      return 'application/xml; charset=utf-8';
+    default:
+      return null;
+  }
+};
+
 const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     const distFile = path.join(distPath, fileName);
     const publicFile = path.join(publicPath, fileName);
     
+    let targetFile = '';
     if (fs.existsSync(distFile)) {
-      return res.sendFile(distFile);
+      targetFile = distFile;
     } else if (fs.existsSync(publicFile)) {
-      return res.sendFile(publicFile);
-    }
-    
-    if (fallbackFileName) {
+      targetFile = publicFile;
+    } else if (fallbackFileName) {
       const distFallback = path.join(distPath, fallbackFileName);
       const publicFallback = path.join(publicPath, fallbackFileName);
       if (fs.existsSync(distFallback)) {
-        return res.sendFile(distFallback);
+        targetFile = distFallback;
       } else if (fs.existsSync(publicFallback)) {
-        return res.sendFile(publicFallback);
+        targetFile = publicFallback;
       }
+    }
+    
+    if (targetFile) {
+      const contentType = getContentType(targetFile);
+      if (contentType) {
+        res.setHeader('Content-Type', contentType);
+      }
+      return res.sendFile(targetFile);
     }
     
     res.status(404).type('text/plain').send('Not Found');
@@ -111,7 +147,14 @@ app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'ma
 app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
-app.use(express.static(publicPath));
+app.use(express.static(publicPath, {
+  setHeaders: (res, filePath) => {
+    const contentType = getContentType(filePath);
+    if (contentType) {
+      res.setHeader('Content-Type', contentType);
+    }
+  }
+}));
 
 import jwt from 'jsonwebtoken';
 import { pool, ledgerPool } from './db/index.js';
@@ -236,11 +279,18 @@ app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api', toolRoutes);
 
-if (process.env.NODE_ENV === "production") {
+const isProduction = process.env.NODE_ENV === 'production' || !fs.existsSync(path.join(process.cwd(), 'src'));
+
+if (isProduction) {
   app.use(express.static(distPath, {
     etag: false,
     lastModified: false,
     setHeaders: (res, filePath) => {
+      const contentType = getContentType(filePath);
+      if (contentType) {
+        res.setHeader('Content-Type', contentType);
+      }
+      
       if (/\.(js|css)$/.test(filePath)) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
@@ -251,7 +301,10 @@ if (process.env.NODE_ENV === "production") {
 
   let cachedIndexHtml = '';
   try {
-    cachedIndexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      cachedIndexHtml = fs.readFileSync(indexPath, 'utf8');
+    }
   } catch (err) {
     console.warn('[Server] Could not pre-load index.html for noncing:', err);
   }
@@ -263,7 +316,12 @@ if (process.env.NODE_ENV === "production") {
         const noncedHtml = cachedIndexHtml.replace(/<script\b/g, `<script nonce="${res.locals.nonce || ''}"`);
         res.type('html').send(noncedHtml);
       } else {
-        res.sendFile(path.join(distPath, 'index.html'));
+        const indexPath = path.join(distPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(404).type('text/plain').send('Index.html not found');
+        }
       }
     } else {
       res.status(404).type('text/plain').send('Not Found');
