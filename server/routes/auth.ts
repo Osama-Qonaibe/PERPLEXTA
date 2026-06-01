@@ -476,7 +476,8 @@ router.get("/google/callback", async (req, res) => {
         client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
         redirect_uri: getRedirectUri(req),
         grant_type: 'authorization_code'
-      } as any).toString()
+      } as any).toString(),
+      signal: AbortSignal.timeout(8000)
     });
 
     const tokens = await tokenResponse.json() as any;
@@ -486,7 +487,8 @@ router.get("/google/callback", async (req, res) => {
     }
 
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${tokens.access_token}` }
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      signal: AbortSignal.timeout(8000)
     });
     const googleUser = await userRes.json() as any;
 

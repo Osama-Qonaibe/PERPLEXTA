@@ -180,15 +180,59 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
 
     console.log('[DB] Verifying connectivity...');
     try {
-      const queries = [pool.query('SELECT 1')];
-      if (ledgerPool !== pool) queries.push(ledgerPool.query('SELECT 1'));
-      if (externalPool !== pool) queries.push(externalPool.query('SELECT 1'));
-      if (securityPool !== pool) queries.push(securityPool.query('SELECT 1'));
-      
-      await Promise.all(queries);
-      console.log('[DB] Perplexta Pools verified and active.');
+      const verifyPoolWithTimeout = async (p: any, name: string) => {
+        let timeoutId: any;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error(`${name} connection timeout (2.5s)`)), 2500);
+        });
+        
+        try {
+          await Promise.race([p.query('SELECT 1'), timeoutPromise]);
+          clearTimeout(timeoutId);
+          return true;
+        } catch (err: any) {
+          clearTimeout(timeoutId);
+          console.warn(`[DB] ⚠️ Warmup/Connectivity check for ${name} failed: ${err.message}`);
+          return false;
+        }
+      };
+
+      const coreOk = await verifyPoolWithTimeout(pool, 'Core DB');
+      if (!coreOk) {
+        console.error('[DB] ❌ Warning: Core Database is currently unreachable or slow to respond.');
+      }
+
+      if (ledgerPool && ledgerPool !== pool) {
+        const ledgerOk = await verifyPoolWithTimeout(ledgerPool, 'Ledger DB');
+        if (!ledgerOk) {
+          console.warn('[DB] Swapping Ledger Pool to point to Core Database Pool due to failure.');
+          try { await ledgerPool.end(); } catch {}
+          ledgerPool = pool;
+        }
+      }
+
+      if (externalPool && externalPool !== pool) {
+        const externalOk = await verifyPoolWithTimeout(externalPool, 'External DB');
+        if (!externalOk) {
+          console.warn('[DB] Swapping External Pool to point to Core Database Pool due to failure.');
+          try { await externalPool.end(); } catch {}
+          externalPool = pool;
+        }
+      }
+
+      if (securityPool && securityPool !== pool) {
+        const securityOk = await verifyPoolWithTimeout(securityPool, 'Security DB');
+        if (!securityOk) {
+          console.warn('[DB] Swapping Security Pool to point to Core Database Pool due to failure.');
+          try { await securityPool.end(); } catch {}
+          securityPool = pool;
+        }
+      }
+
+      console.log('[DB] Perplexta Pools verification and seamless fallback assignment complete.');
+
     } catch (verifyError: any) {
-      console.warn('[DB] ⚠️ Warmup/Connectivity pre-flight check returned warning/failure, but pools remain active for lazy-connection on demand retry:', verifyError.message);
+      console.warn('[DB] ⚠️ Connectivity post-flight assessment returned error:', verifyError.message);
     }
 
   } catch (poolCreationError: any) {
