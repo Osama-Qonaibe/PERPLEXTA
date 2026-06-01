@@ -1,4 +1,12 @@
 import 'dotenv/config';
+import dns from 'dns';
+try {
+  if (dns && typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+  }
+} catch (dnsErr) {
+  console.warn('[Server] Failed to set DNS result order:', dnsErr);
+}
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocket } from './config/socket.js';

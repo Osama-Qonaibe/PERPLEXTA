@@ -124,7 +124,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       ssl: sslConfig,
       max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
+      connectionTimeoutMillis: 4000,
     });
 
     ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
@@ -132,7 +132,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       ssl: sslConfig,
       max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
+      connectionTimeoutMillis: 4000,
     });
 
     externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
@@ -140,7 +140,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       ssl: sslConfig,
       max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
+      connectionTimeoutMillis: 4000,
     });
 
     securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
@@ -148,7 +148,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       ssl: sslConfig,
       max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
+      connectionTimeoutMillis: 4000,
     });
 
     pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));
