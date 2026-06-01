@@ -20,32 +20,76 @@ export async function refreshCachedAppName() {
 }
 
 export async function getSystemSettings() {
-  const result = await pool.query(`
-    SELECT 
-      site_name_en, site_name_ar, site_description_en, site_description_ar,
-      seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-      google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-      paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
-    FROM system_settings LIMIT 1
-  `);
-  
-  const settings = result.rows[0] || {};
-  if (settings.stripe_publishable_key) {
-    try {
-      settings.stripe_publishable_key = decrypt(settings.stripe_publishable_key);
-    } catch (e) {
-      console.warn('[System] Failed to decrypt stripe_publishable_key:', e);
+  try {
+    const result = await pool.query(`
+      SELECT 
+        site_name_en, site_name_ar, site_description_en, site_description_ar,
+        seo_description_en, seo_description_ar, keywords_en, keywords_ar,
+        google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
+        stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
+        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
+      FROM system_settings LIMIT 1
+    `);
+    
+    let settings = result.rows[0];
+
+    // Seed default if database table is completely empty
+    if (!settings) {
+      console.log('[SystemSettings] Table system_settings is empty. Seeding default row...');
+      await pool.query(`
+        INSERT INTO system_settings (site_name_en, site_name_ar, logo_url, logo_light_url, favicon_url)
+        VALUES ('Premium AI', 'منصة النخبة', null, null, null)
+      `);
+      const secondTry = await pool.query(`
+        SELECT 
+          site_name_en, site_name_ar, site_description_en, site_description_ar,
+          seo_description_en, seo_description_ar, keywords_en, keywords_ar,
+          google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
+          stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
+          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
+        FROM system_settings LIMIT 1
+      `);
+      settings = secondTry.rows[0];
     }
-  }
-  if (settings.paypal_client_id) {
-    try {
-      settings.paypal_client_id = decrypt(settings.paypal_client_id);
-    } catch (e) {
-      console.warn('[System] Failed to decrypt paypal_client_id:', e);
+    
+    if (settings.stripe_publishable_key) {
+      try {
+        settings.stripe_publishable_key = decrypt(settings.stripe_publishable_key);
+      } catch (e) {
+        console.warn('[System] Failed to decrypt stripe_publishable_key:', e);
+      }
     }
+    if (settings.paypal_client_id) {
+      try {
+        settings.paypal_client_id = decrypt(settings.paypal_client_id);
+      } catch (e) {
+        console.warn('[System] Failed to decrypt paypal_client_id:', e);
+      }
+    }
+    return settings;
+  } catch (err: any) {
+    const errMsg = err.message || '';
+    if (errMsg.includes('relation "system_settings" does not exist')) {
+      console.log('[SystemSettings] system_settings table does not exist. Running migrations dynamically...');
+      try {
+        const { runDatabaseMigrations } = await import('../db/migrations.js');
+        await runDatabaseMigrations();
+        return getSystemSettings();
+      } catch (innerErr: any) {
+        console.error('[SystemSettings] Dynamic migration running failed:', innerErr.message);
+      }
+    } else if (errMsg.includes('logo_light_url')) {
+      console.log('[SystemSettings] logo_light_url column seems to be missing. Attempting dynamic self-healing...');
+      try {
+        await pool.query('ALTER TABLE system_settings ADD COLUMN logo_light_url TEXT');
+        console.log('[SystemSettings] Successfully added logo_light_url dynamically!');
+        return getSystemSettings();
+      } catch (innerErr: any) {
+        console.error('[SystemSettings] Dynamic column addition failed:', innerErr.message);
+      }
+    }
+    throw err;
   }
-  return settings;
 }
 
 export async function updateSystemSettings(settings: any) {
