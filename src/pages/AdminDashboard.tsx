@@ -11985,6 +11985,9 @@ const SystemSettingsView = ({
   const [logoBase64, setLogoBase64] = useState<string | null>(
     siteSettings.logoBase64,
   );
+  const [logoLightBase64, setLogoLightBase64] = useState<string | null>(
+    siteSettings.logoLightBase64,
+  );
   const [faviconBase64, setFaviconBase64] = useState<string | null>(
     siteSettings.faviconBase64,
   );
@@ -12031,6 +12034,7 @@ const SystemSettingsView = ({
           setGoogleAnalyticsId(data.google_analytics_id || "");
           setGoogleSiteVerification(data.google_site_verification || "");
           setLogoBase64(data.logo_url || null);
+          setLogoLightBase64(data.logo_light_url || null);
           setFaviconBase64(data.favicon_url || null);
           setSeoImageUrl(data.seo_image_url || null);
 
@@ -12046,6 +12050,7 @@ const SystemSettingsView = ({
             keywordsAr: kwsArVal,
             googleAnalyticsId: data.google_analytics_id || "",
             logoBase64: data.logo_url || null,
+            logoLightBase64: data.logo_light_url || null,
             faviconBase64: data.favicon_url || null,
             seoImageUrl: data.seo_image_url || null,
           });
@@ -12059,13 +12064,14 @@ const SystemSettingsView = ({
 
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "logo" | "favicon" | "seo",
+    type: "logo" | "logo_light" | "favicon" | "seo",
   ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === "logo") setLogoBase64(reader.result as string);
+        else if (type === "logo_light") setLogoLightBase64(reader.result as string);
         else if (type === "favicon") setFaviconBase64(reader.result as string);
         else if (type === "seo") setSeoImageUrl(reader.result as string);
       };
@@ -12098,6 +12104,7 @@ const SystemSettingsView = ({
           google_analytics_id: googleAnalyticsId,
           google_site_verification: googleSiteVerification,
           logo_url: logoBase64,
+          logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
           seo_image_url: siteSettings.seoImageUrl,
         }),
@@ -12154,6 +12161,7 @@ const SystemSettingsView = ({
           google_analytics_id: googleAnalyticsId,
           google_site_verification: googleSiteVerification,
           logo_url: logoBase64,
+          logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
           seo_image_url: siteSettings.seoImageUrl,
         }),
@@ -12163,6 +12171,7 @@ const SystemSettingsView = ({
         setSiteSettings({
           ...siteSettings,
           logoBase64,
+          logoLightBase64,
           faviconBase64,
         });
         showToast(t("saveSuccess") || "Visual settings saved", "success");
@@ -12349,8 +12358,8 @@ const SystemSettingsView = ({
           <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Logo Upload */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Logo Upload (Dark theme) */}
           <div
             className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
@@ -12364,7 +12373,7 @@ const SystemSettingsView = ({
               {logoBase64 ? (
                 <img
                   src={logoBase64}
-                  alt="Logo"
+                  alt="Dark Logo"
                   className="w-8 h-8 rounded-md object-contain"
                 />
               ) : (
@@ -12401,10 +12410,72 @@ const SystemSettingsView = ({
                 </div>
               )}
             </div>
-            <h3 className="font-medium text-sm mb-1">{t("uploadLogo")}</h3>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "الشعار للثيم الداكن" : "Logo (Dark Theme)"}
+            </h3>
             <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 1MB)</p>
             <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-              Base64 Encoded (No external files)
+              Base64 Encoded
+            </p>
+          </div>
+
+          {/* Logo Upload (Light theme) */}
+          <div
+            className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, "logo_light")}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="mb-4 flex items-center justify-center h-8">
+              {logoLightBase64 ? (
+                <img
+                  src={logoLightBase64}
+                  alt="Light Logo"
+                  className="w-8 h-8 rounded-md object-contain"
+                />
+              ) : (
+                <div className="bg-sky-500 p-1.5 rounded-sm text-white flex items-center justify-center w-8 h-8">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 2L2 7L12 12L22 7L12 2Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 17L12 22L22 17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 12L12 17L22 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "الشعار للثيم الفاتح" : "Logo (Light Theme)"}
+            </h3>
+            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 1MB)</p>
+            <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
+              Base64 Encoded
             </p>
           </div>
 
@@ -12429,10 +12500,12 @@ const SystemSettingsView = ({
                 <Globe size={16} className="text-gray-400" />
               )}
             </div>
-            <h3 className="font-medium text-sm mb-1">{t("uploadFavicon")}</h3>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "أيقونة المفضلة" : "Favicon"}
+            </h3>
             <p className="text-xs text-gray-500">32x32 PNG or ICO</p>
             <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-              Base64 Encoded (No external files)
+              Base64 Encoded
             </p>
           </div>
         </div>

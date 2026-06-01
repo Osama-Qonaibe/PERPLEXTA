@@ -195,62 +195,87 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
     setUploadingImage(true);
     setUploadError('');
 
+    const uploadRawFile = async (rawFile: File) => {
+      const formData = new FormData();
+      formData.append('file', rawFile);
+      try {
+        const res = await fetch('/api/files/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.file) {
+            setEditImage(`/uploads/${data.file.file_url}`);
+            setUploadError('');
+          } else {
+            setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
+          }
+        } else {
+          try {
+            const errData = await res.json();
+            const serverMsg = language === 'ar' 
+              ? (errData.message_ar || errData.error || 'فشل في رفع الصورة') 
+              : (errData.message_en || errData.details || errData.error || 'Failed uploading image');
+            setUploadError(serverMsg);
+          } catch {
+            setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      uploadRawFile(file);
+    };
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => {
+        uploadRawFile(file);
+      };
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1080;
-        canvas.height = 1080;
-        const ctx = canvas.getContext('2d');
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1080;
+          canvas.height = 1080;
+          const ctx = canvas.getContext('2d');
 
-        if (ctx) {
-          const srcWidth = img.width;
-          const srcHeight = img.height;
-          const minSide = Math.min(srcWidth, srcHeight);
+          if (ctx) {
+            const srcWidth = img.width;
+            const srcHeight = img.height;
+            const minSide = Math.min(srcWidth, srcHeight);
 
-          const sx = (srcWidth - minSide) / 2;
-          const sy = (srcHeight - minSide) / 2;
+            const sx = (srcWidth - minSide) / 2;
+            const sy = (srcHeight - minSide) / 2;
 
-          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
 
-          canvas.toBlob(async (blob) => {
-            if (!blob) {
-              setUploadError(language === 'ar' ? 'فشل معالجة الصورة.' : 'Failed to crop image.');
-              setUploadingImage(false);
-              return;
-            }
-
-            const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            const formData = new FormData();
-            formData.append('file', croppedFile);
-
-            try {
-              const res = await fetch('/api/files/upload', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                },
-                body: formData
-              });
-
-              if (res.ok) {
-                const data = await res.json();
-                if (data.success && data.file) {
-                  setEditImage(`/uploads/${data.file.file_url}`);
-                } else {
-                  setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
-                }
-              } else {
-                setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                uploadRawFile(file);
+                return;
               }
-            } catch (err) {
-              console.error(err);
-              setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
-            } finally {
-              setUploadingImage(false);
-            }
-          }, 'image/jpeg', 0.9);
+
+              const baseName = file.name.replace(/\.[^/.]+$/, "");
+              const croppedFile = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+              uploadRawFile(croppedFile);
+            }, 'image/jpeg', 0.9);
+          } else {
+            uploadRawFile(file);
+          }
+        } catch (err) {
+          console.error('[Crop Fail]', err);
+          uploadRawFile(file);
         }
       };
       img.src = event.target?.result as string;
@@ -314,7 +339,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
           category_en: catObj.nEn,
           category_ar: catObj.nAr,
           image_url: editImage,
-          contact_link: editContact || 'https://t.me/perplexta_support',
+          contact_link: null,
           download_url: editLinkDownload || null,
           preview_url: editLinkPreview || null,
           video_url: editLinkVideo || null,
@@ -389,7 +414,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
             category_en: itemToCreate.category_en,
             category_ar: itemToCreate.category_ar,
             image_url: itemToCreate.image_url,
-            contact_link: itemToCreate.contact_link || 'https://t.me/perplexta_support',
+            contact_link: null,
             status: newStatus,
             download_url: itemToCreate.download_url || null,
             preview_url: itemToCreate.preview_url || null,
@@ -688,9 +713,19 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'sold')}
                           disabled={actioningId === item.id}
-                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white text-[10px] font-bold transition-all duration-300"
+                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white text-[10px] font-bold transition-all duration-300 animate-pulse"
                         >
                           {language === 'ar' ? 'تعليم كمباع' : 'Mark Sold'}
+                        </button>
+                      )}
+
+                      {item.status === 'sold' && (
+                        <button
+                          onClick={() => handleUpdateStatus(item.id, 'approved')}
+                          disabled={actioningId === item.id}
+                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black text-[10px] font-bold transition-all duration-300"
+                        >
+                          {language === 'ar' ? 'إعادة عرض' : 'Re-List'}
                         </button>
                       )}
 
@@ -1037,37 +1072,20 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   </div>
                 </div>
 
-                {/* Secure Download Link and Contact Link */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                      {language === 'ar' ? 'رابط تحميل الملف الآمن' : 'Secure Download Link (ZIP/Source)'}
-                    </label>
-                    <input
-                      type="text"
-                      value={editLinkDownload}
-                      onChange={(e) => setEditLinkDownload(e.target.value)}
-                      placeholder="https://..."
-                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
-                      }`}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                      {language === 'ar' ? 'رابط التواصل الدائم *' : 'Contact / Telegram Link *'}
-                    </label>
-                    <input
-                      type="url"
-                      required
-                      value={editContact}
-                      onChange={(e) => setEditContact(e.target.value)}
-                      placeholder="https://t.me/your_telegram_account"
-                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
-                      }`}
-                    />
-                  </div>
+                {/* Secure Download Link */}
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                    {language === 'ar' ? 'رابط تحميل الملف الآمن' : 'Secure Download Link (ZIP/Source)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editLinkDownload}
+                    onChange={(e) => setEditLinkDownload(e.target.value)}
+                    placeholder="https://..."
+                    className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
+                      theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                    }`}
+                  />
                 </div>
 
                 {/* Tech Specs */}

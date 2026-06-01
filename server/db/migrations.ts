@@ -1201,6 +1201,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query("ALTER TABLE users ALTER COLUMN language SET DEFAULT 'en'");
     });
 
+    await runVersioned('v35_logo_light_theme', 'Adding logo_light_url column to support light theme tailored logos', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'logo_light_url', 'TEXT');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1732,6 +1736,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         site_name_en VARCHAR(255) DEFAULT 'Premium AI',
         site_name_ar VARCHAR(255) DEFAULT 'منصة النخبة',
         logo_url TEXT,
+        logo_light_url TEXT,
         favicon_url TEXT,
         site_description_en TEXT,
         site_description_ar TEXT,

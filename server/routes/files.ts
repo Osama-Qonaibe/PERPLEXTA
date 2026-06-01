@@ -35,9 +35,9 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
     
-    // Non-admin without any active subscription gets 0 limit
+    // Non-admin without any active subscription gets a 20MB free storage tier instead of 0
     if (row.role !== 'admin' && !hasActiveSub) {
-      limitMb = '0';
+      limitMb = '20';
     }
     
     if (limitMb !== 'unlimited') {
@@ -87,8 +87,9 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
     res.status(201).json({ success: true, file });
     await logSystemActivity(userId, 'file_upload', `Uploaded file: ${originalname}`, { fileId: file.id }, req);
-  } catch (error) {
-    res.status(500).json({ error: 'Upload failed' });
+  } catch (error: any) {
+    console.error('File upload failed:', error);
+    res.status(500).json({ error: 'Upload failed', details: error.message || String(error) });
   }
 });
 

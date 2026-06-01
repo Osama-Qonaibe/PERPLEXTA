@@ -39,6 +39,7 @@ export interface SiteSettings {
   siteDescription: string;
   siteDescriptionAr: string;
   logoBase64: string | null;
+  logoLightBase64: string | null;
   faviconBase64: string | null;
   seoDescriptionEn: string;
   seoDescriptionAr: string;
@@ -2509,6 +2510,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       siteDescription: '',
       siteDescriptionAr: '',
       logoBase64: null,
+      logoLightBase64: null,
       faviconBase64: null,
       seoDescriptionEn: '',
       seoDescriptionAr: '',
@@ -2838,6 +2840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           googleAnalyticsId: settingsData.google_analytics_id || '',
           googleSiteVerification: settingsData.google_site_verification || '',
           logoBase64: settingsData.logo_url || null,
+          logoLightBase64: settingsData.logo_light_url || null,
           faviconBase64: settingsData.favicon_url || null,
           seoImageUrl: settingsData.seo_image_url || null
         });

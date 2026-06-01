@@ -24,7 +24,7 @@ export async function getSystemSettings() {
     SELECT 
       site_name_en, site_name_ar, site_description_en, site_description_ar,
       seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-      google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url,
+      google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
       stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
       paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
     FROM system_settings LIMIT 1
@@ -93,6 +93,9 @@ export async function updateSystemSettings(settings: any) {
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
     ? settings.logo_url 
     : existing.logo_url;
+  const logo_light_url = (settings.logo_light_url !== undefined && settings.logo_light_url !== null && settings.logo_light_url !== '') 
+    ? settings.logo_light_url 
+    : existing.logo_light_url;
   const favicon_url = (settings.favicon_url !== undefined && settings.favicon_url !== null && settings.favicon_url !== '') 
     ? settings.favicon_url 
     : existing.favicon_url;
@@ -104,11 +107,11 @@ export async function updateSystemSettings(settings: any) {
     UPDATE system_settings SET 
       site_name_en = $1, site_name_ar = $2, site_description_en = $3, site_description_ar = $4,
       seo_description_en = $5, seo_description_ar = $6, keywords_en = $7, keywords_ar = $8,
-      google_analytics_id = $9, google_site_verification = $10, logo_url = $11, favicon_url = $12, seo_image_url = $13, updated_at = CURRENT_TIMESTAMP
+      google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14, updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
-    google_analytics_id, google_site_verification, logo_url, favicon_url, seo_image_url
+    google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url
   ]);
   
   await refreshCachedAppName();

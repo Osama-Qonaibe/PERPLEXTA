@@ -27,7 +27,7 @@ import { DefaultLogo } from './components/DefaultLogo';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 
 const CenteredLoader = () => {
-  const { siteSettings, language } = useAppContext();
+  const { siteSettings, language, theme } = useAppContext();
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
 
   const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
@@ -50,6 +50,11 @@ const CenteredLoader = () => {
     }
   }
 
+  const currentTheme = theme || localStorage.getItem('theme') || 'dark';
+  const activeLogo = (currentTheme === 'light' && siteSettings.logoLightBase64) 
+    ? siteSettings.logoLightBase64 
+    : siteSettings.logoBase64;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -68,8 +73,8 @@ const CenteredLoader = () => {
             className="absolute inset-0 bg-emerald-500 rounded-full blur-[50px]"
           />
           <div className="relative w-24 h-24 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-[var(--border-main)]/80 flex items-center justify-center shadow-2xl overflow-hidden">
-            {siteSettings.logoBase64 ? (
-              <img src={siteSettings.logoBase64} alt="Logo" className="w-[84px] h-[84px] object-cover block rounded-sm" />
+            {activeLogo ? (
+              <img src={activeLogo} alt="Logo" className="w-[84px] h-[84px] object-cover block rounded-sm" />
             ) : (
               <DefaultLogo className="w-16 h-16" iconClassName="w-10 h-10" />
             )}

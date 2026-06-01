@@ -315,17 +315,7 @@ export const MarketplacePortfolio: React.FC = () => {
                             </a>
                           )}
 
-                          {item.contact_link && (
-                            <a
-                              href={item.contact_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-10 h-9 rounded-lg border border-[var(--border)]/60 bg-[#161618] hover:bg-[#1f1f22] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 group-hover:border-emerald-500/30"
-                              title={isRtl ? 'الدعم الفني / المطور' : 'Contact Support'}
-                            >
-                              <ExternalLink size={13} className="text-gray-400 group-hover:text-emerald-500 transition-colors" />
-                            </a>
-                          )}
+
                         </div>
                       </div>
                     </div>

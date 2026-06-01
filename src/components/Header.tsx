@@ -198,7 +198,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
-                  {siteSettings.logoBase64 ? (
+                  {((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64) ? (
                     <motion.div 
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
                       animate={isStreaming ? {
@@ -217,7 +217,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       } : {}}
                     >
                       <img 
-                        src={siteSettings.logoBase64} 
+                        src={(theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64!} 
                         alt="Logo" 
                         className="w-full h-full object-cover block" 
                       />

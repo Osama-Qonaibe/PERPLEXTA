@@ -851,7 +851,7 @@ export const MarketplacePage: React.FC = () => {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const url = user?.role === 'admin' ? '/api/marketplace/admin/items' : '/api/marketplace/items';
+      const url = '/api/marketplace/items';
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await fetch(url, { headers });
       const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
@@ -982,62 +982,87 @@ export const MarketplacePage: React.FC = () => {
     setUploadingImage(true);
     setUploadError('');
 
+    const uploadRawFile = async (rawFile: File) => {
+      const formData = new FormData();
+      formData.append('file', rawFile);
+      try {
+        const res = await fetch('/api/files/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.file) {
+            setItemImage(`/uploads/${data.file.file_url}`);
+            setUploadError('');
+          } else {
+            setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
+          }
+        } else {
+          try {
+            const errData = await res.json();
+            const serverMsg = language === 'ar' 
+              ? (errData.message_ar || errData.error || 'فشل في رفع الصورة') 
+              : (errData.message_en || errData.details || errData.error || 'Failed uploading image');
+            setUploadError(serverMsg);
+          } catch {
+            setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      uploadRawFile(file);
+    };
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => {
+        uploadRawFile(file);
+      };
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1080;
-        canvas.height = 1080;
-        const ctx = canvas.getContext('2d');
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1080;
+          canvas.height = 1080;
+          const ctx = canvas.getContext('2d');
 
-        if (ctx) {
-          const srcWidth = img.width;
-          const srcHeight = img.height;
-          const minSide = Math.min(srcWidth, srcHeight);
+          if (ctx) {
+            const srcWidth = img.width;
+            const srcHeight = img.height;
+            const minSide = Math.min(srcWidth, srcHeight);
 
-          const sx = (srcWidth - minSide) / 2;
-          const sy = (srcHeight - minSide) / 2;
+            const sx = (srcWidth - minSide) / 2;
+            const sy = (srcHeight - minSide) / 2;
 
-          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
 
-          canvas.toBlob(async (blob) => {
-            if (!blob) {
-              setUploadError(language === 'ar' ? 'فشل معالجة الصورة.' : 'Failed to crop image.');
-              setUploadingImage(false);
-              return;
-            }
-
-            const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            const formData = new FormData();
-            formData.append('file', croppedFile);
-
-            try {
-              const res = await fetch('/api/files/upload', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                },
-                body: formData
-              });
-
-              if (res.ok) {
-                const data = await res.json();
-                if (data.success && data.file) {
-                  setItemImage(`/uploads/${data.file.file_url}`);
-                } else {
-                  setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
-                }
-              } else {
-                setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                uploadRawFile(file);
+                return;
               }
-            } catch (err) {
-              console.error(err);
-              setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
-            } finally {
-              setUploadingImage(false);
-            }
-          }, 'image/jpeg', 0.9);
+
+              const baseName = file.name.replace(/\.[^/.]+$/, "");
+              const croppedFile = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+              uploadRawFile(croppedFile);
+            }, 'image/jpeg', 0.9);
+          } else {
+            uploadRawFile(file);
+          }
+        } catch (err) {
+          console.error('[Crop Fail]', err);
+          uploadRawFile(file);
         }
       };
       img.src = event.target?.result as string;
@@ -1075,7 +1100,7 @@ export const MarketplacePage: React.FC = () => {
           category_en: catObj.nEn,
           category_ar: catObj.nAr,
           image_url: itemImage || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
-          contact_link: itemContact || 'https://t.me/perplexta_support',
+          contact_link: null,
           download_url: itemLinkDownload,
           preview_url: itemLinkPreview,
           video_url: itemLinkVideo,
@@ -1329,9 +1354,6 @@ export const MarketplacePage: React.FC = () => {
       setReferralCode('');
 
       setTimeout(() => {
-        if (selectedProduct?.contact_link) {
-          window.open(selectedProduct.contact_link, '_blank');
-        }
         setSelectedProduct(null);
         setBuyingProgress('idle');
       }, 3000);
@@ -2215,55 +2237,57 @@ export const MarketplacePage: React.FC = () => {
                         </a>
                       )}
 
-                      {selectedProduct.contact_link && (
-                        <a
-                          href={selectedProduct.contact_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
-                            isThemeDark
-                              ? 'border-white/5 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10'
-                              : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                          }`}
-                          title={language === 'ar' ? 'تواصل بالبائع' : 'Contact Seller'}
-                        >
-                          <Megaphone size={13} strokeWidth={2.5} />
-                          <span>{language === 'ar' ? 'تواصل بالبائع' : 'Contact Seller'}</span>
-                        </a>
-                      )}
+
                     </div>
                   </div>
 
-                  {user?.role === 'admin' && (
-                    <div className="p-3.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs select-none">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold uppercase tracking-wide text-amber-500 flex items-center gap-1">
-                            <ShieldAlert size={12} />
-                            {language === 'ar' ? 'لوحة إشراف المدير (تراقب)' : 'Admin Control Panel'}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase ${
-                            selectedProduct.status === 'approved' 
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : selectedProduct.status === 'rejected'
-                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                          }`}>
-                            {selectedProduct.status || 'pending'}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-gray-400 leading-relaxed">
-                          {language === 'ar' 
-                            ? 'بصفتك مديراً، يمكنك الموافقة على هذا المنتج ونشره فوراً، أو رفضه، أو تعديل كامل محتواه.' 
-                            : 'As an administrator, you can approve, reject, or completely edit this product listing.'}
-                        </p>
-                      </div>
+                  {(user?.role === 'admin' || selectedProduct.user_id === user?.id) && (
+                    <div className="flex flex-wrap items-center gap-2 my-2 select-none">
+                      <button
+                        onClick={() => {
+                          startEditing(selectedProduct);
+                        }}
+                        className="h-8 px-4 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                      >
+                        <Edit size={12} />
+                        <span>{language === 'ar' ? 'تعديل المعروض' : 'Edit Listing'}</span>
+                      </button>
 
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      {selectedProduct.status === 'approved' && (
                         <button
                           onClick={async () => {
                             try {
-                              const res = await fetch(`/api/marketplace/admin/items/${selectedProduct.id}/status`, {
+                              const res = await fetch(`/api/marketplace/items/${selectedProduct.id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ status: 'sold' })
+                              });
+                              if (res.ok) {
+                                toast.success(language === 'ar' ? 'تم تمييز المنتج كمباع بنجاح!' : 'Product marked as sold successfully!');
+                                setSelectedProduct({ ...selectedProduct, status: 'sold' });
+                                fetchItems();
+                              } else {
+                                const data = await res.json();
+                                toast.error(data.error || 'Failed to update status');
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          className="h-8 px-4 rounded-[4px] bg-amber-500/15 hover:bg-amber-500/20 border border-amber-500/30 text-amber-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                        >
+                          <span>{language === 'ar' ? 'تعليم كمباع' : 'Mark as Sold'}</span>
+                        </button>
+                      )}
+
+                      {selectedProduct.status === 'sold' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/marketplace/items/${selectedProduct.id}`, {
                                 method: 'PATCH',
                                 headers: {
                                   'Content-Type': 'application/json',
@@ -2272,60 +2296,22 @@ export const MarketplacePage: React.FC = () => {
                                 body: JSON.stringify({ status: 'approved' })
                               });
                               if (res.ok) {
-                                toast.success(language === 'ar' ? 'تمت الموافقة ونشر المنتج بنجاح!' : 'Product approved and published successfully!');
+                                toast.success(language === 'ar' ? 'تمت إعادة عرض المنتج وتنشيطه بنجاح!' : 'Product reactivated and re-listed successfully!');
                                 setSelectedProduct({ ...selectedProduct, status: 'approved' });
                                 fetchItems();
                               } else {
-                                toast.error('Failed to approve');
+                                const data = await res.json();
+                                toast.error(data.error || 'Failed to update status');
                               }
                             } catch (e) {
                               console.error(e);
                             }
                           }}
-                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                          className="h-8 px-4 rounded-[4px] bg-emerald-500/15 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
                         >
-                          <Check size={12} />
-                          <span>{language === 'ar' ? 'موافقة ونشر' : 'Approve & Publish'}</span>
+                          <span>{language === 'ar' ? 'إعادة عرض المنتج' : 'Re-List Item'}</span>
                         </button>
-
-                        <button
-                          onClick={async () => {
-                            try {
-                              const res = await fetch(`/api/marketplace/admin/items/${selectedProduct.id}/status`, {
-                                method: 'PATCH',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'Authorization': `Bearer ${token}`
-                                },
-                                body: JSON.stringify({ status: 'rejected' })
-                              });
-                              if (res.ok) {
-                                toast.success(language === 'ar' ? 'تم رفض المنتج وحجبه بنجاح' : 'Product rejected successfully');
-                                setSelectedProduct({ ...selectedProduct, status: 'rejected' });
-                                fetchItems();
-                              } else {
-                                toast.error('Failed to reject');
-                              }
-                            } catch (e) {
-                              console.error(e);
-                            }
-                          }}
-                          className="h-8 px-2.5 rounded-[4px] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
-                        >
-                          <X size={12} />
-                          <span>{language === 'ar' ? 'رفض' : 'Reject'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            startEditing(selectedProduct);
-                          }}
-                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
-                        >
-                          <Edit size={12} />
-                          <span>{language === 'ar' ? 'تعديل' : 'Edit'}</span>
-                        </button>
-                      </div>
+                      )}
                     </div>
                   )}
 
@@ -2341,9 +2327,13 @@ export const MarketplacePage: React.FC = () => {
                             ? (language === 'ar' 
                                 ? 'تم رفض إدراج هذا المنتج من قبل مدير المنصة.' 
                                 : 'This listing was rejected has been hidden by admins.')
-                            : (language === 'ar'
-                                ? 'منتجك معتمد ومنشور بنجاح للعامة!'
-                                : 'Your listing is live and visible to the public!')
+                            : selectedProduct.status === 'sold'
+                              ? (language === 'ar' 
+                                  ? 'هذا المنتج مميز حالياً كمباع ومخفي عن الزوار العامين ولكنه محفوظ تحت حسابك للتحكم.' 
+                                  : 'This product is currently marked as sold. It is hidden from public view but remains accessible under your account.')
+                              : (language === 'ar'
+                                  ? 'منتجك معتمد ومنشور بنجاح للعامة!'
+                                  : 'Your listing is live and visible to the public!')
                         }
                       </span>
                     </div>
@@ -2583,7 +2573,7 @@ export const MarketplacePage: React.FC = () => {
                         <div className="space-y-2">
                           {parseFloat(selectedProduct.price.toString()) <= 0 ? (
                             <a
-                              href={selectedProduct.contact_link || '#'}
+                              href={selectedProduct.download_url || selectedProduct.preview_url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
@@ -3333,19 +3323,7 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">{t.contactSeller} *</label>
-                    <input
-                      type="url"
-                      required
-                      value={itemContact}
-                      onChange={(e) => setItemContact(e.target.value)}
-                      placeholder="https://t.me/your_telegram_account"
-                      className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                        isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
-                      }`}
-                    />
-                  </div>
+
 
                   <div className="pt-4 flex items-center justify-end gap-2 border-t border-[var(--border-main)] dark:border-white/5">
                     <button

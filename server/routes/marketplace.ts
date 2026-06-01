@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { deductFromWallet, adjustWalletBalance, refundToWallet, getEconomySettings } from '../services/wallet.js';
@@ -70,7 +71,26 @@ function getLicensePriceMultiplier(license: string): number {
 // Get approved marketplace items (Explicit select - OMIT SECURE download_url)
 router.get('/items', async (req, res) => {
   try {
-    const result = await pool.query(`
+    const authHeader = req.headers['authorization'];
+    let token = authHeader && authHeader.split(' ')[1];
+    let loggedInUserId: number | null = null;
+
+    if (token) {
+      token = token.trim();
+      if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
+      }
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || '');
+        if (decoded && decoded.id) {
+          loggedInUserId = Number(decoded.id);
+        }
+      } catch (e) {
+        // Ignored, token invalid but let user browse public approved items
+      }
+    }
+
+    let queryText = `
       SELECT m.id, m.user_id, m.title_en, m.title_ar, m.description_en, m.description_ar, 
              m.price, m.category_en, m.category_ar, m.image_url, m.status, m.views, 
              m.contact_link, m.preview_url, m.video_url, m.features, m.technologies,
@@ -79,8 +99,17 @@ router.get('/items', async (req, res) => {
       FROM marketplace_items m
       JOIN users u ON m.user_id = u.id
       WHERE m.status = 'approved'
-      ORDER BY m.created_at DESC
-    `);
+    `;
+    const params: any[] = [];
+
+    if (loggedInUserId) {
+      queryText += ` OR m.user_id = $1 `;
+      params.push(loggedInUserId);
+    }
+
+    queryText += ` ORDER BY m.created_at DESC `;
+
+    const result = await pool.query(queryText, params);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Failed to fetch items:', error);
@@ -136,11 +165,12 @@ router.get('/items/:id', async (req, res) => {
 router.post('/items', authenticateToken, async (req: any, res) => {
   const { 
     title_en, title_ar, description_en, description_ar, price, 
-    category_en, category_ar, image_url, contact_link, 
+    category_en, category_ar, image_url, 
     download_url, preview_url, video_url, features, technologies,
     referral_percent, highlight_tag, license_type
   } = req.body;
   
+  const contact_link = null; // Zero-trust: direct seller contact links removed to prevent fraud/illegal assets
   const userId = req.user.id;
   const isUserAdmin = req.user.role === 'admin';
   const status = isUserAdmin ? 'approved' : 'pending';
@@ -234,11 +264,12 @@ router.patch('/items/:id', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { 
     title_en, title_ar, description_en, description_ar, price, 
-    category_en, category_ar, image_url, contact_link, status,
+    category_en, category_ar, image_url, status,
     download_url, preview_url, video_url, features, technologies,
     referral_percent, highlight_tag, license_type
   } = req.body;
   
+  const contact_link = null; // Zero-trust: direct seller contact links removed to prevent fraud/illegal assets
   const userId = req.user.id;
   const isUserAdmin = req.user.role === 'admin';
 
@@ -274,8 +305,15 @@ router.patch('/items/:id', authenticateToken, async (req: any, res) => {
 
     let finalStatus = item.status;
     if (status !== undefined) {
-      if (isUserAdmin) finalStatus = status;
-      else if (status === 'sold') finalStatus = 'sold';
+      if (isUserAdmin) {
+        finalStatus = status;
+      } else {
+        if (status === 'sold') {
+          finalStatus = 'sold';
+        } else if (status === 'approved' && item.status === 'sold') {
+          finalStatus = 'approved';
+        }
+      }
     }
 
     let parsedReferralPercent = undefined;
