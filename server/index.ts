@@ -27,8 +27,8 @@ async function startServer() {
           process.env.EXTERNAL_DATABASE_URL || '',
           process.env.SECURITY_DATABASE_URL || ''
         );
-        await runDatabaseMigrations();
         await synchronizePerplextaPoolsFromRegistry();
+        await runDatabaseMigrations();
         await syncSystemTemplates();
         await refreshCachedAppName();
         dbReady = true;

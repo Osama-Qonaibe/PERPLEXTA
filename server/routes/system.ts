@@ -148,8 +148,9 @@ router.post("/admin/settings", authenticateAdmin, async (req, res) => {
   try {
     const result = await updateSystemSettings(req.body);
     res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Error' });
+  } catch (error: any) {
+    console.error('[SystemSettings] Failed to update system settings:', error);
+    res.status(500).json({ error: error.message || 'Internal Error' });
   }
 });
 
