@@ -2,7 +2,6 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import fetch from 'node-fetch';
 import { pool, ledgerPool, getSecurityPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
