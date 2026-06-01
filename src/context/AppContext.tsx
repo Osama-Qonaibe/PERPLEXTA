@@ -2541,7 +2541,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const socketEndpoint = SOCKET_URL || window.location.origin;
     const socketOptions: any = { 
-      transports: ['polling', 'websocket'], 
+      transports: ['websocket', 'polling'], 
       autoConnect: !!token 
     };
 

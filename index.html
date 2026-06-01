@@ -66,71 +66,117 @@
     <script>
       (function() {
         try {
-          var settings = JSON.parse(localStorage.getItem('site_settings') || '{}');
-          var lang = localStorage.getItem('language') || 'en';
+          var lang = 'ar';
+          try {
+            lang = localStorage.getItem('language') || 'ar';
+          } catch(e) {}
           
-          // Dynamic Language & Direction Setup
           document.documentElement.lang = lang;
           document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-          // Dynamic Title Setup
-          var title = '...';
-          if (settings) {
-            title = lang === 'ar' ? (settings.siteNameAr || settings.siteName) : settings.siteName;
+          var settings = null;
+          
+          // Helper function to apply settings to the DOM dynamically
+          function applySettings(s) {
+            if (!s) return;
+            var title = lang === 'ar' ? (s.siteNameAr || s.siteName) : (s.siteName || s.siteNameAr);
+            if (title && title !== '...') {
+              document.title = title;
+              var ogTitle = document.querySelector('meta[property="og:title"]');
+              if (ogTitle) ogTitle.setAttribute('content', title);
+              var twTitle = document.querySelector('meta[name="twitter:title"]');
+              if (twTitle) twTitle.setAttribute('content', title);
+            }
+            
+            var desc = lang === 'ar' ? (s.seoDescriptionAr || s.siteDescriptionAr) : (s.seoDescriptionEn || s.siteDescription);
+            if (desc) {
+              var metaDesc = document.querySelector('meta[name="description"]');
+              if (metaDesc) metaDesc.setAttribute('content', desc);
+              
+              var ogDesc = document.querySelector('meta[property="og:description"]');
+              if (ogDesc) ogDesc.setAttribute('content', desc);
+              
+              var twDesc = document.querySelector('meta[name="twitter:description"]');
+              if (twDesc) twDesc.setAttribute('content', desc);
+            }
+            
+            var keywords = lang === 'ar' ? s.keywordsAr : s.keywordsEn;
+            if (keywords) {
+              var metaKeys = document.querySelector('meta[name="keywords"]');
+              if (metaKeys) metaKeys.setAttribute('content', keywords);
+            }
+            
+            var seoImg = s.seoImageUrl;
+            if (seoImg) {
+              var ogImg = document.querySelector('meta[property="og:image"]');
+              if (ogImg) ogImg.setAttribute('content', seoImg);
+              
+              var twImg = document.querySelector('meta[name="twitter:image"]');
+              if (twImg) twImg.setAttribute('content', seoImg);
+            }
+            
+            var siteVerification = s.googleSiteVerification;
+            if (siteVerification) {
+              var metaSV = document.querySelector('meta[name="google-site-verification"]');
+              if (metaSV) metaSV.setAttribute('content', siteVerification);
+            }
+
+            if (s.faviconBase64) {
+              var existingFavicon = document.querySelector('link[rel="icon"]');
+              if (existingFavicon) {
+                 existingFavicon.href = s.faviconBase64;
+              } else {
+                 var link = document.createElement('link');
+                 link.rel = 'icon';
+                 link.href = s.faviconBase64;
+                 document.head.appendChild(link);
+              }
+            }
           }
-          if (title && title !== '...') {
-            document.title = title;
+
+          // Step 1: Immediate instant load from localStorage (0ms budget, completely non-blocking)
+          try {
+            settings = JSON.parse(localStorage.getItem('site_settings') || '{}');
+          } catch(e) {}
+
+          if (settings && settings.siteName) {
+            applySettings(settings);
           } else {
             document.title = lang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر' : 'Perplexta - Premium AI Platform';
           }
-          
-          // Dynamic Description & Keywords
-          var desc = lang === 'ar' ? (settings.seoDescriptionAr || settings.siteDescriptionAr) : (settings.seoDescriptionEn || settings.siteDescription);
-          if (desc) {
-            var metaDesc = document.querySelector('meta[name="description"]');
-            if (metaDesc) metaDesc.setAttribute('content', desc);
-            
-            // Sync Open Graph & Twitter description
-            var ogDesc = document.querySelector('meta[property="og:description"]');
-            if (ogDesc) ogDesc.setAttribute('content', desc);
-            
-            var twDesc = document.querySelector('meta[name="twitter:description"]');
-            if (twDesc) twDesc.setAttribute('content', desc);
-          }
-          
-          if (title && title !== '...') {
-            var ogTitle = document.querySelector('meta[property="og:title"]');
-            if (ogTitle) ogTitle.setAttribute('content', title);
-            
-            var twTitle = document.querySelector('meta[name="twitter:title"]');
-            if (twTitle) twTitle.setAttribute('content', title);
-          }
 
-          var keywords = lang === 'ar' ? settings.keywordsAr : settings.keywordsEn;
-          if (keywords) {
-            var metaKeys = document.querySelector('meta[name="keywords"]');
-            if (metaKeys) metaKeys.setAttribute('content', keywords);
-          }
+          // Step 2: Asynchronous background fetch to keep settings fresh and up-to-date (100% non-blocking)
+          fetch('/api/settings')
+            .then(function(res) {
+              if (res.ok) return res.json();
+              throw new Error('Settings HTTP error ' + res.status);
+            })
+            .then(function(raw) {
+              var fresh = {
+                siteName: raw.site_name_en || '',
+                siteNameAr: raw.site_name_ar || '',
+                siteDescription: raw.site_description_en || '',
+                siteDescriptionAr: raw.site_description_ar || '',
+                seoDescriptionEn: raw.seo_description_en || '',
+                seoDescriptionAr: raw.seo_description_ar || '',
+                keywordsEn: raw.keywords_en || '',
+                keywordsAr: raw.keywords_ar || '',
+                googleAnalyticsId: raw.google_analytics_id || '',
+                googleSiteVerification: raw.google_site_verification || '',
+                logoBase64: raw.logo_url || null,
+                logoLightBase64: raw.logo_light_url || null,
+                faviconBase64: raw.favicon_url || null,
+                seoImageUrl: raw.seo_image_url || null
+              };
+              localStorage.setItem('site_settings', JSON.stringify(fresh));
+              applySettings(fresh);
+            })
+            .catch(function(err) {
+              console.warn('[SEO Loader] Failed fetching remote configuration asynchronously:', err);
+            });
 
-          // Dynamic SEO Image Update
-          var seoImg = settings.seoImageUrl;
-          if (seoImg) {
-            var ogImg = document.querySelector('meta[property="og:image"]');
-            if (ogImg) ogImg.setAttribute('content', seoImg);
-            
-            var twImg = document.querySelector('meta[name="twitter:image"]');
-            if (twImg) twImg.setAttribute('content', seoImg);
-          }
-
-          // Dynamic Google Site Verification
-          var siteVerification = settings.googleSiteVerification;
-          if (siteVerification) {
-            var metaSV = document.querySelector('meta[name="google-site-verification"]');
-            if (metaSV) metaSV.setAttribute('content', siteVerification);
-          }
-
-          // Dynamic Google Analytics Integration
-          var gaId = settings.googleAnalyticsId || 'G-TJ89GYPD40';
+          // Dynamic Google Analytics Integration using the loaded setting
+          var gaId = (settings && settings.googleAnalyticsId) || 'G-TJ89GYPD40';
           if (gaId) {
             var gaScript = document.createElement('script');
             gaScript.id = 'ga-script';
@@ -148,13 +194,6 @@
             document.head.appendChild(gaInlineScript);
             
             window.gtag = function(){ dataLayer.push(arguments); };
-          }
-
-          if (settings.faviconBase64) {
-             var link = document.createElement('link');
-             link.rel = 'icon';
-             link.href = settings.faviconBase64;
-             document.head.appendChild(link);
           }
         } catch (e) {}
       })();
