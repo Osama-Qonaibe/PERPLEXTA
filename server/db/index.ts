@@ -178,17 +178,42 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       console.error('[DB] Unexpected error on idle core client:', err.message);
     });
 
-    console.log('[DB] Verifying connectivity...');
+    console.log('[DB] Verifying connectivity individually...');
     try {
-      const queries = [pool.query('SELECT 1')];
-      if (ledgerPool !== pool) queries.push(ledgerPool.query('SELECT 1'));
-      if (externalPool !== pool) queries.push(externalPool.query('SELECT 1'));
-      if (securityPool !== pool) queries.push(securityPool.query('SELECT 1'));
-      
-      await Promise.all(queries);
-      console.log('[DB] Perplexta Pools verified and active.');
-    } catch (verifyError: any) {
-      console.warn('[DB] ⚠️ Warmup/Connectivity pre-flight check returned warning/failure, but pools remain active for lazy-connection on demand retry:', verifyError.message);
+      await pool.query('SELECT 1');
+      console.log('[DB] Core PostgreSQL is healthy.');
+    } catch (coreErr: any) {
+      console.error('[DB] 🚨 Core PostgreSQL failed connection check:', coreErr.message);
+    }
+
+    if (ledgerPool && ledgerPool !== pool) {
+      try {
+        await ledgerPool.query('SELECT 1');
+        console.log('[DB] Ledger PostgreSQL is healthy.');
+      } catch (ledgerErr: any) {
+        console.warn('[DB] ⚠️ Ledger database failed connection check. Falling back to Core pool immediately (0ms delay):', ledgerErr.message);
+        ledgerPool = pool;
+      }
+    }
+
+    if (externalPool && externalPool !== pool) {
+      try {
+        await externalPool.query('SELECT 1');
+        console.log('[DB] External PostgreSQL is healthy.');
+      } catch (externalErr: any) {
+        console.warn('[DB] ⚠️ External database failed connection check. Falling back to Core pool immediately (0ms delay):', externalErr.message);
+        externalPool = pool;
+      }
+    }
+
+    if (securityPool && securityPool !== pool) {
+      try {
+        await securityPool.query('SELECT 1');
+        console.log('[DB] Security PostgreSQL is healthy.');
+      } catch (securityErr: any) {
+        console.warn('[DB] ⚠️ Security database failed connection check. Falling back to Core pool immediately (0ms delay):', securityErr.message);
+        securityPool = pool;
+      }
     }
 
   } catch (poolCreationError: any) {
