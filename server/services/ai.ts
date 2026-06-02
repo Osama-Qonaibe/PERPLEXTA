@@ -3,6 +3,7 @@ import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
+import { memoryCache } from '../utils/cache.js';
 
 const CUSTOM_PROVIDER_TIMEOUT_MS = 60000;
 
@@ -67,8 +68,8 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
   let count = 0;
   const provider = providerId.toLowerCase();
 
-  // Enforce a tight 15-second timeout during model list synchronization to protect the system from infinite blockades/hangs on unreachable servers
-  const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(15000);
+  // Enforce a safer 45-second timeout during model list synchronization to protect the system from infinite blockades/hangs on unreachable servers while giving remote providers enough breathing room.
+  const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(45000);
 
   try {
     if (provider === 'openai') {
@@ -205,6 +206,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         'UPDATE api_keys_vault SET models = $1, model_list = $1, is_active = true, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
         [JSON.stringify(models), providerId]
       );
+      invalidateVaultCache(providerId);
     }
     return { models, count };
   } catch (error) {
@@ -267,9 +269,11 @@ export async function getProviderUrlKey(provider: string): Promise<string | null
 }
 
 export function invalidateVaultCache(provider?: string) {
+  memoryCache.clear();
   if (provider) {
-    vaultCache.delete(provider.toLowerCase());
-    urlKeyCache.delete(provider.toLowerCase());
+    const clean = provider.toLowerCase().replace(/\s+/g, '');
+    vaultCache.delete(clean);
+    urlKeyCache.delete(clean);
   } else {
     vaultCache.clear();
     urlKeyCache.clear();
@@ -277,7 +281,7 @@ export function invalidateVaultCache(provider?: string) {
 }
 
 export async function checkProviderStatus(provider: string, apiKey: string, urlKey?: string) {
-    const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(10000);
+    const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(25000);
     try {
         const normProvider = provider.toLowerCase();
         let status = { isValid: false, usage: 0, limit: 0, message: '' };

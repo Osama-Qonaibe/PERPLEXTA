@@ -168,13 +168,12 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       }
 
       try {
-        const isUserFileRes = await pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
-        if (isUserFileRes.rows.length > 0) {
-          return res.sendFile(resolvedPath);
-        }
-
-        const isProofRes = await (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
-        if (isProofRes.rows.length > 0) {
+        const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
+        const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
+        
+        const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
+        
+        if (isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0) {
           return res.sendFile(resolvedPath);
         }
 
@@ -319,13 +318,22 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(distPath, {
-    etag: false,
-    lastModified: false,
+    etag: true,
+    lastModified: true,
+    maxAge: '1y',
     setHeaders: (res, filePath) => {
-      if (/\.(js|css)$/.test(filePath)) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
+      if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
+        // Built hashed files from Vite
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(js|css)$/.test(filePath)) {
+        // Standard JS/CSS (non-hashed fallback)
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      } else if (/\.(woff2?|ttf|otf|eot)$/.test(filePath)) {
+        // Fonts
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(png|jpg|jpeg|gif|svg|ico)$/i.test(filePath)) {
+        // Images / Favicon
+        res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     }
   }));

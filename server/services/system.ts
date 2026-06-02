@@ -9,7 +9,7 @@ let cachedAppNameAr = '';
 
 let cachedSettings: any = null;
 let settingsCacheTime = 0;
-const SETTINGS_CACHE_TTL = 10000; // 10 seconds in-memory cache
+const SETTINGS_CACHE_TTL = 300000; // 5 minutes in-memory cache
 
 export async function clearSettingsCache() {
   cachedSettings = null;

@@ -247,7 +247,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'image') {
     const imageSettings = reqBody.image_settings || {};
-    const providerId = route.primary_provider.toLowerCase();
+    const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
     const apiKey = await getProviderKey(providerId);
 
     if (!apiKey) {
@@ -414,7 +414,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         throw new Error('No audio file provided for speech-to-text.');
       }
 
-      const providerId = route.primary_provider.toLowerCase();
+      const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
@@ -472,7 +472,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'video') {
     try {
-      const providerId = route.primary_provider.toLowerCase();
+      const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
@@ -628,7 +628,7 @@ ${refinedSystemPromptSegment}`.trim();
 
   for (const target of modelsToTry) {
     try {
-      const providerId = target.provider.toLowerCase();
+      const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
 
       const [apiKey, urlKey, budgetRes] = await Promise.all([
         getProviderKey(providerId),

@@ -2,6 +2,7 @@ import express from 'express';
 import { pool, ledgerPool, getSecurityPool, getExternalPool } from '../db/index.js';
 import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
+import { memoryCache } from '../utils/cache.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
@@ -301,8 +302,11 @@ router.get("/users", authenticateAdmin, async (req, res) => {
 
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
-    res.json({ routes: result.rows, tools: result.rows });
+    const data = await memoryCache.getOrSet("admin:orchestrator:routes", async () => {
+      const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
+      return { routes: result.rows, tools: result.rows };
+    }, 3600000); // 1 hour Cache
+    res.json(data);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
@@ -358,6 +362,7 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
         ]);
       }
       await client.query('COMMIT');
+      invalidateVaultCache();
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -372,12 +377,15 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
 
 router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT provider, models FROM api_keys_vault');
-    const models: any = {};
-    result.rows.forEach((row: any) => {
-      models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
-    });
-    res.json({ providerModels: models });
+    const providerModels = await memoryCache.getOrSet("admin:orchestrator:models", async () => {
+      const result = await pool.query('SELECT provider, models FROM api_keys_vault');
+      const models: any = {};
+      result.rows.forEach((row: any) => {
+        models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
+      });
+      return models;
+    }, 3600000); // 1 hour Cache
+    res.json({ providerModels });
   } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
