@@ -2522,7 +2522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // If forceRedirect is true, reload instantly to cleanly purge any memory state
     if (forceRedirect) {
-      window.location.replace('/?_lo=' + Date.now());
+      window.location.replace('/');
     } else {
       localStorage.removeItem('app_loader_type');
     }
