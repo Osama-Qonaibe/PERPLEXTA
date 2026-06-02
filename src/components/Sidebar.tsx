@@ -155,7 +155,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         headers: { 'Authorization': `Bearer ${token}` }
       });
       fetchChats();
-      navigate('/');
+      navigate('/chat');
     } catch (e) {
       console.error('Failed to delete chat', e);
     }
@@ -203,7 +203,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-  if (user && (['admin', 'support', 'elite'].includes(user.role || '') || (adminEmail && user.email === adminEmail))) {
+  if (!isMobile && user && (['admin', 'support', 'elite'].includes(user.role || '') || (adminEmail && user.email === adminEmail))) {
     navItems.push({ 
       icon: <LayoutDashboard size={18} />, 
       label: t('dashboard'), 
@@ -218,14 +218,15 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }
 
   const handleNewChat = () => {
-    const isAlreadyAtNewChat = window.location.pathname === '/';
+    const isAlreadyAtNewChat = window.location.pathname === '/' || window.location.pathname === '/chat';
     
     if (isAlreadyAtNewChat) {
+      window.dispatchEvent(new Event('clear-chat'));
       if (isMobile) setIsSidebarOpen(false);
       return;
     }
 
-    navigate('/');
+    navigate('/chat');
     window.dispatchEvent(new Event('clear-chat'));
     if (isMobile) {
       setIsSidebarOpen(false);

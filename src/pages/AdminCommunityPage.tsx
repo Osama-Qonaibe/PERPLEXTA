@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, Plus, BookOpen, MessageSquare, Trash2, Send, ArrowLeft, Image, Edit, FileText, ChevronRight, Upload, ShoppingBag } from 'lucide-react';
+import { ShieldCheck, Plus, BookOpen, MessageSquare, Trash2, Send, ArrowLeft, Image, Edit, FileText, ChevronRight, Upload, ShoppingBag, Monitor } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MarketplaceManagementView } from '../components/MarketplaceManagementView';
 
@@ -25,7 +25,7 @@ interface Article {
 }
 
 export const AdminCommunityPage: React.FC = () => {
-  const { language, token, user, theme, t } = useAppContext();
+  const { language, token, user, theme, t, isMobile } = useAppContext();
   const [activeTab, setActiveTab] = useState<'blog' | 'forum' | 'marketplace'>('blog');
   
   // Lists
@@ -270,6 +270,27 @@ export const AdminCommunityPage: React.FC = () => {
   };
 
   const isRtl = language === 'ar';
+
+  if (isMobile) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
+          <Monitor size={36} className="text-amber-500 animate-pulse" />
+        </div>
+        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
+          {isRtl ? 'التحكم متاح فقط عبر سطح المكتب' : 'Desktop Access Required'}
+        </h2>
+        <p className="text-xs text-gray-400 max-w-sm">
+          {isRtl 
+            ? 'تم تعطيل لوحة إدارة الأقسام الخارجية على أجهزة الهاتف لتخفيف حجم التطبيق وتحسين الأداء. يرجى المتابعة من شاشة حاسوبك الشخصي.' 
+            : 'To maintain lightweight performance and high operational stability, external category admin panels are restricted to desktop sessions. Please open this view on a PC.'}
+        </p>
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
+          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
+        </a>
+      </div>
+    );
+  }
 
   if (user?.role !== 'admin') {
     return (

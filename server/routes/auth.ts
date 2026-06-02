@@ -855,7 +855,7 @@ router.get("/google/callback", async (req, res) => {
                   } else {
                     window.location.href = window.location.origin + safeRef;
                   }
-                }, 1500);
+                }, 150);
               } catch (err) {
                 console.error('Auth processing failed', err);
                 window.location.href = '/';

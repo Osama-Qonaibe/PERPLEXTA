@@ -180,8 +180,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   };
 
   const handleNewChat = () => {
-    if (location.pathname === '/') return;
-    navigate('/');
+    if (location.pathname === '/' || location.pathname === '/chat') return;
+    navigate('/chat');
     window.dispatchEvent(new Event('clear-chat'));
   };
 
@@ -312,73 +312,79 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           )}
         </div>
 
-        <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full">
+        <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full relative">
             <AnimatePresence mode="wait">
-              {memoryNotification.isVisible ? (
-                <div className="flex items-center justify-center h-full">
-                  <MemoryNotification 
-                    key="memory-notif"
-                    isVisible={memoryNotification.isVisible}
-                    onClose={closeMemoryNotification}
-                    type={memoryNotification.type}
-                    customDesc={memoryNotification.desc}
-                  />
-                </div>
-              ) : chatId && chatTitle ? (
-              <motion.div 
-                key="chat-title"
-                ref={titleEditRef}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-300 max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
-                onClick={() => {
-                  if (!isEditingTitle) {
-                    setIsEditingTitle(true);
-                    setTempTitle(chatTitle || '');
-                  }
-                }}
-              >
-                {isEditingTitle ? (
-                  <div className="flex items-center gap-1.5 w-full h-full" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="text"
-                      autoFocus
-                      value={tempTitle}
-                      onChange={(e) => setTempTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRename();
-                        if (e.key === 'Escape') setIsEditingTitle(false);
-                      }}
-                      className="bg-transparent text-[11px] sm:text-xs font-bold outline-none text-[var(--text-primary)] w-full h-full"
-                    />
-                    <div className="flex items-center gap-0.5">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleRename(); }}
-                        className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all duration-300"
-                        title={language === 'ar' ? 'حفظ' : 'Save'}
-                      >
-                         <Check size={13} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
-                        className="p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-all duration-300"
-                        title={language === 'ar' ? 'إلغاء' : 'Cancel'}
-                      >
-                         <X size={13} />
-                      </button>
+              {chatId && chatTitle ? (
+                <motion.div 
+                  key="chat-title"
+                  ref={titleEditRef}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-300 max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
+                  onClick={() => {
+                    if (!isEditingTitle) {
+                      setIsEditingTitle(true);
+                      setTempTitle(chatTitle || '');
+                    }
+                  }}
+                >
+                  {isEditingTitle ? (
+                    <div className="flex items-center gap-1.5 w-full h-full" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        autoFocus
+                        value={tempTitle}
+                        onChange={(e) => setTempTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename();
+                          if (e.key === 'Escape') setIsEditingTitle(false);
+                        }}
+                        className="bg-transparent text-[11px] sm:text-xs font-bold outline-none text-[var(--text-primary)] w-full h-full"
+                      />
+                      <div className="flex items-center gap-0.5">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleRename(); }}
+                          className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all duration-300"
+                          title={language === 'ar' ? 'حفظ' : 'Save'}
+                        >
+                           <Check size={13} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
+                          className="p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-all duration-300"
+                          title={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                        >
+                           <X size={13} />
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-1.5 overflow-hidden w-full h-full select-none">
+                      <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
+                        {chatTitle}
+                      </h2>
+                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 flex-shrink-0" />
+                    </div>
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {memoryNotification.isVisible && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+                  <div className="pointer-events-auto bg-[var(--bg-base)] rounded-full">
+                    <MemoryNotification 
+                      key="memory-notif"
+                      isVisible={memoryNotification.isVisible}
+                      onClose={closeMemoryNotification}
+                      type={memoryNotification.type}
+                      customDesc={memoryNotification.desc}
+                    />
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-1.5 overflow-hidden w-full h-full select-none">
-                    <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
-                      {chatTitle}
-                    </h2>
-                    <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 flex-shrink-0" />
-                  </div>
-                )}
-              </motion.div>
-            ) : null}
+                </div>
+              )}
             </AnimatePresence>
         </nav>
 

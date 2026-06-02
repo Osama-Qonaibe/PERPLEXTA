@@ -1655,9 +1655,14 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom(isGenerating ? 'auto' : 'smooth');
+      if (isGenerating) {
+        // Safe immediate scroll when starting target generation to align viewport
+        scrollToBottom('auto');
+      } else {
+        scrollToBottom('smooth');
+      }
     }
-  }, [messages.length, lastMessageContent, chatId, isGenerating]);
+  }, [messages.length, chatId]);
 
   useEffect(() => {
     if (!isGenerating) {
@@ -1854,13 +1859,13 @@ export const ChatPage: React.FC = () => {
         // Inject styles directly inside exportEl to ensure Tajawal loads inside isolated SVG/foreignObject elements
         const fontStyle = document.createElement('style');
         fontStyle.textContent = `
-          @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Tajawal:wght@200;300;400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
           * {
-            font-family: 'Tajawal', 'Inter', sans-serif !important;
+            font-family: 'Space Grotesk', 'Tajawal', 'Inter', sans-serif !important;
             box-sizing: border-box;
           }
           .msg-body-text {
-            font-family: 'Tajawal', 'Inter', sans-serif !important;
+            font-family: 'Space Grotesk', 'Tajawal', 'Inter', sans-serif !important;
             font-size: 15px !important;
             line-height: 1.8 !important;
             white-space: pre-wrap !important;
@@ -1912,7 +1917,7 @@ export const ChatPage: React.FC = () => {
         footer.style.textAlign = 'center';
         footer.style.fontSize = '10px';
         footer.style.opacity = '0.3';
-        footer.innerText = '© 2026 PERPLEXTA PLATFORM - CONFIDENTIAL AI REPORT';
+        footer.innerText = '© 2026 ViralLinkUp PLATFORM - CONFIDENTIAL AI REPORT';
         exportEl.appendChild(footer);
 
         document.body.appendChild(exportEl);
@@ -2271,21 +2276,6 @@ export const ChatPage: React.FC = () => {
   }, [chatId]);
 
   useEffect(() => {
-    // Perplexta Memory Protocol: Initial Startup notification
-    const timer = setTimeout(() => {
-      triggerMemoryNotification('startup');
-    }, 1500); // Slight delay for premium feel
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    // Notify on tool selection change (excluding default chat)
-    if (selectedTool !== 'chat') {
-       triggerMemoryNotification('startup');
-    }
-  }, [selectedTool]);
-
-  useEffect(() => {
     if (routeChatId) {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
@@ -2300,8 +2290,6 @@ export const ChatPage: React.FC = () => {
       setMessages([]);
       setChatId(null);
       localStorage.removeItem('last_chat_id');
-      // Trigger Perplexta Memory Startup for new chat
-      triggerMemoryNotification('startup');
     }
   }, [routeChatId, token, isAuthReady]);
 
@@ -2684,6 +2672,7 @@ export const ChatPage: React.FC = () => {
       generationStartTimeRef.current = Date.now();
       setMessages(updatedMessages);
       setIsGenerating(true);
+      isGeneratingRef.current = true;
       streamingBuffer.current = '';
       isServerDoneRef.current = false;
       
@@ -3302,13 +3291,12 @@ export const ChatPage: React.FC = () => {
               animate={isGenerating ? {
                 boxShadow: [
                   "0 0 0px rgba(16, 185, 129, 0)",
-                  "0 0 16px rgba(16, 185, 129, 0.6)",
+                  "0 0 16px rgba(16, 185, 129, 0.4)",
                   "0 0 0px rgba(16, 185, 129, 0)"
                 ],
-                scale: [1, 1.05, 1],
                 borderColor: [
                   "rgba(16, 185, 129, 0.1)",
-                  "rgba(16, 185, 129, 0.5)",
+                  "rgba(16, 185, 129, 0.4)",
                   "rgba(16, 185, 129, 0.1)"
                 ]
               } : {}}
@@ -3664,11 +3652,18 @@ export const ChatPage: React.FC = () => {
               </div>
               
               {/* Visual Copyright Footer for Visitors in Arabic & English */}
-              <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-text">
+              <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-none flex flex-col gap-2">
+                <div className="flex items-center justify-center gap-2.5 text-[9.5px] text-emerald-500 font-bold">
+                  <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'من نحن' : 'About Us'}</span>
+                  <span className="text-gray-500/20">•</span>
+                  <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
+                  <span className="text-gray-500/20">•</span>
+                  <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'الخصوصية' : 'Privacy'}</span>
+                </div>
                 <p className="text-[9.5px] sm:text-[10px] text-gray-400 dark:text-gray-500 font-sans tracking-wide leading-relaxed px-4">
                   {dir === 'rtl' 
-                    ? "الملكية الفكرية محفوظة لـ Perplexta 2026 ©"
-                    : "Intellectual Property Protected by Perplexta 2026 ©"
+                    ? "الملكية الفكرية محفوظة لـ ViralLinkUp 2026 ©"
+                    : "Intellectual Property Protected by ViralLinkUp 2026 ©"
                   }
                 </p>
               </div>
@@ -3849,7 +3844,7 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className={`flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col ${isGenerating ? 'scroll-auto' : 'scroll-smooth'}`}
+            className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col scroll-smooth"
           >
           <AnimatePresence>
             {isChatMessagesLoading ? (

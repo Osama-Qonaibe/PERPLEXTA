@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, Pin, Lock, Eye, Trash2, Send, ArrowLeft, Plus, MessageCircle, 
   Calendar, User, UserCheck, ShieldCheck, Flag, ShieldAlert, BookOpen, AlertCircle,
@@ -50,6 +51,7 @@ interface Comment {
 
 export const ForumPage: React.FC = () => {
   const { language, token, user, theme } = useAppContext();
+  const navigate = useNavigate();
   const isThemeDark = theme === 'dark';
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -117,10 +119,78 @@ export const ForumPage: React.FC = () => {
     );
   };
 
-  const renderCategoryIcon = (slug: string, active: boolean, size = 15) => {
+  const getColorClasses = (colorName: string, active: boolean) => {
+    const colorMap: Record<string, { text: string; bg: string; border: string; glow: string; textHover: string; bgHover: string; borderHover: string; activeText: string }> = {
+      indigo: { 
+        text: 'text-indigo-400', 
+        bg: 'bg-indigo-500/10', 
+        border: 'border-indigo-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(99,102,241,0.6)]',
+        textHover: 'text-indigo-400',
+        bgHover: 'bg-indigo-500/5',
+        borderHover: 'border-indigo-500/30',
+        activeText: 'text-indigo-400'
+      },
+      emerald: { 
+        text: 'text-emerald-400', 
+        bg: 'bg-emerald-500/10', 
+        border: 'border-emerald-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+        textHover: 'text-emerald-400',
+        bgHover: 'bg-emerald-500/5',
+        borderHover: 'border-emerald-500/30',
+        activeText: 'text-emerald-400'
+      },
+      rose: { 
+        text: 'text-rose-400', 
+        bg: 'bg-rose-500/10', 
+        border: 'border-rose-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]',
+        textHover: 'text-rose-400',
+        bgHover: 'bg-rose-500/5',
+        borderHover: 'border-rose-500/30',
+        activeText: 'text-rose-400'
+      },
+      amber: { 
+        text: 'text-amber-400', 
+        bg: 'bg-amber-500/10', 
+        border: 'border-amber-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]',
+        textHover: 'text-amber-400',
+        bgHover: 'bg-amber-500/5',
+        borderHover: 'border-amber-500/30',
+        activeText: 'text-amber-400'
+      },
+      violet: { 
+        text: 'text-violet-400', 
+        bg: 'bg-violet-500/10', 
+        border: 'border-violet-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]',
+        textHover: 'text-violet-400',
+        bgHover: 'bg-violet-500/5',
+        borderHover: 'border-violet-500/30',
+        activeText: 'text-violet-400'
+      },
+      cyan: { 
+        text: 'text-cyan-400', 
+        bg: 'bg-cyan-500/10', 
+        border: 'border-cyan-500/20', 
+        glow: 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]',
+        textHover: 'text-cyan-400',
+        bgHover: 'bg-cyan-500/5',
+        borderHover: 'border-cyan-500/30',
+        activeText: 'text-cyan-400'
+      },
+    };
+
+    return colorMap[colorName] || colorMap.indigo;
+  };
+
+  const renderCategoryIcon = (slug: string, active: boolean, size = 15, colorName = 'indigo') => {
+    const config = getColorClasses(colorName, active);
     const baseClass = active 
-      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300'
-      : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-300';
+      ? `${config.activeText} ${config.glow} transition-all duration-300`
+      : `text-gray-400 group-hover:${config.textHover} group-hover:${config.glow} transition-all duration-300`;
 
     switch (slug) {
       case 'pioneers-devs-designers':
@@ -535,7 +605,7 @@ export const ForumPage: React.FC = () => {
   return (
     <div
       className={`h-[calc(100vh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
-        isThemeDark ? 'bg-[#050505] text-white' : 'bg-[var(--bg-base)] text-gray-900'
+        isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
@@ -549,7 +619,7 @@ export const ForumPage: React.FC = () => {
       {/* Main Content Card Wrapper - Integrated full screen with no outer margins */}
       <div className={`w-full h-full flex flex-col overflow-hidden relative z-10 ${
         isThemeDark
-          ? 'bg-[#080808]/95 shadow-black/80'
+          ? 'bg-[#131315]/95 shadow-black/80'
           : 'bg-white shadow-gray-200/50'
       }`}>
         {/* Toast Notification for self-reporting warnings */}
@@ -577,7 +647,6 @@ export const ForumPage: React.FC = () => {
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          {/* UNIFIED VIEW: Modern Category Navigation Feed with Shortcuts and Persistent Sidebar */}
           {!selectedPost && !isCreatingThread && (
             <motion.div
               key="forum-unified-hub"
@@ -588,20 +657,29 @@ export const ForumPage: React.FC = () => {
               className="flex-1 flex flex-col overflow-hidden"
             >
               {/* Page Header */}
-              <div className={`p-6 md:px-8 border-b relative select-none flex-shrink-0 ${
-                isThemeDark ? 'border-white/5 bg-[#080808]' : 'border-gray-200/80 bg-white'
+              <header className={`px-8 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 border-b relative select-none flex-shrink-0 ${
+                isThemeDark ? 'border-gray-800/60 bg-[#131315]' : 'border-gray-200/80 bg-white'
               }`}>
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-black font-sans tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center gap-2">
-                      <MessageCircle size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                      {isRtl ? 'منتدى النقاشات الفنية والمالية' : 'Perplexta Tech & Financial Forum'}
+                <div className="flex flex-row items-center justify-between gap-4">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <h1 className="text-base sm:text-lg md:text-2xl font-black font-sans tracking-tight">
+                      {isRtl ? (
+                        <>
+                          <span className="text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.35)] font-sans">مجتمع بيربليكستا </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.35)] font-sans">Perplexta Community </span>
+                        </>
+                      )}
                     </h1>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed font-sans font-medium">
+                    <p className={`text-[9px] md:text-xs font-semibold leading-relaxed ${
+                      isThemeDark ? 'text-gray-400' : 'text-slate-600'
+                    }`}>
                       {isRtl 
-                        ? 'شارك خبراتك في التداول، ناقش تحليلات السوق، وتواصل مباشرة مع مجتمع الخبراء.' 
-                        : 'Share quantitative trade techniques, deliberate analytics, and interface with professional peers.'}
+                        ? 'ملتقى تقني لمشاركة التجارب، مناقشة الأكواد وحلول البيانات، وبناء مجتمع معرفي متكامل' 
+                        : 'A technical forum to share experiences, discuss code, address data solutions, and build an integrated system of knowledge.'}
                     </p>
                   </div>
 
@@ -617,17 +695,19 @@ export const ForumPage: React.FC = () => {
                           triggerToast('لا يوجد قسم متوفر مضاف حالياً', 'No active category available');
                         }
                       }}
-                      className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/18 text-emerald-400 border border-emerald-500/20 px-5 h-10 font-bold text-xs rounded-[4px] shadow-sm cursor-pointer hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-300 font-sans shrink-0 hover:scale-[1.02]"
+                      className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/18 text-emerald-400 border border-emerald-500/20 px-5 h-9 font-bold text-xs rounded-[4px] shadow-sm cursor-pointer hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-300 font-sans shrink-0 hover:scale-[1.02]"
                     >
                       <Plus size={14} className="text-emerald-500" />
                       {isRtl ? 'إنشاء موضوع جديد' : 'New Discussion'}
                     </button>
                   )}
                 </div>
+              </header>
 
-                {/* Sub-header Filter and Search bar - Unified with BlogPage/Marketplace */}
-                <div className={`mt-6 p-2 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border ${
-                  isThemeDark ? 'bg-[#07080a] border-white/5' : 'bg-[#fafafa] border-gray-200/80'
+              {/* Sub-header Filter and Search bar - Unified with BlogPage/Marketplace */}
+              <div className="px-8 sm:px-4 md:px-6 lg:px-8 py-3 flex-shrink-0">
+                <div className={`p-2 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border ${
+                  isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-[#fafafa] border-gray-200/80'
                 }`}>
                   <div className="flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
                     <button
@@ -646,18 +726,19 @@ export const ForumPage: React.FC = () => {
 
                     {categories.map((cat) => {
                       const isSelected = selectedCategory?.id === cat.id;
+                      const config = getColorClasses(cat.color, isSelected);
                       return (
                         <button
                           key={cat.id}
                           onClick={() => handleSelectCategory(cat)}
                           className={`group px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap cursor-pointer transition-all duration-300 shrink-0 ${
                             isSelected
-                              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.25)] font-black'
+                              ? `${config.bg} border ${config.border} ${config.text} ${config.glow} font-black`
                               : (isThemeDark ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/5' : 'text-gray-650 hover:text-emerald-500 hover:bg-emerald-500/5')
                           }`}
                         >
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14)}</span>
+                            <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14, cat.color)}</span>
                             <span>{isRtl ? cat.name_ar : cat.name_en}</span>
                           </span>
                         </button>
@@ -703,7 +784,7 @@ export const ForumPage: React.FC = () => {
                         onClick={() => handleSelectCategory(null)}
                         className={`group flex items-center justify-between rounded-[4px] px-3.5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300 border ${
                           selectedCategory === null
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)] shadow-sm'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)] shadow-sm font-black'
                             : (isThemeDark 
                                 ? 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-gray-400' 
                                 : 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-slate-650')
@@ -717,26 +798,27 @@ export const ForumPage: React.FC = () => {
 
                       {categories.map((cat) => {
                         const isSelected = selectedCategory?.id === cat.id;
+                        const config = getColorClasses(cat.color, isSelected);
                         return (
                           <div
                             key={cat.id}
                             onClick={() => handleSelectCategory(cat)}
-                            className={`group flex items-center justify-between rounded-[4px] px-3.5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300 border ${
+                            className={`group flex items-center justify-between rounded-[4px] px-3.5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-330 border ${
                               isSelected
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)] shadow-sm'
+                                ? `${config.bg} ${config.text} ${config.border} ${config.glow} shadow-sm font-black`
                                 : (isThemeDark 
                                     ? 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-gray-400' 
                                     : 'bg-transparent border-transparent hover:border-emerald-500/10 hover:bg-emerald-500/5 text-slate-655')
                             }`}
                           >
                             <span className="flex items-center gap-2 truncate font-medium">
-                              <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14)}</span>
+                              <span className="shrink-0">{renderCategoryIcon(cat.slug, isSelected, 14, cat.color)}</span>
                               <span className="truncate">{isRtl ? cat.name_ar : cat.name_en}</span>
                             </span>
-                            <span className={`text-[10px] font-mono font-bold bg-emerald-500/5 px-2 py-0.5 rounded shrink-0 border transition-all duration-330 ${
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 border transition-all duration-330 ${
                               isSelected 
-                                ? 'text-emerald-400 border-emerald-500/25 bg-emerald-500/10 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]' 
-                                : 'text-gray-400 border-transparent group-hover:text-emerald-400 group-hover:border-emerald-500/10 group-hover:bg-emerald-500/5'
+                                ? `${config.text} ${config.border} ${config.bg} ${config.glow}` 
+                                : 'text-gray-400 border-transparent bg-emerald-500/5 group-hover:text-emerald-400 group-hover:border-emerald-500/10 group-hover:bg-emerald-500/5'
                             }`}>
                               {cat.post_count}
                             </span>
@@ -764,10 +846,167 @@ export const ForumPage: React.FC = () => {
 
                     if (activePosts.length === 0) {
                       return (
-                        <div className="py-20 text-center border border-dashed border-gray-800 p-8 rounded-lg max-w-xl mx-auto select-none">
-                          <MessageSquare size={48} className="mx-auto text-gray-500 mb-3" />
-                          <h3 className="font-bold text-sm tracking-tight mb-1 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">{isRtl ? 'لا توجد مواضيع منشورة بعد' : 'No topics posted in this zone'}</h3>
-                          <p className="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">{isRtl ? 'كن أول من يفتتح نقاشاً ذكياً وحيوياً هنا بالضغط على زر "موضوع جديد"!' : 'Initiate the very first conversation in this space.'}</p>
+                        <div className={`py-12 md:py-16 px-6 md:px-10 border rounded-2xl max-w-2xl mx-auto select-none flex flex-col items-center justify-center text-center transition-all duration-300 ${
+                          isThemeDark 
+                            ? 'bg-[#151518] border-gray-800/60 shadow-[0_4px_30px_rgba(0,0,0,0.4)]' 
+                            : 'bg-white border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
+                        }`}>
+                          <div className="relative mb-5">
+                            <div className="absolute inset-0 bg-emerald-500/10 blur-xl rounded-full" />
+                            <div className={`relative w-14 h-14 rounded-full flex items-center justify-center border transition-transform duration-500 hover:scale-105 ${
+                              isThemeDark ? 'bg-[#1e1e21] border-gray-800' : 'bg-slate-50 border-gray-200'
+                            }`}>
+                              <MessageSquare size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            </div>
+                          </div>
+                          
+                          <h3 className={`text-base md:text-lg font-black tracking-tight mb-2 font-sans ${
+                            isThemeDark ? 'text-white' : 'text-slate-900'
+                          }`}>
+                            {isRtl ? 'نأسف لإزعاجكم' : 'We Apologize for the Inconvenience'}
+                          </h3>
+                          
+                          <p className={`text-xs md:text-sm leading-relaxed max-w-lg mb-6 font-sans font-medium ${
+                            isThemeDark ? 'text-gray-400' : 'text-slate-600'
+                          }`}>
+                            {isRtl 
+                              ? 'منتدى بيربليكستا قيد التطوير والتحضير الفني حالياً، وسيكون متاحاً للجميع لمشاركة الخبرات البرمجية ومختلف نقاشات السوق والبيانات في أقرب وقت.'
+                              : 'Perplexta Forum is currently undergoing technical preparation and build-out. It will be available for everyone to exchange expertise, code, market strategies, and datasets in the near future.'
+                            }
+                          </p>
+                          
+                          <div className={`w-full max-w-md h-px my-4 ${
+                            isThemeDark ? 'bg-gray-800/60' : 'bg-gray-200/80'
+                          }`} />
+                          
+                          <span className={`text-[10px] md:text-xs font-bold mb-4 uppercase tracking-wider block font-sans ${
+                            isThemeDark ? 'text-emerald-400' : 'text-emerald-600'
+                          }`}>
+                            {isRtl ? 'استكشف الميزات والأقسام التقنية النشطة حالياً' : 'Explore currently active technical sections'}
+                          </span>
+                          
+                          {/* Section Navigation grid layout */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl mt-1">
+                            {/* Chat Button */}
+                            <button
+                              onClick={() => navigate('/')}
+                              className={`flex items-center gap-3 p-3 rounded-md border text-right transition-all duration-300 hover:scale-[1.01] hover:shadow-sm cursor-pointer ${
+                                isThemeDark 
+                                  ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/30 text-white' 
+                                  : 'bg-slate-50/50 border-gray-200 hover:border-emerald-500/30 text-slate-800'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-[4px] flex-shrink-0 ${
+                                isThemeDark ? 'bg-gray-800 text-emerald-400' : 'bg-slate-100 text-emerald-600'
+                              }`}>
+                                <Terminal size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black leading-tight truncate">
+                                  {isRtl ? 'المحادثة والذكاء الاصطناعي' : 'AI Assistant Chat'}
+                                </h4>
+                                <p className="text-[9px] text-gray-500 truncate mt-0.5">
+                                  {isRtl ? 'بيئة المحادثة والتحليلات المتكاملة' : 'Integrated analytical workspace'}
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Marketplace Button */}
+                            <button
+                              onClick={() => navigate('/marketplace')}
+                              className={`flex items-center gap-3 p-3 rounded-md border text-right transition-all duration-300 hover:scale-[1.01] hover:shadow-sm cursor-pointer ${
+                                isThemeDark 
+                                  ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/30 text-white' 
+                                  : 'bg-slate-50/50 border-gray-200 hover:border-emerald-500/30 text-slate-800'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-[4px] flex-shrink-0 ${
+                                isThemeDark ? 'bg-gray-800 text-emerald-400' : 'bg-slate-100 text-emerald-600'
+                              }`}>
+                                <Cpu size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black leading-tight truncate">
+                                  {isRtl ? 'متجر الحلول والبيانات' : 'Solutions Marketplace'}
+                                </h4>
+                                <p className="text-[9px] text-gray-500 truncate mt-0.5">
+                                  {isRtl ? 'تطبيقات برمجية وحزم بيانات مخصصة' : 'Engineered trading tools & datasets'}
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Blog Button */}
+                            <button
+                              onClick={() => navigate('/blog')}
+                              className={`flex items-center gap-3 p-3 rounded-md border text-right transition-all duration-300 hover:scale-[1.01] hover:shadow-sm cursor-pointer ${
+                                isThemeDark 
+                                  ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/30 text-white' 
+                                  : 'bg-slate-50/50 border-gray-200 hover:border-emerald-500/30 text-slate-800'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-[4px] flex-shrink-0 ${
+                                isThemeDark ? 'bg-gray-800 text-emerald-400' : 'bg-slate-100 text-emerald-600'
+                              }`}>
+                                <BookOpen size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black leading-tight truncate">
+                                  {isRtl ? 'أبحاث بيربليكستا الفنية' : 'Perplexta Tech Blog'}
+                                </h4>
+                                <p className="text-[9px] text-gray-500 truncate mt-0.5">
+                                  {isRtl ? 'دراسات حالة وتحليلات عميقة للمطورين' : 'Deep quant & engineering research'}
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Subscription Button */}
+                            <button
+                              onClick={() => navigate('/subscription')}
+                              className={`flex items-center gap-3 p-3 rounded-md border text-right transition-all duration-300 hover:scale-[1.01] hover:shadow-sm cursor-pointer ${
+                                isThemeDark 
+                                  ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/30 text-white' 
+                                  : 'bg-slate-50/50 border-gray-200 hover:border-emerald-500/30 text-slate-800'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-[4px] flex-shrink-0 ${
+                                isThemeDark ? 'bg-gray-800 text-emerald-400' : 'bg-slate-100 text-emerald-600'
+                              }`}>
+                                <Zap size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black leading-tight truncate">
+                                  {isRtl ? 'باقات الاشتراك والترقية' : 'Premium VIP Plans'}
+                                </h4>
+                                <p className="text-[9px] text-gray-500 truncate mt-0.5">
+                                  {isRtl ? 'الوصول الكامل إلى نماذج النخبة الذكية' : 'Unlock full enterprise tools'}
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Rewards Button */}
+                            <button
+                              onClick={() => navigate('/rewards')}
+                              className={`flex items-center gap-3 p-3 sm:col-span-2 rounded-md border text-right sm:text-center transition-all duration-300 hover:scale-[1.01] hover:shadow-sm cursor-pointer ${
+                                isThemeDark 
+                                  ? 'bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/30 text-white' 
+                                  : 'bg-slate-50/50 border-gray-200 hover:border-emerald-500/30 text-slate-800'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-[4px] flex-shrink-0 ${
+                                isThemeDark ? 'bg-gray-800 text-emerald-400' : 'bg-slate-100 text-emerald-600'
+                              }`}>
+                                <UserCheck size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-black leading-tight truncate">
+                                  {isRtl ? 'التحقق والمكافآت (KYC)' : 'KYC Verification & Rewards'}
+                                </h4>
+                                <p className="text-[9px] text-gray-500 truncate mt-0.5">
+                                  {isRtl ? 'توثيق العضوية وربح الرصيد وتتبع المهام' : 'Verify credentials and earn system credit'}
+                                </p>
+                              </div>
+                            </button>
+                          </div>
                         </div>
                       );
                     }
@@ -1321,6 +1560,29 @@ export const ForumPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Footer Block - Unified with Marketplace & Blog */}
+      <footer className={`hidden md:block p-4 border-t text-[10px] select-none flex-shrink-0 ${
+        isThemeDark ? 'bg-[#131315] border-gray-800/60 text-gray-500' : 'bg-gray-50 border-gray-150 text-gray-600'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-center sm:text-right">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <span className="font-sans font-black tracking-widest text-[9px] uppercase">
+              PERPLEXTA PLATFORM INSIGHTS SYSTEM
+            </span>
+            <div className="flex items-center justify-center gap-2.5 text-[9px] text-emerald-500 font-bold">
+              <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
+              <span className="text-gray-500/20">•</span>
+              <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
+              <span className="text-gray-500/20">•</span>
+              <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{language === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
+            </div>
+          </div>
+          <span>
+            {language === 'ar' ? 'الموقع محفوظ لـ ViralLinkUp 2026 ©' : 'All Sovereignties Reserved ViralLinkUp 2026 ©'}
+          </span>
+        </div>
+      </footer>
     </div>
 
       {/* FLOATING ACTION BUTTON (FAB) & DYNAMIC SHORTCUT */}

@@ -293,6 +293,10 @@ const dict = {
     mainCategories: 'الأقسام الرئيسية',
     priceFilter: 'السعر',
     priceAll: 'الكل',
+    sortByRecent: 'الأحدث أولاً',
+    sortByPriceAsc: 'السعر (من الأقل للأعلى)',
+    sortByPriceDesc: 'السعر (من الأعلى للأقل)',
+    sortByLabel: 'الترتيب حسب',
     noProducts: 'لا توجد منتجات مطابقة لبحثك في هذا القسم الحالي',
     loadingAssets: 'جاري تحميل المعروضات السيادية...',
     buyWithBalance: 'شراء بالرصيد',
@@ -349,6 +353,10 @@ const dict = {
     mainCategories: 'Main Categories',
     priceFilter: 'Price',
     priceAll: 'All',
+    sortByRecent: 'Most Recent',
+    sortByPriceAsc: 'Price: Low to High',
+    sortByPriceDesc: 'Price: High to Low',
+    sortByLabel: 'Sort By',
     noProducts: 'No products match your search query in this selection',
     loadingAssets: 'Loading sovereign assets...',
     buyWithBalance: 'Buy with Balance',
@@ -656,6 +664,7 @@ export const MarketplacePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'price-asc' | 'price-desc'>('recent');
 
   const [referralCode, setReferralCode] = useState<string>('');
 
@@ -1215,6 +1224,20 @@ export const MarketplacePage: React.FC = () => {
     else if (selectedPriceRange === '500+') matchesPrice = parsedPrice > 500;
 
     return matchesSearch && matchesCategory && matchesPrice;
+  }).sort((a, b) => {
+    if (sortBy === 'price-asc') {
+      return Number(a.price) - Number(b.price);
+    }
+    if (sortBy === 'price-desc') {
+      return Number(b.price) - Number(a.price);
+    }
+    // Default (recent): Newest first
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    if (dateB === dateA) {
+      return b.id - a.id;
+    }
+    return dateB - dateA;
   });
 
   const getLicensePriceMultiplier = (license: string): number => {
@@ -1673,19 +1696,41 @@ export const MarketplacePage: React.FC = () => {
                 })}
               </div>
 
-              <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-72 md:w-80 lg:w-96 flex-shrink-0 transition-all ${
-                isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
-              }`}>
-                <Search size={14} className="text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`flex-1 bg-transparent text-xs placeholder-gray-500 outline-none px-2 ${
-                    isThemeDark ? 'text-white' : 'text-gray-800'
-                  }`}
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-64 md:w-72 transition-all ${
+                  isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
+                }`}>
+                  <Search size={14} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={t.searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`flex-1 bg-transparent text-xs placeholder-gray-500 outline-none px-2 ${
+                      isThemeDark ? 'text-white' : 'text-gray-800'
+                    }`}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0 select-none">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className={`h-8 px-2 border rounded-lg text-[11px] font-bold outline-none cursor-pointer transition-all ${
+                      isThemeDark ? 'bg-black/45 border-white/10 focus:border-emerald-500/40 text-gray-200' : 'bg-white border-gray-250 focus:border-emerald-500/40 text-gray-750'
+                    }`}
+                  >
+                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="recent">
+                      {t.sortByRecent}
+                    </option>
+                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="price-asc">
+                      {t.sortByPriceAsc}
+                    </option>
+                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="price-desc">
+                      {t.sortByPriceDesc}
+                    </option>
+                  </select>
+                </div>
               </div>
 
             </div>
@@ -1830,7 +1875,22 @@ export const MarketplacePage: React.FC = () => {
                   <p className="text-xs font-semibold leading-relaxed">{t.noProducts}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <motion.div
+                  id="product-list-container"
+                  key={sortBy}
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                      opacity: 1,
+                      transition: {
+                        staggerChildren: 0.05
+                      }
+                    }
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                >
                   <AnimatePresence mode="popLayout">
                     {filteredItems.map(item => {
                       const hList = getProductHighlights(item);
@@ -1843,8 +1903,10 @@ export const MarketplacePage: React.FC = () => {
                         <motion.div
                           key={item.id}
                           layout
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
+                          variants={{
+                            hidden: { opacity: 0, y: 15 },
+                            visible: { opacity: 1, y: 0 }
+                          }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           whileHover={{ y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
                           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -1942,7 +2004,7 @@ export const MarketplacePage: React.FC = () => {
                       );
                     })}
                   </AnimatePresence>
-                </div>
+                </motion.div>
               )}
 
             </main>
@@ -1953,11 +2015,20 @@ export const MarketplacePage: React.FC = () => {
             isThemeDark ? 'bg-[#080808] border-white/5 text-gray-500' : 'bg-gray-50 border-gray-150 text-gray-600'
           }`}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-center sm:text-right">
-              <span className="font-sans font-black tracking-widest text-[9px] uppercase">
-                PERPLEXTA PLATFORM MARKETPLACE SYSTEM
-              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <span className="font-sans font-black tracking-widest text-[9px] uppercase">
+                  PERPLEXTA PLATFORM MARKETPLACE SYSTEM
+                </span>
+                <div className="flex items-center justify-center gap-2.5 text-[9px] text-emerald-500 font-bold">
+                  <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
+                  <span className="text-gray-500/20">•</span>
+                  <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
+                  <span className="text-gray-500/20">•</span>
+                  <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{language === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
+                </div>
+              </div>
               <span>
-                {language === 'ar' ? 'الموقع محفوظ لـ PERPLEXTA 2026 ©' : 'All Sovereignties Reserved PERPLEXTA 2026 ©'}
+                {language === 'ar' ? 'الموقع محفوظ لـ ViralLinkUp 2026 ©' : 'All Sovereignties Reserved ViralLinkUp 2026 ©'}
               </span>
             </div>
           </footer>

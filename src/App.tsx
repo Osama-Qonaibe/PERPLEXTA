@@ -172,10 +172,10 @@ export default function App() {
           <PWAWrapper>
             <Routes>
               <Route path="/" element={<MainLayout />}>
-                <Route index element={<ChatPage />} />
+                <Route index element={<Navigate to="/chat" replace />} />
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
                 <Route path="subscription" element={<SubscriptionPage />} />
-                <Route path="chat/:id" element={<ChatPage />} />
+                <Route path="chat/:id?" element={<ChatPage />} />
                 <Route path="forum" element={<ForumPage />} />
                 <Route path="marketplace" element={<MarketplacePage />} />
                 <Route path="blog" element={<BlogPage />} />

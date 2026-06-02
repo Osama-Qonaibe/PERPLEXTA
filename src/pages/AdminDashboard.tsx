@@ -12926,9 +12926,33 @@ export const AdminDashboard: React.FC = () => {
     user,
     socket,
     setIsOperationPending,
+    isMobile,
   } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isRtl = language === "ar";
+
+  if (isMobile) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
+          <Monitor size={36} className="text-amber-500 animate-pulse" />
+        </div>
+        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
+          {isRtl ? 'لوحة التحكم متاحة فقط عبر سطح المكتب' : 'Command Center is Desktop-Only'}
+        </h2>
+        <p className="text-xs text-gray-400 max-w-sm">
+          {isRtl 
+            ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
+            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
+        </p>
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
+          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
+        </a>
+      </div>
+    );
+  }
 
   const isSupport = user?.role === "support";
   const path = location.pathname.split("/").pop() || "dashboard";

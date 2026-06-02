@@ -32,8 +32,6 @@ export const AuthModal: React.FC = () => {
     }
   }, [isAuthModalOpen, user, setIsAuthModalOpen]);
 
-  if (!isAuthModalOpen) return null;
-
   const handleClose = () => {
     setIsAuthModalOpen(false);
     // Reset state

@@ -1,14 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark" style="background-color: #080809; color: #f8fafc;">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('theme');
+          var isDark = (savedTheme === 'dark' || !savedTheme);
+          if (isDark) {
+            document.documentElement.className = 'dark';
+            document.documentElement.style.backgroundColor = '#080809';
+            document.documentElement.style.color = '#f8fafc';
+          } else {
+            document.documentElement.className = '';
+            document.documentElement.style.backgroundColor = '#fcfcfc';
+            document.documentElement.style.color = '#0f172a';
+          }
+        } catch (e) {
+          document.documentElement.className = 'dark';
+          document.documentElement.style.backgroundColor = '#080809';
+          document.documentElement.style.color = '#f8fafc';
+        }
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/app-assets/icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Perplexta Platform - Professional Elite AI Platform</title>
     <meta name="description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations with dual-database ledgers." />
     <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
   </head>
-  <body>
+  <body style="background-color: inherit; color: inherit;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
