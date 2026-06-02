@@ -214,7 +214,7 @@ import forumRoutes from './routes/forum.js';
 import blogRoutes from './routes/blog.js';
 import marketplaceRoutes from './routes/marketplace.js';
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);

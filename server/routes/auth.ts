@@ -324,8 +324,31 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'InvalidTokenType', message: 'Invalid token type' });
     }
 
-    const blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [refreshToken]);
+    const blacklistCheck = await getSecurityPool().query('SELECT id, created_at FROM token_blacklist WHERE token = $1', [refreshToken]);
     if (blacklistCheck.rows.length > 0) {
+      const blacklistedTime = new Date(blacklistCheck.rows[0].created_at).getTime();
+      const timeElapsed = Date.now() - blacklistedTime;
+      const gracePeriodMs = 30 * 1000; // 30-second grace period for network retries and race conditions
+      
+      if (timeElapsed < gracePeriodMs) {
+        console.warn(`[Session Grace Period] Concurrent/retry token refresh detected with recently blacklisted token for user ID: ${decoded.id}. Time elapsed: ${timeElapsed}ms. Retrieving active session...`);
+        const activeSessionRes = await pool.query(
+          "SELECT session_token FROM user_sessions WHERE user_id = $1 AND status = 'active' AND expires_at > CURRENT_TIMESTAMP ORDER BY last_active_at DESC LIMIT 1",
+          [decoded.id]
+        );
+        if (activeSessionRes.rows.length > 0) {
+          const activeSessionToken = activeSessionRes.rows[0].session_token;
+          const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
+          if (userRes.rows.length > 0) {
+            const user = userRes.rows[0];
+            if (user.status !== 'suspended') {
+              const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+              return res.json({ token: newAccessToken, refreshToken: activeSessionToken });
+            }
+          }
+        }
+      }
+
       console.warn(`[Security Alert] Replay attempt with blacklisted refresh token from user ID: ${decoded.id}`);
       await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE user_id = $1", [decoded.id]);
       return res.status(401).json({ error: 'CompromisedSession', message: 'Session has been invalidated due to token reuse' });
