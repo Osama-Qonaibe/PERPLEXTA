@@ -1550,11 +1550,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
   const [user, setUser] = useState<User | null>(null);
-  const userRef = useRef<User | null>(user);
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
   const [token, setToken] = useState<string | null>(() => {
     try {
       const rawToken = localStorage.getItem('app_token');
@@ -1577,14 +1572,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const bootStartTime = useRef(Date.now());
+  const MIN_BOOT_TIME = 1200; // 1.2s for high-end feel
 
   const completeBoot = (force = false) => {
     const elapsed = Date.now() - bootStartTime.current;
-    const storedToken = localStorage.getItem('app_token');
-    const isGuest = !storedToken || storedToken === 'null' || storedToken === 'undefined' || storedToken === '';
-    
-    const activeMinBootTime = isGuest ? 50 : 250;
-    const remaining = force ? 0 : Math.max(0, activeMinBootTime - elapsed);
+    const remaining = force ? 0 : Math.max(0, MIN_BOOT_TIME - elapsed);
     setTimeout(() => {
       setIsAuthReady(true);
       localStorage.removeItem('app_loader_type');
@@ -1729,148 +1721,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [isOperationPending]);
 
   const installApp = async () => {
-    if (typeof window === 'undefined') return;
+    setIsInstallationRunning(true);
+    setIsInstalling(true);
+    setInstallProgress(0);
+    setInstallSuccess(false);
 
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const logsAr = [
+      '[معايرة] جاري الاتصال بقنوات الـ PWA المشفرة واستدعاء بروتوكول التشغيل الجوهري...',
+      '[معالجة] توجيه مسارات البث واستعلام أداء التخزين المحلي للواجهة وبدء المزامنة الفورية...',
+      '[بناء الكاش] جاري بناء وتخزين أصول النظام الأساسية لدمجها في مصفوفة التصفح السريع...',
+      '[تأمين السيادة] حقن الميثاق الدستوري الأعلى لبيربليكستا بموجب بروتوكول CORE_PROTOCOL الجوهري...',
+      '[تفعيل المزامنة] تهيئة الـ Service Worker المستقل لضمان وصول مستمر بلا انقطاع على مدار الساعة 24/7...',
+      '[فحص النزاهة] مطابقة شهادات التشفير الأمني وفك التسمية الرمزية لدفاتر المحفظة والبيانات المحلية...',
+      '[دخول النظام] المصافحة الرقمية تمت بنجاح! بيئة بيربليكستا السيادية نشطة ومثبتة بنسبة 100%.'
+    ];
 
-    if (isIOSDevice) {
-      setIsInstallationRunning(true);
-      setInstallSuccess(true);
-      return;
+    const logsEn = [
+      '[CALIBRATING] Handshaking with secure PWA satellite node channel and compilation pipeline...',
+      '[ROUTING] Optimizing telemetry pipelines and auditing filesystem state for lightning-fast client-side delivery...',
+      '[COMPILING] Extracting and caching layout engine, fonts, icons, and real-time dashboard assets locally...',
+      '[SECURING] Binding Perplexta Sovereign Security Constitution under military-grade CORE_PROTOCOL standard...',
+      '[DENSE_SYNCHRONY] Deploying responsive multithread service worker for offline runtime execution & memory compression...',
+      '[INTEGRITY] Validating ledger wallet endpoints and verification of AES-256 credentials with zero-leak proxy layer...',
+      '[COMPLETED] Cryptographic handshake finalized successfully! Interactive core volume is fully synchronized.'
+    ];
+
+    const targetLogs = language === 'ar' ? logsAr : logsEn;
+    setInstallLogs([targetLogs[0]]);
+
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([15, 30, 45]);
     }
 
-    if (isInstallable && deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+    const interval = setInterval(() => {
+      setInstallProgress((prev) => {
+        const increment = Math.floor(Math.random() * 8) + 4;
+        const next = prev + increment;
         
-        if (outcome === 'accepted') {
-          setDeferredPrompt(null);
-          setIsInstallable(false);
+        if (next >= 100) {
+          clearInterval(interval);
+          setInstallLogs((old) => [...old, targetLogs[6]]);
           
-          setIsInstallationRunning(true);
-          setIsInstalling(true);
-          setInstallProgress(0);
-          setInstallSuccess(false);
-
-          const logsAr = [
-            'بدء تهيئة الملفات وتخصيص مساحات التشغيل المحمية لبيربليكستا...',
-            'إعداد خدمات المزامنة الخلفية وقواعد البيانات المصغرة المحلية...',
-            'تنزيل وحفظ واجهات التشغيل التفاعلية فائقة الأداء...',
-            'تفعيل بروتوكول الأمان الدستوري وحقن مفاتيح الهوية السيادية الموثقة...',
-            'اكتملت جميع العمليات؛ جاري تسجيل التطبيق في بيئة تشغيل جهازك...'
-          ];
-
-          const logsEn = [
-            'Initializing system directories and localized sovereign memory volumes...',
-            'Registering background service assets and caching core DB pipelines...',
-            'Compiling visual layouts and responsive high-fidelity interfaces...',
-            'Applying multi-stage verification and military-grade encryption...',
-            'System fully integrated. Finalizing application registration...'
-          ];
-
-          const targetLogs = language === 'ar' ? logsAr : logsEn;
-          setInstallLogs([targetLogs[0]]);
-
-          if ('vibrate' in navigator) {
-            navigator.vibrate([15, 30, 45]);
+          if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate([100, 50, 100]);
           }
 
-          const interval = setInterval(() => {
-            setInstallProgress((prev) => {
-              const increment = Math.floor(Math.random() * 12) + 6;
-              const next = prev + increment;
-              
-              if (next >= 100) {
-                clearInterval(interval);
-                setInstallLogs((old) => [...old, language === 'ar' ? 'تمت إضافة جميع حزم بيربليكستا السيادية وتثبيتها بنجاح!' : 'All Perplexta packets deployed and secured successfully!']);
-                setInstallSuccess(true);
-                setIsStandalone(true);
-                
-                if ('vibrate' in navigator) {
-                  navigator.vibrate([100, 50, 100]);
-                }
-
-                setTimeout(() => {
-                  try {
-                    window.close();
-                  } catch (e) {
-                    console.log("window.close is blocked by browser parameters", e);
-                  }
-                  window.location.href = "/?standalone=true";
-                }, 2500);
-
-                return 100;
-              }
-
-              const stepIndex = Math.min(Math.floor(next / 25), 4);
-              const currentLog = targetLogs[stepIndex];
-              setInstallLogs((oldLogs) => {
-                if (oldLogs[oldLogs.length - 1] !== currentLog && currentLog) {
-                  return [...oldLogs, currentLog];
-                }
-                return oldLogs;
-              });
-
-              return next;
-            });
-          }, 150);
-        } else {
-          setIsInstallationRunning(false);
-          setIsInstalling(false);
-        }
-      } catch (err) {
-        console.error("PWA prompt trigger error:", err);
-        setIsInstallationRunning(true);
-        setIsInstalling(true);
-        setInstallProgress(0);
-        setInstallSuccess(false);
-        
-        const interval = setInterval(() => {
-          setInstallProgress((prev) => {
-            const next = prev + 10;
-            if (next >= 100) {
-              clearInterval(interval);
-              setInstallSuccess(true);
-              setIsStandalone(true);
-              setTimeout(() => {
-                try {
-                  window.close();
-                } catch (e) {}
-                window.location.href = "/?standalone=true";
-              }, 2500);
-              return 100;
-            }
-            return next;
-          });
-        }, 100);
-      }
-    } else {
-      setIsInstallationRunning(true);
-      setIsInstalling(true);
-      setInstallProgress(0);
-      setInstallSuccess(false);
-
-      const interval = setInterval(() => {
-        setInstallProgress((prev) => {
-          const next = prev + 10;
-          if (next >= 100) {
-            clearInterval(interval);
-            setInstallSuccess(true);
-            setIsStandalone(true);
-            setTimeout(() => {
+          setTimeout(async () => {
+            if (isInstallable && deferredPrompt) {
               try {
-                window.close();
-              } catch (e) {}
-              window.location.href = "/?standalone=true";
-            }, 2500);
-            return 100;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                  setIsStandalone(true);
+                  setIsInstallable(false);
+                  setDeferredPrompt(null);
+                  setInstallSuccess(true);
+                } else {
+                  setIsInstallationRunning(false);
+                  setIsInstalling(false);
+                }
+              } catch (err) {
+                console.error("PWA prompt trigger error:", err);
+                setInstallSuccess(true);
+              }
+            } else {
+              setInstallSuccess(true);
+            }
+          }, 1200);
+
+          return 100;
+        }
+
+        const stepIndex = Math.min(Math.floor(next / 16.6), 5);
+        const currentLog = targetLogs[stepIndex];
+        setInstallLogs((oldLogs) => {
+          if (oldLogs[oldLogs.length - 1] !== currentLog && currentLog) {
+            return [...oldLogs, currentLog];
           }
-          return next;
+          return oldLogs;
         });
-      }, 100);
-    }
+
+        return next;
+      });
+    }, 100);
   };
 
   const [economySettings, setEconomySettings] = useState<any>({ 
@@ -1894,6 +1827,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser(info);
       setIsAuthModalOpen(false); 
       
+      // Fetch full profile (with avatar, points, balance) immediately after token activation
+      fetch(`/api/user/me?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${newToken}` }
+      })
+        .then(r => r.json())
+        .then(data => {
+          const profile = data.user || (data.email ? data : null);
+          if (profile) {
+            setUser(profile);
+            if (profile.points !== undefined) setBalance(Number(profile.points));
+            if (profile.balance !== undefined) setBalanceUSD(Number(profile.balance));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to sync oauth profile on-the-fly:", err);
+        });
+      
       if (authLang && (authLang === 'ar' || authLang === 'en')) {
         setLanguage(authLang as any);
         localStorage.setItem('language', authLang);
@@ -1902,26 +1852,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
       const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
-      
-      const currentPath = window.location.pathname;
-      const isSamePage = currentPath === targetRef || 
-                         (currentPath === '/' && targetRef === '/chats') || 
-                         (currentPath === '/chats' && targetRef === '/');
+      localStorage.setItem('app_loader_type', 'login');
       
       setTimeout(() => {
         localStorage.removeItem('app_oauth_syncing');
-        if (isSamePage) {
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
-          toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
-        } else {
-          localStorage.setItem('app_logged_in_toast', '1');
-          localStorage.setItem('app_loader_type', 'login');
-          localStorage.setItem('app_force_refresh', '1');
-          window.location.href = targetRef;
+        
+        const currentPath = window.location.pathname;
+        if ((targetRef === '/' || targetRef === '/chats') && (currentPath === '/' || currentPath === '/chats')) {
+          return;
         }
-      }, 50);
+        
+        localStorage.setItem('app_force_refresh', '1');
+        window.location.href = targetRef;
+      }, 600);
     };
 
     const getParam = (name: string) => {
@@ -2285,24 +2228,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const profileFetched = useRef(false);
   useEffect(() => {
-    // Show toasts after immediate redirects/refreshes cleanly
-    const loggedOutToast = localStorage.getItem('app_logged_out_toast');
-    if (loggedOutToast === '1') {
-      localStorage.removeItem('app_logged_out_toast');
-      setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!');
-      }, 100);
-    }
-    const loggedInToast = localStorage.getItem('app_logged_in_toast');
-    if (loggedInToast === '1') {
-      localStorage.removeItem('app_logged_in_toast');
-      setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
-      }, 100);
-    }
-  }, [language]);
-
-  useEffect(() => {
     // Reset fetched status if token is cleared so we can fetch again on next login
     if (!token) {
       profileFetched.current = false;
@@ -2395,10 +2320,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+          localStorage.setItem('app_loader_type', 'login');
           
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
           
           return { success: true };
         } else {
@@ -2441,10 +2367,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
+          localStorage.setItem('app_loader_type', 'login');
           
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
           
           return { success: true };
         } else {
@@ -2466,40 +2393,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const logout = async (forceRedirect = true) => {
-    // If there is no active session, prevent infinite redirect reload loops
-    if (!token && !user) {
-      console.log('[Session] Logout called but no active session found. Ignoring action.');
-      return;
-    }
+  const logout = (forceRedirect = true) => {
+    localStorage.setItem('app_loader_type', 'logout');
+    refreshPromiseRef.current = null;
 
-    const storedToken = token;
     const storedRefreshToken = localStorage.getItem('app_refresh_token');
 
-    // Instantly prepare for reload
-    if (forceRedirect) {
-      localStorage.setItem('app_logged_out_toast', '1');
-      localStorage.setItem('app_loader_type', 'logout');
-    }
-
-    // Clear session storage instantly
     localStorage.removeItem('app_token');
     localStorage.removeItem('app_refresh_token');
-    localStorage.removeItem('app_oauth_user');
-    localStorage.removeItem('app_oauth_trigger');
     
-    // Background logout API call (fire-and-forget) to ensure zero UI delay
-    if (storedToken) {
+    if (token) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: { 
-          'Authorization': `Bearer ${storedToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ refreshToken: storedRefreshToken })
-      }).catch((e) => {
-        console.log('Notice: Auth logout call finished in background with info', e);
-      });
+      }).catch(e => console.error('API Logout error', e));
     }
 
     if (socket) {
@@ -2510,8 +2421,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    if (forceRedirect) {
+      window.location.href = '/?_lo=' + Date.now();
+      return;
+    }
+
+    setIsAuthReady(false);
     setIsAuthModalOpen(false);
-    setSocket(null);
+    if (socket) {
+      setSocket(null);
+    }
     setToken(null);
     setRefreshTokenState(null);
     setUser(null);
@@ -2519,6 +2438,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBalanceUSD(0);
     setNotifications([]);
     setMilestoneData(null);
+<<<<<<< HEAD
+=======
 
     // If forceRedirect is true, reload instantly to cleanly purge any memory state
     if (forceRedirect) {
@@ -2526,6 +2447,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       localStorage.removeItem('app_loader_type');
     }
+>>>>>>> d50105e1c168e5c55fe304b3bcccb89978cc5329
   };
 
   // Automated 2-hour Inactivity Session Invalidation Service
@@ -2628,41 +2550,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   useEffect(() => {
-    if (!token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
-      return;
-    }
-
-    // Pre-flight validation constraint check: Is the token already expired?
-    // If so, trigger modern silent refresh instead of passing stale token directly
-    const isExpired = (() => {
-      try {
-        const parts = token.split('.');
-        if (parts.length < 2) return true;
-        const decodedPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-        return decodedPayload.exp ? (decodedPayload.exp * 1000 < Date.now() + 5000) : false;
-      } catch (e) {
-        return true;
-      }
-    })();
-
-    if (isExpired) {
-      console.warn('[Socket Setup] Pre-flight validation caught expired JWT. Postponing socket initialization until silent refresh completes.');
-      silentRefreshToken().catch(err => {
-        console.error('[Socket Setup] Pre-flight refresh failed:', err);
-      });
-      return;
-    }
-
     const socketEndpoint = SOCKET_URL || window.location.origin;
     const socketOptions: any = { 
       transports: ['websocket', 'polling'], 
-      autoConnect: true,
-      auth: { token }
+      autoConnect: !!token 
     };
+
+    if (token) {
+      socketOptions.auth = { token };
+    }
 
     const newSocket = io(socketEndpoint, socketOptions);
     setSocket(newSocket);
@@ -2672,39 +2568,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
         console.warn('[Socket] Synchronizing credentials: Real-time authentication handshake refresh initialized...');
         const refreshedToken = await silentRefreshToken();
+<<<<<<< HEAD
+        if (!refreshedToken) {
+          console.error('[Socket] Session token refresh failed. Destroying connection parameters.');
+=======
         if (refreshedToken) {
           console.log('[Socket] Token successfully refreshed in background. Re-assigning socket auth metadata and reconnecting...');
           newSocket.auth = { token: refreshedToken };
           newSocket.connect();
         } else {
           console.warn('[Socket] Credentials expired and silent rotation attempt failed. Standard logout sequence triggered.');
+>>>>>>> d50105e1c168e5c55fe304b3bcccb89978cc5329
           logout(false);
         }
       }
     });
 
     newSocket.on('connect', () => {
-      if (userRef.current?.id) {
-        newSocket.emit('register_user', userRef.current.id);
+      if (user?.id) {
+        newSocket.emit('register_user', user.id);
       }
     });
 
     newSocket.on('new_notification', (notif: any) => {
-      setNotifications(prev => {
-        if (prev.some(n => n.id === notif.id)) return prev;
-        return [notif, ...prev];
-      });
-
-      try {
-        if (Notification.permission === 'granted') {
-          new Notification(language === 'ar' ? notif.title_ar : notif.title_en, {
-            body: language === 'ar' ? notif.message_ar : notif.message_en,
-            icon: '/favicon.ico'
-          });
-        }
-      } catch (err) {
-        console.warn('[Notification] Failsafe wrapper caught error standard dispatch:', err);
-      }
+      setNotifications(prev => [notif, ...prev]);
     });
 
     newSocket.on('quota_milestone', (data: any) => {
@@ -2729,15 +2616,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => {
-      newSocket.disconnect();
+      if (newSocket) newSocket.disconnect();
     };
-  }, [token, language]);
+  }, [token]);
 
   useEffect(() => {
-    if (socket && user?.id) {
+    if (socket && socket.connected && user?.id) {
       socket.emit('register_user', user.id);
+      
+      const handleNewNotification = (notif: any) => {
+        setNotifications(prev => [notif, ...prev]);
+        
+        if (Notification.permission === 'granted') {
+          new Notification(language === 'ar' ? notif.title_ar : notif.title_en, {
+            body: language === 'ar' ? notif.message_ar : notif.message_en,
+            icon: '/favicon.ico'
+          });
+        }
+      };
+
+      socket.on('new_notification', handleNewNotification);
+
+      return () => {
+        socket.off('new_notification', handleNewNotification);
+      };
     }
-  }, [socket, user]);
+  }, [socket, user, language]);
 
   const fetchNotifications = async () => {
     if (!token) return;
