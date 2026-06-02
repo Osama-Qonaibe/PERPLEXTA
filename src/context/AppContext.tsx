@@ -2522,7 +2522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // If forceRedirect is true, reload instantly to cleanly purge any memory state
     if (forceRedirect) {
-      window.location.replace('/');
+      window.location.replace('/?_lo=' + Date.now());
     } else {
       localStorage.removeItem('app_loader_type');
     }
@@ -2670,14 +2670,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     newSocket.on('connect_error', async (err: any) => {
       console.warn('[Socket] Connection failure:', err.message);
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
-        console.error('[Socket] Direct auth rejection. Attempting automatic session token refresh...');
+        console.warn('[Socket] Synchronizing credentials: Real-time authentication handshake refresh initialized...');
         const refreshedToken = await silentRefreshToken();
         if (refreshedToken) {
           console.log('[Socket] Token successfully refreshed in background. Re-assigning socket auth metadata and reconnecting...');
           newSocket.auth = { token: refreshedToken };
           newSocket.connect();
         } else {
-          console.error('[Socket] Session token refresh failed. Destroying connection parameters.');
+          console.warn('[Socket] Credentials expired and silent rotation attempt failed. Standard logout sequence triggered.');
           logout(false);
         }
       }
