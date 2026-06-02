@@ -33,8 +33,9 @@ router.post("/execute-task", authenticateToken, chatLimiter, async (req: any, re
 
     if (!targetSocket) {
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
     }
 
     const result = await executeTaskLogic(req.body, userId, req, onChunk, targetSocket);

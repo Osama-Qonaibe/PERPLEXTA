@@ -3053,7 +3053,7 @@ const ApiKeysVaultView = ({
               </button>
             </div>
 
-            <div className="space-y-3">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
                   {t("apiKeyLabel")}
@@ -3145,7 +3145,7 @@ const ApiKeysVaultView = ({
                   </p>
                 </div>
               )}
-            </div>
+            </form>
 
             <div className="grid grid-cols-2 gap-2 mt-6">
               <button
@@ -3222,7 +3222,7 @@ const ApiKeysVaultView = ({
             </div>
           </button>
         ) : (
-          <div className="p-6 rounded-lg border border-emerald-500/20 bg-[var(--bg-secondary)] shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[440px]">
+          <form onSubmit={(e) => e.preventDefault()} className="p-6 rounded-lg border border-emerald-500/20 bg-[var(--bg-secondary)] shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[440px]">
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-2 border-b border-[var(--border-main)]/30">
                 <span className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
@@ -3433,7 +3433,7 @@ const ApiKeysVaultView = ({
                 {language === "ar" ? "فحص وحفظ" : "Verify & Save"}
               </button>
             </div>
-          </div>
+          </form>
         )}
       </div>
     </div>
@@ -6166,7 +6166,7 @@ const FinanceVaultView = ({
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-450 mb-1.5">
                           {t("publishableKey")}
@@ -6239,7 +6239,7 @@ const FinanceVaultView = ({
                             : "Necessary to safely process events instantly and settle active subscriptions."}
                         </p>
                       </div>
-                    </div>
+                    </form>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-gray-850">
@@ -6384,7 +6384,7 @@ const FinanceVaultView = ({
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-450 mb-1.5">
                           {dir === "rtl" ? "معرف العميل (Client ID)" : "PayPal Client ID"}
@@ -6421,7 +6421,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="EK_..."
-                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/40 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-emerald-500/40 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#0f0f11] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-gray-50/50 border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -6440,7 +6440,7 @@ const FinanceVaultView = ({
                             : "Once dynamic payments are authorized, funds will be captures with immediate PostgreSQL ledger logs."}
                         </p>
                       </div>
-                    </div>
+                    </form>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-gray-850">
@@ -8704,7 +8704,8 @@ const UserManagementView = ({
       {isCreateUserModalOpen &&
         createPortal(
           <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-            <div
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleCreateUser(); }}
               className={`relative w-full max-w-md overflow-hidden rounded-lg shadow-2xl flex flex-col transition-theme bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
@@ -8715,6 +8716,7 @@ const UserManagementView = ({
                   </h3>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setIsCreateUserModalOpen(false)}
                   className="p-2 rounded-md text-gray-400 hover:bg-[var(--bg-secondary)] transition-theme"
                 >
@@ -8788,7 +8790,7 @@ const UserManagementView = ({
 
               <div className="p-6 bg-[var(--bg-secondary)]/30 border-t border-[var(--border-main)]">
                 <button
-                  onClick={handleCreateUser}
+                  type="submit"
                   disabled={isUpdating}
                   className="w-full py-3 rounded-md bg-emerald-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
@@ -8800,7 +8802,7 @@ const UserManagementView = ({
                   {dir === "rtl" ? "تسجيل المستخدم" : "Register User"}
                 </button>
               </div>
-            </div>
+            </form>
           </div>,
           document.body
         )}
@@ -10330,7 +10332,7 @@ const SmartEmailHubView = ({
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     {t("mailerType")}
@@ -10520,7 +10522,7 @@ const SmartEmailHubView = ({
                     {t("testConnection")}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
 
             <div className="space-y-6">

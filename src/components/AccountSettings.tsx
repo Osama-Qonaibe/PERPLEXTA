@@ -115,15 +115,23 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   className="w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] min-h-[120px] text-sm"
                   autoFocus
                 />
-              ) : (
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSave();
+                }}
+                className="w-full max-w-md"
+              >
                 <input
                   type={type}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full max-w-md p-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full p-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                   autoFocus
                 />
-              )
+              </form>
+            )
             ) : (
               <p className={`font-bold text-[var(--text-primary)] tracking-tight ${multiline ? 'text-sm whitespace-pre-wrap leading-relaxed opacity-80' : 'text-base'}`}>
                 {field === 'password' ? '••••••••' : (value || t('none'))}

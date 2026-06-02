@@ -7,6 +7,15 @@ export { getEconomySettings, updateEconomySettings };
 let cachedAppNameEn = '';
 let cachedAppNameAr = '';
 
+let cachedSettings: any = null;
+let settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 10000; // 10 seconds in-memory cache
+
+export async function clearSettingsCache() {
+  cachedSettings = null;
+  settingsCacheTime = 0;
+}
+
 export async function refreshCachedAppName() {
   try {
     const res = await pool.query('SELECT site_name_en, site_name_ar FROM system_settings LIMIT 1');
@@ -20,6 +29,11 @@ export async function refreshCachedAppName() {
 }
 
 export async function getSystemSettings() {
+  const now = Date.now();
+  if (cachedSettings && (now - settingsCacheTime < SETTINGS_CACHE_TTL)) {
+    return cachedSettings;
+  }
+
   try {
     const result = await pool.query(`
       SELECT 
@@ -66,6 +80,9 @@ export async function getSystemSettings() {
         console.warn('[System] Failed to decrypt paypal_client_id:', e);
       }
     }
+
+    cachedSettings = settings;
+    settingsCacheTime = now;
     return settings;
   } catch (err: any) {
     const errMsg = err.message || '';
@@ -158,6 +175,7 @@ export async function updateSystemSettings(settings: any) {
     google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url
   ]);
   
+  await clearSettingsCache();
   await refreshCachedAppName();
   return { success: true };
 }

@@ -67,10 +67,14 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
   let count = 0;
   const provider = providerId.toLowerCase();
 
+  // Enforce a tight 15-second timeout during model list synchronization to protect the system from infinite blockades/hangs on unreachable servers
+  const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(15000);
+
   try {
     if (provider === 'openai') {
       const response = await fetch('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'OpenAI');
       const data: any = await response.json();
@@ -81,7 +85,8 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
           'x-api-key': apiKey, 
           'anthropic-version': '2023-06-01',
           'Accept': 'application/json'
-        }
+        },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'Anthropic');
       const data: any = await response.json();
@@ -91,7 +96,8 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         headers: { 
           'Accept': 'application/json',
           'x-goog-api-key': apiKey
-        }
+        },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'Google AI');
       const data: any = await response.json();
@@ -103,28 +109,32 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       }));
     } else if (provider === 'together') {
       const response = await fetch('https://api.together.xyz/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'Together AI');
       const data: any = await response.json();
       models = (data || []).map((m: any) => ({ id: m.id, name: m.display_name || m.id }));
     } else if (provider === 'openrouter') {
       const response = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'OpenRouter');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.name || m.id }));
     } else if (provider === 'xai' || provider === 'grok') {
       const response = await fetch('https://api.x.ai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'xAI');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'groq') {
       const response = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
       });
       await handleApiError(response, 'Groq');
       const data: any = await response.json();
@@ -135,7 +145,10 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         if (apiKey && apiKey.trim() !== '') {
             targetHeaders['Authorization'] = `Bearer ${apiKey}`;
         }
-        const response = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+        const response = await fetch(`${cleanUrl}/api/tags`, {
+            headers: targetHeaders,
+            signal: timeoutSignal
+        });
         await handleApiError(response, 'Ollama');
         const data = await response.json();
         models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
@@ -152,12 +165,14 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             
             try {
                 let response = await fetch(`${cleanUrl}/models`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+                    signal: timeoutSignal
                 });
                 
                 if (!response.ok && response.status === 404 && !cleanUrl.endsWith('/v1')) {
                     response = await fetch(`${cleanUrl}/v1/models`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+                        signal: timeoutSignal
                     });
                 }
 
@@ -196,6 +211,8 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
     console.error(`[SyncInternal] Error syncing ${providerId}:`, error);
     await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [providerId]);
     throw error;
+  } finally {
+    clearTimeoutTimer();
   }
 }
 
@@ -260,19 +277,22 @@ export function invalidateVaultCache(provider?: string) {
 }
 
 export async function checkProviderStatus(provider: string, apiKey: string, urlKey?: string) {
+    const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(10000);
     try {
         const normProvider = provider.toLowerCase();
         let status = { isValid: false, usage: 0, limit: 0, message: '' };
 
         if (normProvider === 'openai') {
             const res = await fetch('https://api.openai.com/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
             if (!res.ok) status.message = `OpenAI: ${res.statusText}`;
         } else if (normProvider === 'deepseek') {
             const res = await fetch('https://api.deepseek.com/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
             if (!res.ok) status.message = `DeepSeek: ${res.statusText}`;
@@ -282,29 +302,34 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                   'x-api-key': apiKey, 
                   'anthropic-version': '2023-06-01',
                   'Accept': 'application/json'
-                }
+                },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
             if (!res.ok) status.message = `Anthropic: ${res.statusText}`;
         } else if (normProvider === 'google' || normProvider === 'gemini') {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
-                headers: { 'x-goog-api-key': apiKey }
+                headers: { 'x-goog-api-key': apiKey },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
             if (!res.ok) status.message = `Google AI: ${res.statusText}`;
         } else if (normProvider === 'together') {
             const res = await fetch('https://api.together.xyz/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
         } else if (normProvider === 'openrouter') {
             const res = await fetch('https://openrouter.ai/api/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
         } else if (normProvider === 'groq') {
             const res = await fetch('https://api.groq.com/openai/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
             });
             status.isValid = res.ok;
             if (!res.ok) status.message = `Groq: ${res.statusText}`;
@@ -322,11 +347,11 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 targetHeaders['Authorization'] = `Bearer ${keyToUse}`;
             }
             try {
-                let res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders });
+                let res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders, signal: timeoutSignal });
                 if (!res.ok && (res.status === 401 || res.status === 403) && targetHeaders['Authorization']) {
                     const headersNoAuth = { ...targetHeaders };
                     delete headersNoAuth['Authorization'];
-                    res = await fetch(`${cleanUrl}/api/tags`, { headers: headersNoAuth });
+                    res = await fetch(`${cleanUrl}/api/tags`, { headers: headersNoAuth, signal: timeoutSignal });
                 }
                 status.isValid = res.ok;
                 if (!res.ok) {
@@ -349,12 +374,14 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
 
                 try {
                     let res = await fetch(`${cleanUrl}/models`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}` }
+                        headers: { 'Authorization': `Bearer ${apiKey}` },
+                        signal: timeoutSignal
                     });
                     
                     if (!res.ok && res.status === 404 && !cleanUrl.endsWith('/v1')) {
                         res = await fetch(`${cleanUrl}/v1/models`, {
-                            headers: { 'Authorization': `Bearer ${apiKey}` }
+                            headers: { 'Authorization': `Bearer ${apiKey}` },
+                            signal: timeoutSignal
                         });
                     }
 
@@ -376,6 +403,8 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
         return status;
     } catch (e: any) {
         return { isValid: false, usage: 0, limit: 0, message: e.message };
+    } finally {
+        clearTimeoutTimer();
     }
 }
 

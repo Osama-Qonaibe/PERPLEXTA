@@ -115,6 +115,7 @@ app.use(express.static(publicPath));
 
 import jwt from 'jsonwebtoken';
 import { pool, ledgerPool } from './db/index.js';
+import { getSystemSettings } from './services/system.js';
 
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
@@ -236,6 +237,86 @@ app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api', toolRoutes);
 
+function injectSEOTags(html: string, settings: any, req: express.Request): string {
+  if (!settings) return html;
+
+  const acceptLang = req.headers['accept-language'] || '';
+  const isEn = acceptLang.toLowerCase().startsWith('en');
+  const isAr = !isEn; // Arabic is the default!
+
+  const nameAr = settings.site_name_ar || 'بيربليكستا';
+  const nameEn = settings.site_name_en || 'Perplexta';
+  const seoAr = settings.seo_description_ar || settings.site_description_ar || 'منصة التحليلات المتقدمة والذكاء الاصطناعي';
+  const seoEn = settings.seo_description_en || settings.site_description_en || 'Professional elite AI and advanced analytics platform';
+  const keywordsAr = settings.keywords_ar || 'ذكاء اصطناعي, تحليل تقني, تداول, برمجة';
+  const keywordsEn = settings.keywords_en || 'AI, technical analysis, trading, coding';
+
+  const currentTitle = isAr ? nameAr : nameEn;
+  const currentDesc = isAr ? seoAr : seoEn;
+  const currentKeywords = isAr ? keywordsAr : keywordsEn;
+
+  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = req.headers.host || 'perplexta.com';
+  const baseUrl = `${protocol}://${host}`;
+
+  let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
+  if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+    const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+    imageUrl = `${baseUrl}${cleanPath}`;
+  }
+
+  let faviconUrl = settings.favicon_url || '/app-assets/icon.png';
+  if (faviconUrl && !faviconUrl.startsWith('http') && !faviconUrl.startsWith('data:')) {
+    const cleanFavicon = faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`;
+    faviconUrl = `${baseUrl}${cleanFavicon}`;
+  }
+
+  const currentUrl = `${baseUrl}${req.originalUrl || req.path}`;
+
+  // Build fully-compliant SEO, OpenGraph and Twitter meta tags block
+  let metaBlock = `
+    <meta name="description" content="${currentDesc}" />
+    <meta name="keywords" content="${currentKeywords}" />
+    <meta property="og:title" content="${currentTitle}" />
+    <meta property="og:description" content="${currentDesc}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:url" content="${currentUrl}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="${isAr ? nameAr : nameEn}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${currentTitle}" />
+    <meta name="twitter:description" content="${currentDesc}" />
+    <meta name="twitter:image" content="${imageUrl}" />
+  `;
+
+  if (settings.google_site_verification) {
+    metaBlock += `\n    <meta name="google-site-verification" content="${settings.google_site_verification}" />`;
+  }
+
+  let processedHtml = html;
+
+  // Replace existing title or inject if missing
+  if (/<title>[^]*?<\/title>/i.test(processedHtml)) {
+    processedHtml = processedHtml.replace(/<title>[^]*?<\/title>/gi, `<title>${currentTitle}</title>`);
+  } else {
+    processedHtml = processedHtml.replace('</head>', `<title>${currentTitle}</title>\n</head>`);
+  }
+
+  // Strip standard viewport/description to prevent duplication
+  processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
+
+  // Update favicon reference if customized
+  if (settings.favicon_url) {
+    processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+type="image\/png"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" type="image/png" href="${faviconUrl}" />`);
+    processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" href="${faviconUrl}" />`);
+  }
+
+  // Inject metaBlock right before </head>
+  processedHtml = processedHtml.replace('</head>', `${metaBlock}\n  </head>`);
+
+  return processedHtml;
+}
+
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(distPath, {
     etag: false,
@@ -256,13 +337,22 @@ if (process.env.NODE_ENV === "production") {
     console.warn('[Server] Could not pre-load index.html for noncing:', err);
   }
 
-  app.get('*', (req, res) => {
-    const hasStaticExtension = /\.(js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav)$/i.test(req.path);
+  app.get('*', async (req, res) => {
+    const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      if (cachedIndexHtml) {
-        const noncedHtml = cachedIndexHtml.replace(/<script\b/g, `<script nonce="${res.locals.nonce || ''}"`);
-        res.type('html').send(noncedHtml);
-      } else {
+      try {
+        let baseHtml = cachedIndexHtml;
+        if (!baseHtml) {
+          baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+        }
+
+        const settings = await getSystemSettings().catch(() => null);
+        const noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${res.locals.nonce || ''}"`);
+        const finalHtml = settings ? injectSEOTags(noncedHtml, settings, req) : noncedHtml;
+        
+        res.type('html').send(finalHtml);
+      } catch (err) {
+        console.error('[SEO] Wildcard serve error:', err);
         res.sendFile(path.join(distPath, 'index.html'));
       }
     } else {
