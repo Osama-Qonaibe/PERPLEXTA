@@ -247,10 +247,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         onTouchStart={swipeHandlers.onTouchStart}
         onTouchMove={swipeHandlers.onTouchMove}
         onTouchEnd={swipeHandlers.onTouchEnd}
-        className={`fixed top-[72px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100vh-72px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
+        className={`fixed top-[72px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100dvh-72px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
           isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
         }`}
-        style={{ contain: 'layout', maxHeight: 'calc(100vh - 72px)' }}
+        style={{ contain: 'layout', maxHeight: 'calc(100dvh - 72px)' }}
       >
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)} 

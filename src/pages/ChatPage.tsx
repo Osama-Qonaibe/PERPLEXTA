@@ -3644,7 +3644,7 @@ export const ChatPage: React.FC = () => {
           </AnimatePresence>
 
           {(!user || !token) ? (
-            <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100vh-120px)] sm:min-h-[calc(100vh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
+            <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
               <div className="w-full text-[var(--text-primary)] my-auto">
                 <TypewriterMotive />
                 {renderInputArea()}

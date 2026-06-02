@@ -38,7 +38,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
 
   return (
     <aside 
-      className={`fixed top-[72px] bottom-0 h-[calc(100vh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
+      className={`fixed top-[72px] bottom-0 h-[calc(100dvh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
         dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'
       } translate-x-0 visible transition-colors duration-[var(--theme-transition-duration)]`}
       style={{ width: isMobile ? '68%' : '240px', maxWidth: isMobile ? '260px' : 'none' }}

@@ -13,7 +13,7 @@ export const MainLayout: React.FC = () => {
   const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 80);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme">
+    <div className="flex h-[100dvh] w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme">
       <Header activeLanguage={language} />
       <Sidebar activeLanguage={language} />
 

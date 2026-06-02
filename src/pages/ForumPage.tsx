@@ -604,7 +604,7 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div
-      className={`h-[calc(100vh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
+      className={`h-[calc(100dvh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
         isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}

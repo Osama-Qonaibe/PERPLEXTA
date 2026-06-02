@@ -328,7 +328,7 @@ export const BlogPage: React.FC = () => {
 
   return (
     <div
-      className={`h-[calc(100vh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
+      className={`h-[calc(100dvh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
         isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
