@@ -3193,7 +3193,7 @@ export const ChatPage: React.FC = () => {
 
 
   const renderInputArea = () => (
-    <div className="w-full flex flex-col box-border min-w-0 px-8 md:px-6 max-w-4xl mx-auto">
+    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto">
 
       {renderVideoSettings()}
       {renderImageSettings()}
@@ -4526,7 +4526,7 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-4 relative">
+      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-2 sm:pb-4 relative">
         <AnimatePresence>
           {showScrollToBottom && (
             <motion.button

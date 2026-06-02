@@ -3019,12 +3019,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.lang = language;
     localStorage.setItem('language', language);
     
+    const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
+      document.documentElement.style.backgroundColor = '#080809';
+      document.documentElement.style.color = '#f8fafc';
+      if (meta) meta.setAttribute('content', '#080809');
     } else {
       document.documentElement.classList.remove('dark');
       document.documentElement.classList.add('light');
+      document.documentElement.style.backgroundColor = '#fcfcfc';
+      document.documentElement.style.color = '#0f172a';
+      if (meta) meta.setAttribute('content', '#fcfcfc');
     }
     localStorage.setItem('theme', theme);
   }, [language, theme, dir]);
