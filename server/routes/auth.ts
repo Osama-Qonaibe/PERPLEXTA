@@ -864,6 +864,9 @@ router.get("/google/callback", async (req, res) => {
                 if (isPopup) {
                   try {
                     window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
+                     if (allowedOrigin !== '*') {
+                       window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
+                     }
                   } catch (e) {}
                 }
 
@@ -876,7 +879,11 @@ router.get("/google/callback", async (req, res) => {
                   if (isPopup) {
                     window.close();
                   } else {
-                    window.location.href = window.location.origin + safeRef;
+                    const separator = safeRef.indexOf('?') !== -1 ? '&' : '?';
+                    window.location.href = window.location.origin + safeRef + separator +
+                      'token=' + encodeURIComponent(data.token) +
+                      (data.refreshToken ? '&refreshToken=' + encodeURIComponent(data.refreshToken) : '') +
+                      '&user=' + encodeURIComponent(JSON.stringify(data));
                   }
                 }, 150);
               } catch (err) {
