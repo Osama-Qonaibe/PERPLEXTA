@@ -32,7 +32,16 @@ router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to create a chat.' });
     }
 
-    const chat = await createChat(req.user.id, req.body.title);
+    const { title, message, tool } = req.body;
+    const chat = await createChat(req.user.id, title);
+    
+    if (message) {
+      await addChatMessage(chat.id, 'user', message, tool);
+      generateChatTitle(chat.id, message).catch(err => {
+        console.error('[ChatRoute] Background title generation fail on chat create:', err);
+      });
+    }
+    
     res.json(chat);
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;

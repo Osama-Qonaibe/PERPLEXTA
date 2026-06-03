@@ -2712,7 +2712,11 @@ export const ChatPage: React.FC = () => {
               'Content-Type': 'application/json', 
               'Authorization': `Bearer ${authToken}` 
             },
-            body: JSON.stringify({ title: currentQuery.substring(0, 50) })
+            body: JSON.stringify({ 
+              title: currentQuery.substring(0, 50),
+              message: currentQuery,
+              tool: toolToUse
+            })
           });
           
           if (res.ok) {
@@ -2722,13 +2726,12 @@ export const ChatPage: React.FC = () => {
             chatIdRef.current = currentChatId; // Update ref immediately
             navigate(`/chat/${currentChatId}`, { replace: true });
             window.dispatchEvent(new Event('chat-created'));
+            window.dispatchEvent(new Event('chat-updated'));
           } else {
             const errorData = await res.json();
             throw new Error(errorData.error || 'Failed to create chat');
           }
-        }
-
-        if (currentChatId) {
+        } else {
           const msgRes = await fetch(`/api/chats/${currentChatId}/messages`, {
             method: 'POST',
             headers: { 

@@ -2440,10 +2440,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
           
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
-          
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -2485,10 +2481,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
-          
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
           
           return { success: true };
         } else {
