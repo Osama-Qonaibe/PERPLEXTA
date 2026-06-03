@@ -9,8 +9,13 @@ import { csrfProtection } from './middleware/csrf.js';
 
 const app = express();
 
+// Explicitly trust proxy headers (including X-Forwarded-For and X-Forwarded-Proto) to handle load balancers / reverse proxies correctly
 const trustProxyVal = process.env.TRUST_PROXIES || '1';
-app.set('trust proxy', trustProxyVal === '1' ? 1 : (isNaN(Number(trustProxyVal)) ? trustProxyVal.split(',').map(s => s.trim()) : Number(trustProxyVal)));
+if (trustProxyVal === 'true' || trustProxyVal === '1') {
+  app.set('trust proxy', 1);
+} else {
+  app.set('trust proxy', isNaN(Number(trustProxyVal)) ? trustProxyVal.split(',').map(s => s.trim()) : Number(trustProxyVal));
+}
 
 app.use((req, res, next) => {
   res.locals.nonce = crypto.randomBytes(16).toString('base64');

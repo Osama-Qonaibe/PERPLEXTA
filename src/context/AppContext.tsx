@@ -1575,6 +1575,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [usePollingFallback, setUsePollingFallback] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('socket_polling_fallback') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const bootStartTime = useRef(Date.now());
 
@@ -2696,7 +2703,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const socketEndpoint = SOCKET_URL || window.location.origin;
     const socketOptions: any = { 
-      transports: ['websocket', 'polling'], 
+      transports: usePollingFallback ? ['polling'] : ['websocket', 'polling'], 
       autoConnect: true,
       auth: { token }
     };
@@ -2706,6 +2713,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     newSocket.on('connect_error', async (err: any) => {
       console.warn('[Socket] Connection failure:', err.message);
+      
+      if (!usePollingFallback) {
+        console.warn('[Socket] WebSocket transport handshake failed. Gracefully falling back to secure HTTP long-polling...');
+        try {
+          localStorage.setItem('socket_polling_fallback', 'true');
+        } catch (e) {
+          console.warn('[Socket] Failed to write fallback state to local storage', e);
+        }
+        setUsePollingFallback(true);
+        return;
+      }
+
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
         console.warn('[Socket] Synchronizing credentials: Real-time authentication handshake refresh initialized...');
         const refreshedToken = await silentRefreshToken();
@@ -2768,7 +2787,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       newSocket.disconnect();
     };
-  }, [token, language]);
+  }, [token, language, usePollingFallback]);
 
   useEffect(() => {
     if (socket && user?.id) {

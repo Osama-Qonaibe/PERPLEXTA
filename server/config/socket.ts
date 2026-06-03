@@ -15,7 +15,11 @@ export function initSocket(httpServer: HttpServer) {
       origin: process.env.APP_URL || true,
       methods: ["GET", "POST"],
       credentials: true
-    }
+    },
+    transports: ["websocket", "polling"],
+    allowUpgrades: true,
+    pingInterval: 25000,
+    pingTimeout: 20000
   });
 
 
