@@ -1879,51 +1879,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     points_per_dollar: 1000, 
     conversion_rate: 0.001 
   });
+
+  const handleAuthSuccess = (userData: any) => {
+    if (localStorage.getItem('app_oauth_syncing') === 'true') return;
+    localStorage.setItem('app_oauth_syncing', 'true');
+
+    const { token: newToken, refreshToken: newRefreshToken, lang: authLang, ...info } = userData;
+    localStorage.setItem('app_token', newToken);
+    setToken(newToken);
+    if (newRefreshToken) {
+      localStorage.setItem('app_refresh_token', newRefreshToken);
+      setRefreshTokenState(newRefreshToken);
+    }
+    setUser(info);
+    setIsAuthModalOpen(false); 
+    
+    if (authLang && (authLang === 'ar' || authLang === 'en')) {
+      setLanguage(authLang as any);
+      localStorage.setItem('language', authLang);
+    }
+    
+    const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
+    const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
+    localStorage.removeItem('app_ref');
+    
+    const currentPath = window.location.pathname;
+    const isSamePage = currentPath === targetRef || 
+                       (currentPath === '/' && targetRef === '/chats') || 
+                       (currentPath === '/chats' && targetRef === '/');
+    
+    setTimeout(() => {
+      localStorage.removeItem('app_oauth_syncing');
+      if (isSamePage) {
+        profileFetched.current = false;
+        fetchUserProfile();
+        fetchBalance();
+        toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+      } else {
+        localStorage.setItem('app_logged_in_toast', '1');
+        localStorage.setItem('app_loader_type', 'login');
+        localStorage.setItem('app_force_refresh', '1');
+        window.location.href = targetRef;
+      }
+    }, 50);
+  };
+
   useEffect(() => {
-    const handleAuthSuccess = (userData: any) => {
-      if (localStorage.getItem('app_oauth_syncing') === 'true') return;
-      localStorage.setItem('app_oauth_syncing', 'true');
-
-      const { token: newToken, refreshToken: newRefreshToken, lang: authLang, ...info } = userData;
-      localStorage.setItem('app_token', newToken);
-      setToken(newToken);
-      if (newRefreshToken) {
-        localStorage.setItem('app_refresh_token', newRefreshToken);
-        setRefreshTokenState(newRefreshToken);
-      }
-      setUser(info);
-      setIsAuthModalOpen(false); 
-      
-      if (authLang && (authLang === 'ar' || authLang === 'en')) {
-        setLanguage(authLang as any);
-        localStorage.setItem('language', authLang);
-      }
-      
-      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
-      const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
-      localStorage.removeItem('app_ref');
-      
-      const currentPath = window.location.pathname;
-      const isSamePage = currentPath === targetRef || 
-                         (currentPath === '/' && targetRef === '/chats') || 
-                         (currentPath === '/chats' && targetRef === '/');
-      
-      setTimeout(() => {
-        localStorage.removeItem('app_oauth_syncing');
-        if (isSamePage) {
-          profileFetched.current = false;
-          fetchUserProfile();
-          fetchBalance();
-          toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
-        } else {
-          localStorage.setItem('app_logged_in_toast', '1');
-          localStorage.setItem('app_loader_type', 'login');
-          localStorage.setItem('app_force_refresh', '1');
-          window.location.href = targetRef;
-        }
-      }, 50);
-    };
-
     const getParam = (name: string) => {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get(name)) return searchParams.get(name);
@@ -2343,6 +2344,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const mode = (isMobileDevice || isStandalone) ? 'redirect' : 'popup';
       
+      // Clean up synchronization flags to avoid stale locks
+      localStorage.removeItem('app_oauth_syncing');
+      
       const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}`);
       
       if (!res.ok) {
@@ -2367,7 +2371,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
-      window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
+      
+      const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
+
+      // Start an ultra-reliable polling fallback that checks localStorage for auth state.
+      // This bypasses COOP / opener restriction blocks completely.
+      let checkCount = 0;
+      const pollInterval = setInterval(() => {
+        checkCount++;
+        if (checkCount > 600) { // Limit to 5 minutes
+          clearInterval(pollInterval);
+          return;
+        }
+
+        const storedToken = localStorage.getItem('app_token');
+        const userDataJson = localStorage.getItem('app_oauth_user');
+
+        if (storedToken && userDataJson) {
+          clearInterval(pollInterval);
+          try {
+            const userData = JSON.parse(userDataJson);
+            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
+            handleAuthSuccess(processedUser);
+            localStorage.removeItem('app_oauth_user');
+            localStorage.removeItem('app_oauth_trigger');
+            if (popup && !popup.closed) {
+              try {
+                popup.close();
+              } catch (e) {}
+            }
+          } catch (e) {
+            console.error('Failed to parse OAuth stored data in polling fallback:', e);
+          }
+        }
+      }, 500);
 
     } catch (error) {
       console.error('Login failed', error);

@@ -559,7 +559,14 @@ router.get("/stats", authenticateAdmin, async (req, res) => {
 router.get("/security-alerts", authenticateAdmin, async (req, res) => {
   try {
     const result = await getSecurityPool().query('SELECT * FROM security_alerts ORDER BY created_at DESC LIMIT 50');
-    res.json(result.rows);
+    const mappedRows = result.rows.map((row: any) => ({
+      ...row,
+      type: row.type || row.alert_type,
+      alert_type: row.alert_type || row.type,
+      description: row.description || row.details || row.message,
+      details: row.details || row.description || row.message
+    }));
+    res.json(mappedRows);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
