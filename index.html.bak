@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر</title>
+    
+    <!-- Primary SEO Meta Tags -->
+    <meta id="meta-description" name="description" content="بيربليكستا - منصة التحليل الفني والذكاء الاصطناعي الرائدة ومحرك التوجيه المتعدد بين الأنظمة الذكية لحل المسائل المعقدة ورفع الكفاءة التشغيلية والمالية." />
+    <meta id="meta-keywords" name="keywords" content="بيربليكستا, ذكاء اصطناعي, أوركسترا النماذج, أوتوميشن, تحليل البيانات, البرمجة الاحترافية, نماذج محادثة, ميموري, ليدجر مالي" />
+    <meta name="author" content="Perplexta Tech Platforms" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://perplexta.com" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://perplexta.com" />
+    <meta property="og:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
+    <meta property="og:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
+    <meta property="og:image" content="https://perplexta.com/app-assets/og-image.png" />
+    <meta property="og:site_name" content="بيربليكستا | Perplexta" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@perplexta" />
+    <meta name="twitter:creator" content="@perplexta" />
+    <meta name="twitter:url" content="https://perplexta.com" />
+    <meta name="twitter:title" content="منصة بيربليكستا - تحليل تقني احترافي وأوركسترا الذكاء الاصطناعي" />
+    <meta name="twitter:description" content="منصة التحليل والذكاء الاصطناعي الفاخر وحلول معالجة البيانات وبناء التطبيقات باستخدام أحدث النماذج العابرة للأنظمة." />
+    <meta name="twitter:image" content="https://perplexta.com/app-assets/og-image.png" />
+
+    <!-- Google Webmasters / Search Console Verification (Placeholder for admins) -->
+    <meta name="google-site-verification" content="verification_placeholder" />
+
+    <!-- Dynamic Google Tag dynamically injected on system settings load -->
+
+    <!-- Web Application Schema (JSON-LD) for Search Engine Rich Cards -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Perplexta Platform",
+        "alternateName": "بيربليكستا",
+        "description": "Professional Elite Technical Analysis & Multi-Model Orchestration Platform.",
+        "url": "https://perplexta.com",
+        "applicationCategory": "BusinessApplication",
+        "browserRequirements": "Requires HTML5 compatible browser with JavaScript enabled.",
+        "operatingSystem": "All",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f0f11">
+    <script>
+      (function() {
+        try {
+          var lang = 'ar';
+          try {
+            lang = localStorage.getItem('language') || 'ar';
+          } catch(e) {}
+          
+          document.documentElement.lang = lang;
+          document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+          var settings = null;
+          
+          // Helper function to apply settings to the DOM dynamically
+          function applySettings(s) {
+            if (!s) return;
+            var title = lang === 'ar' ? (s.siteNameAr || s.siteName) : (s.siteName || s.siteNameAr);
+            if (title && title !== '...') {
+              document.title = title;
+              var ogTitle = document.querySelector('meta[property="og:title"]');
+              if (ogTitle) ogTitle.setAttribute('content', title);
+              var twTitle = document.querySelector('meta[name="twitter:title"]');
+              if (twTitle) twTitle.setAttribute('content', title);
+            }
+            
+            var desc = lang === 'ar' ? (s.seoDescriptionAr || s.siteDescriptionAr) : (s.seoDescriptionEn || s.siteDescription);
+            if (desc) {
+              var metaDesc = document.querySelector('meta[name="description"]');
+              if (metaDesc) metaDesc.setAttribute('content', desc);
+              
+              var ogDesc = document.querySelector('meta[property="og:description"]');
+              if (ogDesc) ogDesc.setAttribute('content', desc);
+              
+              var twDesc = document.querySelector('meta[name="twitter:description"]');
+              if (twDesc) twDesc.setAttribute('content', desc);
+            }
+            
+            var keywords = lang === 'ar' ? s.keywordsAr : s.keywordsEn;
+            if (keywords) {
+              var metaKeys = document.querySelector('meta[name="keywords"]');
+              if (metaKeys) metaKeys.setAttribute('content', keywords);
+            }
+            
+            var seoImg = s.seoImageUrl;
+            if (seoImg) {
+              var ogImg = document.querySelector('meta[property="og:image"]');
+              if (ogImg) ogImg.setAttribute('content', seoImg);
+              
+              var twImg = document.querySelector('meta[name="twitter:image"]');
+              if (twImg) twImg.setAttribute('content', seoImg);
+            }
+            
+            var siteVerification = s.googleSiteVerification;
+            if (siteVerification) {
+              var metaSV = document.querySelector('meta[name="google-site-verification"]');
+              if (metaSV) metaSV.setAttribute('content', siteVerification);
+            }
+
+            if (s.faviconBase64) {
+              var existingFavicon = document.querySelector('link[rel="icon"]');
+              if (existingFavicon) {
+                 existingFavicon.href = s.faviconBase64;
+              } else {
+                 var link = document.createElement('link');
+                 link.rel = 'icon';
+                 link.href = s.faviconBase64;
+                 document.head.appendChild(link);
+              }
+            }
+          }
+
+          // Step 1: Immediate instant load from localStorage (0ms budget, completely non-blocking)
+          try {
+            settings = JSON.parse(localStorage.getItem('site_settings') || '{}');
+          } catch(e) {}
+
+          if (settings && settings.siteName) {
+            applySettings(settings);
+          } else {
+            document.title = lang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر' : 'Perplexta - Premium AI Platform';
+          }
+
+          // Step 2: Asynchronous background fetch to keep settings fresh and up-to-date (100% non-blocking)
+          fetch('/api/settings')
+            .then(function(res) {
+              if (res.ok) return res.json();
+              throw new Error('Settings HTTP error ' + res.status);
+            })
+            .then(function(raw) {
+              var fresh = {
+                siteName: raw.site_name_en || '',
+                siteNameAr: raw.site_name_ar || '',
+                siteDescription: raw.site_description_en || '',
+                siteDescriptionAr: raw.site_description_ar || '',
+                seoDescriptionEn: raw.seo_description_en || '',
+                seoDescriptionAr: raw.seo_description_ar || '',
+                keywordsEn: raw.keywords_en || '',
+                keywordsAr: raw.keywords_ar || '',
+                googleAnalyticsId: raw.google_analytics_id || '',
+                googleSiteVerification: raw.google_site_verification || '',
+                logoBase64: raw.logo_url || null,
+                logoLightBase64: raw.logo_light_url || null,
+                faviconBase64: raw.favicon_url || null,
+                seoImageUrl: raw.seo_image_url || null
+              };
+              localStorage.setItem('site_settings', JSON.stringify(fresh));
+              applySettings(fresh);
+            })
+            .catch(function(err) {
+              console.warn('[SEO Loader] Failed fetching remote configuration asynchronously:', err);
+            });
+
+          // Dynamic Google Analytics Integration using the loaded setting
+          var gaId = (settings && settings.googleAnalyticsId) || 'G-TJ89GYPD40';
+          if (gaId) {
+            var gaScript = document.createElement('script');
+            gaScript.id = 'ga-script';
+            gaScript.async = true;
+            gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+            document.head.appendChild(gaScript);
+            
+            var gaInlineScript = document.createElement('script');
+            gaInlineScript.id = 'ga-inline-script';
+            gaInlineScript.innerHTML = 
+              "window.dataLayer = window.dataLayer || [];\n" +
+              "function gtag(){dataLayer.push(arguments);}\n" +
+              "gtag('js', new Date());\n" +
+              "gtag('config', '" + gaId + "');";
+            document.head.appendChild(gaInlineScript);
+            
+            window.gtag = function(){ dataLayer.push(arguments); };
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html, body {
+        background-color: #0f0f11 !important; /* Forces dark background to prevent any white flash */
+        margin: 0;
+        padding: 0;
+      }
+      /* Only apply light background if the light class is explicitly present */
+      html.light, html.light body {
+        background-color: #ffffff !important;
+      }
+    </style>
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Reg failed', err));
+        });
+      }
+    </script>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme') || 'dark';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#0f0f11';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.style.backgroundColor = '#ffffff';
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

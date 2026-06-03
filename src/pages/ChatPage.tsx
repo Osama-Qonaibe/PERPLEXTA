@@ -2284,12 +2284,19 @@ export const ChatPage: React.FC = () => {
         console.log('[ChatPage] Skipping redundant load for active generation session.');
         return;
       }
+      // Perplexta Fix: Prevent re-loading the same chatId when isAuthReady re-triggers this effect
+      if (loadedChatIdRef.current === routeChatId) {
+        console.log('[ChatPage] ChatId already loaded, skipping duplicate loadChat call.');
+        return;
+      }
       if (isAuthReady) {
+        loadedChatIdRef.current = routeChatId;
         loadChat(routeChatId);
       }
     } else {
       setMessages([]);
       setChatId(null);
+      loadedChatIdRef.current = null;
       localStorage.removeItem('last_chat_id');
     }
   }, [routeChatId, token, isAuthReady]);
