@@ -184,6 +184,24 @@ npm run start
 
 ---
 
+## 🔒 Proprietary License & Ownership Agreement
+
+### **STRICTLY PROPRIETARY - ALL RIGHTS RESERVED**
+
+This software and its entire codebase, structural design, architecture, icons, databases, and custom protocols are completely proprietary, confidential, and protected under national and international intellectual property (IP) and copyright laws.
+
+* **Intellectual Property Rights:** Owned entirely and exclusively by the Lead Architect & Developer, **Osama Qoneibi** (أسامة قنيبي).
+* **Proprietary & Commercial Ownership:** Held entirely, globally, and exclusively by **Viral Link Up Ltd.** (شركة فيرال لينك اب المحدودة).
+
+#### **Terms of Use & Restrictive Covenants:**
+1. **No Reverse Engineering:** Any form of decompiling, disassembling, reverse engineering, extraction, or structural decoding of any part of this system is strictly and absolutely prohibited.
+2. **No Unauthorized Copying or Modification:** No part of this codebase (including frontend styling, backend protocols, database schemas, and orchestrator features) may be copied, modified, cloned, duplicated, redistributed, published, or transmitted in any form or by any means without prior explicit, official, written authorization from both the intellectual property holder and the commercial owner.
+3. **Traceability:** Any unauthorized access, replication, or usage of this software will be pursued legally to the maximum extent permitted by applicable commercial, maritime, and intellectual property courts globally.
+
+---
+
 <div align="center">
   <sub>PERPLEXTA PLATFORM • Engineered with Professional Purity, Majestic Calm & Bulletproof Performance.</sub>
+  <br>
+  <sub>Copyright © 2026 Osama Qoneibi & Viral Link Up Ltd. All Rights Reserved.</sub>
 </div>
