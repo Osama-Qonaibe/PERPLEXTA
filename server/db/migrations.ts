@@ -485,6 +485,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_logs', 'type', 'VARCHAR(50)', `'system'`);
       await ensureColumn(tx, 'system_logs', 'details', 'JSONB', `'{}'`);
       await ensureColumn(tx, 'security_alerts', 'type', 'VARCHAR(50)', `'security'`);
+      await ensureColumn(tx, 'plans', 'plan_type', 'VARCHAR(100)', `'user'`);
 
       await tx.query(`SELECT 1`); // Placeholder
     });
@@ -1205,6 +1206,28 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'logo_light_url', 'TEXT');
     });
 
+    await runVersioned('v36_agent_auth', 'Creating web bot agent auth registration and credentials table', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS registered_agents (
+          id SERIAL PRIMARY KEY,
+          client_id VARCHAR(255) UNIQUE NOT NULL,
+          client_secret VARCHAR(255) NOT NULL,
+          client_name VARCHAR(255),
+          identity_type VARCHAR(50) DEFAULT 'agent',
+          credential_type VARCHAR(50) DEFAULT 'client_credentials',
+          redirect_uris TEXT[],
+          jwks_uri VARCHAR(500),
+          user_agent VARCHAR(500),
+          signature_keys JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    });
+
+    await runVersioned('v37_agent_auth_user_id', 'Adding user_id owner link column to registered_agents', async (tx) => {
+      await ensureColumn(tx, 'registered_agents', 'user_id', 'INTEGER');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1539,6 +1562,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         color VARCHAR(50) DEFAULT 'emerald',
         features JSONB DEFAULT '[]',
         limits JSONB DEFAULT '{}',
+        plan_type VARCHAR(100) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -2086,11 +2110,23 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   const planCheck = await targetPool.query('SELECT count(*) FROM plans');
   if (parseInt(planCheck.rows[0].count) === 0) {
       await targetPool.query(`
-        INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits)
+        INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits, plan_type)
         VALUES
-          ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}'),
-          ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}'),
-          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Perplexta Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}')
+          ('Starter', 'البداية', 'Free starter plan', 'خطة البداية المجانية', 0, 0, 0, '["Basic Search", "Limited AI Chats"]', '#10b981', false, 'Standard', '{"chat": 20, "chat_fast": 30, "perplexta_analysis": 5, "image": 2, "code": 5, "notebook": 10, "stt": 5, "tts": 5, "storage_mb": 100}', 'user'),
+          ('Pro', 'المحترف', 'Professional plan for advanced users', 'خطة المحترفين للمستخدمين المتقدمين', 19.99, 199.90, 17, '["Advanced Analysis", "Unlimited Chats", "Priority Support"]', '#3b82f6', true, 'Best Value', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": 100, "perplexta_analysis": 50, "image": 50, "code": 100, "notebook": 100, "stt": 100, "tts": 100, "storage_mb": 1024}', 'user'),
+          ('Elite', 'النخبة', 'Full power for strategic expert users', 'القوة الكاملة للمستخدمين الخبراء الاستراتيجيين', 49.99, 499.90, 17, '["Full Perplexta Access", "Multi-model Orchestration", "Concierge Support"]', '#8b5cf6', false, 'Elite', '{"chat": "unlimited", "chat_fast": "unlimited", "chat_pro": "unlimited", "chat_reasoning": "unlimited", "perplexta_analysis": "unlimited", "image": "unlimited", "video": 50, "code": "unlimited", "legal_analysis": "unlimited", "storage_mb": 10240}', 'user')
+        ON CONFLICT (name_en) DO NOTHING
+      `);
+    }
+
+  const devPlanCheck = await targetPool.query("SELECT count(*) FROM plans WHERE plan_type = 'developer'");
+  if (parseInt(devPlanCheck.rows[0].count) === 0) {
+      console.log('[Migrations] Seeding Developer Plans...');
+      await targetPool.query(`
+        INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, monthly_price, annual_price, discount, features, color, is_popular, badge, limits, plan_type)
+        VALUES
+          ('Developer Lite', 'مطور لايت', 'Direct high-fidelity x402 gateway and programmatic client connectivity.', 'بوابة x402 عالية الدقة المباشرة وربط العملاء البرمجيين.', 29.99, 299.90, 17, '["Direct x402 API Access", "1,000 Key Requests/day", "Unified Failover Route", "Rate limit 30 req/min"]', '#8b5cf6', false, 'Dev Entry', '{"x402_api": 1000, "storage_mb": 2000}', 'developer'),
+          ('Developer Scale', 'مطور سكيل', 'Unthrottled enterprise gateway and strategic multi-modal programmatic access.', 'بوابة المؤسسات غير المحدودة والوصول البرمجي المتعدد الاستراتيجي.', 99.99, 999.90, 17, '["Unthrottled x402 API Node", "10,000 Key Requests/day", "Dedicated Webhooks", "Automated Failover Orchestrator Mode", "Priority Support"]', '#ec4899', true, 'Best Dev Value', '{"x402_api": 10000, "storage_mb": 10240}', 'developer')
         ON CONFLICT (name_en) DO NOTHING
       `);
     }
@@ -2113,7 +2149,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       ('canvas', '', '', 'Perplexta creative studio and multi-modal design canvas.', 'استوديو الإبداع المتقدم ولوحة التصميم متعددة الوسائط.', 25),
       ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
       ('sovereign_memory', '', '', 'Unified sovereign system intelligence and long-term memory synthesis.', 'ذاكرة النظام السيادية الموحدة وتركيب المعارف طويلة الأمد.', 5),
-      ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10)
+      ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10),
+      ('x402_api', 'google', 'gemini-1.5-pro', 'Dynamic high-fidelity artificial intelligence analytics gateway for programmatic developer clients connected via x402 payment protocol.', 'بوابة تحليلات الذكاء الاصطناعي عالية الدقة الديناميكية لعملاء الوكلاء البرمجيين المتصلين ببروتوكول دفع x402.', 15)
     ON CONFLICT (tool_id) DO NOTHING
   `);
 }

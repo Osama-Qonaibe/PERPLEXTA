@@ -206,15 +206,16 @@ router.get("/plans", authenticateAdmin, async (req, res) => {
 
 router.post("/plans", authenticateAdmin, async (req, res) => {
   try {
-    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits } = req.body;
+    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user' } = req.body;
     if (!name_en) return res.status(400).json({ error: 'name_en is required' });
     await pool.query(`
-      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits)]);
+      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type]);
     await auditLog((req as any).user?.id, 'Create Plan', 'system', { name_en });
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[Admin] Create Plan Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -222,17 +223,18 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
 router.put("/plans/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits } = req.body;
+    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user' } = req.body;
     await pool.query(`
       UPDATE plans SET 
         name_en = $1, name_ar = $2, desc_en = $3, desc_ar = $4, badge = $5, 
         discount = $6, is_active = $7, is_visible = $8, monthly_price = $9, annual_price = $10, 
-        color = $11, features = $12, limits = $13, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $14
-    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), id]);
+        color = $11, features = $12, limits = $13, plan_type = $14, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $15
+    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type, id]);
     await auditLog((req as any).user?.id, 'Update Plan', 'system', { id, name_en });
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[Admin] Update Plan Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -303,11 +305,30 @@ router.get("/users", authenticateAdmin, async (req, res) => {
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const data = await memoryCache.getOrSet("admin:orchestrator:routes", async () => {
+      // Auto-heal/seed missing tools in DB
+      const { tools } = await import('../config/constants.js');
+      // Find all existing tool_ids
+      const dbTools = await pool.query('SELECT tool_id FROM tool_orchestrator');
+      const dbToolIds = new Set(dbTools.rows.map((r: any) => r.tool_id));
+      
+      const missingTools = tools.filter(t => !dbToolIds.has(t.id));
+      if (missingTools.length > 0) {
+        console.log(`[Admin Orchestrator] Seeding ${missingTools.length} missing tools to DB tool_orchestrator...`);
+        for (const t of missingTools) {
+          await pool.query(`
+            INSERT INTO tool_orchestrator (tool_id, primary_provider, primary_model, is_active, cost_per_usage, task_description, task_description_ar)
+            VALUES ($1, '', '', true, $2, $3, $4)
+            ON CONFLICT (tool_id) DO NOTHING
+          `, [t.id, t.cost, t.desc, t.descAr]);
+        }
+      }
+
       const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
       return { routes: result.rows, tools: result.rows };
     }, 3600000); // 1 hour Cache
     res.json(data);
-  } catch {
+  } catch (err) {
+    console.error('[Admin Orchestrator Error]', err);
     res.status(500).json({ error: 'Internal Error' });
   }
 });
@@ -363,6 +384,7 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
       }
       await client.query('COMMIT');
       invalidateVaultCache();
+      memoryCache.delete("admin:orchestrator:routes");
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');

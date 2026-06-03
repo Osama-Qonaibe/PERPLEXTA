@@ -246,6 +246,12 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
         - Redefined the Logout trigger to immediately purge memory states (User, Token, Sockets, and Balances) and kick off an instantaneous refresh while safely performing the backend session revocation asynchronously.
     - **Eliminated Delayed Jitter/Notifications**: Eliminated automatic, delayed startup and tool-change system notifications to ensure the platform behaves cleanly and quietly.
     - **Premium AuthModal Exit Animation**: Added a graceful fade-out and slide transition using `AnimatePresence` on `AuthModal.tsx` to provide a premium visual experience during authentication state changes.
+- **Programmatic Integration & Subscription Splitting (Completed Today - June 3, 2026):**
+    - **Hardened Programmatic Agent Flow & Wallet Deduction**: Re-engineered programmatic client registration (`registered_agents` portal). Creating client credentials now invokes an automated backend wallet transaction check that queries the current cost of `x402_api` from the `tool_orchestrator` table (falling back safely to ₪5.00), validates active user wallet balances, and triggers transactional debits using secure, append-only ledger mechanisms.
+    - **Insufficient Balance Handler (402 Verification)**: Integrated rigid upfront checks. Registration requests immediately reject with a standard HTTP 402 code and dynamic bilingual guidance (Arabic/English) if user balances are beneath the registration threshold, eliminating orphan key generation.
+    - **Segmented Plans & Subscriptions Display**: Optimized the frontend `SubscriptionPage` with a dual-segmented interactive sliding switch separating consumer "Performance Plans" from developer-agent "Developer & Agent Plans".
+    - **Reactive Limit Visualization**: Implemented dynamic context-aware limit presentations inside package cards. Selecting Developer plans automatically swaps standard user conversational meters (chats, analysis tools) with programmatic-specific meters (`x402 API Requests`) and Storage quotas.
+    - **Bilingual Schema Migration & Seeding**: Added safe migration and auto-seeding blocks for corporate API packages (`Developer Lite` and `Developer Scale`) under the new `plan_type` schema constraint, keeping structural fields updated in user editing panels.
 - **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MAJESTIC CALM ACHIEVED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)

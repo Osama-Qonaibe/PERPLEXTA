@@ -93,7 +93,13 @@ export const SubscriptionPage: React.FC = () => {
     };
   }, [resultModal, navigate]);
 
+  const [activeTab, setActiveTab] = React.useState<'user' | 'developer'>('user');
+
   const visiblePlans = plans.filter(plan => plan.isVisible);
+  const displayedPlans = visiblePlans.filter(plan => {
+    if (activeTab === 'developer') return plan.planType === 'developer';
+    return !plan.planType || plan.planType === 'user';
+  });
 
   const getDisplayPrice = (plan: any, cycle: 'monthly' | 'annual') => {
     const m = Number(plan.monthlyPrice || 0);
@@ -290,8 +296,39 @@ export const SubscriptionPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="flex justify-center mb-10">
+        <div className="p-1 rounded-[var(--radius)] flex items-center bg-[var(--bg-secondary)] border border-[var(--border-main)]/60 max-w-lg w-full">
+          <button
+            onClick={() => setActiveTab('user')}
+            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+              activeTab === 'user'
+                ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                : 'text-[var(--text-secondary)] hover:text-emerald-500'
+            }`}
+          >
+            <Sparkles size={14} className={activeTab === 'user' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''} />
+            <span className={activeTab === 'user' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : ''}>
+              {dir === 'rtl' ? 'خطط الاستخدام العام' : 'Performance Plans'}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('developer')}
+            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+              activeTab === 'developer'
+                ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                : 'text-[var(--text-secondary)] hover:text-emerald-500'
+            }`}
+          >
+            <Code2 size={14} className={activeTab === 'developer' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''} />
+            <span className={activeTab === 'developer' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : ''}>
+              {dir === 'rtl' ? 'خطط المطورين والوكلاء' : 'Developer & Agent Plans'}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-        {visiblePlans.map((plan) => (
+        {displayedPlans.map((plan) => (
           <div 
             key={plan.id} 
             className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
@@ -368,12 +405,21 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
               <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat') || 'Chat'} value={plan.limits.chat} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis') || 'Perplexta Analysis'} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('image') || 'Image Generation'} value={plan.limits.image} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('code') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
-                <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
-                <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('canvas') || 'Smart Audio Studio'} value={plan.limits.canvas !== undefined ? plan.limits.canvas : (plan.limits.workspace !== undefined ? plan.limits.workspace : (plan.limits.tts !== undefined ? plan.limits.tts : 0))} color={plan.color || '#10b981'} />
+                {plan.limits.x402_api !== undefined ? (
+                  <>
+                    <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={dir === 'rtl' ? 'واجهة البرمجة x402' : 'x402 API Requests'} value={plan.limits.x402_api} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
+                  </>
+                ) : (
+                  <>
+                    <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat') || 'Chat'} value={plan.limits.chat} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis') || 'Perplexta Analysis'} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('image') || 'Image Generation'} value={plan.limits.image} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('code') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
+                    <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('canvas') || 'Smart Audio Studio'} value={plan.limits.canvas !== undefined ? plan.limits.canvas : (plan.limits.workspace !== undefined ? plan.limits.workspace : (plan.limits.tts !== undefined ? plan.limits.tts : 0))} color={plan.color || '#10b981'} />
+                  </>
+                )}
               </div>
             </div>
           </div>

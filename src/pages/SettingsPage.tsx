@@ -6,6 +6,7 @@ import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
 import { MarketplacePortfolio } from '../components/MarketplacePortfolio';
+import { DeveloperAgentPortal } from '../components/DeveloperAgentPortal';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { 
@@ -202,6 +203,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
     { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'سوق المنصة' : 'Marketplace Hub' },
     { id: 'memory', icon: <BrainCircuit size={18} />, label: t('memoryCenter') },
+    { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'بوابة المطورين والوكلاء' : 'Developer & Bot Portal' },
   ];
 
   if (!user) return null;
@@ -343,6 +345,13 @@ export const SettingsPage: React.FC = () => {
                    theme={theme}
                    stickyOffset={80}
                  />
+              )}
+
+              {/* Developer & Bot Portal Tab */}
+              {activeTab === 'developer' && (
+                <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-2xl">
+                  <DeveloperAgentPortal />
+                </div>
               )}
             </motion.div>
           </AnimatePresence>

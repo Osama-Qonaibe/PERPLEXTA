@@ -14,5 +14,6 @@ export const tools = [
   { id: 'canvas', cost: 25, desc: 'Smart Audio & Multi-modal Studio', descAr: 'استوديو الصوت الذكي والإنتاج المتعدد' },
   { id: 'notebook', cost: 30, desc: 'Perplexta research notebook', descAr: 'دفتر أبحاث احترافي' },
   { id: 'sovereign_memory', cost: 5, desc: 'Unified sovereign system intelligence and long-term memory synthesis.', descAr: 'ذاكرة النظام السيادية الموحدة وتركيب المعارف طويلة الأمد.' },
-  { id: 'sovereign_search', cost: 10, desc: 'Global real-time web intelligence and strategic knowledge extraction.', descAr: 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.' }
+  { id: 'sovereign_search', cost: 10, desc: 'Global real-time web intelligence and strategic knowledge extraction.', descAr: 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.' },
+  { id: 'x402_api', cost: 15, desc: 'Dynamic high-fidelity artificial intelligence analytics gateway for programmatic developer clients connected via x402 payment protocol.', descAr: 'بوابة تحليلات الذكاء الاصطناعي عالية الدقة الديناميكية لعملاء الوكلاء البرمجيين المتصلين ببروتوكول دفع x402.' }
 ];

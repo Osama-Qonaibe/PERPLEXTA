@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { pool, getSecurityPool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
+import { getOrCreateSigningKeys } from '../utils/keys.js';
 
 interface UserCacheEntry {
   status: string;
@@ -67,6 +68,31 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
       jwt.verify(token, jwtSecret, async (err: any, user: any) => {
         if (err) {
+          try {
+            const { publicKeyPem } = getOrCreateSigningKeys();
+            if (publicKeyPem) {
+              const agentPayload = jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] }) as any;
+              if (agentPayload && agentPayload.client_id) {
+                const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [agentPayload.client_id]);
+                if (agentCheck.rows.length > 0) {
+                  const agent = agentCheck.rows[0];
+                  (req as any).user = {
+                    id: agent.id,
+                    name: agent.client_name,
+                    id_type: agent.identity_type,
+                    role: 'agent',
+                    isAgent: true,
+                    client_id: agent.client_id
+                  };
+                  (req as any).token = token;
+                  return next();
+                }
+              }
+            }
+          } catch (rsaErr) {
+            // Fall through to original error handling
+          }
+
           if (err.name === 'TokenExpiredError') {
             console.warn(`[Auth] JWT Token Expired`);
             res.status(401).json({ error: 'TokenExpiredError', message: 'Token has expired' });

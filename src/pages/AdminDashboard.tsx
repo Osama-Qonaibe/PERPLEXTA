@@ -695,6 +695,7 @@ const CommandCenterView = ({
               { id: 'chat_pro', labelEn: 'Pro Chat', labelAr: 'المحادثة المتقدمة' },
               { id: 'chat_reasoning', labelEn: 'Reasoning Mode', labelAr: 'نمط التفكير العميق' },
               { id: 'perplexta_analysis', labelEn: 'Perplexta Analysis', labelAr: 'تحليل بيربليكستا' },
+              { id: 'x402_api', labelEn: 'x402 Agent API', labelAr: 'بوابة عملاء x402' },
               { id: 'image', labelEn: 'Image Generation', labelAr: 'توليد الصور' },
               { id: 'code', labelEn: 'Code Analysis', labelAr: 'تحليل الكود' },
               { id: 'legal_analysis', labelEn: 'Legal Analysis', labelAr: 'التحليل القانوني' }
@@ -4419,6 +4420,7 @@ const OrchestratorView = ({
                 canvas: Music,
                 sovereign_memory: Database,
                 sovereign_search: Search,
+                x402_api: Cpu,
               };
 
               if (savedRoute) {
@@ -6723,6 +6725,7 @@ const ALL_TOOLS = [
   "canvas",
   "sovereign_memory",
   "sovereign_search",
+  "x402_api",
   "storage_mb",
   "marketplace_listings",
 ];
@@ -6775,6 +6778,7 @@ const PlansSubscriptionsView = ({
           monthlyPrice: parseFloat(p.monthly_price),
           annualPrice: parseFloat(p.annual_price),
           color: p.color,
+          planType: p.plan_type || "user",
           features:
             typeof p.features === "string"
               ? JSON.parse(p.features)
@@ -6830,6 +6834,7 @@ const PlansSubscriptionsView = ({
         ...plan,
         isActive: plan.isActive !== undefined ? plan.isActive : true,
         isVisible: plan.isVisible !== undefined ? plan.isVisible : true,
+        planType: plan.planType || "user",
         limits,
       });
     } else {
@@ -6852,6 +6857,7 @@ const PlansSubscriptionsView = ({
         annualPrice: 0,
         color: "#10b981",
         features: [],
+        planType: "user",
         limits,
       });
     }
@@ -6901,8 +6907,8 @@ const PlansSubscriptionsView = ({
     try {
       const isNew = editingPlan.id === "new";
       const url = isNew
-        ? "/api/admin/plans"
-        : `/api/admin/plans/${editingPlan.id}`;
+         ? "/api/admin/plans"
+         : `/api/admin/plans/${editingPlan.id}`;
       const method = isNew ? "POST" : "PUT";
 
       const payload = {
@@ -6919,6 +6925,7 @@ const PlansSubscriptionsView = ({
         color: editingPlan.color,
         features: editingPlan.features,
         limits: editingPlan.limits,
+        plan_type: editingPlan.planType || "user",
       };
 
       const res = await fetch(url, {
@@ -7221,6 +7228,32 @@ const PlansSubscriptionsView = ({
                         className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme text-center`}
                         dir="ltr"
                       />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-xs font-medium text-gray-500 px-1">
+                        {dir === "rtl" ? "تصنيف الباقة" : "Plan Type"}
+                      </label>
+                      <select
+                        value={editingPlan.planType || "user"}
+                        onChange={(e) =>
+                          setEditingPlan({
+                            ...editingPlan,
+                            planType: e.target.value,
+                          })
+                        }
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme appearance-none`}
+                        dir={dir}
+                      >
+                        <option value="user">
+                          {dir === "rtl" ? "مستخدم (عام)" : "User (General)"}
+                        </option>
+                        <option value="developer">
+                          {dir === "rtl" ? "مطورين (وكلاء برمجيات)" : "Developers (API/Agents)"}
+                        </option>
+                      </select>
                     </div>
                   </div>
 

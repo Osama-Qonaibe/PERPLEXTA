@@ -1,198 +1,189 @@
 # 🌌 Perplexta Platform - Elite AI System & Dual-Database Orchestrator
 
-[![Architecture: Full-Stack React + Express](https://img.shields.io/badge/Architecture-Full--Stack%20React%20%2B%20Express-emerald?style=flat-back-line)](https://github.com)
-[![Database: PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_Dual--Core-blue?style=flat-back-line)](https://github.com)
-[![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-8e44ad?style=flat-back-line)](https://github.com)
-[![Stability: Verified Active](https://img.shields.io/badge/Stability-Verified%20Active-2ecc71?style=flat-back-line)](https://github.com)
+[![Architecture: Full-Stack React 19 + Express](https://img.shields.io/badge/Architecture-Full--Stack%20React%2019%20%2B%20Express-emerald?style=flat-square)](https://github.com)
+[![Database: PostgreSQL Dynamic Quad-Pool](https://img.shields.io/badge/Database-PostgreSQL%20Quad--Pool-blue?style=flat-square)](https://github.com)
+[![Protocol: Agentic Commerce Protocol (ACP)](https://img.shields.io/badge/Protocol-ACP%20Discovery-orange?style=flat-square)](https://github.com)
+[![Protocol: Model Context Protocol (MCP)](https://img.shields.io/badge/Protocol-MCP%20Integration-0052cc?style=flat-square)](https://github.com)
+[![Stability: Verified Stable](https://img.shields.io/badge/Stability-Verified%20Stable-2ecc71?style=flat-square)](https://github.com)
 
 ---
 
-## 📖 نظرة عامة | Platform Vision
-**Perplexta Platform** is an enterprise-grade AI execution, workflow, and financial ledger platform designed for **Professional Elite Technical Analysis**. It leverages modern full-stack architectures to provide real-time streaming AI interactions with robust failover routing, modular sub-service orchestration, secure 100MB file intelligence abstraction, and a completely segregated financial transaction ledger.
+## 📖 Platform Vision & Identity
 
-تعد **منصة بيربليكستا** نظامًا متكاملًا على مستوى المؤسسات لإدارة تدفق العمل الذكاء الاصطناعي والدفتر المالي ذي المصداقية العالية. تم تصميمها خصيصًا لتقديم **التحليلات التقنية الاحترافية المتقدمة** بدقة فائقة وبنية تحتية مرنة تواجه عثرات الاتصال والخدمات بشكل تلقائي وذاتي (Silent Failover).
+**Perplexta Platform** is an enterprise-grade full-stack AI execution, programmatic workspace, and financial ledger platform built for **Professional Elite Technical Analysis**. It integrates native real-time AI streams, bulletproof multi-model failovers, sandbox file intelligence, and a strict, append-only cash ledger system within an aesthetic, zero-friction interface.
+
+Designed under a unified design philosophy, Perplexta couples lightweight responsive frontends with hardened backend architectures, supporting both general technical consumers and high-throughput programmatic machine/agent clients.
 
 ---
 
-## 🏗️ البنية السحابية والهندسة التحتية | System Architecture
+## 🏗️ System Architecture & Data Flow
 
 ```
-                                  [ Client UI - React 19 ]
-                                             │
-                                   ( Socket.io & REST )
-                                             │
-                                             ▼
-                             [ Express API & Security Gateway ]
-                                  │                     │
-                                  ▼                     ▼
-                     [ Core DB (Operational) ]   [ Ledger DB (The Vault) ]
-                     - Profiles & Auths          - Append-Only Wallets
-                     - Tools & Orchestration     - Referral Tree
-                     - Chats & Real-time Logs    - Payout Transactions
+                                    [ Client UI - React 19 ]
+                                               │
+                                     ( Socket.io & REST )
+                                               │
+                                               ▼
+                               [ Express API & Security Gateway ]
+                      ┌────────────────────────┼────────────────────────┐
+                      ▼                        ▼                        ▼
+          [ Core DB (Operational) ]  [ Ledger DB (The Vault) ]  [ External & Community ]
+          - Profiles & Auths         - Append-Only Transactions - Forum & Marketplace
+          - Orchestrator Engine      - Partner Referral Tree    - Professional Blogs
+          - Secure File Vaults       - Stripe Subscriptions     - Community Purchases
 ```
 
-### 1. نظام قواعد البيانات الرباعي المعزول | Multi-Database Architecture & Isolation Strategy
-Perplexta Platform utilizes a highly secure, advanced **Four-Pool Database Architecture (Multi-Tenant Segregation)**. This decouples system responsibilities to ensure maximum database integrity, ultra-low transactional latency, flawless GDPR/KYC data handling, and defense-in-depth isolation.
-
-تعتمد المنصة على بنية تحتية هندسية متطورة تتكون من **أربعة أحواض قواعد بيانات معزولة ومستقلة (Database Pools)**. يضمن هذا الفصل الهيكلي تلبية أعلى معايير الأمان المالي، تحقيق أداء فائق السرعة للمعالجة المتزامنة (Zero-Latency Async)، وضمان المتانة الأمنية للمنصة ضد أي اختراقات أو عثرات تشغيلية.
+### HARDENED QUAD-POOL DATABASE INFRASTRUCTURE
+To guarantee defense-in-depth security, strict transactional isolation, and sub-millisecond queries, the backend controls **Four Geographically Isolated Database Pools** (Core Operational, Financial Ledger, External Social/Market, and Security Audit/Defense). Direct structural joins between critical transactional entities (like balances or wallets) and social/operational schemas are architecturally banned at the query level.
 
 ---
 
-## 📊 دليل تفصيلي لقواعد البيانات والربط الهيكلي | Comprehensive Database Schema & Segregation Report
+## 🤖 Advanced AI Agent Capabilities & Integrations
+
+Perplexta Platform is engineered with comprehensive, machine-readable specifications allowing programmatic AI agents, developer networks, and autonomous nodes to seamlessly discover, map, authorize, and invoke its services.
 
 ```
-                      ┌─────────────────────────────────────────┐
-                      │    EXPRESS BACKEND GATEWAY CONNECTOR    │
-                      └─────────────────────────────────────────┘
-                                   │    │    │    │
-         ┌─────────────────────────┘    │    │    └─────────────────────────┐
-         ▼                              ▼    ▼                              ▼
-┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐    ┌───────────────────┐
-│     Core Pool     │    │    Ledger Pool    │    │   External Pool   │    │   Security Pool   │
-│   (Operational)   │    │    (The Vault)    │    │  (Social/Market)  │    │ (Audit & Defense) │
-└───────────────────┘    └───────────────────┘    └───────────────────┘    └───────────────────┘
+       [ Client AI Agent ]  ───────── 1. Query Link Headers ─────────► [ Origin Root (/) ]
+                │                                                           │
+                │◄───────── 2. RFC 9727 / RFC 8288 Discovery ───────────────┘
+                │
+                ├────────── 3. Find MCP Capabilities ───────────────────────► [ /.well-known/mcp/server-card.json ]
+                ├────────── 4. Find Commerce Specifications ────────────────► [ /.well-known/acp.json ]
+                └────────── 5. Register & Trade Node (x402 Protocol) ───────► [ /api/auth/register-agent ]
 ```
 
-### 🗄️ 1. قاعدة البيانات التشغيلية والأساسية (Core Pool - `DATABASE_URL`)
-* **الهدف الهيكلي (Architecture Role):** إدارة الهوية العامة للمستخدمين، وتدفق محادثات الذكاء الاصطناعي، والملفات، الإشعارات، وتهيئات المحرك الأساسية (Orchestrator).
-* **معايير الأمان والأداء:** اتصال سريع بزمن استجابة منخفض جداً لإتاحة البث الفوري للمحادثات (Fast Chat Streaming) ومعالجة الملفات المرفقة بكفاءة.
+---
 
-| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
-| :--- | :--- | :--- |
-| `users` | يخزن بيانات الهوية، الرتب والمستويات التشغيلية، وحالة الـ KYC، وضبط واجهة المستخدم واللغة الافتراضية. | `id`, `email`, `password_hash`, `role`, `language`, `theme`, `kyc_status` |
-| `chats` | يربط كل جلسة محادثة بالمستخدم مع تحديد نموذج الذكاء الاصطناعي النشط. | `id`, `user_id`, `title`, `active_model`, `updated_at` |
-| `messages` | المستودع الحقيقي لنصوص الرسائل المُرسلة والمُستقبلة مع تفاصيل استهلاك الـ Tokens وعداد الصرف. | `id`, `chat_id`, `role`, `content`, `tokens_used`, `tracking_metadata` |
-| `user_files` | نظام ملفات مستخدم آمن لتسجيل المرفقات المستخلصة من PDF بنظام التشفير، وحفظ النصوص المنتزعة كبيانات سياقية. | `id`, `user_id`, `filename`, `file_size`, `extracted_text`, `created_at` |
-| `tool_orchestrator` | لوحة التحكم الذكية لتوجيه نماذج الذكاء الاصطناعي الأساسية والاحتياطية لكل أداة (Silent Failover). | `id`, `tool_id`, `primary_model`, `fallback_1_model`, `fallback_2_model` |
-| `api_keys_vault` | قبو مشفر بمستوى عسكري (AES-256) يحفظ مفاتيح مزودي الذكاء الاصطناعي دون أي تسريب في السيرفر. | `id`, `provider`, `encrypted_key_data`, `is_active` |
-| `system_settings` | خصائص الموقع الثنائية اللغة (AR/EN)، بيانات السيو (SEO)، وإعدادات بوابة الدفع وتصاريح تشغيل خادم المزامنة. | `id`, `site_name`, `site_name_ar`, `seo_description`, `stripe_webhook_secret` |
-| `system_broadcasts` | الإعلانات الإدارية والبث الحي للمستخدين النشطين في واجهة التشغيل. | `id`, `title_en`, `title_ar`, `content_en`, `content_ar` |
-| `support_tickets` | بطاقات الفحص والدعم الفني ومراحل معالجة وحل إشكاليات المستخدم النهائي. | `id`, `user_id`, `subject`, `status` (Open/Closed), `priority` |
+### 1. Agentic Commerce Protocol (ACP) Discovery Interface
+To allow programmatic AI agents to automatically discover commerce capabilities without requiring human interactive signup, the platform serves a verified, fully-compliant ACP Discovery document at its origin root:
+
+* **Endpoint Location:** `/.well-known/acp.json` (HTTP Status 200, public, with optimal CORS configuration supporting browser-less agent queries).
+* **Bilingual Navigation Hooks:** The system serves unified RFC 8288 & RFC 9727 reactive Link headers on all origin requests targeting `/` or `/index.html`:
+  ```http
+  Link: </.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp"
+  ```
+* **Discovery Schema:** Returns compliance configuration targeting protocol versioning, dynamic fallback URLs, supported network transports, and available agent checkout services:
+  ```json
+  {
+    "protocol": {
+      "name": "acp",
+      "version": "1.0"
+    },
+    "api_base_url": "https://perplexta-platform-host/api",
+    "transports": ["http"],
+    "capabilities": {
+      "services": ["checkout"]
+    }
+  }
+  ```
 
 ---
 
-### 💳 2. محفظة الدفتر المالي المعزولة (Ledger Pool - `LEDGER_DATABASE_URL`)
-* **الهدف الهيكلي (Architecture Role):** عزل متكامل لكافة العمليات المالية، والاشتراكات، والعمولات، ونظام شجرة الإحالات (Referral Tree) بنمط سجل الصياغة التراكمي (Append-Only Ledger).
-* **معايير الأمان والأداء:** لا توجد عمليات حذف أو تعديل للقيم بشكل مباشر لحماية الحسابات من أي التواء مالي أو هجوم تزوير. كافة العمليات المالية هي عبارة عن حركات حسابية متوازنة لضمان المحاسبة العادلة (Audit Trail).
-
-| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
-| :--- | :--- | :--- |
-| `wallets` | السجل الموحد لرصيد المحفظة الفعلي والترويجي لكل عميل (يتم تحديثه فقط عبر حركات الدفتر التراكمي). | `id`, `user_id`, `balance`, `promo_balance`, `updated_at` |
-| `ledger_transactions` | الدفتر العام التراكمي: حركة حسابية دقيقة لتتبع الإيداع، الخصم، شراء الخدمات، والعمولات المسجلة زمنياً. | `id`, `wallet_id`, `amount`, `type` (Credit/Debit), `description`, `reference_id` |
-| `subscriptions` | اشتراكات المستخدمين الحالية، والمستوى البلاتيني/الذهبي، وفترة الانتهاء، وضوابط الاستهلاك المستهدف. | `id`, `user_id`, `plan_id`, `status` (Active/Canceled), `current_period_end` |
-| `plans` | قوالب الحزم التشغيلية المخصصة بما في ذلك عتبة حدود الحسابات الخاصة بكل أداة وقيم الاشتراك السنوي/الشهري. | `id`, `name`, `price_monthly`, `price_yearly`, `tool_quotas_json` |
-| `referrals` | شجرة المبتدئين والعوائد الإحالية (Referral Tree)، توثيق عمليات الشراء وحساب حصص الشركاء والمشرفين. | `id`, `referrer_id`, `referred_id`, `points_rewarded`, `payout_status` |
-| `deposits` | سجلات طلبات الشحن اليدوية والآلية وبوابات الدفع البنكية والمشفرة قبل الاعتماد وإدراج الحركات بالدفتر المالي. | `id`, `user_id`, `amount`, `gateway`, `status` (Pending/Approved/Rejected) |
-| `coupons` | نظام الخصومات الترويجية والقسائم المحددة بنطاق عوائد ومستويات مالية ترويجية. | `id`, `code`, `discount_percent`, `max_uses`, `expires_at` |
+### 2. Model Context Protocol (MCP) Integration
+To facilitate immediate context injection and system instrumentation, Perplexta implements host-level MCP protocol compliance:
+* **Service Descriptor:** Served dynamically at `/.well-known/mcp/server-card.json`.
+* **Standard Representation:** Programmatic clients use this catalog to instantly read and map available analytic tools (such as Sovereign Research, Canvas Audio Studio, and Perplexta Analysis), their pricing weights, and arguments schema.
+* **Stream Compatibility:** Directly links model prompts to the background execution layer, streamlining autonomous research loops.
 
 ---
 
-### 🌐 3. قاعدة البيانات الخارجية والمجتمعية (External Pool - `EXTERNAL_DATABASE_URL`)
-* **الهدف الهيكلي (Architecture Role):** السيطرة الكاملة على منتديات النقاش، والمقالات وبلوج التحليل المتقدم، وبوابة المتجر المتكامل في المنصة (Marketplace).
-* **معايير الأمان والأداء:** تسمح بالاستعلامات الضخمة للمنتديات والمشاركة المجتمعية بدون التأثير على قاعدة محركات المحادثات أو البيانات المالية.
+### 3. Programmatic API Keys & Wallet Linkage (x402 Payment Architecture)
+Designed for high-performance machine clients, developers can dynamically generate runtime API credentials and register programmatic agents. Registration processes hook directly into the financial ledger system via the **x402 Programmatic Payment Protocol**:
 
-| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
-| :--- | :--- | :--- |
-| `forum_categories` | تصنيفات وأقسام منتدى المجتمع الفني والمالي مع الأيقونات المرتبطة والصفات اللونية. | `id`, `name_en`, `name_ar`, `color`, `slug` |
-| `forum_posts` | مواضيع النقاش المفتوحة ومقاود الترشيح ومواصفات الإشراف والحظر. | `id`, `category_id`, `user_id`, `title`, `content`, `views_count`, `is_locked` |
-| `forum_comments` | الردود الفنية على مواضيع المنتدى الداعمة لتنسيق غني وتتبع الاستشهادات. | `id`, `post_id`, `user_id`, `content` |
-| `blog_articles` | مقالات التحليل المالي والتقني الاحترافية المكتوبة بأقلام النخبة أو المعتمدة تشغيلياً. | `id`, `title_en`, `title_ar`, `content_en`, `content_ar`, `author_id`, `tags` |
-| `marketplace_items` | الأدوات ومنتجات المحاكاة المتاحة في المتجر مع ضبط الأسعار ومعدل الإحالة المجتمعي. | `id`, `title`, `description`, `price`, `file_path` (Secure S3 or Direct), `referral_percent` |
-| `marketplace_purchases` | الفواتير التقنية لتثبيت المبيعات وتأمين المرفقات والتحقق من التوقيع الرقمي للمالك. | `id`, `item_id`, `buyer_id`, `price_paid`, `is_claimed` |
+```
+[ Developer Agent Node ] ─────── ( Request /register-agent ) ───────► [ API & Wallet Link Router ]
+           ▲                                                                      │
+           │                                                            1. Verify x402 cost in DB
+           │                                                            2. Check User Core Wallet
+           │                                                                      │
+           ├─── [ Account Rejection (HTTP 402) ] ◄── Balance < x402 cost ─────────┤
+           │                                                                      ▼
+           └─── [ Keys Registered & Ledger Booked ] ◄── Balance ≥ x402 cost ──────┘
+```
 
----
-
-### 🛡️ 4. حوض الحماية وأمن السيرفر (Security Pool - `SECURITY_DATABASE_URL`)
-* **الهدف الهيكلي (Architecture Role):** مراقبة نشاط التطبيق، وتتبع الجلسات المتعددة، وتقييد معدلات الطلب الآلي، والتحصينات الدفاعية لمنع هجمات الاستغلال.
-* **معايير الأمان والأداء:** حماية عالية المستوى تفحص كافة الرموز (Tokens) ومصدر عناوين الـ IP قبل تفعيل خدمات المحادثة أو المعاملات البنكية لسرعة اتخاذ القرارات الأمنية.
-
-| اسم الجدول | الوظيفة الفنية والدقيقة للجدول | Key Columns & Technical Role |
-| :--- | :--- | :--- |
-| `user_sessions` | تتبع بصمات الجسلات والـ IP النشط والموقع الجغرافي المسجل لكل جلسة مستخدم لضمان عدم السخرة العابرة للحدود. | `id`, `user_id`, `ip_address`, `user_agent`, `platform`, `is_active` |
-| `token_blacklist` | سلة حجز الرموز التالفة والملغاة (Revoked Tokens) لعمليات المصادقة لإنهاء الجلسات فور الخروج الآمن. | `id`, `token`, `expires_at`, `blacklisted_at` |
-| `security_alerts` | سجلات الحوادث الاستخباراتية للأمن (IDS): تتبع محاولات الولوج الخاطئ، فحص انتهاك هجمات الحقن أو تجاوز الحدود. | `id`, `user_id`, `alert_type`, `severity` (Low/Med/High), `details`, `ip_address` |
-| `password_resets` | الرموز الآمنة وذات المدة القصيرة المخصصة لتغيير وارتجاع بيانات تسجيل الدخول للمستخدمين الفاقدين للوصول. | `id`, `user_id`, `token`, `expires_at` |
-
----
-
-### 🏁 3. محرك التوجيه الذاتي الصامت | Silent Failover Orchestrator
-
-### 2. محرك التوجيه الذاتي الصامت | Silent Failover Orchestrator
-Eradicating API downtimes completely:
-*   Any premium tool (Code Analysis, Intelligent Audio Studio, Research Agent, etc.) is configured with a **Primary Model**, **Fallback 1 Model**, and **Fallback 2 Model**.
-*   If the primary model rate-limits, errors out, or fails pre-flight verification, the routing engine silently swaps connection pools to fallback models in less than 40ms, offering a completely uninterrupted user experience without hardcoded configurations.
-*   **Rigorous Safe-Swap Validation:** Swapping pools in production runs full SQL ping checks across all 4 database endpoints (`Core`, `Ledger`, `External`, `Security`) sequentially to ensure no database state mismatch can affect ongoing streaming cycles.
-
-### 3. الحاوية الآمنة لملفات الذاكرة الاستخباراتية | Secure Ingestion & Intel Extraction
-*   **Capacity Boundary:** Secure processing and analytics of files up to **100MB** using sandboxed storage.
-*   **Extraction Bridge:** High-precision parsing modules targeting PDFs, Rich Text Documents, Spreadsheets, and HTML structures. Extracted text context is automatically structured and fed dynamically into advanced reasoning pipelines for deep intelligence analysis.
-*   **Zero-Knowledge Keys:** API keys and credential databases are stored using AES-256 hardware-grade standard cryptography with zero memory leaks.
+* **Automated Key Debits:** Creating programmatic credentials (`registered_agents` portal) queries the current transaction cost of the high-fidelity gateway (`x402_api`) directly from the backend `tool_orchestrator` table.
+* **Ledger Synchronization:** The gateway executes a real-time, isolated append-only debit on the user's operational wallet balance (recording a corresponding transaction hash within `ledger_transactions` to preserve compliance records).
+* **Default Pricing:** Programmatic registration queries are dynamically populated from administrative tool controls, defaulting to a safe, audited pricing baseline of **₪5.00** per registration cycle if left unmodified in the admin control cards.
+* **Sovereign Quota Control:** If wallet levels are insufficient to settle the registration fee, the backend immediately halts the credential creation flow and rejects the transaction by serving a standardized **HTTP 402 Use Balance / Insufficient Funds** payload with localized Arabic-English recovery paths:
+  ```json
+  {
+    "error": "Insufficient Balance",
+    "message": "Dynamic key creation requires ₪5.00. Please recharge your account balance."
+  }
+  ```
 
 ---
 
-## ⚙️ الميزات الأساسية | Key Features
+## 🎯 Full-Stack System Features & Resilience Controls
 
-*   **Majestic Motion & Aesthetics:** Built using Tailwind CSS v4 with unified **600ms to 1.1s majestic slow-motion eases**, custom-designed dark-mode body canvases (`bg-[#0f0f11]`), and signature **Emerald Glow drop-shadow filters** for active interactable elements.
-*   **Bilingual Synchronization (AR/EN):** Fully integrated internationalization mapping across high-performance views, reports, system logs, subscription toggles, and email templates.
-*   **Granular Quota Control:** Dynamic, tool-by-tool daily and monthly quota enforcement. Includes a beautifully designed bilingual "Quota Exceeded" layout that acts as a lead converter to upgrade plans or refer colleagues.
-*   **Real-time Heartbeats & Log Tracking:** Socket.io driven metadata streaming, real-time activity stream panels on the Admin Console, and automated 24-hour maintenance cycles managed via internal CRON engines.
+### 🌀 1. Silent Failover AI Orchestration
+* **Runtime Abstraction:** No model names, configurations, or direct provider paths are hardcoded in application logic.
+* **Database-Driven Routing:** Active AI tools correspond to hierarchical parameters designating a **Primary Model**, **Fallback 1**, and **Fallback 2**.
+* **Automatic Silent Handoffs:** If the primary engine encounters HTTP rate limits, quota failures, or service timeouts, the orchestrator silently captures the exception, clones the prompt context, and routes queries to the fallback handler in under 40ms, providing uninterrupted user output streaming.
+
+### 💼 2. Segmented Subscription Ecosystem
+To balance consumer workloads with resource-intensive enterprise machine developers, Perplexta deploys segmented tier selections:
+* **Performance Plans (Consumer UI):** Highly optimized tiers tailored for human interactive research, chats, and audio synthesis (e.g., `Starter`, `Pro`, `Elite`).
+* **Developer & Agent Plans (Programmatic Integration):** Built for machines and technical developers (e.g., `Developer Lite`, `Developer Scale`). These plans focus entirely on raw endpoints, OIDC OAuth credentials, and **x402 API query quotas**.
+* **Adaptive Panels:** Frontend subscription pages dynamically swap conversational limit meters (such as message ceilings or search parameters) with programmatic meters (`x402 API Requests` and high-capacity secure storage quotas) based on active plan categories.
+
+### 📂 3. 100MB Intelligence Sandboxing & Analysis
+* **High-Capacity Ingestion:** Secure physical upload and schema-vetted reading of documents, spreadsheets, code, and PDFs up to **100MB**.
+* **Extraction Bridge:** Extracted textual contexts are compiled on-the-fly and seamlessly structured inside agent system prompts during inference, turning documents into instantly querying vectors.
 
 ---
 
-## 🛠️ دليل التثبيت والتشغيل المحلي | Setup & Local Installation
+## 🗄️ Database Schema & Segmentation Report
+
+A complete database structure and relationships index is mapped in depth across our core database registries:
+
+* **Operational Core Pool (`DATABASE_URL`):** Manages users, credentials, chats, messages, administrative settings, and tool orchestration routes.
+* **Financial Ledger Pool (`LEDGER_DATABASE_URL`):** Strict, append-only financial registry managing balances, deposits, stripes, referrals, coupons, and API plan parameters.
+* **External Social Pool (`EXTERNAL_DATABASE_URL`):** Moderated community spaces, forums, partner technical blogs, and the asset marketplace.
+* **Security Audit Pool (`SECURITY_DATABASE_URL`):** Security session logs, rate limit structures, and Token blacklists.
+
+*(Refer to complete table schema details inside the main developer guidelines for full primary/foreign key mappings).*
+
+---
+
+## 🚀 Setup & Local Installation
 
 ### Prerequisites
-*   Node.js (v18 or higher recommended)
-*   PostgreSQL Instances (for Core and Ledger)
+* **Node.js:** v18 or higher (v20+ recommended)
+* **PostgreSQL:** Dual operational and ledger instances.
 
-### 1. استنساخ المستودع وضبط البيئة | Clone & Setup Environment
-Clone this repository locally, then create a `.env` file referencing `.env.example`:
-
+### 1. Configure the Local Environment
+Clone the repository and compile environment settings:
 ```bash
 cp .env.example .env
 ```
-
-Ensure you configure the following core variables:
+Ensure you provide accurate db connection URLs:
 ```env
 DATABASE_URL=postgres://user:password@localhost:5432/perplexta_core
 LEDGER_DATABASE_URL=postgres://user:password@localhost:5432/perplexta_ledger
 JWT_SECRET=your_jwt_signing_secret_here
 ENCRYPTION_KEY=32_character_aes_encryption_key_here
 ```
+*(All provider keys are strictly stored on disk using AES-256 standard encryption bound to your `ENCRYPTION_KEY` block.)*
 
-*(Note: AI Provider API keys such as Gemini and OpenAI are strictly database-driven and dynamically loaded via the encrypted API Keys Vault, avoiding any static local configurations or hardcoded models.)*
-
-### 2. تثبيت الحزم البرمجية | Install Dependencies
+### 2. Run Local Systems
 ```bash
+# Install dependencies
 npm install
-```
 
-### 3. تشغيل خادم التطوير الصاخب | Run Development Environment
-To trigger the concurrent Express routing backend and the Vite frontend server with live monitoring:
-```bash
+# Start development server
 npm run dev
 ```
 
-### 4. البناء للإنتاج والتشغيل المستقر | Production Build & Run
-To compile the absolute, optimized bundles into a single self-contained CJS bundle for Cloud native environments:
+### 3. Build & Deploy
+Bundles frontend components and packages backend configurations to single, fast-executing, standalone scripts:
 ```bash
-# Build Frontend assets and bundle full server modules
 npm run build
-
-# Start the optimized node process
 npm run start
 ```
 
 ---
 
-## 🛡️ ميثاق الأمان والاستقرار التقني | Security & Resiliency Integrity
-To maintain corporate security and bulletproof resistance against exploits:
-*   **SSRF Phishing Guards:** Strict hostname and whitelist parsing prevents malicious remote callback triggers or internal loopback lookups across external schemas.
-*   **Database Sync Protection:** Migrations undergo asynchronous dry-runs with high-performance error handling, guaranteeing a Degradation Mode fallback over fatal startup failures if remote connections timeout.
-*   **Raw Trace Purging:** All raw database traces and query diagnostics are strictly blocked from client exposures, piping debugging dumps cleanly into secure file system volumes.
-
----
-
 <div align="center">
-  <sub>PERPLEXTA PLATFORM. Engineered with Architectural Purity & Visual Majesty.</sub>
+  <sub>PERPLEXTA PLATFORM • Engineered with Professional Purity, Majestic Calm & Bulletproof Performance.</sub>
 </div>

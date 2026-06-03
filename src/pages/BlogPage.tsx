@@ -646,12 +646,11 @@ export const BlogPage: React.FC = () => {
                   <>
                     {/* Desktop Premium Grid View */}
                     <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      <AnimatePresence mode="popLayout">
+                      <AnimatePresence mode="wait">
                         {sortedArticles.map((article) => {
                           return (
                             <motion.article
                               key={article.id}
-                              layout
                               initial={{ opacity: 0, y: 15 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}

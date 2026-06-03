@@ -833,8 +833,23 @@ export const ForumPage: React.FC = () => {
                 <main className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-none space-y-6">
                   {postsLoading ? (
                     <div className="space-y-4 animate-pulse">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className={`p-5 h-28 border rounded-lg ${isThemeDark ? 'bg-[#1a1a1c] border-white/5' : 'bg-gray-50 border-gray-200'}`} />
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={`p-5 min-h-[112px] border rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                          isThemeDark ? 'bg-[#1a1a1c]/80 border-white/5' : 'bg-gray-100/10 border-gray-150'
+                        }`}>
+                          <div className="flex-1 space-y-2.5 w-full">
+                            <div className="flex items-center gap-2">
+                              <div className="h-3 bg-gray-200/15 dark:bg-gray-800/20 rounded w-16" />
+                              <div className="h-3 bg-gray-200/10 dark:bg-gray-800/15 rounded w-12" />
+                            </div>
+                            <div className="h-4 bg-gray-200/20 dark:bg-gray-800/25 rounded w-2/3" />
+                            <div className="h-3 bg-gray-200/10 dark:bg-gray-800/15 rounded w-1/2" />
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-5 h-5 rounded-full bg-gray-200/10 dark:bg-gray-800/15" />
+                            <div className="w-12 h-3 bg-gray-200/10 dark:bg-gray-800/15 rounded" />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   ) : (() => {
