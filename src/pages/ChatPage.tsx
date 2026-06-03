@@ -1631,6 +1631,7 @@ export const ChatPage: React.FC = () => {
   
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatIdRef = useRef<string | null>(chatId);
+  const loadedChatIdRef = useRef<string | null>(null);
   const streamingBuffer = useRef('');
   const typewriterInterval = useRef<any>(null);
   const isGeneratingRef = useRef(false);
