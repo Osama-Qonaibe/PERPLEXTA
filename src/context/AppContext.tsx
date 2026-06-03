@@ -1899,14 +1899,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('language', authLang);
       }
       
-      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/chat';
+      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
       const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
       
       const currentPath = window.location.pathname;
       const isSamePage = currentPath === targetRef || 
-                         (currentPath === '/' && targetRef === '/chat') || 
-                         (currentPath === '/chat' && targetRef === '/');
+                         (currentPath === '/' && targetRef === '/chats') || 
+                         (currentPath === '/chats' && targetRef === '/');
       
       setTimeout(() => {
         localStorage.removeItem('app_oauth_syncing');
@@ -2659,7 +2659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const socketEndpoint = SOCKET_URL || window.location.origin;
     const socketOptions: any = { 
-      transports: ['polling', 'websocket'], 
+      transports: ['websocket', 'polling'], 
       autoConnect: true,
       auth: { token }
     };
