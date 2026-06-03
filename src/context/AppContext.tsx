@@ -1899,14 +1899,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('language', authLang);
       }
       
-      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
+      const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/chat';
       const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
       localStorage.removeItem('app_ref');
       
       const currentPath = window.location.pathname;
       const isSamePage = currentPath === targetRef || 
-                         (currentPath === '/' && targetRef === '/chats') || 
-                         (currentPath === '/chats' && targetRef === '/');
+                         (currentPath === '/' && targetRef === '/chat') || 
+                         (currentPath === '/chat' && targetRef === '/');
       
       setTimeout(() => {
         localStorage.removeItem('app_oauth_syncing');
