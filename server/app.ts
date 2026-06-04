@@ -10,7 +10,29 @@ import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 
+import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
+
 const app = express();
+
+// Database connection queue backpressure & queue controller
+app.use((req, res, next) => {
+  const isBackpressureSaturated = (p: any) => {
+    if (!p) return false;
+    const maxPool = p.options?.max || 20;
+    const totalCount = p.totalCount || 0;
+    const waitingCount = p.waitingCount || 0;
+    return totalCount >= maxPool && waitingCount > 15;
+  };
+
+  if (isBackpressureSaturated(pool) || isBackpressureSaturated(ledgerPool) || isBackpressureSaturated(externalPool) || isBackpressureSaturated(securityPool)) {
+    res.setHeader('Retry-After', '2');
+    return res.status(503).json({
+      error: 'Service Overloaded',
+      message: 'The database connection pool is currently saturated. Please retry shortly.'
+    });
+  }
+  next();
+});
 
 // x402 Payment Protocol Configuration for Programmatic AI Agents
 const x402Routes = {
@@ -475,7 +497,6 @@ app.get('/.well-known/acp.json', (req, res) => {
 app.use(express.static(publicPath));
 
 import jwt from 'jsonwebtoken';
-import { pool, ledgerPool } from './db/index.js';
 import { getSystemSettings } from './services/system.js';
 
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {

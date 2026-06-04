@@ -1495,6 +1495,7 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('last_active_tool', selectedTool);
+    triggerMemoryNotification('startup');
   }, [selectedTool]);
 
   const handleUserTyping = () => {

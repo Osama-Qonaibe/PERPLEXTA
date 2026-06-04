@@ -104,24 +104,26 @@ function slugify(text: string) {
 // 1. Get all articles
 router.get('/articles', async (req, res) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+    const offset = (page - 1) * limit;
+
     const result = await pool.query(`
       SELECT b.*, 
-             COALESCE(comment_counts.count, 0) as comment_count,
+             COALESCE(COUNT(DISTINCT bc.id), 0)::int as comment_count,
              COALESCE(ratings.avg_rate, 0.0) as avg_rating,
              COALESCE(ratings.rate_count, 0) as ratings_count
       FROM blog_articles b
-      LEFT JOIN (
-        SELECT article_id, COUNT(*) as count 
-        FROM blog_comments 
-        GROUP BY article_id
-      ) comment_counts ON b.id = comment_counts.article_id
+      LEFT JOIN blog_comments bc ON b.id = bc.article_id
       LEFT JOIN (
         SELECT article_id, ROUND(AVG(rating), 1)::float as avg_rate, COUNT(*) as rate_count
         FROM blog_ratings
         GROUP BY article_id
       ) ratings ON b.id = ratings.article_id
+      GROUP BY b.id, ratings.avg_rate, ratings.rate_count
       ORDER BY b.created_at DESC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
     await hydrateAuthors(result.rows, 'author_id');
     res.json(result.rows);
   } catch (error: any) {

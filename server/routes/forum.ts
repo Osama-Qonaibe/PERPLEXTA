@@ -45,6 +45,10 @@ async function hydrateAuthors(items: any[], userIdKey = 'user_id') {
 // 1. Get all categories
 router.get('/categories', async (req, res) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+    const offset = (page - 1) * limit;
+
     const result = await pool.query(`
       SELECT c.*, 
              COALESCE(COUNT(DISTINCT p.id), 0) as post_count,
@@ -54,7 +58,8 @@ router.get('/categories', async (req, res) => {
       LEFT JOIN forum_comments tc ON p.id = tc.post_id
       GROUP BY c.id
       ORDER BY c.id ASC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Failed to fetch categories:', error);
@@ -66,18 +71,20 @@ router.get('/categories', async (req, res) => {
 router.get('/categories/:categoryId/posts', async (req, res) => {
   const { categoryId } = req.params;
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+    const offset = (page - 1) * limit;
+
     const result = await pool.query(`
       SELECT p.*, 
-             COALESCE(comment_counts.count, 0) as comment_count
+             COALESCE(COUNT(fc.id), 0)::int as comment_count
       FROM forum_posts p
-      LEFT JOIN (
-        SELECT post_id, COUNT(*) as count 
-        FROM forum_comments 
-        GROUP BY post_id
-      ) comment_counts ON p.id = comment_counts.post_id
-      WHERE p.category_id = $1
+      LEFT JOIN forum_comments fc ON p.id = fc.post_id
+      WHERE p.category_id = $3
+      GROUP BY p.id
       ORDER BY p.is_pinned DESC, p.created_at DESC
-    `, [categoryId]);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset, categoryId]);
     await hydrateAuthors(result.rows);
     res.json(result.rows);
   } catch (error: any) {
@@ -89,17 +96,19 @@ router.get('/categories/:categoryId/posts', async (req, res) => {
 // 2.5 Get all posts across all categories
 router.get('/posts', async (req, res) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+    const offset = (page - 1) * limit;
+
     const result = await pool.query(`
       SELECT p.*, 
-             COALESCE(comment_counts.count, 0) as comment_count
+             COALESCE(COUNT(fc.id), 0)::int as comment_count
       FROM forum_posts p
-      LEFT JOIN (
-        SELECT post_id, COUNT(*) as count 
-        FROM forum_comments 
-        GROUP BY post_id
-      ) comment_counts ON p.id = comment_counts.post_id
+      LEFT JOIN forum_comments fc ON p.id = fc.post_id
+      GROUP BY p.id
       ORDER BY p.is_pinned DESC, p.created_at DESC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
     await hydrateAuthors(result.rows);
     res.json(result.rows);
   } catch (error: any) {
