@@ -314,7 +314,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
         <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full relative">
             <AnimatePresence mode="wait">
-              {chatId && chatTitle ? (
+              {chatId && chatTitle && !memoryNotification.isVisible ? (
                 <motion.div 
                   key="chat-title"
                   ref={titleEditRef}
@@ -374,7 +374,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
             <AnimatePresence>
               {memoryNotification.isVisible && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-                  <div className="pointer-events-auto bg-[var(--bg-base)] rounded-full">
+                  <div className="pointer-events-auto bg-transparent">
                     <MemoryNotification 
                       key="memory-notif"
                       isVisible={memoryNotification.isVisible}

@@ -15,7 +15,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
 
   useEffect(() => {
     if (isVisible) {
-      const duration = 1500; // Fast 1.5 seconds for premium, less annoying presentation
+      const duration = 3500; // Increased to 3.5 seconds to give the user enough time to read the text clearly
       const timer = setTimeout(onClose, duration);
       return () => clearTimeout(timer);
     }
