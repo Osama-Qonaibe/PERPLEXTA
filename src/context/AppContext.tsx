@@ -2823,43 +2823,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [socket, user]);
 
-  const fetchNotifications = async () => {
-    if (!token) return;
-    const currentToken = token;
-    try {
-      const res = await fetch('/api/notifications', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      if (res.ok) {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          if (token === currentToken) {
-            setNotifications(data);
-          }
-        } else {
-          const text = await res.text();
-          console.warn('Received non-JSON response from /api/notifications:', text.substring(0, 100));
-        }
-      } else if (res.status === 401 || res.status === 403) {
-        console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
-        logout(false);
-      } else {
-        console.error('Failed to fetch notifications:', res.status, res.statusText);
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('Failed to fetch')) {
-        console.debug('Transient network error fetching notifications (likely server initializing)');
-      } else {
-        console.error('Error fetching notifications:', error);
-      }
-    }
-  };
-
   const markAsRead = async (id: number) => {
     if (!token) return;
     try {
@@ -2921,11 +2884,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    if (token) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
+    if (!token) return;
+
+    let isMounted = true;
+
+    const fetchNotificationsSecure = async () => {
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        if (!isMounted) return;
+
+        if (res.ok) {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            if (isMounted) {
+              setNotifications(data);
+            }
+          } else {
+            const text = await res.text();
+            console.warn('Received non-JSON response from /api/notifications:', text.substring(0, 100));
+          }
+        } else if (res.status === 401 || res.status === 403) {
+          console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
+          logout(false);
+        } else {
+          console.error('Failed to fetch notifications:', res.status, res.statusText);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        if (error instanceof Error && error.message.includes('Failed to fetch')) {
+          console.debug('Transient network error fetching notifications (likely server initializing)');
+        } else {
+          console.error('Error fetching notifications:', error);
+        }
+      }
+    };
+
+    fetchNotificationsSecure();
+    const interval = setInterval(fetchNotificationsSecure, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [token]);
 
   const refreshUser = async () => {
