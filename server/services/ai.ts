@@ -531,11 +531,11 @@ function transformMessagesForOllama(messages: any[]): any[] {
       return { role: msg.role, content: msg.content };
     }
     if (Array.isArray(msg.content)) {
-      let contentString = '';
+      const parts: string[] = [];
       const images: string[] = [];
       msg.content.forEach((block: any) => {
         if (block.type === 'text') {
-          contentString += (contentString ? '\n' : '') + (block.text || '');
+          if (block.text) parts.push(block.text);
         } else if (block.type === 'image' && block.data) {
           let rawBase64 = block.data;
           if (rawBase64.includes(';base64,')) {
@@ -544,9 +544,10 @@ function transformMessagesForOllama(messages: any[]): any[] {
           images.push(rawBase64);
         } else {
           const nameStr = block.name ? ` "${block.name}"` : '';
-          contentString += `\n[Attached File:${nameStr} (${block.mime_type || 'unsupported-media-type'})]`;
+          parts.push(`[Attached File:${nameStr} (${block.mime_type || 'unsupported-media-type'})]`);
         }
       });
+      const contentString = parts.join('\n');
       const transformed: any = { role: msg.role, content: contentString };
       if (images.length > 0) {
         transformed.images = images;

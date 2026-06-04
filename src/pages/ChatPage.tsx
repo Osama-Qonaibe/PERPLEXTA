@@ -2476,6 +2476,11 @@ export const ChatPage: React.FC = () => {
     setForensicReport(null);
     setIsForensicModalOpen(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 120000); // 2 minutes max processing limit
+
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -2486,8 +2491,11 @@ export const ChatPage: React.FC = () => {
         headers: {
           'Authorization': `Bearer ${authToken}`
         },
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errData = await response.json();
@@ -2506,11 +2514,13 @@ export const ChatPage: React.FC = () => {
         throw new Error('No forensic diagnostic record found');
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('[Forensic client scanner]', err);
+      const isAbort = err.name === 'AbortError';
       toast.error(
         dir === 'rtl'
-          ? `عذرًا، فشل الفحص: ${err.message}`
-          : `Document diagnostic failed: ${err.message}`
+          ? (isAbort ? 'انتهت مهلة المخدم (دقيقتان) أثناء معالجة الملف.' : `عذرًا، فشل الفحص: ${err.message}`)
+          : (isAbort ? 'Forensic processor timed out (2 minutes limit).' : `Document diagnostic failed: ${err.message}`)
       );
       setIsForensicModalOpen(false);
     } finally {
@@ -2522,14 +2532,24 @@ export const ChatPage: React.FC = () => {
     setIsOperationPending(isGenerating || query.length > 100);
   }, [isGenerating, query, setIsOperationPending]);
 
+  const lastDispatchedStateRef = useRef<{ isGenerating: boolean; chatId: string | null }>({ isGenerating: false, chatId: null });
+
   // Synchronize generation state and active chat ID globally for real-time sidebar pulse
   useEffect(() => {
     const activeChatId = chatId || routeChatId || null;
-    window.dispatchEvent(new CustomEvent('ai-streaming-state', {
-      detail: { isGenerating, chatId: activeChatId }
-    }));
-    if (!isGenerating && activeChatId) {
-      window.dispatchEvent(new Event('chat-updated'));
+    const cache = lastDispatchedStateRef.current;
+    
+    if (cache.isGenerating !== isGenerating || cache.chatId !== activeChatId) {
+      const prevWasGenerating = cache.isGenerating;
+      cache.isGenerating = isGenerating;
+      cache.chatId = activeChatId;
+      window.dispatchEvent(new CustomEvent('ai-streaming-state', {
+        detail: { isGenerating, chatId: activeChatId }
+      }));
+      
+      if (!isGenerating && activeChatId && prevWasGenerating) {
+        window.dispatchEvent(new Event('chat-updated'));
+      }
     }
   }, [isGenerating, chatId, routeChatId]);
 
@@ -2603,6 +2623,7 @@ export const ChatPage: React.FC = () => {
   const chatIdRef = useRef<string | null>(chatId);
   const streamingBuffer = useRef('');
   const typewriterInterval = useRef<any>(null);
+  const checkBufferIntervalRef = useRef<any>(null);
   const isGeneratingRef = useRef(false);
   const isServerDoneRef = useRef(false);
   const generationStartTimeRef = useRef<number | null>(null);
@@ -3409,10 +3430,19 @@ export const ChatPage: React.FC = () => {
         applyFinalResponse(data);
         setIsGenerating(false);
       } else {
+        if (checkBufferIntervalRef.current) {
+          clearInterval(checkBufferIntervalRef.current);
+        }
         // Set an active polling watcher to transition only after the typewriter drains remaining chunks
-        const checkBuffer = setInterval(async () => {
-          if (streamingBuffer.current.length === 0) {
-            clearInterval(checkBuffer);
+        let ticks = 0;
+        const maxTicks = 1200; // 120 seconds max (1200 * 100ms)
+        checkBufferIntervalRef.current = setInterval(async () => {
+          ticks++;
+          if (streamingBuffer.current.length === 0 || ticks >= maxTicks) {
+            if (checkBufferIntervalRef.current) {
+              clearInterval(checkBufferIntervalRef.current);
+              checkBufferIntervalRef.current = null;
+            }
             applyFinalResponse(finalResponseDataRef.current || data);
             setIsGenerating(false);
             streamingBuffer.current = ''; // Reset buffer
@@ -3556,6 +3586,10 @@ export const ChatPage: React.FC = () => {
     socket.on('chat_error', onChatError);
 
     return () => {
+      if (checkBufferIntervalRef.current) {
+        clearInterval(checkBufferIntervalRef.current);
+        checkBufferIntervalRef.current = null;
+      }
       socket.off('chat_chunk', onChatChunk);
       socket.off('chat_response', onChatResponse);
       socket.off('search_steps', onSearchSteps);

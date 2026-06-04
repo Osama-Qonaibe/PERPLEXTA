@@ -189,9 +189,11 @@ export async function consolidateAllUserMemories(options?: {
       success: false
     };
 
+    const client = await pool.connect();
     try {
+      await client.query('BEGIN');
       // Get the 10 oldest memories for user including chat_id for lineage mapping
-      const oldestRes = await pool.query(
+      const oldestRes = await client.query(
         'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
         [userId]
       );
@@ -218,7 +220,7 @@ export async function consolidateAllUserMemories(options?: {
         }
         // Fallback to the chat_id from the most recent message to persist context
         if (!associatedChatId) {
-          const latestMessageChatRes = await pool.query(
+          const latestMessageChatRes = await client.query(
             `SELECT c.id FROM chats c 
              JOIN messages m ON m.chat_id = c.id 
              WHERE c.user_id = $1 
@@ -230,7 +232,7 @@ export async function consolidateAllUserMemories(options?: {
             associatedChatId = latestMessageChatRes.rows[0].id;
           } else {
             // Ultimate fallback to user's most recently active chat
-            const latestChatRes = await pool.query(
+            const latestChatRes = await client.query(
               "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
               [userId]
             );
@@ -281,29 +283,40 @@ ${factsToCondense}`;
 
         if (distilledFact) {
           // Delete selected oldest records
-          await pool.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
+          await client.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
 
           // Insert high-density consolidated fact with complete lineage context
-          await pool.query(
+          await client.query(
             "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
             [userId, associatedChatId, distilledFact]
           );
 
           // Get final count
-          const finalCountRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+          const finalCountRes = await client.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           
           reportItem.distilledFact = distilledFact;
           reportItem.newCount = parseInt(finalCountRes.rows[0].count, 10);
           reportItem.success = true;
+          await client.query('COMMIT');
+        } else {
+          await client.query('ROLLBACK');
+          reportItem.success = false;
+          reportItem.error = 'Consolidation statement calculation resulted in empty string';
         }
       } else {
+        await client.query('ROLLBACK');
         reportItem.success = false;
         reportItem.error = 'Not enough memories to execute consolidation (minimum 2 required)';
       }
     } catch (err: any) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (_) {}
       console.error(`[Memory Service] Failed memory consolidation for user ${userId} (${userName}):`, err);
       reportItem.success = false;
       reportItem.error = err.message || 'Unknown internal error';
+    } finally {
+      client.release();
     }
 
     reports.push(reportItem);

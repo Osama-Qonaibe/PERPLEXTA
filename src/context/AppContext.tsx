@@ -2825,6 +2825,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchNotifications = async () => {
     if (!token) return;
+    const currentToken = token;
     try {
       const res = await fetch('/api/notifications', {
         headers: { 
@@ -2836,7 +2837,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         const contentType = res.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          setNotifications(await res.json());
+          const data = await res.json();
+          if (token === currentToken) {
+            setNotifications(data);
+          }
         } else {
           const text = await res.text();
           console.warn('Received non-JSON response from /api/notifications:', text.substring(0, 100));

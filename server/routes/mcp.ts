@@ -47,11 +47,31 @@ router.get('/sse', (req, res) => {
 
   // Heartbeat to maintain open tunnel
   const heartbeatInterval = setInterval(() => {
-    res.write(': heartbeat\n\n');
+    if (res.writableEnded) {
+      clearInterval(heartbeatInterval);
+      sessions.delete(sessionId);
+      return;
+    }
+    try {
+      res.write(': heartbeat\n\n');
+    } catch (_) {
+      clearInterval(heartbeatInterval);
+      sessions.delete(sessionId);
+    }
   }, 15000);
+
+  // Add timeout to cleanup stale sessions after 30 minutes
+  const sessionTimeout = setTimeout(() => {
+    sessions.delete(sessionId);
+    clearInterval(heartbeatInterval);
+    try {
+      res.end();
+    } catch (_) {}
+  }, 30 * 60 * 1000);
 
   req.on('close', () => {
     clearInterval(heartbeatInterval);
+    clearTimeout(sessionTimeout);
     sessions.delete(sessionId);
   });
 });

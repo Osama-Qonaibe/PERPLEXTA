@@ -72,6 +72,9 @@ router.put('/config', authenticateAdmin, async (req, res) => {
       sender_name || 'Perplexta',
       sender_email || ''
     ]);
+    if (upsertRes.rows.length === 0) {
+      return res.status(500).json({ error: 'Failed to record secure configurations in database registry due to an empty response.' });
+    }
     res.json(upsertRes.rows[0]);
   } catch (error: any) {
     console.error('[EmailConfig] Failed to save config:', error);
@@ -147,6 +150,9 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
       sender_name || 'Perplexta',
       sender_email || ''
     ]);
+    if (upsertRes.rows.length === 0) {
+      return res.status(500).json({ error: 'Failed to record verified secure configurations in the database.' });
+    }
     const savedRow = upsertRes.rows[0];
 
     res.json({ success: true, config: savedRow });
