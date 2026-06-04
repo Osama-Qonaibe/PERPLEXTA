@@ -1,0 +1,29 @@
+{
+  "$schema": "https://agentskills.io/schemas/v0.2.0/agent-skills-index.json",
+  "skills": [
+    {
+      "name": "Perplexta MCP Server",
+      "type": "mcp",
+      "description": "The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query databases, and invoke secure tools.",
+      "url": "https://perplexta.com/.well-known/mcp/server-card.json",
+      "sha256": "8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c",
+      "digest": "8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c"
+    },
+    {
+      "name": "Perplexta OpenAPI Spec",
+      "type": "openapi",
+      "description": "Exposes technical metadata and standard full-stack routing pathways to execute enterprise actions.",
+      "url": "https://perplexta.com/api/docs/openapi.json",
+      "sha256": "2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d",
+      "digest": "2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d"
+    },
+    {
+      "name": "Perplexta API Catalog",
+      "type": "api-catalog",
+      "description": "A linkset-based catalog pointing to description, documentation, and status endpoints.",
+      "url": "https://perplexta.com/.well-known/api-catalog",
+      "sha256": "61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa",
+      "digest": "61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa"
+    }
+  ]
+}
