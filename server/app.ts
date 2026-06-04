@@ -54,9 +54,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// RFC 8288 & RFC 9727 Agent Discovery Link headers for homepage requests
+// RFC 8288 & RFC 9727 Agent Discovery Link headers for all non-static / non-API / homepage requests
 app.use((req, res, next) => {
-  if (req.path === '/' || req.path === '/index.html') {
+  const isApiOrUploads = req.path.startsWith('/api/') || req.path.startsWith('/uploads/');
+  const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
+  
+  if (!isApiOrUploads && !hasStaticExtension) {
     res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp"');
   }
   next();
