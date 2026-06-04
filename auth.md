@@ -1,62 +1,27 @@
-# Agent Authentication & Registration - Perplexta Platform
+# auth.md
 
-Welcome to the Perplexta Platform Agent Registration and Authentication guide. This system supports programmatic discovery and automated registration for software agents and AI integrations.
+This file describes how agents can register and authenticate on behalf of perplexta.com.
 
-## Discovery Metadata
-Automated agents can discover registration and authentication capabilities by querying our standard endpoints:
-- **OpenID Discovery**: /.well-known/openid-configuration
-- **OAuth Discovery**: /.well-known/oauth-authorization-server
-- **Protected Resources**: /.well-known/oauth-protected-resource
-- **Catalog**: /.well-known/api-catalog
+## agent_auth
 
-## Registration Flow
-Agents must complete dynamic client registration via the `register_uri` described in the metadata.
+- register_uri: https://perplexta.com/api/auth/agent-register
+- supported_identity_types: email, oauth
+- supported_credential_types: api_key, access_token
+- claim_uri: https://perplexta.com/api/auth/claim
+- revocation_uri: https://perplexta.com/api/auth/revoke
 
-### 1. Dynamic Client Registration
-To register your agent, submit a `POST` request to the registration endpoint:
-```http
-POST /api/auth/register-agent
-Content-Type: application/json
+## Supported Flows
 
-{
-  "client_name": "My AI Agent",
-  "identity_type": "agent",
-  "credential_type": "client_credentials",
-  "redirect_uris": ["https://myagent.com/callback"]
-}
-```
+- **agent-verified**: Agent-attested identity, no human interaction required
+- **user-claimed**: OTP-based, human confirms via email
 
-Response:
-```json
-{
-  "client_id": "agent_client_12345",
-  "client_secret": "agent_secret_67890",
-  "client_secret_expires_at": 0
-}
-```
+## Scopes
 
-### 2. Obtaining an Access Token
-You can obtain an access token using standard OAuth 2.0 Client Credentials or Authorization Code flow:
-```http
-POST /api/auth/token
-Content-Type: application/x-www-form-urlencoded
+- `read:profile` — Read user profile
+- `write:content` — Create and edit content
+- `read:data` — Access user data
 
-grant_type=client_credentials&client_id=agent_client_12345&client_secret=agent_secret_67890
-```
+## More Info
 
-Response:
-```json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIsIn...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "scope": "read write"
-}
-```
-
-## Security & Claim Support
-You may access claim and revocation endpoints to verify credentials:
-- **Claim API**: /api/auth/claim
-- **Revocation API**: /api/auth/revoke
-
-For support, please refer to the main portal or contact developer support.
+- Protocol: https://workos.com/auth-md
+- GitHub: https://github.com/workos/auth.md

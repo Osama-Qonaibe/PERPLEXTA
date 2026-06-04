@@ -5,10 +5,14 @@
 # php -- END cPanel-generated handler, do not edit
 
 Options -Indexes
+# Markdown for Agents - serve auth.md directly
+RewriteCond %{HTTP:Accept} text/markdown
+RewriteRule ^$ /auth.md [L]
 DirectoryIndex /dist/index.html
 
 AddType application/javascript .js .mjs
 AddType application/json .json
+AddType text/markdown .md
 
 RewriteEngine On
 
@@ -23,9 +27,13 @@ RewriteRule ^sitemap\.xml$ /dist/sitemap.xml [L]
 
 RewriteCond %{REQUEST_URI} ^/api/ [OR]
 RewriteCond %{REQUEST_URI} ^/socket.io/ [OR]
-RewriteCond %{REQUEST_URI} ^/\.well-known/
+RewriteCond %{REQUEST_URI} ^/\.well-known/ [OR]
+RewriteCond %{REQUEST_URI} ^/auth\.md$
 RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ /dist/index.html [L]
+
+# RFC 8288 Link Headers for agent discovery
+Header always set Link '</.well-known/api-catalog>; rel="api-catalog", </.well-known/oauth-authorization-server>; rel="oauth-authorization-server", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource", </auth.md>; rel="service-doc", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp"'
