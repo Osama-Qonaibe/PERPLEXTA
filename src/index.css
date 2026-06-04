@@ -77,13 +77,13 @@
   --font-sans: "Space Grotesk", "Tajawal", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
-  --text-xs: var(--fs-xs);
-  --text-sm: var(--fs-sm);
-  --text-base: var(--fs-base);
-  --text-lg: var(--fs-lg);
-  --text-xl: var(--fs-xl);
-  --text-2xl: var(--fs-2xl);
-  --text-3xl: var(--fs-3xl);
+  --font-size-xs: var(--fs-xs);
+  --font-size-sm: var(--fs-sm);
+  --font-size-base: var(--fs-base);
+  --font-size-lg: var(--fs-lg);
+  --font-size-xl: var(--fs-xl);
+  --font-size-2xl: var(--fs-2xl);
+  --font-size-3xl: var(--fs-3xl);
 
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
@@ -231,7 +231,7 @@ body {
   font-family: "Space Grotesk", "Tajawal", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  container-type: size;
+  container-type: inline-size;
   container-name: app;
 }
 
@@ -612,3 +612,18 @@ input,
     line-height: 1.15rem !important;
   }
 }
+
+@keyframes sovereignProgress {
+  0% { left: -40%; right: 100%; }
+  50% { left: 30%; right: 30%; }
+  100% { left: 100%; right: -40%; }
+}
+
+.animate-sovereign-progress {
+  position: absolute;
+  height: 100%;
+  background-color: #10b981;
+  box-shadow: 0 0 12px rgba(16,185,129,0.8);
+  animation: sovereignProgress 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+

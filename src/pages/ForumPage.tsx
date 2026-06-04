@@ -604,7 +604,7 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div
-      className={`h-[calc(100dvh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
+      className={`h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none pb-0 ${
         isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
@@ -650,10 +650,10 @@ export const ForumPage: React.FC = () => {
           {!selectedPost && !isCreatingThread && (
             <motion.div
               key="forum-unified-hub"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="flex-1 flex flex-col overflow-hidden"
             >
               {/* Page Header */}
@@ -1054,9 +1054,9 @@ export const ForumPage: React.FC = () => {
                           return (
                             <motion.div
                               key={post.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.04 }}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: idx * 0.02 }}
                               className={`p-5 border rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-[0_0_20px_rgba(16,185,129,0.03)] group transition-all duration-300 ${
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-850 hover:border-emerald-500/35' : 'bg-[#fafafa] border-gray-200 hover:border-emerald-500/30'
                               }`}

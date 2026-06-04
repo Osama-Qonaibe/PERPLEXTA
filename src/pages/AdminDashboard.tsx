@@ -3749,15 +3749,23 @@ const DatabaseOrchestrationView = ({
       if (!db) return;
 
       const targetType = db.id === "ledger" ? "ledger" : (db.id === "external" ? "external" : (db.id === "security" ? "security" : "core"));
-
       const dbName = db.db_name || db.dbName || targetType;
       const displayLabel = dbName.replace(/[^a-z0-9_-]/gi, "_").toLowerCase();
-      const filename = `${displayLabel}_backup_${new Date().toISOString().split("T")[0]}.json`;
+      const filename = `${targetType}_${displayLabel}_backup_${new Date().toISOString().split("T")[0]}.json`;
+
+      const confirmMsg =
+        dir === "rtl"
+          ? `هل أنت متأكد من رغبتك في تصدير نسخة احتياطية لقاعدة البيانات: "${dbName}" (${targetType})؟\n\nاسم ملف النسخة الاحتياطية الذي سيتم توليده وحفظه سيكون:\n📎 "${filename}"\n\nاضغط موافق للتأكيد وتنزيل الملف وتسجيل هذه العملية في سجل التدقيق الأمني للقوانين والامتثال المالي.`
+          : `Are you sure you want to export a backup for database: "${dbName}" (${targetType})?\n\nBackup filename to be generated and saved:\n📎 "${filename}"\n\nClick OK to confirm download and commit this administrative action to the secure compliance audit trail.`;
+
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
 
       showToast(
         dir === "rtl"
-          ? `جاري تصدير نسخة احتياطية: ${dbName}...`
-          : `Exporting backup: ${dbName}...`,
+          ? `جاري تصدير نسخة احتياطية لـ ${dbName} (${targetType})...`
+          : `Exporting backup for ${dbName} (${targetType})...`,
         "success",
       );
 
@@ -3775,13 +3783,19 @@ const DatabaseOrchestrationView = ({
       }
 
       const backupData = await res.json();
+      
+      // Use actual database name returned from backend or fallback to dbName
+      const actualDbName = backupData.database_name || dbName;
+      const actualDisplayLabel = actualDbName.replace(/[^a-z0-9_-]/gi, "_").toLowerCase();
+      const finalFilename = `${targetType}_${actualDisplayLabel}_backup_${new Date().toISOString().split("T")[0]}.json`;
+
       const blob = new Blob([JSON.stringify(backupData, null, 2)], {
         type: "application/json",
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = finalFilename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -3789,8 +3803,8 @@ const DatabaseOrchestrationView = ({
 
       showToast(
         dir === "rtl"
-          ? "تم تصدير النسخة بنجاح"
-          : "Backup exported successfully",
+          ? `تم تصدير النسخة احتياطياً بنجاح لقاعدة البيانات: ${actualDbName} (${targetType})`
+          : `Backup successfully exported for database: ${actualDbName} (${targetType})`,
         "success",
       );
     } catch (error: any) {
@@ -4256,57 +4270,65 @@ const DatabaseOrchestrationView = ({
                     </span>
                   </button>
 
-                  <div className="relative group/backup">
-                    <button
-                      onClick={() => {
-                        setOpenBackupMenuId((prev) => (prev === db.id ? null : db.id));
-                      }}
-                      className={`w-full h-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider bg-[var(--bg-primary)] border-[var(--border-main)] text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/5`}
-                    >
-                      <History
-                        size={16}
-                        className="group-hover/backup:animate-spin-slow"
-                      />
-                      <span className="text-center px-1">
-                        {dir === "rtl" ? "نسخ/إستعادة" : "Backup"}
-                      </span>
-                    </button>
-
-                    <div
-                      className={`${
-                        openBackupMenuId === db.id ? "block" : "hidden"
-                      } absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 transition-theme`}
-                    >
+                    <div className="relative group/backup">
                       <button
                         onClick={() => {
-                          handleExportBackup(db.id);
-                          setOpenBackupMenuId(null);
+                          setOpenBackupMenuId((prev) => (prev === db.id ? null : db.id));
                         }}
-                        className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-blue-500/10 text-blue-500 transition-theme text-xs font-bold"
+                        className={`w-full h-full flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider bg-[var(--bg-primary)] border-[var(--border-main)] text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/5`}
                       >
-                        <Download size={16} />{" "}
-                        {dir === "rtl"
-                          ? "تصدير نسخة (Export)"
-                          : "Export Backup"}
-                      </button>
-                      <div className="h-px bg-[var(--border-main)] my-1" />
-                      <label className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-emerald-500/10 text-emerald-500 transition-theme text-xs font-bold cursor-pointer">
-                        <Upload size={16} />
-                        {dir === "rtl"
-                          ? "استيراد نسخة (Import)"
-                          : "Import Backup"}
-                        <input
-                          type="file"
-                          accept=".json"
-                          className="hidden"
-                          onChange={(e) => {
-                            handleImportBackup(db.id, e);
-                            setOpenBackupMenuId(null);
-                          }}
+                        <History
+                          size={16}
+                          className="group-hover/backup:animate-spin-slow"
                         />
-                      </label>
+                        <span className="text-center px-1">
+                          {dir === "rtl" ? "نسخ/إستعادة" : "Backup"}
+                        </span>
+                      </button>
+
+                      <div
+                        className={`${
+                          openBackupMenuId === db.id ? "block" : "hidden"
+                        } absolute bottom-[110%] left-0 right-0 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-md shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-bottom-2 transition-theme`}
+                      >
+                        {(() => {
+                          const currentDbTargetType = db.id === "ledger" ? "ledger" : (db.id === "external" ? "external" : (db.id === "security" ? "security" : "core"));
+                          const currentDbName = db.db_name || db.dbName || currentDbTargetType;
+                          return (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleExportBackup(db.id);
+                                  setOpenBackupMenuId(null);
+                                }}
+                                className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-blue-500/10 text-blue-500 transition-theme text-xs font-bold"
+                              >
+                                <Download size={16} />{" "}
+                                {dir === "rtl"
+                                  ? `تصدير نسخة (${currentDbName})`
+                                  : `Export Backup (${currentDbName})`}
+                              </button>
+                              <div className="h-px bg-[var(--border-main)] my-1" />
+                              <label className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-emerald-500/10 text-emerald-500 transition-theme text-xs font-bold cursor-pointer">
+                                <Upload size={16} />
+                                {dir === "rtl"
+                                  ? `استيراد نسخة إلى (${currentDbName})`
+                                  : `Import Backup to (${currentDbName})`}
+                                <input
+                                  type="file"
+                                  accept=".json"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    handleImportBackup(db.id, e);
+                                    setOpenBackupMenuId(null);
+                                  }}
+                                />
+                              </label>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
                 </div>
 
                 <button
@@ -12949,6 +12971,368 @@ const SystemSettingsView = ({
   );
 };
 
+// --- Compliance Audit Logs View ---
+const ComplianceAuditLogsView = ({
+  theme,
+  t,
+  dir,
+}: {
+  theme: string;
+  t: (key: string) => string;
+  dir: string;
+}) => {
+  const { token, language } = useAppContext();
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [limit] = useState(25);
+  const [offset, setOffset] = useState(0);
+  const [actionFilter, setActionFilter] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
+  const [selectedLog, setSelectedLog] = useState<any | null>(null);
+
+  const isRtl = language === "ar";
+
+  const fetchLogs = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const url = `/api/admin/audit-logs?limit=${limit}&offset=${offset}&action=${encodeURIComponent(actionFilter)}&email=${encodeURIComponent(emailFilter)}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs || []);
+        setTotal(data.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch compliance audit logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [token, offset]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOffset(0);
+    fetchLogs();
+  };
+
+  const handleReset = () => {
+    setActionFilter("");
+    setEmailFilter("");
+    setOffset(0);
+    setTimeout(() => {
+      fetchLogs();
+    }, 50);
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleString(language === "ar" ? "ar-EG" : "en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "UTC"
+    }) + " UTC";
+  };
+
+  return (
+    <div className="space-y-6 font-sans" dir={isRtl ? "rtl" : "ltr"}>
+      {/* Search & Audit Filters Bar */}
+      <form onSubmit={handleSearch} className={`p-4 rounded-lg border flex flex-col md:flex-row gap-4 items-end justify-between ${
+        theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-100"
+      }`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {isRtl ? "تصفية حسب العملية الإدارية" : "Search Admin Action"}
+            </span>
+            <div className="relative">
+              <input
+                type="text"
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                placeholder={isRtl ? "مثال: UPDATE, POST..." : "e.g., CREATE_PLAN, HTTP_POST..."}
+                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
+                  theme === "dark" 
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-emerald-500/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-emerald-500/50"
+                }`}
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {isRtl ? "البريد الإلكتروني للـ دكتور" : "Search Admin Email"}
+            </span>
+            <div className="relative">
+              <input
+                type="text"
+                value={emailFilter}
+                onChange={(e) => setEmailFilter(e.target.value)}
+                placeholder={isRtl ? "البحث بالبريد..." : "e.g., admin@perplexta.com"}
+                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
+                  theme === "dark" 
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-emerald-500/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-emerald-500/50"
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full md:w-auto">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-bold cursor-pointer transition-all duration-300 shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+          >
+            {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
+            {isRtl ? "تطبيق التصفية" : "Apply Filter"}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={loading}
+            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-all duration-300 ${
+              theme === "dark" 
+                ? "border-gray-800 text-gray-300 hover:bg-gray-800"
+                : "border-gray-200 text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            {isRtl ? "إعادة تعيين" : "Reset"}
+          </button>
+        </div>
+      </form>
+
+      {/* Main Audit Logs Table Container */}
+      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme duration-350 ${
+        theme === "dark" ? "bg-[#18181b] border-gray-800/60" : "bg-white border-gray-100"
+      }`}>
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead>
+              <tr className={`border-b text-[10px] uppercase font-black tracking-wider text-gray-400 ${
+                theme === "dark" ? "border-gray-800 bg-[#0f0f11]/40" : "border-gray-100 bg-gray-50/60"
+              }`}>
+                <th className="py-3.5 px-4 text-center">{isRtl ? "الوقت (UTC)" : "Timestamp (UTC)"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "المسؤول (Admin)" : "Admin User"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "العملية الإجرائية" : "Administrative Action"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "المستهدف" : "Target Resource"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "العنوان الرقمي IP" : "IP Address"}</th>
+                <th className="py-3.5 px-4 text-center">{isRtl ? "التفاصيل" : "Compliance Audit"}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-400">
+                    <RefreshCw className="animate-spin inline-block mr-2 text-emerald-500" size={18} />
+                    {isRtl ? "جاري جلب سجل التدقيق الأمني..." : "Ingesting secure compliance records..."}
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-400">
+                    {isRtl ? "لا توجد سجلات مطابقة لمعايير الاستعلام أمنياً." : "No matching compliant audit trail records found."}
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr 
+                    key={log.id} 
+                    className={`transition-colors duration-200 ${
+                      theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
+                    }`}
+                  >
+                    <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap opacity-80">
+                      {formatDate(log.created_at)}
+                    </td>
+                    <td className="py-3.5 px-4 font-medium max-w-[180px] truncate">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[var(--text-primary)]">{log.admin_email || ("ID: " + log.admin_id)}</span>
+                        <span className="text-[9px] opacity-40 font-mono">UID: {log.admin_id || "SYSTEM"}</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-tight ${
+                        log.action.startsWith("HTTP_") 
+                          ? log.action.includes("POST") 
+                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/10"
+                            : log.action.includes("DELETE")
+                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/10"
+                              : "bg-purple-500/10 text-purple-400 border border-purple-500/10"
+                          : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/10"
+                      }`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="font-mono text-[11px] opacity-80">{log.target_resource || "GLOBAL"}</span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="font-mono text-[11px] opacity-75">{log.ip_address || "LOCAL_EXEC"}</span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        onClick={() => setSelectedLog(log)}
+                        className="px-3 py-1 border border-emerald-500/20 rounded-md text-[10px] font-bold text-emerald-500 hover:border-emerald-500 hover:bg-emerald-500/10 cursor-pointer transition-all duration-300"
+                      >
+                        {isRtl ? "عرض التفاصيل" : "Inspect Payload"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Database Audit Pagination Bar */}
+        <div className={`p-4 border-t flex items-center justify-between text-xs ${
+          theme === "dark" ? "border-gray-800/60 bg-[#0f0f11]/20" : "border-gray-100 bg-gray-50/30"
+        }`}>
+          <div className="text-gray-400 font-bold">
+            {isRtl 
+              ? `عرض ${logs.length} سجل من إجمالي ${total}`
+              : `Showing ${logs.length} of ${total} compliance log records`}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+              className={`p-2 rounded-md border flex items-center justify-center transition-all duration-300 disabled:opacity-40 select-none ${
+                offset === 0 ? "cursor-not-allowed" : "cursor-pointer"
+              } ${
+                theme === "dark" 
+                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
+            </button>
+            <button
+              disabled={offset + limit >= total}
+              onClick={() => setOffset(offset + limit)}
+              className={`p-2 rounded-md border flex items-center justify-center transition-all duration-300 disabled:opacity-40 select-none ${
+                offset + limit >= total ? "cursor-not-allowed" : "cursor-pointer"
+              } ${
+                theme === "dark" 
+                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* JSON Expand Payload Modal -- Pure Emerald Glow Premium Transition */}
+      <AnimatePresence>
+        {selectedLog && (
+          <div className="fixed inset-0 flex items-center justify-center z-[130] p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLog(null)}
+              className="fixed inset-0 bg-black/65 backdrop-blur-[4px] z-0 cursor-pointer"
+            />
+
+            {/* Modal Drawer */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className={`relative max-w-2xl w-full rounded-xl border p-6 z-10 shadow-2xl ${
+                theme === "dark" ? "bg-[#111113] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border)] mb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" size={18} />
+                  <span className="text-xs uppercase font-black tracking-wider w-auto h-auto leading-none mt-0">
+                    {isRtl ? "التدقيق والتفاصيل القياسية" : "Compliance Payload Audit Inspection"}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedLog(null)}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-all duration-300`}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Summary metadata grid */}
+              <div className="grid grid-cols-2 gap-4 text-[10px] mb-4">
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "المسؤول الفاعل" : "Action Operator"}</span>
+                  <span className="font-bold mt-0.5 text-[var(--text-primary)] truncate">{selectedLog.admin_email || "System/Cron Engine"}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "العملية الإجرائية" : "Action Identifier"}</span>
+                  <span className="font-bold mt-0.5 text-emerald-400 font-mono">{selectedLog.action}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "الوقت (توقيت عالمي)" : "Logged Timestamp (UTC)"}</span>
+                  <span className="font-semibold mt-0.5 font-mono">{formatDate(selectedLog.created_at)}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "بيانات الموقع والشبكة" : "Network Ingress Platform"}</span>
+                  <span className="font-mono mt-0.5 leading-none text-zinc-400">{selectedLog.ip_address || "Internal Sandbox Host"}</span>
+                </div>
+              </div>
+
+              {/* User Agent Block */}
+              {selectedLog.user_agent && (
+                <div className="mb-4 text-[9px] p-2 rounded bg-black/5 dark:bg-black/25 text-gray-400 font-mono border border-[var(--border)] leading-relaxed">
+                  <strong>User Agent:</strong> {selectedLog.user_agent}
+                </div>
+              )}
+
+              {/* JSON Payload Display */}
+              <div className="flex flex-col font-sans">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 pl-0.5">
+                  {isRtl ? "البيانات المشفرة والمحفوظة (JSON Payloads)" : "Compliant Transaction Log (JSON)"}
+                </span>
+                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-emerald-400 font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
+                  <pre className="whitespace-pre-wrap select-text">
+                    {JSON.stringify(typeof selectedLog.details === "string" ? JSON.parse(selectedLog.details) : selectedLog.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Footer disclaimer */}
+              <p className="text-[9px] text-gray-400 mt-4 leading-relaxed font-sans italic opacity-60">
+                {isRtl 
+                  ? "ملاحظة التوافق: تم إلحاق وحفظ السجل أعلاه في بيئة معزولة أمنياً وغير قابلة للتعديل أو الحذف لضمان نزاهة عمليات المنصة والامتثال الدولي."
+                  : "Compliance Notice: This secure append-only audit log is recorded into a strictly cryptographic sandboxed database table and cannot be overridden, fulfilling absolute platform accountability. "
+                }
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const AdminDashboard: React.FC = () => {
@@ -13004,6 +13388,7 @@ export const AdminDashboard: React.FC = () => {
       "finance",
       "settings",
       "orchestrator",
+      "audit",
     ];
     if (isSupport && sensitivePaths.includes(path)) {
       navigate("/admin/dashboard");
@@ -13120,6 +13505,8 @@ export const AdminDashboard: React.FC = () => {
         return t("smartBroadcast");
       case "settings":
         return t("systemSettings");
+      case "audit":
+        return language === "ar" ? "التدقيق والامتثال" : "Compliance Audit Trail";
       default:
         return t("commandCenter");
     }
@@ -13171,6 +13558,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "إعدادات النظام والبروتوكول الأساسي"
           : "CORE SYSTEM PROTOCOL CONFIG";
+      case "audit":
+        return language === "ar"
+          ? "مراقبة العمليات الحساسة وإعدادات الامتثال الأمني"
+          : "SECURE CRITICAL METADATA AUDITING & SECURITY COMPLIANCE";
       default:
         return "MANAGEMENT COMMAND CENTER";
     }
@@ -13202,6 +13593,8 @@ export const AdminDashboard: React.FC = () => {
         return <Send size={28} className={iconClass} />;
       case "settings":
         return <Settings size={28} className={iconClass} />;
+      case "audit":
+        return <ShieldAlert size={28} className={iconClass} />;
       default:
         return <Settings2 size={28} className={iconClass} />;
     }
@@ -13474,7 +13867,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit"].includes(
             path,
           )
             ? ""
@@ -13525,6 +13918,8 @@ export const AdminDashboard: React.FC = () => {
             />
           ) : path === "settings" ? (
             <SystemSettingsView theme={theme} t={t} dir={dir} />
+          ) : path === "audit" ? (
+            <ComplianceAuditLogsView theme={theme} t={t} dir={dir} />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <div className="mb-6 opacity-50">{getIcon()}</div>

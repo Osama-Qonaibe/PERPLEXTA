@@ -1564,7 +1564,7 @@ export const MarketplacePage: React.FC = () => {
 
   return (
     <div
-      className={`h-[calc(100dvh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
+      className={`h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
         isThemeDark ? 'bg-[#050505] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={dir}
@@ -2221,10 +2221,10 @@ export const MarketplacePage: React.FC = () => {
             />
 
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
               className={`relative w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl border flex flex-col scrollbar-none shadow-2xl ${
                 isThemeDark ? 'bg-[#090a0c] border-white/10 text-white shadow-black/90' : 'bg-white border-gray-200 text-gray-900 shadow-gray-300/40'
               }`}

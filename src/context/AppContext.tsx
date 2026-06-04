@@ -1553,10 +1553,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return 'dark';
     }
   });
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem('app_user_profile');
+      if (stored && stored !== 'null' && stored !== 'undefined') {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  });
   const userRef = useRef<User | null>(user);
   useEffect(() => {
     userRef.current = user;
+    try {
+      if (user) {
+        localStorage.setItem('app_user_profile', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('app_user_profile');
+      }
+    } catch (e) {
+      console.warn('Failed to save user profile to storage', e);
+    }
   }, [user]);
 
   const [token, setToken] = useState<string | null>(() => {
@@ -1910,14 +1930,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('language', authLang);
     }
     
-    const targetRefRaw = userData.ref || localStorage.getItem('app_ref') || '/';
-    const targetRef = (targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
+    const targetRefRaw = userData.ref || localStorage.getItem('app_ref');
+    // If no explicit redirect is saved or requested, we keep the user on their exact current viewport
+    const targetRef = targetRefRaw && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//') ? targetRefRaw : null;
     localStorage.removeItem('app_ref');
     
     const currentPath = window.location.pathname;
-    const isSamePage = currentPath === targetRef || 
-                       (currentPath === '/' && targetRef === '/chats') || 
-                       (currentPath === '/chats' && targetRef === '/');
+    
+    const normalizePath = (p: string) => {
+      let clean = p.replace(/\/$/, "");
+      if (clean === "" || clean === "/chats") return "/chat";
+      return clean;
+    };
+    
+    const normCurrent = normalizePath(currentPath);
+    const normTarget = targetRef ? normalizePath(targetRef) : normCurrent;
+    
+    const isSamePage = !targetRef || 
+                       normCurrent === normTarget || 
+                       (normCurrent.startsWith('/chat') && normTarget.startsWith('/chat'));
     
     setTimeout(() => {
       localStorage.removeItem('app_oauth_syncing');
@@ -1930,7 +1961,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('app_logged_in_toast', '1');
         localStorage.setItem('app_loader_type', 'login');
         localStorage.setItem('app_force_refresh', '1');
-        window.location.href = targetRef;
+        window.location.href = targetRef || '/';
       }
     }, 50);
   };
@@ -2527,6 +2558,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('app_refresh_token');
     localStorage.removeItem('app_oauth_user');
     localStorage.removeItem('app_oauth_trigger');
+    localStorage.removeItem('app_user_profile');
     
     // Background logout API call (fire-and-forget) to ensure zero UI delay
     if (storedToken) {

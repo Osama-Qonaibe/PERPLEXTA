@@ -132,7 +132,22 @@ export async function exportDatabase(type: 'core' | 'ledger' | 'external' | 'sec
       ? EXTERNAL_TABLES 
       : (type === 'security' ? SECURITY_TABLES : CORE_TABLES));
       
-  const backup: any = { type, timestamp: new Date().toISOString(), data: {} };
+  let actualDbName = 'unknown';
+  try {
+    const dbNameResult = await targetPool.query('SELECT current_database() as db_name');
+    if (dbNameResult && dbNameResult.rows && dbNameResult.rows.length > 0) {
+      actualDbName = dbNameResult.rows[0].db_name;
+    }
+  } catch (err) {
+    console.warn('[Export] Failed to query current_database():', err);
+  }
+
+  const backup: any = { 
+    type, 
+    database_name: actualDbName, 
+    timestamp: new Date().toISOString(), 
+    data: {} 
+  };
 
   for (const table of tables) {
     try {

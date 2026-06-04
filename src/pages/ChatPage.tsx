@@ -12,7 +12,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork, Sliders, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
@@ -25,6 +25,7 @@ import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { TypewriterMotive } from '../components/TypewriterMotive';
 import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
+import { generateProceduralTrack } from '../utils/audioGenerator';
 
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
@@ -39,6 +40,63 @@ const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
     </div>
   </div>
 );
+
+const BlockquoteWithActions = ({ children, dir }: any) => {
+  const [copied, setCopied] = useState(false);
+
+  const extractText = (node: any): string => {
+    if (!node) return '';
+    if (typeof node === 'string') return node;
+    if (typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(extractText).join('');
+    if (node.props && node.props.children) return extractText(node.props.children);
+    return '';
+  };
+
+  const textToProcess = extractText(children).trim();
+
+  const handleCopy = () => {
+    if (!textToProcess) return;
+    navigator.clipboard.writeText(textToProcess)
+      .then(() => {
+        setCopied(true);
+        toast.success(dir === 'rtl' ? 'تم نسخ النص المقتبس' : 'Quote copied to clipboard!');
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error(dir === 'rtl' ? 'فشل في النسخ' : 'Failed to copy text');
+      });
+  };
+
+  const handleApply = () => {
+    if (!textToProcess) return;
+    window.dispatchEvent(new CustomEvent('insert_to_prompt', { detail: textToProcess }));
+  };
+
+  return (
+    <div className="relative group/bq transition-all duration-300 my-4 p-4 rounded-[4px] border border-emerald-500/15 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01]">
+      <div className={`absolute top-2 ${dir === 'rtl' ? 'left-2' : 'right-2'} opacity-100 sm:opacity-0 sm:group-hover/bq:opacity-100 transition-opacity duration-300 flex items-center gap-1 z-10 pointer-events-auto`}>
+        <button
+          onClick={handleCopy}
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          title={dir === 'rtl' ? 'نسخ النص' : 'Copy Text'}
+        >
+          {copied ? <Check size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" /> : <Copy size={14} />}
+        </button>
+        <button
+          onClick={handleApply}
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
+        >
+          <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
+        </button>
+      </div>
+      <blockquote className="m-0 pl-2 pr-10 rtl:pr-2 rtl:pl-10 italic">
+        {children}
+      </blockquote>
+    </div>
+  );
+};
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const { dir } = useAppContext();
@@ -388,6 +446,13 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                       {dir === 'rtl' ? 'تم النسخ!' : 'Copied!'}
                     </span>
                   )}
+                </button>
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('insert_to_prompt', { detail: editableCode }))}
+                  className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 hover:bg-[var(--bg-overlay)] active:scale-95 cursor-pointer"
+                  title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
+                >
+                  <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
                 </button>
                 <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
                   <FileText size={14} />
@@ -1039,13 +1104,9 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className={`flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-theme text-start relative overflow-hidden rounded-md ${
-              dir === 'rtl' ? 'flex-row' : 'flex-row'
-            }`}
+            className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-theme text-start relative overflow-hidden rounded-md flex-row"
           >
-            <div className={`w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 ${
-              dir === 'rtl' ? 'order-first' : 'order-first'
-            }`}>
+            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 order-first">
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
             </div>
             <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme flex-1 min-w-0 leading-tight">
@@ -1053,6 +1114,841 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             </span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+};
+
+const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }: { body: string; fullContent?: string; dir: 'ltr' | 'rtl'; theme: string; coverImageUrl: string | null }) => {
+  const [status, setStatus] = useState<'idle' | 'rendering' | 'ready' | 'error'>('idle');
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(30);
+  const [volume, setVolume] = useState(0.85);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // 🎛️ Live Multi-Channel Web Audio API Mixing Controls State
+  const [aiVolume, setAiVolume] = useState(0.85);
+  const [uploadedVolume, setUploadedVolume] = useState(0.70);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedDuration, setUploadedDuration] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isMixerExpanded, setIsMixerExpanded] = useState(true);
+
+  // HTML Media Elements Refs
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const uploadedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Web Audio Context Graph Refs
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const aiSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const uploadedSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const aiGainNodeRef = useRef<GainNode | null>(null);
+  const uploadedGainNodeRef = useRef<GainNode | null>(null);
+  const masterGainNodeRef = useRef<GainNode | null>(null);
+
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Simulate incremental compilation progress percentage
+  useEffect(() => {
+    if (status === 'rendering') {
+      setProgressPercent(0);
+      const interval = setInterval(() => {
+        setProgressPercent(prev => {
+          if (prev >= 98) return prev;
+          const inc = Math.floor(Math.random() * 8) + 4;
+          return Math.min(98, prev + inc);
+        });
+      }, 150);
+      return () => clearInterval(interval);
+    } else if (status === 'ready') {
+      setProgressPercent(100);
+    }
+  }, [status]);
+
+  // Parse parameters from section text or full parent content for high precision
+  const bodyText = (fullContent || '') + '\n' + (body || '');
+  let styleName = 'Epic';
+  let vocalName = 'None';
+  let durationVal = 30;
+
+  if (bodyText.includes('ملحمية') || bodyText.toLowerCase().includes('epic') || bodyText.toLowerCase().includes('orchestra')) {
+    styleName = 'Epic';
+  } else if (bodyText.includes('طرب') || bodyText.includes('شرقي') || bodyText.toLowerCase().includes('tarab') || bodyText.toLowerCase().includes('maqam')) {
+    styleName = 'Tarab';
+  } else if (bodyText.includes('إلكترونك') || bodyText.includes('دي جي') || bodyText.toLowerCase().includes('edm') || bodyText.toLowerCase().includes('techno') || bodyText.toLowerCase().includes('electronic') || bodyText.toLowerCase().includes('تقنو') || bodyText.toLowerCase().includes('تكنو')) {
+    styleName = 'EDM';
+  } else if (bodyText.includes('غيتار') || bodyText.includes('تخت') || bodyText.toLowerCase().includes('acoustic') || bodyText.toLowerCase().includes('guitar') || bodyText.toLowerCase().includes('soft') || bodyText.toLowerCase().includes('كلاسيك') || bodyText.toLowerCase().includes('هادئ')) {
+    styleName = 'Acoustic';
+  } else if (bodyText.includes('لو-فاي') || bodyText.includes('لوفاي') || bodyText.toLowerCase().includes('lofi') || bodyText.toLowerCase().includes('lo-fi') || bodyText.toLowerCase().includes('chill')) {
+    styleName = 'LoFi';
+  } else if (bodyText.includes('جاز') || bodyText.toLowerCase().includes('jazz') || bodyText.toLowerCase().includes('blues')) {
+    styleName = 'Jazz';
+  } else if (bodyText.includes('بوب') || bodyText.toLowerCase().includes('pop') || bodyText.toLowerCase().includes('upbeat')) {
+    styleName = 'Pop';
+  }
+
+  if (bodyText.includes('كورال') || bodyText.toLowerCase().includes('choir') || bodyText.toLowerCase().includes('choral')) {
+    vocalName = 'Choir';
+  } else if (bodyText.includes('أنثوي') || bodyText.toLowerCase().includes('female') || bodyText.toLowerCase().includes('soprano')) {
+    vocalName = 'Female';
+  } else if (bodyText.includes('ذكوري') || bodyText.toLowerCase().includes('male') || bodyText.toLowerCase().includes('baritone') || bodyText.toLowerCase().includes('hum') || bodyText.toLowerCase().includes('تينور')) {
+    vocalName = 'Male';
+  } else if (bodyText.includes('روبوت') || bodyText.toLowerCase().includes('vocaloid') || bodyText.toLowerCase().includes('ai synth')) {
+    vocalName = 'Vocaloid';
+  } else if (bodyText.includes('بدون غناء') || bodyText.includes('موسيقى فقط') || bodyText.includes('عزف') || bodyText.toLowerCase().includes('instrumental') || bodyText.toLowerCase().includes('none')) {
+    vocalName = 'None';
+  }
+
+  const normalizedBody = bodyText
+    .replace(/[٠0]/g, '0')
+    .replace(/[١1]/g, '1')
+    .replace(/[٢2]/g, '2')
+    .replace(/[٣3]/g, '3')
+    .replace(/[٤4]/g, '4')
+    .replace(/[٥5]/g, '5')
+    .replace(/[٦6]/g, '6')
+    .replace(/[٧7]/g, '7')
+    .replace(/[٨8]/g, '8')
+    .replace(/[٩9]/g, '9');
+
+  const durationMatch = normalizedBody.match(/(?:المدة|Duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/i) || normalizedBody.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/i);
+  if (durationMatch) {
+    durationVal = parseInt(durationMatch[1], 10);
+    if (isNaN(durationVal) || durationVal < 10) durationVal = 30;
+  }
+
+  // Calculate the live active mix duration
+  const mixDuration = uploadedFile ? Math.max(duration, uploadedDuration) : duration;
+
+  // Synthesize audio sequence locally on mount
+  useEffect(() => {
+    let active = true;
+    const renderTrack = async () => {
+      setStatus('rendering');
+      try {
+        const trackBlob = await generateProceduralTrack(styleName, vocalName, durationVal);
+        if (!active) return;
+        const url = URL.createObjectURL(trackBlob);
+        setAudioUrl(url);
+        setDuration(durationVal);
+        setStatus('ready');
+      } catch (err) {
+        console.error('Generative synthesis failed:', err);
+        if (active) setStatus('error');
+      }
+    };
+    renderTrack();
+
+    return () => {
+      active = false;
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [styleName, vocalName, durationVal]);
+
+  // Cleanup Web Audio Context on unmount
+  useEffect(() => {
+    return () => {
+      if (uploadedUrl) {
+        URL.revokeObjectURL(uploadedUrl);
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, [uploadedUrl]);
+
+  // Adjust master gain level in context
+  useEffect(() => {
+    if (masterGainNodeRef.current) {
+      masterGainNodeRef.current.gain.setValueAtTime(isMuted ? 0 : volume, audioCtxRef.current?.currentTime || 0);
+    }
+  }, [volume, isMuted]);
+
+  // Handle Playback Loop Updates for mixed tracks
+  const updateProgress = () => {
+    if (audioRef.current) {
+      const mainTime = audioRef.current.currentTime;
+      let displayTime = mainTime;
+
+      if (audioRef.current.ended) {
+        if (uploadedAudioRef.current && !uploadedAudioRef.current.ended && uploadedUrl) {
+          // If the AI track ended but the user track is longer, keep updates synced to user playback
+          displayTime = uploadedAudioRef.current.currentTime;
+          setCurrentTime(displayTime);
+          animationFrameRef.current = requestAnimationFrame(updateProgress);
+        } else {
+          setIsPlaying(false);
+          setCurrentTime(0);
+          if (uploadedAudioRef.current) {
+            uploadedAudioRef.current.currentTime = 0;
+          }
+        }
+      } else {
+        // Enforce perfect sub-quarter-second phase lock sync between tracks
+        if (uploadedAudioRef.current && !uploadedAudioRef.current.paused && uploadedUrl) {
+          const diff = Math.abs(uploadedAudioRef.current.currentTime - mainTime);
+          if (diff > 0.22) {
+            uploadedAudioRef.current.currentTime = Math.min(mainTime, uploadedAudioRef.current.duration || 0);
+          }
+        }
+        setCurrentTime(displayTime);
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
+      }
+    }
+  };
+
+  const handlePlayPause = async () => {
+    if (!audioRef.current || status !== 'ready') return;
+
+    // 1. Setup / Resume AudioContext on Gesture
+    let ctx = audioCtxRef.current;
+    if (!ctx) {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        ctx = new AudioContextClass();
+        audioCtxRef.current = ctx;
+
+        // Create Master Volume Controller node
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(isMuted ? 0 : volume, ctx.currentTime);
+        masterGain.connect(ctx.destination);
+        masterGainNodeRef.current = masterGain;
+      } catch (e) {
+        console.warn("Web Audio API failing initiated:", e);
+      }
+    }
+
+    if (ctx && ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    // 2. Wire AI track node exactly once to the Web Audio Graph
+    if (ctx && !aiSourceRef.current && masterGainNodeRef.current) {
+      try {
+        const aiSrc = ctx.createMediaElementSource(audioRef.current);
+        const aiGain = ctx.createGain();
+        aiGain.gain.setValueAtTime(aiVolume, ctx.currentTime);
+        aiSrc.connect(aiGain);
+        aiGain.connect(masterGainNodeRef.current);
+
+        aiSourceRef.current = aiSrc;
+        aiGainNodeRef.current = aiGain;
+      } catch (err) {
+        console.warn("AI source routing warning:", err);
+      }
+    }
+
+    // 3. Wire Uploaded track node exactly once to the Web Audio Graph
+    if (ctx && uploadedAudioRef.current && uploadedUrl && !uploadedSourceRef.current && masterGainNodeRef.current) {
+      try {
+        const uplSrc = ctx.createMediaElementSource(uploadedAudioRef.current);
+        const uplGain = ctx.createGain();
+        uplGain.gain.setValueAtTime(uploadedVolume, ctx.currentTime);
+        uplSrc.connect(uplGain);
+        uplGain.connect(masterGainNodeRef.current);
+
+        uploadedSourceRef.current = uplSrc;
+        uploadedGainNodeRef.current = uplGain;
+      } catch (err) {
+        console.warn("Uploaded source routing warning:", err);
+      }
+    }
+
+    // 4. Trigger synchronized playback
+    if (isPlaying) {
+      audioRef.current.pause();
+      if (uploadedAudioRef.current && uploadedUrl) {
+        uploadedAudioRef.current.pause();
+      }
+      setIsPlaying(false);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    } else {
+      if (uploadedAudioRef.current && uploadedUrl) {
+        uploadedAudioRef.current.currentTime = Math.min(audioRef.current.currentTime, uploadedAudioRef.current.duration || 0);
+      }
+
+      try {
+        const playPromises = [];
+        playPromises.push(audioRef.current.play());
+        if (uploadedAudioRef.current && uploadedUrl) {
+          playPromises.push(uploadedAudioRef.current.play());
+        }
+
+        await Promise.all(playPromises);
+        setIsPlaying(true);
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
+      } catch (err) {
+        console.error("Audio playback block:", err);
+      }
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (val > 0) setIsMuted(false);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !audioRef.current || status !== 'ready') return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const targetTime = percentage * mixDuration;
+
+    audioRef.current.currentTime = targetTime;
+    if (uploadedAudioRef.current && uploadedUrl) {
+      uploadedAudioRef.current.currentTime = Math.min(targetTime, uploadedAudioRef.current.duration || 0);
+    }
+    setCurrentTime(targetTime);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      toast.error(dir === 'rtl' ? 'يرجى تحميل ملف صوتي صالح.' : 'Please upload a valid audio file.');
+      return;
+    }
+
+    if (uploadedUrl) {
+      URL.revokeObjectURL(uploadedUrl);
+    }
+
+    const url = URL.createObjectURL(file);
+    setUploadedFile(file);
+    setUploadedUrl(url);
+
+    // Stop current play of both
+    if (isPlaying) {
+      audioRef.current?.pause();
+      if (uploadedAudioRef.current) {
+        uploadedAudioRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+
+    setCurrentTime(0);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+    }
+
+    // Force disconnect previous source reference to let it rebind on next play
+    if (uploadedSourceRef.current) {
+      try {
+        uploadedSourceRef.current.disconnect();
+      } catch (e) {}
+      uploadedSourceRef.current = null;
+    }
+    uploadedGainNodeRef.current = null;
+
+    toast.success(dir === 'rtl' ? 'تم جلب الملف الصوتي المساعد للمزج!' : 'Companion file imported successfully into production mixer!');
+  };
+
+  const removeUploadedFile = () => {
+    if (uploadedUrl) {
+      URL.revokeObjectURL(uploadedUrl);
+    }
+    setUploadedFile(null);
+    setUploadedUrl(null);
+    setUploadedDuration(0);
+
+    if (uploadedSourceRef.current) {
+      try {
+        uploadedSourceRef.current.disconnect();
+      } catch (e) {}
+      uploadedSourceRef.current = null;
+    }
+    uploadedGainNodeRef.current = null;
+
+    // Reset play positions
+    setCurrentTime(0);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+    }
+    if (isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  // Convert raw seconds to localized mm:ss string
+  const formatTime = (timeInSecs: number) => {
+    const min = Math.floor(timeInSecs / 60);
+    const sec = Math.floor(timeInSecs % 60);
+    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+  };
+
+  // Style attributes translations mapping for direct localized display
+  const styleDisplayMap: Record<string, { ar: string; en: string }> = {
+    'Epic': { ar: 'أوركسترا ملحمية', en: 'Epic Orchestral' },
+    'Tarab': { ar: 'طرب ومقام شرقي', en: 'Arabic Tarab' },
+    'EDM': { ar: 'إلكترونك ودي جي', en: 'EDM & Techno' },
+    'Acoustic': { ar: 'غيتار وتخت هادئ', en: 'Acoustic & Soft' },
+    'LoFi': { ar: 'لو-فاي مريح', en: 'Chill Lo-Fi' },
+    'Jazz': { ar: 'جاز بلوز', en: 'Jazz & Blues' },
+    'Pop': { ar: 'بوب حماسي', en: 'Energetic Pop' }
+  };
+
+  const vocalDisplayMap: Record<string, { ar: string; en: string }> = {
+    'None': { ar: 'مقطوعة موسيقية', en: 'Instrumental Only' },
+    'Choir': { ar: 'صوت كورال سينمائي', en: 'Cinematic Choir vocal' },
+    'Female': { ar: 'أداء سوبرانو نسائي', en: 'Soprano Female vocal' },
+    'Male': { ar: 'غناء تينور ذكوري', en: 'Tenor Male vocal' },
+    'Vocaloid': { ar: 'سنتسيزر ذكاء اصطناعي', en: 'AI Vocal Synthesizer' }
+  };
+
+  const styleLabel = styleDisplayMap[styleName] || { ar: styleName, en: styleName };
+  const vocalLabel = vocalDisplayMap[vocalName] || { ar: vocalName, en: vocalName };
+
+  return (
+    <div className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto">
+      {audioUrl && (
+        <audio 
+          ref={audioRef} 
+          src={audioUrl} 
+          onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)} 
+        />
+      )}
+
+      {/* Uploaded local audio file element */}
+      {uploadedUrl && (
+        <audio
+          ref={uploadedAudioRef}
+          src={uploadedUrl}
+          onLoadedMetadata={() => {
+            if (uploadedAudioRef.current) {
+              setUploadedDuration(uploadedAudioRef.current.duration);
+            }
+          }}
+        />
+      )}
+
+      {/* Album cover / visual showcase space */}
+      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/15 shadow-2xl bg-black">
+        {coverImageUrl ? (
+          <img 
+            src={coverImageUrl} 
+            className={`w-full h-full object-cover opacity-50 transition-transform duration-700 ${isPlaying ? 'scale-105' : 'scale-100'}`} 
+            referrerPolicy="no-referrer" 
+            alt="Orchestra Cover" 
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#0b0c10] via-gray-950 to-black flex items-center justify-center">
+             <Music className={`text-emerald-500/10 transition-transform duration-1000 ${isPlaying ? 'rotate-6 scale-110' : ''}`} size={140} />
+          </div>
+        )}
+
+        {/* Floating details badge */}
+        <div className={`absolute top-4 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex flex-col gap-1 z-10`}>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            {dir === 'rtl' ? styleLabel.ar : styleLabel.en}
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium px-1">
+            {dir === 'rtl' ? vocalLabel.ar : vocalLabel.en}
+          </p>
+        </div>
+
+        {/* Center operational synthesis controller overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/30 backdrop-blur-[2px]">
+          {status === 'rendering' || status === 'idle' ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative flex items-center justify-center">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                  className="w-20 h-20 rounded-full border-2 border-t-emerald-500 border-r-emerald-500/30 border-b-emerald-500/10 border-l-transparent shadow-[0_0_30px_rgba(16,185,129,0.15)]" 
+                />
+                <div className="absolute w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center backdrop-blur-sm">
+                  <span className="text-[11px] font-mono font-black text-emerald-400">
+                    {progressPercent}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest animate-pulse leading-none mb-1">
+                  {dir === 'rtl' ? 'جاري التوليف الابتكاري والهندسة الفنية...' : 'SYNTHESIZING & ORCHESTRATING SOUNDWAVE...'}
+                </span>
+                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                  {dir === 'rtl' ? 'جودة فائقة الدقة استوديو 24 بت' : 'ULTRA-RES 24-BIT DIGITAL SIGNAL PROCESSING'}
+                </span>
+              </div>
+            </div>
+          ) : status === 'error' ? (
+            <div className="flex flex-col items-center gap-2 text-rose-500">
+               <AlertTriangle size={32} className="animate-bounce" />
+               <span className="text-xs font-black uppercase tracking-wider">
+                 {dir === 'rtl' ? 'فشل إعداد المسار الصوتي' : 'SOUND GENERATION ERROR'}
+               </span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <button 
+                onClick={handlePlayPause}
+                className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border-2 border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/30 text-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+                title={isPlaying ? (dir === 'rtl' ? 'إيقاف مؤقت' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
+              >
+                {isPlaying ? (
+                  <Pause size={30} className="fill-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                ) : (
+                  <Play size={30} className="ml-1.5 fill-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                )}
+              </button>
+              
+              <div className="text-center px-6">
+                <h4 className="text-sm font-black text-white tracking-[0.2em] uppercase mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                  {dir === 'rtl' ? 'تحفة الأوركسترا من بيربليكستا' : 'PERPLEXTA ORCHESTRA MASTERPIECE'}
+                </h4>
+                <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">
+                  {dir === 'rtl' ? 'أصلية بالكامل • جودة استوديو 24 بت' : 'FULLY ORIGINAL • 24-BIT CUSTOM SYNTH'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Dynamic visualizer bars responsive to track status */}
+        <div className="absolute bottom-0 left-0 w-full h-12 flex items-end justify-center gap-1 sm:gap-1.5 px-6 pb-4 opacity-65 pointer-events-none">
+          {Array.from({ length: 36 }).map((_, i) => {
+            let scaleVal = 4;
+            if (status === 'ready' && isPlaying) {
+              const speed = 0.15;
+              const indexFactor = Math.sin(i * 0.4 + currentTime * 8);
+              const volumeFactor = 16 + indexFactor * 12;
+              scaleVal = Math.max(4, Math.min(26, volumeFactor));
+              return (
+                <div 
+                  key={i}
+                  style={{ height: `${scaleVal}px` }}
+                  className="w-1 bg-emerald-500/70 rounded-full transition-all duration-100 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                />
+              );
+            } else if (status === 'rendering' || status === 'idle') {
+              // Beautiful staggered smooth wave motion during compilation
+              return (
+                <motion.div 
+                  key={i}
+                  animate={{ 
+                    height: [4, 18 + Math.sin(i * 0.5) * 10, 4] 
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity, 
+                    ease: "easeInOut",
+                    delay: i * 0.05 
+                  }}
+                  className="w-1 bg-emerald-500/60 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                />
+              );
+            } else {
+              // Soft static baseline wave
+              scaleVal = 4 + Math.sin(i * 0.3) * 3;
+              return (
+                <div 
+                  key={i}
+                  style={{ height: `${scaleVal}px` }}
+                  className="w-1 bg-emerald-500/40 rounded-full transition-all duration-100 shadow-[0_0_4px_rgba(16,185,129,0.1)]"
+                />
+              );
+            }
+          })}
+        </div>
+      </div>
+
+      {/* Aesthetic sound player operational controller bar */}
+      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-3 ${
+        theme === 'dark' 
+          ? 'bg-[#151518] border-gray-800/40' 
+          : 'bg-gray-50/80 border-gray-200/65'
+      }`}>
+        <div className="flex items-center justify-between gap-4 w-full">
+          {/* Quick timing indicator labels */}
+          <span className="text-[11px] font-mono font-bold text-[var(--text-muted)] min-w-[34px]">
+            {formatTime(currentTime)}
+          </span>
+
+          {/* Fully seekable slider timeline */}
+          <div 
+            ref={progressBarRef}
+            onClick={handleTimelineClick}
+            className="flex-1 h-2 relative rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden cursor-pointer group"
+          >
+            <div 
+              style={{ width: `${(currentTime / mixDuration) * 100}%` }}
+              className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.7)]"
+            />
+            {/* Glowing seek cursor marker */}
+            <div 
+              style={{ left: `calc(${(currentTime / mixDuration) * 100}% - 4px)` }}
+              className="absolute top-0 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+            />
+          </div>
+
+          <span className="text-[11px] font-mono font-bold text-[var(--text-muted)] min-w-[34px]">
+            {formatTime(mixDuration)}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between w-full pt-1">
+          {/* Volume control block with emerald feedback */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleMute}
+              className="w-10 h-10 rounded-[4px] bg-transparent border border-transparent transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              title={isMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
+            >
+              <Volume2 size={16} className={isMuted ? 'text-gray-500 line-through' : 'text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'} />
+            </button>
+            
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.05"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              className="w-16 sm:w-24 h-1 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-700 cursor-pointer"
+            />
+          </div>
+
+          {/* Quick description of song setup */}
+          <div className="hidden sm:flex flex-col text-center">
+            <span className="text-[10px] text-[#10b981] font-[#10b981] drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-bold uppercase tracking-widest leading-none">
+              {styleName} • {vocalName}
+            </span>
+            <span className="text-[8px] text-[var(--text-muted)] font-mono mt-0.5">
+              {durationVal} SECONDS / 16-BIT PCM WAV
+            </span>
+          </div>
+
+          {/* Instant WAV download button to save to local device */}
+          {audioUrl && status === 'ready' ? (
+            <a 
+              href={audioUrl}
+              download={`perplexta_song_${styleName.toLowerCase()}_${durationVal}s.wav`}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all duration-300 group/down shadow-md"
+              title={dir === 'rtl' ? 'تنزيل الأغنية بصيغة WAV' : 'Download fully-mastered WAV track'}
+            >
+              <Download size={12} className="group-hover/down:translate-y-0.5 transition-transform duration-300" />
+              <span>{dir === 'rtl' ? 'تنزيل المسار الرئيسي' : 'DOWNLOAD MASTER'}</span>
+            </a>
+          ) : (
+            <button 
+              disabled
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-transparent border border-gray-200 dark:border-gray-800 text-[10px] font-black uppercase text-[var(--text-muted)] opacity-50"
+            >
+              <Loader2 size={12} className="animate-spin" />
+              <span>{dir === 'rtl' ? 'تجهيز التحميل' : 'COMPILING...'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 🎛️ STUDIO DUAL-CHANNEL MIXING BOARD */}
+      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-all duration-300 ${
+        theme === 'dark' 
+          ? 'bg-[#151518]/95 border-gray-800/40 shadow-xl' 
+          : 'bg-white border-gray-200/65 shadow-sm'
+      }`}>
+        <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <span className="absolute inset-0 bg-emerald-500 rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <Sliders size={16} className="text-emerald-400 relative drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">
+                {dir === 'rtl' ? 'مستودع هندسة وتوليف الصوت' : 'STUDIO PRODUCTION MIXER'}
+              </span>
+              <h5 className="text-[12px] font-bold text-[var(--text-primary)] leading-none">
+                {dir === 'rtl' ? 'دمج المسارات والملفات المحلية' : 'Multi-Channel Live Web Audio Console'}
+              </h5>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => setIsMixerExpanded(!isMixerExpanded)}
+            className="text-[10px] font-black text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] uppercase tracking-wider transition-colors pt-1"
+          >
+            {isMixerExpanded 
+              ? (dir === 'rtl' ? 'طي اللوحة' : 'COLLAPSE PANEL') 
+              : (dir === 'rtl' ? 'توسيع ومزج الملفات' : 'EXPAND & MIX')}
+          </button>
+        </div>
+
+        {isMixerExpanded && (
+          <div className="flex flex-col gap-5 animate-fadeIn">
+            {/* 1. Mix Drag-and-Drop / Upload Area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  {dir === 'rtl' ? 'تحميل مسار خارجي / صوت مضاف' : 'UPLOAD COMPANION/VOCAL TRACK'}
+                </span>
+                
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
+                    uploadedFile 
+                      ? 'border-emerald-500/30 bg-emerald-500/[0.02]' 
+                      : isDragging 
+                        ? 'border-emerald-500 bg-emerald-500/[0.04]' 
+                        : 'border-gray-300 dark:border-gray-800/80 hover:border-emerald-500/40 hover:bg-emerald-500/[0.01]'
+                  }`}
+                >
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="audio/*" 
+                    onChange={handleFileChange}
+                    className="hidden" 
+                  />
+
+                  {uploadedFile ? (
+                    <div className="flex flex-col items-center gap-1.5 w-full">
+                      <div className="flex items-center gap-2 text-emerald-400">
+                        <Check size={16} />
+                        <span className="text-[11px] font-bold truncate max-w-[180px]">{uploadedFile.name}</span>
+                      </div>
+                      <span className="text-[9px] text-[var(--text-muted)] font-mono uppercase">
+                        {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB • {formatTime(uploadedDuration)} • {uploadedFile.type.split('/')[1]?.toUpperCase()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeUploadedFile();
+                        }}
+                        className="mt-1.5 px-2 py-1 rounded-[3px] bg-red-500/10 border border-red-500/20 text-[9px] font-black text-red-400 hover:bg-red-500 hover:text-white transition-all uppercase"
+                      >
+                        {dir === 'rtl' ? 'إزالة الملف' : 'REMOVE TRACK'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Paperclip 
+                        size={18} 
+                        className={`transition-colors duration-300 ${
+                          isDragging ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400'
+                        }`} 
+                      />
+                      <div className="flex flex-col gap-0.5 animate-pulse">
+                        <span className="text-[11px] font-bold text-[var(--text-primary)]">
+                          {dir === 'rtl' ? 'اسحب وأفلت الملف الصوتي هنا' : 'Drag & drop companion audio'}
+                        </span>
+                        <span className="text-[9px] text-[var(--text-muted)]">
+                          {dir === 'rtl' ? 'أو انقر للتصفح من جهازك (MP3, WAV, M4A)' : 'or click to browse local files (MP3, WAV, M4A)'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Interactive Channels Mixing Board */}
+              <div className="flex flex-col gap-3 justify-center">
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                  {dir === 'rtl' ? 'لوحة التحكم بمستويات الصوت (دمج حي)' : 'CHANNEL MIXER CONTROLS'}
+                </span>
+
+                {/* AI Synthesized Channel */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
+                      <Sparkles size={11} className="text-emerald-400" />
+                      {dir === 'rtl' ? 'قناة الذكاء الاصطناعي (مورث)' : 'AI Synthesized Stem'}
+                    </span>
+                    <span className="font-mono text-emerald-500 font-bold">
+                      {Math.round(aiVolume * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.01"
+                    disabled={status !== 'ready'}
+                    value={aiVolume}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setAiVolume(val);
+                      if (aiGainNodeRef.current) {
+                        aiGainNodeRef.current.gain.setValueAtTime(val, audioCtxRef.current?.currentTime || 0);
+                      }
+                    }}
+                    className="w-full h-1.5 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Local Uploaded Channel */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
+                      <Paperclip size={11} className={uploadedFile ? 'text-emerald-400' : 'text-gray-500'} />
+                      {dir === 'rtl' ? 'القناة المضافة الخارجية' : 'External Companion Stem'}
+                    </span>
+                    <span className={`font-mono font-bold ${uploadedFile ? 'text-emerald-500' : 'text-gray-500'}`}>
+                      {uploadedFile ? `${Math.round(uploadedVolume * 100)}%` : (dir === 'rtl' ? 'غير نشط' : 'INACTIVE')}
+                    </span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.01"
+                    disabled={!uploadedFile}
+                    value={uploadedVolume}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setUploadedVolume(val);
+                      if (uploadedGainNodeRef.current) {
+                        uploadedGainNodeRef.current.gain.setValueAtTime(val, audioCtxRef.current?.currentTime || 0);
+                      }
+                    }}
+                    className="w-full h-1.5 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Info / Web Audio Feedback Banner */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded bg-black/5 dark:bg-white/[0.02] border border-gray-200/50 dark:border-gray-800/30 text-[10px] text-[var(--text-muted)] font-medium leading-normal">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>
+                {dir === 'rtl' 
+                  ? 'بروتوكول ويب أوديو (Web Audio API) يقوم بدمج المسارين في بث واحد فائق الدقة ٢٤ بت بالوقت الفعلي.' 
+                  : 'High-fidelity 24-bit real-time digital mixing pipeline driven entirely by your browser Web Audio API.'
+                }
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1080,134 +1976,185 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
   const coverMatch = coverSection?.body.match(/!\[.*?\]\((.*?)\)/);
   const coverImageUrl = coverMatch ? coverMatch[1] : null;
 
-  // If no structured sections found, fallback to standard rendering
-  if (sections.length === 0) {
-    return <Markdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock as any, p: 'div' }}>{content}</Markdown>;
+  // Let's check if the content contains some hints of music/cover structure.
+  // If not structured at all, fallback to native Markdown.
+  const isAudioConcept = content.includes('[I. Cover') || content.includes('[II. Audio') || content.includes('البيئة الصوتية') || content.includes('الأوركسترا');
+  if (sections.length === 0 && !isAudioConcept) {
+    return <Markdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock as any, p: 'div', blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions> }}>{content}</Markdown>;
   }
+
+  // Define canonical phases matching the PERPLEXTA CREATIVE PRODUCTION PROTOCOL
+  const canonicalSlots = [
+    {
+      phase: 1,
+      id: 'phase-1-cover',
+      titleEn: 'I. COVER & MOOD ART',
+      titleAr: 'أولاً: غلاف الألبوم واللوحة الفنية المعبرة',
+      pendingTextEn: 'Designing album cover artwork and visual branding concepts...',
+      pendingTextAr: 'جاري توليد وصياغة غلاف الألبوم الرشيق وتجلياته البصرية...',
+      icon: 'image'
+    },
+    {
+      phase: 2,
+      id: 'phase-2-env',
+      titleEn: 'II. AUDIO SUITE ENVIRONMENT',
+      titleAr: 'ثانياً: هندسة البيئة الصوتية والآلات الموسيقية',
+      pendingTextEn: 'Calibrating digital audio workstation environment, frequencies and scales...',
+      pendingTextAr: 'جاري معايرة مقامات الصوت الفنية وضبط توزيع ترددات الآلات...',
+      icon: 'sliders'
+    },
+    {
+      phase: 3,
+      id: 'phase-3-sonic',
+      titleEn: 'III. SONIC ORCHESTRATION',
+      titleAr: 'ثالثاً: المقطع الموسيقي واللحن النهائي التفاعلي',
+      pendingTextEn: 'Orchestrating musical composition parameters and final DSP rendering...',
+      pendingTextAr: 'جاري تأليف المقامات الصوتية المتقدمة وتحضير التوزيع الفني للمركبات اللحنية...',
+      icon: 'music'
+    }
+  ];
+
+  // Map parsed sections to their corresponding canonical slots
+  const slots = canonicalSlots.map((canon, i) => {
+    let matched = sections.find(sec => {
+      const lowerT = sec.title.toLowerCase();
+      if (i === 0) return lowerT.includes('cover') || lowerT.includes('art') || lowerT.includes('غلاف');
+      if (i === 1) return lowerT.includes('environment') || lowerT.includes('بيئة') || lowerT.includes('suite');
+      if (i === 2) return lowerT.includes('orchestration') || lowerT.includes('sonic') || lowerT.includes('مقطع') || lowerT.includes('موسيقي');
+      return false;
+    });
+
+    // Fallback to direct indexing if not matched by keywords yet sections are populated sequently
+    if (!matched && sections[i] && i === sections.length - 1) {
+      matched = sections[i];
+    }
+
+    return {
+      canon,
+      data: matched || null,
+      isPending: !matched
+    };
+  });
 
   return (
     <div className="flex flex-col gap-10 py-4 w-full">
-      {sections.map((section, idx) => {
-        const isMusicSection = section.title.includes('المقطع الموسيقي') || section.title.toLowerCase().includes('sonic') || section.title.toLowerCase().includes('orchestra');
+      {slots.map((slot, idx) => {
+        const { canon, data, isPending } = slot;
+        const isMusicSection = canon.phase === 3;
+        const currentTitle = dir === 'rtl' ? canon.titleAr : canon.titleEn;
         
         return (
           <motion.div
-          key={section.id}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ 
-            duration: 0.3, 
-            delay: idx * 0.1,
-            ease: [0.22, 1, 0.36, 1] 
-          }}
-          className={`relative overflow-hidden rounded-lg border transition-theme group ${
-            theme === 'dark' 
-              ? 'bg-[#121214] border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
-              : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
-          }`}
-        >
-          {/* Executive Header */}
-          <div className={`px-8 py-6 border-b flex items-center justify-between ${
-            theme === 'dark' ? 'border-[var(--border)] bg-[var(--bg-surface)]' : 'border-[var(--border)] bg-[var(--bg-base)]'
-          }`}>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-20" />
-                <div className="relative w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+            key={canon.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              duration: 0.3, 
+              delay: idx * 0.1,
+              ease: [0.22, 1, 0.36, 1] 
+            }}
+            className={`relative overflow-hidden rounded-lg border transition-theme group ${
+              theme === 'dark' 
+                ? 'bg-[#121214] border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
+                : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
+            } ${isPending ? 'opacity-85 border-dashed border-emerald-500/20 bg-emerald-500/[0.01]' : ''}`}
+          >
+            {/* Executive Header */}
+            <div className={`px-8 py-6 border-b flex items-center justify-between ${
+              theme === 'dark' ? 'border-[var(--border)] bg-[var(--bg-surface)]' : 'border-[var(--border)] bg-[var(--bg-base)]'
+            }`}>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-20" />
+                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-emerald-500'}`} />
+                </div>
+                <div className="flex flex-col">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 ${isPending ? 'text-amber-500' : 'text-emerald-500 glow-emerald'}`}>
+                    {dir === 'rtl' ? 'مرحلة إنتاج بيربليكستا' : 'PERPLEXTA PRODUCTION PHASE'} {canon.phase}
+                  </span>
+                  <h3 className={`text-xl font-black tracking-tight uppercase ${isPending ? 'text-[var(--text-primary)] opacity-60 animate-pulse' : 'text-[var(--text-primary)]'}`}>
+                    {currentTitle}
+                  </h3>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-0.5 glow-emerald">
-                  {dir === 'rtl' ? 'مرحلة إنتاج بيربليكستا' : 'PERPLEXTA PRODUCTION PHASE'} {idx + 1}
-                </span>
-                <h3 className="text-xl font-black tracking-tight text-[var(--text-primary)] uppercase">
-                  {(section.title as string).replace(/[#\d\.\[\]]/g, '').trim()}
-                </h3>
-              </div>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-4">
-               <div className="flex flex-col items-end">
-                 <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
-                   {dir === 'rtl' ? 'حالة التشفير' : 'ENCRYPTION STATUS'}
-                 </span>
-                  <div className="flex items-center gap-2">
-                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                   <span className="text-[10px] font-black text-emerald-500 uppercase">
-                     {dir === 'rtl' ? 'نشط' : 'ACTIVE'}
+              
+              <div className="hidden md:flex items-center gap-4">
+                 <div className="flex flex-col items-end">
+                   <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
+                     {dir === 'rtl' ? 'حالة العمل' : 'COMPILATION'}
+                   </span>
+                    <div className="flex items-center gap-2">
+                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]`} />
+                     <span className={`text-[10px] font-black uppercase ${isPending ? 'text-amber-400' : 'text-emerald-500'}`}>
+                       {isPending ? (dir === 'rtl' ? 'في الانتظار' : 'QUEUED') : (dir === 'rtl' ? 'مكتمل' : 'RESOLVED')}
+                     </span>
+                   </div>
+                 </div>
+                 <div className="w-px h-8 bg-[var(--border)]" />
+                 <div className="flex flex-col items-end">
+                   <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
+                     {dir === 'rtl' ? 'دقة الإخراج' : 'OUTPUT PRECISION'}
+                   </span>
+                   <span className="text-[10px] font-black text-[var(--text-primary)]">
+                     {isPending ? '--' : '99.8%'}
                    </span>
                  </div>
-               </div>
-               <div className="w-px h-8 bg-[var(--border)]" />
-               <div className="flex flex-col items-end">
-                 <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
-                   {dir === 'rtl' ? 'دقة الإخراج' : 'OUTPUT PRECISION'}
-                 </span>
-                 <span className="text-[10px] font-black text-[var(--text-primary)]">99.8%</span>
-               </div>
+              </div>
             </div>
-          </div>
 
             {/* Content Area */}
             <div className={`p-8 md:p-10 text-[13px] md:text-base ${isMusicSection ? 'text-center' : ''}`}>
               <div className="markdown-body prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:mb-4 prose-headings:mt-8">
-                {isMusicSection ? (
+                {isPending ? (
+                  <div className="flex flex-col gap-4 py-4">
+                    {canon.phase === 3 ? (
+                      // RENDER PLAYER IMMEDIATELY EVEN IF PENDING!
+                      <div className="flex flex-col items-center gap-6">
+                        <InteractiveAudioPlayer 
+                          body="" 
+                          fullContent={content}
+                          dir={dir} 
+                          theme={theme} 
+                          coverImageUrl={coverImageUrl} 
+                        />
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 animate-pulse justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          <span>{dir === 'rtl' ? canon.pendingTextAr : canon.pendingTextEn}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      // Normal loading skeletons
+                      <div className="space-y-3">
+                        <div className="h-4 bg-emerald-500/5 rounded-md w-3/4 animate-pulse border border-emerald-500/10" />
+                        <div className="h-4 bg-emerald-500/5 rounded-md w-1/2 animate-pulse border border-emerald-500/10" />
+                        <div className="h-4 bg-emerald-500/5 rounded-md w-5/6 animate-pulse border border-emerald-500/10" />
+                        <p className="text-xs text-[var(--text-muted)] font-bold animate-pulse mt-4">
+                          {dir === 'rtl' ? canon.pendingTextAr : canon.pendingTextEn}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : isMusicSection ? (
                   <div className="flex flex-col items-center gap-8">
                     {/* Visual Exhibition */}
-                    <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden border border-emerald-500/20 shadow-2xl group/video bg-black mx-auto">
-                      {coverImageUrl ? (
-                        <img 
-                          src={coverImageUrl} 
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover/video:scale-105 opacity-60" 
-                          referrerPolicy="no-referrer" 
-                          alt="Orchestra Cover" 
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
-                           <Music className="text-[var(--text-primary)]" size={120} />
-                        </div>
-                      )}
-                      
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                         <motion.div 
-                           animate={{ scale: [1, 1.1, 1] }}
-                           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                           className="w-24 h-24 rounded-full bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.3)]"
-                         >
-                           <Play size={40} className="ml-1" />
-                         </motion.div>
-                         <div className="text-center px-6">
-                            <h4 className="text-xl font-black text-white tracking-widest uppercase mb-1 drop-shadow-md">
-                              {dir === 'rtl' ? 'تحفة الأوركسترا من بيربليكستا' : 'PERPLEXTA ORCHESTRA MASTERPIECE'}
-                            </h4>
-                            <p className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase">
-                              {dir === 'rtl' ? 'جودة استوديو 24 بت' : '24-BIT STUDIO QUALITY'}
-                            </p>
-                         </div>
-                      </div>
-
-                      {/* Visualizer bars */}
-                      <div className="absolute bottom-0 left-0 w-full h-12 flex items-end justify-center gap-1.5 px-10 pb-4 opacity-50">
-                        {Array.from({ length: 40 }).map((_, i) => (
-                           <motion.div 
-                             key={i}
-                             animate={{ height: [4, Math.random() * 24 + 4, 4] }}
-                             transition={{ duration: 0.3, repeat: Infinity }}
-                             className="w-1 bg-emerald-500/60 rounded-full"
-                           />
-                        ))}
-                      </div>
-                    </div>
+                    <InteractiveAudioPlayer 
+                      body={data?.body || ''} 
+                      fullContent={content}
+                      dir={dir} 
+                      theme={theme} 
+                      coverImageUrl={coverImageUrl} 
+                    />
 
                     <Markdown 
                       remarkPlugins={[remarkGfm]} 
                       components={{ 
                         code: CodeBlock as any,
-                        // Suppress images in the body of this section if we already used the cover
-                        img: () => null,
-                        p: 'div'
+                        img: () => null, // Suppress images inside cover section
+                        p: 'div',
+                        blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>
                       }}
                     >
-                      {section.body}
+                      {data?.body || ''}
                     </Markdown>
                   </div>
                 ) : (
@@ -1216,6 +2163,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                     components={{ 
                       code: CodeBlock as any,
                       p: 'div',
+                      blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
                       img: ({ node, ...props }: any) => (
                         <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-300 group-hover/video:scale-110" referrerPolicy="no-referrer" />
@@ -1231,18 +2179,18 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                       )
                     }}
                   >
-                    {section.body}
+                    {data?.body || ''}
                   </Markdown>
                 )}
               </div>
             </div>
 
-          {/* Decorative Corner Trace */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/3 blur-[100px] pointer-events-none" />
-        </motion.div>
-      );
-    })}
+            {/* Decorative Corner Trace */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/3 blur-[100px] pointer-events-none" />
+          </motion.div>
+        );
+      })}
 
       {/* Global Studio Certification */}
       <motion.div 
@@ -1430,7 +2378,9 @@ export const ChatPage: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<'fast' | 'thinking' | 'pro'>(() => {
     return (localStorage.getItem('last_active_model') as any) || 'fast';
   });
-  const [selectedTool, setSelectedTool] = useState<string>('chat');
+  const [selectedTool, setSelectedTool] = useState<string>(() => {
+    return localStorage.getItem('last_active_tool') || 'chat';
+  });
   const [activeDropdown, setActiveDropdown] = useState<'tool' | 'model'>('tool');
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -1597,7 +2547,7 @@ export const ChatPage: React.FC = () => {
     mood: 'Epic',
     duration: 30,
     format: 'wav',
-    vocalType: 'None'
+    vocalType: 'Instrumental'
   });
   const [showVideoSettings, setShowVideoSettings] = useState(true);
   const [showImageSettings, setShowImageSettings] = useState(true);
@@ -1612,6 +2562,25 @@ export const ChatPage: React.FC = () => {
       document.title = dir === 'rtl' ? (siteSettings?.siteNameAr || 'محادثة بيربليكستا') : (siteSettings?.siteName || 'Perplexta Chat');
     }
   }, [messages, siteSettings, dir]);
+
+  // Perplexta: Prompt injection and copy insertion bridge
+  useEffect(() => {
+    const handleInsertToPrompt = (e: Event) => {
+      const text = (e as CustomEvent).detail;
+      if (text) {
+        setQuery(text);
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.style.height = 'auto';
+          // Ensure container grows to fit content dynamically up to max-height limit
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+        }
+        toast.success(dir === 'rtl' ? 'تم نسخ البرومبت وتطبيقه في حقل الإدخال' : 'Prompt loaded directly into the input field!');
+      }
+    };
+    window.addEventListener('insert_to_prompt', handleInsertToPrompt);
+    return () => window.removeEventListener('insert_to_prompt', handleInsertToPrompt);
+  }, [dir]);
   const [showChatLimitWarning, setShowChatLimitWarning] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -2280,7 +3249,11 @@ export const ChatPage: React.FC = () => {
     if (routeChatId) {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
-      if ((isGenerating || isGeneratingRef.current) && (chatId === routeChatId || chatIdRef.current === routeChatId || !chatId)) {
+      const belongsToCurrentSession = !chatId || 
+        chatId.toString() === routeChatId.toString() || 
+        chatIdRef.current?.toString() === routeChatId.toString();
+
+      if ((isGenerating || isGeneratingRef.current) && belongsToCurrentSession) {
         console.log('[ChatPage] Skipping redundant load for active generation session.');
         return;
       }
@@ -2334,6 +3307,10 @@ export const ChatPage: React.FC = () => {
 
   const loadChat = async (id: string) => {
     if (!token || token === 'null') return;
+    if (isGenerating || isGeneratingRef.current) {
+      console.log('[ChatPage] loadChat bypassed during active generation.');
+      return;
+    }
     setChatId(id);
     setIsChatMessagesLoading(true);
     setMessages([]); // Clear stale messages to prevent visual overlap before fetch
@@ -2788,6 +3765,67 @@ export const ChatPage: React.FC = () => {
         }
       }
 
+      let finalAudioSettings = audioSettings;
+      if (selectedTool === 'canvas') {
+        const textToParse = currentQuery.toLowerCase();
+        let updated = { ...audioSettings };
+        
+        // 1. Detect Mood/Genre
+        if (textToParse.includes('ملحمية') || textToParse.includes('أوركسترا') || textToParse.includes('epic') || textToParse.includes('orchestra') || textToParse.includes('orchestral')) {
+          updated.mood = 'Epic';
+        } else if (textToParse.includes('طرب') || textToParse.includes('شرقي') || textToParse.includes('مقام') || textToParse.includes('tarab') || textToParse.includes('maqam')) {
+          updated.mood = 'Tarab';
+        } else if (textToParse.includes('إلكترونك') || textToParse.includes('دي جي') || textToParse.includes('تقنو') || textToParse.includes('تكنو') || textToParse.includes('edm') || textToParse.includes('techno') || textToParse.includes('electronic')) {
+          updated.mood = 'EDM';
+        } else if (textToParse.includes('غيتار') || textToParse.includes('تخت') || textToParse.includes('هادئ') || textToParse.includes('acoustic') || textToParse.includes('guitar') || textToParse.includes('soft') || textToParse.includes('كلاسيك')) {
+          updated.mood = 'Acoustic';
+        } else if (textToParse.includes('لوفاي') || textToParse.includes('لو-فاي') || textToParse.includes('lofi') || textToParse.includes('lo-fi') || textToParse.includes('chill')) {
+          updated.mood = 'LoFi';
+        } else if (textToParse.includes('جاز') || textToParse.includes('بلوز') || textToParse.includes('jazz') || textToParse.includes('blues')) {
+          updated.mood = 'Jazz';
+        } else if (textToParse.includes('بوب') || textToParse.includes('حماسي') || textToParse.includes('pop') || textToParse.includes('upbeat')) {
+          updated.mood = 'Pop';
+        }
+
+        // 2. Detect Vocal Type
+        if (textToParse.includes('كورال') || textToParse.includes('choir') || textToParse.includes('choral')) {
+          updated.vocalType = 'Choir';
+        } else if (textToParse.includes('أنثوي') || textToParse.includes('سوبرانو') || textToParse.includes('female') || textToParse.includes('soprano')) {
+          updated.vocalType = 'Female';
+        } else if (textToParse.includes('ذكوري') || textToParse.includes('تينور') || textToParse.includes('male') || textToParse.includes('baritone')) {
+          updated.vocalType = 'Male';
+        } else if (textToParse.includes('روبوت') || textToParse.includes('سنتسيزر') || textToParse.includes('vocaloid') || textToParse.includes('ai synth')) {
+          updated.vocalType = 'Vocaloid';
+        } else if (textToParse.includes('بدون غناء') || textToParse.includes('موسيقى فقط') || textToParse.includes('عزف') || textToParse.includes('instrumental') || textToParse.includes('no vocals') || textToParse.includes('none')) {
+          updated.vocalType = 'Instrumental';
+        }
+
+        // 3. Detect Duration
+        const normalizedPrompt = textToParse
+          .replace(/[٠0]/g, '0')
+          .replace(/[١1]/g, '1')
+          .replace(/[٢2]/g, '2')
+          .replace(/[٣3]/g, '3')
+          .replace(/[٤4]/g, '4')
+          .replace(/[٥5]/g, '5')
+          .replace(/[٦6]/g, '6')
+          .replace(/[٧7]/g, '7')
+          .replace(/[٨8]/g, '8')
+          .replace(/[٩9]/g, '9');
+
+        const durationMatch = normalizedPrompt.match(/(?:المدة|duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/) || 
+                              normalizedPrompt.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/);
+        if (durationMatch) {
+          const durVal = parseInt(durationMatch[1], 10);
+          if (!isNaN(durVal) && durVal >= 10 && durVal <= 120) {
+            updated.duration = durVal;
+          }
+        }
+        
+        setAudioSettings(updated);
+        finalAudioSettings = updated;
+      }
+
       socket.emit('chat_message', {
         token: authToken,
         tool_id: toolToUse,
@@ -2800,7 +3838,7 @@ export const ChatPage: React.FC = () => {
         forensic_mode: forensicMode,
         video_settings: selectedTool === 'video' ? videoSettings : undefined,
         image_settings: selectedTool === 'image' ? imageSettings : undefined,
-        audio_settings: selectedTool === 'canvas' ? audioSettings : undefined
+        audio_settings: selectedTool === 'canvas' ? finalAudioSettings : undefined
       });
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -3006,20 +4044,32 @@ export const ChatPage: React.FC = () => {
     if (selectedTool !== 'canvas' || !showAudioSettings) return null;
 
     const moods = [
-      { id: 'Majestic', label: dir === 'rtl' ? 'مهيب' : 'Majestic' },
-      { id: 'Epic', label: t('mood_epic') },
-      { id: 'Dramatic', label: t('mood_dramatic') },
-      { id: 'Symphonic', label: dir === 'rtl' ? 'سيمفوني' : 'Symphonic' },
-      { id: 'Cinematic', label: dir === 'rtl' ? 'سينمائي' : 'Cinematic' },
-      { id: 'Mystical', label: dir === 'rtl' ? 'غامض' : 'Mystical' }
+      { id: 'Epic', label: dir === 'rtl' ? 'أوركسترا ملحمية' : 'Epic Orchestral' },
+      { id: 'Tarab', label: dir === 'rtl' ? 'طرب ومقام شرقي' : 'Arabic Tarab' },
+      { id: 'EDM', label: dir === 'rtl' ? 'إلكترونك ودي جي' : 'EDM & Techno' },
+      { id: 'Acoustic', label: dir === 'rtl' ? 'غيتار وتخت هادئ' : 'Acoustic & Soft' },
+      { id: 'LoFi', label: dir === 'rtl' ? 'لو-فاي مريح' : 'Chill Lo-Fi' },
+      { id: 'Jazz', label: dir === 'rtl' ? 'جاز بلوز' : 'Jazz & Blues' },
+      { id: 'Pop', label: dir === 'rtl' ? 'بوب حماسي' : 'Energetic Pop' }
     ];
+
     const vocalTypes = [
-      { id: 'None', label: dir === 'rtl' ? 'بدون صوت' : 'No Lyrics' },
-      { id: 'Choir', label: dir === 'rtl' ? 'كورال' : 'Choir' },
-      { id: 'Soprano', label: dir === 'rtl' ? 'سوپرانو' : 'Soprano' },
-      { id: 'Tenor', label: dir === 'rtl' ? 'تينور' : 'Tenor' },
-      { id: 'Professional', label: t('vocal_professional') }
+      { id: 'Instrumental', label: dir === 'rtl' ? 'لحن صامت' : 'Instrumental' },
+      { id: 'Male', label: dir === 'rtl' ? 'صوت رجالي' : 'Male Vocal' },
+      { id: 'Female', label: dir === 'rtl' ? 'صوت نسائي' : 'Female Vocal' },
+      { id: 'Choir', label: dir === 'rtl' ? 'كورال جماعي' : 'Choir Vocal' },
+      { id: 'Vocaloid', label: dir === 'rtl' ? 'مؤثرات أصوات AI' : 'AI Synth Vocal' }
     ];
+
+    const appendAudioTag = (tagLabel: string) => {
+      setQuery(prev => {
+        const cleanedLabel = tagLabel.trim();
+        if (prev.includes(`[${cleanedLabel}]`)) return prev;
+        const trimmed = prev.trim();
+        if (!trimmed) return `[${cleanedLabel}] `;
+        return `${trimmed} [${cleanedLabel}] `;
+      });
+    };
 
     return (
       <motion.div 
@@ -3034,10 +4084,13 @@ export const ChatPage: React.FC = () => {
               {moods.map(m => (
                 <button
                   key={m.id}
-                  onClick={() => setAudioSettings(prev => ({ ...prev, mood: m.id }))}
+                  onClick={() => {
+                    setAudioSettings(prev => ({ ...prev, mood: m.id }));
+                    appendAudioTag(m.label);
+                  }}
                   className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                     audioSettings.mood === m.id 
-                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110' 
+                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110 font-bold' 
                       : 'text-gray-400/40 hover:text-gray-200'
                   }`}
                 >
@@ -3052,7 +4105,10 @@ export const ChatPage: React.FC = () => {
               {[15, 30, 60, 90].map(d => (
                 <button
                   key={d}
-                  onClick={() => setAudioSettings(prev => ({ ...prev, duration: d }))}
+                  onClick={() => {
+                    setAudioSettings(prev => ({ ...prev, duration: d }));
+                    appendAudioTag(`${d}${dir === 'rtl' ? ' ثواني' : 's'}`);
+                  }}
                   className={`text-[7px] md:text-[9px] font-bold tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                     audioSettings.duration === d 
                       ? 'text-emerald-500 underline underline-offset-4 decoration-2 scale-105' 
@@ -3070,7 +4126,10 @@ export const ChatPage: React.FC = () => {
               {vocalTypes.map(v => (
                 <button
                   key={v.id}
-                  onClick={() => setAudioSettings(prev => ({ ...prev, vocalType: v.id }))}
+                  onClick={() => {
+                    setAudioSettings(prev => ({ ...prev, vocalType: v.id }));
+                    appendAudioTag(v.label);
+                  }}
                   className={`text-[7px] md:text-[9px] font-bold transition-theme pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-[var(--radius)] ${
                     audioSettings.vocalType === v.id 
                       ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
@@ -3674,8 +4733,14 @@ export const ChatPage: React.FC = () => {
             </div>
           ) : (
             <>
-              {messages.length > 0 && (
+              {chatId && (
                 <div className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]">
+                  {/* Sovereign high-end loading progression bar */}
+                  {isChatMessagesLoading && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500/10 overflow-hidden z-40">
+                      <div className="animate-sovereign-progress h-full bg-emerald-500 rounded-full animate-pulse" />
+                    </div>
+                  )}
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
@@ -3861,19 +4926,28 @@ export const ChatPage: React.FC = () => {
                 className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-6 py-12 flex flex-col gap-8 min-h-full"
               >
                 {[...Array(3)].map((_, i) => (
-                  <div 
+                  <motion.div 
                     key={i} 
-                    className="flex gap-4 w-full p-6 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] animate-pulse"
+                    className="flex gap-4 w-full p-6 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]"
+                    animate={{
+                      opacity: [0.45, 0.75, 0.45]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 0.2
+                    }}
                   >
                     {/* Pulsing Avatar */}
                     <div className="w-10 h-10 rounded-full bg-gray-200/20 dark:bg-gray-800/40 shrink-0" />
                     {/* Pulsing Line Blocks */}
                     <div className="flex-1 space-y-3 pt-1">
-                      <div className="h-2.5 bg-gray-250/50 dark:bg-gray-800/50 rounded w-1/4" />
-                      <div className="h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded w-3/4" />
-                      <div className="h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded w-1/2" />
+                      <div className={`h-2.5 bg-gray-250/50 dark:bg-gray-800/50 rounded ${i === 0 ? 'w-1/4' : i === 1 ? 'w-1/5' : 'w-1/3'}`} />
+                      <div className={`h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded ${i === 0 ? 'w-3/4' : i === 1 ? 'w-5/6' : 'w-2/3'}`} />
+                      <div className={`h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded ${i === 0 ? 'w-1/2' : i === 1 ? 'w-2/3' : 'w-3/4'}`} />
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             ) : messages.length === 0 ? (
@@ -3945,7 +5019,40 @@ export const ChatPage: React.FC = () => {
                   </div>
                 </motion.div>
               ) : (
-                <div key="onboarding-view" className="flex-1 w-full" />
+                <motion.div 
+                  key="onboarding-view" 
+                  initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, scale: 0.96, filter: "blur(12px)", y: -10 }}
+                  transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
+                  className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
+                >
+                  {/* Subtle Premium Background Glow */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/[0.02] via-transparent to-transparent pointer-events-none select-none" />
+                  
+                  <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
+                    {/* Pulsing Emerald Sparkle Icon Container */}
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/[0.04] border border-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mb-6 transition-all duration-300 hover:scale-110">
+                      <Sparkles size={24} className="animate-pulse" />
+                    </div>
+
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
+                      {dir === 'rtl' 
+                        ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'} 👋`
+                        : `Welcome back, ${user?.name || 'Perplexta Elite Member'} 👋`
+                      }
+                    </h1>
+
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
+                      {dir === 'rtl'
+                        ? 'كيف يمكنني مساندة رؤيتك الاستثمارية والتحليلية اليوم؟'
+                        : 'How can I support your investment and analytical vision today?'
+                      }
+                    </p>
+
+                    <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+                  </div>
+                </motion.div>
               )
             ) : (
               <motion.div
@@ -3963,13 +5070,13 @@ export const ChatPage: React.FC = () => {
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
                   >
-                    <div className={`w-full ${msg.role === 'user' ? 'bg-transparent text-[var(--text-primary)]' : 'bg-transparent'} px-0`}>
+                    <div className={`w-full ${msg.role === 'user' ? 'bg-transparent' : 'bg-transparent'} px-0`}>
                       {msg.role === 'user' ? (
                         <div className={`flex flex-col gap-2 w-full ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
                               {msg.file && (
                                 <div className={`mb-1 p-2 rounded-[var(--radius)] border flex items-center gap-3 w-fit ${
                                   dir === 'rtl' ? 'self-end' : 'self-start'
-                                } bg-[var(--bg-secondary)] border-[var(--border)]`}>
+                                  } bg-[var(--bg-secondary)] border-[var(--border)]`}>
                                   {msg.file.type.startsWith('image/') ? (
                                     <img 
                                       src={msg.file.preview} 
@@ -3991,12 +5098,12 @@ export const ChatPage: React.FC = () => {
                                 </div>
                               )}
                               {editingMessageIndex === idx ? (
-                                <div className="flex flex-col gap-2 min-w-[200px] md:min-w-[400px]">
+                                <div className="flex flex-col gap-2 w-full max-w-2xl bg-zinc-50 dark:bg-zinc-900/60 p-4 rounded-xl border border-gray-200 dark:border-zinc-850/80">
                                   <textarea
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     autoFocus
-                                    className="w-full bg-transparent border-none focus:ring-0 text-[16px] md:text-sm resize-none outline-none"
+                                    className="w-full bg-transparent border-none focus:ring-0 text-[15px] md:text-sm resize-none outline-none text-zinc-900 dark:text-zinc-100"
                                     rows={Math.max(1, editValue.split('\n').length)}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -4024,36 +5131,47 @@ export const ChatPage: React.FC = () => {
                                   </div>
                                 </div>
                               ) : (
-                                <div className={`group relative flex items-center gap-3 w-full ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
-                                  {/* Each question is an H1-style heading in the flow */}
-                                  <h1 className={`text-md md:text-xl font-black tracking-tight flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'} leading-tight whitespace-pre-wrap text-[var(--text-primary)] uppercase`}>
-                                    {stripProtocolMarkers(msg.content)}
-                                  </h1>
+                                <div className="group relative flex items-center gap-3 w-full">
+                                  
+                                  {/* Compact, professional user text with zero background, borders, or shadows */}
+                                  <div 
+                                    className={`text-[14px] md:text-[15px] font-semibold leading-relaxed whitespace-pre-wrap text-zinc-950 dark:text-zinc-50 tracking-wide font-sans flex-1 ${
+                                      dir === 'rtl' ? 'text-right' : 'text-left'
+                                    }`}
+                                    dir={dir === 'rtl' ? 'rtl' : 'ltr'}
+                                  >
+                                    {stripProtocolMarkers(msg.content) || msg.content || (dir === 'rtl' ? 'محتوى فارغ' : 'Empty Content')}
+                                  </div>
+
                                   {msg.is_pinned && (
-                                    <div className="absolute -top-1 -start-1 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-sm border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                    <div className="flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
                                       <Pin size={8} className="text-emerald-500" />
                                       <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
                                     </div>
                                   )}
-                                  <button 
-                                    onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
-                                    className={`opacity-0 group-hover:opacity-100 transition-all duration-300 p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] shrink-0 ${
-                                      msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
-                                    }`}
-                                    title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                                  >
-                                    {msg.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      setEditingMessageIndex(idx);
-                                      setEditValue(msg.content);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 shrink-0"
-                                    title={dir === 'rtl' ? 'تعديل' : 'Edit'}
-                                  >
-                                    <Pencil size={14} />
-                                  </button>
+
+                                  {/* Minimalist, low-noise action buttons visible on hover over user prompt */}
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                                    <button 
+                                      onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
+                                      className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-colors duration-200 shrink-0 ${
+                                        msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
+                                      }`}
+                                      title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
+                                    >
+                                      {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setEditingMessageIndex(idx);
+                                        setEditValue(msg.content);
+                                      }}
+                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 transition-colors duration-200 shrink-0"
+                                      title={dir === 'rtl' ? 'تعديل' : 'Edit'}
+                                    >
+                                      <Pencil size={13} />
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                               {/* Exact Forensic Timestamp for User message */}
@@ -4101,6 +5219,7 @@ export const ChatPage: React.FC = () => {
                                 remarkPlugins={[remarkGfm]} 
                                 components={{ 
                                   code: CodeBlock,
+                                  blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
                                   p: ({ children, node }: any) => {
                                     const isLastMessage = idx === messages.length - 1;
                                     const isStreamingActive = isLastMessage && msg.is_streaming;
@@ -4150,12 +5269,12 @@ export const ChatPage: React.FC = () => {
                                       </div>
                                     );
                                   },
-                                  h1: ({ children }) => <h1 className="text-md md:text-xl font-black text-emerald-500 mb-3 mt-5 uppercase tracking-wider border-b border-emerald-500/10 pb-1.5">{children}</h1>,
-                                  h2: ({ children }) => <h2 className="text-sm md:text-lg font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
-                                    <div className="w-0.5 h-3.5 bg-emerald-500 rounded-full" />
+                                  h1: ({ children }) => <h1 className="text-xs md:text-sm font-black text-emerald-500 mb-3 mt-5 uppercase tracking-wider border-b border-emerald-500/10 pb-1.5">{children}</h1>,
+                                  h2: ({ children }) => <h2 className="text-[11px] md:text-xs font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
+                                    <div className="w-0.5 h-3 bg-emerald-500 rounded-full" />
                                     {children}
                                   </h2>,
-                                  h3: ({ children }) => <h3 className="text-[12px] md:text-md font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
+                                  h3: ({ children }) => <h3 className="text-[10px] md:text-[11px] font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
                               img: ({ node, ...props }) => {
                               const handleDownload = async () => {
                                 if (!props.src) return;

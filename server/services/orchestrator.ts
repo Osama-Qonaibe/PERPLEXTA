@@ -57,7 +57,7 @@ async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: 
 }
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
-  let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode } = reqBody;
+  let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode, image_settings, video_settings, audio_settings } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
@@ -595,6 +595,97 @@ If you detect any durable user fact, preference, or rule, silently output: <extr
 Do not mention this in your reply.`.trim();
 
     refinedSystemPromptSegment = conversationalMemoryInstructions;
+  } else if (toolIdStr === 'canvas') {
+    const audioSet = audio_settings || {};
+    let moodLabel = audioSet.mood || 'Epic';
+    let durationCount = Number(audioSet.duration || 30);
+    let vocalTypeLabel = audioSet.vocalType || 'Instrumental';
+
+    // SERVER-SIDE EXTRACTION: Extract exact parameters from prompt to prevent any hallucination
+    const promptLower = (prompt || '').toLowerCase();
+    
+    // Determine style / mood
+    if (promptLower.includes('ملحمية') || promptLower.includes('أوركسترا') || promptLower.includes('epic') || promptLower.includes('orchestra') || promptLower.includes('orchestral')) {
+      moodLabel = 'Epic';
+    } else if (promptLower.includes('طرب') || promptLower.includes('شرقي') || promptLower.includes('مقام') || promptLower.includes('tarab') || promptLower.includes('maqam')) {
+      moodLabel = 'Tarab';
+    } else if (promptLower.includes('إلكترونك') || promptLower.includes('دي جي') || promptLower.includes('تقنو') || promptLower.includes('تكنو') || promptLower.includes('edm') || promptLower.includes('techno') || promptLower.includes('electronic')) {
+      moodLabel = 'EDM';
+    } else if (promptLower.includes('غيتار') || promptLower.includes('تخت') || promptLower.includes('هادئ') || promptLower.includes('acoustic') || promptLower.includes('guitar') || promptLower.includes('soft') || promptLower.includes('كلاسيك')) {
+      moodLabel = 'Acoustic';
+    } else if (promptLower.includes('لوفاي') || promptLower.includes('لو-فاي') || promptLower.includes('lofi') || promptLower.includes('lo-fi') || promptLower.includes('chill')) {
+      moodLabel = 'LoFi';
+    } else if (promptLower.includes('جاز') || promptLower.includes('بلوز') || promptLower.includes('jazz') || promptLower.includes('blues')) {
+      moodLabel = 'Jazz';
+    } else if (promptLower.includes('بوب') || promptLower.includes('حماسي') || promptLower.includes('pop') || promptLower.includes('upbeat')) {
+      moodLabel = 'Pop';
+    }
+
+    // Determine Vocal Type
+    if (promptLower.includes('كورال') || promptLower.includes('choir') || promptLower.includes('choral')) {
+      vocalTypeLabel = 'Choir';
+    } else if (promptLower.includes('أنثوي') || promptLower.includes('سوبرانو') || promptLower.includes('female') || promptLower.includes('soprano')) {
+      vocalTypeLabel = 'Female';
+    } else if (promptLower.includes('ذكوري') || promptLower.includes('تينور') || promptLower.includes('male') || promptLower.includes('baritone')) {
+      vocalTypeLabel = 'Male';
+    } else if (promptLower.includes('روبوت') || promptLower.includes('سنتسيزر') || promptLower.includes('vocaloid') || promptLower.includes('ai synth')) {
+      vocalTypeLabel = 'Vocaloid';
+    } else if (promptLower.includes('بدون غناء') || promptLower.includes('موسيقى فقط') || promptLower.includes('عزف') || promptLower.includes('instrumental') || promptLower.includes('no vocals') || promptLower.includes('none')) {
+      vocalTypeLabel = 'Instrumental';
+    }
+
+    // Determine Duration
+    const normalizedPrompt = promptLower
+      .replace(/[٠0]/g, '0')
+      .replace(/[١1]/g, '1')
+      .replace(/[٢2]/g, '2')
+      .replace(/[٣3]/g, '3')
+      .replace(/[٤4]/g, '4')
+      .replace(/[٥5]/g, '5')
+      .replace(/[٦6]/g, '6')
+      .replace(/[٧7]/g, '7')
+      .replace(/[٨8]/g, '8')
+      .replace(/[٩9]/g, '9');
+
+    const durationMatch = normalizedPrompt.match(/(?:المدة|duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/) || 
+                          normalizedPrompt.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/);
+    if (durationMatch) {
+      const durVal = parseInt(durationMatch[1], 10);
+      if (!isNaN(durVal) && durVal >= 10 && durVal <= 120) {
+        durationCount = durVal;
+      }
+    }
+
+    const canvasInstructions = `[AUDIO ORCHESTRATION MODE]
+The user is working in the high-performance Audio & Soundtrack Production Studio (استوديو تأليف الموسيقى والمؤثرات).
+Your primary task is to generate and synthesize an immersive musical/creative composition concept using the PERPLEXTA CREATIVE PRODUCTION PROTOCOL.
+
+CRITICAL INSTRUCTION: You MUST strictly configure and respect the exact parameters extracted from the user's prompt (Mood/Genre: ${moodLabel}, Vocals: ${vocalTypeLabel}, Duration: ${durationCount}s).
+Any dynamic choice or recommendation must match these values exactly. DO NOT offer arbitrary variations, unrequested suggestions, or conversational hallucinations.
+
+You MUST structure your response into EXACTLY 3 phases using the bracket tags to trigger the visual production suite on the frontend:
+
+[I. Cover & Mood Art]
+Provide an elegant, detailed visual description of the album/soundtrack cover art.
+Include exactly one Markdown image tag pointing to a beautiful Unsplash cover matching the mood, e.g.:
+![Album Art](https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80) or other professional Unsplash URLs related to music/scenery. Ensure Referrer-Policy "no-referrer" is supported.
+
+[II. Audio Suite Environment / البيئة الصوتية]
+Describe the soundscape, instrumentation, tempo, scales, key, and production techniques in professional terms.
+Present the chosen parameters clearly using bullet points:
+- **النمط والموسيقى (Style/Genre)**: ${moodLabel}
+- **نوع صوت الأداء (Vocal Selection)**: ${vocalTypeLabel}
+- **المدة الزمنية (Duration)**: ${durationCount} ثانية (seconds)
+
+[III. Sonic Orchestration / المقطع الموسيقي]
+This is where the direct player and visualizer reside.
+Write a rich narrative describing the masterpiece's audio progression, section by section (Intro, Verse, Chorus, Outro/Epic Solo) following the user specifications.
+If vocal style is not Instrumental, write beautiful poetic original lyrics (in Arabic or English, matching user intent). If Instrumental, describe the instrumental solo layers, chord progressions, and synths.
+End with a professional, authoritative, and inspiring summary of the sonic results in Tajawal-style elegant vocabulary.
+
+Your response MUST be highly creative, authoritative, elite, and inspiring. Use elegant, high-profile vocabulary. Keep the structure bracket tags like "[I. Cover & Mood Art]" exactly as they are so the frontend parsing handles them correctly.`.trim();
+
+    refinedSystemPromptSegment = canvasInstructions;
   }
 
   if (toolIdStr === 'sovereign_search') {

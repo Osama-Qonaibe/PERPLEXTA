@@ -328,7 +328,7 @@ export const BlogPage: React.FC = () => {
 
   return (
     <div
-      className={`h-[calc(100dvh-72px)] w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
+      className={`h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
         isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
@@ -350,10 +350,10 @@ export const BlogPage: React.FC = () => {
           {!selectedArticle ? (
             <motion.div
               key="list"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="flex-1 flex flex-col overflow-hidden"
             >
               <header className={`px-8 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 border-b relative select-none flex-shrink-0 ${
@@ -651,11 +651,10 @@ export const BlogPage: React.FC = () => {
                           return (
                             <motion.article
                               key={article.id}
-                              initial={{ opacity: 0, y: 15 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                              whileHover={{ y: -6, transition: { duration: 0.25, ease: 'easeOut' } }}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.25 }}
                               className={`rounded-xl border overflow-hidden transition-all duration-300 flex flex-col h-[390px] cursor-pointer relative group ${
                                 isThemeDark
                                   ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
@@ -751,8 +750,8 @@ export const BlogPage: React.FC = () => {
                             return (
                               <motion.div
                                 key={`mob-featured-${article.id}`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                                 className={`rounded-xl overflow-hidden border flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                   isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                                 }`}
@@ -791,8 +790,8 @@ export const BlogPage: React.FC = () => {
                           return (
                             <motion.div
                               key={`mob-list-row-${article.id}`}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
                               className={`p-3.5 rounded-xl border flex gap-3.5 cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                               }`}

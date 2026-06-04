@@ -24,16 +24,172 @@ import {
 const router = express.Router();
 router.use(adminLimiter);
 
-async function auditLog(userId: any, action: string, type: string, details: object) {
+// High-Integrity Compliance Interceptor Middleware for all administrative mutations
+router.use((req, res, next) => {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    const originalSend = res.send;
+    let logged = false;
+
+    res.send = function (body) {
+      if (!logged) {
+        logged = true;
+        const adminId = (req as any).user?.id || null;
+        const adminEmail = (req as any).user?.email || null;
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+        const userAgent = req.headers['user-agent'] || null;
+
+        let sanitizedBody = { ...req.body };
+        const sensitiveKeys = ['password', 'secret', 'key', 'token', 'connection_string', 'password_hash'];
+        for (const k of Object.keys(sanitizedBody)) {
+          if (sensitiveKeys.some(sk => k.toLowerCase().includes(sk))) {
+            sanitizedBody[k] = '********';
+          }
+        }
+
+        Promise.resolve().then(async () => {
+          try {
+            const secPool = getSecurityPool();
+            if (secPool) {
+              await secPool.query(
+                `INSERT INTO admin_audit_logs (admin_id, admin_email, action, target_resource, details, ip_address, user_agent) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                  adminId,
+                  adminEmail,
+                  `HTTP_${req.method} ${req.originalUrl || req.url}`,
+                  req.params.id || req.body.id || req.body.username || req.body.email || req.body.provider || null,
+                  JSON.stringify({
+                    body: sanitizedBody,
+                    query: req.query,
+                    statusCode: res.statusCode
+                  }),
+                  ipAddress ? String(ipAddress).slice(0, 100) : null,
+                  userAgent ? String(userAgent) : null
+                ]
+              );
+            }
+          } catch (err: any) {
+            console.error('[Compliance Middleware] Interceptor failed to record admin audit:', err.message);
+          }
+        });
+      }
+      return originalSend.apply(res, arguments as any);
+    };
+  }
+  next();
+});
+
+async function auditLog(userId: any, action: string, type: string, details: object, req?: any) {
   try {
+    // 1. Log to current operational system_logs
     await pool.query(
       'INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)',
       [userId, action, type, JSON.stringify(details)]
     );
+
+    // 2. Log to isolated compliance security database
+    const secPool = getSecurityPool();
+    if (secPool) {
+      let adminEmail = null;
+      if (userId) {
+        try {
+          const userRes = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
+          if (userRes.rows.length > 0) {
+            adminEmail = userRes.rows[0].email;
+          }
+        } catch (dbErr) {
+          console.warn('[AuditLog] Failed to fetch admin email:', dbErr);
+        }
+      }
+
+      let ipAddress = null;
+      let userAgent = null;
+      if (req) {
+        ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+        userAgent = req.headers['user-agent'] || null;
+      }
+
+      await secPool.query(
+        `INSERT INTO admin_audit_logs (admin_id, admin_email, action, target_resource, details, ip_address, user_agent) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          userId || null,
+          adminEmail,
+          action,
+          (details as any)?.targetResource || (details as any)?.targetUser || (details as any)?.provider || null,
+          JSON.stringify(details || {}),
+          ipAddress ? String(ipAddress).slice(0, 100) : null,
+          userAgent ? String(userAgent) : null
+        ]
+      );
+    }
   } catch (error) {
-    console.error('[AuditLog] Failed to record activity:', error);
+    console.error('[AuditLog] Failed to record dual audit log:', error);
   }
 }
+
+// REST Compliance API Endpoint to read security audit logs
+router.get("/audit-logs", authenticateAdmin, async (req, res) => {
+  try {
+    const secPool = getSecurityPool();
+    if (!secPool) {
+      return res.status(503).json({ error: 'Security database offline' });
+    }
+
+    let limit = parseInt(req.query.limit as string, 10) || 50;
+    let offset = parseInt(req.query.offset as string, 10) || 0;
+    if (isNaN(limit) || limit < 1) limit = 50;
+    if (limit > 500) limit = 500;
+    if (isNaN(offset) || offset < 0) offset = 0;
+
+    const actionFilter = req.query.action as string;
+    const emailFilter = req.query.email as string;
+
+    let query = `
+      SELECT id, admin_id, admin_email, action, target_resource, details, ip_address, user_agent, created_at 
+      FROM admin_audit_logs
+    `;
+    const params: any[] = [];
+    const conditions: string[] = [];
+
+    if (actionFilter) {
+      params.push(`%${actionFilter}%`);
+      conditions.push(`action ILIKE $${params.length}`);
+    }
+
+    if (emailFilter) {
+      params.push(`%${emailFilter}%`);
+      conditions.push(`admin_email ILIKE $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const countConditionsStr = conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : '';
+    const countQueryRes = await secPool.query(
+      `SELECT COUNT(*) FROM admin_audit_logs${countConditionsStr}`,
+      params.slice(0, params.length - 2)
+    );
+    const totalLines = parseInt(countQueryRes.rows[0].count, 10);
+
+    const result = await secPool.query(query, params);
+    res.json({
+      logs: result.rows,
+      pagination: {
+        total: totalLines,
+        limit,
+        offset
+      }
+    });
+  } catch (error: any) {
+    console.error('[AdminRouter] Fetch audit logs failed:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 router.get("/health", authenticateAdmin, async (req, res) => {
   try {

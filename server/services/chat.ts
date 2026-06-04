@@ -69,7 +69,7 @@ export async function updateUserChatContextSummary(chatId: string, userId: strin
 }
 
 export async function handleChatMessage(socket: any, data: any) {
-  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data, forensic_mode } = data;
+  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data, forensic_mode, image_settings, video_settings, audio_settings } = data;
   
   let authenticatedUserId = userId;
   if (!authenticatedUserId && token) {
@@ -126,7 +126,10 @@ export async function handleChatMessage(socket: any, data: any) {
         chat_id: finalChatId,
         system_prompt: customInstructions,
         file_data,
-        forensic_mode
+        forensic_mode,
+        image_settings,
+        video_settings,
+        audio_settings
       }, 
       authenticatedUserId, 
       undefined, 

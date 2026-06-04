@@ -89,6 +89,25 @@ export async function runSystemMaintenance() {
         await pool.query("DELETE FROM user_usage WHERE usage_date < CURRENT_DATE - INTERVAL '90 days'");
       }
 
+      // 13. Cleanup legacy admin audit logs older than 180 days (retains security database indexing speed)
+      try {
+        const secPool = getSecurityPool();
+        if (secPool) {
+          const secTableCheck = await secPool.query(`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_name = 'admin_audit_logs'
+            )
+          `);
+          if (secTableCheck.rows[0].exists) {
+            await secPool.query("DELETE FROM admin_audit_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '180 days'");
+            console.log('[Maintenance] Compliant admin audit logs older than 180 days pruned successfully.');
+          }
+        }
+      } catch (secErr: any) {
+        console.warn('[Maintenance] Skipping admin audit logs cleanup:', secErr.message);
+      }
+
       console.log('[Maintenance] Daily system and database event logging cleanups completed successfully.');
     }
   } catch (e: any) {
@@ -262,6 +281,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
+
+        await activeSecurityClient.query(`
+          CREATE TABLE IF NOT EXISTS admin_audit_logs (
+            id SERIAL PRIMARY KEY,
+            admin_id INTEGER,
+            admin_email VARCHAR(255),
+            action VARCHAR(100) NOT NULL,
+            target_resource VARCHAR(100),
+            details JSONB DEFAULT '{}',
+            ip_address VARCHAR(100),
+            user_agent TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
       }
     } catch (e: any) {
       console.warn('[Migrations] Failed to inspect/initialize security database tables:', e.message);
@@ -350,7 +383,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             // Security tables query check
             if (
               isTableMatched('token_blacklist') ||
-              isTableMatched('security_alerts')
+              isTableMatched('security_alerts') ||
+              isTableMatched('admin_audit_logs')
             ) {
               return securityClient || client;
             }
@@ -1228,6 +1262,23 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'registered_agents', 'user_id', 'INTEGER');
     });
 
+    await runVersioned('v38_admin_audit_logs', 'Creating admin audit logging table in the security database', async (tx) => {
+      const activeSecurityClient = securityClient || client;
+      await activeSecurityClient.query(`
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+          id SERIAL PRIMARY KEY,
+          admin_id INTEGER,
+          admin_email VARCHAR(255),
+          action VARCHAR(100) NOT NULL,
+          target_resource VARCHAR(100),
+          details JSONB DEFAULT '{}',
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: any) {
     console.error('[CRITICAL] Database Migration failed:', error.message);
@@ -1244,6 +1295,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   if (!pool) return;
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
+  const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
 
   const schema = [
     {
@@ -1925,6 +1977,21 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
+    },
+    {
+      name: 'admin_audit_logs',
+      pool: targetSecurityPool,
+      query: `CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER,
+        admin_email VARCHAR(255),
+        action VARCHAR(100) NOT NULL,
+        target_resource VARCHAR(100),
+        details JSONB DEFAULT '{}',
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
@@ -1992,6 +2059,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS task_logs_task_id_key ON task_logs(task_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)` },
+    { pool: targetSecurityPool, query: `CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_admin_id ON admin_audit_logs(admin_id)` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS admin_audit_logs_pkey ON admin_audit_logs(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_pkey ON oauth_states(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_state_key ON oauth_states(state)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS tool_orchestrator_pkey ON tool_orchestrator(id)` },

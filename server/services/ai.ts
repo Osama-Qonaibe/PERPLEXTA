@@ -567,6 +567,20 @@ export async function callAIProvider(
     }
   }
 
+  // Safe model migration / deprecation mapper for Google Gemini API
+  if (normProvider.includes('google') || normProvider.includes('gemini')) {
+    const modelLower = cleanModel.toLowerCase();
+    if (modelLower.includes('gemini-2.0-flash-lite') || modelLower.includes('gemini-2.0-flash-lite-preview')) {
+      cleanModel = cleanModel.replace(/gemini-2\.0-flash-lite(-preview)?/gi, 'gemini-3.5-flash');
+    } else if (modelLower.includes('gemini-3.1-flash-lite')) {
+      cleanModel = cleanModel.replace(/gemini-3\.1-flash-lite/gi, 'gemini-3.5-flash');
+    } else if (modelLower.includes('gemini-2.0-flash') || modelLower.includes('gemini-2.0-flash-preview')) {
+      cleanModel = cleanModel.replace(/gemini-2\.0-flash(-preview)?/gi, 'gemini-3.5-flash');
+    } else if (modelLower.includes('gemini-1.5-flash') || modelLower.includes('gemini-1.5-flash-preview')) {
+      cleanModel = cleanModel.replace(/gemini-1\.5-flash(-preview)?/gi, 'gemini-3.5-flash');
+    }
+  }
+
   const messages: any[] = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   history.forEach(msg => messages.push({ role: msg.role, content: msg.content }));
@@ -703,9 +717,25 @@ export async function callAIProvider(
     url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:${method}`;
     if (isStreaming) url += '?alt=sse';
     headers['x-goog-api-key'] = cleanApiKey;
+    const isTtsModel = cleanModel.toLowerCase().includes('tts');
     const geminiContents = transformMessagesForGemini(processedMessages);
     body = { contents: geminiContents };
-    if (systemPrompt) body.system_instruction = { parts: [{ text: systemPrompt }] };
+    if (systemPrompt) {
+      if (isTtsModel) {
+        if (geminiContents.length > 0 && geminiContents[0].parts && geminiContents[0].parts.length > 0) {
+          const firstPart = geminiContents[0].parts[0];
+          if (typeof firstPart.text === 'string') {
+            firstPart.text = `[System Protocol:\n${systemPrompt}]\n\nUser Prompt:\n${firstPart.text}`;
+          } else {
+            geminiContents[0].parts.unshift({ text: `[System Protocol:\n${systemPrompt}]` });
+          }
+        } else {
+          geminiContents.unshift({ role: 'user', parts: [{ text: `[System Protocol:\n${systemPrompt}]` }] });
+        }
+      } else {
+        body.system_instruction = { parts: [{ text: systemPrompt }] };
+      }
+    }
   } else if (normProvider.includes('ollama')) {
     const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
     const cleanUrl = cleanOllamaUrl(resolvedUrl);
@@ -770,6 +800,48 @@ export async function callAIProvider(
     }
   }
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+
+  if (!res.ok && (normProvider.includes('google') || normProvider.includes('gemini'))) {
+    try {
+      const clonedRes = res.clone();
+      const errJson = await clonedRes.json();
+      const errorDetail = JSON.stringify(errJson);
+      
+      const isMultiturnDisabled = errorDetail.includes('Multiturn chat is not enabled for this model') || 
+                                  errorDetail.includes('multiturn') ||
+                                  (errJson.error?.message && errJson.error.message.includes('Multiturn chat'));
+                                  
+      if (isMultiturnDisabled && processedMessages.length > 1) {
+        console.warn(`[AI Service] Model ${cleanModel} does not support multiturn chat. Retrying with only the final user prompt...`);
+        // Extract only the system instructions and the latest user prompt
+        const singleTurnMessages = processedMessages.filter(m => m.role === 'system' || m === processedMessages[processedMessages.length - 1]);
+        const isTtsModel = cleanModel.toLowerCase().includes('tts');
+        const geminiContents = transformMessagesForGemini(singleTurnMessages);
+        body = { contents: geminiContents };
+        if (systemPrompt) {
+          if (isTtsModel) {
+            if (geminiContents.length > 0 && geminiContents[0].parts && geminiContents[0].parts.length > 0) {
+              const firstPart = geminiContents[0].parts[0];
+              if (typeof firstPart.text === 'string') {
+                firstPart.text = `[System Protocol:\n${systemPrompt}]\n\nUser Prompt:\n${firstPart.text}`;
+              } else {
+                geminiContents[0].parts.unshift({ text: `[System Protocol:\n${systemPrompt}]` });
+              }
+            } else {
+              geminiContents.unshift({ role: 'user', parts: [{ text: `[System Protocol:\n${systemPrompt}]` }] });
+            }
+          } else {
+            body.system_instruction = { parts: [{ text: systemPrompt }] };
+          }
+        }
+        
+        res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+      }
+    } catch (e) {
+      console.error('[AI Service] Error checking or recovering from Gemini multi-turn response:', e);
+    }
+  }
+
   return handleResponse(res);
 }

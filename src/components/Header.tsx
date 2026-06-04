@@ -72,6 +72,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const [tempTitle, setTempTitle] = useState('');
 
   const chatId = location.pathname.startsWith('/chat/') ? location.pathname.split('/chat/')[1] : null;
+  const isForumActive = location.pathname.startsWith('/forum');
+  const isMarketplaceActive = location.pathname.startsWith('/marketplace');
+  const isBlogActive = location.pathname.startsWith('/blog');
 
   useEffect(() => {
     const fetchChatTitle = async () => {
@@ -391,32 +394,77 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
             <NavLink
               to="/forum"
-              className="hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
+                isForumActive 
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+              }`}
               title={language === 'ar' ? 'منتدى المجتمع' : 'Community Forum'}
             >
-              <MessageSquare size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
-              <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'المنتدى' : 'Community'}</span>
-              <span className="sm:hidden text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'منتدى' : 'Forum'}</span>
+              <MessageSquare 
+                size={15} 
+                className={`transition-theme ${
+                  isForumActive 
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                }`} 
+              />
+              <span className={`hidden sm:inline text-[13px] transition-theme ${
+                isForumActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'المنتدى' : 'Community'}</span>
+              <span className={`sm:hidden transition-theme ${
+                isForumActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'منتدى' : 'Forum'}</span>
             </NavLink>
 
             <NavLink
               to="/marketplace"
-              className="hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
+                isMarketplaceActive 
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+              }`}
               title={language === 'ar' ? 'سوق بيربليكستا للمنتجات الرقمية' : 'Perplexta Digital Products Market'}
             >
-              <ShoppingBag size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
-              <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'السوق' : 'Marketplace'}</span>
-              <span className="sm:hidden text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'السوق' : 'Market'}</span>
+              <ShoppingBag 
+                size={15} 
+                className={`transition-theme ${
+                  isMarketplaceActive 
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                }`} 
+              />
+              <span className={`hidden sm:inline text-[13px] transition-theme ${
+                isMarketplaceActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'السوق' : 'Marketplace'}</span>
+              <span className={`sm:hidden transition-theme ${
+                isMarketplaceActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'السوق' : 'Market'}</span>
             </NavLink>
 
             <NavLink
               to="/blog"
-              className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
+                isBlogActive 
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+              }`}
               title={language === 'ar' ? 'مقالات التحليل واستخبارات السوق' : 'Market Intelligence Insights'}
             >
-              <Edit2 size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
-              <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'المقالات' : 'Insights'}</span>
-              <span className="sm:hidden text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'مقال' : 'Blog'}</span>
+              <Edit2 
+                size={15} 
+                className={`transition-theme ${
+                  isBlogActive 
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                }`} 
+              />
+              <span className={`hidden sm:inline text-[13px] transition-theme ${
+                isBlogActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'المقالات' : 'Insights'}</span>
+              <span className={`sm:hidden transition-theme ${
+                isBlogActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'مقال' : 'Blog'}</span>
             </NavLink>
           <AnimatePresence>
             {isOffline && (

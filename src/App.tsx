@@ -203,6 +203,7 @@ export default function App() {
                 <Route path="emails" element={<AdminDashboard />} />
                 <Route path="broadcast" element={<AdminDashboard />} />
                 <Route path="settings" element={<AdminDashboard />} />
+                <Route path="audit" element={<AdminDashboard />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
