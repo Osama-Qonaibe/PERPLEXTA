@@ -1,0 +1,31 @@
+# php -- BEGIN cPanel-generated handler, do not edit
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+
+Options -Indexes
+DirectoryIndex /dist/index.html
+
+AddType application/javascript .js .mjs
+AddType application/json .json
+
+RewriteEngine On
+
+RewriteRule ^assets/(.*)$ /dist/assets/$1 [L]
+RewriteRule ^app-assets/(.*)$ /dist/app-assets/$1 [L]
+RewriteRule ^manifest\.json$ /dist/manifest.json [L]
+RewriteRule ^manifest\.webmanifest$ /dist/manifest.webmanifest [L]
+RewriteRule ^sw\.js$ /dist/sw.js [L]
+RewriteRule ^workbox-(.*)$ /dist/workbox-$1 [L]
+RewriteRule ^robots\.txt$ /dist/robots.txt [L]
+RewriteRule ^sitemap\.xml$ /dist/sitemap.xml [L]
+
+RewriteCond %{REQUEST_URI} ^/api/ [OR]
+RewriteCond %{REQUEST_URI} ^/socket.io/ [OR]
+RewriteCond %{REQUEST_URI} ^/\.well-known/
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /dist/index.html [L]

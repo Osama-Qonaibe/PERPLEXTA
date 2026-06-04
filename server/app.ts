@@ -255,7 +255,7 @@ For support, please refer to the main portal or contact developer support.`;
 
 app.get('/.well-known/oauth-protected-resource', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -274,7 +274,7 @@ app.get('/.well-known/oauth-protected-resource', (req, res) => {
 
 app.get('/.well-known/openid-configuration', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -312,7 +312,7 @@ app.get('/.well-known/openid-configuration', (req, res) => {
 
 app.get('/.well-known/oauth-authorization-server', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -347,7 +347,7 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
 
 app.get('/.well-known/agent-skills/index.json', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -388,7 +388,7 @@ app.get('/.well-known/agent-skills/index.json', (req, res) => {
 
 app.get('/.well-known/mcp/server-card.json', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -436,7 +436,7 @@ app.get('/api/auth/jwks', (req, res) => {
 
 app.get('/.well-known/api-catalog', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -473,7 +473,7 @@ app.get('/.well-known/api-catalog', (req, res) => {
 
 app.get('/.well-known/acp.json', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
   
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -802,7 +802,7 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const currentKeywords = isAr ? keywordsAr : keywordsEn;
 
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'perplexta.com';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
