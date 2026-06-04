@@ -38,5 +38,32 @@
   <body style="background-color: inherit; color: inherit;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+    // WebMCP - Expose site tools to AI agents via browser
+    if (typeof navigator !== "undefined" && navigator.modelContext) {
+      navigator.modelContext.provideContext({
+        tools: [
+          {
+            name: "search",
+            description: "Search Perplexta platform content and AI models",
+            inputSchema: { type: "object", properties: { query: { type: "string", description: "Search query" } }, required: ["query"] },
+            execute: async ({ query }) => fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json())
+          },
+          {
+            name: "get_models",
+            description: "Get available AI models on Perplexta platform",
+            inputSchema: { type: "object", properties: {} },
+            execute: async () => fetch("/api/models").then(r => r.json())
+          },
+          {
+            name: "get_status",
+            description: "Get Perplexta platform health and status",
+            inputSchema: { type: "object", properties: {} },
+            execute: async () => fetch("/api/health").then(r => r.json())
+          }
+        ]
+      });
+    }
+    </script>
   </body>
 </html>

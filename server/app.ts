@@ -82,7 +82,24 @@ app.use((req, res, next) => {
   const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
   
   if (!isApiOrUploads && !hasStaticExtension) {
-    res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp"');
+    res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp", </.well-known/oauth-authorization-server>; rel="oauth-authorization-server", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource", </auth.md>; rel="service-doc"');
+  }
+  next();
+});
+
+// Markdown for Agents (Accept: text/markdown content negotiation)
+app.use((req, res, next) => {
+  const accept = req.headers["accept"] || "";
+  if (accept.includes("text/markdown") && (req.path === "/" || req.path === "/index.html")) {
+    const mdPath = path.join(process.cwd(), "public", "auth.md");
+    if (fs.existsSync(mdPath)) {
+      const content = fs.readFileSync(mdPath, "utf-8");
+      const tokens = content.split(/\s+/).length;
+      res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+      res.setHeader("x-markdown-tokens", String(tokens));
+      res.setHeader("Vary", "Accept");
+      return res.send(content);
+    }
   }
   next();
 });
@@ -183,92 +200,123 @@ app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 app.get('/auth.md', (req, res) => {
+  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
+  const baseUrl = `${protocol}://${host}`;
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  
-  const markdownContent = `# Agent Authentication & Registration - Perplexta Platform
+  res.setHeader('Vary', 'Accept');
+  res.setHeader('X-Auth-Md-Version', '1.0');
 
-Welcome to the Perplexta Platform Agent Registration and Authentication guide. This system supports programmatic discovery and automated registration for software agents and AI integrations.
-
-## Discovery Metadata
-Automated agents can discover registration and authentication capabilities by querying our standard endpoints:
-- **OpenID Discovery**: /.well-known/openid-configuration
-- **OAuth Discovery**: /.well-known/oauth-authorization-server
-- **Protected Resources**: /.well-known/oauth-protected-resource
-- **Catalog**: /.well-known/api-catalog
-
-## Registration Flow
-Agents must complete dynamic client registration via the \`register_uri\` described in the metadata.
-
-### 1. Dynamic Client Registration
-To register your agent, submit a \`POST\` request to the registration endpoint:
-\`\`\`http
-POST /api/auth/register-agent
-Content-Type: application/json
-
-{
-  "client_name": "My AI Agent",
-  "identity_type": "agent",
-  "credential_type": "client_credentials",
-  "redirect_uris": ["https://myagent.com/callback"]
-}
-\`\`\`
-
-Response:
-\`\`\`json
-{
-  "client_id": "agent_client_12345",
-  "client_secret": "agent_secret_67890",
-  "client_secret_expires_at": 0
-}
-\`\`\`
-
-### 2. Obtaining an Access Token
-You can obtain an access token using standard OAuth 2.0 Client Credentials or Authorization Code flow:
-\`\`\`http
-POST /api/auth/token
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=client_credentials&client_id=agent_client_12345&client_secret=agent_secret_67890
-\`\`\`
-
-Response:
-\`\`\`json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIsIn...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "scope": "read write"
-}
-\`\`\`
-
-## Security & Claim Support
-You may access claim and revocation endpoints to verify credentials:
-- **Claim API**: /api/auth/claim
-- **Revocation API**: /api/auth/revoke
-
-For support, please refer to the main portal or contact developer support.`;
+  const markdownContent = [
+    '# auth.md',
+    '',
+    `This is the agent registration document for ${baseUrl}.`,
+    '',
+    '## agent_auth',
+    '',
+    'Agents can register on behalf of users using this service.',
+    '',
+    `- register_uri: ${baseUrl}/api/auth/agent-register`,
+    '- identity_types_supported: anonymous, identity_assertion',
+    '- credential_types_supported: api_key, access_token',
+    `- claim_uri: ${baseUrl}/api/auth/claim`,
+    `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+    '',
+    '## Discover',
+    '',
+    'Fetch the authorization server metadata to discover registration endpoints:',
+    '',
+    '```',
+    `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+    `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+    '```',
+    '',
+    '## Register',
+    '',
+    'Send a POST request to register an agent:',
+    '',
+    '```',
+    `POST ${baseUrl}/api/auth/agent-register`,
+    'Content-Type: application/json',
+    '',
+    '{',
+    '  "client_name": "My Agent",',
+    '  "identity_type": "anonymous",',
+    '  "credential_type": "api_key",',
+    '  "scopes": ["read", "write"]',
+    '}',
+    '```',
+    '',
+    '## Claim',
+    '',
+    'Bind the credential to a verified user identity:',
+    '',
+    '```',
+    `POST ${baseUrl}/api/auth/claim`,
+    'Content-Type: application/json',
+    'Authorization: Bearer <api_key>',
+    '',
+    '{',
+    '  "identity_type": "identity_assertion",',
+    '  "assertion": "<id_jag_token>"',
+    '}',
+    '```',
+    '',
+    '## Revoke',
+    '',
+    'Revoke a credential:',
+    '',
+    '```',
+    `POST ${baseUrl}/api/auth/revoke`,
+    'Content-Type: application/json',
+    'Authorization: Bearer <api_key>',
+    '',
+    '{',
+    '  "client_id": "agent_..."',
+    '}',
+    '```',
+    '',
+    '## More Info',
+    '',
+    '- Protocol: https://workos.com/auth-md',
+    '- GitHub: https://github.com/workos/auth.md',
+  ].join('\n');
 
   res.send(markdownContent);
 });
-
 app.get('/.well-known/oauth-protected-resource', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
   const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
   const baseUrl = `${protocol}://${host}`;
-  
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Content-Type', 'application/json');
-  
+
   res.json({
     resource: baseUrl,
     authorization_servers: [baseUrl],
     scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
     resource_signing_alg_values_supported: ['RS256'],
-    bearer_methods_supported: ['header', 'body', 'query']
+    bearer_methods_supported: ['header', 'body', 'query'],
+    resource_documentation: `${baseUrl}/auth.md`,
+    agent_auth: {
+      register_uri: `${baseUrl}/api/auth/agent-register`,
+      claim_uri: `${baseUrl}/api/auth/claim`,
+      revocation_uri: `${baseUrl}/api/auth/revoke`,
+      identity_types_supported: ['anonymous', 'identity_assertion'],
+      anonymous: {
+        credential_types_supported: ['api_key']
+      },
+      identity_assertion: {
+        assertion_types_supported: ['urn:ietf:params:oauth:token-type:id-jag', 'verified_email'],
+        credential_types_supported: ['access_token', 'api_key']
+      }
+    }
   });
 });
 
@@ -330,17 +378,12 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
     scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
     agent_auth: {
-      register_uri: `${baseUrl}/api/auth/register-agent`,
-      supported_identity_types: ['agent', 'user', 'app'],
-      identity_types_supported: ['agent', 'user', 'app'],
-      credential_types: ['api_key', 'bearer_token', 'client_credentials'],
-      credential_types_supported: ['api_key', 'bearer_token', 'client_credentials'],
-      claim_endpoint: `${baseUrl}/api/auth/claim`,
+      auth_md: `${baseUrl}/auth.md`,
+      register_uri: `${baseUrl}/api/auth/agent-register`,
+      identity_types_supported: ['anonymous', 'identity_assertion'],
+      credential_types_supported: ['api_key', 'access_token'],
       claim_uri: `${baseUrl}/api/auth/claim`,
-      claim_url: `${baseUrl}/api/auth/claim`,
-      revocation_endpoint: `${baseUrl}/api/auth/revoke`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`,
-      revocation_url: `${baseUrl}/api/auth/revoke`
+      revocation_uri: `${baseUrl}/api/auth/revoke`
     }
   });
 });
