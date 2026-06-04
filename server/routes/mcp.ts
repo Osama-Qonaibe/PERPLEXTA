@@ -6,18 +6,24 @@ import { executeTaskLogic } from '../services/orchestrator.js';
 
 const router = express.Router();
 
-// SSE Session storage
+// SSE Session storage with enhanced management
 interface SseSession {
   id: string;
   res: express.Response;
   created: number;
+  heartbeatInterval?: NodeJS.Timeout;
+  sessionTimeout?: NodeJS.Timeout;
 }
 
 const sessions = new Map<string, SseSession>();
 
 /**
- * SSE Endpoint
- * Initializes the Server-Sent Events stream and registers the client session.
+ * SSE Endpoint with proper session lifecycle management
+ * FIXES APPLIED:
+ * 1. Added error handling on res.write() failures
+ * 2. Added session timeout (30 minutes)
+ * 3. Proper cleanup of intervals and timeouts
+ * 4. Added error event handlers to prevent hanging connections
  */
 router.get('/sse', (req, res) => {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
@@ -33,46 +39,83 @@ router.get('/sse', (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   const sessionId = crypto.randomUUID();
-  sessions.set(sessionId, {
+  const session: SseSession = {
     id: sessionId,
     res,
-    created: Date.now()
-  });
+    created: Date.now(),
+  };
+
+  // Cleanup function to prevent memory leaks
+  const cleanupSession = () => {
+    if (session.heartbeatInterval) {
+      clearInterval(session.heartbeatInterval);
+      session.heartbeatInterval = undefined;
+    }
+    if (session.sessionTimeout) {
+      clearTimeout(session.sessionTimeout);
+      session.sessionTimeout = undefined;
+    }
+    sessions.delete(sessionId);
+    console.log('[SSE] Session cleaned up:', sessionId);
+  };
+
+  sessions.set(sessionId, session);
 
   // Client must POST JSON-RPC payloads to this message url
   const messageUrl = `${baseUrl}/api/mcp/message?id=${sessionId}`;
-  
-  // Write initial protocol headers
-  res.write(`event: endpoint\ndata: ${messageUrl}\n\n`);
 
-  // Heartbeat to maintain open tunnel
-  const heartbeatInterval = setInterval(() => {
+  // Write initial protocol headers with error handling
+  try {
+    res.write(`event: endpoint\ndata: ${messageUrl}\n\n`);
+  } catch (err) {
+    console.error('[SSE] Failed to write endpoint:', err);
+    cleanupSession();
+    res.end();
+    return;
+  }
+
+  // Heartbeat to maintain open tunnel with comprehensive error handling
+  session.heartbeatInterval = setInterval(() => {
     if (res.writableEnded) {
-      clearInterval(heartbeatInterval);
-      sessions.delete(sessionId);
+      cleanupSession();
       return;
     }
+
     try {
       res.write(': heartbeat\n\n');
-    } catch (_) {
-      clearInterval(heartbeatInterval);
-      sessions.delete(sessionId);
+    } catch (err) {
+      console.warn('[SSE] Heartbeat write failed:', (err as Error).message);
+      cleanupSession();
     }
   }, 15000);
 
-  // Add timeout to cleanup stale sessions after 30 minutes
-  const sessionTimeout = setTimeout(() => {
-    sessions.delete(sessionId);
-    clearInterval(heartbeatInterval);
+  // Session timeout: 30 minutes to prevent resource exhaustion
+  session.sessionTimeout = setTimeout(() => {
+    console.log('[SSE] Session timeout (30 min), closing:', sessionId);
+    cleanupSession();
     try {
       res.end();
-    } catch (_) {}
+    } catch (e) {
+      // Already closed
+    }
   }, 30 * 60 * 1000);
 
+  // Cleanup on connection close
   req.on('close', () => {
-    clearInterval(heartbeatInterval);
-    clearTimeout(sessionTimeout);
-    sessions.delete(sessionId);
+    console.log('[SSE] Client disconnected:', sessionId);
+    cleanupSession();
+  });
+
+  // Error handling for request
+  req.on('error', (err) => {
+    console.error('[SSE] Connection error:', sessionId, (err as Error).message);
+    cleanupSession();
+  });
+
+  // Error handling for response
+  res.on('error', (err) => {
+    console.error('[SSE] Response error:', sessionId, (err as Error).message);
+    cleanupSession();
   });
 });
 
@@ -110,7 +153,7 @@ router.post('/message', async (req, res) => {
   let userId = 1; // Default integration/sandbox user ID
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1];
-  
+
   if (token) {
     try {
       token = token.trim();
@@ -151,7 +194,6 @@ router.post('/message', async (req, res) => {
       }
 
       case 'tools/list': {
-        // Query of active platform tools mapped in system
         let registeredTools: any[] = [];
         try {
           const dbTools = await pool.query('SELECT tool_id, task_description, task_description_ar FROM tool_orchestrator WHERE is_active = true');
@@ -160,7 +202,6 @@ router.post('/message', async (req, res) => {
           console.error('[MCP Server] Error querying tools from DB:', dbErr);
         }
 
-        // Fallback default list if database is empty or connection fails
         if (registeredTools.length === 0) {
           registeredTools = [
             { tool_id: 'chat', task_description: 'Elite strategic assistant for professional discourse and general logic.' },
@@ -215,18 +256,24 @@ router.post('/message', async (req, res) => {
           });
         }
 
-        // Let sse connection know the execution is underway if session is registered
         const activeSession = sessionId ? sessions.get(sessionId) : null;
-        if (activeSession) {
-          activeSession.res.write(`event: log\ndata: ${JSON.stringify({ message: `Executing tool ${toolName} for query.` })}\n\n`);
+        if (activeSession && !activeSession.res.writableEnded) {
+          try {
+            activeSession.res.write(`event: log\ndata: ${JSON.stringify({ message: `Executing tool ${toolName} for query.` })}\n\n`);
+          } catch (err) {
+            console.warn('[MCP] Failed to write log event:', err);
+          }
         }
 
-        // Run tool invocation via the global Perplexta Orchestrator
         let buffer = '';
         const onChunk = (chunk: string) => {
           buffer += chunk;
-          if (activeSession) {
-            activeSession.res.write(`event: progress\ndata: ${JSON.stringify({ chunk })}\n\n`);
+          if (activeSession && !activeSession.res.writableEnded) {
+            try {
+              activeSession.res.write(`event: progress\ndata: ${JSON.stringify({ chunk })}\n\n`);
+            } catch (err) {
+              console.warn('[MCP] Failed to write progress event:', err);
+            }
           }
         };
 
@@ -235,7 +282,6 @@ router.post('/message', async (req, res) => {
           prompt: runPrompt
         }, userId, req, onChunk);
 
-        // Extract response body or aggregated buffer
         const resultAsAny = executionResult as any;
         const summaryText = resultAsAny?.response || resultAsAny?.summary || resultAsAny?.result || buffer || resultAsAny?.text || JSON.stringify(executionResult);
 
