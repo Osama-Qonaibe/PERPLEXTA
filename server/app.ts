@@ -847,6 +847,7 @@ if (process.env.NODE_ENV === "production") {
     etag: true,
     lastModified: true,
     maxAge: '1y',
+    index: false,
     setHeaders: (res, filePath) => {
       if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
         // Built hashed files from Vite
