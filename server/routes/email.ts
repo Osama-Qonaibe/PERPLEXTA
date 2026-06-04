@@ -45,47 +45,34 @@ router.put('/config', authenticateAdmin, async (req, res) => {
       sender_email
     } = req.body;
 
-    const check = await pool.query('SELECT id FROM email_settings LIMIT 1');
-    if (check.rows.length === 0) {
-      const insertRes = await pool.query(`
-        INSERT INTO email_settings (
-          mailer_type, smtp_host, smtp_port, smtp_encryption, 
-          smtp_username, smtp_password, sender_name, sender_email, status
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
-        RETURNING *
-      `, [
-        mailer_type || 'smtp',
-        smtp_host || '',
-        String(smtp_port || '587'),
-        smtp_encryption || 'tls',
-        smtp_username || '',
-        smtp_password || '',
-        sender_name || 'Perplexta',
-        sender_email || ''
-      ]);
-      res.json(insertRes.rows[0]);
-    } else {
-      const updateRes = await pool.query(`
-        UPDATE email_settings SET 
-          mailer_type = $1, smtp_host = $2, smtp_port = $3, smtp_encryption = $4,
-          smtp_username = $5, smtp_password = $6, sender_name = $7, sender_email = $8,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $9
-        RETURNING *
-      `, [
-        mailer_type || 'smtp',
-        smtp_host || '',
-        String(smtp_port || '587'),
-        smtp_encryption || 'tls',
-        smtp_username || '',
-        smtp_password || '',
-        sender_name || 'Perplexta',
-        sender_email || '',
-        check.rows[0].id
-      ]);
-      res.json(updateRes.rows[0]);
-    }
+    const upsertRes = await pool.query(`
+      INSERT INTO email_settings (
+        id, mailer_type, smtp_host, smtp_port, smtp_encryption, 
+        smtp_username, smtp_password, sender_name, sender_email, status
+      )
+      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+      ON CONFLICT (id) DO UPDATE SET
+        mailer_type = EXCLUDED.mailer_type,
+        smtp_host = EXCLUDED.smtp_host,
+        smtp_port = EXCLUDED.smtp_port,
+        smtp_encryption = EXCLUDED.smtp_encryption,
+        smtp_username = EXCLUDED.smtp_username,
+        smtp_password = EXCLUDED.smtp_password,
+        sender_name = EXCLUDED.sender_name,
+        sender_email = EXCLUDED.sender_email,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `, [
+      mailer_type || 'smtp',
+      smtp_host || '',
+      String(smtp_port || '587'),
+      smtp_encryption || 'tls',
+      smtp_username || '',
+      smtp_password || '',
+      sender_name || 'Perplexta',
+      sender_email || ''
+    ]);
+    res.json(upsertRes.rows[0]);
   } catch (error: any) {
     console.error('[EmailConfig] Failed to save config:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
@@ -129,51 +116,38 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: `Connection failed: ${verifyErr.message}` });
     }
 
-    // Connection verified successfully, let's update database or insert
-    const check = await pool.query('SELECT id FROM email_settings LIMIT 1');
-    let savedRow;
-    if (check.rows.length === 0) {
-      const insertRes = await pool.query(`
-        INSERT INTO email_settings (
-          mailer_type, smtp_host, smtp_port, smtp_encryption, 
-          smtp_username, smtp_password, sender_name, sender_email, 
-          status, last_verified_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', CURRENT_TIMESTAMP)
-        RETURNING *
-      `, [
-        mailer_type || 'smtp',
-        smtp_host,
-        String(smtp_port),
-        smtp_encryption || 'tls',
-        smtp_username || '',
-        smtp_password || '',
-        sender_name || 'Perplexta',
-        sender_email || ''
-      ]);
-      savedRow = insertRes.rows[0];
-    } else {
-      const updateRes = await pool.query(`
-        UPDATE email_settings SET 
-          mailer_type = $1, smtp_host = $2, smtp_port = $3, smtp_encryption = $4,
-          smtp_username = $5, smtp_password = $6, sender_name = $7, sender_email = $8,
-          status = 'active', last_verified_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $9
-        RETURNING *
-      `, [
-        mailer_type || 'smtp',
-        smtp_host,
-        String(smtp_port),
-        smtp_encryption || 'tls',
-        smtp_username || '',
-        smtp_password || '',
-        sender_name || 'Perplexta',
-        sender_email || '',
-        check.rows[0].id
-      ]);
-      savedRow = updateRes.rows[0];
-    }
+    // Connection verified successfully, let's update database or insert using high-performance UPSERT
+    const upsertRes = await pool.query(`
+      INSERT INTO email_settings (
+        id, mailer_type, smtp_host, smtp_port, smtp_encryption, 
+        smtp_username, smtp_password, sender_name, sender_email, 
+        status, last_verified_at
+      )
+      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, 'active', CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        mailer_type = EXCLUDED.mailer_type,
+        smtp_host = EXCLUDED.smtp_host,
+        smtp_port = EXCLUDED.smtp_port,
+        smtp_encryption = EXCLUDED.smtp_encryption,
+        smtp_username = EXCLUDED.smtp_username,
+        smtp_password = EXCLUDED.smtp_password,
+        sender_name = EXCLUDED.sender_name,
+        sender_email = EXCLUDED.sender_email,
+        status = 'active',
+        last_verified_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `, [
+      mailer_type || 'smtp',
+      smtp_host,
+      String(smtp_port),
+      smtp_encryption || 'tls',
+      smtp_username || '',
+      smtp_password || '',
+      sender_name || 'Perplexta',
+      sender_email || ''
+    ]);
+    const savedRow = upsertRes.rows[0];
 
     res.json({ success: true, config: savedRow });
   } catch (error: any) {

@@ -542,6 +542,9 @@ app.use(express.static(publicPath));
 import jwt from 'jsonwebtoken';
 import { getSystemSettings } from './services/system.js';
 
+const filePermissionCache = new Map<string, { authorized: boolean; expiresAt: number }>();
+const FILE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL Cache
+
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const filename = req.params.filename;
@@ -592,13 +595,31 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         return res.sendFile(resolvedPath);
       }
 
+      const cacheKey = `${user.id}:${filename}`;
+      const now = Date.now();
+      if (filePermissionCache.has(cacheKey)) {
+        const cached = filePermissionCache.get(cacheKey)!;
+        if (now < cached.expiresAt) {
+          if (cached.authorized) {
+            return res.sendFile(resolvedPath);
+          } else {
+            return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+          }
+        } else {
+          filePermissionCache.delete(cacheKey);
+        }
+      }
+
       try {
         const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
         const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
         
         const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
         
-        if (isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0) {
+        const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0;
+        filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
+
+        if (authorized) {
           return res.sendFile(resolvedPath);
         }
 

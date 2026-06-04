@@ -218,14 +218,21 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
   }
 }
 
-const vaultCache = new Map<string, string>();
-const urlKeyCache = new Map<string, string>();
+const vaultCache = new Map<string, { value: string; expiresAt: number }>();
+const urlKeyCache = new Map<string, { value: string; expiresAt: number }>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache TTL
 
 export async function getProviderKey(provider: string): Promise<string | null> {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
+  const now = Date.now();
   
   if (vaultCache.has(normProvider)) {
-    return vaultCache.get(normProvider)!;
+    const cached = vaultCache.get(normProvider)!;
+    if (now < cached.expiresAt) {
+      return cached.value;
+    } else {
+      vaultCache.delete(normProvider);
+    }
   }
 
   let decryptedKey: string | null = null;
@@ -236,13 +243,13 @@ export async function getProviderKey(provider: string): Promise<string | null> {
         decryptedKey = decrypt(result.rows[0].encrypted_key);
       }
       if (result.rows[0].url_key) {
-        urlKeyCache.set(normProvider, result.rows[0].url_key);
+        urlKeyCache.set(normProvider, { value: result.rows[0].url_key, expiresAt: now + CACHE_TTL_MS });
       }
     }
   } catch (_) {}
 
   if (decryptedKey) {
-    vaultCache.set(normProvider, decryptedKey);
+    vaultCache.set(normProvider, { value: decryptedKey, expiresAt: now + CACHE_TTL_MS });
     return decryptedKey;
   }
 
@@ -251,9 +258,15 @@ export async function getProviderKey(provider: string): Promise<string | null> {
 
 export async function getProviderUrlKey(provider: string): Promise<string | null> {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
+  const now = Date.now();
   
   if (urlKeyCache.has(normProvider)) {
-    return urlKeyCache.get(normProvider)!;
+    const cached = urlKeyCache.get(normProvider)!;
+    if (now < cached.expiresAt) {
+      return cached.value;
+    } else {
+      urlKeyCache.delete(normProvider);
+    }
   }
 
   let urlKey: string | null = null;
@@ -261,7 +274,7 @@ export async function getProviderUrlKey(provider: string): Promise<string | null
     const result = await pool.query('SELECT url_key FROM api_keys_vault WHERE provider = $1', [normProvider]);
     if (result.rows.length > 0 && result.rows[0].url_key) {
       urlKey = result.rows[0].url_key;
-      urlKeyCache.set(normProvider, urlKey as string);
+      urlKeyCache.set(normProvider, { value: urlKey as string, expiresAt: now + CACHE_TTL_MS });
     }
   } catch (_) {}
 

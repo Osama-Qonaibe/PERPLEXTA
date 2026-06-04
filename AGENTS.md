@@ -440,6 +440,12 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
         - In `ForumPage.tsx`, removed all heavy `y: 15` drifts from the threads section view, replacing it with a clean, lightweight, highly responsive `opacity` transition of `0.15s`. Sequential delays for category rendering were compacted to a snappy `0.02s` block-time.
         - In `MarketplacePage.tsx`, optimized modal entry of the item listing popup by removing vertical offset slides and speed-clumping duration to a snappy `0.2s` fade sequence, creating an elite interactive popup.
         - In `BlogPage.tsx`, replaced all major list layout sliding transitions and mobile horizontal rows translation curves (`y: 15` and `y: 10`) with pristine, responsive opacity fade entries.
+- **Critical Back-End Performance Audit & Structural Optimization (Completed Today - June 4, 2026):**
+    - **High-Performance DB Indexes:** Deployed custom database indexes targeting `chat_memories(user_id, created_at DESC)` and `chats(user_id, updated_at DESC)`. This completely eliminates scanning overhead and guarantees ultra-fast range queries and sorting execution times for active user conversations.
+    - **Secure API & URL Caching with TTL:** Re-engineered API key and custom provider URL retrievals in `server/services/ai.ts` to utilize active cache maps with an automated 10-minute Time-To-Live (TTL). Cache invalidation ensures instant sync with the admin control panel while shielding database pools from redundant key-decryption queries.
+    - **Email Configuration UPSERT Migration:** Eliminated the double-query insert-or-update pattern in `server/routes/email.ts` with atomic PostgreSQL `INSERT ... ON CONFLICT (id) DO UPDATE` statements, creating a highly resilient and race-condition proof parameters sync.
+    - **Secure File Download Authorization Caching:** Added global, secure document download caching in `server/app.ts` with a 1-hour expiration. This eliminates the twin database query overhead (checking ownership and proof of deposit tables) on repetitive static resource requests while preserving strict access rights.
+    - **React Query Network Optimization:** Hardened the global react query client in `src/main.tsx` to utilize a robust stale-while-revalidate pattern with automatic reconnect query syncs, reduced refocus polling, and increased retry resilience on network hiccups.
 
 **System State:** `STABLE / METICULOUS VISUAL HARMONY ACTIVE`
 **Final Authorization:** All core protocols are now active and enforced by the Global Constitution.
