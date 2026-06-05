@@ -3959,7 +3959,7 @@ const DatabaseOrchestrationView = ({
                       {t(db.titleKey)}
                       <span className="px-1.5 py-0.5 rounded-xs bg-[var(--bg-secondary)] text-gray-500 text-[8px] font-black uppercase border border-[var(--border-main)]">
                         {db.id === 'ledger' ? (language === 'ar' ? 'الخزينة (المالية)' : 'Ledger (Financial)') :
-                         db.id === 'external' ? (language === 'ar' ? 'الأقسام الخارجية (المجتمعية)' : 'External (Social)') :
+                         db.id === 'external' ? (language === 'ar' ? 'لوحة تحكم الأقسام' : 'Sections Dashboard') :
                          db.id === 'security' ? (language === 'ar' ? 'الحماية (الأمنية)' : 'Security (Defense)') :
                          (language === 'ar' ? 'الرئيسية (التشغيلية)' : 'Core (Operational)')}
                       </span>

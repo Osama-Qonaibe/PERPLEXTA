@@ -180,11 +180,17 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   useEffect(() => {
     fetchChats();
-    window.addEventListener('chat-created', fetchChats);
-    window.addEventListener('chat-updated', fetchChats);
+    let debounceTimer: any = null;
+    const debouncedFetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchChats(), 300);
+    };
+    window.addEventListener('chat-created', debouncedFetch);
+    window.addEventListener('chat-updated', debouncedFetch);
     return () => {
-      window.removeEventListener('chat-created', fetchChats);
-      window.removeEventListener('chat-updated', fetchChats);
+      window.removeEventListener('chat-created', debouncedFetch);
+      window.removeEventListener('chat-updated', debouncedFetch);
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [token]);
 
@@ -212,7 +218,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     });
     navItems.push({
       icon: <Settings2 size={18} />,
-      label: language === 'ar' ? 'إدارة الأقسام الخارجية' : 'External Admin',
+      label: language === 'ar' ? 'لوحة تحكم الأقسام' : 'Sections Dashboard',
       path: '/admin-community'
     });
   }
@@ -461,10 +467,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                         size={isMobile ? 16 : 16} 
                                         className={`relative z-10 transition-all duration-300 ${
                                           isActive 
-                                            ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                                            ? 'text-emerald-500' 
                                             : streamingChatId === chat.id 
-                                              ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' 
-                                              : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                              ? 'text-emerald-500 animate-pulse' 
+                                              : 'text-gray-400 group-hover:text-emerald-500'
                                         }`} 
                                       />
                                     </div>
@@ -477,10 +483,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                           transition={sidebarTransition}
                                           className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
                                             isActive 
-                                              ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                                              ? 'text-emerald-500' 
                                               : streamingChatId === chat.id 
-                                                ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
-                                                : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                                ? 'text-emerald-500 font-extrabold' 
+                                                : 'text-gray-400 group-hover:text-emerald-500'
                                           }`}
                                         >
                                           {chat.title}
@@ -552,7 +558,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   {isActive && (
                                     <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 ${
                                       dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
-                                    } shadow-[0_0_8px_rgba(16,185,129,0.7)]`} />
+                                    }`} />
                                   )}
                                 </>
                               )}
