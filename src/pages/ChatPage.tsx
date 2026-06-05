@@ -3270,14 +3270,15 @@ export const ChatPage: React.FC = () => {
     if (routeChatId) {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
-      const belongsToCurrentSession = !chatId || 
-        chatId.toString() === routeChatId.toString() || 
-        chatIdRef.current?.toString() === routeChatId.toString();
+      const belongsToCurrentSession =
+        chatIdRef.current?.toString() === routeChatId.toString() ||
+        chatId?.toString() === routeChatId.toString();
 
       if ((isGenerating || isGeneratingRef.current) && belongsToCurrentSession) {
-        console.log('[ChatPage] Skipping redundant load for active generation session.');
         return;
       }
+
+      if (chatIdRef.current?.toString() === routeChatId.toString() && messages.length > 0) { return; }
       if (isAuthReady) {
         loadChat(routeChatId);
       }
@@ -3334,7 +3335,7 @@ export const ChatPage: React.FC = () => {
     }
     setChatId(id);
     setIsChatMessagesLoading(true);
-    setMessages([]); // Clear stale messages to prevent visual overlap before fetch
+    // Perplexta: Do not clear messages before fetch to prevent flash
     try {
       const res = await fetch(`/api/chats/${id}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -3737,8 +3738,10 @@ export const ChatPage: React.FC = () => {
             setChatId(currentChatId);
             chatIdRef.current = currentChatId; // Update ref immediately
             navigate(`/chat/${currentChatId}`, { replace: true });
-            window.dispatchEvent(new Event('chat-created'));
-            window.dispatchEvent(new Event('chat-updated'));
+            setTimeout(() => {
+              window.dispatchEvent(new Event('chat-created'));
+              window.dispatchEvent(new Event('chat-updated'));
+            }, 100);
           } else {
             const errorData = await res.json();
             throw new Error(errorData.error || 'Failed to create chat');
@@ -4950,7 +4953,7 @@ export const ChatPage: React.FC = () => {
             className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col scroll-smooth"
           >
           <AnimatePresence>
-            {isChatMessagesLoading ? (
+            {isChatMessagesLoading && messages.length === 0 && !user ? (
               <motion.div
                 key="chat-messages-skeleton"
                 initial={{ opacity: 0 }}
@@ -4984,7 +4987,7 @@ export const ChatPage: React.FC = () => {
                   </motion.div>
                 ))}
               </motion.div>
-            ) : messages.length === 0 ? (
+            ) : messages.length === 0 && !routeChatId ? (
               !hasActiveSub ? (
                 <motion.div
                   key="subscription-blocker-onboarding"

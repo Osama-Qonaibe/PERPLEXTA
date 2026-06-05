@@ -323,7 +323,7 @@ export const AdminCommunityPage: React.FC = () => {
           </a>
           <div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-theme font-sans">
-              {isRtl ? 'إدارة الأقسام الخارجية' : 'External Admin Console'}
+              {isRtl ? 'لوحة تحكم الأقسام' : 'Sections Dashboard'}
             </h1>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 opacity-80">
               {isRtl 

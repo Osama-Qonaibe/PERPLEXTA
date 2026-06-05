@@ -31,6 +31,7 @@ const CenteredLoader = () => {
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
 
   const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
+  if (loaderType === 'refresh') return null;
   let loaderText = '';
   if (language === 'ar') {
     if (loaderType === 'login') {
