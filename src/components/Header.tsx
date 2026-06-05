@@ -658,7 +658,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           animate={{ opacity: 1, y: 0, height: 'auto' }}
           exit={{ opacity: 0, y: -15, height: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className={`absolute top-[72px] left-0 right-0 z-[70] transition-theme border-b flex items-center justify-between px-4 py-2.5 text-xs font-sans shadow-lg overflow-hidden ${
+          className={`absolute top-[72px] left-0 right-0 z-[70] transition-theme border-b flex items-center justify-between px-4 py-2.5 text-xs font-sans shadow-none overflow-hidden ${
             theme === 'dark'
               ? 'bg-[#121418] border-gray-800/60 text-gray-300'
               : 'bg-[#fafafa] border-gray-200 text-gray-700'
