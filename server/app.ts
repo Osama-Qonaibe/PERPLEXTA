@@ -563,11 +563,17 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     
+    // In dev mode, or if origin matches configured allowed list, let it pass
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
+      return callback(null, true);
     }
+    
+    // Fallback: Check if the request origin comes from Cloud Run (.run.app) or localhost / loopback interfaces
+    if (origin.endsWith('.run.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

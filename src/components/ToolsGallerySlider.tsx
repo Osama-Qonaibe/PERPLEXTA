@@ -222,7 +222,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handlePrev}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-505 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronRight size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />
@@ -291,7 +291,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handleNext}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-555 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronLeft size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />
