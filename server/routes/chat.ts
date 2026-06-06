@@ -307,8 +307,8 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
     const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
 
     await pool.query(
-      'UPDATE messages SET content = $1, generation_time = $2 WHERE id = $3',
-      [result.result, generationTimeSeconds, assistantMessageId]
+      'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
+      [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
     );
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
@@ -321,7 +321,8 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
         chatId, 
         message_id: assistantMessageId,
         tool: toolId || 'chat',
-        generation_time: generationTimeSeconds
+        generation_time: generationTimeSeconds,
+        citations: result.citations || []
       });
       io.to(`user_${req.user.id}`).emit('chat_updated');
     }

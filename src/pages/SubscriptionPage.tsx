@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud } from 'lucide-react';
+import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
@@ -327,104 +327,199 @@ export const SubscriptionPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-        {displayedPlans.map((plan) => (
-          <div 
-            key={plan.id} 
-            className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
-              isActivePlan(plan.id) 
-                ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
-                : 'hover:border-emerald-500/30'
-            }`}
-          >
-            <div className="absolute inset-0 rounded-[var(--radius)] bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-300 pointer-events-none" />
-            <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-all duration-300 group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
-            {plan.badge !== 'none' && (
-              <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
-                <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#10b981' }}>
-                  {t(plan.badge)}
-                </span>
-              </div>
+      {displayedPlans.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="w-full max-w-3xl mx-auto rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-secondary)] p-8 md:p-12 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[350px]"
+        >
+          {/* Subtle glowing element background */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500/0" />
+          
+          <div className="w-16 h-16 rounded-[4px] bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 text-emerald-500 hover:scale-105 transition-all duration-300">
+            <Code2 size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+          </div>
+
+          <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)] mb-3 tracking-wide">
+            {dir === 'rtl' ? 'بوابة المطورين والوكلاء (قيد الإنشاء والتطوير)' : 'Developer & Agent Portal (Under Construction)'}
+          </h2>
+
+          <p className="text-xs md:text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl mb-8">
+            {dir === 'rtl' ? (
+              'نحن نعمل بجِد على بناء وبناء أدوات وحلول متكاملة مخصصة للمطورين والوكلاء لتمكين التوزيع البرمجي المباشر والمزامنة العبقرية لخدمات PERPLEXTA. ترقبوا إطلاق واجهات برمجة تطبيقات مخصصة، إمكانيات استخدام وكلاء مستقلين (Autonomous Bots)، وموارد سيادية هائلة تمكّنكم من دمج الذكاء الاصطناعي الفائق في تطبيقاتكم وبنيتكم التحتية بكفاءة متناهية.'
+            ) : (
+              'We are working diligently on building comprehensive tools and solutions tailored for developers and partners to enable direct programmatic distribution and deep integration with PERPLEXTA services. Stay tuned for custom API key provisioning, autonomous agent hosting, and enterprise-grade sovereign compute resources designed to integrate next-generation AI into your infrastructure.'
             )}
-            <div className="mb-3 md:mb-4">
-              <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2 text-[var(--text-primary)]">
-                <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#10b981' }}></span>
-                {dir === 'rtl' ? plan.nameAr : plan.nameEn}
-              </h3>
-              <p className="text-[11px] md:text-sm text-[var(--text-secondary)] leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--bg-primary)] border border-[var(--border-main)] text-xs text-[var(--text-muted)] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>{dir === 'rtl' ? 'المرحلة: التأسيس المعماري والنمذجة' : 'Phase: Architectural Ingestion & Setup'}</span>
             </div>
-            <div className="mb-4 md:mb-6 text-[var(--text-primary)]">
-              <div className="flex items-baseline gap-1.5 md:gap-2">
-                <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">${getDisplayPrice(plan, billingCycle).toFixed(2)}</span>
-                <span className="text-xs text-[var(--text-muted)]">/ {billingCycle === 'annual' ? t('annual') : t('monthly')}</span>
-              </div>
-              {billingCycle === 'monthly' && getSavingPercentage(plan) > 0 ? (
-                <div className="mt-1 text-[10px] md:text-xs font-medium" style={{ color: plan.color || '#10b981' }}>
-                  {dir === 'rtl' ? `وفر ${getSavingPercentage(plan)}% مع الدفع السنوي` : `Save ${getSavingPercentage(plan)}% with annual billing`}
-                </div>
-              ) : (
-                <div className="mt-1 text-[10px] md:text-xs font-medium text-transparent select-none">Spacer</div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-8 relative z-10">
-              <button 
-                onClick={() => handleUpgrade(plan.id)}
-                disabled={loading !== null || isActivePlan(plan.id)}
-                className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
-                style={{ 
-                  backgroundColor: plan.color || '#10b981', 
-                  boxShadow: isActivePlan(plan.id) ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
-                  opacity: isActivePlan(plan.id) ? 0.9 : 1
-                }}
-              >
-                {isActivePlan(plan.id) ? (
-                  <div className="flex items-center gap-1.5"><CheckCircle2 size={16} />{dir === 'rtl' ? 'نشط' : 'Active'}</div>
-                ) : (loading === `${plan.id}-stripe` ? '...' : (dir === 'rtl' ? 'اشتراك' : 'Subscribe'))}
-              </button>
-              <button 
-                onClick={() => handlePayWithBalance(plan.id)}
-                disabled={loading !== null || isActivePlan(plan.id)}
-                className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
-                style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
-              >
-                {isActivePlan(plan.id) ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
-              </button>
-            </div>
-            <div className="flex-1 space-y-2 md:space-y-3 mb-6 md:mb-8">
-              <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 md:mb-3">
-                {dir === 'rtl' ? 'الميزات' : 'Features'}
-              </p>
-              {plan.features.map((feature: any) => (
-                <div key={feature.id} className="flex items-start gap-2.5 md:gap-3">
-                  <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#10b981' }} />
-                  <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
-                    {dir === 'rtl' ? feature.textAr : feature.textEn}
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold text-xs hover:bg-emerald-500/20 hover:scale-105 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] active:scale-95"
+            >
+              {dir === 'rtl' ? 'العودة لمساحة العمل' : 'Return to Workspace'}
+            </button>
+          </div>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+          {displayedPlans.map((plan) => (
+            <div 
+              key={plan.id} 
+              className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
+                isActivePlan(plan.id) 
+                  ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
+                  : 'hover:border-emerald-500/30'
+              }`}
+            >
+              <div className="absolute inset-0 rounded-[var(--radius)] bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-300 pointer-events-none" />
+              <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-all duration-300 group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
+              {plan.badge !== 'none' && (
+                <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
+                  <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#10b981' }}>
+                    {t(plan.badge)}
                   </span>
                 </div>
-              ))}
-            </div>
-            <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
-              <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                {plan.limits.x402_api !== undefined ? (
-                  <>
-                    <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={dir === 'rtl' ? 'واجهة البرمجة x402' : 'x402 API Requests'} value={plan.limits.x402_api} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
-                  </>
+              )}
+              <div className="mb-3 md:mb-4">
+                <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2 text-[var(--text-primary)]">
+                  <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#10b981' }}></span>
+                  {dir === 'rtl' ? plan.nameAr : plan.nameEn}
+                </h3>
+                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
+              </div>
+              <div className="mb-4 md:mb-6 text-[var(--text-primary)]">
+                <div className="flex items-baseline gap-1.5 md:gap-2">
+                  <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">${getDisplayPrice(plan, billingCycle).toFixed(2)}</span>
+                  <span className="text-xs text-[var(--text-muted)]">/ {billingCycle === 'annual' ? t('annual') : t('monthly')}</span>
+                </div>
+                {billingCycle === 'monthly' && getSavingPercentage(plan) > 0 ? (
+                  <div className="mt-1 text-[10px] md:text-xs font-medium" style={{ color: plan.color || '#10b981' }}>
+                    {dir === 'rtl' ? `وفر ${getSavingPercentage(plan)}% مع الدفع السنوي` : `Save ${getSavingPercentage(plan)}% with annual billing`}
+                  </div>
                 ) : (
-                  <>
-                    <LimitItem icon={<MessageSquare size={12} className="md:w-3.5 md:h-3.5" />} label={t('chat') || 'Chat'} value={plan.limits.chat} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<Search size={12} className="md:w-3.5 md:h-3.5" />} label={t('perplexta_analysis') || 'Perplexta Analysis'} value={plan.limits.perplexta_analysis} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<Sparkles size={12} className="md:w-3.5 md:h-3.5" />} label={t('image') || 'Image Generation'} value={plan.limits.image} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<Code2 size={12} className="md:w-3.5 md:h-3.5" />} label={t('code') || 'Code Analysis'} value={plan.limits.code} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<Cloud size={12} className="md:w-3.5 md:h-3.5" />} label={t('storage_mb') || 'Storage (MB)'} value={plan.limits.storage_mb} color={plan.color || '#10b981'} />
-                    <LimitItem icon={<LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />} label={t('canvas') || 'Smart Audio Studio'} value={plan.limits.canvas !== undefined ? plan.limits.canvas : (plan.limits.workspace !== undefined ? plan.limits.workspace : (plan.limits.tts !== undefined ? plan.limits.tts : 0))} color={plan.color || '#10b981'} />
-                  </>
+                  <div className="mt-1 text-[10px] md:text-xs font-medium text-transparent select-none">Spacer</div>
                 )}
               </div>
+              <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-8 relative z-10">
+                <button 
+                  onClick={() => handleUpgrade(plan.id)}
+                  disabled={loading !== null || isActivePlan(plan.id)}
+                  className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
+                  style={{ 
+                    backgroundColor: plan.color || '#10b981', 
+                    boxShadow: isActivePlan(plan.id) ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
+                    opacity: isActivePlan(plan.id) ? 0.9 : 1
+                  }}
+                >
+                  {isActivePlan(plan.id) ? (
+                    <div className="flex items-center gap-1.5"><CheckCircle2 size={16} />{dir === 'rtl' ? 'نشط' : 'Active'}</div>
+                  ) : (loading === `${plan.id}-stripe` ? '...' : (dir === 'rtl' ? 'اشتراك' : 'Subscribe'))}
+                </button>
+                <button 
+                  onClick={() => handlePayWithBalance(plan.id)}
+                  disabled={loading !== null || isActivePlan(plan.id)}
+                  className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
+                  style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
+                >
+                  {isActivePlan(plan.id) ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
+                </button>
+              </div>
+              <div className="flex-1 space-y-2 md:space-y-3 mb-6 md:mb-8">
+                <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 md:mb-3">
+                  {dir === 'rtl' ? 'الميزات' : 'Features'}
+                </p>
+                {plan.features.map((feature: any) => (
+                  <div key={feature.id} className="flex items-start gap-2.5 md:gap-3">
+                    <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#10b981' }} />
+                    <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
+                      {dir === 'rtl' ? feature.textAr : feature.textEn}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
+                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-3 flex justify-between items-center px-1">
+                  <span>{dir === 'rtl' ? 'تخصيص الحصص والموارد السيادية' : 'Sovereign Resource Quotas'}</span>
+                </p>
+                <div className="max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
+                    {(() => {
+                      const toolIcons: Record<string, React.ReactNode> = {
+                        chat: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
+                        chat_fast: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
+                        chat_pro: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
+                        chat_reasoning: <Cpu size={12} className="md:w-3.5 md:h-3.5" />,
+                        perplexta_analysis: <Search size={12} className="md:w-3.5 md:h-3.5" />,
+                        legal_analysis: <Scale size={12} className="md:w-3.5 md:h-3.5" />,
+                        notebook: <FileText size={12} className="md:w-3.5 md:h-3.5" />,
+                        image: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
+                        video: <Tv size={12} className="md:w-3.5 md:h-3.5" />,
+                        stt: <Mic size={12} className="md:w-3.5 md:h-3.5" />,
+                        tts: <Volume2 size={12} className="md:w-3.5 md:h-3.5" />,
+                        learning: <GraduationCap size={12} className="md:w-3.5 md:h-3.5" />,
+                        code: <Code2 size={12} className="md:w-3.5 md:h-3.5" />,
+                        canvas: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
+                        sovereign_memory: <Server size={12} className="md:w-3.5 md:h-3.5" />,
+                        sovereign_search: <Search size={12} className="md:w-3.5 md:h-3.5" />,
+                        x402_api: <Key size={12} className="md:w-3.5 md:h-3.5" />,
+                        storage_mb: <Cloud size={12} className="md:w-3.5 md:h-3.5" />,
+                        marketplace_listings: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
+                      };
+
+                      const ALL_TOOLS = [
+                        "chat",
+                        "chat_fast",
+                        "chat_pro",
+                        "chat_reasoning",
+                        "perplexta_analysis",
+                        "legal_analysis",
+                        "notebook",
+                        "image",
+                        "video",
+                        "stt",
+                        "tts",
+                        "learning",
+                        "code",
+                        "canvas",
+                        "sovereign_memory",
+                        "sovereign_search",
+                        "x402_api",
+                        "storage_mb",
+                        "marketplace_listings"
+                      ];
+
+                      return ALL_TOOLS.map((toolId) => {
+                        const limitVal = (plan.limits && plan.limits[toolId] !== undefined)
+                          ? plan.limits[toolId]
+                          : { daily: 0, monthly: 0 };
+
+                        const label = t(toolId) || toolId;
+                        const icon = toolIcons[toolId] || <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5" />;
+
+                        return (
+                          <LimitItem
+                            key={toolId}
+                            icon={icon}
+                            label={label}
+                            value={limitVal}
+                            color={plan.color || '#10b981'}
+                          />
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <ModalPortal>
         <AnimatePresence>

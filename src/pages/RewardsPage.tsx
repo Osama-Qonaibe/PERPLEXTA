@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { toast } from 'sonner';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
@@ -46,7 +47,7 @@ export const RewardsPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Could not access camera. Please ensure permissions are granted.");
+      toast.error(dir === 'rtl' ? 'تعذر الوصول إلى الكاميرا. يرجى التأكد من منح الإذن.' : 'Could not access camera. Please ensure permissions are granted.');
       setIsCapturing(false);
     }
   };
@@ -118,7 +119,7 @@ export const RewardsPage: React.FC = () => {
       const data = await res.json();
       
       if (res.ok) {
-        alert(dir === 'rtl' ? `تم تحويل النقاط بنجاح! الرصيد الجديد: $${Number(data.usdAmount).toFixed(2)}` : `Points converted successfully! New Balance: $${Number(data.usdAmount).toFixed(2)}`);
+        toast.success(dir === 'rtl' ? `تم تحويل النقاط بنجاح! الرصيد الجديد: $${Number(data.usdAmount).toFixed(2)}` : `Points converted successfully! New Balance: $${Number(data.usdAmount).toFixed(2)}`);
         setIsConvertModalOpen(false);
         setConvertAmount('1000');
         
@@ -131,11 +132,43 @@ export const RewardsPage: React.FC = () => {
           setWallet(wData);
         }
       } else {
-        alert(data.error || 'Conversion failed');
+        toast.error(data.error || 'Conversion failed');
       }
     } catch (error) {
       console.error('Error converting points:', error);
-      alert('An error occurred');
+      toast.error(dir === 'rtl' ? 'حدث خطأ غير متوقع' : 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!token) return;
+    if (!window.confirm(dir === 'rtl' ? 'هل أنت متأكد من رغبتك في مسح سجل المعاملات بالكامل؟ لضمان عدم التضخم.' : 'Are you sure you want to clear your entire transaction history to prevent data bloat?')) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/wallet/clear', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTransactions([]);
+        setHasMoreTx(false);
+        setTxOffset(0);
+        toast.success(dir === 'rtl' ? 'تم مسح السجل بنجاح لضمان نظافة البيانات وعدم التضخم!' : 'History cleared successfully to ensure clean data and no bloat!');
+      } else {
+        toast.error(data.error || 'Failed to clear history');
+      }
+    } catch (err) {
+      console.error('Error clearing history:', err);
+      toast.error(dir === 'rtl' ? 'حدث خطأ أثناء مسح سجل المعاملات' : 'An error occurred while clearing history');
     } finally {
       setIsSubmitting(false);
     }
@@ -170,8 +203,23 @@ export const RewardsPage: React.FC = () => {
             const newTransactions = Array.isArray(data) ? data : (data.transactions || []);
             if (txOffset === 0) {
               setTransactions(newTransactions);
+              if (newTransactions.length >= 20) {
+                toast.info(dir === 'rtl' 
+                  ? 'تم الوصول إلى الحد الأقصى (20 من السجلات). سيتم حذف السجلات القديمة تلقائيًا لمنع تضخم البيانات.' 
+                  : 'Transaction limit of 20 records reached. Oldest transactions are automatically pruned to prevent data bloat.'
+                );
+              }
             } else {
-              setTransactions(prev => [...prev, ...newTransactions]);
+              setTransactions(prev => {
+                const updated = [...prev, ...newTransactions];
+                if (updated.length >= 20) {
+                  toast.info(dir === 'rtl' 
+                    ? 'تم الوصول إلى الحد الأقصى (20 من السجلات). سيتم حذف السجلات القديمة تلقائيًا لمنع تضخم البيانات.' 
+                    : 'Transaction limit of 20 records reached. Oldest transactions are automatically pruned to prevent data bloat.'
+                  );
+                }
+                return updated;
+              });
             }
             if (newTransactions.length < TX_LIMIT || (data.hasMore === false)) setHasMoreTx(false);
           }
@@ -607,6 +655,16 @@ export const RewardsPage: React.FC = () => {
               <History className="text-emerald-500 md:w-5 md:h-5" size={18} />
               <h3 className="text-base md:text-lg font-bold text-emerald-500">{t('transactionHistory')}</h3>
             </div>
+            {transactions.length > 0 && (
+              <button
+                onClick={handleClearHistory}
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[calc(var(--radius)/1.5)] border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-bold transition-all duration-300 disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw size={12} className={isSubmitting ? "animate-spin" : ""} />
+                {dir === 'rtl' ? 'مسح السجل' : 'Clear History'}
+              </button>
+            )}
           </div>
           
           <div className={`overflow-hidden rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-secondary)]`}>

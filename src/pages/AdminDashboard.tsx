@@ -7131,6 +7131,37 @@ const PlansSubscriptionsView = ({
               )}
             </div>
 
+            <div className="mb-6 pt-4 border-t border-gray-100 dark:border-gray-800/60">
+              <span className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider block mb-2">
+                {dir === "rtl" ? "حصص الأدوات والملفات النشطة" : "Active Tool & File Quotas"}
+              </span>
+              <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
+                {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any]) => {
+                  if (limitVal === undefined || limitVal === null) return null;
+                  const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
+                  const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
+                  const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
+
+                  return (
+                    <div
+                      key={key}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800/60 bg-gray-50 dark:bg-gray-800/30 flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+                    >
+                      <span className="text-emerald-500 font-extrabold">{t(key)}</span>
+                      <span className="font-mono text-[8px]">
+                        {daily !== undefined && daily !== null && (
+                          <>D: <strong className="text-gray-900 dark:text-white">{formatLimit(daily)}</strong></>
+                        )}
+                        {monthly !== null && monthly !== 0 && monthly !== undefined && (
+                          <>; M: <strong className="text-emerald-500">{formatLimit(monthly)}</strong></>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex gap-3">
               <button
                 onClick={() => handleOpenModal(plan)}
@@ -7750,7 +7781,6 @@ const UserManagementView = ({
   });
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
-  const [customLimits, setCustomLimits] = useState<any>({});
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -7809,7 +7839,6 @@ const UserManagementView = ({
       kyc_rejection_reason?: string;
       kyc_required?: boolean;
       status?: string;
-      custom_limits?: any;
     },
   ) => {
     setIsUpdating(true);
@@ -8361,7 +8390,6 @@ const UserManagementView = ({
   const handleViewProfile = (user: any) => {
     setSelectedUser(user);
     setSupportNotes(user.support_notes || "");
-    setCustomLimits(user.custom_limits || {});
     setIsProfileModalOpen(true);
     fetchUserUsage(user.id);
   };
@@ -9705,236 +9733,6 @@ const UserManagementView = ({
                         ? "حفظ ملاحظات الدعم"
                         : "Save Support Notes"}
                     </button>
-                  </div>
-
-                  <div
-                    className={`p-8 rounded-[3rem] border flex flex-col h-full lg:col-span-2 transition-theme relative overflow-hidden ${theme === "dark" ? "bg-[#161618] border-emerald-500/10 focus-within:border-emerald-500/30" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
-                  >
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/[0.03] blur-[120px] rounded-full pointer-events-none" />
-                    <div className="flex items-center justify-between mb-8 relative z-10">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                          <Activity size={20} />
-                        </div>
-                        <h3 className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-400">
-                          {t("consumptionRadar")}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={async () => {
-                            await handleUpdatePermissions(selectedUser.id, {
-                              role: selectedUser.role,
-                              kyc_status: selectedUser.kyc_status,
-                              kyc_rejection_reason: selectedUser.kyc_rejection_reason,
-                              kyc_required: selectedUser.kyc_required,
-                              status: selectedUser.status || selectedUser.subscription_status,
-                              custom_limits: customLimits,
-                            });
-                          }}
-                          disabled={isUpdating}
-                          className="px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-bold text-[10px] uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Save size={12} />
-                          {dir === "rtl" ? "حفظ تخصيص الميزات" : "Save Feature Overrides"}
-                        </button>
-                        {isLoadingUsage && (
-                          <RefreshCw
-                            size={16}
-                            className="animate-spin text-emerald-500"
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {!selectedUserUsage ? (
-                      <div className="flex-1 flex flex-col items-center justify-center py-12 text-gray-500 italic text-sm">
-                        <Zap size={32} className="mb-3 opacity-20" />
-                        {dir === "rtl"
-                          ? "جاري جلب بيانات الاستهلاك..."
-                          : "Fetching consumption data..."}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {ALL_TOOLS.map((toolId) => {
-                          const planLimits =
-                            getPlanDetails(selectedUser.plan_id).limits || {};
-                          const planLimit = planLimits[toolId] || {
-                            daily: 0,
-                            monthly: 0,
-                          };
-                          
-                          const customLimit = customLimits?.[toolId];
-                          const hasOverride = customLimit !== undefined && customLimit !== null;
-
-                          const dailyLimitRaw = hasOverride ? customLimit.daily : (planLimit?.daily || (typeof planLimit === "number" ? planLimit : 0));
-                          const monthlyLimitRaw = hasOverride ? customLimit.monthly : (planLimit?.monthly || (typeof planLimit === "number" ? planLimit * 30 : 0));
-
-                          const dailyLimit = dailyLimitRaw === "unlimited" ? "unlimited" : Number(dailyLimitRaw || 0);
-                          const monthlyLimit = monthlyLimitRaw === "unlimited" ? "unlimited" : Number(monthlyLimitRaw || 0);
-
-                          const toolKey = toolId;
-                          const usage = selectedUserUsage[toolKey] || {
-                            daily: 0,
-                            monthly: 0,
-                          };
-
-                          const dailyPercent =
-                            dailyLimit === "unlimited" ? 0 : dailyLimit > 0
-                              ? Math.min(100, (usage.daily / dailyLimit) * 100)
-                              : 0;
-                          const monthlyPercent =
-                            monthlyLimit === "unlimited" ? 0 : monthlyLimit > 0
-                              ? Math.min(
-                                  100,
-                                  (usage.monthly / monthlyLimit) * 100,
-                                )
-                              : 0;
-
-                          return (
-                            <div
-                              key={toolKey}
-                              className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"} transition-theme hover:border-emerald-500/30 group flex flex-col justify-between`}
-                            >
-                              <div>
-                                <div className="flex items-center justify-between mb-3 px-1">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-500 transition-theme">
-                                    {t(toolKey)}
-                                  </span>
-                                  <Zap
-                                    size={10}
-                                    className={
-                                      dailyPercent > 80
-                                        ? "text-amber-500 animate-pulse"
-                                        : "text-gray-600"
-                                    }
-                                  />
-                                </div>
-
-                                <div className="space-y-3">
-                                  {/* Daily Bar */}
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[8px] font-bold uppercase">
-                                      <span className="text-gray-500">
-                                        {t("daily")}
-                                      </span>
-                                      <span
-                                        className={
-                                          dailyPercent > 90
-                                            ? "text-red-500"
-                                            : "text-emerald-500"
-                                        }
-                                      >
-                                        {String(
-                                          typeof usage.daily === "number"
-                                            ? usage.daily
-                                            : 0,
-                                        )}{" "}
-                                        / {dailyLimit === "unlimited" ? (dir === "rtl" ? "غير محدود" : "unlimited") : String(dailyLimit)}
-                                      </span>
-                                    </div>
-                                    <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
-                                      <div
-                                        className={`h-full rounded-full transition-theme ${dailyPercent > 90 ? "bg-red-500" : "bg-emerald-500"}`}
-                                        style={{ width: `${dailyLimit === "unlimited" ? 0 : dailyPercent}%` }}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  {/* Monthly Bar */}
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[8px] font-bold uppercase">
-                                      <span className="text-gray-500">
-                                        {t("monthly")}
-                                      </span>
-                                      <span
-                                        className={
-                                          monthlyPercent > 90
-                                            ? "text-red-500"
-                                            : "text-blue-500"
-                                        }
-                                      >
-                                        {String(
-                                          typeof usage.monthly === "number"
-                                            ? usage.monthly
-                                            : 0,
-                                        )}{" "}
-                                        / {monthlyLimit === "unlimited" ? (dir === "rtl" ? "غير محدود" : "unlimited") : String(monthlyLimit)}
-                                      </span>
-                                    </div>
-                                    <div className="h-1 w-full bg-[var(--bg-secondary)]/40 rounded-full overflow-hidden">
-                                      <div
-                                        className={`h-full rounded-full transition-theme ${monthlyPercent > 90 ? "bg-red-500" : "bg-blue-500"}`}
-                                        style={{ width: `${monthlyLimit === "unlimited" ? 0 : monthlyPercent}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Override Section */}
-                              <div className="mt-4 pt-3 border-t border-[var(--border-main)]/10 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className={`text-[9.5px] font-black ${hasOverride ? "text-amber-500" : "text-gray-500"}`}>
-                                    {hasOverride ? (dir === "rtl" ? "حد مخصص ⚙️" : "Custom Override ⚙️") : (dir === "rtl" ? "الافتراضي" : "Standard Plan")}
-                                  </span>
-                                  {hasOverride && (
-                                    <button
-                                      onClick={() => {
-                                        const next = { ...customLimits };
-                                        delete next[toolId];
-                                        setCustomLimits(next);
-                                      }}
-                                      className="text-[9px] font-bold text-red-500 hover:underline cursor-pointer"
-                                    >
-                                      {dir === "rtl" ? "إلغاء التخصيص" : "Reset"}
-                                    </button>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-1.5">
-                                  <div>
-                                    <label className="text-[8px] font-medium text-gray-500 block mb-0.5">
-                                      {dir === "rtl" ? "اليومي" : "Daily"}
-                                    </label>
-                                    <input
-                                      type="text"
-                                      placeholder={typeof planLimit === "number" ? String(planLimit) : String(planLimit?.daily || "unlimited")}
-                                      value={customLimit?.daily !== undefined ? String(customLimit.daily) : ""}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        const next = { ...customLimits };
-                                        if (!next[toolId]) next[toolId] = { daily: "unlimited", monthly: "unlimited" };
-                                        next[toolId] = { ...next[toolId], daily: val === "" ? "unlimited" : (val.trim() === "unlimited" ? "unlimited" : (isNaN(Number(val)) ? val : Number(val))) };
-                                        setCustomLimits(next);
-                                      }}
-                                      className={`w-full h-7 px-1.5 rounded-sm text-[10px] font-bold border focus:outline-none focus:border-amber-500/50 transition-theme ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)] text-amber-500" : "bg-white border-[var(--border-main)] text-amber-600"}`}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-[8px] font-medium text-gray-500 block mb-0.5">
-                                      {dir === "rtl" ? "الشهري" : "Monthly"}
-                                    </label>
-                                    <input
-                                      type="text"
-                                      placeholder={typeof planLimit === "number" ? String(planLimit * 30) : String(planLimit?.monthly || "unlimited")}
-                                      value={customLimit?.monthly !== undefined ? String(customLimit.monthly) : ""}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        const next = { ...customLimits };
-                                        if (!next[toolId]) next[toolId] = { daily: "unlimited", monthly: "unlimited" };
-                                        next[toolId] = { ...next[toolId], monthly: val === "" ? "unlimited" : (val.trim() === "unlimited" ? "unlimited" : (isNaN(Number(val)) ? val : Number(val))) };
-                                        setCustomLimits(next);
-                                      }}
-                                      className={`w-full h-7 px-1.5 rounded-sm text-[10px] font-bold border focus:outline-none focus:border-amber-500/50 transition-theme ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)] text-amber-500" : "bg-white border-[var(--border-main)] text-amber-600"}`}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

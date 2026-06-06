@@ -26,8 +26,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
         SELECT 
           u.id as user_id,
           u.role,
-          p.limits,
-          u.custom_limits
+          p.limits
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
         LEFT JOIN plans p ON s.plan_id = p.id
@@ -45,7 +44,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
       )
       SELECT 
         ui.limits,
-        ui.custom_limits,
         ui.role,
         (SELECT count FROM daily_usage) as daily_count,
         (SELECT count FROM monthly_usage) as monthly_count
@@ -54,12 +52,12 @@ export async function checkUserQuota(userId: number, toolId: string) {
 
     if (res.rows.length === 0) return { allowed: true };
     
-    const { limits, custom_limits, daily_count, monthly_count } = res.rows[0];
+    const { limits, daily_count, monthly_count } = res.rows[0];
     
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
     
-    const finalLimits = { ...(limits || {}), ...(custom_limits || {}) };
+    const finalLimits = limits || {};
     if (Object.keys(finalLimits).length === 0) {
       // If they are active but have no limits defined yet, allow access as a fallback
       return { allowed: true, currentDaily, currentMonthly };
@@ -157,8 +155,7 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
         SELECT 
           u.id as user_id,
           u.role,
-          p.limits,
-          u.custom_limits
+          p.limits
         FROM users u
         LEFT JOIN subscriptions s ON u.id = s.user_id
         LEFT JOIN plans p ON s.plan_id = p.id
@@ -176,7 +173,6 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
       )
       SELECT 
         ui.limits,
-        ui.custom_limits,
         ui.role,
         (SELECT count FROM daily_usage) as daily_count,
         (SELECT count FROM monthly_usage) as monthly_count
@@ -188,11 +184,11 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
       return { allowed: true };
     }
 
-    const { limits, custom_limits, daily_count, monthly_count } = res.rows[0];
+    const { limits, daily_count, monthly_count } = res.rows[0];
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
 
-    const finalLimits = { ...(limits || {}), ...(custom_limits || {}) };
+    const finalLimits = limits || {};
     if (Object.keys(finalLimits).length === 0) {
       // If billing active with undefined limit boundaries, default allow as fallback
       await client.query(`

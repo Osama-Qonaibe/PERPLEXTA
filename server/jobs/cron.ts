@@ -18,6 +18,7 @@ export const cronTracker: Record<string, CronJobInfo> = {
   expiredTokensCleanup: { lastRun: new Date(Date.now() - 3.5 * 360000) .toISOString(), status: 'success', error: null },
   subscriptionAudit: { lastRun: new Date(Date.now() - 5 * 3600000).toISOString(), status: 'success', error: null },
   memoryCompaction: { lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), status: 'success', error: null },
+  monthlyLedgerCleanup: { lastRun: new Date(Date.now() - 15 * 24 * 3600000).toISOString(), status: 'success', error: null },
 };
 
 async function cleanupOrphanedPhysicalFiles() {
@@ -156,6 +157,23 @@ export function initCronJobs() {
     } catch (err: any) {
       console.error('[Cron] Monthly memory distillation failed:', err.message);
       cronTracker.memoryCompaction = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
+    }
+  });
+
+  // 6. Monthly Ledger Transaction Purge (Older than 30 days) on the 1st of every month at 5:00 AM
+  cron.schedule('0 5 1 * *', async () => {
+    console.log('[Cron] 💸 Running monthly ledger transaction purge...');
+    cronTracker.monthlyLedgerCleanup = { lastRun: new Date().toISOString(), status: 'running', error: null };
+    try {
+      const { ledgerPool } = await import('../db/index.js');
+      if (ledgerPool) {
+        const deleteRes = await ledgerPool.query("DELETE FROM ledger_transactions WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
+        console.log(`[Cron] Purged historical transactions from ledger_transactions: ${deleteRes.rowCount} rows deleted.`);
+      }
+      cronTracker.monthlyLedgerCleanup = { lastRun: new Date().toISOString(), status: 'success', error: null };
+    } catch (err: any) {
+      console.error('[Cron] Monthly ledger purge failed:', err.message);
+      cronTracker.monthlyLedgerCleanup = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
     }
   });
 }

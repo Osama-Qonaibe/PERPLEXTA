@@ -1,5 +1,10 @@
+import { getProviderKey } from './ai.js';
+
 export async function perplextaTTS(text: string, voiceId: string = 'standard') {
-  const apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
+  let apiKey = await getProviderKey('elevenlabs');
+  if (!apiKey) {
+    apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
+  }
   if (!apiKey) throw new Error('ElevenLabs API Key is missing.');
 
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;

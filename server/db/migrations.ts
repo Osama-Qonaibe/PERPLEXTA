@@ -1,8 +1,21 @@
 import pkg from 'pg';
 const { Pool } = pkg;
+import type { Pool as PgPool, PoolClient as PgPoolClient } from 'pg';
+import { User, Wallet, Subscription, ApiKeyVault, UserFile, ToolOrchestrator, Notification } from './types.js';
 import bcrypt from 'bcryptjs';
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+
+export type QueryClient = PgPool | PgPoolClient | {
+  query: (text: string | { text: string }, params?: any[]) => Promise<any>;
+  release?: () => void;
+  connect?: () => Promise<any>;
+};
+
+export interface WrappedClient {
+  release: () => void;
+  query: (text: string | { text: string }, params?: any[]) => Promise<any>;
+}
 
 export async function runSystemMaintenance() {
   try {
@@ -12,13 +25,13 @@ export async function runSystemMaintenance() {
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_name IN (
-          'token_blacklist', 'password_resets', 'user_activity_logs', 
-          'subscriptions', 'oauth_states', 'ai_logs', 'notifications', 
-          'system_logs', 'task_logs', 'stripe_events', 'security_alerts',
+          'token_blacklist', 'password_resets', 
+          'subscriptions', 'oauth_states', 'notifications', 
+          'system_logs', 'stripe_events', 'security_alerts',
           'user_usage'
         )
       `);
-      const existingTables = new Set(tableCheck.rows.map((r: any) => r.table_name));
+      const existingTables = new Set(tableCheck.rows.map((r: { table_name: string }) => r.table_name));
 
       // 1. Cleanup expired tokens
       if (existingTables.has('token_blacklist')) {
@@ -30,12 +43,7 @@ export async function runSystemMaintenance() {
         await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
       }
       
-      // 3. Cleanup old activity logs (keep 30 days)
-      if (existingTables.has('user_activity_logs')) {
-        await pool.query("DELETE FROM user_activity_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
-      }
-      
-      // 4. Update expired subscriptions
+      // 3. Update expired subscriptions
       if (existingTables.has('subscriptions')) {
         await pool.query(`
           UPDATE subscriptions 
@@ -45,17 +53,12 @@ export async function runSystemMaintenance() {
         `);
       }
 
-      // 5. Cleanup expired OAuth states
+      // 4. Cleanup expired OAuth states
       if (existingTables.has('oauth_states')) {
         await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
       }
 
-      // 6. Cleanup old AI logs (keep 30 days)
-      if (existingTables.has('ai_logs')) {
-        await pool.query("DELETE FROM ai_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
-      }
-
-      // 7. Cleanup read notifications older than 30 days or any notifications older than 90 days
+      // 5. Cleanup read notifications older than 30 days or any notifications older than 90 days
       if (existingTables.has('notifications')) {
         await pool.query(`
           DELETE FROM notifications 
@@ -64,14 +67,9 @@ export async function runSystemMaintenance() {
         `);
       }
 
-      // 8. Cleanup old system logs (keep 30 days)
+      // 6. Cleanup old system logs (keep 30 days)
       if (existingTables.has('system_logs')) {
         await pool.query("DELETE FROM system_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
-      }
-
-      // 9. Cleanup old task logs (keep 30 days)
-      if (existingTables.has('task_logs')) {
-        await pool.query("DELETE FROM task_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
       }
 
       // 10. Cleanup processed Stripe webhooks events (keep 90 days for audit trail)
@@ -104,25 +102,31 @@ export async function runSystemMaintenance() {
             console.log('[Maintenance] Compliant admin audit logs older than 180 days pruned successfully.');
           }
         }
-      } catch (secErr: any) {
-        console.warn('[Maintenance] Skipping admin audit logs cleanup:', secErr.message);
+      } catch (secErr: unknown) {
+        console.warn('[Maintenance] Skipping admin audit logs cleanup:', (secErr as Error).message);
       }
 
       console.log('[Maintenance] Daily system and database event logging cleanups completed successfully.');
     }
-  } catch (e: any) {
-    console.error('[Maintenance] System maintenance failed:', e.message);
+  } catch (e: unknown) {
+    console.error('[Maintenance] System maintenance failed:', (e as Error).message);
   }
 }
 
-let io: any;
-export function setIo(socketIo: any) {
+let io: { emit: (event: string, data: Record<string, unknown>) => void } | null = null;
+export function setIo(socketIo: { emit: (event: string, data: Record<string, unknown>) => void }) {
   io = socketIo;
 }
 
-export async function ensureColumn(poolObj: any, tableName: string, columnName: string, type: string, defaultVal?: any) {
-  const isClient = !!poolObj.release;
-  const client = isClient ? poolObj : await poolObj.connect();
+export async function ensureColumn(
+  poolObj: QueryClient,
+  tableName: string,
+  columnName: string,
+  type: string,
+  defaultVal?: string | number | boolean | null
+) {
+  const isClient = 'release' in poolObj && typeof poolObj.release === 'function';
+  const client = isClient ? (poolObj as PgPoolClient) : await (poolObj as PgPool).connect();
   
   try {
     if (!isClient) await client.query('BEGIN');
@@ -141,7 +145,7 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
       if (!/^[a-zA-Z0-9_(),\s]+$/i.test(type)) {
         throw new Error(`Invalid SQL type identifier: ${type}`);
       }
-      if (defaultVal !== undefined) {
+      if (defaultVal !== undefined && defaultVal !== null) {
         const defaultStr = String(defaultVal).trim();
         // Allow ONLY alphanumeric, standard SQL constants, quotes with clean contents, brackets/braces
         if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
@@ -150,7 +154,7 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
       }
       
       let query = `ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`;
-      if (defaultVal !== undefined) {
+      if (defaultVal !== undefined && defaultVal !== null) {
         query += ` DEFAULT ${defaultVal}`;
       }
       await client.query(query);
@@ -158,23 +162,58 @@ export async function ensureColumn(poolObj: any, tableName: string, columnName: 
     }
     
     if (!isClient) await client.query('COMMIT');
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (!isClient) await client.query('ROLLBACK');
-    console.error(`[Database] ERROR in ensureColumn (${tableName}.${columnName}):`, e.message);
+    const err = e as Error & { code?: string };
+    console.error(`[Database] ERROR in ensureColumn (${tableName}.${columnName}):`, err.message);
+    try {
+      if (pool) {
+        await pool.query(`
+          INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
+          VALUES ($1, 'conflict', $2, $3, $4)
+        `, [
+          `ensureColumn_${tableName}_${columnName}`,
+          err.message || 'Unknown error',
+          err.code || null,
+          JSON.stringify({ tableName, columnName, type, defaultVal })
+        ]);
+      }
+    } catch (auditErr) {
+      // Ignore if table does not exist yet during initial boot
+    }
     throw e;
   } finally {
-    if (!isClient) client.release();
+    if (!isClient) (client as PgPoolClient).release();
   }
 }
 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
   if (!pool) return;
   const client = await pool.connect();
-  let ledgerClient: any = null;
-  let externalClient: any = null;
-  let securityClient: any = null;
+  let ledgerClient: PgPoolClient | null = null;
+  let externalClient: PgPoolClient | null = null;
+  let securityClient: PgPoolClient | null = null;
   
-  if (ledgerPool && ledgerPool !== pool) {
+  const isSameDb = (poolA: any, poolB: any) => {
+    if (!poolA || !poolB) return true;
+    if (poolA === poolB) return true;
+    const connA = poolA.options?.connectionString;
+    const connB = poolB.options?.connectionString;
+    if (!connA || !connB) return false;
+    try {
+      const urlA = new URL(connA);
+      const urlB = new URL(connB);
+      return urlA.host === urlB.host && urlA.pathname === urlB.pathname;
+    } catch {
+      return connA === connB;
+    }
+  };
+
+  const isLedgerDistinct = ledgerPool && ledgerPool !== pool && !isSameDb(pool, ledgerPool);
+  const isExternalDistinct = externalPool && externalPool !== pool && !isSameDb(pool, externalPool);
+  const isSecurityDistinct = securityPool && securityPool !== pool && !isSameDb(pool, securityPool);
+
+  if (isLedgerDistinct) {
     try {
       ledgerClient = await ledgerPool.connect();
       console.log('[Migrations] Connecting to secondary Ledger DB for dual-path synchronization...');
@@ -184,7 +223,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     }
   }
 
-  if (externalPool && externalPool !== pool) {
+  if (isExternalDistinct) {
     try {
       externalClient = await externalPool.connect();
       console.log('[Migrations] Connecting to secondary External DB for dual-path forum/blog synchronization...');
@@ -194,7 +233,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     }
   }
 
-  if (securityPool && securityPool !== pool) {
+  if (isSecurityDistinct) {
     try {
       securityClient = await securityPool.connect();
       console.log('[Migrations] Connecting to secondary Security DB for dual-path blacklist/alert synchronization...');
@@ -211,6 +250,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         id SERIAL PRIMARY KEY,
         migration_name VARCHAR(255) UNIQUE NOT NULL,
         applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Dedicated security audit table for tracking failed migration attempts and schema conflicts
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS migration_security_audit (
+        id SERIAL PRIMARY KEY,
+        migration_name VARCHAR(255),
+        status VARCHAR(50) NOT NULL, -- 'failed' | 'conflict' | 'info'
+        error_message TEXT,
+        sql_state VARCHAR(20),
+        details JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -237,8 +289,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           )
         `);
       }
-    } catch (e: any) {
-      console.warn('[Migrations] Failed to inspect external database structure:', e.message);
+    } catch (e: unknown) {
+      console.warn('[Migrations] Failed to inspect external database structure:', (e as Error).message);
     }
 
     const activeSecurityClient = securityClient || client;
@@ -296,13 +348,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           )
         `);
       }
-    } catch (e: any) {
-      console.warn('[Migrations] Failed to inspect/initialize security database tables:', e.message);
+    } catch (e: unknown) {
+      console.warn('[Migrations] Failed to inspect/initialize security database tables:', (e as Error).message);
     }
 
     if (type === 'scratch') {
       console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
-      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'campaigns', 'ai_logs', 'message_reports', 'user_shortcuts', 'task_logs', 'user_activity_logs', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
+      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'message_reports', 'user_shortcuts', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
       for (const t of tables) {
         await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
       }
@@ -350,7 +402,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     `);
 
     // Helper to run a versioned migration
-    const runVersioned = async (name: string, description: string, fn: (tx?: any, ledgerTx?: any) => Promise<void>) => {
+    const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
         console.log(`[Migrations] Applying ${name}: ${description}...`);
@@ -359,7 +411,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         if (externalClient) await externalClient.query('BEGIN');
         if (securityClient) await securityClient.query('BEGIN');
         try {
-          const findClientForQuery = (sql: string, params?: any[]) => {
+          const findClientForQuery = (sql: string, params?: unknown[]) => {
             const queryLower = sql.toLowerCase();
             
             const isTableMatched = (tableName: string) => {
@@ -403,9 +455,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             return client;
           };
 
-          const wrappedClient = {
+          const wrappedClient: WrappedClient = {
             release: () => {},
-            query: async (text: any, params?: any[]) => {
+            query: async (text: string | { text: string }, params?: unknown[]) => {
               let sqlString = '';
               if (typeof text === 'string') {
                 sqlString = text;
@@ -417,9 +469,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             }
           };
 
-          const wrappedLedgerClient = {
+          const wrappedLedgerClient: WrappedClient = {
             release: () => {},
-            query: async (text: any, params?: any[]) => {
+            query: async (text: string | { text: string }, params?: unknown[]) => {
               let sqlString = '';
               if (typeof text === 'string') {
                 sqlString = text;
@@ -440,12 +492,28 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           if (externalClient) await externalClient.query('COMMIT');
           if (securityClient) await securityClient.query('COMMIT');
           console.log(`[Migrations] Successfully applied ${name}.`);
-        } catch (e) {
+        } catch (e: unknown) {
           await client.query('ROLLBACK');
           if (ledgerClient) await ledgerClient.query('ROLLBACK');
           if (externalClient) await externalClient.query('ROLLBACK');
           if (securityClient) await securityClient.query('ROLLBACK');
-          console.error(`[Migrations] Failed to apply ${name}:`, e);
+          const err = e as Error & { code?: string };
+          console.error(`[Migrations] Failed to apply ${name}:`, err);
+          
+          try {
+            await client.query(`
+              INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
+              VALUES ($1, 'failed', $2, $3, $4)
+            `, [
+              name,
+              err.message || 'Unknown error',
+              err.code || null,
+              JSON.stringify({ stack: err.stack, phase: 'runVersioned' })
+            ]);
+          } catch (auditErr) {
+            console.error('[Migrations] Failed to write failure audit log:', auditErr);
+          }
+          
           throw e;
         }
       }
@@ -585,7 +653,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     // MIGRATION: Finance & History Expansion v7
-    await runVersioned('v7_finance_expansion', 'Adding deposit requests and plan history', async (tx, ledgerTx) => {
+    await runVersioned('v7_finance_expansion', 'Adding deposit requests', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       await ledgerTarget.query(`
         CREATE TABLE IF NOT EXISTS deposit_requests (
@@ -602,15 +670,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      await tx.query(`
-        CREATE TABLE IF NOT EXISTS plan_features_history (
-          id SERIAL PRIMARY KEY,
-          plan_id INTEGER,
-          admin_id INTEGER,
-          change_log JSONB,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
     });
 
     // MIGRATION: Security Hardening (Stripe Key Encryption) v8
@@ -622,7 +681,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       
       for (const row of settingsRes.rows) {
         let needsUpdate = false;
-        const updates: any = {};
+        const updates: Record<string, string> = {};
 
         const keysToCheck = ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'];
         for (const key of keysToCheck) {
@@ -688,11 +747,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-    });
-
-    // MIGRATION: Granular Limit Overrides v12
-    await runVersioned('v12_custom_limits', 'Adding custom_limits jsonb column to users table for granular overrides', async (tx) => {
-      await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_limits JSONB DEFAULT NULL`);
     });
 
     // MIGRATION: Payment Gateways Settings Expansion v13
@@ -1280,9 +1334,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
-  } catch (error: any) {
-    console.error('[CRITICAL] Database Migration failed:', error.message);
-    if (process.env.NODE_ENV === 'production') throw error;
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[CRITICAL] Database Migration failed:', err.message);
+    if (process.env.NODE_ENV === 'production') throw err;
   } finally {
     client.release();
     if (ledgerClient) ledgerClient.release();
@@ -1291,13 +1346,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   }
 }
 
-export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: any, customLedgerPool?: any) {
+export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: QueryClient, customLedgerPool?: QueryClient) {
   if (!pool) return;
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
   const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
 
-  const schema = [
+  interface SchemaTable {
+    name: string;
+    query: string;
+    pool?: QueryClient;
+  }
+
+  const schema: SchemaTable[] = [
     {
       name: 'users',
       query: `CREATE TABLE IF NOT EXISTS users (
@@ -1538,21 +1599,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'user_usage_logs',
-      pool: targetLedgerPool,
-      query: `CREATE TABLE IF NOT EXISTS user_usage_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        tool_id VARCHAR(100) NOT NULL,
-        model VARCHAR(255),
-        amount NUMERIC(15, 4) DEFAULT '0',
-        usage_type VARCHAR(50) DEFAULT 'free',
-        tokens_used INTEGER DEFAULT 0,
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'support_tickets',
       query: `CREATE TABLE IF NOT EXISTS support_tickets (
         id SERIAL PRIMARY KEY,
@@ -1709,38 +1755,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'campaigns',
-      query: `CREATE TABLE IF NOT EXISTS campaigns (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        template_id INTEGER,
-        target_criteria JSONB,
-        total_recipients INTEGER DEFAULT 0,
-        success_count INTEGER DEFAULT 0,
-        fail_count INTEGER DEFAULT 0,
-        status VARCHAR(50) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        completed_at TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
-      name: 'ai_logs',
-      query: `CREATE TABLE IF NOT EXISTS ai_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER,
-        tool_id VARCHAR(50),
-        provider VARCHAR(50),
-        model VARCHAR(255),
-        prompt_tokens INTEGER DEFAULT 0,
-        completion_tokens INTEGER DEFAULT 0,
-        cost NUMERIC(15, 6) DEFAULT '0',
-        status VARCHAR(20) DEFAULT 'success',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'message_reports',
       query: `CREATE TABLE IF NOT EXISTS message_reports (
         id SERIAL PRIMARY KEY,
@@ -1773,36 +1787,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         metadata JSONB DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
-      name: 'task_logs',
-      query: `CREATE TABLE IF NOT EXISTS task_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER,
-        tool_id VARCHAR(50),
-        task_type VARCHAR(100),
-        status VARCHAR(20) DEFAULT 'pending',
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        task_id VARCHAR(50) NOT NULL UNIQUE,
-        message TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
-      name: 'user_activity_logs',
-      query: `CREATE TABLE IF NOT EXISTS user_activity_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        tool_id VARCHAR(50),
-        amount DECIMAL(15,4) DEFAULT 1,
-        usage_type VARCHAR(20) DEFAULT 'quota',
-        action_type VARCHAR(100) DEFAULT 'system_event',
-        description TEXT,
-        ip_address VARCHAR(100),
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -1941,16 +1925,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       )`
     },
     {
-      name: 'plan_features_history',
-      query: `CREATE TABLE IF NOT EXISTS plan_features_history (
-        id SERIAL PRIMARY KEY,
-        plan_id INTEGER,
-        admin_id INTEGER,
-        change_log JSONB,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-    },
-    {
       name: 'marketplace_items',
       query: `CREATE TABLE IF NOT EXISTS marketplace_items (
         id SERIAL PRIMARY KEY,
@@ -1996,16 +1970,13 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   ];
 
   for (const table of schema) {
-    const p = (table as any).pool || targetPool;
+    const p = table.pool || targetPool;
     await p.query(table.query);
   }
 
   const indexes = [
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS ai_logs_pkey ON ai_logs(id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_ai_logs_user_id ON ai_logs(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS api_keys_vault_pkey ON api_keys_vault(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS api_keys_vault_provider_key ON api_keys_vault(provider)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS campaigns_pkey ON campaigns(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS chat_memories_pkey ON chat_memories(id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_chat_memories_user_id ON chat_memories(user_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_chat_memories_chat_id ON chat_memories(chat_id)` },
@@ -2057,8 +2028,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS system_logs_pkey ON system_logs(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS system_settings_pkey ON system_settings(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS task_logs_pkey ON task_logs(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS task_logs_task_id_key ON task_logs(task_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at) WHERE expires_at > CURRENT_TIMESTAMP` },
@@ -2068,9 +2037,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_state_key ON oauth_states(state)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS tool_orchestrator_pkey ON tool_orchestrator(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS tool_orchestrator_tool_id_key ON tool_orchestrator(tool_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_created_at ON user_activity_logs(created_at)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_activity_user_id ON user_activity_logs(user_id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS user_activity_logs_pkey ON user_activity_logs(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS user_files_pkey ON user_files(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS user_shortcuts_pkey ON user_shortcuts(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS user_usage_pkey ON user_usage(id)` },
@@ -2092,8 +2058,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
 
   // Relations & FKs
   const relations = [
-    { pool: targetPool, query: `ALTER TABLE campaigns DROP CONSTRAINT IF EXISTS campaigns_template_id_fkey` },
-    { pool: targetPool, query: `ALTER TABLE campaigns ADD CONSTRAINT campaigns_template_id_fkey FOREIGN KEY (template_id) REFERENCES email_templates(id)` },
     { pool: targetPool, query: `ALTER TABLE chats DROP CONSTRAINT IF EXISTS chats_user_id_fkey` },
     { pool: targetPool, query: `ALTER TABLE chats ADD CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE` },
     { pool: targetPool, query: `ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_chat_id_fkey` },
@@ -2115,9 +2079,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetLedgerPool, query: `ALTER TABLE ledger_transactions DROP CONSTRAINT IF EXISTS ledger_transactions_wallet_id_fkey` },
     { pool: targetLedgerPool, query: `ALTER TABLE ledger_transactions ADD CONSTRAINT ledger_transactions_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES wallets(id)` },
     { pool: targetLedgerPool, query: `ALTER TABLE coupon_usages DROP CONSTRAINT IF EXISTS coupon_usages_coupon_id_fkey` },
-    { pool: targetLedgerPool, query: `ALTER TABLE coupon_usages ADD CONSTRAINT coupon_usages_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE` },
-    { pool: targetPool, query: `ALTER TABLE plan_features_history DROP CONSTRAINT IF EXISTS plan_features_history_plan_id_fkey` },
-    { pool: targetPool, query: `ALTER TABLE plan_features_history ADD CONSTRAINT plan_features_history_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE` }
+    { pool: targetLedgerPool, query: `ALTER TABLE coupon_usages ADD CONSTRAINT coupon_usages_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE` }
   ];
 
   for (const rel of relations) {
@@ -2266,8 +2228,8 @@ export async function monitorDatabases() {
       );
       if (!isAlive && io) io.emit('db_alert', { provider: reg.provider, status: 'down' });
     }
-  } catch (err: any) {
-    console.error('[Monitor] Database monitoring failed:', err.message);
+  } catch (err: unknown) {
+    console.error('[Monitor] Database monitoring failed:', (err as Error).message);
   } finally {
     isMonitoring = false;
   }

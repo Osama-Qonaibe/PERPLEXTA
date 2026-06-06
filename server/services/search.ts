@@ -1,5 +1,10 @@
+import { getProviderKey } from './ai.js';
+
 export async function performPerplextaSearch(query: string) {
-  const apiKey = (process.env.SERPER_API_KEY || '').trim();
+  let apiKey = await getProviderKey('serper');
+  if (!apiKey) {
+    apiKey = (process.env.SERPER_API_KEY || '').trim();
+  }
   if (!apiKey) return [];
 
   try {
@@ -7,7 +12,8 @@ export async function performPerplextaSearch(query: string) {
       method: 'POST',
       headers: {
         'X-API-KEY': apiKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
       body: JSON.stringify({ q: query, num: 5 })
     });

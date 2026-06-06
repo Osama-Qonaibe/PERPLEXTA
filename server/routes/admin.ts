@@ -417,7 +417,7 @@ router.get("/users", authenticateAdmin, async (req, res) => {
     const result = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.role, u.status, u.created_at, u.last_active_at,
-        u.kyc_status, u.kyc_required, u.support_notes, u.kyc_rejection_reason, u.custom_limits,
+        u.kyc_status, u.kyc_required, u.support_notes, u.kyc_rejection_reason, '{}'::JSONB as custom_limits,
         s.plan_id, s.status as subscription_status, s.current_period_end,
         p.name_en as plan_name
       FROM users u
@@ -885,11 +885,10 @@ async function updateUserPermissionsInternal(
     kyc_status?: string;
     kyc_rejection_reason?: string | null;
     kyc_required?: boolean;
-    custom_limits?: any;
   },
   client: any
 ) {
-  const { role, status, kyc_status, kyc_rejection_reason, kyc_required, custom_limits } = fields;
+  const { role, status, kyc_status, kyc_rejection_reason, kyc_required } = fields;
   
   const userUpdates = [];
   const userValues: any[] = [userIdNum];
@@ -909,7 +908,6 @@ async function updateUserPermissionsInternal(
     userUpdates.push(`kyc_required = $${valIdx++}`); 
     userValues.push(kyc_required); 
   }
-  if (custom_limits !== undefined) { userUpdates.push(`custom_limits = $${valIdx++}`); userValues.push(custom_limits); }
 
   if (userUpdates.length > 0) {
     await client.query(`UPDATE users SET ${userUpdates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userValues);
@@ -924,7 +922,7 @@ async function updateUserPermissionsInternal(
 router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { role, status, kyc_status, kyc_rejection_reason, kyc_required, custom_limits } = req.body;
+    const { role, status, kyc_status, kyc_rejection_reason, kyc_required } = req.body;
     
     if (role && !['admin', 'user', 'support', 'elite'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
@@ -949,8 +947,7 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
         status,
         kyc_status,
         kyc_rejection_reason,
-        kyc_required,
-        custom_limits
+        kyc_required
       }, client);
       await client.query('COMMIT');
       invalidateUserCache(userIdNum);

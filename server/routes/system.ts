@@ -73,6 +73,121 @@ router.get("/economy", async (req, res) => {
   }
 });
 
+// Dynamic SEO Link Metadata Scraper & Router with Cache
+const urlMetadataCache = new Map<string, any>();
+
+router.get("/link-metadata", async (req, res) => {
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+
+  let cleanUrl = targetUrl.trim();
+  if (!/^https?:\/\//i.test(cleanUrl)) {
+    cleanUrl = 'https://' + cleanUrl;
+  }
+
+  if (urlMetadataCache.has(cleanUrl)) {
+    return res.json(urlMetadataCache.get(cleanUrl));
+  }
+
+  try {
+    const parsedUrl = new URL(cleanUrl);
+    const domain = parsedUrl.hostname;
+    const defaultMeta = {
+      title: domain,
+      description: '',
+      image: '',
+      site_name: domain.replace(/^www\./i, '').split('.')[0] || domain,
+      url: cleanUrl,
+      favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const fetchRes = await fetch(cleanUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!fetchRes.ok) {
+      urlMetadataCache.set(cleanUrl, defaultMeta);
+      return res.json(defaultMeta);
+    }
+
+    const html = await fetchRes.text();
+
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : defaultMeta.title;
+
+    const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+                         html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+    const ogTitle = ogTitleMatch ? ogTitleMatch[1].trim() : title;
+
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const description = descMatch ? descMatch[1].trim() : '';
+
+    const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
+                        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+    const ogDescription = ogDescMatch ? ogDescMatch[1].trim() : description;
+
+    const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                         html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    let image = ogImageMatch ? ogImageMatch[1].trim() : '';
+    if (image && !/^https?:\/\//i.test(image)) {
+      image = new URL(image, cleanUrl).toString();
+    }
+
+    const siteNameMatch = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i) ||
+                          html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i);
+    const site_name = siteNameMatch ? siteNameMatch[1].trim() : defaultMeta.site_name;
+
+    const resultMeta = {
+      title: ogTitle || title || defaultMeta.title,
+      description: ogDescription || defaultMeta.description,
+      image: image || defaultMeta.image,
+      site_name: site_name || defaultMeta.site_name,
+      url: cleanUrl,
+      favicon: defaultMeta.favicon
+    };
+
+    urlMetadataCache.set(cleanUrl, resultMeta);
+    return res.json(resultMeta);
+  } catch (err) {
+    try {
+      const parsedUrl = new URL(cleanUrl);
+      const domain = parsedUrl.hostname;
+      const fallbackMeta = {
+        title: domain,
+        description: '',
+        image: '',
+        site_name: domain.replace(/^www\./i, '').split('.')[0] || domain,
+        url: cleanUrl,
+        favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+      };
+      urlMetadataCache.set(cleanUrl, fallbackMeta);
+      return res.json(fallbackMeta);
+    } catch {
+      const fallbackMeta = {
+        title: targetUrl,
+        description: '',
+        image: '',
+        site_name: targetUrl,
+        url: cleanUrl,
+        favicon: `https://www.google.com/s2/favicons?domain=google.com&sz=64`
+      };
+      return res.json(fallbackMeta);
+    }
+  }
+});
+
 // User Shortcuts Endpoints
 router.post("/shortcuts", authenticateToken, async (req: any, res) => {
   try {

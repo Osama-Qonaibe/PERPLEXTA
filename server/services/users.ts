@@ -236,7 +236,7 @@ export async function getUserProfile(userId: string) {
   if (!pool) throw new Error('Database initializing');
   
   const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code, u.custom_limits,
+    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code,
            s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color, p.limits
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -251,7 +251,6 @@ export async function getUserProfile(userId: string) {
   const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
   
   let subscription = null;
-  const customLimits = typeof row.custom_limits === 'object' && row.custom_limits !== null ? row.custom_limits : (typeof row.custom_limits === 'string' ? JSON.parse(row.custom_limits || '{}') : {});
 
   if (row.plan_id) {
     const rawLimits = typeof row.limits === 'object' && row.limits !== null ? row.limits : (typeof row.limits === 'string' ? JSON.parse(row.limits || '{}') : {});
@@ -262,7 +261,7 @@ export async function getUserProfile(userId: string) {
       plan_name_en: row.plan_name_en,
       plan_name_ar: row.plan_name_ar,
       plan_color: row.plan_color,
-      limits: { ...rawLimits, ...customLimits }
+      limits: rawLimits
     };
   }
   
@@ -279,7 +278,7 @@ export async function getUserProfile(userId: string) {
     kyc_status: row.kyc_status,
     created_at: row.created_at,
     referral_code: row.referral_code,
-    custom_limits: customLimits,
+    custom_limits: {},
     subscription,
     balance: wallet.balance,
     points: parseInt(wallet.points)

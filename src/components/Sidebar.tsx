@@ -412,7 +412,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               }}
                               className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 transition-all duration-300 group relative border rounded-[4px] ${
                                 isActive 
-                                  ? 'text-emerald-500 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.06] border-emerald-500/10' 
+                                  ? 'text-emerald-500 bg-transparent border-transparent' 
                                   : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 border-transparent'
                               }`}
                             >
@@ -462,12 +462,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                                   >
                                     <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 ${isActive ? 'bg-emerald-500/[0.02] dark:bg-emerald-500/[0.04]' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'}`} />
+                                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 ${isActive ? 'bg-transparent' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'}`} />
                                       <MessageSquare 
                                         size={isMobile ? 16 : 16} 
                                         className={`relative z-10 transition-all duration-300 ${
                                           isActive 
-                                            ? 'text-emerald-500' 
+                                            ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
                                             : streamingChatId === chat.id 
                                               ? 'text-emerald-500 animate-pulse' 
                                               : 'text-gray-400 group-hover:text-emerald-500'
@@ -483,7 +483,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                           transition={sidebarTransition}
                                           className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
                                             isActive 
-                                              ? 'text-emerald-500' 
+                                              ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
                                               : streamingChatId === chat.id 
                                                 ? 'text-emerald-500 font-extrabold' 
                                                 : 'text-gray-400 group-hover:text-emerald-500'

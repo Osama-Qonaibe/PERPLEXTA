@@ -15,6 +15,25 @@ async function startServer() {
   try {
     console.log('[Server] Initializing Perplexta Ecosystem...');
     
+    // 1. If in development, setup Vite middlewares first so static asset routes are fully registered before listening
+    if (process.env.NODE_ENV !== 'production') {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa'
+      });
+      app.use(vite.middlewares);
+      console.log('[Server] Vite Middleware integrated (Dev Mode)');
+    }
+    
+    // 2. Open httpServer port 3000 and initialize Socket immediately so health probes succeed
+    const httpServer = createServer(app);
+    const ioInstance = initSocket(httpServer);
+
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT} [INITIALIZING...]`);
+    });
+
+    // 3. Connect to database pools and execute versioned migrations asynchronously
     let dbReady = false;
     let attempts = 0;
     const maxAttempts = 3;
@@ -42,26 +61,15 @@ async function startServer() {
         }
       }
     }
-    
-    if (process.env.NODE_ENV !== 'production') {
-      const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa'
-      });
-      app.use(vite.middlewares);
-      console.log('[Server] Vite Middleware integrated (Dev Mode)');
-    }
-    
-    const httpServer = createServer(app);
-    const ioInstance = initSocket(httpServer);
+
+    // 4. Once pool synchronization passes, active background jobs and socket pipelines
     if (dbReady) {
       setIo(ioInstance);
       initCronJobs();
+      console.log('[Server] Database initialization completed successfully. Secondary databases synchronized & operational.');
+    } else {
+      console.log('[Server] Loaded Engine in Degraded Mode (No persistent database connectivity).');
     }
-
-    httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT}${!dbReady ? ' [DEGRADED MODE]' : ''}`);
-    });
   } catch (err) {
     console.error('[Server] FATAL: Unexpected Application Failure:', err);
     process.exit(1);

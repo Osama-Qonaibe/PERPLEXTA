@@ -16,7 +16,7 @@ import { deductUsageFromWallet } from './wallet.js';
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 
-const AI_CALL_TIMEOUT_MS = 60000;
+const AI_CALL_TIMEOUT_MS = 90000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -59,8 +59,18 @@ async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
   let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode, image_settings, video_settings, audio_settings } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
+
+  if (toolIdStr === 'sovereign_search') {
+    throw new Error(JSON.stringify({
+      error: "System Error: Direct execution of 'sovereign_search' is disabled. It operates purely as an integrated background-only capability.",
+      error_ar: "خطأ في النظام: لا يمكن تشغيل 'البحث السيادي' بشكل مباشر كأداة منعزلة. تعمل هذه الإمكانية في الخلفية تلقائياً لدعم الاستعلامات.",
+      type: "DIRECT_ACCESS_BLOCKED"
+    }));
+  }
+
   const chatIdNum = chat_id ? parseInt(chat_id) : 0;
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
+  let searchCitations: any[] = [];
 
   const sanitizePrompt = (p: string) => {
     if (!p) return p;
@@ -233,16 +243,101 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 
-  if (toolIdStr === 'sovereign_search') {
+  const isSovereignSearch = toolIdStr === 'sovereign_search';
+  const isPerplextaAnalysis = toolIdStr === 'perplexta_analysis';
+
+  // High-fidelity search intent extraction:
+  // We trigger sovereign web search if the user explicitly requests web connection/search, OR
+  // if the query is a factual informational lookup and not just a social greeting/simple chat message.
+  const isSocialGreeting = (text: string) => {
+    const socialKeywords = [
+      'مرحبا', 'سلام', 'كيفك', 'كيف حالك', 'شكراً', 'شكرا', 'اهلين', 'هلا', 'مساء الخير', 'صباح الخير', 'منور',
+      'hi', 'hello', 'hey', 'how are you', 'thanks', 'thank you', 'good morning', 'good evening', 'test', 'مستعد'
+    ];
+    const cleaned = text.trim().toLowerCase();
+    if (cleaned.length < 5) return true; // Very short prompts are conversational/simple
+    return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 15);
+  };
+
+  const chatWantsSearch = isChatOnly && (
+    !isSocialGreeting(cleanUserPrompt) || // If it's not a social greeting, we keep it web-connected!
+    cleanUserPrompt.toLowerCase().includes('search') ||
+    cleanUserPrompt.toLowerCase().includes('google') ||
+    cleanUserPrompt.toLowerCase().includes('طقس') ||
+    cleanUserPrompt.toLowerCase().includes('أخبار') ||
+    cleanUserPrompt.toLowerCase().includes('اخبار') ||
+    cleanUserPrompt.toLowerCase().includes('سعر') ||
+    cleanUserPrompt.toLowerCase().includes('دولار') ||
+    cleanUserPrompt.toLowerCase().includes('بحث') ||
+    cleanUserPrompt.toLowerCase().includes('ابحث') ||
+    cleanUserPrompt.toLowerCase().includes('ما هو') ||
+    cleanUserPrompt.toLowerCase().includes('ما هي') ||
+    cleanUserPrompt.toLowerCase().includes('today') ||
+    cleanUserPrompt.toLowerCase().includes('now') ||
+    cleanUserPrompt.toLowerCase().includes('أحدث') ||
+    cleanUserPrompt.toLowerCase().includes('ويب') ||
+    cleanUserPrompt.toLowerCase().includes('برابط') ||
+    cleanUserPrompt.toLowerCase().includes('رابط') ||
+    cleanUserPrompt.toLowerCase().includes('موقع') ||
+    cleanUserPrompt.toLowerCase().includes('ابحث عن') ||
+    cleanUserPrompt.toLowerCase().includes('find') ||
+    cleanUserPrompt.toLowerCase().includes('weather') ||
+    cleanUserPrompt.toLowerCase().includes('news') ||
+    cleanUserPrompt.toLowerCase().includes('stock') ||
+    cleanUserPrompt.toLowerCase().includes('price') ||
+    cleanUserPrompt.toLowerCase().includes('latest') ||
+    cleanUserPrompt.toLowerCase().includes('current') ||
+    cleanUserPrompt.toLowerCase().includes('من هو') ||
+    cleanUserPrompt.toLowerCase().includes('من هي') ||
+    cleanUserPrompt.toLowerCase().includes('ماذا حدث')
+  );
+
+  // 1. Segregated System Search Engine (Background Sovereign Search API Grounding path)
+  if (isSovereignSearch || chatWantsSearch) {
     try {
+      if (io) {
+        io.to(`user_${userId}`).emit('search_steps', { 
+          step: userLang === 'ar' ? 'جاري الاتصال بمحرك البحث وتجميع البيانات الفورية...' : 'Connecting to live web index and harvesting context...', 
+          status: 'processing' 
+        });
+      }
+      
       const searchResults = await performPerplextaSearch(cleanUserPrompt);
       if (searchResults && searchResults.length > 0) {
+        searchCitations = searchResults.map((r: any, idx: number) => ({
+          title: r.title,
+          link: r.link,
+          url: r.link,
+          index: idx + 1,
+          snippet: r.snippet
+        }));
         const searchContext = searchResults.map((r: any) => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
         finalPrompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
+        
+        if (io) {
+          io.to(`user_${userId}`).emit('search_steps', { 
+            step: userLang === 'ar' ? 'تم استخراج نتائج البحث الفورية وتوليف المصادر' : 'Dynamic context harvested successfully. Generating synthesis...', 
+            status: 'completed' 
+          });
+          io.to(`user_${userId}`).emit('citations', { citations: searchCitations });
+        }
+      } else {
+        if (io) {
+          io.to(`user_${userId}`).emit('search_steps', { 
+            step: userLang === 'ar' ? 'لم يتم العثور على نتائج بحث مباشرة، جاري تفعيل المرجعية المعرفية المباشرة' : 'No direct web matches cataloged. Utilizing deep internal knowledge bases...', 
+            status: 'completed' 
+          });
+        }
       }
     } catch (searchErr) {
-      console.error(`[Orchestrator] ${toolIdStr} failed:`, searchErr);
+      console.error(`[Orchestrator Search Grounding] Failed:`, searchErr);
     }
+  }
+
+  // 2. Segregated User-facing Analysis & Auditing Block
+  if (isPerplextaAnalysis) {
+    // Audit & compliance files are injected via file extractor / PDF bridge directly into the finalPrompt structure.
+    // Operating strictly without duplicated background web search execution.
   }
 
   if (toolIdStr === 'image') {
@@ -350,6 +445,35 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           }
           if (pollData.status === 'failed') throw new Error('Replicate generation failed');
         }
+      } else if (providerId === 'google' || providerId === 'gemini') {
+        const aspectRatio = imageSettings.aspectRatio || '1:1';
+        let modelName = route.primary_model || 'imagen-3.0-generate-002';
+        
+        // Safety: If model has 'gemini' or 'flash' in its name, map it to the correct Imagen 3 generator model
+        if (modelName.toLowerCase().includes('gemini') || modelName.toLowerCase().includes('flash')) {
+          modelName = 'imagen-3.0-generate-002';
+        }
+
+        const res = await withTimeout(
+          fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateImages?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: finalPrompt,
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: aspectRatio
+            })
+          }),
+          AI_CALL_TIMEOUT_MS,
+          'google-image'
+        );
+        const data = await res.json() as any;
+        if (!res.ok) {
+          throw new Error(data?.error?.message || `Google Imagen API error: ${res.status}`);
+        }
+        const base64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64Encoded;
+        imageUrl = base64 ? `data:image/jpeg;base64,${base64}` : '';
       }
 
       if (!imageUrl) throw new Error('Image generation returned empty result');
@@ -688,11 +812,28 @@ Your response MUST be highly creative, authoritative, elite, and inspiring. Use 
     refinedSystemPromptSegment = canvasInstructions;
   }
 
-  if (toolIdStr === 'sovereign_search') {
+  if (isSovereignSearch || chatWantsSearch) {
     const searchInstructions = `[SEARCH ENGINE]
-Synthesize the live web context against the user query. Eliminate bias, structure findings with headers and bullets, cite sources precisely.`.trim();
+Synthesize the live web context against the user query. Eliminate bias, structure findings with headers and bullets, cite sources precisely.
+CRITICAL CITATION RULES:
+1. You MUST provide inline link sources of any factual claims by using bracket numbered notation like [1], [2], [3], etc. 
+2. These numbers MUST correspond exactly with the index of the search result source URLs.
+3. Every sentence making an informative or data assertion that is supported by the search results must end with its corresponding index marker (e.g. "...as reported recently [1].").
+4. Under no circumstances should you generate fake placeholder brackets. Only cite matching indices from the actual live web context.
+Always leverage the provided LIVE WEB CONTEXT to respond truthfully.`.trim();
 
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
+  }
+
+  if (toolIdStr === 'perplexta_analysis') {
+    const analysisInstructions = `[PERPLEXTA FILE AUDIT & DEEP ANALYSIS ENGINE]
+You are operating as the Chief Digital Forensics and Compliance Auditor. 
+Your primary task is to perform an elite, multi-layered audit of the user's provided files, structures, and inquiries.
+- If files/PDFs are uploaded, perform thorough context inspection, compliance auditing, structure checks, and hidden content analyses.
+- Present clean, structured expert conclusions with clear headers, security disclosures, and precise textual proof.
+- Direct your output structure into scientific, executive levels. Avoid general or superficial summaries. Ensure peak professional vocabulary in Tajawal style.`.trim();
+
+    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${analysisInstructions}` : analysisInstructions;
   }
 
   const toolBoundary = isChatOnly
@@ -877,7 +1018,7 @@ ${refinedSystemPromptSegment}`.trim();
     await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
   }
 
-  return { result: generatedText };
+  return { result: generatedText, citations: searchCitations };
 };
 
 async function runMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {

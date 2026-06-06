@@ -1,6 +1,27 @@
 import { ledgerPool, pool } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
+export async function enforceTransactionLimit(userId: string | number, txClient?: any) {
+  const targetLedger = txClient || ledgerPool;
+  if (!targetLedger) return;
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  if (isNaN(userIdNum)) return;
+  
+  try {
+    await targetLedger.query(`
+      DELETE FROM ledger_transactions 
+      WHERE id NOT IN (
+        SELECT id FROM ledger_transactions 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT 20
+      ) AND user_id = $1
+    `, [userIdNum]);
+  } catch (err) {
+    console.warn('[Wallet] Failure in enforcing transaction limit:', err);
+  }
+}
+
 export async function getUserWallet(userId: string | number, txClient?: any) {
   const targetLedger = txClient || ledgerPool;
   if (!targetLedger || !pool) throw new Error('Database not available');
@@ -116,10 +137,10 @@ export function clearEconomyCache() {
   lastCacheUpdate = 0;
 }
 
-export async function getTransactionHistory(userId: string, type: string, limit: number = 100, offset: number = 0) {
+export async function getTransactionHistory(userId: string, type: string, limit: number = 20, offset: number = 0) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   
-  const cappedLimit = Math.min(Math.max(1, limit), 100);
+  const cappedLimit = Math.min(Math.max(1, limit), 20);
 
   let baseQuery = 'FROM ledger_transactions WHERE user_id = $1 AND (is_hidden IS NOT TRUE)';
   const params: any[] = [userId];
@@ -130,13 +151,24 @@ export async function getTransactionHistory(userId: string, type: string, limit:
   }
 
   const countRes = await ledgerPool.query(`SELECT COUNT(*) as total ${baseQuery}`, params);
-  const total = parseInt(countRes.rows[0].total || '0');
+  const total = Math.min(20, parseInt(countRes.rows[0].total || '0'));
+
+  if (offset >= 20) {
+    return {
+      transactions: [],
+      total,
+      hasMore: false,
+      limit: cappedLimit,
+      offset
+    };
+  }
 
   const limitIdx = params.length + 1;
   const offsetIdx = params.length + 2;
   const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
   
-  const finalParams = [...params, cappedLimit, offset];
+  const finalLimit = Math.min(cappedLimit, 20 - offset);
+  const finalParams = [...params, finalLimit, offset];
   const result = await ledgerPool.query(dataQuery, finalParams);
   
   return {
@@ -186,6 +218,8 @@ export async function convertPointsToBalance(userId: string, amountPoints: numbe
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
       [userId, wallet.id, -amountPoints, 'conversion', `Converted ${amountPoints} points to $${usdAmount.toFixed(2)}`]
     );
+
+    await enforceTransactionLimit(userId, client);
 
     await client.query('COMMIT');
     return { usdAmount };
@@ -253,6 +287,8 @@ export async function requestWithdrawal(userId: string, amountUSD: number, metho
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, status, reference_id, description) VALUES ($1, $2, $3, $4, $5, $6, $7)',
       [userId, wallet.id, -amountUSD, 'withdrawal', 'pending', withdrawalId.toString(), `Withdrawal request for $${amountUSD} via ${cleanedMethod} (${sanitizedDetails})`]
     );
+
+    await enforceTransactionLimit(userId, client);
 
     await client.query('COMMIT');
     return { success: true };
@@ -331,6 +367,8 @@ export async function deductFromWallet(userId: string | number, amount: number, 
       [userIdNum, wallet.id, -amount, transactionType, description]
     );
 
+    await enforceTransactionLimit(userIdNum, client);
+
     await client.query('COMMIT');
     return result.rows[0].balance;
   } catch (error) {
@@ -363,6 +401,8 @@ export async function refundToWallet(userId: string | number, amount: number, tr
       'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description) VALUES ($1, $2, $3, $4, $5)',
       [userIdNum, walletId, amount, transactionType, description]
     );
+
+    await enforceTransactionLimit(userIdNum, client);
 
     await client.query('COMMIT');
     return result.rows[0].balance;
@@ -408,6 +448,8 @@ export async function adjustWalletBalance(userId: string | number, amount: numbe
       [userIdNum, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
     );
 
+    await enforceTransactionLimit(userIdNum, client);
+
     await client.query('COMMIT');
     return { 
       newBalance: result.rows[0].balance,
@@ -448,6 +490,8 @@ export async function depositToWallet(userId: string | number, amount: number, m
        VALUES ($1, $2, $3, 'deposit', $4, 'success')`,
       [userIdNum, wallet.id, amount, `Deposited via ${method}: ${description}`]
     );
+
+    await enforceTransactionLimit(userIdNum, client);
 
     await client.query('COMMIT');
 
@@ -495,6 +539,7 @@ export async function deductUsageFromWallet(userId: string | number, toolId: str
         'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [userIdNum, wallet.id, 0, -pointsCost, 'tool_usage_points', `Exceeded ${toolId} quota. Charged ${pointsCost} tool points.`, 'success']
       );
+      await enforceTransactionLimit(userIdNum, client);
       await client.query('COMMIT');
       return { charged: 'points', amount: pointsCost };
     } else if (Number(wallet.balance) >= usdCost) {
@@ -506,6 +551,7 @@ export async function deductUsageFromWallet(userId: string | number, toolId: str
         'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [userIdNum, wallet.id, -usdCost, 0, 'tool_usage_balance', `Exceeded ${toolId} quota. Charged ₪${usdCost.toFixed(2)} from wallet cache balance.`, 'success']
       );
+      await enforceTransactionLimit(userIdNum, client);
       await client.query('COMMIT');
       return { charged: 'balance', amount: usdCost };
     } else {

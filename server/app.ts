@@ -11,6 +11,7 @@ import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdow
 import { paymentMiddlewareFromConfig } from '@x402/express';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
+import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
 
 const app = express();
 
@@ -611,8 +612,8 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       }
 
       try {
-        const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]);
-        const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]);
+        const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]) as Promise<{ rows: { id: UserFile['id'] }[] }>;
+        const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]) as Promise<{ rows: { id: DepositRequest['id'] }[] }>;
         
         const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
         
@@ -641,7 +642,7 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
 
   try {
     // 1. Fetch dynamic Orchestrator route for 'x402_api'
-    const toolRes = await pool.query("SELECT * FROM tool_orchestrator WHERE tool_id = 'x402_api' AND is_active = true");
+    const toolRes = (await pool.query("SELECT * FROM tool_orchestrator WHERE tool_id = 'x402_api' AND is_active = true")) as { rows: ToolOrchestrator[] };
     
     if (toolRes.rows.length > 0) {
       const route = toolRes.rows[0];
@@ -650,7 +651,7 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
         { provider: route.fallback_1_provider, model: route.fallback_1_model },
         { provider: route.fallback_2_provider, model: route.fallback_2_model },
         { provider: route.fallback_3_provider, model: route.fallback_3_model }
-      ].filter(m => m.provider && m.model);
+      ].filter(m => m.provider && m.model) as { provider: string; model: string }[];
 
       if (modelsToTry.length > 0) {
         // Safe dynamic imports to avoid circular dependancy at module loading level
@@ -845,7 +846,6 @@ app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
-app.use('/api', toolRoutes);
 
 function injectSEOTags(html: string, settings: any, req: express.Request): string {
   if (!settings) return html;

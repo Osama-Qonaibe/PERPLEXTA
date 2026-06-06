@@ -1,4 +1,11 @@
-export const tools = [
+export interface ToolDefinition {
+  id: string;
+  cost: number;
+  desc: string;
+  descAr: string;
+}
+
+export const tools: ToolDefinition[] = [
   { id: 'chat', cost: 10, desc: 'Supreme orchestration chat authority', descAr: 'الأداة الأساسية والوحيدة لتوجيه النماذج، وتعتبر السلطة العليا في النظام.' },
   { id: 'chat_fast', cost: 5, desc: 'High-speed technical chat', descAr: 'دردشة تقنية سريعة' },
   { id: 'chat_pro', cost: 25, desc: 'Elite reasoning chat', descAr: 'دردشة عقلية ذكية' },

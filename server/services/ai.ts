@@ -153,6 +153,27 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         await handleApiError(response, 'Ollama');
         const data = await response.json();
         models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
+    } else if (provider === 'mistral') {
+       const response = await fetch('https://api.mistral.ai/v1/models', {
+         headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+         signal: timeoutSignal
+       });
+       await handleApiError(response, 'Mistral AI');
+       const data: any = await response.json();
+       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
+    } else if (provider === 'elevenlabs') {
+       const response = await fetch('https://api.elevenlabs.io/v1/models', {
+         headers: { 'xi-api-key': apiKey, 'Accept': 'application/json' },
+         signal: timeoutSignal
+       });
+       await handleApiError(response, 'ElevenLabs');
+       const data: any = await response.json();
+       const modelsArray = Array.isArray(data) ? data : (data.data || []);
+       models = modelsArray.map((m: any) => ({ id: m.model_id || m.id, name: m.name || m.model_id || m.id }));
+    } else if (provider === 'serper') {
+        models = [
+            { id: 'google-serper', name: 'Google Serper Search Engine' }
+        ];
     } else {
         let baseUrl = urlKey;
         if (!baseUrl) {
@@ -378,6 +399,48 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 status.isValid = false;
                 status.message = `Ollama: Failed to connect to ${cleanUrl} (${err.message})`;
             }
+        } else if (normProvider === 'mistral') {
+            const res = await fetch('https://api.mistral.ai/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `Mistral AI: ${res.statusText}`;
+        } else if (normProvider === 'elevenlabs') {
+            const res = await fetch('https://api.elevenlabs.io/v1/models', {
+                headers: { 'xi-api-key': apiKey },
+                signal: timeoutSignal
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `ElevenLabs: ${res.statusText}`;
+        } else if (normProvider === 'xai' || normProvider === 'grok') {
+            const res = await fetch('https://api.x.ai/v1/models', {
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                signal: timeoutSignal
+            });
+            status.isValid = res.ok;
+            if (!res.ok) status.message = `xAI (Grok): ${res.statusText}`;
+        } else if (normProvider === 'serper') {
+            try {
+                const res = await fetch('https://google.serper.dev/search', {
+                    method: 'POST',
+                    headers: {
+                        'X-API-KEY': apiKey,
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    },
+                    body: JSON.stringify({ q: 'apple', num: 1 }),
+                    signal: timeoutSignal
+                });
+                status.isValid = res.ok;
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    status.message = `Serper: Connection failed (${res.status}): ${errText || res.statusText}`;
+                }
+            } catch (err: any) {
+                status.isValid = false;
+                status.message = `Serper: Failed to connect (${err.message})`;
+            }
         } else {
             let baseUrl = urlKey;
             if (!baseUrl) {
@@ -584,14 +647,12 @@ export async function callAIProvider(
   // Safe model migration / deprecation mapper for Google Gemini API
   if (normProvider.includes('google') || normProvider.includes('gemini')) {
     const modelLower = cleanModel.toLowerCase();
-    if (modelLower.includes('gemini-2.0-flash-lite') || modelLower.includes('gemini-2.0-flash-lite-preview')) {
-      cleanModel = cleanModel.replace(/gemini-2\.0-flash-lite(-preview)?/gi, 'gemini-3.5-flash');
-    } else if (modelLower.includes('gemini-3.1-flash-lite')) {
-      cleanModel = cleanModel.replace(/gemini-3\.1-flash-lite/gi, 'gemini-3.5-flash');
-    } else if (modelLower.includes('gemini-2.0-flash') || modelLower.includes('gemini-2.0-flash-preview')) {
-      cleanModel = cleanModel.replace(/gemini-2\.0-flash(-preview)?/gi, 'gemini-3.5-flash');
-    } else if (modelLower.includes('gemini-1.5-flash') || modelLower.includes('gemini-1.5-flash-preview')) {
-      cleanModel = cleanModel.replace(/gemini-1\.5-flash(-preview)?/gi, 'gemini-3.5-flash');
+    if (modelLower.includes('gemini-3.5-flash')) {
+      cleanModel = cleanModel.replace(/gemini-3\.5-flash/gi, 'gemini-1.5-flash');
+    } else if (modelLower.includes('gemini-2.0-flash-001')) {
+      cleanModel = cleanModel.replace(/gemini-2\.0-flash-001/gi, 'gemini-1.5-flash');
+    } else if (modelLower.includes('gemini-2.0-flash')) {
+      cleanModel = cleanModel.replace(/gemini-2\.0-flash/gi, 'gemini-1.5-flash');
     }
   }
 
@@ -821,6 +882,50 @@ export async function callAIProvider(
       const clonedRes = res.clone();
       const errJson = await clonedRes.json();
       const errorDetail = JSON.stringify(errJson);
+      
+      const is404 = res.status === 404 || errorDetail.includes('NOT_FOUND') || errorDetail.includes('is not found') || errorDetail.includes('not found');
+      
+      if (is404) {
+        console.warn(`[AI Service] 404 Not Found received for Google/Gemini model ${cleanModel}. Initiating self-healing...`);
+        
+        // 1. Try stable v1 endpoint first
+        if (url.includes('/v1beta/')) {
+          const stableUrl = url.replace('/v1beta/', '/v1/');
+          console.warn(`[AI Service] Retrying on stable v1 endpoint: ${stableUrl}`);
+          const retryRes = await fetch(stableUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+          if (retryRes.ok) {
+            console.log(`[AI Service] Self-healed successfully on stable v1 endpoint for ${cleanModel}.`);
+            return handleResponse(retryRes);
+          }
+        }
+
+        // 2. Try alternative Google/Gemini models
+        const alternativeModels = [
+          'gemini-1.5-flash-latest',
+          'gemini-1.5-flash',
+          'gemini-2.0-flash',
+          'gemini-2.5-flash',
+          'gemini-1.5-pro-latest',
+          'gemini-1.5-pro'
+        ];
+
+        for (const altModel of alternativeModels) {
+          if (altModel.toLowerCase() === cleanModel.toLowerCase().replace('models/', '')) continue;
+          
+          const altPath = altModel.startsWith('models/') ? altModel : `models/${altModel}`;
+          const versions = ['v1', 'v1beta'];
+          const altMethod = isStreaming ? 'streamGenerateContent' : 'generateContent';
+          for (const version of versions) {
+            const altUrl = `https://generativelanguage.googleapis.com/${version}/${altPath}:${altMethod}${isStreaming ? '?alt=sse' : ''}`;
+            console.warn(`[AI Service] Retrying with alternative: ${altModel} on version ${version} at ${altUrl}`);
+            const altRes = await fetch(altUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+            if (altRes.ok) {
+              console.log(`[AI Service] Self-healed successfully using alternative model: ${altModel} (${version}).`);
+              return handleResponse(altRes);
+            }
+          }
+        }
+      }
       
       const isMultiturnDisabled = errorDetail.includes('Multiturn chat is not enabled for this model') || 
                                   errorDetail.includes('multiturn') ||
