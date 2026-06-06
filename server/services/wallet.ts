@@ -67,12 +67,12 @@ export async function getEconomySettings() {
   
   if (res.rows.length > 0) {
     settings = res.rows[0];
-    settings.crypto_address = decrypt(settings.crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy');
-    settings.bank_name = decrypt(settings.bank_name || process.env.DEFAULT_BANK_NAME || 'Merchant Discount Bank IL (011)');
-    settings.bank_recipient = decrypt(settings.bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Perplexta Tech Platforms LTD.');
-    settings.bank_iban = decrypt(settings.bank_iban || process.env.DEFAULT_BANK_IBAN || 'IL42 0110 0000 0000 3484 2192');
-    settings.bank_swift = decrypt(settings.bank_swift || process.env.DEFAULT_BANK_SWIFT || 'PPLXIL33XXX');
-    settings.paypal_email = decrypt(settings.paypal_email || process.env.DEFAULT_PAYPAL_EMAIL || 'paypal@perplexta.com');
+    settings.crypto_address = decrypt(settings.crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS');
+    settings.bank_name = decrypt(settings.bank_name || process.env.DEFAULT_BANK_NAME || 'Your Default Bank');
+    settings.bank_recipient = decrypt(settings.bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.');
+    settings.bank_iban = decrypt(settings.bank_iban || process.env.DEFAULT_BANK_IBAN || 'IL00000000000000000000');
+    settings.bank_swift = decrypt(settings.bank_swift || process.env.DEFAULT_BANK_SWIFT || 'TESTIL33XXX');
+    settings.paypal_email = decrypt(settings.paypal_email || process.env.DEFAULT_PAYPAL_EMAIL || 'paypal-sandbox@yourdomain.com');
   } else {
     settings = {
       points_per_dollar: 1000,
@@ -84,12 +84,12 @@ export async function getEconomySettings() {
       conversion_rate: 0.001,
       min_withdrawal_cents: 1000,
       referral_activation_min_deposit: 10,
-      crypto_address: decrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
-      bank_name: decrypt(process.env.DEFAULT_BANK_NAME || 'Merchant Discount Bank IL (011)'),
-      bank_recipient: decrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Perplexta Tech Platforms LTD.'),
-      bank_iban: decrypt(process.env.DEFAULT_BANK_IBAN || 'IL42 0110 0000 0000 3484 2192'),
-      bank_swift: decrypt(process.env.DEFAULT_BANK_SWIFT || 'PPLXIL33XXX'),
-      paypal_email: decrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal@perplexta.com')
+      crypto_address: decrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+      bank_name: decrypt(process.env.DEFAULT_BANK_NAME || 'Your Default Bank'),
+      bank_recipient: decrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.'),
+      bank_iban: decrypt(process.env.DEFAULT_BANK_IBAN || 'IL00000000000000000000'),
+      bank_swift: decrypt(process.env.DEFAULT_BANK_SWIFT || 'TESTIL33XXX'),
+      paypal_email: decrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal-sandbox@yourdomain.com')
     };
   }
   
@@ -120,12 +120,12 @@ export async function updateEconomySettings(settings: any) {
     points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
     welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
     referral_activation_min_deposit,
-    encrypt(crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
-    encrypt(bank_name || process.env.DEFAULT_BANK_NAME || 'Merchant Discount Bank IL (011)'),
-    encrypt(bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Perplexta Tech Platforms LTD.'),
-    encrypt(bank_iban || process.env.DEFAULT_BANK_IBAN || 'IL42 0110 0000 0000 3484 2192'),
-    encrypt(bank_swift || process.env.DEFAULT_BANK_SWIFT || 'PPLXIL33XXX'),
-    encrypt(paypal_email || process.env.DEFAULT_PAYPAL_EMAIL || 'paypal@perplexta.com')
+    encrypt(crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+    encrypt(bank_name || process.env.DEFAULT_BANK_NAME || 'Your Default Bank'),
+    encrypt(bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.'),
+    encrypt(bank_iban || process.env.DEFAULT_BANK_IBAN || 'IL00000000000000000000'),
+    encrypt(bank_swift || process.env.DEFAULT_BANK_SWIFT || 'TESTIL33XXX'),
+    encrypt(paypal_email || process.env.DEFAULT_PAYPAL_EMAIL || 'paypal-sandbox@yourdomain.com')
   ]);
   
   clearEconomyCache();

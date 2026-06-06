@@ -5,14 +5,10 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
-  // Requests that include the Authorization header (Bearer tokens) are intrinsically protected against CSRF 
-  // because the browser cannot automatically include the header.
-  if (req.headers.authorization) {
-    return next();
-  }
-
   const origin = (req.headers.origin as string) || (req.headers.referer as string);
-  
+
+  // If there's an origin or referer header, we MUST validate it (even if Authorization header is present),
+  // because browsers will attach Origin/Referer headers for state-changing cross-origin requests.
   if (process.env.NODE_ENV === 'production' && origin) {
     try {
       const allowed: string[] = [];
@@ -29,7 +25,6 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
       const isAllowed = allowed.some(domain => {
         if (!domain) return false;
         const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
-        // Strip trailing slashes or pathing to match only protocol + host
         try {
           const domUrl = new URL(cleanDomain);
           return `${domUrl.protocol}//${domUrl.host}` === originStr;
@@ -44,6 +39,12 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     } catch {
       return res.status(403).json({ error: 'CSRF protection: Invalid request origin format.' });
     }
+  }
+
+  // If no origin/referer was present (e.g., direct programmatic API or server-to-server calls),
+  // we only allow state-changing methods if a valid Authorization header is present, guaranteeing it is not an ambient browser context.
+  if (!origin && !req.headers.authorization) {
+    return res.status(403).json({ error: 'CSRF protection: State-changing requests must include an Origin, Referer, or Authorization header.' });
   }
 
   next();

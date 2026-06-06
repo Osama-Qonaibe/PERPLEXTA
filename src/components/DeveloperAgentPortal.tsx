@@ -1047,7 +1047,7 @@ authenticateAgent();`;
                   </div>
                   <div className="flex justify-between">
                     <span>{isAr ? 'العنوان المستهدف محفظة:' : 'Recipient PayTo:'}</span>
-                    <span className="text-emerald-500 font-bold">0x71C7...8976F</span>
+                    <span className="text-emerald-500 font-bold">0xX402...Wallet</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{isAr ? 'السعر المحدد:' : 'Asset Pricing:'}</span>
@@ -1069,7 +1069,7 @@ authenticateAgent();`;
 {`HTTP/1.1 402 Payment Required
 Payment-Requirements: {
   "scheme": "exact",
-  "payTo": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "payTo": "0xYourX402WalletAddressGoesHere",
   "amount": "100000",
   "asset": "eip155:84532/erc20:..."
 }`}

@@ -1518,12 +1518,12 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
           referral_activation_min_deposit,
-          encrypt(crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
-          encrypt(bank_name || 'Merchant Discount Bank IL (011)'),
-          encrypt(bank_recipient || 'Perplexta Tech Platforms LTD.'),
-          encrypt(bank_iban || 'IL42 0110 0000 0000 3484 2192'),
-          encrypt(bank_swift || 'PPLXIL33XXX'),
-          encrypt(paypal_email || 'paypal@perplexta.com')
+          encrypt(crypto_address || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+          encrypt(bank_name || 'Your Default Bank'),
+          encrypt(bank_recipient || 'Your Default Business Platforms LTD.'),
+          encrypt(bank_iban || 'IL00000000000000000000'),
+          encrypt(bank_swift || 'TESTIL33XXX'),
+          encrypt(paypal_email || 'paypal-sandbox@yourdomain.com')
         ]);
       } else {
         await ledgerTarget.query(`
@@ -1536,12 +1536,12 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
           points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
           welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
           referral_activation_min_deposit,
-          encrypt(crypto_address || 'TPh7eWpY29kZVN6QXV0VGhlbnRpY2F0aW9uTGVkZ2Vy'),
-          encrypt(bank_name || 'Merchant Discount Bank IL (011)'),
-          encrypt(bank_recipient || 'Perplexta Tech Platforms LTD.'),
-          encrypt(bank_iban || 'IL42 0110 0000 0000 3484 2192'),
-          encrypt(bank_swift || 'PPLXIL33XXX'),
-          encrypt(paypal_email || 'paypal@perplexta.com')
+          encrypt(crypto_address || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+          encrypt(bank_name || 'Your Default Bank'),
+          encrypt(bank_recipient || 'Your Default Business Platforms LTD.'),
+          encrypt(bank_iban || 'IL00000000000000000000'),
+          encrypt(bank_swift || 'TESTIL33XXX'),
+          encrypt(paypal_email || 'paypal-sandbox@yourdomain.com')
         ]);
       }
     } catch (ledgerErr) {
