@@ -92,6 +92,14 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       await handleApiError(response, 'Anthropic');
       const data: any = await response.json();
       models = (data.data || []).map((m: any) => ({ ...m, name: m.id }));
+    } else if (provider === 'deepseek') {
+      const response = await fetch('https://api.deepseek.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: timeoutSignal
+      });
+      await handleApiError(response, 'DeepSeek');
+      const data: any = await response.json();
+      models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'google' || provider === 'gemini') {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
         headers: { 

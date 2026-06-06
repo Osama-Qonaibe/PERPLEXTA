@@ -214,7 +214,7 @@ export const SettingsPage: React.FC = () => {
       {/* Sidebar Navigation - Elite Standard */}
       <div className={`w-full md:w-60 border-b md:border-b-0 border-[var(--border)] flex flex-col h-[280px] md:h-screen relative ${
         dir === 'rtl' ? 'md:border-l' : 'md:border-r'
-      } border-[var(--border)] bg-[#1a1a1c]/30`}>
+      } border-[var(--border)] bg-[var(--bg-secondary)]`}>
         
         {/* Sidebar Header - Height matched with content header (h-20) */}
         <div className="h-20 px-6 border-b border-[var(--border)]/50 flex items-center">
@@ -238,7 +238,7 @@ export const SettingsPage: React.FC = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-300 group relative overflow-hidden ${
                 activeTab === tab.id 
                   ? 'text-emerald-500'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               <AnimatePresence>

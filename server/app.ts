@@ -88,19 +88,433 @@ app.use((req, res, next) => {
   next();
 });
 
+function getPreferredLanguage(req: express.Request): string {
+  const acceptLang = req.headers['accept-language'];
+  if (!acceptLang) return 'ar'; // Default is Arabic
+
+  const supported = ['ar', 'en', 'fr', 'es', 'de'];
+  const parsed = acceptLang.split(',')
+    .map(lang => {
+      const parts = lang.split(';');
+      const code = parts[0].trim().toLowerCase().split('-')[0];
+      let q = 1.0;
+      if (parts[1]) {
+        const qMatch = parts[1].match(/q=([\d.]+)/);
+        if (qMatch) q = parseFloat(qMatch[1]);
+      }
+      return { code, q };
+    })
+    .filter(item => supported.includes(item.code))
+    .sort((a, b) => b.q - a.q);
+
+  if (parsed.length > 0) {
+    return parsed[0].code;
+  }
+
+  const lowerHeader = acceptLang.toLowerCase();
+  for (const lang of supported) {
+    if (lowerHeader.includes(lang)) {
+      return lang;
+    }
+  }
+
+  return 'ar';
+}
+
+function generateAuthMd(baseUrl: string, lang: string): string {
+  if (lang === 'ar') {
+    return [
+      '# auth.md',
+      '',
+      `هذا هو مستند تسجيل الوكيل لـ ${baseUrl}.`,
+      '',
+      '## agent_auth',
+      '',
+      'يمكن للوكلاء التسجيل نيابة عن المستخدمين باستخدام هذه الخدمة.',
+      '',
+      `- register_uri: ${baseUrl}/api/auth/agent-register`,
+      '- identity_types_supported: anonymous, identity_assertion',
+      '- credential_types_supported: api_key, access_token',
+      `- claim_uri: ${baseUrl}/api/auth/claim`,
+      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+      '',
+      '## Discover (الاكتشاف)',
+      '',
+      'جلب البيانات التعريفية لخادم المصادقة لاكتشاف نقاط نهاية التسجيل:',
+      '',
+      '```http',
+      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+      '```',
+      '',
+      '## Register (التسجيل)',
+      '',
+      'إرسال طلب POST لتسجيل وكيل جديد:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/agent-register`,
+      'Content-Type: application/json',
+      '',
+      '{',
+      '  "client_name": "My Agent",',
+      '  "identity_type": "anonymous",',
+      '  "credential_type": "api_key",',
+      '  "scopes": ["read", "write"]',
+      '}',
+      '```',
+      '',
+      '## Claim (المطالبة والمطابقة)',
+      '',
+      'ربط وثيقة الاعتماد بهوية مستخدم تم التحقق منها:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/claim`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "identity_type": "identity_assertion",',
+      '  "assertion": "<id_jag_token>"',
+      '}',
+      '```',
+      '',
+      '## Revoke (إبطال الصلاحية)',
+      '',
+      'إبطال وثيقة اعتماد:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/revoke`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "client_id": "agent_..."',
+      '}',
+      '```',
+      '',
+      '## More Info (مزيد من المعلومات)',
+      '',
+      '- Protocol (البروتوكول): https://workos.com/auth-md',
+      '- GitHub (جيت هاب): https://github.com/workos/auth.md',
+    ].join('\n');
+  } else if (lang === 'fr') {
+    return [
+      '# auth.md',
+      '',
+      `Ceci est le document d'enregistrement de l'agent pour ${baseUrl}.`,
+      '',
+      '## agent_auth',
+      '',
+      'Les agents peuvent s\'enregistrer au nom des utilisateurs via ce service.',
+      '',
+      `- register_uri: ${baseUrl}/api/auth/agent-register`,
+      '- identity_types_supported: anonymous, identity_assertion',
+      '- credential_types_supported: api_key, access_token',
+      `- claim_uri: ${baseUrl}/api/auth/claim`,
+      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+      '',
+      '## Discover (Découvrir)',
+      '',
+      'Récupérer les métadonnées du serveur d\'autorisation pour découvrir les points de terminaison d\'enregistrement :',
+      '',
+      '```http',
+      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+      '```',
+      '',
+      '## Register (S\'enregistrer)',
+      '',
+      'Envoyer une requête POST pour enregistrer un agent :',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/agent-register`,
+      'Content-Type: application/json',
+      '',
+      '{',
+      '  "client_name": "My Agent",',
+      '  "identity_type": "anonymous",',
+      '  "credential_type": "api_key",',
+      '  "scopes": ["read", "write"]',
+      '}',
+      '```',
+      '',
+      '## Claim (Revendiquer)',
+      '',
+      'Associer l\'identifiant à une identité utilisateur vérifiée :',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/claim`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "identity_type": "identity_assertion",',
+      '  "assertion": "<id_jag_token>"',
+      '}',
+      '```',
+      '',
+      '## Revoke (Révoquer)',
+      '',
+      'Révoquer un identifiant :',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/revoke`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "client_id": "agent_..."',
+      '}',
+      '```',
+      '',
+      '## More Info (Plus d\'infos)',
+      '',
+      '- Protocole: https://workos.com/auth-md',
+      '- GitHub: https://github.com/workos/auth.md',
+    ].join('\n');
+  } else if (lang === 'es') {
+    return [
+      '# auth.md',
+      '',
+      `Este es el documento de registro de agentes para ${baseUrl}.`,
+      '',
+      '## agent_auth',
+      '',
+      'Los agentes pueden registrarse en nombre de los usuarios utilizando este servicio.',
+      '',
+      `- register_uri: ${baseUrl}/api/auth/agent-register`,
+      '- identity_types_supported: anonymous, identity_assertion',
+      '- credential_types_supported: api_key, access_token',
+      `- claim_uri: ${baseUrl}/api/auth/claim`,
+      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+      '',
+      '## Discover (Descubrir)',
+      '',
+      'Obtener los metadatos del servidor de autorización para descubrir los endpoints de registro:',
+      '',
+      '```http',
+      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+      '```',
+      '',
+      '## Register (Registrar)',
+      '',
+      'Enviar una solicitud POST para registrar un agente:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/agent-register`,
+      'Content-Type: application/json',
+      '',
+      '{',
+      '  "client_name": "My Agent",',
+      '  "identity_type": "anonymous",',
+      '  "credential_type": "api_key",',
+      '  "scopes": ["read", "write"]',
+      '}',
+      '```',
+      '',
+      '## Claim (Reclamar)',
+      '',
+      'Asociar la credencial con una identidad de usuario verificada:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/claim`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "identity_type": "identity_assertion",',
+      '  "assertion": "<id_jag_token>"',
+      '}',
+      '```',
+      '',
+      '## Revoke (Revocar)',
+      '',
+      'Revocar una credencial:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/revoke`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "client_id": "agent_..."',
+      '}',
+      '```',
+      '',
+      '## More Info (Más información)',
+      '',
+      '- Protocolo: https://workos.com/auth-md',
+      '- GitHub: https://github.com/workos/auth.md',
+    ].join('\n');
+  } else if (lang === 'de') {
+    return [
+      '# auth.md',
+      '',
+      `Dies ist das Agenten-Registrierungsdokument für ${baseUrl}.`,
+      '',
+      '## agent_auth',
+      '',
+      'Agenten können sich im Namen von Benutzern über diesen Dienst registrieren.',
+      '',
+      `- register_uri: ${baseUrl}/api/auth/agent-register`,
+      '- identity_types_supported: anonymous, identity_assertion',
+      '- credential_types_supported: api_key, access_token',
+      `- claim_uri: ${baseUrl}/api/auth/claim`,
+      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+      '',
+      '## Discover (Entdecken)',
+      '',
+      'Abrufen der Metadaten des Autorisierungsservers, um Registrierungs-Endpunkte zu ermitteln:',
+      '',
+      '```http',
+      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+      '```',
+      '',
+      '## Register (Registrieren)',
+      '',
+      'Senden Sie eine POST-Anfrage, um einen Agenten zu registrieren:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/agent-register`,
+      'Content-Type: application/json',
+      '',
+      '{',
+      '  "client_name": "My Agent",',
+      '  "identity_type": "anonymous",',
+      '  "credential_type": "api_key",',
+      '  "scopes": ["read", "write"]',
+      '}',
+      '```',
+      '',
+      '## Claim (Beanspruchen)',
+      '',
+      'Verknüpfen Sie das Berechtigungsnachweis-Token mit einer verifizierten Benutzeridentität:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/claim`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "identity_type": "identity_assertion",',
+      '  "assertion": "<id_jag_token>"',
+      '}',
+      '```',
+      '',
+      '## Revoke (Widerrufen)',
+      '',
+      'Widerrufen eines Berechtigungsnachweises:',
+      '',
+      '```http',
+      `POST ${baseUrl}/api/auth/revoke`,
+      'Content-Type: application/json',
+      'Authorization: Bearer <api_key>',
+      '',
+      '{',
+      '  "client_id": "agent_..."',
+      '}',
+      '```',
+      '',
+      '## More Info (Weitere Informationen)',
+      '',
+      '- Protokoll: https://workos.com/auth-md',
+      '- GitHub: https://github.com/workos/auth.md',
+    ].join('\n');
+  }
+
+  // Fallback to English
+  return [
+    '# auth.md',
+    '',
+    `This is the agent registration document for ${baseUrl}.`,
+    '',
+    '## agent_auth',
+    '',
+    'Agents can register on behalf of users using this service.',
+    '',
+    `- register_uri: ${baseUrl}/api/auth/agent-register`,
+    '- identity_types_supported: anonymous, identity_assertion',
+    '- credential_types_supported: api_key, access_token',
+    `- claim_uri: ${baseUrl}/api/auth/claim`,
+    `- revocation_uri: ${baseUrl}/api/auth/revoke`,
+    '',
+    '## Discover',
+    '',
+    'Fetch the authorization server metadata to discover registration endpoints:',
+    '',
+    '```http',
+    `GET ${baseUrl}/.well-known/oauth-protected-resource`,
+    `GET ${baseUrl}/.well-known/oauth-authorization-server`,
+    '```',
+    '',
+    '## Register',
+    '',
+    'Send a POST request to register an agent:',
+    '',
+    '```http',
+    `POST ${baseUrl}/api/auth/agent-register`,
+    'Content-Type: application/json',
+    '',
+    '{',
+    '  "client_name": "My Agent",',
+    '  "identity_type": "anonymous",',
+    '  "credential_type": "api_key",',
+    '  "scopes": ["read", "write"]',
+    '}',
+    '```',
+    '',
+    '## Claim',
+    '',
+    'Bind the credential to a verified user identity:',
+    '',
+    '```http',
+    `POST ${baseUrl}/api/auth/claim`,
+    'Content-Type: application/json',
+    'Authorization: Bearer <api_key>',
+    '',
+    '{',
+    '  "identity_type": "identity_assertion",',
+    '  "assertion": "<id_jag_token>"',
+    '}',
+    '```',
+    '',
+    '## Revoke',
+    '',
+    'Revoke a credential:',
+    '',
+    '```http',
+    `POST ${baseUrl}/api/auth/revoke`,
+    'Content-Type: application/json',
+    'Authorization: Bearer <api_key>',
+    '',
+    '{',
+    '  "client_id": "agent_..."',
+    '}',
+    '```',
+    '',
+    '## More Info',
+    '',
+    '- Protocol: https://workos.com/auth-md',
+    '- GitHub: https://github.com/workos/auth.md',
+  ].join('\n');
+}
+
 // Markdown for Agents (Accept: text/markdown content negotiation)
 app.use((req, res, next) => {
   const accept = req.headers["accept"] || "";
   if (accept.includes("text/markdown") && (req.path === "/" || req.path === "/index.html")) {
-    const mdPath = path.join(process.cwd(), "public", "auth.md");
-    if (fs.existsSync(mdPath)) {
-      const content = fs.readFileSync(mdPath, "utf-8");
-      const tokens = content.split(/\s+/).length;
-      res.setHeader("Content-Type", "text/markdown; charset=utf-8");
-      res.setHeader("x-markdown-tokens", String(tokens));
-      res.setHeader("Vary", "Accept");
-      return res.send(content);
-    }
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
+    const baseUrl = `${protocol}://${host}`;
+    const preferredLang = getPreferredLanguage(req);
+    const content = generateAuthMd(baseUrl, preferredLang);
+    const tokens = content.split(/\s+/).length;
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.setHeader("x-markdown-tokens", String(tokens));
+    res.setHeader("Vary", "Accept, Accept-Language");
+    return res.send(content);
   }
   next();
 });
@@ -219,83 +633,11 @@ app.get('/auth.md', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Vary', 'Accept');
+  res.setHeader('Vary', 'Accept, Accept-Language');
   res.setHeader('X-Auth-Md-Version', '1.0');
 
-  const markdownContent = [
-    '# auth.md',
-    '',
-    `This is the agent registration document for ${baseUrl}.`,
-    '',
-    '## agent_auth',
-    '',
-    'Agents can register on behalf of users using this service.',
-    '',
-    `- register_uri: ${baseUrl}/api/auth/agent-register`,
-    '- identity_types_supported: anonymous, identity_assertion',
-    '- credential_types_supported: api_key, access_token',
-    `- claim_uri: ${baseUrl}/api/auth/claim`,
-    `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-    '',
-    '## Discover',
-    '',
-    'Fetch the authorization server metadata to discover registration endpoints:',
-    '',
-    '```',
-    `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-    `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-    '```',
-    '',
-    '## Register',
-    '',
-    'Send a POST request to register an agent:',
-    '',
-    '```',
-    `POST ${baseUrl}/api/auth/agent-register`,
-    'Content-Type: application/json',
-    '',
-    '{',
-    '  "client_name": "My Agent",',
-    '  "identity_type": "anonymous",',
-    '  "credential_type": "api_key",',
-    '  "scopes": ["read", "write"]',
-    '}',
-    '```',
-    '',
-    '## Claim',
-    '',
-    'Bind the credential to a verified user identity:',
-    '',
-    '```',
-    `POST ${baseUrl}/api/auth/claim`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "identity_type": "identity_assertion",',
-    '  "assertion": "<id_jag_token>"',
-    '}',
-    '```',
-    '',
-    '## Revoke',
-    '',
-    'Revoke a credential:',
-    '',
-    '```',
-    `POST ${baseUrl}/api/auth/revoke`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "client_id": "agent_..."',
-    '}',
-    '```',
-    '',
-    '## More Info',
-    '',
-    '- Protocol: https://workos.com/auth-md',
-    '- GitHub: https://github.com/workos/auth.md',
-  ].join('\n');
+  const preferredLang = getPreferredLanguage(req);
+  const markdownContent = generateAuthMd(baseUrl, preferredLang);
 
   res.send(markdownContent);
 });
@@ -872,9 +1214,7 @@ function escapeHtmlAttribute(str: string): string {
 function injectSEOTags(html: string, settings: any, req: express.Request): string {
   if (!settings) return html;
 
-  const acceptLang = req.headers['accept-language'] || '';
-  const isEn = acceptLang.toLowerCase().startsWith('en');
-  const isAr = !isEn; // Arabic is the default!
+  const preferredLang = getPreferredLanguage(req);
 
   const nameAr = settings.site_name_ar || 'بيربليكستا';
   const nameEn = settings.site_name_en || 'Perplexta';
@@ -883,9 +1223,32 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const keywordsAr = settings.keywords_ar || 'ذكاء اصطناعي, تحليل تقني, تداول, برمجة';
   const keywordsEn = settings.keywords_en || 'AI, technical analysis, trading, coding';
 
-  const currentTitle = isAr ? nameAr : nameEn;
-  const currentDesc = isAr ? seoAr : seoEn;
-  const currentKeywords = isAr ? keywordsAr : keywordsEn;
+  let currentTitle = nameAr;
+  let currentDesc = seoAr;
+  let currentKeywords = keywordsAr;
+  let currentSiteName = nameAr;
+
+  if (preferredLang === 'en') {
+    currentTitle = nameEn;
+    currentDesc = seoEn;
+    currentKeywords = keywordsEn;
+    currentSiteName = nameEn;
+  } else if (preferredLang === 'fr') {
+    currentTitle = settings.site_name_fr || 'Perplexta';
+    currentDesc = settings.seo_description_fr || settings.site_description_fr || 'Plateforme d\'IA d\'élite professionnelle et d\'analyse avancée';
+    currentKeywords = settings.keywords_fr || 'IA, analyse technique, trading, codage';
+    currentSiteName = settings.site_name_fr || 'Perplexta';
+  } else if (preferredLang === 'es') {
+    currentTitle = settings.site_name_es || 'Perplexta';
+    currentDesc = settings.seo_description_es || settings.site_description_es || 'Plataforma de IA de élite profesional y análisis avanzado';
+    currentKeywords = settings.keywords_es || 'IA, análisis técnico, trading, codificación';
+    currentSiteName = settings.site_name_es || 'Perplexta';
+  } else if (preferredLang === 'de') {
+    currentTitle = settings.site_name_de || 'Perplexta';
+    currentDesc = settings.seo_description_de || settings.site_description_de || 'Professionelle Elite-KI und fortschrittliche Analyseplattform';
+    currentKeywords = settings.keywords_de || 'KI, technische Analyse, Trading, Programmierung';
+    currentSiteName = settings.site_name_de || 'Perplexta';
+  }
 
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
   const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
@@ -912,7 +1275,7 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const escImage = escapeHtmlAttribute(imageUrl);
   const escUrl = escapeHtmlAttribute(currentUrl);
   const escFavicon = escapeHtmlAttribute(faviconUrl);
-  const escSiteName = escapeHtmlAttribute(isAr ? nameAr : nameEn);
+  const escSiteName = escapeHtmlAttribute(currentSiteName);
 
   // Build fully-compliant SEO, OpenGraph and Twitter meta tags block
   let metaBlock = `

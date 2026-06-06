@@ -4,6 +4,30 @@ import { getUserStorageUsage } from './files.js';
 import bcrypt from 'bcryptjs';
 
 const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: string, desc_ar: string }> = {
+  'chat': {
+    name_en: 'General Chat',
+    name_ar: 'المحادثة العامة',
+    desc_en: 'Standard model conversation and assistance.',
+    desc_ar: 'المحادثة القياسية لتقديم المساعدة والاستشارات.'
+  },
+  'chat_fast': {
+    name_en: 'Fast Chat',
+    name_ar: 'المحادثة السريعة',
+    desc_en: 'High-speed model operations and response generation.',
+    desc_ar: 'استجابات فائقة السرعة لسير العمل اليومي.'
+  },
+  'chat_pro': {
+    name_en: 'Pro Chat',
+    name_ar: 'المحادثة المتقدمة',
+    desc_en: 'High-fidelity contextual analysis and reasoning capabilities.',
+    desc_ar: 'تحليل دقيق ومناقشات فنية عميقة للمحترفين.'
+  },
+  'chat_reasoning': {
+    name_en: 'Thinking Chat',
+    name_ar: 'محادثة التفكير والتحليل',
+    desc_en: 'Deep multi-step cognitive processing and visual design logic.',
+    desc_ar: 'ذكاء مخصص للتفكير متعدد الخطوات وتصميم الحلول المعقدة.'
+  },
   'perplexta_analysis': { 
     name_en: 'Perplexta Analysis', 
     name_ar: 'تحليل بيربليكستا',
@@ -75,6 +99,12 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     name_ar: 'البحث السيادي',
     desc_en: 'Global real-time web intelligence and strategic knowledge extraction.',
     desc_ar: 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.'
+  },
+  'x402_api': {
+    name_en: 'Agent Gateway (x402 API)',
+    name_ar: 'بوابة الـ API (x402)',
+    desc_en: 'AI analytics integration gateway for programmatic execution.',
+    desc_ar: 'بوابة برمجية متطورة لتكامل النماذج والتحليلات للوكلاء.'
   },
   'storage_mb': { 
     name_en: 'Vault Storage', 

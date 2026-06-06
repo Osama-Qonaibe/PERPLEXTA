@@ -1333,6 +1333,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v39_ensure_plan_type_column', 'Ensure plan_type column exists on plans table', async (tx) => {
+      await ensureColumn(tx, 'plans', 'plan_type', 'VARCHAR(100)', `'user'`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;

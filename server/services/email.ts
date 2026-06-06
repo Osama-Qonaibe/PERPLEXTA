@@ -26,7 +26,7 @@ export async function sendEmail(to: string, subject: string, html: string, admin
       tls: {
         rejectUnauthorized: false
       },
-      connectionTimeout: 15000 // 15 seconds wait timeout
+      connectionTimeout: 15000
     });
 
     const info = await transporter.sendMail({
@@ -36,7 +36,6 @@ export async function sendEmail(to: string, subject: string, html: string, admin
       html
     });
 
-    // Consistent communication logging for robust auditing
     await pool.query(
       `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
       [
@@ -58,7 +57,6 @@ export async function sendEmail(to: string, subject: string, html: string, admin
   } catch (error: any) {
     console.error('[Email] Failed to send email to:', to, 'Error:', error);
 
-    // Consistent failed communication logging for robust auditing
     await pool.query(
       `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
       [

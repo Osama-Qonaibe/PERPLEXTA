@@ -6,7 +6,6 @@ import { syncSystemTemplates } from '../services/email.js';
 
 const router = express.Router();
 
-// GET /api/mail-services-v3/config
 router.get('/config', authenticateAdmin, async (req, res) => {
   try {
     const check = await pool.query('SELECT * FROM email_settings LIMIT 1');
@@ -31,7 +30,6 @@ router.get('/config', authenticateAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/mail-services-v3/config
 router.put('/config', authenticateAdmin, async (req, res) => {
   try {
     const {
@@ -82,7 +80,6 @@ router.put('/config', authenticateAdmin, async (req, res) => {
   }
 });
 
-// POST /api/mail-services-v3/verify
 router.post('/verify', authenticateAdmin, async (req, res) => {
   try {
     const {
@@ -100,7 +97,6 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'SMTP Host and Port are required for verification.' });
     }
 
-    // Try verifying connection using nodemailer
     const transporter = nodemailer.createTransport({
       host: smtp_host,
       port: parseInt(smtp_port || '587'),
@@ -109,7 +105,7 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
         user: smtp_username,
         pass: smtp_password
       },
-      connectionTimeout: 10000 // 10s timeout
+      connectionTimeout: 10000
     });
 
     try {
@@ -119,7 +115,6 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: `Connection failed: ${verifyErr.message}` });
     }
 
-    // Connection verified successfully, let's update database or insert using high-performance UPSERT
     const upsertRes = await pool.query(`
       INSERT INTO email_settings (
         id, mailer_type, smtp_host, smtp_port, smtp_encryption, 
@@ -162,7 +157,6 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
   }
 });
 
-// GET /api/mail-services-v3/templates
 router.get('/templates', authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM email_templates ORDER BY name ASC');
@@ -173,7 +167,6 @@ router.get('/templates', authenticateAdmin, async (req, res) => {
   }
 });
 
-// POST /api/mail-services-v3/templates
 router.post('/templates', authenticateAdmin, async (req, res) => {
   try {
     const {
@@ -239,7 +232,6 @@ router.post('/templates', authenticateAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/mail-services-v3/templates/:id
 router.delete('/templates/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -251,7 +243,6 @@ router.delete('/templates/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// POST /api/mail-services-v3/sync
 router.post('/sync', authenticateAdmin, async (req, res) => {
   try {
     await syncSystemTemplates();

@@ -191,6 +191,44 @@ router.get("/audit-logs", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.post("/audit-logs/batch-delete", authenticateAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'IDs array required' });
+    }
+    const secPool = getSecurityPool();
+    if (!secPool) {
+      return res.status(503).json({ error: 'Security database offline' });
+    }
+    await secPool.query('DELETE FROM admin_audit_logs WHERE id = ANY($1)', [ids]);
+    await auditLog((req as any).user?.id, 'Batch Delete Compliance Logs', 'security', { count: ids.length });
+    res.json({ success: true, count: ids.length });
+  } catch (error: any) {
+    console.error('[AdminRouter] Batch delete audit logs failed:', error);
+    res.status(500).json({ error: error.message || 'Batch delete failed' });
+  }
+});
+
+router.delete("/audit-logs/all", authenticateAdmin, async (req, res) => {
+  try {
+    const confirmation = req.headers['x-confirm-action'];
+    if (confirmation !== 'DELETE_ALL') {
+      return res.status(400).json({ error: 'Action confirmation required.' });
+    }
+    const secPool = getSecurityPool();
+    if (!secPool) {
+      return res.status(503).json({ error: 'Security database offline' });
+    }
+    await secPool.query('DELETE FROM admin_audit_logs');
+    await auditLog((req as any).user?.id, 'Clear Compliance Logs', 'security', {});
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('[AdminRouter] Clear audit logs failed:', error);
+    res.status(500).json({ error: error.message || 'Clear failed' });
+  }
+});
+
 router.get("/health", authenticateAdmin, async (req, res) => {
   try {
     const health = await getServerHealth();
@@ -1041,6 +1079,152 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
     const result = await adjustWalletBalance(userIdNum, parsedAmount, type, reason || 'Admin adjustment', target);
     
     await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: userIdNum, amount: parsedAmount, type, unit, reason });
+
+    // Send notifications (Email & Socket)
+    try {
+      const userRes = await pool.query('SELECT name, email, language FROM users WHERE id = $1', [userIdNum]);
+      if (userRes.rows.length > 0) {
+        const user = userRes.rows[0];
+        const userLang = user.language === 'ar' ? 'ar' : 'en';
+        
+        let titleEn = '';
+        let titleAr = '';
+        let msgEn = '';
+        let msgAr = '';
+
+        const isAdd = type === 'credit' || type === 'add';
+        const formattedAmount = target === 'balance' ? `$${parsedAmount.toFixed(2)}` : `${parsedAmount} PTS`;
+
+        if (target === 'balance') {
+          if (isAdd) {
+            titleEn = "USD Wallet Credited";
+            titleAr = "إيداع رصيد دولار";
+            msgEn = `Administrator has credited $${parsedAmount.toFixed(2)} to your wallet. Reason: ${reason}`;
+            msgAr = `قام المسؤول بإضافة $${parsedAmount.toFixed(2)} إلى محفظتك. السبب: ${reason}`;
+          } else {
+            titleEn = "USD Wallet Debited";
+            titleAr = "خصم رصيد دولار";
+            msgEn = `Administrator has debited $${parsedAmount.toFixed(2)} from your wallet. Reason: ${reason}`;
+            msgAr = `قام المسؤول بخصم $${parsedAmount.toFixed(2)} من محفظتك. السبب: ${reason}`;
+          }
+        } else {
+          if (isAdd) {
+            titleEn = "Reward Points Added";
+            titleAr = "إضافة نقاط مكافأة";
+            msgEn = `Administrator has credited ${parsedAmount} points to your account. Reason: ${reason}`;
+            msgAr = `قام المسؤول بإضافة ${parsedAmount} نقطة مكافأة إلى حسابك. السبب: ${reason}`;
+          } else {
+            titleEn = "Reward Points Deducted";
+            titleAr = "خصم نقاط مكافأة";
+            msgEn = `Administrator has deducted ${parsedAmount} points from your account. Reason: ${reason}`;
+            msgAr = `قام المسؤول بخصم ${parsedAmount} نقطة من حسابك. السبب: ${reason}`;
+          }
+        }
+
+        // 1. Send Real-time notification on platform
+        const { createNotification } = await import('../services/notifications.js');
+        await createNotification(userIdNum, 'finance', titleEn, titleAr, msgEn, msgAr, {
+          amount: parsedAmount,
+          unit: target === 'balance' ? 'USD' : 'PTS',
+          type,
+          new_balance: result.newBalance,
+          new_points: result.newPoints
+        });
+
+        // 2. Send Styled Audit Confirmation Email
+        const { sendEmail } = await import('../services/email.js');
+        const subject = userLang === 'ar' 
+          ? (isAdd ? 'تحديث مالي: تم إيداع رصيد جديد' : 'تحديث مالي: تم سحب رصيد من الحساب') 
+          : (isAdd ? 'Financial Update: Wallet Capital Adjustment' : 'Financial Update: Wallet Deduction Notice');
+        
+        const htmlBody = userLang === 'ar' ? `
+          <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="text-align: center; margin-bottom: 25px;">
+              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
+            </div>
+            <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
+              تنبيه كشف الحساب المالي
+            </h2>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              أهلاً <strong>${user.name || 'عزيزنا العميل'}</strong>، مزار توازن وحسابات المحفظة تم تحديثه بنجاح.
+            </p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              يرجى العلم بأنه تم إجراء تعديل رسمي على رصيد محفظتك المعتمد من قِبل إدارة النظام كالتالي:
+            </p>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 20px 0;">
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>نوع المعاملة:</strong></td>
+                  <td style="color: #0f172a; text-align: left;"><strong>${isAdd ? 'إيداع / شحن' : 'سحب / خصم'}</strong></td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>القيمة المعدلة:</strong></td>
+                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: left; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>السبب المعتمد:</strong></td>
+                  <td style="color: #334155; text-align: left;">${reason || 'تعديل إداري'}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
+              <span style="color: #166534; font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">رصيدك المعتمد الجديد:</span>
+              <span style="color: #15803d; font-size: 16px; font-weight: 800;">
+                $${parseFloat(result.newBalance).toFixed(2)} USD | ${parseFloat(result.newPoints || 0)} PTS
+              </span>
+            </div>
+            <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+              هذه رسالة تلقائية صادرة عن نظام التدقيق الإلكتروني لبيربليكستا. لحماية حسابك المالي، نقوم بإبلاغك بجميع عمليات تعديل الأرصدة لحظة حدوثها.
+            </p>
+          </div>
+        ` : `
+          <div style="font-family: 'Inter', sans-serif; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="text-align: center; margin-bottom: 25px;">
+              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
+            </div>
+            <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
+              Statement of Ledger Adjustment
+            </h2>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              Hello <strong>${user.name || 'Valued User'}</strong>,
+            </p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              Please be advised that an official adjustment has been performed on your wallet by the system administrators:
+            </p>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 20px 0;">
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>Adjustment Type:</strong></td>
+                  <td style="color: #0f172a; text-align: right;"><strong>${isAdd ? 'Deposit / Credit' : 'Withdrawal / Debit'}</strong></td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>Adjustment Value:</strong></td>
+                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: right; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>Approved Reason:</strong></td>
+                  <td style="color: #334155; text-align: right;">${reason || 'Administrative adjustment'}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
+              <span style="color: #166534; font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">Your New Verified Balance:</span>
+              <span style="color: #15803d; font-size: 16px; font-weight: 800;">
+                $${parseFloat(result.newBalance).toFixed(2)} USD | ${parseFloat(result.newPoints || 0)} PTS
+              </span>
+            </div>
+            <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+              This is an automated statement dispatched immediately by the Perplexta Security Engine. For safety verification, all ledger adjustments prompt an instantaneous notification broadcast.
+            </p>
+          </div>
+        `;
+
+        await sendEmail(user.email, subject, htmlBody, (req as any).user?.id);
+      }
+    } catch (notifErr: any) {
+      console.error('[Admin Balance Notification] Processing failed:', notifErr);
+    }
+    
     res.json({ success: true, newBalance: result.newBalance, newPoints: result.newPoints });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to adjust balance' });
@@ -1077,7 +1261,6 @@ router.post("/users/:id/send-email", authenticateAdmin, async (req, res) => {
     const targetEmail = userRes.rows[0].email;
     const adminId = (req as any).user?.id || null;
 
-    // Send the actual email using our robust SMTP service
     const emailResult = await sendEmail(targetEmail, subject, body, adminId);
 
     if (!emailResult.success) {
@@ -1174,109 +1357,7 @@ router.get("/users/:id/activity-logs", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.get("/financial-radar", authenticateAdmin, async (req, res) => {
-  try {
-    const totalBalance = await ledgerPool.query('SELECT sum(balance) as total FROM wallets');
-    const totalTransactions = await ledgerPool.query('SELECT count(*) FROM ledger_transactions');
-    const recentVolume = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '24 hours'");
-    const prevVolume = await ledgerPool.query("SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '48 hours' AND created_at <= now() - interval '24 hours'");
-    
-    const volCurrent = parseFloat(recentVolume.rows[0].total || 0);
-    const volPrev = parseFloat(prevVolume.rows[0].total || 0);
-    let volChange = 0;
-    if (volPrev > 0) {
-      volChange = ((volCurrent - volPrev) / volPrev) * 100;
-    } else if (volCurrent > 0) {
-      volChange = 100.0;
-    }
 
-    const pageLimit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
-    const pageOffset = Math.max(parseInt(req.query.offset as string, 10) || 0, 0);
-    const recentTx = await ledgerPool.query(
-      'SELECT * FROM ledger_transactions ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-      [pageLimit, pageOffset]
-    );
-    
-    let transactions = recentTx.rows;
-    try {
-      const userIds = [...new Set(transactions.map((t: any) => t.user_id))];
-      if (userIds.length > 0) {
-        const usersRes = await pool.query('SELECT id, name FROM users WHERE id = ANY($1)', [userIds]);
-        const userMap = new Map(usersRes.rows.map((u: any) => [u.id, u.name]));
-        transactions = transactions.map((t: any) => ({
-          ...t,
-          user_name: userMap.get(t.user_id) || 'Unknown User'
-        }));
-      }
-    } catch (uErr) {
-      console.error('[Admin] Failed to enrich transactions with user names:', uErr);
-    }
-
-    res.json({
-      stats: {
-        total_liquidity: parseFloat(totalBalance.rows[0].total || 0),
-        transaction_count: parseInt(totalTransactions.rows[0].count),
-        volume_24h: volCurrent,
-        volume_change_24h: volChange,
-        health_score: 100
-      },
-      transactions
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-router.get("/wallet-diagnostics", authenticateAdmin, async (req, res) => {
-  try {
-    const pageLimit = Math.min(parseInt(req.query.limit as string, 10) || 50, 100);
-    const pageOffset = Math.max(parseInt(req.query.offset as string, 10) || 0, 0);
-    const walletData = await ledgerPool.query(
-      'SELECT * FROM wallets WHERE balance < 0 ORDER BY id ASC LIMIT $1 OFFSET $2',
-      [pageLimit, pageOffset]
-    );
-    
-    let anomalies = walletData.rows;
-    
-    try {
-      const userIds = anomalies.map((w: any) => w.user_id);
-      if (userIds.length > 0) {
-        const usersRes = await pool.query('SELECT id, name, email FROM users WHERE id = ANY($1)', [userIds]);
-        const userMap = new Map(usersRes.rows.map((u: any) => [u.id, u]));
-        anomalies = anomalies.map((w: any) => {
-          const user = userMap.get(w.user_id) as any;
-          return {
-            ...w,
-            user: user ? { id: user.id, name: user.name, email: user.email } : null
-          };
-        });
-      }
-    } catch (uErr) {
-      console.error('[Admin] Failed to enrich wallet anomalies:', uErr);
-    }
-    
-    res.json(anomalies);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-router.get("/wallet-alerts", authenticateAdmin, async (req, res) => {
-  try {
-    const { getEconomySettings } = await import('../services/wallet.js');
-    const settings = await getEconomySettings();
-    const thresholdUSD = parseFloat(settings.min_payout_usd || 10) * 100;
-
-    const alerts = await ledgerPool.query(`
-      SELECT * FROM ledger_transactions 
-      WHERE amount > $1 OR transaction_type = 'system_adjustment'
-      ORDER BY created_at DESC LIMIT 20
-    `, [thresholdUSD]);
-    res.json(alerts.rows);
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
 
 router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
   try {

@@ -455,11 +455,12 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 **System State:** `STABLE / METICULOUS VISUAL HARMONY ACTIVE / RECONCILED SCHEMA INITIALIZATION`
 **Final Authorization:** All core protocols are now active and enforced by the Global Constitution.
 **Perplexta Status:** `ABSOLUTE`
-**Current Session Focus:** `Developer Portal Refinement & Systematic Orphaned Migration Cleanup`
+**Current Session Focus:** `Developer Portal Refinement, Systematic Orphaned Migration Cleanup & Contrast Accessibility Calibration`
 
-### 🛠️ Session Work Completed Today (June 6, 2026 - Developer Portal Refinement & Migration Cleanup):
+### 🛠️ Session Work Completed Today (June 6, 2026 - Developer Portal Refinement, Migration Cleanup & Contrast Accessibility Calibration):
 - **High-Fidelity Developer & Agent Plans Placeholder:** Refactored `src/pages/SubscriptionPage.tsx` to handle the empty `developer` plans tab with a pristine bento-style placeholder card. Integrated professional bilingual instructions (AR/EN) featuring slow-motion entrance animations (`framer-motion`), custom emerald pulsing indicators, phase status markers, and an interactive "Return to Workspace" navigation flow for high visual polish.
 - **Systematic Migration Audit & Orphaned Schema Cleanup:** Systematically audited ALL database migration states in `server/db/migrations.ts`. Purged obsolete table references such as the vestigial `plan_features_history` creation block from the historic `v7_finance_expansion` stage, ensuring a pristine, optimal, and 100% production-ready schema initialization sequence.
+- **Contrast Accessibility Calibration & Multi-Theme Alignment:** Overhauled the User/Profile Account Settings page (`src/components/AccountSettings.tsx`) to guarantee optimal text contrast under WCAG accessibility guidelines in both light and dark themes. Swapped unstable opaque backgrounds and custom variables for precise, high-contrast Tailwind-based color pairings (`slate-500`, `slate-900`, `slate-100`, `zinc-900`, `zinc-800`), ensuring that all labels, inputs, and text blocks are flawlessly readable and respond elegantly to real-time dark/light theme changes.
 - **Clean Validation & Compiles:** Verified the entire codebase using full-stack compiler passes (`npm run build`) and strict TypeScript type-checking checks to guarantee zero regression paths.
 
 **Final Message to All Future Contributors:** You are inheriting a "Technical Fortress." Your duty is to expand its borders, not weaken its walls. Build with precision. Keep it Majestic. 🛡️✨🏆
