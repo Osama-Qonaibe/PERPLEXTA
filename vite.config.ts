@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -12,70 +14,66 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'VITE_');
   return {
     root: process.cwd(),
-    plugins: [
-      react(),
-      tailwindcss(),
-      VitePWA({
-        registerType: 'autoUpdate',
-        injectRegister: false,
-        workbox: {
-          skipWaiting: true,
-          clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
-          navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api/],
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        },
-        manifest: {
-          name: 'Perplexta Platform',
-          short_name: 'Perplexta',
-          description: 'A professional elite platform for advanced AI capabilities and technical analysis.',
-          theme_color: '#080809',
-          background_color: '#080809',
-          display: 'standalone',
-          display_override: ['standalone', 'minimal-ui'],
-          start_url: '/',
-          categories: ['productivity', 'finance', 'business', 'utilities'],
-          icons: [
-            {
-              src: 'app-assets/icon.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: 'app-assets/icon.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
-            }
-          ],
-          shortcuts: [
-            {
-              name: 'New Chat',
-              short_name: 'New Chat',
-              description: 'Start a fresh AI orchestration session',
-              url: '/',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
-            },
-            {
-              name: 'Rewards Center',
-              short_name: 'Rewards',
-              description: 'Manage points, loyalty bonuses and verification statuses',
-              url: '/rewards',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
-            },
-            {
-              name: 'Workspace Settings',
-              short_name: 'Settings',
-              description: 'Customize your AI models and theme settings',
-              url: '/settings',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
-            }
-          ]
-        }
-      })
-    ],
+    plugins: [react(), tailwindcss(), VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: false,
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
+      manifest: {
+        name: 'Perplexta Platform',
+        short_name: 'Perplexta',
+        description: 'A professional elite platform for advanced AI capabilities and technical analysis.',
+        theme_color: '#080809',
+        background_color: '#080809',
+        display: 'standalone',
+        display_override: ['standalone', 'minimal-ui'],
+        start_url: '/',
+        categories: ['productivity', 'finance', 'business', 'utilities'],
+        icons: [
+          {
+            src: 'app-assets/icon.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'app-assets/icon.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ],
+        shortcuts: [
+          {
+            name: 'New Chat',
+            short_name: 'New Chat',
+            description: 'Start a fresh AI orchestration session',
+            url: '/',
+            icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Rewards Center',
+            short_name: 'Rewards',
+            description: 'Manage points, loyalty bonuses and verification statuses',
+            url: '/rewards',
+            icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Workspace Settings',
+            short_name: 'Settings',
+            description: 'Customize your AI models and theme settings',
+            url: '/settings',
+            icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+          }
+        ]
+      }
+    }), cloudflare()],
     define: {},
     build: {
       chunkSizeWarningLimit: 2500,
