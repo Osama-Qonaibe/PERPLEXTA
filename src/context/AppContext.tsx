@@ -1923,6 +1923,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRefreshTokenState(newRefreshToken);
     }
     setUser(info);
+    localStorage.setItem('last_active_tool', 'chat');
     setIsAuthModalOpen(false); 
     
     if (authLang && (authLang === 'ar' || authLang === 'en')) {
@@ -2472,6 +2473,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           setUser(data.user);
           localStorage.setItem('app_token', data.token);
+          localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
           
@@ -2514,6 +2516,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           setUser(data.user);
           localStorage.setItem('app_token', data.token);
+          localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
           
@@ -2559,6 +2562,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('app_oauth_user');
     localStorage.removeItem('app_oauth_trigger');
     localStorage.removeItem('app_user_profile');
+    
+    // Clear Perplexta settings and user preferences to default
+    localStorage.removeItem('last_active_tool');
+    localStorage.removeItem('last_active_model');
+    sessionStorage.removeItem('draft_query');
     
     // Background logout API call (fire-and-forget) to ensure zero UI delay
     if (storedToken) {

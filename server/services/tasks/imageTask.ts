@@ -328,10 +328,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     }));
   }
 
+  let savedUrl = imageUrl;
   try {
     // Write image bytes to secure disk to minimize WS load
-    const savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
+    savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
+  } catch (saveErr: any) {
+    console.warn('[Image Task] Silent warning: failed to save image locally, fallback to original or base64 URL.', saveErr.message);
+  }
 
+  try {
     const estimatedCost = (route.cost_per_usage || 0) / 1000;
     if (estimatedCost > 0 && successfulProvider) {
       await pool.query(
@@ -345,12 +350,8 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     const savedUrlWithAspect = `${savedUrl}#aspect=${selectedRatio}`;
     return { result: `![Generated Image](${savedUrlWithAspect})` };
   } catch (imgErr: any) {
-    await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-    console.error('[Orchestrator Image] Critical ledger registration failure:', imgErr.message);
-    throw new Error(JSON.stringify({
-      error: `Image saving or logging operations failed: ${imgErr.message}`,
-      error_ar: `فشل تسجيل وحفظ ملف الصورة المعالج: ${imgErr.message}`,
-      type: "GENERATION_ERROR"
-    }));
+    console.error('[Orchestrator Image] Silent warning: ledger or system activity logging failed but returning image anyway:', imgErr.message);
+    const savedUrlWithAspect = `${savedUrl}#aspect=${selectedRatio}`;
+    return { result: `![Generated Image](${savedUrlWithAspect})` };
   }
 }

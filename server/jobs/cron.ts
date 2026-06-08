@@ -66,6 +66,68 @@ async function cleanupOrphanedPhysicalFiles() {
   }
 }
 
+async function purgeGeneratedFilesOlderThan24Hours() {
+  console.log('[Cron] ⏰ Starting automated cleanup of files older than 24 hours to prevent disk inflation...');
+  try {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    
+    // Safety check: ensure uploading directory exists
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      console.log('[Cron] Uploads folder does not exist yet. Skipping cleanup.');
+      return;
+    }
+
+    // 1. Get all file database entries older than 24 hours
+    const result = await pool.query(
+      `SELECT id, file_url FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+    );
+
+    if (result.rows.length === 0) {
+      console.log('[Cron] No database records of files older than 24 hours found.');
+      return;
+    }
+
+    console.log(`[Cron] Found ${result.rows.length} files older than 24 hours to purge.`);
+
+    let purgedCount = 0;
+    for (const row of result.rows) {
+      const fileUrl = row.file_url;
+      if (!fileUrl) continue;
+
+      // Extract filename from file_url (e.g. if it is '/uploads/...' or raw filename)
+      let filename = fileUrl;
+      if (filename.startsWith('/uploads/')) {
+        filename = filename.replace('/uploads/', '');
+      }
+
+      const filePath = path.join(uploadDir, filename);
+
+      try {
+        // Physical erasure
+        await fs.unlink(filePath).catch(() => {});
+        purgedCount++;
+      } catch (err: any) {
+        console.warn(`[Cron] Could not delete physical file ${filename}:`, err.message);
+      }
+    }
+
+    // 2. Delete the DB references from user_files and video_resources to maintain transactional integrity
+    const deleteFilesCount = await pool.query(
+      `DELETE FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+    );
+    
+    const deleteVideosCount = await pool.query(
+      `DELETE FROM video_resources WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+    );
+
+    console.log(`[Cron] Purging reports: physically removed ${purgedCount} files. Erased ${deleteFilesCount.rowCount} records from user_files, and ${deleteVideosCount.rowCount} from video_resources.`);
+  } catch (err: any) {
+    console.error('[Cron] Automated old files physical & database purge failed:', err.message);
+  }
+}
+
 export function initCronJobs() {
   // 1. Daily maintenance, API keys reset, and orphaned physical files purge at 3:00 AM
   cron.schedule('0 3 * * *', async () => {
@@ -76,6 +138,9 @@ export function initCronJobs() {
       await pool.query('UPDATE api_keys_vault SET used_today = 0, last_reset_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP');
       console.log('[Cron] API keys usage reset completed.');
       
+      // Perform automated cleanup of files older than 24 hours to prevent disk inflation
+      await purgeGeneratedFilesOlderThan24Hours();
+
       // Perform structural disk file audit to preserve Zero-Clutter goals
       await cleanupOrphanedPhysicalFiles();
       cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'success', error: null };

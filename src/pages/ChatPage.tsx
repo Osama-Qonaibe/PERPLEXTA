@@ -3878,6 +3878,15 @@ export const ChatPage: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<string>(() => {
     return localStorage.getItem('last_active_tool') || 'chat';
   });
+  
+  const prevUserRef = useRef<any>(null);
+  useEffect(() => {
+    if (user && !prevUserRef.current) {
+      setSelectedTool('chat');
+    }
+    prevUserRef.current = user;
+  }, [user]);
+
   const [activeDropdown, setActiveDropdown] = useState<'tool' | 'model'>('tool');
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
