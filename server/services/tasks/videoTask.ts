@@ -68,7 +68,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
   const video_settings = reqBody.video_settings;
 
   const requestedDuration = video_settings ? parseInt(String(video_settings.duration || '5')) : 5;
-  const totalFrames = requestedDuration * 24;
+  const fps = video_settings?.fps || 24;
+  const totalFrames = requestedDuration * fps;
 
   // Compile all candidate targets in the fallback chain for dynamic orchestrator-driven fallback resolution:
   // 1. Primary Model Setup
@@ -241,7 +242,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   totalFrames,
                   phase: `Processing video frames on Replicate (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
                   phase_ar: `توليد ومعالجة إطارات الفيديو على Replicate (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
-                  fps: 24,
+                  fps,
                   currentStep: i + 1,
                   totalSteps
                 });
@@ -257,6 +258,10 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               if (pollData.status === 'failed') {
                 throw new Error('Replicate video task failed at runtime.');
               }
+            }
+
+            if (!videoUrl) {
+              throw new Error(`replicate polling timed out after ${totalSteps * 5}s without result.`);
             }
           }
         } else if (providerId === 'runway') {
@@ -302,7 +307,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   totalFrames,
                   phase: `RunwayML cluster rendering frames (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
                   phase_ar: `عنقود معالجة RunwayML يولد إطارات الفيديو (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
-                  fps: 24,
+                  fps,
                   currentStep: i + 1,
                   totalSteps
                 });
@@ -321,6 +326,10 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 throw new Error(`Runway task execution failed: ${pollData.failureReason || 'unknown'}`);
               }
             }
+
+            if (!videoUrl) {
+              throw new Error(`runway polling timed out after ${totalSteps * 5}s without result.`);
+            }
           }
         } else if (providerId === 'google' || providerId === 'gemini' || providerId.includes('veo')) {
           // --- Google Veo/Gemini Dynamic Process ---
@@ -329,6 +338,11 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
             throw new Error(`Google Veo: no model configured in orchestrator for provider '${providerId}'.`);
           }
           const modelToUse = cleanModel;
+
+          const SUPPORTED_VEO_MODELS = ['veo-2.0-generate-001', 'veo-3.0-generate-preview'];
+          if (!SUPPORTED_VEO_MODELS.includes(modelToUse)) {
+            throw new Error(`Unsupported Veo model: '${modelToUse}'.`);
+          }
 
           if (io) {
             io.to(`user_${userId}`).emit('video_progress', {
@@ -382,7 +396,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 totalFrames,
                 phase: `perplexta Cinema Engine rendering video frames (${progressPct}%)`,
                 phase_ar: `محرك بيربليكستا السينمائي يقوم برندر إطارات الفيديو (${progressPct}%)`,
-                fps: 24,
+                fps,
                 currentStep: i + 1,
                 totalSteps
               });
@@ -405,50 +419,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
             throw new Error('Google Veo operation completed but did not return a valid video URI.');
           }
 
-          // Stream the video bytes securely directly to the server's local disk
-          // This prevents massive base64 text-representation memory overhead and V8 OOM crashes during concurrent usage
-          const uploadDir = path.join(process.cwd(), 'uploads');
-          await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
-
-          const fileExtension = 'mp4';
-          const randomFilename = `${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
-          const filePath = path.join(uploadDir, randomFilename);
-
-          const videoDownloadRes = await fetch(uri, {
-            headers: { 'x-goog-api-key': apiKey },
-          });
-
-          if (!videoDownloadRes.ok) {
-            throw new Error(`Failed to download generated Veo video bytes from Google: HTTP ${videoDownloadRes.status}`);
-          }
-
-          if (!videoDownloadRes.body) {
-            throw new Error('Google Veo fetch response body is empty.');
-          }
-
-          const fileStream = createWriteStream(filePath);
-          const nodeReadable = Readable.fromWeb(videoDownloadRes.body as any);
-          await pipeline(nodeReadable, fileStream);
-
-          const mimeType = videoDownloadRes.headers.get('content-type') || 'video/mp4';
-          const contentLengthStr = videoDownloadRes.headers.get('content-length');
-          const fileSize = contentLengthStr ? parseInt(contentLengthStr, 10) : 0;
-
-          // Register in system file metadata cleanly
-          await saveFileMetadata(String(userId), {
-            file_name: `perplexta_Cinema_Video_${Date.now()}.${fileExtension}`,
-            file_url: randomFilename,
-            file_size: fileSize,
-            mime_type: mimeType,
-            file_type: 'video',
-            metadata: {
-              generated: true,
-              origin: 'AI_Orchestrator_Studio_perplexta',
-              model: modelToUse
-            }
-          });
-
-          videoUrl = `/uploads/${randomFilename}`;
+          videoUrl = await saveGeneratedVideoToDisk(String(userId), uri, { 'x-goog-api-key': apiKey });
         } else {
           // --- Generic Dynamic Model Fallback Handler ---
           const finalEndpoint = vaultConfig?.url_key;
@@ -534,7 +505,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
         totalFrames,
         phase: "Composed! Conveying master sequence stream...",
         phase_ar: "اكتمل التوليد! جاري نقل تدفق مقطع الفيديو النهائي...",
-        fps: 24,
+        fps,
         currentStep: 120,
         totalSteps: 120
       });

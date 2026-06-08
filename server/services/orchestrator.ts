@@ -258,27 +258,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 
   const isSovereignSearch = toolIdStr === 'sovereign_search';
-
-  // High-fidelity search intent extraction:
-  // We trigger sovereign web search if the user explicitly requests web connection/search, OR
-  // if the query is a factual informational lookup and not just a social greeting/simple chat message.
-  const isSocialGreeting = (text: string) => {
-    const socialKeywords = [
-      'مرحبا', 'سلام', 'كيفك', 'كيف حالك', 'شكراً', 'شكرا', 'اهلين', 'هلا', 'مساء الخير', 'صباح الخير', 'منور',
-      'hi', 'hello', 'hey', 'how are you', 'thanks', 'thank you', 'good morning', 'good evening', 'test', 'مستعد'
-    ];
-    const cleaned = text.trim().toLowerCase();
-    if (cleaned.length < 5) return true; // Very short prompts are conversational/simple
-    return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 15);
-  };
-
-  const SEARCH_KEYWORDS = [
-    'search', 'google', 'طقس', 'أخبار', 'اخبار', 'سعر', 'دولار', 'بحث',
-    'ابحث', 'ما هو', 'ما هي', 'today', 'now', 'أحدث', 'ويب', 'برابط',
-    'رابط', 'موقع', 'ابحث عن', 'find', 'weather', 'news', 'stock',
-    'price', 'latest', 'current', 'من هو', 'من هي', 'ماذا حدث'
-  ];
-
+  
   const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
     SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
 
@@ -831,7 +811,7 @@ Produce the minimum number of consolidated facts needed to preserve all key info
 async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
     const recentMessages = await pool.query(
-      "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT 20",
+      `SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT ${UPDATE_SUMMARY_LIMIT}`,
       [chatIdNum]
     );
 
@@ -845,7 +825,7 @@ async function updateChatContextSummary(chatIdNum: number, userId: number, provi
 
     const summary = await withTimeout(
       callAIProvider(provider, model, apiKey, summaryPrompt, 'You are a concise conversation summarizer. Output only the summary, no preamble.', undefined, [], {}, undefined),
-      30000,
+      UPDATE_SUMMARY_TIMEOUT_MS,
       'context-summary'
     );
 

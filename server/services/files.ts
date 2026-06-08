@@ -86,7 +86,7 @@ export async function saveGeneratedImageToDisk(userId: string, imageData: string
   return `/uploads/${randomFilename}`;
 }
 
-export async function saveGeneratedVideoToDisk(userId: string, videoData: string): Promise<string> {
+export async function saveGeneratedVideoToDisk(userId: string, videoData: string, customHeaders?: Record<string, string>): Promise<string> {
   const uploadDir = path.join(process.cwd(), 'uploads');
   // Confirm uploads directory exists
   await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
@@ -114,7 +114,8 @@ export async function saveGeneratedVideoToDisk(userId: string, videoData: string
     try {
       response = await fetch(videoData, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/437.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/437.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          ...customHeaders
         }
       });
       if (!response.ok) {
@@ -123,7 +124,9 @@ export async function saveGeneratedVideoToDisk(userId: string, videoData: string
     } catch (err: any) {
       console.warn(`[File Service] First fetch attempt failed with User-Agent: ${err.message}. Retrying clean raw fetch...`);
       try {
-        response = await fetch(videoData);
+        response = await fetch(videoData, {
+          headers: customHeaders
+        });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
