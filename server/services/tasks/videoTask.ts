@@ -277,7 +277,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 'X-Runway-Version': '2024-11-06'
               },
               body: JSON.stringify({
-                model: modelName || 'gen3a_turbo',
+                model: modelName,
                 promptText: actualPrompt,
                 duration: requestedDuration,
                 ratio: calculatedRatio
@@ -325,14 +325,17 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
         } else if (providerId === 'google' || providerId === 'gemini' || providerId.includes('veo')) {
           // --- Google Veo/Gemini Dynamic Process ---
           const cleanModel = modelName.startsWith('models/') ? modelName.substring(7) : modelName;
-          const modelToUse = cleanModel || 'veo-3.1-lite-generate-preview';
+          if (!cleanModel) {
+            throw new Error(`Google Veo: no model configured in orchestrator for provider '${providerId}'.`);
+          }
+          const modelToUse = cleanModel;
 
           if (io) {
             io.to(`user_${userId}`).emit('video_progress', {
               progress: 20,
               renderedFrames: Math.round(totalFrames * 0.20),
               totalFrames,
-              phase: 'Initializing peprlexta Cinema Engine & allocating neural render cores...',
+              phase: 'Initializing perplexta Cinema Engine & allocating neural render cores...',
               phase_ar: 'تهيئة محرك بيربليكستا السينمائي وجاري رندر الفيديو...',
               fps: 0,
               currentStep: 2,
@@ -377,7 +380,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 progress: progressPct,
                 renderedFrames,
                 totalFrames,
-                phase: `peprlexta Cinema Engine rendering video frames (${progressPct}%)`,
+                phase: `perplexta Cinema Engine rendering video frames (${progressPct}%)`,
                 phase_ar: `محرك بيربليكستا السينمائي يقوم برندر إطارات الفيديو (${progressPct}%)`,
                 fps: 24,
                 currentStep: i + 1,
@@ -433,14 +436,14 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
           // Register in system file metadata cleanly
           await saveFileMetadata(String(userId), {
-            file_name: `peprlexta_Cinema_Video_${Date.now()}.${fileExtension}`,
+            file_name: `perplexta_Cinema_Video_${Date.now()}.${fileExtension}`,
             file_url: randomFilename,
             file_size: fileSize,
             mime_type: mimeType,
             file_type: 'video',
             metadata: {
               generated: true,
-              origin: 'AI_Orchestrator_Studio_peprlexta',
+              origin: 'AI_Orchestrator_Studio_perplexta',
               model: modelToUse
             }
           });
