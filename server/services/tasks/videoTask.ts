@@ -7,8 +7,10 @@ import { VideoResourceProvider } from '../videoResourceProvider.js';
 import { 
   withTimeout, 
   safeParseResponse, 
+  safeDecrementOnFailure,
   AI_CALL_TIMEOUT_MS 
 } from './utils.js';
+import { GoogleGenAI, GenerateVideosOperation } from "@google/genai";
 
 export interface TaskExecutionContext {
   reqBody: any;
@@ -234,7 +236,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const pollUrl = prediction.urls?.get;
           
           if (pollUrl) {
-            const totalSteps = 20;
+            const totalSteps = 120;
             for (let i = 0; i < totalSteps; i++) {
               const progressPct = Math.round(15 + (i / totalSteps) * 80);
               const renderedFrames = Math.round((progressPct / 100) * totalFrames);
@@ -244,15 +246,15 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   progress: progressPct,
                   renderedFrames,
                   totalFrames,
-                  phase: `Processing video frames [State: ${prediction.status || 'processing'}]`,
-                  phase_ar: `توليد ومعالجة إطارات الفيديو [الحالة: ${prediction.status || 'جاري العمل'}]`,
+                  phase: `Processing video frames on Replicate (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
+                  phase_ar: `توليد ومعالجة إطارات الفيديو على Replicate (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
                   fps: 24,
                   currentStep: i + 1,
                   totalSteps
                 });
               }
 
-              await new Promise(r => setTimeout(r, 2000));
+              await new Promise(r => setTimeout(r, 5000));
               const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
               const pollData = await safeParseResponse(poll, 'Replicate video poll error');
               if (pollData.status === 'succeeded') {
@@ -295,7 +297,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const taskId = task.id;
 
           if (taskId) {
-            const totalSteps = 20;
+            const totalSteps = 120;
             for (let i = 0; i < totalSteps; i++) {
               const progressPct = Math.round(15 + (i / totalSteps) * 80);
               const renderedFrames = Math.round((progressPct / 100) * totalFrames);
@@ -305,15 +307,15 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   progress: progressPct,
                   renderedFrames,
                   totalFrames,
-                  phase: `RunwayML cluster rendering frames (${progressPct}%)`,
-                  phase_ar: `عنقود معالجة RunwayML يولد إطارات الفيديو (${progressPct}%)`,
+                  phase: `RunwayML cluster rendering frames (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
+                  phase_ar: `عنقود معالجة RunwayML يولد إطارات الفيديو (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
                   fps: 24,
                   currentStep: i + 1,
                   totalSteps
                 });
               }
 
-              await new Promise(r => setTimeout(r, 2000));
+              await new Promise(r => setTimeout(r, 5000));
               const poll = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': '2024-11-06' }
               });
@@ -329,63 +331,106 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           }
         } else if (providerId === 'google' || providerId === 'gemini' || providerId.includes('veo')) {
           // --- Google Veo/Gemini Dynamic Process ---
-          let cleanModel = modelName.startsWith('models/') ? modelName.substring(7) : modelName;
-          if (!cleanModel || cleanModel.toLowerCase().includes('veo-3') || cleanModel.toLowerCase().includes('veo-3.0') || cleanModel.toLowerCase().includes('veo-3.1')) {
-            console.log(`[Video Task] Dynamically mapped model '${cleanModel}' to standard stable 'veo-2.0-generate-001' to prevent prediction errors.`);
-            cleanModel = 'veo-2.0-generate-001';
-          }
-          const modelToUse = cleanModel;
+          const cleanModel = modelName.startsWith('models/') ? modelName.substring(7) : modelName;
+          const modelToUse = cleanModel || 'veo-3.1-lite-generate-preview';
 
           if (io) {
             io.to(`user_${userId}`).emit('video_progress', {
               progress: 20,
               renderedFrames: Math.round(totalFrames * 0.20),
               totalFrames,
-              phase: 'Contacting Google Generative Language Cluster & initializing prediction matrices',
-              phase_ar: 'الاتصال بمخادم Google وتحديد مصفوفة الرندر لتسلسل توليف الفيديو',
+              phase: 'Connecting to Google Veo Studio & scheduling video generation state...',
+              phase_ar: 'الاتصال بأستوديو Google Veo وجدولة عملية توليد إطارات مقطع الفيديو...',
               fps: 0,
               currentStep: 2,
-              totalSteps: 20
+              totalSteps: 120
             });
           }
 
-          const res = await withTimeout(
-            fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:predict?key=${apiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                instances: [
-                  {
-                    prompt: actualPrompt,
-                    aspectRatio: video_settings?.aspectRatio || "16:9",
-                    duration: String(requestedDuration)
-                  }
-                ]
-              })
-            }),
-            AI_CALL_TIMEOUT_MS,
-            'google-veo-init'
-          );
+          const ai = new GoogleGenAI({
+            apiKey: apiKey,
+            httpOptions: {
+              headers: {
+                'User-Agent': 'aistudio-build',
+              }
+            }
+          });
 
-          const apiData = await safeParseResponse(res, 'Google Veo video status');
-          if (apiData && apiData.predictions && apiData.predictions[0]) {
-            const pred = apiData.predictions[0];
-            if (pred.bytesBase64) {
-              videoUrl = `data:video/mp4;base64,${pred.bytesBase64}`;
-            } else if (pred.videoUri) {
-              videoUrl = pred.videoUri;
-            } else if (pred.video && pred.video.videoUri) {
-              videoUrl = pred.video.videoUri;
+          const operation = await ai.models.generateVideos({
+            model: modelToUse,
+            prompt: actualPrompt,
+            config: {
+              numberOfVideos: 1,
+              resolution: video_settings?.resolution || '1080p',
+              aspectRatio: video_settings?.aspectRatio || '16:9'
+            }
+          });
+
+          if (!operation || !operation.name) {
+            throw new Error(`Google Veo request did not return a valid long-running operation.`);
+          }
+
+          const op = new GenerateVideosOperation();
+          op.name = operation.name;
+          
+          let completedOp = null;
+          const totalSteps = 120; // 120 steps * 5s = 10 minutes max timeout
+          for (let i = 0; i < totalSteps; i++) {
+            const progressPct = Math.round(15 + (i / totalSteps) * 80);
+            const renderedFrames = Math.round((progressPct / 100) * totalFrames);
+            
+            if (io) {
+              io.to(`user_${userId}`).emit('video_progress', {
+                progress: progressPct,
+                renderedFrames,
+                totalFrames,
+                phase: `Google Veo video synthesis processing (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
+                phase_ar: `معالج ومولد Google Veo يقوم بتوليف الإطارات (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
+                fps: 24,
+                currentStep: i + 1,
+                totalSteps
+              });
+            }
+
+            await new Promise(r => setTimeout(r, 5000));
+            const updated = await ai.operations.getVideosOperation({ operation: op });
+            if (updated.done) {
+              completedOp = updated;
+              break;
             }
           }
+
+          if (!completedOp || !completedOp.done) {
+            throw new Error('Google Veo video generation timed out after maximum polling limits.');
+          }
+
+          const uri = completedOp.response?.generatedVideos?.[0]?.video?.uri;
+          if (!uri) {
+            throw new Error('Google Veo operation completed but did not return a valid video URI.');
+          }
+
+          // Fetch the video bytes securely using dynamic key header auth without url leaks
+          const videoDownloadRes = await fetch(uri, {
+            headers: { 'x-goog-api-key': apiKey },
+          });
+
+          if (!videoDownloadRes.ok) {
+            throw new Error(`Failed to download generated Veo video bytes from Google: HTTP ${videoDownloadRes.status}`);
+          }
+
+          const videoBytes = await videoDownloadRes.arrayBuffer();
+          const base64Data = Buffer.from(videoBytes).toString('base64');
+          videoUrl = `data:video/mp4;base64,${base64Data}`;
 
           if (!videoUrl) {
             throw new Error(`Google Veo prediction returned empty output for model: ${modelToUse}`);
           }
         } else {
           // --- Generic Dynamic Model Fallback Handler ---
-          // Allows supporting ANY dynamic provider or model in the world dynamically
-          const finalEndpoint = vaultConfig?.url_key || `https://api.${providerId}.ai/v1/video/generations`;
+          const finalEndpoint = vaultConfig?.url_key;
+          if (!finalEndpoint) {
+            throw new Error(`Orchestration routing check: Dynamic provider '${target.provider}' is missing a registered custom endpoint URL (url_key) in the vault.`);
+          }
           
           console.log(`[Video Task] Executing generic endpoint generation for provider: ${providerId} on endpoint: ${finalEndpoint}`);
           
@@ -452,66 +497,9 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
       }
     }
 
-    // HIGH-FIDELITY CINEMATIC RESILIENT FALLBACK CORE WITH REAL-TIME PROGRESS BROADCAST SIMULATION
+    // If no video URL was generated after trying all target options in the loop
     if (!videoUrl) {
-      console.log('[Orchestrator Video] Generating via elite cinematic fallback asset engine...');
-      
-      const promptLower = finalPrompt.toLowerCase();
-      const totalSteps = 16;
-      
-      const phases = [
-        { en: "Initializing GPU grid & assigning neural pathways", ar: "تهيئة مصفوفة معالجة الرسومات وتعيين المسارات العصبية" },
-        { en: "Analyzing prompt composition & lighting balance", ar: "تحليل بنية المطلب وتحقيق توازن الإضاءة السينمائية" },
-        { en: "Allocating keyframe matrices & latent grids", ar: "تخصيص مصفوفات الإطارات الرئيسية والشبكات الكامنة" },
-        { en: "Synthesizing spatial motion vector flows (10-25%)", ar: "توليف تدفقات نواقل الحركة المكانية (10-25%)" },
-        { en: "Computing motion temporal consistency (25-40%)", ar: "حساب الاتساق الزمني للحركة (25-40%)" },
-        { en: "Generating intermediate micro-interpolations (40-50%)", ar: "توليد التداخلات الدقيقة والمقاطع البينية (40-50%)" },
-        { en: "Executing deep frame latent rendering (50-60%)", ar: "تنفيذ الرندر الكامن للإطارات العميقة (50-60%)" },
-        { en: "Formulating fluid dynamics & motion blur vectors (60-70%)", ar: "صياغة الديناميكيات السائلة ونواقل تشتت الحركة (60-70%)" },
-        { en: "Rendering high-contrast shadow volumes (70-75%)", ar: "معالجة ورسم وتوزيع ظلال الكتل ثلاثية الأبعاد (70-75%)" },
-        { en: "Blending dual frame-buffer channels (75-80%)", ar: "دمج قنوات تخزين الإطارات المزدوجة المتزامة (75-80%)" },
-        { en: "Synthesizing optical flow field noise algorithms (80-85%)", ar: "توليف خوارزميات التدفق البصري لمعالجة التشويش (80-85%)" },
-        { en: "Applying deep neural super-resolution scaling (85-90%)", ar: "تطبيق التوسيع البصري الفائق عبر الشبكات العصبية (85-90%)" },
-        { en: "Applying high-fidelity color grading filters (90-95%)", ar: "تطبيق تدريج الألوان السينمائية عالية الدقة (90-95%)" },
-        { en: "Structuring final container sequence codec (95-98%)", ar: "تأصيل ترميز حاوية التسلسل النهائي بدقة متناهية (95-98%)" },
-        { en: "Optimizing streaming delivery pipelines (98-99%)", ar: "تحسين قنوات إرسال التسجيل الموجه للاستجابة السريعة (98-99%)" },
-        { en: "Finalizing cinematic rendering & masterwork presentation", ar: "تنقيح المشاهد النهائية وضبط المؤثرات السينمائية" }
-      ];
-
-      for (let i = 0; i < totalSteps; i++) {
-        const stepProgress = Math.round(((i + 1) / totalSteps) * 100);
-        const renderedFrames = Math.round((stepProgress / 100) * totalFrames);
-        const currentPhase = phases[i] || phases[phases.length - 1];
-
-        if (io) {
-          io.to(`user_${userId}`).emit('video_progress', {
-            progress: stepProgress,
-            renderedFrames,
-            totalFrames,
-            phase: currentPhase.en,
-            phase_ar: currentPhase.ar,
-            fps: 24,
-            currentStep: i + 1,
-            totalSteps
-          });
-        }
-        
-        await new Promise(r => setTimeout(r, 220));
-      }
-
-      if (promptLower.includes('sea') || promptLower.includes('ocean') || promptLower.includes('beach') || promptLower.includes('sunset') || promptLower.includes('بحر') || promptLower.includes('شاطئ') || promptLower.includes('غروب')) {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-      } else if (promptLower.includes('forest') || promptLower.includes('tree') || promptLower.includes('nature') || promptLower.includes('mountain') || promptLower.includes('غابة') || promptLower.includes('طبيعة') || promptLower.includes('جبل')) {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-      } else if (promptLower.includes('neon') || promptLower.includes('cyber') || promptLower.includes('city') || promptLower.includes('tech') || promptLower.includes('مدير') || promptLower.includes('مدينة') || promptLower.includes('تكنولوجيا')) {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
-      } else if (promptLower.includes('space') || promptLower.includes('galaxy') || promptLower.includes('star') || promptLower.includes('cosmic') || promptLower.includes('فضاء') || promptLower.includes('مجرة') || promptLower.includes('نجوم')) {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
-      } else if (promptLower.includes('abstract') || promptLower.includes('particle') || promptLower.includes('pattern') || promptLower.includes('فن') || promptLower.includes('تجريدي')) {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-      } else {
-        videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-      }
+      throw new Error('All configured video generation providers failed or returned empty results.');
     }
 
     // Final direct progress finish block
@@ -538,8 +526,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
     await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Video generation completed successfully`, { 
       toolIdStr, 
-      provider: successfulProvider || 'Resilient Fallback',
-      modelUsed: successfulModel || 'Resilient Fallback'
+      provider: successfulProvider,
+      modelUsed: successfulModel
     });
 
     let savedLocalUrl = videoUrl;
@@ -579,35 +567,15 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
     return { result: `[Generated Video](${finalUrl})` };
   } catch (videoErr: any) {
-    console.log('[Orchestrator Video] Handled transition in task handler:', videoErr.message);
-    const ultimateFallback = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-    let savedLocalFallback = ultimateFallback;
-    try {
-      savedLocalFallback = await saveGeneratedVideoToDisk(String(userId), ultimateFallback);
-    } catch (_) {}
-
-    // Save to video_resources database for fallback as well to avoid freezing/404s
-    try {
-      await VideoResourceProvider.storeVideoResource(
-        String(userId),
-        reqBody.chat_id ? parseInt(String(reqBody.chat_id)) : null,
-        null,
-        savedLocalFallback,
-        finalPrompt || 'Resilient fallback video generation',
-        'System_Fallback',
-        'Resilient_Mixkit',
-        requestedDuration,
-        video_settings?.aspectRatio || '16:9',
-        video_settings?.resolution || '1080p',
-        { original_url: ultimateFallback, status: videoErr.message, fallback: true }
-      );
-    } catch (dbErr: any) {
-      console.log('[Video Task Fallback] Database registry status update:', dbErr.message);
-    }
-
-    const finalUrl = video_settings
-      ? `${savedLocalFallback}#aspect=${video_settings.aspectRatio || '16:9'}&resolution=${video_settings.resolution || '1080p'}&duration=${video_settings.duration || '5'}`
-      : savedLocalFallback;
-    return { result: `[Generated Video](${finalUrl})` };
+    console.error('[Orchestrator Video] Critical video task execution failure:', videoErr.message);
+    
+    // Automatically trigger pre-generation wallet/quota refund on failure!
+    await safeDecrementOnFailure(ctx.quotaCheck, userId, 'video', ctx.walletCharged);
+    
+    throw new Error(JSON.stringify({
+      error: `Video generation task failed: ${videoErr.message || 'The request timed out or was rejected by the provider.'}`,
+      error_ar: `فشل خط توليد الفيديو: ${videoErr.message || 'انتهت مهلة المخدم أو تم رفض الطلب من مزود الخدمة.'}`,
+      type: "GENERATION_ERROR"
+    }));
   }
 }

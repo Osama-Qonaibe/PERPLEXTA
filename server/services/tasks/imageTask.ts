@@ -193,7 +193,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
       let requestBody = {};
 
       if (isPredictModel) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict?key=${apiKey}`;
+        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict`;
         requestBody = {
           instances: [
             { prompt: finalPrompt }
@@ -205,7 +205,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           }
         };
       } else {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateImages?key=${apiKey}`;
+        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateImages`;
         requestBody = {
           prompt: finalPrompt,
           numberOfImages: 1,
@@ -217,7 +217,10 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
       const res = await withTimeout(
         fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
           body: JSON.stringify(requestBody)
         }),
         AI_CALL_TIMEOUT_MS,
