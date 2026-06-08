@@ -12,6 +12,7 @@ import { getAppName } from './system.js';
 import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet } from './wallet.js';
+import { OrchestratorRegistry } from './orchestratorRegistry.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
@@ -54,6 +55,26 @@ async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: 
   } catch (e) {
     console.error('[Orchestrator] safeDecrementOnFailure failed:', e);
   }
+}
+
+async function safeParseResponse(res: any, defaultErrorPrefix: string): Promise<any> {
+  const text = await res.text();
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    // Content is not valid JSON
+  }
+  
+  if (!res.ok) {
+    const errorMsg = data?.error?.message 
+      || data?.message 
+      || data?.detail 
+      || (text ? (text.length > 300 ? text.substring(0, 300) + '...' : text) : `HTTP ${res.status}`);
+    throw new Error(`${defaultErrorPrefix}: ${errorMsg}`);
+  }
+  
+  return data;
 }
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
@@ -341,164 +362,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   }
 
   if (toolIdStr === 'image') {
-    const imageSettings = reqBody.image_settings || {};
-    const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
-    const apiKey = await getProviderKey(providerId);
-
-    if (!apiKey) {
-      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-      throw new Error(JSON.stringify({
-        error: "Image generation service is temporarily unavailable. No active API key found.",
-        error_ar: "خدمة توليد الصور غير متاحة حالياً. لا يوجد مفتاح API نشط.",
-        type: "SYSTEM_INACTIVE"
-      }));
-    }
-
-    let imageUrl = '';
-
-    try {
-      if (providerId === 'openai') {
-        const aspectRatio = imageSettings.aspectRatio || '1:1';
-        const size =
-          aspectRatio === '16:9' ? '1792x1024' :
-          aspectRatio === '9:16' ? '1024x1792' :
-          '1024x1024';
-        const quality = imageSettings.quality === 'Ultra' ? 'hd' : 'standard';
-        const style = imageSettings.style === 'واقعي' || imageSettings.style === 'Realistic' ? 'natural' : 'vivid';
-
-        const res = await withTimeout(
-          fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: route.primary_model, prompt: finalPrompt, n: 1, size, quality, style })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'openai-image'
-        );
-        const data = await res.json() as any;
-        if (!res.ok) throw new Error(data?.error?.message || `OpenAI image API error: ${res.status}`);
-        imageUrl = data.data?.[0]?.url || '';
-
-      } else if (providerId === 'together') {
-        const aspectRatio = imageSettings.aspectRatio || '1:1';
-        const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
-        const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
-
-        const res = await withTimeout(
-          fetch('https://api.together.xyz/v1/images/generations', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: route.primary_model, prompt: finalPrompt, n: 1, width, height })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'together-image'
-        );
-        const data = await res.json() as any;
-        if (!res.ok) throw new Error(data?.error?.message || `Together image API error: ${res.status}`);
-        imageUrl = data.data?.[0]?.url || data.data?.[0]?.b64_json || '';
-
-      } else if (providerId === 'stabilityai' || providerId === 'stability') {
-        const aspectRatio = imageSettings.aspectRatio || '1:1';
-        const width = aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024;
-        const height = aspectRatio === '9:16' ? 1344 : aspectRatio === '16:9' ? 768 : 1024;
-
-        const res = await withTimeout(
-          fetch(`https://api.stability.ai/v1/generation/${route.primary_model}/text-to-image`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-              text_prompts: [{ text: finalPrompt, weight: 1 }],
-              width, height,
-              steps: imageSettings.quality === 'Ultra' ? 50 : 30,
-              samples: 1
-            })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'stability-image'
-        );
-        const data = await res.json() as any;
-        if (!res.ok) throw new Error(data?.message || `Stability AI error: ${res.status}`);
-        const b64 = data.artifacts?.[0]?.base64;
-        imageUrl = b64 ? `data:image/png;base64,${b64}` : '';
-
-      } else if (providerId === 'replicate') {
-        const res = await withTimeout(
-          fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version: route.primary_model, input: { prompt: finalPrompt } })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'replicate-image-init'
-        );
-        const prediction = await res.json() as any;
-        if (!res.ok) throw new Error(prediction?.detail || `Replicate error: ${res.status}`);
-
-        let pollUrl = prediction.urls?.get;
-        for (let i = 0; i < 30; i++) {
-          await new Promise(r => setTimeout(r, 2000));
-          const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
-          const pollData = await poll.json() as any;
-          if (pollData.status === 'succeeded') {
-            imageUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
-            break;
-          }
-          if (pollData.status === 'failed') throw new Error('Replicate generation failed');
-        }
-      } else if (providerId === 'google' || providerId === 'gemini') {
-        const aspectRatio = imageSettings.aspectRatio || '1:1';
-        let modelName = route.primary_model || 'imagen-3.0-generate-002';
-        
-        // Safety: If model has 'gemini' or 'flash' in its name, map it to the correct Imagen 3 generator model
-        if (modelName.toLowerCase().includes('gemini') || modelName.toLowerCase().includes('flash')) {
-          modelName = 'imagen-3.0-generate-002';
-        }
-
-        const res = await withTimeout(
-          fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateImages?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt: finalPrompt,
-              numberOfImages: 1,
-              outputMimeType: 'image/jpeg',
-              aspectRatio: aspectRatio
-            })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'google-image'
-        );
-        const data = await res.json() as any;
-        if (!res.ok) {
-          throw new Error(data?.error?.message || `Google Imagen API error: ${res.status}`);
-        }
-        const base64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64Encoded;
-        imageUrl = base64 ? `data:image/jpeg;base64,${base64}` : '';
-      }
-
-      if (!imageUrl) throw new Error('Image generation returned empty result');
-
-      const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      if (estimatedCost > 0) {
-        await pool.query(
-          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-          [estimatedCost, providerId]
-        );
-      }
-
-      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Image generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
-
-      return { result: imageUrl };
-
-    } catch (imgErr: any) {
-      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-      console.error('[Orchestrator Image] Generation failed:', imgErr.message);
-      throw new Error(JSON.stringify({
-        error: `Image generation failed: ${imgErr.message}`,
-        error_ar: `فشل توليد الصورة: ${imgErr.message}`,
-        type: "GENERATION_ERROR"
-      }));
-    }
+    const handler = await OrchestratorRegistry.getHandler('image');
+    return await handler({
+      reqBody,
+      userId,
+      route,
+      quotaCheck,
+      walletCharged,
+      finalPrompt
+    });
   }
 
   if (toolIdStr === 'tts') {
@@ -567,8 +439,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         'stt'
       );
 
-      const data = await res.json() as any;
-      if (!res.ok) throw new Error(data?.error?.message || `STT API error: ${res.status}`);
+      const data = await safeParseResponse(res, 'STT API error');
 
       const transcription = data.text || '';
 
@@ -595,104 +466,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   }
 
   if (toolIdStr === 'video') {
-    try {
-      const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
-      const apiKey = await getProviderKey(providerId);
-
-      if (!apiKey) {
-        await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-        throw new Error(JSON.stringify({
-          error: "Video generation service is temporarily unavailable. No active API key found.",
-          error_ar: "خدمة توليد الفيديو غير متاحة حالياً. لا يوجد مفتاح API نشط.",
-          type: "SYSTEM_INACTIVE"
-        }));
-      }
-
-      let videoUrl = '';
-
-      if (providerId === 'replicate') {
-        const res = await withTimeout(
-          fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version: route.primary_model, input: { prompt: finalPrompt } })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'replicate-video-init'
-        );
-        const prediction = await res.json() as any;
-        if (!res.ok) throw new Error(prediction?.detail || `Replicate video error: ${res.status}`);
-
-        const pollUrl = prediction.urls?.get;
-        for (let i = 0; i < 60; i++) {
-          await new Promise(r => setTimeout(r, 5000));
-          const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
-          const pollData = await poll.json() as any;
-          if (pollData.status === 'succeeded') {
-            videoUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
-            break;
-          }
-          if (pollData.status === 'failed') throw new Error(`Replicate video generation failed: ${pollData.error || 'unknown'}`);
-        }
-      } else if (providerId === 'runway') {
-        const res = await withTimeout(
-          fetch('https://api.runwayml.com/v1/image_to_video', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-              'X-Runway-Version': '2024-11-06'
-            },
-            body: JSON.stringify({
-              model: route.primary_model || 'gen3a_turbo',
-              promptText: finalPrompt,
-              duration: 5,
-              ratio: '1280:768'
-            })
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'runway-video-init'
-        );
-        const task = await res.json() as any;
-        if (!res.ok) throw new Error(task?.error || `Runway error: ${res.status}`);
-
-        const taskId = task.id;
-        for (let i = 0; i < 60; i++) {
-          await new Promise(r => setTimeout(r, 5000));
-          const poll = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': '2024-11-06' }
-          });
-          const pollData = await poll.json() as any;
-          if (pollData.status === 'SUCCEEDED') {
-            videoUrl = pollData.output?.[0] || '';
-            break;
-          }
-          if (pollData.status === 'FAILED') throw new Error(`Runway video generation failed: ${pollData.failure || 'unknown'}`);
-        }
-      }
-
-      if (!videoUrl) throw new Error('Video generation returned empty result');
-
-      const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      if (estimatedCost > 0) {
-        await pool.query(
-          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-          [estimatedCost, providerId]
-        );
-      }
-
-      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Video generated via ${route.primary_provider}/${route.primary_model}`, { toolIdStr, provider: providerId });
-
-      return { result: videoUrl };
-    } catch (videoErr: any) {
-      await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-      console.error('[Orchestrator Video] Generation failed:', videoErr.message);
-      throw new Error(JSON.stringify({
-        error: `Video generation failed: ${videoErr.message}`,
-        error_ar: `فشل توليد الفيديو: ${videoErr.message}`,
-        type: "GENERATION_ERROR"
-      }));
-    }
+    const handler = await OrchestratorRegistry.getHandler('video');
+    return await handler({
+      reqBody,
+      userId,
+      route,
+      quotaCheck,
+      walletCharged,
+      finalPrompt
+    });
   }
 
   let userMemoriesStr = '';

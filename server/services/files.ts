@@ -1,4 +1,7 @@
 import { pool } from '../db/index.js';
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
 
 export async function getUserFiles(userId: string) {
   if (!pool) throw new Error('Database initializing');
@@ -28,3 +31,142 @@ export async function getUserStorageUsage(userId: string): Promise<number> {
   const result = await pool.query('SELECT SUM(file_size) as total FROM user_files WHERE user_id = $1', [userId]);
   return parseInt(result.rows[0].total || '0');
 }
+
+export async function saveGeneratedImageToDisk(userId: string, imageData: string): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  // Confirm uploads directory exists
+  await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+  let buffer: Buffer;
+  let fileExtension = 'jpg';
+  let mimeType = 'image/jpeg';
+
+  if (imageData.startsWith('data:')) {
+    const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length < 3) {
+      throw new Error('Invalid base64 data image formatting');
+    }
+    mimeType = matches[1];
+    fileExtension = mimeType.split('/')[1] || 'jpg';
+    buffer = Buffer.from(matches[2], 'base64');
+  } else if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    const response = await fetch(imageData);
+    if (!response.ok) {
+      throw new Error(`Failed to download image from URL: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type');
+    if (contentType) {
+      mimeType = contentType;
+      fileExtension = contentType.split('/')[1] || 'jpg';
+    }
+  } else {
+    buffer = Buffer.from(imageData, 'base64');
+  }
+
+  const randomFilename = `${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+  const filePath = path.join(uploadDir, randomFilename);
+
+  await fs.writeFile(filePath, buffer);
+
+  // Register the file metadata
+  await saveFileMetadata(userId, {
+    file_name: `Perplexta_Gen_${Date.now()}.${fileExtension}`,
+    file_url: randomFilename,
+    file_size: buffer.length,
+    mime_type: mimeType,
+    file_type: 'image',
+    metadata: {
+      generated: true,
+      origin: 'AI_Orchestrator_Studio'
+    }
+  });
+
+  return `/uploads/${randomFilename}`;
+}
+
+export async function saveGeneratedVideoToDisk(userId: string, videoData: string): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  // Confirm uploads directory exists
+  await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+  let buffer: Buffer;
+  let fileExtension = 'mp4';
+  let mimeType = 'video/mp4';
+
+  if (videoData.startsWith('data:')) {
+    const matches = videoData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length < 3) {
+      throw new Error('Invalid base64 data video formatting');
+    }
+    mimeType = matches[1];
+    fileExtension = mimeType.split('/')[1] || 'mp4';
+    buffer = Buffer.from(matches[2], 'base64');
+  } else if (videoData.startsWith('http://') || videoData.startsWith('https://')) {
+    // If it's a known public sample video or is already perfectly publicly hosted, we don't need to cache/write it to disk
+    if (videoData.includes('commondatastorage.googleapis.com') || videoData.includes('gtv-videos-bucket') || videoData.includes('sample')) {
+      console.log(`[File Service] Video is from a standard public sample bucket. Bypassing disk save and returning original URL.`);
+      return videoData;
+    }
+
+    let response: Response | null = null;
+    try {
+      response = await fetch(videoData, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/437.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      }
+    } catch (err: any) {
+      console.warn(`[File Service] First fetch attempt failed with User-Agent: ${err.message}. Retrying clean raw fetch...`);
+      try {
+        response = await fetch(videoData);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        }
+      } catch (cleanFetchErr: any) {
+        console.error(`[File Service] Resilient fallback: Raw retry also failed: ${cleanFetchErr.message}. Returning original URL.`);
+        return videoData;
+      }
+    }
+
+    try {
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type');
+      if (contentType) {
+        mimeType = contentType;
+        fileExtension = contentType.split('/')[1] || 'mp4';
+      }
+    } catch (bufferErr: any) {
+      console.error(`[File Service] Failed to read arrayBuffer from response: ${bufferErr.message}. Returning original URL.`);
+      return videoData;
+    }
+  } else {
+    buffer = Buffer.from(videoData, 'base64');
+  }
+
+  const randomFilename = `${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+  const filePath = path.join(uploadDir, randomFilename);
+
+  await fs.writeFile(filePath, buffer);
+
+  // Register the file metadata
+  await saveFileMetadata(userId, {
+    file_name: `Perplexta_Video_${Date.now()}.${fileExtension}`,
+    file_url: randomFilename,
+    file_size: buffer.length,
+    mime_type: mimeType,
+    file_type: 'video',
+    metadata: {
+      generated: true,
+      origin: 'AI_Orchestrator_Studio'
+    }
+  });
+
+  return `/uploads/${randomFilename}`;
+}
+

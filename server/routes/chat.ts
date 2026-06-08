@@ -14,6 +14,7 @@ import {
   updateUserChatTitle,
   updateUserChatContextSummary
 } from '../services/chat.js';
+import { VideoResourceProvider } from '../services/videoResourceProvider.js';
 
 const router = express.Router();
 
@@ -310,6 +311,15 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
       'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
       [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
     );
+
+    // If it was a video tool message, cleanly associate it in the database
+    if (toolId === 'video' && result.result && assistantMessageId) {
+      try {
+        await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result);
+      } catch (assocErr: any) {
+        console.warn('[ChatRoute] Safe warning: Failed to associate message with video:', assocErr.message);
+      }
+    }
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
 

@@ -1,5 +1,7 @@
 import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useVideoPlayback } from '../hooks/useVideoPlayback';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -12,9 +14,10 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork, Sliders, UploadCloud } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork, Sliders, UploadCloud, ZoomIn, ZoomOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
+import { useVideoResource } from '../context/VideoResourceContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -40,6 +43,1083 @@ const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
     </div>
   </div>
 );
+
+const ImageGenerationPlaceholder = ({ 
+  dir, 
+  aspectRatio = '1:1', 
+  liveElapsed = 0, 
+  style = 'Cinematic', 
+  quality = 'HD',
+  t,
+  isFailed = false,
+  errorMessage = '',
+  onRetry
+}: { 
+  dir: 'ltr' | 'rtl'; 
+  aspectRatio?: string; 
+  liveElapsed?: number; 
+  style?: string;
+  quality?: string;
+  t: any;
+  isFailed?: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
+}) => {
+  // Map aspect ratio to explicit responsive, compact Tailwind aspect classes and max-widths to prevent scrolling
+  const ratioClasses: { [key: string]: string } = {
+    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
+    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
+    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
+    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
+    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
+  };
+
+  const currentClass = ratioClasses[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
+
+  // Dynamic status updates based on real elapsed seconds to keep the process engaging
+  const getAIStatusLabel = () => {
+    if (liveElapsed < 4) {
+      return dir === 'rtl' 
+        ? 'تحليل المطلب الفني وتجهيز الأنماط العصبية الدقيقة...' 
+        : 'Analyzing artistic prompt & aligning neural style maps...';
+    } else if (liveElapsed < 8) {
+      return dir === 'rtl' 
+        ? 'رسم تفاصيل الشكل والهيكل الهندسي وتوزيع الكتلة والضوء...' 
+        : 'Synthesizing layout structure, composition geometry & volumetric lighting...';
+    } else if (liveElapsed < 14) {
+      return dir === 'rtl' 
+        ? 'توليد البيكسلات الفائقة بدقة عالية وتنسيق التفاصيل البصرية...' 
+        : 'Executing deep pixel matrix synthesis & forming high-fidelity textures...';
+    } else {
+      return dir === 'rtl' 
+        ? 'تنقيح الألوان الجمالية واللمسات السينمائية المتقدمة وتأصيل النتيجة...' 
+        : 'Refining stylistic color grading & preparing masterwork presentation...';
+    }
+  };
+
+  return (
+    <div className="w-full flex justify-start">
+      <div className="flex flex-col gap-4 w-full my-4 items-start">
+        {/* Target Image Frame */}
+        <div 
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
+        >
+          {/* Holographic Cyber Grid Background Overlay */}
+          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
+
+          {/* Pulse Emerald/Red Radial Glow at center */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${isFailed ? 'bg-rose-500/5' : 'bg-emerald-500/5'} blur-[50px] pointer-events-none`} />
+
+          {/* Dynamic Scanning Laser effect */}
+          <motion.div 
+            animate={{ y: ['0%', '100%', '0%'] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            className={`absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-${isFailed ? 'rose' : 'emerald'}-500/45 to-transparent shadow-[0_0_12px_rgba(${isFailed ? '244,63,94' : '16,185,129'},0.6)] pointer-events-none`}
+          />
+
+          {/* Neural Network Abstract Canvas or SVG animation in background */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none overflow-hidden select-none">
+            <svg className={`w-full h-full max-w-sm max-h-xs ${isFailed ? 'text-rose-500/10' : 'text-emerald-500/20'}`} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <motion.circle cx="100" cy="100" r="4" className={isFailed ? 'fill-rose-400/40' : 'fill-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.6)]'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2 }} />
+              <motion.circle cx="40" cy="60" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [0.9, 1.2, 0.9] }} transition={{ repeat: Infinity, duration: 2.5 }} />
+              <motion.circle cx="160" cy="60" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1.1, 0.8, 1.1] }} transition={{ repeat: Infinity, duration: 1.8 }} />
+              <motion.circle cx="70" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} />
+              <motion.circle cx="130" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [0.8, 1.1, 0.8] }} transition={{ repeat: Infinity, duration: 2.7 }} />
+              
+              <motion.path d="M40 60 L100 100 M160 60 L100 100 M70 150 L100 100 M130 150 L100 100" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4,4" animate={{ strokeDashoffset: [0, -20] }} transition={{ repeat: Infinity, duration: 5, ease: 'linear' }} />
+              <motion.path d="M40 60 L160 60 L130 150 L70 150 Z" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
+            </svg>
+          </div>
+
+          {/* Top bar indicators */}
+          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isFailed ? 'bg-rose-400' : 'bg-emerald-400'} opacity-75`} />
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              </span>
+              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-emerald-400'} tracking-wider`}>
+                {isFailed 
+                  ? (dir === 'rtl' ? 'فشل النظام الفني' : 'AI ART ENGINE CRITICAL') 
+                  : (dir === 'rtl' ? 'جاري التركيز البصري' : 'AI ART ENGINE LIVE')}
+              </span>
+            </div>
+            <span className="text-[9px] font-mono text-gray-500 font-bold whitespace-nowrap">
+              {quality} • {style} • {aspectRatio}
+            </span>
+          </div>
+
+          {/* Main interactive center rendering */}
+          {isFailed ? (
+            <div className="flex flex-col items-center justify-center p-6 gap-3.5 select-none text-center z-10 flex-1">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-bounce-slow">
+                <AlertTriangle size={22} />
+              </div>
+
+              <div className="flex flex-col items-center max-w-[90%] gap-1">
+                <span className="text-[11px] md:text-sm font-bold text-gray-200">
+                  {dir === 'rtl' ? 'عذراً، تعذر إنشاء العمل الفني المطلوب' : 'Artwork synthesis encountered an issue'}
+                </span>
+                <span className="text-[9px] font-medium text-rose-400/80 bg-rose-950/30 border border-rose-500/10 px-2.5 py-1 rounded-[4px] font-mono select-text text-center break-words max-w-full">
+                  {errorMessage || (dir === 'rtl' ? 'خطأ غير معروف في خادم التوليد.' : 'Unspecified generator fault occurred.')}
+                </span>
+              </div>
+
+              {onRetry && (
+                <button 
+                  onClick={onRetry}
+                  className="group relative flex items-center gap-1.5 px-4.5 py-1.5 text-[10px] md:text-xs font-semibold text-slate-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-400/55 rounded-[4px] transition-all duration-300 shadow-[0_0_15px_rgba(244,63,94,0.1)] focus:outline-none cursor-pointer pointer-events-auto active:scale-95"
+                >
+                  <RefreshCw size={12} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
+                  <span>{dir === 'rtl' ? 'إعادة محاولة التوليد' : 'Retry Image Generation'}</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 gap-3 select-none text-center z-10 flex-1">
+              <div className="relative flex items-center justify-center">
+                {/* Spinning outward orbit ring */}
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  className="w-16 h-16 rounded-full border border-dashed border-emerald-500/40 flex items-center justify-center"
+                />
+                {/* Outward glowing orbit ring rotating opposite */}
+                <motion.div 
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                  className="absolute w-12 h-12 rounded-full border border-t-emerald-500 border-r-transparent border-b-emerald-500/20 border-l-transparent"
+                />
+                <div className="absolute text-[10px] font-mono font-black text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
+                  {liveElapsed.toFixed(1)}s
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center max-w-[85%] mt-1">
+                <span className="text-[10px] md:text-[11px] font-bold text-gray-200 uppercase tracking-wide leading-relaxed animate-pulse">
+                  {getAIStatusLabel()}
+                </span>
+                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest mt-0.5">
+                  {dir === 'rtl' ? 'خوارزميات التوليف الفني من بريليكستا' : 'PERPLEXTA HIGH-FIDELITY ENGINE'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom micro metrics panel */}
+          <div className={`p-2.5 w-full bg-zinc-950/50 border-t ${isFailed ? 'border-rose-500/5' : 'border-emerald-500/5'} backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500`}>
+            <span>{isFailed ? 'CORES: DISENGAGED' : 'CORES: ALLOCATED'}</span>
+            <span>{isFailed ? 'STATUS: HALTED 500' : `LATENCY: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  const srcVal = src || '';
+  let imgAspect = '1:1';
+  if (srcVal.includes('#aspect=')) {
+    imgAspect = srcVal.split('#aspect=')[1] || '1:1';
+  }
+
+  const imgRatioClasses: { [key: string]: string } = {
+    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
+    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
+    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
+    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
+    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
+  };
+
+  const currentRatioClass = imgRatioClasses[imgAspect] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
+
+  const handleDownload = async () => {
+    if (!srcVal) return;
+    try {
+      const cleanUrl = srcVal.split('#')[0];
+      const cleanResponse = await fetch(cleanUrl);
+      const cleanBlob = await cleanResponse.blob();
+      const cleanObjectUrl = window.URL.createObjectURL(cleanBlob);
+      const link = document.createElement('a');
+      link.href = cleanObjectUrl;
+      link.download = `Perplexta_Gen_${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(cleanObjectUrl);
+    } catch (err) {
+      console.error("Download failed, using backup method...", err);
+      const link = document.createElement('a');
+      link.href = srcVal;
+      link.download = `Perplexta_Gen_${Date.now()}.png`;
+      link.target = '_blank';
+      link.click();
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2500);
+    } catch (err) {
+      console.error("Clipboard write failed", err);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!srcVal) return;
+    const cleanUrl = srcVal.split('#')[0];
+
+    if (navigator.share) {
+      try {
+        setShareStatus('sharing');
+        await navigator.share({
+          title: 'Perplexta AI Art',
+          text: dir === 'rtl' ? 'شاهد هذا العمل الفني الرائع المولد بواسطة منصة بيربليكستا للذكاء الاصطناعي!' : 'Check out this stunning artwork generated with Perplexta AI!',
+          url: cleanUrl,
+        });
+        setShareStatus('idle');
+      } catch (err) {
+        console.warn("Native share cancelled or failed, falling back to copy Link", err);
+        setShareStatus('idle');
+        if (err && (err as any).name !== 'AbortError') {
+          copyToClipboard(cleanUrl);
+        }
+      }
+    } else {
+      copyToClipboard(cleanUrl);
+    }
+  };
+
+  // Reset zoom settings on close/open
+  const resetZoom = () => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    setIsDragging(false);
+  };
+
+  const toggleZoom = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    if (scale > 1) {
+      resetZoom();
+    } else {
+      setScale(2.5);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale <= 1) return;
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || scale <= 1) return;
+    e.preventDefault();
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+    resetZoom();
+    setIsImageLoaded(false);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPreviewOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewOpen]);
+
+  return (
+    <>
+      <div className="w-full flex my-4 justify-start">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-all duration-500 ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass}`}
+        >
+          <img 
+            src={srcVal}
+            alt={alt || "Generated Output"}
+            className="block w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] cursor-pointer" 
+            referrerPolicy="no-referrer" 
+            loading="lazy"
+            onClick={() => setIsPreviewOpen(true)}
+          />
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-x-0 bottom-0 p-3.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center items-center backdrop-blur-[2px] z-10"
+          >
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsPreviewOpen(true)}
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                title={dir === 'rtl' ? 'معاينة' : 'Preview'}
+              >
+                <Maximize2 size={13} />
+              </button>
+              <button 
+                onClick={handleShare}
+                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md active:scale-95 ${
+                  shareStatus === 'copied' 
+                    ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
+                    : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
+                }`}
+                title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+              >
+                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-emerald-400' : ''} />
+              </button>
+              <button 
+                onClick={handleDownload}
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                title={dir === 'rtl' ? 'تنزيل' : 'Download'}
+              >
+                <Download size={13} />
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {isPreviewOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-center select-none"
+              onClick={() => setIsPreviewOpen(false)}
+            >
+              {/* TOP BRAND INDICATOR BAR */}
+              <div 
+                className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/90 via-black/45 to-transparent flex items-center justify-between px-6 z-[1000]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-bold text-emerald-400/90 tracking-widest uppercase font-mono">
+                    {dir === 'rtl' ? 'مستكشف الدقة الفائقة من بريليكستا' : 'PERPLEXTA HIGH-FIDELITY PREVIEW'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium font-sans">
+                    {dir === 'rtl' ? 'توليف آمن ومحمي بالكامل لقواعد التصميم الذكية' : 'Strictly audited smart synthesis artifact'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDownload}
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'تنزيل' : 'Download'}
+                  >
+                    <Download size={15} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+                  >
+                    <Share2 size={15} />
+                  </button>
+                  <button
+                    onClick={() => setIsPreviewOpen(false)}
+                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'إغلاق' : 'Close'}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* DYNAMIC VIEWPORT & ZOOM MANAGER */}
+              <div 
+                className="w-full h-full flex items-center justify-center overflow-hidden p-6 relative cursor-zoom-out"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                {!isImageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-zinc-950/20 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                      <span className="text-[10px] font-mono text-emerald-400/80 tracking-wider">
+                        {dir === 'rtl' ? 'تجهيز بكسلات الإطار الفائقة...' : 'INGESTING ULTRA-RES CANVAS...'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: isImageLoaded ? 1 : 0 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                  className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center transition-shadow duration-500 bg-black/40 rounded-[4px]"
+                  style={{
+                    boxShadow: '0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 50px rgba(16,185,129,0.06)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={srcVal}
+                    alt={alt || "Output Preview"}
+                    onLoad={() => setIsImageLoaded(true)}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onClick={toggleZoom}
+                    className="max-w-[90vw] max-h-[80vh] rounded-[4px] object-contain block select-none border border-zinc-800/80"
+                    style={{
+                      transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                      cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in',
+                      transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                    }}
+                    draggable={false}
+                  />
+                </motion.div>
+              </div>
+
+              {/* BOTTOM FLOATING CONTROL DOCK */}
+              <div 
+                className="absolute bottom-8 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-[1000] px-4 py-2.5 rounded-[4px] flex items-center gap-4 text-xs font-mono select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-1.5 border-r border-zinc-700/60 pe-3 text-gray-400">
+                  <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">{dir === 'rtl' ? 'التقريب' : 'ZOOM'}:</span>
+                  <span className="text-[11px] font-bold text-gray-200">{(scale * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setScale(prev => Math.max(prev - 0.5, 1));
+                      if (scale <= 1.5) setPosition({ x: 0, y: 0 });
+                    }}
+                    disabled={scale <= 1}
+                    className="w-7 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-gray-300 hover:text-white disabled:opacity-45 disabled:pointer-events-none active:scale-95"
+                    title={dir === 'rtl' ? 'تصغير' : 'Zoom Out'}
+                  >
+                    <ZoomOut size={13} />
+                  </button>
+                  <button
+                    onClick={resetZoom}
+                    className="px-2 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-[9px] uppercase font-bold text-emerald-400 hover:text-emerald-300 active:scale-95"
+                    title={dir === 'rtl' ? 'إعادة ضبط' : 'Reset View'}
+                  >
+                    {dir === 'rtl' ? 'ضبط' : 'Reset'}
+                  </button>
+                  <button
+                    onClick={() => setScale(prev => Math.min(prev + 0.5, 4))}
+                    disabled={scale >= 4}
+                    className="w-7 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-gray-300 hover:text-white disabled:opacity-45 disabled:pointer-events-none active:scale-95"
+                    title={dir === 'rtl' ? 'تكبير' : 'Zoom In'}
+                  >
+                    <ZoomIn size={13} />
+                  </button>
+                </div>
+                {scale > 1 && (
+                  <div className="hidden sm:flex text-[9px] text-zinc-400 border-l border-zinc-700/60 ps-3 items-center gap-1.5 animate-pulse">
+                    <span>💡 {dir === 'rtl' ? 'اسحب للتنقل داخل الصورة' : 'Drag inside frame to pan details'}</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
+  );
+};
+
+const VideoGenerationPlaceholder = ({ 
+  dir, 
+  aspectRatio = '16:9', 
+  liveElapsed = 0, 
+  resolution = '720p', 
+  duration = 5,
+  t,
+  isFailed = false,
+  errorMessage = '',
+  onRetry,
+  progressData = null
+}: { 
+  dir: 'ltr' | 'rtl'; 
+  aspectRatio?: string; 
+  liveElapsed?: number; 
+  resolution?: string;
+  duration?: number;
+  t: any;
+  isFailed?: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
+  progressData?: {
+    progress: number;
+    renderedFrames: number;
+    totalFrames: number;
+    phase: string;
+    phase_ar: string;
+    fps?: number;
+    currentStep?: number;
+    totalSteps?: number;
+  } | null;
+}) => {
+  // Map aspect ratio to explicit responsive, compact Tailwind aspect classes
+  const ratioClasses: { [key: string]: string } = {
+    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
+    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
+    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
+    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
+    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
+  };
+
+  const currentClass = ratioClasses[aspectRatio] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
+
+  const progressValue = isFailed 
+    ? (progressData?.progress || Math.min(99, Math.round(liveElapsed * 4.5)))
+    : (progressData ? progressData.progress : Math.min(99, Math.round(liveElapsed * 4.5)));
+
+  const getAIStatusLabel = () => {
+    if (isFailed) {
+      return dir === 'rtl' ? 'تم إيقاف الإنتاج بسبب خطأ' : 'Synthesis halted due to error';
+    }
+    if (progressData) {
+      return dir === 'rtl' ? progressData.phase_ar : progressData.phase;
+    }
+    if (liveElapsed < 4) {
+      return dir === 'rtl' 
+        ? 'بناء الخلايا الشبكية وتهيئة مصفوفة الفيديو...' 
+        : 'Initializing neural grid & allocating keyframe matrices...';
+    } else if (liveElapsed < 8) {
+      return dir === 'rtl' 
+        ? 'حساب وتوليد الإطارات الوسيطة وتتبع تسلسل الحركة...' 
+        : 'Computing flow motion vectors & rendering temporal vectors...';
+    } else if (liveElapsed < 14) {
+      return dir === 'rtl' 
+        ? 'تركيب بيكسلات الصور الحركية ودمج القناتين الفائقتين...' 
+        : 'Executing latent frame synthesis & polishing hyper-resolution...';
+    } else {
+      return dir === 'rtl' 
+        ? 'تنقيح المشاهد النهائية وضبط المؤثرات السينمائية الصورية...' 
+        : 'Finalizing cosmetic filters & structuring master sequence...';
+    }
+  };
+
+  return (
+    <div className="w-full flex justify-start">
+      <div className="flex flex-col gap-3.5 w-full my-4 items-start">
+        {/* Target Video Frame */}
+        <div 
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
+        >
+          {/* Holographic Cyber Grid Background Overlay */}
+          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
+
+          {/* Top bar indicators */}
+          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                {!isFailed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              </span>
+              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-emerald-400'} tracking-wider`}>
+                {isFailed 
+                  ? (dir === 'rtl' ? 'فشل إنتاج الفيديو' : 'VIDEO SYNTHESIS CRITICAL') 
+                  : (dir === 'rtl' ? 'جاري بناء التدفق البصري' : 'AI VIDEO STREAM ACTIVE')}
+              </span>
+            </div>
+            <span className="text-[9px] font-mono text-gray-400 font-bold whitespace-nowrap">
+              {resolution} • {duration}s • {aspectRatio}
+            </span>
+          </div>
+
+          {/* Main unified clean screen content */}
+          <div className="flex flex-col items-center justify-center p-6 gap-4 select-none text-center z-10 flex-1 w-full">
+            {isFailed ? (
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] mb-1">
+                <AlertTriangle size={22} />
+              </div>
+            ) : (
+              <div className="relative flex items-center justify-center w-12 h-12">
+                {/* Clean, quiet pulse loader */}
+                <motion.div 
+                  animate={{ scale: [0.95, 1.05, 0.95], opacity: [0.5, 0.9, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-10 h-10 rounded-full border border-emerald-500/30 flex items-center justify-center"
+                />
+                <div className="absolute text-[10px] font-mono font-bold text-emerald-400">
+                  {liveElapsed.toFixed(0)}s
+                </div>
+              </div>
+            )}
+
+            {/* Micro progress section - "خط نسبة الانتاج" (The only production progress line) */}
+            <div className="w-full max-w-[280px] flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className={`font-black tracking-tight ${isFailed ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {progressValue}%
+                </span>
+                <span className="text-gray-400 max-w-[200px] truncate text-right">
+                  {getAIStatusLabel()}
+                </span>
+              </div>
+
+              {/* Seamless unified glowing progress line */}
+              <div className={`h-1.5 w-full ${isFailed ? 'bg-rose-950/40 border-rose-900/30' : 'bg-zinc-900 border-zinc-800'} rounded-full overflow-hidden border p-0.5`}>
+                <motion.div 
+                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressValue}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+
+            {/* Error Message Details displayed elegantly if failed */}
+            {isFailed && (
+              <div className="flex flex-col items-center gap-2 max-w-[90%]">
+                <span className="text-[10px] text-rose-400 font-mono bg-rose-950/20 border border-rose-500/10 px-2 py-0.5 rounded-[4px] break-words text-center">
+                  {errorMessage || (dir === 'rtl' ? 'حدث خطأ غير محدد أثناء المعالجة.' : 'Unspecified frame generation fault.')}
+                </span>
+                {onRetry && (
+                  <button 
+                    onClick={onRetry}
+                    className="group flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold text-slate-100 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400/50 rounded-[4px] transition-all duration-300 shadow-[0_0_10px_rgba(244,63,94,0.1)] cursor-pointer"
+                  >
+                    <RefreshCw size={10} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
+                    <span>{dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Minimalist professional footer */}
+          <div className="p-2.5 w-full bg-zinc-950/50 border-t border-zinc-900/40 backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500">
+            <span>{isFailed ? 'STATE: HALTED' : 'PROCESS: SYNCHRONIZED'}</span>
+            <span>{isFailed ? 'FAIL_CODE: 0x2A4' : `TIME_ELAPSED: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UnifiedVideoMessageWidget = ({
+  msg,
+  idx,
+  messages,
+  dir,
+  videoSettings,
+  liveElapsed,
+  isGenerating,
+  t,
+  onRetry
+}: {
+  msg: any;
+  idx: number;
+  messages: any[];
+  dir: 'ltr' | 'rtl';
+  videoSettings: any;
+  liveElapsed: number;
+  isGenerating: boolean;
+  t: any;
+  onRetry: () => void;
+}) => {
+  const { registerProcessingVideo, relinkMessageId } = useVideoResource();
+  const msgId = msg.id || msg.client_id;
+
+  useEffect(() => {
+    const isProcessing = msg.tool === 'video' && 
+      !msg.content.includes('.mp4') && 
+      !msg.content.includes('mixkit') && 
+      !msg.content.includes('/uploads/') && 
+      !msg.content.includes('[Generated Video]') &&
+      !msg.is_video_failed;
+
+    if (isProcessing && msgId) {
+      registerProcessingVideo(msgId);
+    }
+  }, [msgId, msg.content, msg.tool, msg.is_video_failed, registerProcessingVideo]);
+
+  useEffect(() => {
+    if (msg.client_id && msg.id && msg.client_id !== msg.id) {
+      relinkMessageId(msg.client_id, msg.id);
+    }
+  }, [msg.client_id, msg.id, relinkMessageId]);
+
+  const {
+    status,
+    progressData,
+    resolvedUrl,
+    generationError
+  } = useVideoPlayback({ src: msg.content, messageId: msgId, dir });
+
+  if (status === 'ready' && resolvedUrl) {
+    return (
+      <ShareableVideoOutput 
+        src={resolvedUrl} 
+        dir={dir} 
+        alt="Generated Video"
+      />
+    );
+  }
+
+  const failedState = status === 'error' || !!msg.is_video_failed || (!isGenerating && idx === messages.length - 1 && !msg.content);
+
+  return (
+    <VideoGenerationPlaceholder 
+      dir={dir} 
+      aspectRatio={videoSettings.aspectRatio}
+      liveElapsed={idx === messages.length - 1 ? liveElapsed : 0}
+      resolution={videoSettings.resolution}
+      duration={videoSettings.duration}
+      t={t}
+      isFailed={failedState}
+      errorMessage={generationError || msg.content || (dir === 'rtl' ? 'تم إيقاف توليد وإعداد الفيديو من قبل العميل أو لعدم الاتصال' : 'Video generation stopped or halted.')}
+      progressData={progressData}
+      onRetry={onRetry}
+    />
+  );
+};
+
+const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: string; dir?: string; alt?: string; title?: string; [key: string]: any }) => {
+  const {
+    shareStatus,
+    isPreviewOpen,
+    setIsPreviewOpen,
+    isPlaying,
+    setIsPlaying,
+    isMuted,
+    progress,
+    currentTime,
+    duration,
+    isVideoLoaded,
+    setIsVideoLoaded,
+    
+    // Preview states
+    isPreviewPlaying,
+    setIsPreviewPlaying,
+    isPreviewMuted,
+    previewProgress,
+    previewTime,
+    previewDur,
+    
+    // Refs
+    videoRef,
+    previewVideoRef,
+    
+    // Extracted layout metrics
+    cleanDisplayUrl,
+    vidAspect,
+    providerMeta,
+    
+    // Handlers
+    handleDownload,
+    handleShare,
+    togglePlay,
+    toggleMute,
+    handleTimeUpdate,
+    handleLoadedMetadata,
+    handleSeek,
+    
+    // Preview Handlers
+    togglePreviewPlay,
+    togglePreviewMute,
+    handlePreviewSeek,
+    handlePreviewTimeUpdate,
+    handlePreviewLoadedMetadata,
+  } = useVideoPlayback({ src, dir });
+
+  const vidRatioClasses: { [key: string]: string } = {
+    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
+    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
+    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
+    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
+    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
+  };
+
+  const currentRatioClass = vidRatioClasses[vidAspect] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
+
+  return (
+    <>
+      <div className="w-full flex my-4 justify-start">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-all duration-500 ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass} bg-black/40`}
+        >
+          {providerMeta.isValid && (
+            <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-emerald-500/10 text-[8px] font-mono text-emerald-400 z-10 transition-all duration-500 hover:border-emerald-500/30 flex items-center gap-1`}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span>{providerMeta.label}</span>
+            </div>
+          )}
+
+          <video 
+            ref={videoRef}
+            src={cleanDisplayUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedData={() => {
+              setIsVideoLoaded(true);
+            }}
+            onLoadedMetadata={() => {
+              setIsVideoLoaded(true);
+              handleLoadedMetadata();
+            }}
+            onEnded={() => setIsPlaying(false)}
+            onClick={() => setIsPreviewOpen(true)}
+            className={`block w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+            loop
+            playsInline
+            muted={isMuted}
+          />
+
+          {!isVideoLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/95 pointer-events-none z-20">
+              <div className="flex flex-col items-center gap-2.5">
+                <Loader2 size={24} className="animate-spin text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <span className="text-[10px] font-sans font-medium text-zinc-400 tracking-wide">
+                  {dir === 'rtl' ? 'جاري التحميل...' : 'Loading video...'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Interactive Play HUD Overlay */}
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300 pointer-events-none" />
+
+          {/* Center Play Button */}
+          <div 
+            onClick={togglePlay}
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-emerald-500/40 flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+              {isPlaying ? <Pause size={18} className="fill-emerald-400/20" /> : <Play size={18} className="fill-emerald-400/20 ml-0.5" />}
+            </div>
+          </div>
+
+          {/* Progress bar glow */}
+          <div className="absolute bottom-0 inset-x-0 h-1 bg-zinc-900/40 backdrop-blur-xs z-10 overflow-hidden pointer-events-none">
+            <div 
+              className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-100" 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Bottom Controllers Panel */}
+          <div 
+            className="absolute inset-x-0 bottom-0 p-3.5 bg-gradient-to-t from-black/90 via-black/45 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center backdrop-blur-[2px] z-10"
+          >
+            {/* Scrubber */}
+            <div onClick={handleSeek} className="absolute top-0 inset-x-0 h-1.5 bg-zinc-850 cursor-pointer overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="h-full bg-emerald-500" style={{ width: `${progress}%` }} />
+            </div>
+
+            {/* Timings */}
+            <div className="flex items-center gap-1.5 font-mono text-[9px] text-gray-400">
+              <span className="text-gray-200">{currentTime.toFixed(0)}s</span>
+              <span>/</span>
+              <span>{duration ? `${duration.toFixed(0)}s` : '5s'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={toggleMute}
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                title={isMuted ? (dir === 'rtl' ? 'إلغاء الكتم' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
+              >
+                {isMuted ? <VolumeX size={13} className="text-gray-400" /> : <Volume2 size={13} />}
+              </button>
+              <button 
+                onClick={() => setIsPreviewOpen(true)}
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                title={dir === 'rtl' ? 'ملء الشاشة' : 'Fullscreen'}
+              >
+                <Maximize2 size={13} />
+              </button>
+              <button 
+                onClick={handleShare}
+                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md active:scale-95 ${
+                  shareStatus === 'copied' 
+                    ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
+                    : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
+                }`}
+                title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+              >
+                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-emerald-400' : ''} />
+              </button>
+              <button 
+                onClick={handleDownload}
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                title={dir === 'rtl' ? 'تنزيل' : 'Download'}
+              >
+                <Download size={13} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {isPreviewOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-center select-none"
+              onClick={() => setIsPreviewOpen(false)}
+            >
+              {/* TOP HEADER */}
+              <div 
+                className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/90 via-black/45 to-transparent flex items-center justify-between px-6 z-[1000]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] font-bold text-emerald-400/90 tracking-widest uppercase font-mono">
+                    {dir === 'rtl' ? 'عرض السينما الفائقة من بيربليكستا' : 'PERPLEXTA CINEMATIC PRO PREVIEW'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium font-sans">
+                    {dir === 'rtl' ? 'مخرجات آلة توليد الفيديو المتكاملة بدقة ووضوح فائقين' : 'Engineered high-fidelity video production container'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDownload}
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'تنزيل' : 'Download'}
+                  >
+                    <Download size={15} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+                  >
+                    <Share2 size={15} />
+                  </button>
+                  <button
+                    onClick={() => setIsPreviewOpen(false)}
+                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    title={dir === 'rtl' ? 'إغلاق' : 'Close'}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* DYNAMIC VIEWPORT & VIDEO WRAPPER */}
+              <div 
+                className="w-full h-full flex flex-col items-center justify-center p-6 relative animate-fade-in"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                  className="relative max-w-[90vw] max-h-[75vh] aspect-video flex items-center justify-center transition-shadow duration-500 bg-black rounded-[4px] border border-zinc-800/80 shadow-[0_25px_70px_-10px_rgba(0,0,0,0.85)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <video
+                    ref={previewVideoRef}
+                    src={cleanDisplayUrl}
+                    onTimeUpdate={handlePreviewTimeUpdate}
+                    onLoadedMetadata={handlePreviewLoadedMetadata}
+                    onEnded={() => setIsPreviewPlaying(false)}
+                    onClick={togglePreviewPlay}
+                    className="max-w-full max-h-[70vh] rounded-[4px] object-contain block focus:outline-none"
+                    loop
+                    preload="auto"
+                    muted={isPreviewMuted}
+                    playsInline
+                  />
+
+                  {/* Preview Play/Pause Click Overlay */}
+                  <div 
+                    onClick={togglePreviewPlay}
+                    className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-850/80 flex items-center justify-center text-emerald-400 shadow-2xl">
+                      {isPreviewPlaying ? <Pause size={24} className="fill-emerald-400/25" /> : <Play size={24} className="fill-emerald-400/25 ml-1" />}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* BOTTOM CONTROL DOCK */}
+              <div 
+                className="absolute bottom-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-[1000] px-5 py-3 rounded-xl flex items-center gap-4 text-xs font-mono select-none w-full max-w-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={togglePreviewPlay}
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-all duration-200"
+                    title={isPreviewPlaying ? (dir === 'rtl' ? 'إيقاف' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
+                  >
+                    {isPreviewPlaying ? <Pause size={13} className="fill-emerald-400/10" /> : <Play size={13} className="fill-emerald-400/10 ml-0.5" />}
+                  </button>
+
+                  <button
+                    onClick={togglePreviewMute}
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-all duration-200"
+                    title={isPreviewMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
+                  >
+                    {isPreviewMuted ? <VolumeX size={13} className="text-zinc-500" /> : <Volume2 size={13} />}
+                  </button>
+                </div>
+
+                <div 
+                  onClick={handlePreviewSeek} 
+                  className="flex-1 h-1.5 bg-zinc-950/80 rounded-full cursor-pointer relative overflow-hidden"
+                >
+                  <div 
+                    className="h-full bg-emerald-500 transition-all duration-100 shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
+                    style={{ width: `${previewProgress}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 font-mono text-[9.5px] text-zinc-400 select-none">
+                  <span className="text-zinc-200 font-bold">{previewTime.toFixed(0)}s</span>
+                  <span className="text-zinc-650">/</span>
+                  <span>{previewDur ? `${previewDur.toFixed(0)}s` : '5s'}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
+  );
+};
+
+const ShareableVideoOutput = VideoPlaybackComponent;
 
 const BlockquoteWithActions = ({ children, dir }: any) => {
   const [copied, setCopied] = useState(false);
@@ -734,6 +1814,8 @@ interface Message {
   is_pinned?: boolean;
   is_quota_error?: boolean;
   is_system_inactive?: boolean;
+  is_image_failed?: boolean;
+  is_video_failed?: boolean;
   quota_data?: any;
   thinking_steps?: { step: string; status: 'completed' | 'processing' | 'pending' }[];
   citations?: { title: string; url: string; index: number; link?: string }[];
@@ -1029,12 +2111,16 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any): React.Rea
   }
   
   if (React.isValidElement(node)) {
-    const elementProps = node.props as any;
-    if (elementProps && 'children' in elementProps) {
-      return React.cloneElement(node, {
-        ...elementProps,
-        children: renderChildrenWithCitations(elementProps.children, msg)
-      } as any);
+    // PREVENT FREEZING: Only clone native primitive HTML tags like strong, em, span, etc.
+    // Never clone layout containers, interactive controls, custom React components, or media.
+    if (typeof node.type === 'string' && !['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button'].includes(node.type)) {
+      const elementProps = node.props as any;
+      if (elementProps && 'children' in elementProps) {
+        return React.cloneElement(node, {
+          ...elementProps,
+          children: renderChildrenWithCitations(elementProps.children, msg)
+        } as any);
+      }
     }
   }
   
@@ -2967,7 +4053,8 @@ export const ChatPage: React.FC = () => {
   const [videoSettings, setVideoSettings] = useState({
     aspectRatio: '16:9',
     resolution: '720p',
-    duration: 5
+    duration: 5,
+    style: 'Cinematic'
   });
   const [imageSettings, setImageSettings] = useState({
     aspectRatio: '1:1',
@@ -3933,7 +5020,10 @@ export const ChatPage: React.FC = () => {
             content: errorMessage,
             is_quota_error: isQuota,
             is_system_inactive: isInactive,
-            quota_data: quotaData
+            quota_data: quotaData,
+            is_image_failed: lastMessage.tool === 'image' || selectedTool === 'image',
+            is_video_failed: lastMessage.tool === 'video' || selectedTool === 'video',
+            tool: lastMessage.tool || selectedTool
           };
           return newMessages;
         }
@@ -3942,7 +5032,10 @@ export const ChatPage: React.FC = () => {
           content: errorMessage,
           is_quota_error: isQuota,
           is_system_inactive: isInactive,
-          quota_data: quotaData
+          quota_data: quotaData,
+          is_image_failed: selectedTool === 'image',
+          is_video_failed: selectedTool === 'video',
+          tool: selectedTool
         }];
       });
       setIsGenerating(false);
@@ -4036,6 +5129,15 @@ export const ChatPage: React.FC = () => {
       window.removeEventListener('load-chat', handleLoadChat);
     };
   }, [navigate]);
+
+  const findUserPrompt = (index: number): string => {
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'user') {
+        return messages[i].content;
+      }
+    }
+    return '';
+  };
 
   const handleSendOrStop = async (overrideQuery?: string, overrideMessages?: Message[]) => {
     if (isGenerating) {
@@ -4462,13 +5564,18 @@ export const ChatPage: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => setImageSettings(prev => ({ ...prev, style: s }))}
-                  className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme whitespace-nowrap ${
+                  className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-all duration-300 whitespace-nowrap pointer-events-auto cursor-pointer ${
                     imageSettings.style === s 
-                      ? 'text-emerald-500 underline underline-offset-4 decoration-2' 
-                      : 'text-gray-400/20 hover:text-gray-200'
+                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] scale-110 font-bold underline underline-offset-4 decoration-2' 
+                      : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
-                  {t(s.toLowerCase()) || s}
+                  {dir === 'rtl' ? (
+                    s === 'Cinematic' ? 'سينمائي' :
+                    s === 'Realistic' ? 'واقعي' :
+                    s === 'Anime' ? 'أنمي' :
+                    'فن رقمي'
+                  ) : s}
                 </button>
               ))}
             </div>
@@ -4609,6 +5716,15 @@ export const ChatPage: React.FC = () => {
 
     const ratios = ['16:9', '9:16', '1:1', '4:3'];
     const resolutions = ['720p', '1080p'];
+    const styles = ['Cinematic', 'Realistic', '3D Render', 'Anime', 'Cyberpunk'];
+    
+    const styleTrans: Record<string, string> = {
+      'Cinematic': dir === 'rtl' ? 'سينمائي' : 'Cinematic',
+      'Realistic': dir === 'rtl' ? 'واقعي' : 'Realistic',
+      '3D Render': dir === 'rtl' ? 'رندر ثلاثي' : '3D Render',
+      'Anime': dir === 'rtl' ? 'أنمي' : 'Anime',
+      'Cyberpunk': dir === 'rtl' ? 'سايبربانك' : 'Cyberpunk'
+    };
 
     return (
       <motion.div 
@@ -4618,6 +5734,25 @@ export const ChatPage: React.FC = () => {
         className={`mb-1 w-full flex items-center justify-between pointer-events-auto px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}
       >
         <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
+          {/* Format/Style Selectors */}
+          <div className="flex items-center gap-1.5 md:gap-2">
+            {styles.map(st => (
+              <button
+                key={st}
+                onClick={() => setVideoSettings(prev => ({ ...prev, style: st }))}
+                className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-all duration-300 pointer-events-auto cursor-pointer ${
+                  videoSettings.style === st
+                    ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-105'
+                    : 'text-gray-400/40 border-transparent hover:text-gray-200'
+                }`}
+              >
+                {styleTrans[st]}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-3 bg-zinc-800/80" />
+
           <div className="flex items-center gap-2 md:gap-3.5">
             {ratios.map(r => (
               <button
@@ -4634,7 +5769,7 @@ export const ChatPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5" />
+          <div className="w-px h-3 bg-zinc-800/80" />
 
           {/* Resolutions Group */}
           <div className="flex items-center gap-2.5 md:gap-4">
@@ -5634,7 +6769,7 @@ export const ChatPage: React.FC = () => {
                         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                         className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
                       >
-                        {!msg.is_quota_error && !msg.is_system_inactive && (
+                        {!msg.is_quota_error && !msg.is_system_inactive && msg.tool !== 'video' && (
                           <ToolStatusIndicator 
                             tool={msg.tool} 
                             isGenerating={isGenerating && idx === messages.length - 1} 
@@ -5642,8 +6777,53 @@ export const ChatPage: React.FC = () => {
                             t={t} 
                           />
                         )}
-                        {isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
-                           <ResponseSkeleton dir={dir} />
+                        {msg.tool === 'video' ? (
+                          <UnifiedVideoMessageWidget 
+                            msg={msg}
+                            idx={idx}
+                            messages={messages}
+                            dir={dir}
+                            videoSettings={videoSettings}
+                            liveElapsed={liveElapsed}
+                            isGenerating={isGenerating}
+                            t={t}
+                            onRetry={() => {
+                              const userPrompt = findUserPrompt(idx);
+                              if (userPrompt) {
+                                handleSendOrStop(userPrompt, messages.slice(0, idx - 1));
+                              }
+                            }}
+                          />
+                        ) : isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
+                          msg.tool === 'image' ? (
+                            <ImageGenerationPlaceholder 
+                              dir={dir} 
+                              aspectRatio={imageSettings.aspectRatio}
+                              liveElapsed={liveElapsed}
+                              style={imageSettings.style}
+                              quality={imageSettings.quality}
+                              t={t}
+                            />
+                          ) : (
+                            <ResponseSkeleton dir={dir} />
+                          )
+                        ) : msg.is_image_failed ? (
+                          <ImageGenerationPlaceholder 
+                            dir={dir} 
+                            aspectRatio={imageSettings.aspectRatio}
+                            liveElapsed={0}
+                            style={imageSettings.style}
+                            quality={imageSettings.quality}
+                            t={t}
+                            isFailed={true}
+                            errorMessage={msg.content}
+                            onRetry={() => {
+                              const userPrompt = findUserPrompt(idx);
+                              if (userPrompt) {
+                                handleSendOrStop(userPrompt, messages.slice(0, idx - 1));
+                              }
+                            }}
+                          />
                         ) : msg.is_quota_error ? (
                            <QuotaExceededCard tool={msg.tool} data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
                         ) : msg.is_system_inactive ? (
@@ -5667,7 +6847,28 @@ export const ChatPage: React.FC = () => {
                                 remarkPlugins={[remarkGfm]} 
                                 components={{ 
                                   code: CodeBlock,
-                                  a: ({ href, children }: any) => <MarkdownLink href={href}>{children}</MarkdownLink>,
+                                  a: ({ href, children }: any) => {
+                                    const isVideo = href && (
+                                      href.endsWith('.mp4') || 
+                                      href.endsWith('.webm') || 
+                                      href.endsWith('.mov') || 
+                                      href.includes('assets.mixkit.co/videos') ||
+                                      href.includes('/uploads/') ||
+                                      href.includes('.mp4') ||
+                                      href.includes('.webm') ||
+                                      href.includes('.mov')
+                                    );
+                                    if (isVideo) {
+                                      return (
+                                        <ShareableVideoOutput 
+                                          src={href} 
+                                          dir={dir} 
+                                          alt="Generated Video"
+                                        />
+                                      );
+                                    }
+                                    return <MarkdownLink href={href}>{children}</MarkdownLink>;
+                                  },
                                   blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
                                   p: ({ children, node }: any) => {
                                     const isLastMessage = idx === messages.length - 1;
@@ -5691,109 +6892,22 @@ export const ChatPage: React.FC = () => {
                                     {children}
                                   </h2>,
                                   h3: ({ children }) => <h3 className="text-[10px] md:text-[11px] font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
-                              img: ({ node, ...props }) => {
-                              const handleDownload = async () => {
-                                if (!props.src) return;
-                                try {
-                                  const response = await fetch(props.src);
-                                  const blob = await response.blob();
-                                  const url = window.URL.createObjectURL(blob);
-                                  const link = document.createElement('a');
-                                  link.href = url;
-                                  link.download = `Perplexta_Gen_${Date.now()}.png`;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  window.URL.revokeObjectURL(url);
-                                } catch (err) {
-                                  console.error("Download failed", err);
-                                }
-                              };
-
-                              return (
-                                <motion.div 
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                                  className="my-4 relative group inline-block w-full max-w-[280px] sm:max-w-sm overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-theme duration-300 hover:shadow-emerald-500/10 hover:border-emerald-500/30"
-                                >
-                                  <img 
-                                    {...props} 
-                                    className="block w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105" 
-                                    referrerPolicy="no-referrer" 
-                                    loading="lazy"
-                                  />
-                                  <motion.div 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center backdrop-blur-[2px]"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-[9px] text-emerald-400 font-bold tracking-tight">
-                                        {dir === 'rtl' ? 'ملاحظة: التخزين 30 يوماً' : 'Note: 30-Day Storage'}
-                                      </span>
-                                      <span className="text-[9px] text-gray-300 font-medium">
-                                        {dir === 'rtl' ? 'آمن ومحمي' : 'Secure & Encrypted'}
-                                      </span>
-                                    </div>
-                                    <button 
-                                      onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
-                                      title={dir === 'rtl' ? 'تنزيل' : 'Download'}
-                                    >
-                                      <Download size={14} />
-                                    </button>
-                                  </motion.div>
-                                </motion.div>
-                              );
-                            },
-                            video: ({ node, ...props }) => {
-                              const handleDownload = async () => {
-                                if (!props.src) return;
-                                try {
-                                  const response = await fetch(props.src);
-                                  const blob = await response.blob();
-                                  const url = window.URL.createObjectURL(blob);
-                                  const link = document.createElement('a');
-                                  link.href = url;
-                                  link.download = `Perplexta_Gen_${Date.now()}.mp4`;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  window.URL.revokeObjectURL(url);
-                                } catch (err) {
-                                  console.error("Video download failed", err);
-                                }
-                              };
-
-                              return (
-                                <div className="my-4 relative group inline-block max-w-[85%] md:max-w-md overflow-hidden rounded-[var(--radius)] border border-[var(--border)] shadow-md transition-theme hover:shadow-emerald-500/10 hover:border-emerald-500/30">
-                                  <video 
-                                    {...props} 
-                                    className="block w-full h-auto rounded-[var(--radius)]" 
-                                    controls 
-                                    controlsList="nodownload" // Intercept native download to use our secure one
-                                  />
-                                  <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center backdrop-blur-md">
-                                    <div className="flex flex-col">
-                                      <span className="text-[9px] text-emerald-400 font-bold tracking-tight">
-                                        {dir === 'rtl' ? 'ملاحظة: التخزين 30 يوماً' : 'Note: 30-Day Storage'}
-                                      </span>
-                                      <span className="text-[9px] text-gray-300 font-medium">
-                                        {dir === 'rtl' ? 'آمن ومحمي' : 'Secure & Encrypted'}
-                                      </span>
-                                    </div>
-                                    <button 
-                                      onClick={handleDownload}
-                                      className="p-2 bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-colors shadow-lg active:scale-90"
-                                      title={dir === 'rtl' ? 'تنزيل الفيديو' : 'Download Video'}
-                                    >
-                                      <Download size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            }
+                              img: ({ node, ...props }) => (
+                                <ShareableImageOutput 
+                                  src={props.src} 
+                                  dir={dir} 
+                                  alt={props.alt} 
+                                  {...props} 
+                                />
+                              ),
+                            video: ({ node, ...props }) => (
+                              <ShareableVideoOutput 
+                                src={props.src} 
+                                dir={dir} 
+                                alt={(props as any).alt || "Generated Video"}
+                                {...props} 
+                              />
+                            )
                           }}
                         >
                           {stripProtocolMarkers(msg.content)}

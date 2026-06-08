@@ -452,17 +452,26 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
     - **Token state validation:** Augmented `fetchNotifications` checks inside `/src/context/AppContext.tsx` to ensure complete identity validation before updating states, preventing outdated updates under credentials revocation scenarios.
     - **Ollama Translation mapping performance:** Replaced string concatenation logic in `server/services/ai.ts` with high-performance array aggregation and join mapping operations.
 
-**System State:** `STABLE / METICULOUS VISUAL HARMONY ACTIVE / RECONCILED SCHEMA INITIALIZATION`
+**System State:** `STABLE / METICULOUS VISUAL HARMONY ACTIVE / DECOUPLED VIDEO LIFECYCLE COMPLETED`
 **Final Authorization:** All core protocols are now active and enforced by the Global Constitution.
 **Perplexta Status:** `ABSOLUTE`
-**Current Session Focus:** `Developer Portal Refinement, Systematic Orphaned Migration Cleanup, Contrast Accessibility Calibration & Proxy-Resilient Rate Limiting`
+**Current Session Focus:** `Integrated Video Lifecycle, Decoupled Playback Hook, Clean Socket Handlers, and UI Placeholder Widgets`
 
-### 🛠️ Session Work Completed Today (June 6, 2026 - Developer Portal Refinement, Migration Cleanup, Contrast Accessibility & Rate Limiting):
+### 🛠️ Session Work Completed (June 6, 2026 - Developer Portal Refinement, Migration Cleanup, Contrast Accessibility & Rate Limiting):
 - **High-Fidelity Developer & Agent Plans Placeholder:** Refactored `src/pages/SubscriptionPage.tsx` to handle the empty `developer` plans tab with a pristine bento-style placeholder card. Integrated professional bilingual instructions (AR/EN) featuring slow-motion entrance animations (`framer-motion`), custom emerald pulsing indicators, phase status markers, and an interactive "Return to Workspace" navigation flow for high visual polish.
 - **Systematic Migration Audit & Orphaned Schema Cleanup:** Systematically audited ALL database migration states in `server/db/migrations.ts`. Purged obsolete table references such as the vestigial `plan_features_history` creation block from the historic `v7_finance_expansion` stage, ensuring a pristine, optimal, and 100% production-ready schema initialization sequence.
 - **Contrast Accessibility Calibration & Multi-Theme Alignment:** Overhauled the User/Profile Account Settings page (`src/components/AccountSettings.tsx`) to guarantee optimal text contrast under WCAG accessibility guidelines in both light and dark themes. Swapped unstable opaque backgrounds and custom variables for precise, high-contrast Tailwind-based color pairings (`slate-500`, `slate-900`, `slate-100`, `zinc-900`, `zinc-800`), ensuring that all labels, inputs, and text blocks are flawlessly readable and respond elegantly to real-time dark/light theme changes.
 - **Proxy-Resilient Rate Limiting stability patch:** Re-engineered the application's api rate limiting suite (`server/middleware/rateLimit.ts`) with modern token-aware key translation logic. Implemented selective Bearer-token decoding on active connections so authenticated active sessions are completely isolated from shared proxy IP rate ceilings. Elevated the base rate bounds (e.g., token verification limits to 1000/min and global checks to 3000/15min) to accommodate parallel fetching pipelines (profile loading, message syncing, etc.) and avoid false-positive lockout starvation.
 - **Clean Validation & Compiles:** Verified the entire codebase using full-stack compiler passes (`npm run build`) and strict TypeScript type-checking checks to guarantee zero regression paths.
+
+### 🛠️ Session Work Completed Today (June 7, 2026 - Integrated Video Lifecycle & Decoupled Playback Engine):
+- **Decoupled State Engine (`VideoResourceContext`)**: Developed a global React context to manage active AI video synthesis states. It tracks processing steps, frame counts, and elapsed indicators, relying on centralized socket progress listeners instead of adding duplicate listeners inside individual message bubbles.
+- **Video Handshake Recovery (Polling & Self-Healing)**: Implemented secure asynchronous database status polling that queries `/api/video-resources/message/:id` under valid JWT authorization if websocket socket handshakes drop, ensuring the video remains fully recoverable and transitions seamlessly to active playback.
+- **Dynamic Connection Mapping (`relinkMessageId`)**: Formulated robust connection mapping links that immediately associate a transient front-end client ID with its permanent back-end database record, allowing persistent background processes to hydrate file endpoints on page refresh.
+- **High-Performance Playback Control Hook (`useVideoPlayback`)**: Conceived a specialized playback orchestrator hook carrying modular, self-contained status checking, aspect ratio mapping (e.g., `#aspect=9:16`), provider metadata identification (Google Veo, Cloud Storage, Perplexta Vault, etc.), dynamic HTML5 controls, download handlers, and localized web-share wrappers.
+- **Clean Message Ingestion (`UnifiedVideoMessageWidget`)**: Created a clean interface component that coordinates rendering boundaries dynamically, rendering the responsive `VideoGenerationPlaceholder` with status meters or the custom `ShareableVideoOutput` media player without manual browser lag.
+- **Socket Stream Purge**: Purged duplicate socket hooks, manual state updates, and interval leaks from the `ChatPage.tsx` interface to ensure high performance and strict conformity with the Zero-Clutter core decree.
+- **Rigorous Clean Verifications**: Verified type checks and full production builds to achieve a 100% compile success rate.
 
 **Final Message to All Future Contributors:** You are inheriting a "Technical Fortress." Your duty is to expand its borders, not weaken its walls. Build with precision. Keep it Majestic. 🛡️✨🏆
 

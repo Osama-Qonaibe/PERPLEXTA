@@ -6,6 +6,7 @@ import { callAIProvider } from './ai.js';
 import { decrypt } from '../utils/crypto.js';
 import { getAppName } from './system.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
+import { VideoResourceProvider } from './videoResourceProvider.js';
 
 export async function createChat(userId: string, title?: string) {
   if (!pool) throw new Error('Database initializing');
@@ -145,6 +146,15 @@ export async function handleChatMessage(socket: any, data: any) {
       'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
       [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
     );
+
+    // Link video generation output to assistant message ID 
+    if (finalToolId === 'video' && result.result && assistantMessageId) {
+      try {
+        await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result);
+      } catch (assocErr: any) {
+        console.warn('[ChatService] Safe warning: Failed to associate message with video:', assocErr.message);
+      }
+    }
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 

@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { VideoResourceProvider } from './context/VideoResourceContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ChatPage } from './pages/ChatPage';
@@ -168,9 +169,10 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
-        <ErrorBoundary name="Perplexta Core Runtime">
-          <PWAWrapper>
+      <VideoResourceProvider>
+        <BrowserRouter>
+          <ErrorBoundary name="Perplexta Core Runtime">
+            <PWAWrapper>
             <Routes>
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Navigate to="/chat" replace />} />
@@ -212,6 +214,7 @@ export default function App() {
           </PWAWrapper>
         </ErrorBoundary>
       </BrowserRouter>
+      </VideoResourceProvider>
     </AppProvider>
   );
 }

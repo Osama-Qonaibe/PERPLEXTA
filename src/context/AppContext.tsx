@@ -2887,8 +2887,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!token) return;
 
     let isMounted = true;
+    let timeoutId: any = null;
+    let currentDelay = 30000;
+    let isFetching = false;
+
+    const scheduleNext = (delay: number) => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (isMounted) {
+        timeoutId = setTimeout(() => {
+          fetchNotificationsSecure();
+        }, delay);
+      }
+    };
 
     const fetchNotificationsSecure = async () => {
+      if (!isMounted) return;
+      if (isFetching) return;
+      
+      if (document.visibilityState === 'hidden') {
+        scheduleNext(30000);
+        return;
+      }
+
+      isFetching = true;
       try {
         const res = await fetch('/api/notifications', {
           headers: { 
@@ -2905,6 +2926,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const data = await res.json();
             if (isMounted) {
               setNotifications(data);
+              currentDelay = 30000; // Reset general poll interval on success
             }
           } else {
             const text = await res.text();
@@ -2913,25 +2935,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else if (res.status === 401 || res.status === 403) {
           console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
           logout(false);
+          return;
+        } else if (res.status === 429) {
+          currentDelay = Math.min(currentDelay * 2, 300000); // Exponential backoff up to 5 mins
+          console.warn(`[Notifications] Traffic is rate-limited (429). Adapting backoff delay to ${currentDelay / 1000}s.`);
         } else {
-          console.error('Failed to fetch notifications:', res.status, res.statusText);
+          console.warn(`[Notifications] Status checkpoint ${res.status} when fetching notifications.`);
         }
       } catch (error) {
         if (!isMounted) return;
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
           console.debug('Transient network error fetching notifications (likely server initializing)');
         } else {
-          console.error('Error fetching notifications:', error);
+          console.warn('[Notifications] Connection status checkpoint:', error);
+        }
+        currentDelay = Math.min(currentDelay * 1.5, 300000);
+      } finally {
+        isFetching = false;
+        if (isMounted) {
+          scheduleNext(currentDelay);
         }
       }
     };
 
     fetchNotificationsSecure();
-    const interval = setInterval(fetchNotificationsSecure, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        fetchNotificationsSecure();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [token]);
 

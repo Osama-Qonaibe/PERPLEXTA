@@ -920,7 +920,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     }
 
     const ext = path.extname(filename).toLowerCase();
-    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav', '.m4a'];
 
     if (publicExtensions.includes(ext)) {
       return res.sendFile(resolvedPath);
@@ -1184,6 +1184,7 @@ import emailRoutes from './routes/email.js';
 import forumRoutes from './routes/forum.js';
 import blogRoutes from './routes/blog.js';
 import marketplaceRoutes from './routes/marketplace.js';
+import videoResourcesRoutes from './routes/videoResources.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -1203,6 +1204,7 @@ app.use('/api/mail-services-v3', emailRoutes);
 app.use('/api/forum', forumRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/video-resources', videoResourcesRoutes);
 app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 

@@ -1337,6 +1337,28 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'plans', 'plan_type', 'VARCHAR(100)', `'user'`);
     });
 
+    await runVersioned('v40_video_resources_table', 'Creating video_resources table and primary indexes', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS video_resources (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          chat_id INTEGER,
+          message_id INTEGER,
+          file_url TEXT NOT NULL,
+          prompt TEXT,
+          provider VARCHAR(100),
+          model VARCHAR(100),
+          duration INTEGER,
+          aspect_ratio VARCHAR(50),
+          resolution VARCHAR(50),
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_video_resources_chat_id ON video_resources(chat_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1970,6 +1992,24 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         user_agent TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
+    },
+    {
+      name: 'video_resources',
+      query: `CREATE TABLE IF NOT EXISTS video_resources (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        chat_id INTEGER,
+        message_id INTEGER,
+        file_url TEXT NOT NULL,
+        prompt TEXT,
+        provider VARCHAR(100),
+        model VARCHAR(100),
+        duration INTEGER,
+        aspect_ratio VARCHAR(50),
+        resolution VARCHAR(50),
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
@@ -2053,7 +2093,10 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_wallet_id ON ledger_transactions(wallet_id)` },
     { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_type ON ledger_transactions(transaction_type)` },
     { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_status ON ledger_transactions(status)` },
-    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_reference ON ledger_transactions(reference_id)` }
+    { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_reference ON ledger_transactions(reference_id)` },
+    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS video_resources_pkey ON video_resources(id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_chat_id ON video_resources(chat_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)` }
   ];
 
   for (const idx of indexes) {
