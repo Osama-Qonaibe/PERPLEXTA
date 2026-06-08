@@ -6,7 +6,9 @@ import {
   withTimeout, 
   safeParseResponse, 
   safeDecrementOnFailure, 
-  AI_CALL_TIMEOUT_MS 
+  validateModelCapacityCached,
+  AI_CALL_TIMEOUT_MS,
+  IMG_TIMEOUT_MS
 } from './utils.js';
 
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
@@ -26,46 +28,6 @@ function resolveImageDimensions(aspectRatio: string): { width: number; height: n
     return { width: 1152, height: 768 };
   }
   return { width: 1024, height: 1024 };
-}
-
-/**
- * Validates available provider daily budgets, quota limits, and system activation status.
- */
-function validateImageModelCapacityCached(
-  vaultConfig: any,
-  providerId: string,
-  costPerUsage: number
-): { warning?: string; valid: boolean } {
-  if (!providerId) return { valid: true };
-
-  if (!vaultConfig) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' has no registered configuration keys in the vault.` 
-    };
-  }
-
-  const { is_active, daily_budget, used_today } = vaultConfig;
-
-  if (!is_active) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' is currently turned off or set to inactive.` 
-    };
-  }
-
-  const budget = parseFloat(daily_budget || '0');
-  const used = parseFloat(used_today || '0');
-  const estimatedCost = (costPerUsage || 0) / 1000;
-
-  if (budget > 0 && (used + estimatedCost) > budget) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' daily running budget of ${budget} is fully used.` 
-    };
-  }
-
-  return { valid: true };
 }
 
 export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ result: string }> {
@@ -142,12 +104,10 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
   promptSuffix += ' [CRITICAL CONSTRAINT: Ensure perfect anatomy, zero anatomical anomalies, correct number of fingers, correct limbs, no draft marks or sketch lines, no text overlapping, no watermarks, no signatures, no blurry segments, pristine visual clarity].';
 
-  finalPrompt = `${promptPrefix}${finalPrompt}${promptSuffix}`;
-
-  // Enforce prompt length boundary to prevent API context overflows
-  if (finalPrompt.length > 4000) {
-    finalPrompt = finalPrompt.substring(0, 4000);
-  }
+  // Enforce prompt length boundary to prevent API context overflows while preserving the critical suffixes
+  const available = 4000 - promptPrefix.length - promptSuffix.length;
+  const trimmedCore = finalPrompt.substring(0, Math.max(200, available));
+  finalPrompt = promptPrefix + trimmedCore + promptSuffix;
 
   let imageUrl = '';
   let successfulProvider = '';
@@ -162,7 +122,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     const vaultConfig = vaultMap.get(providerId);
 
     // Dynamic pre-flight performance checks
-    const validation = validateImageModelCapacityCached(
+    const validation = validateModelCapacityCached(
       vaultConfig,
       providerId,
       route.cost_per_usage || 0
@@ -241,33 +201,41 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         imageUrl = b64 ? `data:image/png;base64,${b64}` : '';
 
       } else if (providerId === 'replicate') {
-        const res = await withTimeout(
-          (signal) => fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version: modelToUse, input: { prompt: finalPrompt } }),
-            signal
-          }),
-          AI_CALL_TIMEOUT_MS,
-          'replicate-image-init'
+        const resultUrl = await withTimeout(
+          async (signal) => {
+            const predRes = await fetch('https://api.replicate.com/v1/predictions', {
+              method: 'POST',
+              headers: { 'Authorization': `Token ${apiKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ version: modelToUse, input: { prompt: finalPrompt } }),
+              signal
+            });
+            const prediction = await safeParseResponse(predRes, 'Replicate error');
+            const pollUrl = prediction.urls?.get;
+            if (!pollUrl) {
+              throw new Error('Replicate did not return a polling URL.');
+            }
+
+            for (let i = 0; i < 40; i++) {
+              if (signal.aborted) {
+                throw new Error('Replicate polling aborted due to timeout.');
+              }
+              await new Promise(r => setTimeout(r, 2000));
+              const poll = await fetch(pollUrl, { 
+                headers: { 'Authorization': `Token ${apiKey}` },
+                signal 
+              });
+              const pollData = await safeParseResponse(poll, 'Replicate pull error');
+              if (pollData.status === 'succeeded') {
+                return Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
+              }
+              if (pollData.status === 'failed') throw new Error('Replicate generation failed');
+            }
+            throw new Error('Replicate image polling timed out after 80s without result.');
+          },
+          IMG_TIMEOUT_MS,
+          'replicate-image-full'
         );
-        const prediction = await safeParseResponse(res, 'Replicate error');
-
-        let pollUrl = prediction.urls?.get;
-        for (let i = 0; i < 40; i++) {
-          await new Promise(r => setTimeout(r, 2000));
-          const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
-          const pollData = await safeParseResponse(poll, 'Replicate pull error');
-          if (pollData.status === 'succeeded') {
-            imageUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
-            break;
-          }
-          if (pollData.status === 'failed') throw new Error('Replicate generation failed');
-        }
-
-        if (!imageUrl) {
-          throw new Error('Replicate image polling timed out after 80s without result.');
-        }
+        imageUrl = resultUrl;
 
       } else if (providerId === 'google' || providerId === 'gemini') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
@@ -275,6 +243,17 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         
         if (cleanModel.startsWith('models/')) {
           cleanModel = cleanModel.substring(7);
+        }
+
+        const SUPPORTED_IMAGEN_MODELS = [
+          'imagen-3.0-generate-002',
+          'imagen-3.0-fast-generate-001',
+          'imagen-2.0-generate-002',
+          'imagen-3.5-generate-001',
+          'imagen-3.5-fast-generate-001'
+        ];
+        if (!SUPPORTED_IMAGEN_MODELS.includes(cleanModel)) {
+          console.warn(`[Image Task] Model '${cleanModel}' is not officially supported by Imagen. Proceeding with caution.`);
         }
 
         // Standardize Google Imagen to :predict endpoint

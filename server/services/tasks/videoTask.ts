@@ -8,53 +8,15 @@ import {
   withTimeout, 
   safeParseResponse, 
   safeDecrementOnFailure,
-  AI_CALL_TIMEOUT_MS 
+  validateModelCapacityCached,
+  AI_CALL_TIMEOUT_MS,
+  VIDEO_TIMEOUT_MS
 } from './utils.js';
-import { GoogleGenAI, GenerateVideosOperation } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 const VIDEO_GENERATION_TIMEOUT_MS = 660_000; // 11 minutes
 const RUNWAY_API_VERSION = '2024-11-06';
-
-/**
- * Validates available provider daily budgets, quota limits, and system activation status.
- */
-function validateVideoModelCapacityCached(
-  vaultConfig: any,
-  providerId: string,
-  costPerUsage: number
-): { warning?: string; valid: boolean } {
-  if (!providerId) return { valid: true };
-
-  if (!vaultConfig) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' has no registered configuration keys in the vault.`
-    };
-  }
-
-  const { is_active, daily_budget, used_today } = vaultConfig;
-
-  if (!is_active) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' is currently disabled in vault settings.` 
-    };
-  }
-
-  const budget = parseFloat(daily_budget || '0');
-  const used = parseFloat(used_today || '0');
-  const estimatedCost = (costPerUsage || 0) / 1000;
-
-  if (budget > 0 && (used + estimatedCost) > budget) {
-    return { 
-      valid: false, 
-      warning: `Provider check: '${providerId}' running budget of ${budget} is fully exhausted.` 
-    };
-  }
-
-  return { valid: true };
-}
 
 /**
  * Executes a POST request to generic or dynamic video generation API endpoints.
@@ -106,8 +68,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
   if (isNaN(requestedDuration) || requestedDuration <= 0) {
     requestedDuration = 5;
   }
-  const fps = video_settings?.fps || 24;
-  const totalFrames = requestedDuration * fps;
+  const fps = video_settings?.fps || 24; // UI-only indicator
+  const totalFrames = requestedDuration * fps; // UI-only indicator
 
   // Build the fallback chain routing targets array
   const targets = [
@@ -160,7 +122,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const vaultConfig = vaultMap.get(providerId);
 
           // Perform capacity security checks
-          const validation = validateVideoModelCapacityCached(
+          const validation = validateModelCapacityCached(
             vaultConfig,
             providerId,
             route.cost_per_usage || 0
@@ -254,9 +216,9 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               const pollUrl = prediction.urls?.get;
               
               if (pollUrl) {
-                const totalSteps = 15;
+                const totalSteps = 70;
                 for (let i = 0; i < totalSteps; i++) {
-                  const progressPct = Math.round(15 + (i / totalSteps) * 80);
+                  const progressPct = Math.min(98, Math.round(15 + (i / totalSteps) * 80));
                   const renderedFrames = Math.round((progressPct / 100) * totalFrames);
                   
                   if (io) {
@@ -319,9 +281,9 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               const taskId = task.id;
 
               if (taskId) {
-                const totalSteps = 15;
+                const totalSteps = 70;
                 for (let i = 0; i < totalSteps; i++) {
-                  const progressPct = Math.round(15 + (i / totalSteps) * 80);
+                  const progressPct = Math.min(98, Math.round(15 + (i / totalSteps) * 80));
                   const renderedFrames = Math.round((progressPct / 100) * totalFrames);
 
                   if (io) {
@@ -402,14 +364,11 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               if (!operation || !operation.name) {
                 throw new Error(`Google Veo request did not return a valid long-running operation.`);
               }
-
-              const op = new GenerateVideosOperation();
-              op.name = operation.name;
               
               let completedOp = null;
-              const totalSteps = 15;
+              const totalSteps = 70;
               for (let i = 0; i < totalSteps; i++) {
-                const progressPct = Math.round(15 + (i / totalSteps) * 80);
+                const progressPct = Math.min(98, Math.round(15 + (i / totalSteps) * 80));
                 const renderedFrames = Math.round((progressPct / 100) * totalFrames);
                 
                 if (io) {
@@ -426,7 +385,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 }
 
                 await new Promise(r => setTimeout(r, 5000));
-                const updated = await ai.operations.getVideosOperation({ operation: op });
+                const updated = await ai.operations.getVideosOperation({ operation: { name: operation.name } as any });
                 if (updated.done) {
                   completedOp = updated;
                   break;
@@ -442,7 +401,6 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 throw new Error('Google Veo operation completed but did not return a valid video URI.');
               }
 
-              // Fix C-2: Set videoUrl to uri; downloading and local storage is saved until final step
               videoUrl = uri;
             } else {
               const finalEndpoint = vaultConfig?.url_key;
@@ -489,7 +447,6 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               break;
             }
           } catch (err: any) {
-            // Fix C-3: Remove sanitization replace on error logging and output warnings properly
             const cleanMessage = err.message || '';
             console.warn(`[Video Orchestrator] Target [${target.label}] (${providerId}) failed with error:`, err);
             

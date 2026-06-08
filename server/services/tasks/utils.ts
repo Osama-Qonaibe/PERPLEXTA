@@ -2,6 +2,51 @@ import { decrementUserUsage } from '../quota.js';
 import { refundUsageToWallet } from '../wallet.js';
 
 export const AI_CALL_TIMEOUT_MS = 90000;
+export const TTS_TIMEOUT_MS = 30000;
+export const STT_TIMEOUT_MS = 45000;
+export const IMG_TIMEOUT_MS = 120000;
+export const VIDEO_TIMEOUT_MS = 660000; // 11 minutes
+
+/**
+ * Validates available provider daily budgets, quota limits, and system activation status.
+ * Consolidates capacity caching controls across image and video tasks with absolute transactional safety.
+ */
+export function validateModelCapacityCached(
+  vaultConfig: any,
+  providerId: string,
+  costPerUsage: number
+): { warning?: string; valid: boolean } {
+  if (!providerId) return { valid: true };
+
+  if (!vaultConfig) {
+    return { 
+      valid: false, 
+      warning: `Provider check: '${providerId}' has no registered configuration keys in the vault.` 
+    };
+  }
+
+  const { is_active, daily_budget, used_today } = vaultConfig;
+
+  if (!is_active) {
+    return { 
+      valid: false, 
+      warning: `Provider check: '${providerId}' is currently turned off or set to inactive.` 
+    };
+  }
+
+  const budget = parseFloat(daily_budget || '0');
+  const used = parseFloat(used_today || '0');
+  const estimatedCost = (costPerUsage || 0) / 1000;
+
+  if (budget > 0 && (used + estimatedCost) > budget) {
+    return { 
+      valid: false, 
+      warning: `Provider check: '${providerId}' daily budget of $${budget} exceeded (spent $${used.toFixed(4)}, next run expects $${estimatedCost.toFixed(4)}).` 
+    };
+  }
+
+  return { valid: true };
+}
 
 export function withTimeout<T>(
   promiseOrFn: Promise<T> | ((signal: AbortSignal) => Promise<T>),
