@@ -24,11 +24,6 @@ import type { TaskExecutionContext } from '../orchestratorRegistry.js';
  * Verifies availability, budget caps, recent failure-rate logging, and dynamic parameters sanity.
  * This is non-blocking to prevent total app crashes if a single model is offline, letting orchestrator fallbacks activate gracefully.
  */
-/**
- * ELITE-GRADE PRE-GENERATION MODEL VALIDATION & RESOURCE CAPACITY ENGINE
- * Verifies availability, budget caps, recent failure-rate logging, and dynamic parameters sanity.
- * This is non-blocking to prevent total app crashes if a single model is offline, letting orchestrator fallbacks activate gracefully.
- */
 function validateVideoModelCapacityCached(
   vaultConfig: any,
   providerId: string,
@@ -337,8 +332,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               progress: 20,
               renderedFrames: Math.round(totalFrames * 0.20),
               totalFrames,
-              phase: 'Connecting to Google Veo Studio & scheduling video generation state...',
-              phase_ar: 'الاتصال بأستوديو Google Veo وجدولة عملية توليد إطارات مقطع الفيديو...',
+              phase: 'Initializing peprlexta Cinema Engine & allocating neural render cores...',
+              phase_ar: 'تهيئة محرك بيربليكستا السينمائي وجاري رندر الفيديو...',
               fps: 0,
               currentStep: 2,
               totalSteps: 120
@@ -382,8 +377,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                 progress: progressPct,
                 renderedFrames,
                 totalFrames,
-                phase: `Google Veo video synthesis processing (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
-                phase_ar: `معالج ومولد Google Veo يقوم بتوليف الإطارات (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
+                phase: `peprlexta Cinema Engine rendering video frames (${progressPct}%)`,
+                phase_ar: `محرك بيربليكستا السينمائي يقوم برندر إطارات الفيديو (${progressPct}%)`,
                 fps: 24,
                 currentStep: i + 1,
                 totalSteps
@@ -438,14 +433,14 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
           // Register in system file metadata cleanly
           await saveFileMetadata(String(userId), {
-            file_name: `Perplexta_Veo_Video_${Date.now()}.${fileExtension}`,
+            file_name: `peprlexta_Cinema_Video_${Date.now()}.${fileExtension}`,
             file_url: randomFilename,
             file_size: fileSize,
             mime_type: mimeType,
             file_type: 'video',
             metadata: {
               generated: true,
-              origin: 'AI_Orchestrator_Studio_Veo',
+              origin: 'AI_Orchestrator_Studio_peprlexta',
               model: modelToUse
             }
           });

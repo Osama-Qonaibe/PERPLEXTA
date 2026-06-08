@@ -1,14 +1,21 @@
-import { decrementUserUsage, incrementUserUsage } from '../quota.js';
+import { decrementUserUsage } from '../quota.js';
+import { refundUsageToWallet } from '../wallet.js';
 
 export const AI_CALL_TIMEOUT_MS = 90000;
 
 export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`AI_TIMEOUT: ${label} exceeded ${ms}ms`)), ms)
-    )
-  ]);
+  let timeoutId: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`AI_TIMEOUT: ${label} exceeded ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
 }
 
 export async function safeParseResponse(res: any, defaultErrorPrefix: string): Promise<any> {
@@ -31,12 +38,13 @@ export async function safeParseResponse(res: any, defaultErrorPrefix: string): P
   return data;
 }
 
-export async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: number, toolIdStr: string, walletCharged: boolean) {
+export async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: number, toolIdStr: string, walletCharged: any) {
   try {
-    if (quotaCheck.allowed) {
+    if (quotaCheck && quotaCheck.allowed) {
       await decrementUserUsage(userId, toolIdStr);
     } else if (walletCharged) {
-      await incrementUserUsage(userId, toolIdStr);
+      // Corrected: refund the charge instead of incrementing usage (incrementing usage is reversed logic)
+      await refundUsageToWallet(userId, toolIdStr, walletCharged);
     }
   } catch (e) {
     console.error('[Orchestrator Shared Task Utils] safeDecrementOnFailure failed:', e);

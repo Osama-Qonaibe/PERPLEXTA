@@ -13,19 +13,30 @@ import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
+import { withTimeout, safeDecrementOnFailure } from './tasks/utils.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 
 const AI_CALL_TIMEOUT_MS = 90000;
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`AI_TIMEOUT: ${label} exceeded ${ms}ms`)), ms)
-    )
-  ]);
+// Modular, non-leaking, module-level schedulers to avoid lexically capturing larger request frame data assets
+function scheduleChatSummaryUpdate(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
+  setImmediate(() => {
+    updateChatContextSummary(chatIdNum, userId, provider, model, apiKey).catch(err => {
+      console.error('[Orchestrator Task Scheduler] Progressive summarization error:', err);
+      logSystemActivity(userId, 'SUMMARIZATION_FAILED', `Context summary update failed for chat ${chatIdNum}: ${err.message}`, { chatIdNum }).catch(() => {});
+    });
+  });
+}
+
+function scheduleMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {
+  setImmediate(() => {
+    runMemoryConsolidation(userId, chatIdNum, provider, model, apiKey).catch(err => {
+      console.error('[Orchestrator Task Scheduler] Memory consolidation error:', err);
+      logSystemActivity(userId, 'MEMORY_CONSOLIDATION_FAILED', `Memory consolidation failed for user ${userId}: ${err.message}`, { userId }).catch(() => {});
+    });
+  });
 }
 
 function getDynamicHistoryLimit(totalMessages: number): number {
@@ -43,18 +54,6 @@ function cleanAIOutput(text: string): string {
     .replace(/```(?:json)?/gi, '')
     .replace(/[{}]/g, '')
     .trim();
-}
-
-async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: number, toolIdStr: string, walletCharged: boolean) {
-  try {
-    if (quotaCheck.allowed) {
-      await decrementUserUsage(userId, toolIdStr);
-    } else if (walletCharged) {
-      await incrementUserUsage(userId, toolIdStr);
-    }
-  } catch (e) {
-    console.error('[Orchestrator] safeDecrementOnFailure failed:', e);
-  }
 }
 
 async function safeParseResponse(res: any, defaultErrorPrefix: string): Promise<any> {
@@ -221,12 +220,12 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const route = routeResult.rows[0];
 
-  let walletCharged = false;
+  let walletCharged: any = false;
 
   if (!quotaCheck.allowed) {
     try {
       const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
-      walletCharged = true;
+      walletCharged = chargeRes as any;
       if (io) {
         io.to(`user_${userId}`).emit('user_profile_updated');
         io.to(`user_${userId}`).emit('wallet_charge_notice', {
@@ -281,7 +280,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   };
 
   const chatWantsSearch = isChatOnly && (
-    !isSocialGreeting(cleanUserPrompt) || // If it's not a social greeting, we keep it web-connected!
     cleanUserPrompt.toLowerCase().includes('search') ||
     cleanUserPrompt.toLowerCase().includes('google') ||
     cleanUserPrompt.toLowerCase().includes('طقس') ||
@@ -681,12 +679,7 @@ ${refinedSystemPromptSegment}`.trim();
       }
 
       if (chatIdNum > 0) {
-        setImmediate(() => {
-          updateChatContextSummary(chatIdNum, userId, target.provider, target.model, apiKey).catch(err => {
-            console.error('[Orchestrator] Progressive summarization error:', err);
-            logSystemActivity(userId, 'SUMMARIZATION_FAILED', `Context summary update failed for chat ${chatIdNum}: ${err.message}`, { chatIdNum }).catch(() => {});
-          });
-        });
+        scheduleChatSummaryUpdate(chatIdNum, userId, target.provider, target.model, apiKey);
       }
 
       try {
@@ -705,12 +698,7 @@ ${refinedSystemPromptSegment}`.trim();
           const currentCount = parseInt(countRes.rows[0].count);
 
           if (currentCount >= 48) {
-            setImmediate(() => {
-              runMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey).catch(err => {
-                console.error('[Orchestrator] Memory consolidation error:', err);
-                logSystemActivity(userId, 'MEMORY_CONSOLIDATION_FAILED', `Memory consolidation failed for user ${userId}: ${err.message}`, { userId }).catch(() => {});
-              });
-            });
+            scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
           }
 
           const insertPromises = extractedFacts.map(item =>
