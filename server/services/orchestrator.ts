@@ -320,7 +320,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'tts') {
     try {
-      const voiceId = reqBody.voice_id || route.primary_model || 'standard';
+      const voiceId = reqBody.voice_id || route.primary_model || '21m00Tcm4TlvDq8ikWAM';
       const audioBuffer = await withTimeout(
         perplextaTTS(cleanUserPrompt, voiceId),
         AI_CALL_TIMEOUT_MS,

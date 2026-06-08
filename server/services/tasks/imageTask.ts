@@ -254,7 +254,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         const prediction = await safeParseResponse(res, 'Replicate error');
 
         let pollUrl = prediction.urls?.get;
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 40; i++) {
           await new Promise(r => setTimeout(r, 2000));
           const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
           const pollData = await safeParseResponse(poll, 'Replicate pull error');
@@ -266,7 +266,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         }
 
         if (!imageUrl) {
-          throw new Error('Replicate image polling timed out after 60s without result.');
+          throw new Error('Replicate image polling timed out after 80s without result.');
         }
 
       } else if (providerId === 'google' || providerId === 'gemini') {
@@ -277,33 +277,18 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           cleanModel = cleanModel.substring(7);
         }
 
-        // isPredictModel should check for imagen-4.0 only (Veo is for videos)
-        const isPredictModel = cleanModel.toLowerCase().includes('imagen-4.0');
-
-        let url = '';
-        let requestBody = {};
-
-        if (isPredictModel) {
-          url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:predict`;
-          requestBody = {
-            instances: [
-              { prompt: finalPrompt }
-            ],
-            parameters: {
-              numberOfImages: 1,
-              aspectRatio: aspectRatio,
-              outputMimeType: 'image/jpeg'
-            }
-          };
-        } else {
-          url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateImages`;
-          requestBody = {
-            prompt: finalPrompt,
+        // Standardize Google Imagen to :predict endpoint
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:predict`;
+        const requestBody = {
+          instances: [
+            { prompt: finalPrompt }
+          ],
+          parameters: {
             numberOfImages: 1,
-            outputMimeType: 'image/jpeg',
-            aspectRatio: aspectRatio
-          };
-        }
+            aspectRatio: aspectRatio,
+            outputMimeType: 'image/jpeg'
+          }
+        };
 
         const res = await withTimeout(
           (signal) => fetch(url, {
@@ -335,7 +320,12 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   }
 
   if (!imageUrl) {
-    throw new Error('All configured image generation providers in the fallback chain failed or returned empty results.');
+    await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
+    throw new Error(JSON.stringify({
+      error: "All configured image generation providers in the fallback chain failed or returned empty results.",
+      error_ar: "فشلت جميع مسارات المزودين التبادلية لتوليد الصور أو أعادت نتائج فارغة.",
+      type: "GENERATION_ERROR"
+    }));
   }
 
   try {

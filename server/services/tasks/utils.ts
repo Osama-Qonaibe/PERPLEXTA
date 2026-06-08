@@ -60,6 +60,8 @@ export async function safeDecrementOnFailure(
     } else if (walletCharged && typeof walletCharged === 'object') {
       // Corrected: refund the charge instead of incrementing usage (incrementing usage is reversed logic)
       await refundUsageToWallet(userId, toolIdStr, walletCharged);
+    } else {
+      console.info(`[safeDecrementOnFailure] No rollback or backup refund needed for user ${userId} / tool "${toolIdStr}": walletCharged=false.`);
     }
   } catch (e) {
     console.error('[Orchestrator Shared Task Utils] safeDecrementOnFailure failed:', e);

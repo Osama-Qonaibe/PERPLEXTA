@@ -254,7 +254,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               const pollUrl = prediction.urls?.get;
               
               if (pollUrl) {
-                const totalSteps = 120;
+                const totalSteps = 15;
                 for (let i = 0; i < totalSteps; i++) {
                   const progressPct = Math.round(15 + (i / totalSteps) * 80);
                   const renderedFrames = Math.round((progressPct / 100) * totalFrames);
@@ -319,7 +319,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               const taskId = task.id;
 
               if (taskId) {
-                const totalSteps = 120;
+                const totalSteps = 15;
                 for (let i = 0; i < totalSteps; i++) {
                   const progressPct = Math.round(15 + (i / totalSteps) * 80);
                   const renderedFrames = Math.round((progressPct / 100) * totalFrames);
@@ -407,7 +407,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               op.name = operation.name;
               
               let completedOp = null;
-              const totalSteps = 120;
+              const totalSteps = 15;
               for (let i = 0; i < totalSteps; i++) {
                 const progressPct = Math.round(15 + (i / totalSteps) * 80);
                 const renderedFrames = Math.round((progressPct / 100) * totalFrames);
