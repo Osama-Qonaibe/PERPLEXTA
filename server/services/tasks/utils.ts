@@ -9,9 +9,9 @@ export const VIDEO_TIMEOUT_MS = 660000; // 11 minutes
 
 /**
  * Validates available provider daily budgets, quota limits, and system activation status.
- * Consolidates capacity caching controls across image and video tasks with absolute transactional safety.
+ * Consolidates capacity controls across image and video tasks with absolute transactional safety.
  */
-export function validateModelCapacityCached(
+export function validateProviderCapacity(
   vaultConfig: any,
   providerId: string,
   costPerUsage: number
@@ -74,23 +74,47 @@ export function withTimeout<T>(
 }
 
 export async function safeParseResponse(res: any, defaultErrorPrefix: string): Promise<any> {
+  const contentType = res.headers?.get('content-type') || '';
   const text = await res.text();
   let data: any = null;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch (err) {
-    // Content is not valid JSON
+  let isJsonCorrupted = false;
+
+  const looksLikeJson = contentType.includes('application/json') || 
+    text.trim().startsWith('{') || 
+    text.trim().startsWith('[');
+
+  if (looksLikeJson) {
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      isJsonCorrupted = true;
+    }
   }
-  
+
   if (!res.ok) {
+    if (isJsonCorrupted) {
+      throw new Error(`${defaultErrorPrefix}: Corrupted JSON payload returned from provider API.`);
+    }
+    const looksLikeHtml = contentType.includes('text/html') || 
+      text.trim().toLowerCase().startsWith('<!doctype html') || 
+      text.trim().toLowerCase().startsWith('<html');
+
+    if (looksLikeHtml) {
+       throw new Error(`${defaultErrorPrefix}: Received HTML page from gateway (HTTP ${res.status}).`);
+    }
+
     const errorMsg = data?.error?.message 
       || data?.message 
       || data?.detail 
-      || (text ? (text.length > 300 ? text.substring(0, 300) + '...' : text) : `HTTP ${res.status}`);
+      || (text ? (text.length > 150 ? text.substring(0, 150) + '...' : text) : `HTTP ${res.status}`);
     throw new Error(`${defaultErrorPrefix}: ${errorMsg}`);
   }
+
+  if (isJsonCorrupted) {
+    throw new Error(`${defaultErrorPrefix}: Unparseable non-JSON raw body received.`);
+  }
   
-  return data;
+  return data || {};
 }
 
 export async function safeDecrementOnFailure(

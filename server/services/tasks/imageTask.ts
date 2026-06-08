@@ -6,10 +6,10 @@ import {
   withTimeout, 
   safeParseResponse, 
   safeDecrementOnFailure, 
-  validateModelCapacityCached,
-  AI_CALL_TIMEOUT_MS,
+  validateProviderCapacity,
   IMG_TIMEOUT_MS
 } from './utils.js';
+import { GoogleGenAI } from "@google/genai";
 
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
@@ -75,34 +75,39 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   let promptSuffix = '';
   const selectedStyle = String(imageSettings.style || 'Cinematic').toLowerCase().trim();
 
-  if (selectedStyle.includes('cinematic') || selectedStyle.includes('سينمائي')) {
-    promptPrefix = 'Elite cinematic masterwork film still, captured on Arri Alexa LF with Master Anamorphic lenses, striking cinematic composition, highly dramatic golden hour side-lighting, cinematic atmospheric haze, deep volumetric shadows, stunning photorealism, award-winning cinematography, hyper-realistic film grain and textures, high dynamic range color grading, ';
-  } else if (selectedStyle.includes('realistic') || selectedStyle.includes('واقعي')) {
-    promptPrefix = 'Pristine, award-winning, documentary-grade professional masterwork photograph, shot on a Hasselblad H6D-100c medium format camera with 80mm lens, f/4.0 aperture for tack-sharp central focus with subtle natural bokeh, raw life representation, immaculate realistic skin pores and material details, flawless realistic lighting without artificial shadows, calibrated color space, ';
-  } else if (selectedStyle.includes('anime') || selectedStyle.includes('أنمي') || selectedStyle.includes('انمي')) {
-    promptPrefix = 'Spectacular custom Japanese anime key visual, highly authentic high-budget anime studio illustration, drawn in the legendary style of CoMix Wave Films and Kyoto Animation, beautiful celestial skies with scattered god-rays, hand-painted aesthetic, flawless clean digital linework, highly professional and clean cel shading, exquisite anime lighting, ';
-  } else if (selectedStyle.includes('digital') || selectedStyle.includes('فن رقمي')) {
-    promptPrefix = 'Premier state-of-the-art custom digital art masterpiece, highly complex fantasy concept art, mesmerizing color palette with ambient occlusion, dramatic octane-rendered visual depth, Intricate geometric details, crisp digital brush strokes, perfect visual equilibrium, Trending on ArtStation, ';
-  } else {
-    promptPrefix = 'Ultra-high-fidelity professional masterpiece, carefully arranged composition, impeccable lighting structure, meticulous micro-details, ';
+  // If the prompt is already highly detailed and long (e.g. > 150 chars), avoid force-feeding heavy prefaces
+  const isCustomDetailedPrompt = finalPrompt.length > 150;
+
+  if (!isCustomDetailedPrompt) {
+    if (selectedStyle.includes('cinematic') || selectedStyle.includes('سينمائي')) {
+      promptPrefix = 'Photorealistic film still, cinematic composition, golden hour side-lighting, atmospheric haze, deep volumetric shadows, film textures, ';
+    } else if (selectedStyle.includes('realistic') || selectedStyle.includes('واقعي')) {
+      promptPrefix = 'Realistic professional photograph, 80mm lens, tack-sharp central focus with natural bokeh, realistic lighting, ';
+    } else if (selectedStyle.includes('anime') || selectedStyle.includes('أنمي') || selectedStyle.includes('انمي')) {
+      promptPrefix = 'Japanese anime illustration key visual, hand-painted background aesthetic, clean linework, beautiful digital lighting, ';
+    } else if (selectedStyle.includes('digital') || selectedStyle.includes('فن رقمي')) {
+      promptPrefix = 'Digital art masterpiece, fantasy concept art, rich color palette, depth, Trending on ArtStation, ';
+    } else {
+      promptPrefix = 'High-fidelity professional masterpiece, carefully arranged composition, clean lighting, ';
+    }
   }
 
   if (selectedRatio === '16:9') {
-    promptSuffix += ' Optimized widescreen panoramic composition, grand architectural horizon view, cinematic wide-angle lens perspective, balanced symmetric rule-of-thirds composition.';
+    promptSuffix += ' Optimized widescreen panoramic framing.';
   } else if (selectedRatio === '9:16') {
-    promptSuffix += ' Elegant vertical composition, majestic full-body vertical alignment, pristine vertical symmetry, optimized mobile digital screen format.';
+    promptSuffix += ' Elegant vertical composition framing.';
   } else if (selectedRatio === '4:3' || selectedRatio === '3:2') {
-    promptSuffix += ' Landscape classic layout alignment, professional framing, balanced depth of field, optimized classic focal parameters.';
+    promptSuffix += ' Landscape classic framing alignment.';
   } else {
-    promptSuffix += ' Flawless central aspect ratio composition, perfect radial symmetry and balancing.';
+    promptSuffix += ' Balanced central aspect ratio framing.';
   }
 
   const selectedQuality = String(imageSettings.quality || 'HD').toLowerCase().trim();
   if (selectedQuality === 'ultra' || selectedQuality === 'hd' || selectedQuality === 'high') {
-    promptSuffix += ' Rendered in meticulous 8k resolution, ultra-fine pixel matrix depth, volumetric light particles, global illumination, raytraced reflection fidelity, intricate subsurface scattering on micro-surfaces, flawless depth maps, crisp textures.';
+    promptSuffix += ' High resolution details, clear textures.';
   }
 
-  promptSuffix += ' [CRITICAL CONSTRAINT: Ensure perfect anatomy, zero anatomical anomalies, correct number of fingers, correct limbs, no draft marks or sketch lines, no text overlapping, no watermarks, no signatures, no blurry segments, pristine visual clarity].';
+  promptSuffix += ' [Constraint: high-quality, clear limbs and faces].';
 
   // Enforce prompt length boundary to prevent API context overflows while preserving the critical suffixes
   const available = 4000 - promptPrefix.length - promptSuffix.length;
@@ -122,7 +127,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     const vaultConfig = vaultMap.get(providerId);
 
     // Dynamic pre-flight performance checks
-    const validation = validateModelCapacityCached(
+    const validation = validateProviderCapacity(
       vaultConfig,
       providerId,
       route.cost_per_usage || 0
@@ -156,7 +161,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
             body: JSON.stringify({ model: modelToUse, prompt: finalPrompt, n: 1, size, quality, style }),
             signal
           }),
-          AI_CALL_TIMEOUT_MS,
+          IMG_TIMEOUT_MS,
           'openai-image'
         );
         const data = await safeParseResponse(res, 'OpenAI image API error');
@@ -172,7 +177,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
             body: JSON.stringify({ model: modelToUse, prompt: finalPrompt, n: 1, width, height }),
             signal
           }),
-          AI_CALL_TIMEOUT_MS,
+          IMG_TIMEOUT_MS,
           'together-image'
         );
         const data = await safeParseResponse(res, 'Together image API error');
@@ -193,7 +198,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
             }),
             signal
           }),
-          AI_CALL_TIMEOUT_MS,
+          IMG_TIMEOUT_MS,
           'stability-image'
         );
         const data = await safeParseResponse(res, 'Stability AI error');
@@ -253,38 +258,35 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           'imagen-3.5-fast-generate-001'
         ];
         if (!SUPPORTED_IMAGEN_MODELS.includes(cleanModel)) {
-          console.warn(`[Image Task] Model '${cleanModel}' is not officially supported by Imagen. Proceeding with caution.`);
+          throw new Error(`Google Imagen check: model '${cleanModel}' is unsupported. Allowed models: ${SUPPORTED_IMAGEN_MODELS.join(', ')}`);
         }
 
-        // Standardize Google Imagen to :predict endpoint
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:predict`;
-        const requestBody = {
-          instances: [
-            { prompt: finalPrompt }
-          ],
-          parameters: {
-            numberOfImages: 1,
-            aspectRatio: aspectRatio,
-            outputMimeType: 'image/jpeg'
+        // Call Imagen using our official modern @google/genai SDK pattern
+        const aiObj = new GoogleGenAI({
+          apiKey: apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build'
+            }
           }
-        };
+        });
 
-        const res = await withTimeout(
-          (signal) => fetch(url, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify(requestBody),
-            signal
+        const imageResponse = await withTimeout(
+          () => aiObj.models.generateImages({
+            model: cleanModel,
+            prompt: finalPrompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: aspectRatio as any
+            }
           }),
-          AI_CALL_TIMEOUT_MS,
+          IMG_TIMEOUT_MS,
           'google-image'
         );
-        const data = await safeParseResponse(res, 'Google Imagen API error');
-        const base64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64Encoded;
-        imageUrl = base64 ? `data:image/jpeg;base64,${base64}` : '';
+
+        const base64Bytes = imageResponse.generatedImages?.[0]?.image?.imageBytes;
+        imageUrl = base64Bytes ? `data:image/jpeg;base64,${base64Bytes}` : '';
       }
 
       if (imageUrl) {

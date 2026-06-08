@@ -8,14 +8,13 @@ import {
   withTimeout, 
   safeParseResponse, 
   safeDecrementOnFailure,
-  validateModelCapacityCached,
+  validateProviderCapacity,
   AI_CALL_TIMEOUT_MS,
   VIDEO_TIMEOUT_MS
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
-const VIDEO_GENERATION_TIMEOUT_MS = 660_000; // 11 minutes
 const RUNWAY_API_VERSION = '2024-11-06';
 
 /**
@@ -122,7 +121,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const vaultConfig = vaultMap.get(providerId);
 
           // Perform capacity security checks
-          const validation = validateModelCapacityCached(
+          const validation = validateProviderCapacity(
             vaultConfig,
             providerId,
             route.cost_per_usage || 0
@@ -291,8 +290,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                       progress: progressPct,
                       renderedFrames,
                       totalFrames,
-                      phase: `RunwayML cluster rendering frames (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
-                      phase_ar: `عنقود معالجة RunwayML يولد إطارات الفيديو (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
+                      phase: `RunwayML pending generation process (${progressPct}%) [Step ${i + 1}/${totalSteps}]`,
+                      phase_ar: `معالجة توليد مقطع الفيديو على RunwayML بقسم (${progressPct}%) [الخطوة ${i + 1}/${totalSteps}]`,
                       fps,
                       currentStep: i + 1,
                       totalSteps
@@ -334,8 +333,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   progress: 20,
                   renderedFrames: Math.round(totalFrames * 0.20),
                   totalFrames,
-                  phase: 'Initializing perplexta Cinema Engine & allocating neural render cores...',
-                  phase_ar: 'تهيئة محرك بيربليكستا السينمائي وجاري رندر الفيديو...',
+                  phase: 'Initializing Google Veo request and allocation check...',
+                  phase_ar: 'تهيئة طلب خدمة Google Veo والتحقق من الحصة المتاحة...',
                   fps: 0,
                   currentStep: 2,
                   totalSteps: 120
@@ -376,8 +375,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                     progress: progressPct,
                     renderedFrames,
                     totalFrames,
-                    phase: `perplexta Cinema Engine rendering video frames (${progressPct}%)`,
-                    phase_ar: `محرك بيربليكستا السينمائي يقوم برندر إطارات الفيديو (${progressPct}%)`,
+                    phase: `Google Veo video generation in progress (${progressPct}%)`,
+                    phase_ar: `عملية توليد الفيديو على Google Veo مستمرة بقسم (${progressPct}%)`,
                     fps,
                     currentStep: i + 1,
                     totalSteps
@@ -458,7 +457,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           }
         }
       },
-      VIDEO_GENERATION_TIMEOUT_MS,
+      VIDEO_TIMEOUT_MS,
       'video-generation-loop'
     );
 
@@ -473,8 +472,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
         progress: 100,
         renderedFrames: totalFrames,
         totalFrames,
-        phase: "Composed! Conveying master sequence stream...",
-        phase_ar: "اكتمل التوليد! جاري نقل تدفق مقطع الفيديو النهائي...",
+        phase: "Composed! Syncing media bytes...",
+        phase_ar: "اكتمل توليد الفيديو بنجاح. جاري مزامنة وحفظ ملف الوسائط المولد...",
         fps,
         currentStep: 120,
         totalSteps: 120
