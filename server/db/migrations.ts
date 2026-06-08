@@ -1460,6 +1460,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
+    await runVersioned('v45_orchestrator_max_history_depth', 'Adding max_history_depth and memory_limit_per_user columns', async (tx) => {
+      await ensureColumn(tx, 'tool_orchestrator', 'max_history_depth', 'INTEGER', 16);
+      await ensureColumn(tx, 'system_settings', 'memory_limit_per_user', 'INTEGER', 50);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;

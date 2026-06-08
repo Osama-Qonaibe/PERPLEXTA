@@ -38,11 +38,16 @@ export async function safeParseResponse(res: any, defaultErrorPrefix: string): P
   return data;
 }
 
-export async function safeDecrementOnFailure(quotaCheck: { allowed: boolean }, userId: number, toolIdStr: string, walletCharged: any) {
+export async function safeDecrementOnFailure(
+  quotaCheck: { allowed: boolean },
+  userId: number,
+  toolIdStr: string,
+  walletCharged: boolean | { charged: 'points' | 'balance'; amount: number }
+) {
   try {
     if (quotaCheck && quotaCheck.allowed) {
       await decrementUserUsage(userId, toolIdStr);
-    } else if (walletCharged) {
+    } else if (walletCharged && typeof walletCharged === 'object') {
       // Corrected: refund the charge instead of incrementing usage (incrementing usage is reversed logic)
       await refundUsageToWallet(userId, toolIdStr, walletCharged);
     }

@@ -143,3 +143,21 @@ export async function isSafeHost(hostOrConnStr: string): Promise<boolean> {
   
   return true;
 }
+
+/**
+ * Normalizes Eastern Arabic numerals (٠, ١, ٢, ...) in a text to standard Western Arabic numerals (0, 1, 2, ...).
+ */
+export function normalizeArabicNumerals(text: string): string {
+  return text
+    .replace(/[٠0]/g, '0')
+    .replace(/[١1]/g, '1')
+    .replace(/[٢2]/g, '2')
+    .replace(/[٣3]/g, '3')
+    .replace(/[٤4]/g, '4')
+    .replace(/[٥5]/g, '5')
+    .replace(/[٦6]/g, '6')
+    .replace(/[٧7]/g, '7')
+    .replace(/[٨8]/g, '8')
+    .replace(/[٩9]/g, '9');
+}
+

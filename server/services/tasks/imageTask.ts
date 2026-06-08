@@ -168,17 +168,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         modelName = modelName.substring(7);
       }
 
-      // Safety override: if model name is empty or belongs to standard non-image text models (e.g. standard text gemini), fallback to a high-performance default image model
-      const lowerName = modelName.toLowerCase();
-      if (
-        !lowerName ||
-        (lowerName.includes('gemini') && !lowerName.includes('image')) ||
-        lowerName.includes('gemma') ||
-        lowerName.includes('pro-preview-tts')
-      ) {
-        modelName = 'imagen-4.0-generate-001';
-      }
-
       // Detect if this is an imagen-4.0 model or any other vertex-served predict-based model
       const isPredictModel = modelName.toLowerCase().includes('imagen-4.0') || modelName.toLowerCase().includes('veo');
 
@@ -227,7 +216,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     if (!imageUrl) throw new Error('Image generation returned empty result');
 
     // Save to physical disk and user_files DB to completely prevent WebSocket lag/freezes
-    const { saveGeneratedImageToDisk } = await import('../files.js');
     const savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
 
     const estimatedCost = (route.cost_per_usage || 0) / 1000;

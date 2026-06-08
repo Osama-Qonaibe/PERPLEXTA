@@ -1,7 +1,6 @@
 import express from 'express';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
-import { decrypt } from '../utils/crypto.js';
 import { callAIProvider, getProviderKey, getProviderUrlKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
@@ -9,14 +8,28 @@ import { extractTextFromFile, forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
 import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
-import { extractFollowUps } from '../utils/helpers.js';
+import { extractFollowUps, normalizeArabicNumerals } from '../utils/helpers.js';
+import { SEARCH_KEYWORDS } from '../config/searchKeywords.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet, refundUsageToWallet } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
-import { withTimeout, safeDecrementOnFailure, AI_CALL_TIMEOUT_MS } from './tasks/utils.js';
+import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS } from './tasks/utils.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
+
+const UPDATE_SUMMARY_LIMIT = 20;
+const UPDATE_SUMMARY_TIMEOUT_MS = 30000;
+
+export const isSocialGreeting = (text: string): boolean => {
+  const socialKeywords = [
+    'مرحبا', 'سلام', 'كيفك', 'كيف حالك', 'شكراً', 'شكرا', 'اهلين', 'هلا', 'مساء الخير', 'صباح الخير', 'منور',
+    'hi', 'hello', 'hey', 'how are you', 'thanks', 'thank you', 'good morning', 'good evening', 'test', 'مستعد'
+  ];
+  const cleaned = text.trim().toLowerCase();
+  if (cleaned.length < 5) return true; // Very short prompts are conversational/simple
+  return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 15);
+};
 
 // Modular, non-leaking, module-level schedulers to avoid lexically capturing larger request frame data assets
 function scheduleChatSummaryUpdate(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
@@ -37,12 +50,12 @@ function scheduleMemoryConsolidation(userId: number, chatIdNum: number, provider
   });
 }
 
-function getDynamicHistoryLimit(totalMessages: number): number {
-  if (totalMessages <= 4) return 4;
-  if (totalMessages <= 8) return 6;
-  if (totalMessages <= 14) return 8;
-  if (totalMessages <= 30) return 12;
-  return 16;
+function getDynamicHistoryLimit(totalMessages: number, maxDepth: number = 16): number {
+  if (totalMessages <= 4) return Math.min(4, maxDepth);
+  if (totalMessages <= 8) return Math.min(6, maxDepth);
+  if (totalMessages <= 14) return Math.min(8, maxDepth);
+  if (totalMessages <= 30) return Math.min(12, maxDepth);
+  return maxDepth;
 }
 
 function cleanAIOutput(text: string): string {
@@ -52,26 +65,6 @@ function cleanAIOutput(text: string): string {
     .replace(/```(?:json)?/gi, '')
     .replace(/[{}]/g, '')
     .trim();
-}
-
-async function safeParseResponse(res: any, defaultErrorPrefix: string): Promise<any> {
-  const text = await res.text();
-  let data: any = null;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch (err) {
-    // Content is not valid JSON
-  }
-  
-  if (!res.ok) {
-    const errorMsg = data?.error?.message 
-      || data?.message 
-      || data?.detail 
-      || (text ? (text.length > 300 ? text.substring(0, 300) + '...' : text) : `HTTP ${res.status}`);
-    throw new Error(`${defaultErrorPrefix}: ${errorMsg}`);
-  }
-  
-  return data;
 }
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
@@ -170,6 +163,8 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     ).catch(() => ({ rows: [] }))
   ]);
 
+  const route = routeResult.rows[0];
+
   let history: { role: string; content: string }[] = [];
   if (chatIdNum > 0) {
     try {
@@ -178,7 +173,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         [chatIdNum]
       );
       const totalMessages = parseInt(countRes.rows[0].count);
-      const historyLimit = getDynamicHistoryLimit(totalMessages);
+      const historyLimit = getDynamicHistoryLimit(totalMessages, route?.max_history_depth);
 
       const historyRes = await pool.query(
         "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT $2",
@@ -213,8 +208,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       type: "SYSTEM_INACTIVE"
     }));
   }
-
-  const route = routeResult.rows[0];
 
   let walletCharged: boolean | { charged: 'points' | 'balance'; amount: number } = false;
 
@@ -401,8 +394,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       formData.append('model', route.primary_model || 'whisper-1');
       if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
 
+      const customUrl = await getProviderUrlKey(providerId);
+      const sttEndpoint = customUrl || 'https://api.openai.com/v1/audio/transcriptions';
+
       const res = await withTimeout(
-        fetch('https://api.openai.com/v1/audio/transcriptions', {
+        fetch(sttEndpoint, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${apiKey}` },
           body: formData
@@ -513,17 +509,7 @@ Do not mention this in your reply.`.trim();
     }
 
     // Determine Duration
-    const normalizedPrompt = promptLower
-      .replace(/[٠0]/g, '0')
-      .replace(/[١1]/g, '1')
-      .replace(/[٢2]/g, '2')
-      .replace(/[٣3]/g, '3')
-      .replace(/[٤4]/g, '4')
-      .replace(/[٥5]/g, '5')
-      .replace(/[٦6]/g, '6')
-      .replace(/[٧7]/g, '7')
-      .replace(/[٨8]/g, '8')
-      .replace(/[٩9]/g, '9');
+    const normalizedPrompt = normalizeArabicNumerals(promptLower);
 
     const durationMatch = normalizedPrompt.match(/(?:المدة|duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/) || 
                           normalizedPrompt.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/);
@@ -545,8 +531,7 @@ You MUST structure your response into EXACTLY 3 phases using the bracket tags to
 
 [I. Cover & Mood Art]
 Provide an elegant, detailed visual description of the album/soundtrack cover art.
-Include exactly one Markdown image tag pointing to a beautiful Unsplash cover matching the mood, e.g.:
-![Album Art](https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80) or other professional Unsplash URLs related to music/scenery. Ensure Referrer-Policy "no-referrer" is supported.
+Include exactly one Markdown image tag pointing to a professional royalty-free cover art image related to the music mood and scenery. Ensure Referrer-Policy "no-referrer" is supported.
 
 [II. Audio Suite Environment / البيئة الصوتية]
 Describe the soundscape, instrumentation, tempo, scales, key, and production techniques in professional terms.
@@ -668,10 +653,14 @@ ${refinedSystemPromptSegment}`.trim();
         }
 
         if (extractedFacts.length > 0) {
-          const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+          const [countRes, settingsRes] = await Promise.all([
+            pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]),
+            pool.query('SELECT memory_limit_per_user FROM system_settings LIMIT 1')
+          ]);
           const currentCount = parseInt(countRes.rows[0].count);
+          const memoryLimit = settingsRes.rows[0]?.memory_limit_per_user || 48;
 
-          if (currentCount >= 48) {
+          if (currentCount >= memoryLimit) {
             scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
           }
 
@@ -695,7 +684,7 @@ ${refinedSystemPromptSegment}`.trim();
           if (io) {
             const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
             const newCount = parseInt(checkNewCount.rows[0].count);
-            if (newCount >= 48) {
+            if (newCount >= memoryLimit) {
               io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
             }
           }
@@ -711,18 +700,25 @@ ${refinedSystemPromptSegment}`.trim();
       console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, e);
 
       const errMessage = e.message || '';
+      const isTemporaryRateLimit = errMessage.includes('429') || errMessage.toLowerCase().includes('rate limit') || errMessage.toLowerCase().includes('too many requests');
+
+      if (isTemporaryRateLimit) {
+        console.warn(`[Orchestrator] Temporary 429 rate limit hit on provider "${target.provider}" / model "${target.model}". Proceeding to fallback if available.`);
+      }
+
       const isQuotaOrAuthExhausted =
-        errMessage.includes('429') ||
-        errMessage.includes('401') ||
-        errMessage.includes('403') ||
-        errMessage.includes('1113') ||
-        errMessage.includes('Insufficient balance') ||
-        errMessage.includes('resource package') ||
-        errMessage.includes('quota') ||
-        errMessage.includes('recharge') ||
-        errMessage.includes('balance') ||
-        errMessage.includes('subscription') ||
-        errMessage.includes('upgrade');
+        !isTemporaryRateLimit && (
+          errMessage.includes('401') ||
+          errMessage.includes('403') ||
+          errMessage.includes('1113') ||
+          errMessage.includes('Insufficient balance') ||
+          errMessage.includes('resource package') ||
+          errMessage.includes('quota') ||
+          errMessage.includes('recharge') ||
+          errMessage.includes('balance') ||
+          errMessage.includes('subscription') ||
+          errMessage.includes('upgrade')
+        );
 
       if (isQuotaOrAuthExhausted && !errMessage.includes('AI_TIMEOUT')) {
         try {
