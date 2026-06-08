@@ -5,7 +5,7 @@ export interface TaskExecutionContext {
   userId: number;
   route: any;
   quotaCheck: any;
-  walletCharged: any;
+  walletCharged: boolean | { charged: 'points' | 'balance'; amount: number };
   finalPrompt: string;
 }
 
