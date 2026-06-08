@@ -1391,33 +1391,38 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v42_missing_indexes', 'Adding critical performance and integrity indexes', async (tx) => {
+      // 1. Core DB targets (using tx)
       // password_resets
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email)`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)`);
-      
-      // forum
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_forum_posts_category_id ON forum_posts(category_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_forum_comments_post_id ON forum_comments(post_id)`);
-      
-      // blog
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)`);
       
       // marketplace
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_status ON marketplace_items(status)`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_user_id ON marketplace_items(user_id)`);
       
-      // ledger
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_user_id ON ledger_transactions(user_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_status ON ledger_transactions(status)`);
+      // 2. External DB targets (explicitly using externalClient || client)
+      const extTarget = externalClient || client;
+      // forum
+      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_forum_posts_category_id ON forum_posts(category_id)`);
+      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_forum_comments_post_id ON forum_comments(post_id)`);
+      // blog
+      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)`);
       
-      // security
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_resolved ON security_alerts(is_resolved)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at)`);
+      // 3. Ledger DB targets (explicitly using ledgerClient || client)
+      const lTarget = ledgerClient || client;
+      await lTarget.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_user_id ON ledger_transactions(user_id)`);
+      await lTarget.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_status ON ledger_transactions(status)`);
+      
+      // 4. Security DB targets (explicitly using securityClient || client)
+      const sTarget = securityClient || client;
+      await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)`);
+      await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_resolved ON security_alerts(is_resolved)`);
+      await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at)`);
     });
 
     await runVersioned('v43_forum_fk_integrity', 'Adding missing foreign keys to forum tables', async (tx) => {
-      await tx.query(`
+      const extTarget = externalClient || client;
+      await extTarget.query(`
         DO $$
         BEGIN
           IF NOT EXISTS (
@@ -1429,7 +1434,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         END $$
       `);
       
-      await tx.query(`
+      await extTarget.query(`
         DO $$
         BEGIN
           IF NOT EXISTS (

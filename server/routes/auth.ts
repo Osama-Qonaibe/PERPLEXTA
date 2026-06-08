@@ -9,10 +9,9 @@ import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
 import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
 import { deductFromWallet } from '../services/wallet.js';
+import { hashToken } from '../utils/tokenHash.js';
 
 const router = express.Router();
-
-const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {

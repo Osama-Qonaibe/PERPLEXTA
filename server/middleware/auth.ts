@@ -3,9 +3,7 @@ import jwt from 'jsonwebtoken';
 import { pool, getSecurityPool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
-import crypto from 'crypto';
-
-const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+import { hashToken } from '../utils/tokenHash.js';
 
 interface UserCacheEntry {
   status: string;

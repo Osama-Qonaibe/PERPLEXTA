@@ -5,7 +5,7 @@ export interface TaskExecutionContext {
   userId: number;
   route: any;
   quotaCheck: any;
-  walletCharged: boolean;
+  walletCharged: any;
   finalPrompt: string;
 }
 
