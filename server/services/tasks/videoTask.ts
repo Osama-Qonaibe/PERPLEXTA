@@ -67,8 +67,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
   if (isNaN(requestedDuration) || requestedDuration <= 0) {
     requestedDuration = 5;
   }
-  const fps = video_settings?.fps || 24; // UI-only indicator
-  const totalFrames = requestedDuration * fps; // UI-only indicator
+  const fps = video_settings?.fps || 24; // UI-only indicator (estimated display metrics for progress)
+  const totalFrames = requestedDuration * fps; // UI-only indicator (estimated display metrics for progress)
 
   // Build the fallback chain routing targets array
   const targets = [
@@ -111,7 +111,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
   try {
     // Wrap entire target traversal list with VIDEO_GENERATION_TIMEOUT_MS limit (C-1)
     await withTimeout(
-      async () => {
+      async (outerSignal) => {
         for (const target of targets) {
           const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
           const modelName = target.model || '';
@@ -233,8 +233,14 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                     });
                   }
 
+                  if (outerSignal?.aborted) {
+                    throw new Error('Replicate video generation polling aborted due to timeout.');
+                  }
                   await new Promise(r => setTimeout(r, 5000));
-                  const poll = await fetch(pollUrl, { headers: { 'Authorization': `Token ${apiKey}` } });
+                  const poll = await fetch(pollUrl, { 
+                    headers: { 'Authorization': `Token ${apiKey}` },
+                    signal: outerSignal
+                  });
                   const pollData = await safeParseResponse(poll, 'Replicate video poll error');
                   if (pollData.status === 'succeeded') {
                     videoUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
@@ -298,9 +304,13 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                     });
                   }
 
+                  if (outerSignal?.aborted) {
+                    throw new Error('Runway video generation polling aborted due to timeout.');
+                  }
                   await new Promise(r => setTimeout(r, 5000));
                   const poll = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': RUNWAY_API_VERSION }
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'X-Runway-Version': RUNWAY_API_VERSION },
+                    signal: outerSignal
                   });
                   const pollData = await safeParseResponse(poll, 'Runway video poll error');
                   if (pollData.status === 'SUCCEEDED') {
@@ -367,6 +377,9 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               let completedOp = null;
               const totalSteps = 70;
               for (let i = 0; i < totalSteps; i++) {
+                if (outerSignal?.aborted) {
+                  throw new Error('Google Veo video generation aborted due to timeout.');
+                }
                 const progressPct = Math.min(98, Math.round(15 + (i / totalSteps) * 80));
                 const renderedFrames = Math.round((progressPct / 100) * totalFrames);
                 
