@@ -11,14 +11,12 @@ import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps } from '../utils/helpers.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
-import { deductUsageFromWallet } from './wallet.js';
+import { deductUsageFromWallet, refundUsageToWallet } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
-import { withTimeout, safeDecrementOnFailure } from './tasks/utils.js';
+import { withTimeout, safeDecrementOnFailure, AI_CALL_TIMEOUT_MS } from './tasks/utils.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
-
-const AI_CALL_TIMEOUT_MS = 90000;
 
 // Modular, non-leaking, module-level schedulers to avoid lexically capturing larger request frame data assets
 function scheduleChatSummaryUpdate(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
@@ -234,7 +232,12 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           amount: chargeRes.amount
         });
       }
-      await incrementUserUsage(userId, toolIdStr);
+      await incrementUserUsage(userId, toolIdStr).catch(async (err) => {
+        console.error('[Orchestrator Quota Sync] Failed to increment usage, rolling back charge:', err);
+        await refundUsageToWallet(userId, toolIdStr, chargeRes as { charged: 'points' | 'balance'; amount: number });
+        walletCharged = false;
+        throw err;
+      });
     } catch (chargeErr: any) {
       const periodStrEn = quotaCheck.period === 'daily' ? 'Daily' : 'Monthly';
       const periodStrAr = quotaCheck.period === 'daily' ? 'يومي' : 'شهري';
