@@ -9,14 +9,7 @@ import {
   AI_CALL_TIMEOUT_MS 
 } from './utils.js';
 
-export interface TaskExecutionContext {
-  reqBody: any;
-  userId: number;
-  route: any;
-  quotaCheck: any;
-  walletCharged: boolean;
-  finalPrompt: string;
-}
+import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ result: string }> {
   const { reqBody, userId, route, quotaCheck, walletCharged } = ctx;

@@ -2,7 +2,7 @@ import { pool } from '../../db/index.js';
 import { getProviderKey, getProviderUrlKey } from '../ai.js';
 import { logSystemActivity } from '../notifications.js';
 import { io } from '../../config/socket.js';
-import { saveGeneratedVideoToDisk } from '../files.js';
+import { saveGeneratedVideoToDisk, saveFileMetadata } from '../files.js';
 import { VideoResourceProvider } from '../videoResourceProvider.js';
 import { 
   withTimeout, 
@@ -11,15 +11,13 @@ import {
   AI_CALL_TIMEOUT_MS 
 } from './utils.js';
 import { GoogleGenAI, GenerateVideosOperation } from "@google/genai";
-
-export interface TaskExecutionContext {
-  reqBody: any;
-  userId: number;
-  route: any;
-  quotaCheck: any;
-  walletCharged: boolean;
-  finalPrompt: string;
-}
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
+import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 /**
  * ELITE-GRADE PRE-GENERATION MODEL VALIDATION & RESOURCE CAPACITY ENGINE
@@ -156,7 +154,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           phase_ar: `الاتصال بـ ${target.provider} وجدولة تسلسل توليف الفيديو...`,
           fps: 0,
           currentStep: 1,
-          totalSteps: 20
+          totalSteps: 120
         });
       }
 
@@ -176,7 +174,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               phase_ar: `بدء إرسال طلب التوليد للواجهة البرمجية المخصصة التابعة لـ ${target.provider}...`,
               fps: 0,
               currentStep: 3,
-              totalSteps: 20
+              totalSteps: 120
             });
           }
 
@@ -276,7 +274,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           }
 
           const res = await withTimeout(
-            fetch('https://api.runwayml.com/v1/image_to_video', {
+            fetch('https://api.runwayml.com/v1/text_to_video', {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -409,7 +407,15 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
             throw new Error('Google Veo operation completed but did not return a valid video URI.');
           }
 
-          // Fetch the video bytes securely using dynamic key header auth without url leaks
+          // Stream the video bytes securely directly to the server's local disk
+          // This prevents massive base64 text-representation memory overhead and V8 OOM crashes during concurrent usage
+          const uploadDir = path.join(process.cwd(), 'uploads');
+          await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+          const fileExtension = 'mp4';
+          const randomFilename = `${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+          const filePath = path.join(uploadDir, randomFilename);
+
           const videoDownloadRes = await fetch(uri, {
             headers: { 'x-goog-api-key': apiKey },
           });
@@ -418,13 +424,33 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
             throw new Error(`Failed to download generated Veo video bytes from Google: HTTP ${videoDownloadRes.status}`);
           }
 
-          const videoBytes = await videoDownloadRes.arrayBuffer();
-          const base64Data = Buffer.from(videoBytes).toString('base64');
-          videoUrl = `data:video/mp4;base64,${base64Data}`;
-
-          if (!videoUrl) {
-            throw new Error(`Google Veo prediction returned empty output for model: ${modelToUse}`);
+          if (!videoDownloadRes.body) {
+            throw new Error('Google Veo fetch response body is empty.');
           }
+
+          const fileStream = createWriteStream(filePath);
+          const nodeReadable = Readable.fromWeb(videoDownloadRes.body as any);
+          await pipeline(nodeReadable, fileStream);
+
+          const mimeType = videoDownloadRes.headers.get('content-type') || 'video/mp4';
+          const contentLengthStr = videoDownloadRes.headers.get('content-length');
+          const fileSize = contentLengthStr ? parseInt(contentLengthStr, 10) : 0;
+
+          // Register in system file metadata cleanly
+          await saveFileMetadata(String(userId), {
+            file_name: `Perplexta_Veo_Video_${Date.now()}.${fileExtension}`,
+            file_url: randomFilename,
+            file_size: fileSize,
+            mime_type: mimeType,
+            file_type: 'video',
+            metadata: {
+              generated: true,
+              origin: 'AI_Orchestrator_Studio_Veo',
+              model: modelToUse
+            }
+          });
+
+          videoUrl = `/uploads/${randomFilename}`;
         } else {
           // --- Generic Dynamic Model Fallback Handler ---
           const finalEndpoint = vaultConfig?.url_key;
@@ -443,7 +469,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               phase_ar: `بدء إرسال طلب التوليد للواجهة البرمجية التابعة لـ ${target.provider}...`,
               fps: 0,
               currentStep: 3,
-              totalSteps: 20
+              totalSteps: 120
             });
           }
 
@@ -511,8 +537,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
         phase: "Composed! Conveying master sequence stream...",
         phase_ar: "اكتمل التوليد! جاري نقل تدفق مقطع الفيديو النهائي...",
         fps: 24,
-        currentStep: 20,
-        totalSteps: 20
+        currentStep: 120,
+        totalSteps: 120
       });
     }
 
@@ -532,7 +558,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
     let savedLocalUrl = videoUrl;
     try {
-      if (videoUrl) {
+      if (videoUrl && !videoUrl.startsWith('/uploads/')) {
         console.log(`[Video Storage] Registering and saving video locally to disk/ledger for user ${userId}...`);
         savedLocalUrl = await saveGeneratedVideoToDisk(String(userId), videoUrl);
       }
