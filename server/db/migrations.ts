@@ -153,11 +153,13 @@ export async function ensureColumn(
         }
       }
       
-      let query = `ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`;
+      await client.query(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`);
       if (defaultVal !== undefined && defaultVal !== null) {
-        query += ` DEFAULT ${defaultVal}`;
+        // تطبيق الـ default بـ UPDATE بدلاً من دمجه في DDL
+        await client.query(
+          `ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DEFAULT ${defaultVal}`
+        );
       }
-      await client.query(query);
       console.log(`[Database] Added column ${columnName} to ${tableName}`);
     }
     
@@ -405,116 +407,125 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
-        console.log(`[Migrations] Applying ${name}: ${description}...`);
-        await client.query('BEGIN');
-        if (ledgerClient) await ledgerClient.query('BEGIN');
-        if (externalClient) await externalClient.query('BEGIN');
-        if (securityClient) await securityClient.query('BEGIN');
+        const lockKey = Buffer.from(name).reduce((acc, c) => acc + c, 0); // رقم فريد لكل migration
+        await client.query(`SELECT pg_advisory_lock($1)`, [lockKey]);
         try {
-          const findClientForQuery = (sql: string, params?: unknown[]) => {
-            const queryLower = sql.toLowerCase();
-            
-            const isTableMatched = (tableName: string) => {
-              if (queryLower.includes(tableName)) return true;
-              if (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName)) return true;
-              return false;
+          const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
+          if (doubleCheck.rows.length > 0) return;
+
+          console.log(`[Migrations] Applying ${name}: ${description}...`);
+          await client.query('BEGIN');
+          if (ledgerClient) await ledgerClient.query('BEGIN');
+          if (externalClient) await externalClient.query('BEGIN');
+          if (securityClient) await securityClient.query('BEGIN');
+          try {
+            const findClientForQuery = (sql: string, params?: unknown[]) => {
+              const queryLower = sql.toLowerCase();
+              
+              const isTableMatched = (tableName: string) => {
+                if (queryLower.includes(tableName)) return true;
+                if (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName)) return true;
+                return false;
+              };
+
+              // External tables query check
+              if (
+                isTableMatched('forum_categories') ||
+                isTableMatched('forum_posts') ||
+                isTableMatched('forum_comments') ||
+                isTableMatched('blog_articles') ||
+                isTableMatched('blog_comments') ||
+                isTableMatched('blog_ratings')
+              ) {
+                return externalClient || client;
+              }
+              
+              // Security tables query check
+              if (
+                isTableMatched('token_blacklist') ||
+                isTableMatched('security_alerts') ||
+                isTableMatched('admin_audit_logs')
+              ) {
+                return securityClient || client;
+              }
+              
+              // Ledger tables check
+              const ledgerTables = [
+                'wallets', 'ledger_transactions', 'referrals', 'referral_tree', 
+                'kyc_requests', 'withdrawal_requests', 'payout_accounts', 
+                'economy_settings', 'coupon_usages', 'deposit_requests', 
+                'coupons', 'stripe_events'
+              ];
+              if (ledgerTables.some(t => isTableMatched(t))) {
+                return ledgerClient || client;
+              }
+              
+              return client;
             };
 
-            // External tables query check
-            if (
-              isTableMatched('forum_categories') ||
-              isTableMatched('forum_posts') ||
-              isTableMatched('forum_comments') ||
-              isTableMatched('blog_articles') ||
-              isTableMatched('blog_comments') ||
-              isTableMatched('blog_ratings')
-            ) {
-              return externalClient || client;
-            }
-            
-            // Security tables query check
-            if (
-              isTableMatched('token_blacklist') ||
-              isTableMatched('security_alerts') ||
-              isTableMatched('admin_audit_logs')
-            ) {
-              return securityClient || client;
-            }
-            
-            // Ledger tables check
-            const ledgerTables = [
-              'wallets', 'ledger_transactions', 'referrals', 'referral_tree', 
-              'kyc_requests', 'withdrawal_requests', 'payout_accounts', 
-              'economy_settings', 'coupon_usages', 'deposit_requests', 
-              'coupons', 'stripe_events'
-            ];
-            if (ledgerTables.some(t => isTableMatched(t))) {
-              return ledgerClient || client;
-            }
-            
-            return client;
-          };
-
-          const wrappedClient: WrappedClient = {
-            release: () => {},
-            query: async (text: string | { text: string }, params?: unknown[]) => {
-              let sqlString = '';
-              if (typeof text === 'string') {
-                sqlString = text;
-              } else if (text && typeof text === 'object' && text.text) {
-                sqlString = text.text;
+            const wrappedClient: WrappedClient = {
+              release: () => {},
+              query: async (text: string | { text: string }, params?: unknown[]) => {
+                let sqlString = '';
+                if (typeof text === 'string') {
+                  sqlString = text;
+                } else if (text && typeof text === 'object' && text.text) {
+                  sqlString = text.text;
+                }
+                const targetClient = findClientForQuery(sqlString, params);
+                return targetClient.query(text, params);
               }
-              const targetClient = findClientForQuery(sqlString, params);
-              return targetClient.query(text, params);
-            }
-          };
+            };
 
-          const wrappedLedgerClient: WrappedClient = {
-            release: () => {},
-            query: async (text: string | { text: string }, params?: unknown[]) => {
-              let sqlString = '';
-              if (typeof text === 'string') {
-                sqlString = text;
-              } else if (text && typeof text === 'object' && text.text) {
-                sqlString = text.text;
+            const wrappedLedgerClient: WrappedClient = {
+              release: () => {},
+              query: async (text: string | { text: string }, params?: unknown[]) => {
+                let sqlString = '';
+                if (typeof text === 'string') {
+                  sqlString = text;
+                } else if (text && typeof text === 'object' && text.text) {
+                  sqlString = text.text;
+                }
+                const targetClient = findClientForQuery(sqlString, params);
+                const finalClient = targetClient === client ? (ledgerClient || client) : targetClient;
+                return finalClient.query(text, params);
               }
-              const targetClient = findClientForQuery(sqlString, params);
-              const finalClient = targetClient === client ? (ledgerClient || client) : targetClient;
-              return finalClient.query(text, params);
-            }
-          };
+            };
 
-          await fn(wrappedClient, wrappedLedgerClient);
-          
-          await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
-          await client.query('COMMIT');
-          if (ledgerClient) await ledgerClient.query('COMMIT');
-          if (externalClient) await externalClient.query('COMMIT');
-          if (securityClient) await securityClient.query('COMMIT');
-          console.log(`[Migrations] Successfully applied ${name}.`);
-        } catch (e: unknown) {
-          await client.query('ROLLBACK');
-          if (ledgerClient) await ledgerClient.query('ROLLBACK');
-          if (externalClient) await externalClient.query('ROLLBACK');
-          if (securityClient) await securityClient.query('ROLLBACK');
-          const err = e as Error & { code?: string };
-          console.error(`[Migrations] Failed to apply ${name}:`, err);
-          
-          try {
-            await client.query(`
-              INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
-              VALUES ($1, 'failed', $2, $3, $4)
-            `, [
-              name,
-              err.message || 'Unknown error',
-              err.code || null,
-              JSON.stringify({ stack: err.stack, phase: 'runVersioned' })
-            ]);
-          } catch (auditErr) {
-            console.error('[Migrations] Failed to write failure audit log:', auditErr);
+            await fn(wrappedClient, wrappedLedgerClient);
+            
+            await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
+            await client.query('COMMIT');
+            if (ledgerClient) await ledgerClient.query('COMMIT');
+            if (externalClient) await externalClient.query('COMMIT');
+            if (securityClient) await securityClient.query('COMMIT');
+            console.log(`[Migrations] Successfully applied ${name}.`);
+          } catch (e: unknown) {
+            await client.query('ROLLBACK');
+            if (ledgerClient) await ledgerClient.query('ROLLBACK');
+            if (externalClient) await externalClient.query('ROLLBACK');
+            if (securityClient) await securityClient.query('ROLLBACK');
+            const err = e as Error & { code?: string };
+            console.error(`[Migrations] Failed to apply ${name}:`, err);
+            
+            try {
+              await client.query(`
+                INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
+                VALUES ($1, 'failed', $2, $3, $4)
+              `, [
+                name,
+                err.message || 'Unknown error',
+                err.code || null,
+                JSON.stringify({ stack: err.stack, phase: 'runVersioned' })
+              ]);
+            } catch (auditErr) {
+              console.error('[Migrations] Failed to write failure audit log:', auditErr);
+            }
+            
+            throw e;
           }
-          
-          throw e;
+        } finally {
+          await client.query(`SELECT pg_advisory_unlock($1)`, [lockKey]);
         }
       }
     };
@@ -752,19 +763,31 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     // MIGRATION: Payment Gateways Settings Expansion v13
     await runVersioned('v13_payment_gateways_expansion', 'Adding crypto deposit address, bank details, and PayPal address to economy_settings', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
-      const encAddress = `'${encrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS')}'`;
-      const encBankName = `'${encrypt(process.env.DEFAULT_BANK_NAME || 'Your Default Bank')}'`;
-      const encBankRecipient = `'${encrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.')}'`;
-      const encBankIBAN = `'${encrypt(process.env.DEFAULT_BANK_IBAN || 'IL00000000000000000000')}'`;
-      const encBankSwift = `'${encrypt(process.env.DEFAULT_BANK_SWIFT || 'TESTIL33XXX')}'`;
-      const encPaypalEmail = `'${encrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal-sandbox@yourdomain.com')}'`;
 
-      await ensureColumn(ledgerTarget, 'economy_settings', 'crypto_address', 'TEXT', encAddress);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_name', 'VARCHAR(255)', encBankName);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_recipient', 'VARCHAR(255)', encBankRecipient);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_iban', 'VARCHAR(255)', encBankIBAN);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_swift', 'VARCHAR(100)', encBankSwift);
-      await ensureColumn(ledgerTarget, 'economy_settings', 'paypal_email', 'VARCHAR(255)', encPaypalEmail);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'crypto_address', 'TEXT', null);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_name', 'VARCHAR(255)', null);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_recipient', 'VARCHAR(255)', null);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_iban', 'VARCHAR(255)', null);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'bank_swift', 'VARCHAR(100)', null);
+      await ensureColumn(ledgerTarget, 'economy_settings', 'paypal_email', 'VARCHAR(255)', null);
+
+      const encAddress = encrypt(process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS');
+      const encBankName = encrypt(process.env.DEFAULT_BANK_NAME || 'Your Default Bank');
+      const encBankRecipient = encrypt(process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.');
+      const encBankIBAN = encrypt(process.env.DEFAULT_BANK_IBAN || 'IL00000000000000000000');
+      const encBankSwift = encrypt(process.env.DEFAULT_BANK_SWIFT || 'TESTIL33XXX');
+      const encPaypalEmail = encrypt(process.env.DEFAULT_PAYPAL_EMAIL || 'paypal-sandbox@yourdomain.com');
+
+      await ledgerTarget.query(`
+        UPDATE economy_settings 
+        SET 
+          crypto_address = COALESCE(crypto_address, $1),
+          bank_name = COALESCE(bank_name, $2),
+          bank_recipient = COALESCE(bank_recipient, $3),
+          bank_iban = COALESCE(bank_iban, $4),
+          bank_swift = COALESCE(bank_swift, $5),
+          paypal_email = COALESCE(paypal_email, $6)
+      `, [encAddress, encBankName, encBankRecipient, encBankIBAN, encBankSwift, encPaypalEmail]);
     });
 
     // MIGRATION: PayPal Credentials to system_settings v14
@@ -1357,6 +1380,79 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_video_resources_chat_id ON video_resources(chat_id)`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)`);
+    });
+
+    await runVersioned('v41_hash_existing_tokens', 'Rehashing existing plaintext tokens in blacklist to SHA-256', async (tx) => {
+      // Clear expired tokens first
+      await tx.query(`DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP`);
+      // Since we cannot retrieve plaintext tokens to rehash, clear remaining active blacklisted tokens
+      await tx.query(`DELETE FROM token_blacklist`);
+      console.log('[Migrations] token_blacklist cleared for SHA-256 migration. Users will re-authenticate once.');
+    });
+
+    await runVersioned('v42_missing_indexes', 'Adding critical performance and integrity indexes', async (tx) => {
+      // password_resets
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)`);
+      
+      // forum
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_forum_posts_category_id ON forum_posts(category_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_forum_comments_post_id ON forum_comments(post_id)`);
+      
+      // blog
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)`);
+      
+      // marketplace
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_status ON marketplace_items(status)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_user_id ON marketplace_items(user_id)`);
+      
+      // ledger
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_user_id ON ledger_transactions(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_status ON ledger_transactions(status)`);
+      
+      // security
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_resolved ON security_alerts(is_resolved)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires ON token_blacklist(expires_at)`);
+    });
+
+    await runVersioned('v43_forum_fk_integrity', 'Adding missing foreign keys to forum tables', async (tx) => {
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'forum_posts_user_id_check'
+          ) THEN
+            ALTER TABLE forum_posts ADD CONSTRAINT forum_posts_user_id_check CHECK (user_id > 0);
+          END IF;
+        END $$
+      `);
+      
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'forum_comments_user_id_check'
+          ) THEN
+            ALTER TABLE forum_comments ADD CONSTRAINT forum_comments_user_id_check CHECK (user_id > 0);
+          END IF;
+        END $$
+      `);
+    });
+
+    await runVersioned('v44_encrypt_registry_passwords', 'Encrypting plaintext passwords in db_connections_registry', async (tx) => {
+      const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+      const rows = await tx.query('SELECT id, password FROM db_connections_registry WHERE password IS NOT NULL');
+      for (const row of rows.rows) {
+        if (row.password && !encryptionPattern.test(row.password)) {
+          await tx.query(
+            'UPDATE db_connections_registry SET password = $1 WHERE id = $2',
+            [encrypt(row.password), row.id]
+          );
+        }
+      }
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');

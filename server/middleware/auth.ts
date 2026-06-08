@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import { pool, getSecurityPool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
+import crypto from 'crypto';
+
+const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
 interface UserCacheEntry {
   status: string;
@@ -115,11 +118,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           try {
             let blacklistCheck;
             try {
-              blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+              blacklistCheck = await getSecurityPool().query('SELECT id FROM token_blacklist WHERE token = $1', [hashToken(token)]);
             } catch (secErr) {
               console.warn('[Auth] Security DB blacklist check failed, trying core pool fallback:', secErr instanceof Error ? secErr.message : secErr);
               if (pool && getSecurityPool() !== pool) {
-                blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [token]);
+                blacklistCheck = await pool.query('SELECT id FROM token_blacklist WHERE token = $1', [hashToken(token)]);
               } else {
                 throw secErr;
               }

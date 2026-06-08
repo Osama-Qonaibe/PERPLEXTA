@@ -12,6 +12,8 @@ import { deductFromWallet } from '../services/wallet.js';
 
 const router = express.Router();
 
+const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
@@ -326,7 +328,7 @@ router.post("/refresh-token", async (req, res) => {
       return res.status(401).json({ error: 'InvalidTokenType', message: 'Invalid token type' });
     }
 
-    const blacklistCheck = await getSecurityPool().query('SELECT id, created_at FROM token_blacklist WHERE token = $1', [refreshToken]);
+    const blacklistCheck = await getSecurityPool().query('SELECT id, created_at FROM token_blacklist WHERE token = $1', [hashToken(refreshToken)]);
     if (blacklistCheck.rows.length > 0) {
       const blacklistedTime = new Date(blacklistCheck.rows[0].created_at).getTime();
       const timeElapsed = Date.now() - blacklistedTime;
@@ -383,7 +385,7 @@ router.post("/refresh-token", async (req, res) => {
     const expirySec = decoded.exp ? Math.floor(decoded.exp) : Math.floor(Date.now() / 1000) + 3600;
     await getSecurityPool().query(
       "INSERT INTO token_blacklist (token, expires_at) VALUES ($1, TO_TIMESTAMP($2)) ON CONFLICT (token) DO NOTHING",
-      [refreshToken, expirySec]
+      [hashToken(refreshToken), expirySec]
     );
 
     await createUserSession(user.id, newRefreshToken, req, remember ? 30 : 1);
@@ -436,7 +438,7 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
       
       await getSecurityPool().query(
         'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
-        [token, expiresAt]
+        [hashToken(token), expiresAt]
       );
       addToBlacklistCache(token);
     }
@@ -453,12 +455,12 @@ router.post("/logout", authenticateToken, async (req: any, res) => {
           const rfExpiry = rfDecoded?.exp ? new Date(rfDecoded.exp * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
           await getSecurityPool().query(
             'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
-            [refreshToken, rfExpiry]
+            [hashToken(refreshToken), rfExpiry]
           );
         } catch {
           await getSecurityPool().query(
             'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING',
-            [refreshToken, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
+            [hashToken(refreshToken), new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
           );
         }
       } catch (sessionErr) {
@@ -1282,7 +1284,7 @@ router.post('/revoke', async (req, res) => {
     } else {
       try {
         addToBlacklistCache(token);
-        await getSecurityPool().query('INSERT INTO token_blacklist (token, expires_at) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL \'24 hours\') ON CONFLICT DO NOTHING', [token]);
+        await getSecurityPool().query('INSERT INTO token_blacklist (token, expires_at) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL \'24 hours\') ON CONFLICT DO NOTHING', [hashToken(token)]);
       } catch (_) {
         // Safe skip if security db table is un-synced
       }
