@@ -3,15 +3,25 @@ import { refundUsageToWallet } from '../wallet.js';
 
 export const AI_CALL_TIMEOUT_MS = 90000;
 
-export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+export function withTimeout<T>(
+  promiseOrFn: Promise<T> | ((signal: AbortSignal) => Promise<T>),
+  ms: number,
+  label: string
+): Promise<T> {
+  const controller = new AbortController();
+  const { signal } = controller;
+
   let timeoutId: NodeJS.Timeout | null = null;
   const timeoutPromise = new Promise<T>((_, reject) => {
     timeoutId = setTimeout(() => {
+      controller.abort();
       reject(new Error(`AI_TIMEOUT: ${label} exceeded ${ms}ms`));
     }, ms);
   });
 
-  return Promise.race([promise, timeoutPromise]).finally(() => {
+  const targetPromise = typeof promiseOrFn === 'function' ? promiseOrFn(signal) : promiseOrFn;
+
+  return Promise.race([targetPromise, timeoutPromise]).finally(() => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }

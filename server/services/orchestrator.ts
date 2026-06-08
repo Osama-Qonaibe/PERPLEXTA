@@ -28,7 +28,7 @@ export const isSocialGreeting = (text: string): boolean => {
   ];
   const cleaned = text.trim().toLowerCase();
   if (cleaned.length < 5) return true; // Very short prompts are conversational/simple
-  return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 15);
+  return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 25);
 };
 
 // Modular, non-leaking, module-level schedulers to avoid lexically capturing larger request frame data assets
