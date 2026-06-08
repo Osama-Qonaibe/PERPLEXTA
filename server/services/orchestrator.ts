@@ -135,17 +135,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         }
       }
 
-      if (!isImageVideoAudio && file_data.type !== 'application/pdf') {
+      const shouldExtractText = !isImageVideoAudio;
+      if (shouldExtractText) {
         const { extractTextFromBuffer } = await import('./extractor.js');
-        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
+        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type || '', file_data.name);
         if (extractedText && extractedText.trim() !== '') {
-          finalPrompt = `${finalPrompt}\n\n[FILE CONTENT - ${file_data.name}]:\n${extractedText}`;
-        }
-      } else if (file_data.type === 'application/pdf') {
-        const { extractTextFromBuffer } = await import('./extractor.js');
-        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type, file_data.name);
-        if (extractedText && extractedText.trim() !== '') {
-          finalPrompt = `${finalPrompt}\n\n[PDF CONTENT EXTRACTED - ${file_data.name}]:\n${extractedText}`;
+          const contentHeader = file_data.type === 'application/pdf'
+            ? `[PDF CONTENT EXTRACTED - ${file_data.name}]`
+            : `[FILE CONTENT - ${file_data.name}]`;
+          finalPrompt = `${finalPrompt}\n\n${contentHeader}:\n${extractedText}`;
         }
       }
     } catch (err: any) {
@@ -218,7 +216,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const route = routeResult.rows[0];
 
-  let walletCharged: any = false;
+  let walletCharged: boolean | { charged: 'points' | 'balance'; amount: number } = false;
 
   if (!quotaCheck.allowed) {
     try {
@@ -267,7 +265,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 
   const isSovereignSearch = toolIdStr === 'sovereign_search';
-  const isPerplextaAnalysis = toolIdStr === 'perplexta_analysis';
 
   // High-fidelity search intent extraction:
   // We trigger sovereign web search if the user explicitly requests web connection/search, OR
@@ -282,37 +279,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 15);
   };
 
-  const chatWantsSearch = isChatOnly && (
-    cleanUserPrompt.toLowerCase().includes('search') ||
-    cleanUserPrompt.toLowerCase().includes('google') ||
-    cleanUserPrompt.toLowerCase().includes('طقس') ||
-    cleanUserPrompt.toLowerCase().includes('أخبار') ||
-    cleanUserPrompt.toLowerCase().includes('اخبار') ||
-    cleanUserPrompt.toLowerCase().includes('سعر') ||
-    cleanUserPrompt.toLowerCase().includes('دولار') ||
-    cleanUserPrompt.toLowerCase().includes('بحث') ||
-    cleanUserPrompt.toLowerCase().includes('ابحث') ||
-    cleanUserPrompt.toLowerCase().includes('ما هو') ||
-    cleanUserPrompt.toLowerCase().includes('ما هي') ||
-    cleanUserPrompt.toLowerCase().includes('today') ||
-    cleanUserPrompt.toLowerCase().includes('now') ||
-    cleanUserPrompt.toLowerCase().includes('أحدث') ||
-    cleanUserPrompt.toLowerCase().includes('ويب') ||
-    cleanUserPrompt.toLowerCase().includes('برابط') ||
-    cleanUserPrompt.toLowerCase().includes('رابط') ||
-    cleanUserPrompt.toLowerCase().includes('موقع') ||
-    cleanUserPrompt.toLowerCase().includes('ابحث عن') ||
-    cleanUserPrompt.toLowerCase().includes('find') ||
-    cleanUserPrompt.toLowerCase().includes('weather') ||
-    cleanUserPrompt.toLowerCase().includes('news') ||
-    cleanUserPrompt.toLowerCase().includes('stock') ||
-    cleanUserPrompt.toLowerCase().includes('price') ||
-    cleanUserPrompt.toLowerCase().includes('latest') ||
-    cleanUserPrompt.toLowerCase().includes('current') ||
-    cleanUserPrompt.toLowerCase().includes('من هو') ||
-    cleanUserPrompt.toLowerCase().includes('من هي') ||
-    cleanUserPrompt.toLowerCase().includes('ماذا حدث')
-  );
+  const SEARCH_KEYWORDS = [
+    'search', 'google', 'طقس', 'أخبار', 'اخبار', 'سعر', 'دولار', 'بحث',
+    'ابحث', 'ما هو', 'ما هي', 'today', 'now', 'أحدث', 'ويب', 'برابط',
+    'رابط', 'موقع', 'ابحث عن', 'find', 'weather', 'news', 'stock',
+    'price', 'latest', 'current', 'من هو', 'من هي', 'ماذا حدث'
+  ];
+
+  const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
+    SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
 
   // 1. Segregated System Search Engine (Background Sovereign Search API Grounding path)
   if (isSovereignSearch || chatWantsSearch) {
@@ -357,10 +332,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   }
 
   // 2. Segregated User-facing Analysis & Auditing Block
-  if (isPerplextaAnalysis) {
-    // Audit & compliance files are injected via file extractor / PDF bridge directly into the finalPrompt structure.
-    // Operating strictly without duplicated background web search execution.
-  }
 
   if (toolIdStr === 'image') {
     const handler = await OrchestratorRegistry.getHandler('image');
@@ -730,8 +701,7 @@ ${refinedSystemPromptSegment}`.trim();
           }
         }
 
-        const cleanRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
-        generatedText = generatedText.replace(cleanRegex, '').trim();
+        generatedText = generatedText.replace(memRegex, '').trim();
       } catch (memProcErr) {
         console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
       }
