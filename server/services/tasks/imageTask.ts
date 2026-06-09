@@ -1,5 +1,6 @@
 import { pool } from '../../db/index.js';
 import { getProviderKey } from '../ai.js';
+import { getSystemSettings } from '../system.js';
 import { logSystemActivity } from '../notifications.js';
 import { saveGeneratedImageToDisk } from '../files.js';
 import { 
@@ -31,10 +32,6 @@ function resolveImageDimensions(aspectRatio: string): { width: number; height: n
   return { width: 1024, height: 1024 };
 }
 
-/**
- * Executes dynamic, provider-agnostic protocol logic configured from the database.
- * Supports sync (Direct API response) and polling (asynchronous multi-step state loop).
- */
 async function executeDynamicImageProtocol(
   protocol: any,
   apiKey: string,
@@ -214,12 +211,11 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   let promptSuffix = '';
   const selectedStyle = String(imageSettings.style || 'Cinematic').toLowerCase().trim();
 
-  // If the prompt is already highly detailed and long (e.g. > threshold chars), avoid force-feeding heavy prefaces
   let promptPrefThreshold = 150;
   try {
-    const settingsRes = await pool.query('SELECT image_prompt_pref_threshold FROM system_settings LIMIT 1');
-    if (settingsRes.rows.length > 0 && settingsRes.rows[0].image_prompt_pref_threshold !== null) {
-      promptPrefThreshold = Number(settingsRes.rows[0].image_prompt_pref_threshold);
+    const systemSettings = await getSystemSettings();
+    if (systemSettings && systemSettings.image_prompt_pref_threshold !== null && systemSettings.image_prompt_pref_threshold !== undefined) {
+      promptPrefThreshold = Number(systemSettings.image_prompt_pref_threshold);
     }
   } catch (err: any) {
     console.warn('[Image Task] Failed to fetch prompt preference threshold from system_settings:', err.message);
@@ -275,7 +271,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
     const vaultConfig = vaultMap.get(providerId);
 
-    // Dynamic pre-flight performance checks
     const validation = validateProviderCapacity(
       vaultConfig,
       providerId,
@@ -294,7 +289,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     }
 
     try {
-      // Prioritize modern dynamic protocol configuration if present to enable zero-code scaling
       const dynamicProtocol = vaultConfig?.protocol_config || (route as any).protocol_config;
       const possessesCustomProtocol = dynamicProtocol && typeof dynamicProtocol === 'object' && Object.keys(dynamicProtocol).length > 0;
 
@@ -446,7 +440,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         const base64Bytes = imageResponse.generatedImages?.[0]?.image?.imageBytes;
         imageUrl = base64Bytes ? `data:image/jpeg;base64,${base64Bytes}` : '';
       } else {
-        // Fallback or generic path for modern custom/open-source models and arbitrary providers (C-4)
         const finalEndpoint = vaultConfig?.url_key;
         if (!finalEndpoint) {
           throw new Error(`Orchestration routing check: Dynamic provider '${target.provider}' has unsupported providerId '${providerId}' and is missing a registered custom endpoint URL (url_key) in the vault.`);
@@ -523,7 +516,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
   let savedUrl = imageUrl;
   try {
-    // Write image bytes to secure disk to minimize WS load
     savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
   } catch (saveErr: any) {
     console.warn('[Image Task] Silent warning: failed to save image locally, fallback to original or base64 URL.', saveErr.message);

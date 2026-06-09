@@ -31,7 +31,6 @@ export const isSocialGreeting = (text: string): boolean => {
   return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 25);
 };
 
-// Modular, non-leaking, module-level schedulers to avoid lexically capturing larger request frame data assets
 function scheduleChatSummaryUpdate(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
   setImmediate(() => {
     updateChatContextSummary(chatIdNum, userId, provider, model, apiKey).catch(err => {
@@ -260,7 +259,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
     SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
 
-  // 1. Segregated System Search Engine (Background Sovereign Search API Grounding path)
   if (chatWantsSearch) {
     try {
       if (io) {
@@ -301,8 +299,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       console.error(`[Orchestrator Search Grounding] Failed:`, searchErr);
     }
   }
-
-  // 2. Segregated User-facing Analysis & Auditing Block
 
   if (toolIdStr === 'image') {
     const handler = await OrchestratorRegistry.getHandler('image');
@@ -596,9 +592,6 @@ ${refinedSystemPromptSegment}`.trim();
     try {
       const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
 
-      const apiKey = await getProviderKey(providerId);
-      if (!apiKey) continue;
-
       const cachedRow = vaultMap.get(providerId);
 
       let isProviderActive = true;
@@ -611,7 +604,14 @@ ${refinedSystemPromptSegment}`.trim();
         dailyBudget = parseFloat(cachedRow.daily_budget || '0');
         usedToday = parseFloat(cachedRow.used_today || '0');
         urlKey = cachedRow.url_key;
-      } else {
+      }
+
+      if (!isProviderActive) continue;
+
+      const apiKey = await getProviderKey(providerId);
+      if (!apiKey) continue;
+
+      if (!cachedRow) {
         const [fallbackUrlKey, budgetRes] = await Promise.all([
           getProviderUrlKey(providerId),
           pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
@@ -622,9 +622,8 @@ ${refinedSystemPromptSegment}`.trim();
           dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
           usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
         }
+        if (!isProviderActive) continue;
       }
-
-      if (!isProviderActive) continue;
 
       if (dailyBudget > 0 && usedToday >= dailyBudget) {
         await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });

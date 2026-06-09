@@ -17,9 +17,6 @@ import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 const RUNWAY_API_VERSION = '2024-11-06';
 
-/**
- * Executes a POST request to generic or dynamic video generation API endpoints.
- */
 async function sendGenericVideoRequest(
   endpoint: string,
   apiKey: string,
@@ -63,10 +60,6 @@ async function sendGenericVideoRequest(
   return vUrl;
 }
 
-/**
- * Executes dynamic, provider-agnostic protocol logic configured from the database.
- * Supports sync (Direct API response) and polling (asynchronous multi-step state loop with socket progress tracking).
- */
 async function executeDynamicVideoProtocol(
   protocol: any,
   apiKey: string,

@@ -13,7 +13,7 @@ function createTimeoutSignal(ms: number): { signal: AbortSignal; clear: () => vo
   return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
 
-export async function handleApiError(response: Response, provider: string) {
+async function handleApiError(response: Response, provider: string) {
   if (!response.ok) {
     let errorDetail = '';
     try {
@@ -68,7 +68,6 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
   let count = 0;
   const provider = providerId.toLowerCase();
 
-  // Enforce a safer 45-second timeout during model list synchronization to protect the system from infinite blockades/hangs on unreachable servers while giving remote providers enough breathing room.
   const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(45000);
 
   try {
@@ -679,7 +678,6 @@ export async function callAIProvider(
   messages.push({ role: 'user', content: messageContent });
 
   const isStreaming = !!onChunk;
-  const processedMessages = messages;
 
   async function handleResponse(response: Response) {
     if (!response.ok) {
@@ -760,23 +758,24 @@ export async function callAIProvider(
   let body: any = {};
   let fetchSignal: AbortSignal | undefined;
 
-  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok' || normProvider === 'groq') {
+  if (normProvider === 'openai' || normProvider === 'deepseek' || normProvider === 'together' || normProvider === 'openrouter' || normProvider === 'xai' || normProvider === 'grok' || normProvider === 'groq' || normProvider === 'mistral') {
     if (normProvider === 'openai') url = 'https://api.openai.com/v1/chat/completions';
     else if (normProvider === 'deepseek') url = 'https://api.deepseek.com/chat/completions';
     else if (normProvider === 'together') url = 'https://api.together.xyz/v1/chat/completions';
     else if (normProvider === 'openrouter') url = 'https://openrouter.ai/api/v1/chat/completions';
     else if (normProvider === 'xai' || normProvider === 'grok') url = 'https://api.x.ai/v1/chat/completions';
     else if (normProvider === 'groq') url = 'https://api.groq.com/openai/v1/chat/completions';
+    else if (normProvider === 'mistral') url = 'https://api.mistral.ai/v1/chat/completions';
     
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
-    const mappedMessages = transformMessagesForOpenAI(processedMessages);
+    const mappedMessages = transformMessagesForOpenAI(messages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
   } else if (normProvider === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
     headers['x-api-key'] = cleanApiKey;
     headers['anthropic-version'] = '2023-06-01';
     headers['anthropic-beta'] = 'pdfs-2024-09-25';
-    const mappedMessages = transformMessagesForAnthropic(processedMessages);
+    const mappedMessages = transformMessagesForAnthropic(messages);
     body = { model: cleanModel, max_tokens: 4096, stream: isStreaming, messages: mappedMessages.filter(m => m.role !== 'system') };
     if (systemPrompt) body.system = systemPrompt;
   } else if (normProvider.includes('google') || normProvider.includes('gemini')) {
@@ -789,7 +788,7 @@ export async function callAIProvider(
     if (isStreaming) url += '?alt=sse';
     headers['x-goog-api-key'] = cleanApiKey;
     const isTtsModel = cleanModel.toLowerCase().includes('tts');
-    const geminiContents = transformMessagesForGemini(processedMessages);
+    const geminiContents = transformMessagesForGemini(messages);
     body = { contents: geminiContents };
     if (systemPrompt) {
       if (isTtsModel) {
@@ -814,7 +813,7 @@ export async function callAIProvider(
     if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
       headers['Authorization'] = `Bearer ${cleanApiKey}`;
     }
-    const mappedMessages = transformMessagesForOllama(processedMessages);
+    const mappedMessages = transformMessagesForOllama(messages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
     const { signal, clear: clearOllamaTimer } = createTimeoutSignal(CUSTOM_PROVIDER_TIMEOUT_MS);
     fetchSignal = signal;
@@ -854,7 +853,7 @@ export async function callAIProvider(
       headers['Authorization'] = cleanApiKey.startsWith('Bearer ') ? cleanApiKey : `Bearer ${cleanApiKey}`;
     }
     
-    const mappedMessages = transformMessagesForOpenAI(processedMessages);
+    const mappedMessages = transformMessagesForOpenAI(messages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
 
     const { signal, clear: clearCustomTimer } = createTimeoutSignal(CUSTOM_PROVIDER_TIMEOUT_MS);
@@ -884,7 +883,6 @@ export async function callAIProvider(
       if (is404) {
         console.warn(`[AI Service] 404 Not Found received for Google/Gemini model ${cleanModel}. Initiating self-healing...`);
         
-        // 1. Try stable v1 endpoint first
         if (url.includes('/v1beta/')) {
           const stableUrl = url.replace('/v1beta/', '/v1/');
           console.warn(`[AI Service] Retrying on stable v1 endpoint: ${stableUrl}`);
@@ -895,7 +893,6 @@ export async function callAIProvider(
           }
         }
 
-        // 2. Try alternative Google/Gemini models
         const alternativeModels = [
           'gemini-1.5-flash-latest',
           'gemini-1.5-flash',
@@ -927,10 +924,10 @@ export async function callAIProvider(
                                   errorDetail.includes('multiturn') ||
                                   (errJson.error?.message && errJson.error.message.includes('Multiturn chat'));
                                   
-      if (isMultiturnDisabled && processedMessages.length > 1) {
+      if (isMultiturnDisabled && messages.length > 1) {
         console.warn(`[AI Service] Model ${cleanModel} does not support multiturn chat. Retrying with only the final user prompt...`);
         // Extract only the system instructions and the latest user prompt
-        const singleTurnMessages = processedMessages.filter(m => m.role === 'system' || m === processedMessages[processedMessages.length - 1]);
+        const singleTurnMessages = messages.filter(m => m.role === 'system' || m === messages[messages.length - 1]);
         const isTtsModel = cleanModel.toLowerCase().includes('tts');
         const geminiContents = transformMessagesForGemini(singleTurnMessages);
         body = { contents: geminiContents };
