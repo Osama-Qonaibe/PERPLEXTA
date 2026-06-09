@@ -30,6 +30,14 @@ import { TypewriterMotive } from '../components/TypewriterMotive';
 import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
 
+const ASPECT_RATIO_CLASSES: { [key: string]: string } = {
+  '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
+  '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
+  '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
+  '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
+  '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
+};
+
 const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
     <div className="flex items-center gap-2">
@@ -66,15 +74,7 @@ const ImageGenerationPlaceholder = ({
   onRetry?: () => void;
 }) => {
   // Map aspect ratio to explicit responsive, compact Tailwind aspect classes and max-widths to prevent scrolling
-  const ratioClasses: { [key: string]: string } = {
-    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
-    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
-    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
-    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
-    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
-  };
-
-  const currentClass = ratioClasses[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
+  const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
 
   // Dynamic status updates based on real elapsed seconds to keep the process engaging
   const getAIStatusLabel = () => {
@@ -232,15 +232,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
     imgAspect = srcVal.split('#aspect=')[1] || '1:1';
   }
 
-  const imgRatioClasses: { [key: string]: string } = {
-    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
-    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
-    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
-    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
-    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
-  };
-
-  const currentRatioClass = imgRatioClasses[imgAspect] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
+  const currentRatioClass = ASPECT_RATIO_CLASSES[imgAspect] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
 
   const handleDownload = async () => {
     if (!srcVal) return;
@@ -584,15 +576,7 @@ const VideoGenerationPlaceholder = ({
   } | null;
 }) => {
   // Map aspect ratio to explicit responsive, compact Tailwind aspect classes
-  const ratioClasses: { [key: string]: string } = {
-    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
-    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
-    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
-    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
-    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
-  };
-
-  const currentClass = ratioClasses[aspectRatio] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
+  const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
 
   const progressValue = isFailed 
     ? (progressData?.progress || Math.min(99, Math.round(liveElapsed * 4.5)))
@@ -850,15 +834,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     handlePreviewLoadedMetadata,
   } = useVideoPlayback({ src, dir });
 
-  const vidRatioClasses: { [key: string]: string } = {
-    '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
-    '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
-    '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
-    '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
-    '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
-  };
-
-  const currentRatioClass = vidRatioClasses[vidAspect] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
+  const currentRatioClass = ASPECT_RATIO_CLASSES[vidAspect] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
 
   return (
     <>
@@ -1857,7 +1833,7 @@ const formatExactTimestamp = (createdAt: string | Date | undefined, dir: 'ltr' |
 const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) => {
   const normId = toolId || 'chat';
   
-  if (normId.startsWith('chat_fast') || normId === 'chat_fast') {
+  if (normId.startsWith('chat_fast')) {
     return {
       label: dir === 'rtl' ? 'البحث السريع والتوليد الخفيف' : 'Fast Generation',
       icon: Zap,
@@ -1865,7 +1841,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       bgClass: 'bg-amber-500/10 border-amber-500/20'
     };
   }
-  if (normId.startsWith('chat_pro') || normId === 'chat_pro') {
+  if (normId.startsWith('chat_pro')) {
     return {
       label: dir === 'rtl' ? 'الذكاء الفائق والتحليل المتقدم' : 'Elite Reasoning',
       icon: Sparkles,
@@ -1873,7 +1849,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       bgClass: 'bg-emerald-500/10 border-emerald-500/20'
     };
   }
-  if (normId.startsWith('chat_reasoning') || normId === 'chat_reasoning') {
+  if (normId.startsWith('chat_reasoning')) {
     return {
       label: dir === 'rtl' ? 'التفكير العميق والتحميص المنطقي' : 'Deep Reasoning',
       icon: Brain,
@@ -2295,7 +2271,6 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
 // Compact highly professional single citation row using dynamic cached SEO metadata scraper
 const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string }) => {
   const [meta, setMeta] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   const rawUrl = cite.url || cite.link || '';
   const cleanUrl = getCleanUrl(rawUrl);
@@ -2310,14 +2285,9 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, i
       .then(data => {
         if (active) {
           setMeta(data);
-          setLoading(false);
         }
       })
-      .catch(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
+      .catch(() => {});
 
     return () => {
       active = false;
