@@ -431,7 +431,31 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
         const base64Bytes = imageResponse.generatedImages?.[0]?.image?.imageBytes;
         imageUrl = base64Bytes ? `data:image/jpeg;base64,${base64Bytes}` : '';
       } else {
-        const finalEndpoint = vaultConfig?.url_key;
+        let rawEndpoint = (vaultConfig?.url_key || '').trim().replace(/\/+$/, '');
+        if (rawEndpoint) {
+          if (rawEndpoint.endsWith('/images/generations')) {
+            // Already fully qualified
+          } else if (rawEndpoint.endsWith('/v1')) {
+            rawEndpoint = `${rawEndpoint}/images/generations`;
+          } else {
+            try {
+              const urlInstance = new URL(rawEndpoint);
+              const pathName = urlInstance.pathname.replace(/\/+$/, '');
+              if (pathName === '' || pathName === '/') {
+                rawEndpoint = `${rawEndpoint}/v1/images/generations`;
+              } else if (pathName.endsWith('/v1') || pathName.includes('/v1/')) {
+                rawEndpoint = `${rawEndpoint}/images/generations`;
+              } else {
+                // Support generic custom paths by appending standard suffix for compatibility
+                rawEndpoint = `${rawEndpoint}/images/generations`;
+              }
+            } catch (e) {
+              rawEndpoint = `${rawEndpoint}/v1/images/generations`;
+            }
+          }
+        }
+        const finalEndpoint = rawEndpoint;
+
         if (!finalEndpoint) {
           throw new Error(`Orchestration routing check: Dynamic provider '${target.provider}' has unsupported providerId '${providerId}' and is missing a registered custom endpoint URL (url_key) in the vault.`);
         }
