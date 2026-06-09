@@ -1417,6 +1417,14 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       iframe.srcdoc = scriptContent;
       let runTimeout: any = null;
 
+      const cleanup = () => {
+        if (runTimeout) clearTimeout(runTimeout);
+        window.removeEventListener('message', messageHandler);
+        if (iframe && iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      };
+
       const messageHandler = (event: MessageEvent) => {
         const data = event.data;
         if (!data || typeof data !== 'object') return;
@@ -1440,14 +1448,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             setIsRunning(false);
           }
           cleanup();
-        }
-      };
-
-      const cleanup = () => {
-        if (runTimeout) clearTimeout(runTimeout);
-        window.removeEventListener('message', messageHandler);
-        if (iframe && iframe.parentNode) {
-          iframe.parentNode.removeChild(iframe);
         }
       };
 
@@ -6654,7 +6654,7 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className="flex-1 min-h-0 overflow-y-scroll w-full overflow-anchor-none relative flex flex-col scroll-smooth"
+            className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative flex flex-col scroll-smooth"
           >
           <AnimatePresence mode="popLayout">
             {isChatMessagesLoading && messages.length === 0 && !user ? (
