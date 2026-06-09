@@ -302,8 +302,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             }`} />
                             <div className={`relative z-10 transition-all duration-300 ${
                               active 
-                                ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                                : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                ? 'text-emerald-500' 
+                                : 'text-gray-400 group-hover:text-emerald-500'
                             }`}>
                               {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 18 : 18 } as any)}
                             </div>
@@ -338,7 +338,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     >
                       <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
                         <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-all duration-300 bg-emerald-500/5 border-emerald-500/10 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/20`} />
-                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-all duration-300 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
+                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-all duration-300 text-emerald-500`} />
                       </div>
                       <AnimatePresence mode="wait" initial={false}>
                         {isSidebarOpen && (
@@ -467,7 +467,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                         size={isMobile ? 16 : 16} 
                                         className={`relative z-10 transition-all duration-300 ${
                                           isActive 
-                                            ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                                            ? 'text-emerald-500' 
                                             : streamingChatId === chat.id 
                                               ? 'text-emerald-500 animate-pulse' 
                                               : 'text-gray-400 group-hover:text-emerald-500'
@@ -483,7 +483,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                           transition={sidebarTransition}
                                           className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
                                             isActive 
-                                              ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-extrabold' 
+                                              ? 'text-emerald-500 font-extrabold' 
                                               : streamingChatId === chat.id 
                                                 ? 'text-emerald-500 font-extrabold' 
                                                 : 'text-gray-400 group-hover:text-emerald-500'
@@ -535,7 +535,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                           <>
                                             <button 
                                               onClick={() => { setEditingChatId(chat.id); setNewTitle(chat.title); setDeletingChatConfirmId(null); }}
-                                              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+                                              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
                                             >
                                               <Edit2 size={isMobile ? 14 : 13} />
                                             </button>

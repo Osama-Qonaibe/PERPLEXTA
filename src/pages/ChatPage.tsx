@@ -3901,6 +3901,36 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
 
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
+const toolbarVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.03,
+      delayChildren: 0.5, // 500ms elegant delay for a calm & dynamic flow
+    }
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.15 }
+  }
+} as const;
+
+const toolbarItemVariants = {
+  hidden: { opacity: 0, y: 8, scale: 0.95, filter: "blur(2px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring",
+      stiffness: 180,
+      damping: 20
+    }
+  }
+} as const;
+
 export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
@@ -6343,9 +6373,40 @@ export const ChatPage: React.FC = () => {
           {(!user || !token) ? (
             <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
               <div className="w-full text-[var(--text-primary)] my-auto">
-                <TypewriterMotive />
-                {renderInputArea()}
-                <ToolsGallerySlider />
+                <AnimatePresence>
+                  {messages.length === 0 && (
+                    <motion.div
+                      key="welcome-motive-wrapper-guest"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ 
+                        opacity: 0, 
+                        y: -12,
+                        transition: { duration: 0.2 } 
+                      }}
+                      className="overflow-hidden w-full flex justify-center"
+                    >
+                      <TypewriterMotive isVisible={true} />
+                    </motion.div>
+                  )}
+
+                  {renderInputArea()}
+
+                  {messages.length === 0 && (
+                    <motion.div
+                      key="welcome-slider-wrapper"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ 
+                        opacity: 0, 
+                        y: 12,
+                        transition: { duration: 0.2 } 
+                      }}
+                    >
+                      <ToolsGallerySlider />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               
               {/* Visual Copyright Footer for Visitors in Arabic & English */}
@@ -6367,14 +6428,21 @@ export const ChatPage: React.FC = () => {
             </div>
           ) : (
             <>
-              {chatId && (
-                <div className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]">
-                  {/* Sovereign high-end loading progression bar */}
-                  {isChatMessagesLoading && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500/10 overflow-hidden z-40">
-                      <div className="animate-sovereign-progress h-full bg-emerald-500 rounded-full animate-pulse" />
-                    </div>
-                  )}
+              <AnimatePresence>
+                {chatId && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]"
+                  >
+                    {/* Sovereign high-end loading progression bar */}
+                    {isChatMessagesLoading && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500/10 overflow-hidden z-40">
+                        <div className="animate-sovereign-progress h-full bg-emerald-500 rounded-full animate-pulse" />
+                      </div>
+                    )}
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
@@ -6542,14 +6610,15 @@ export const ChatPage: React.FC = () => {
                   )}
                </div>
               </div>
-            </div>
+            </motion.div>
           )}
+        </AnimatePresence>
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
             className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col scroll-smooth"
           >
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {isChatMessagesLoading && messages.length === 0 && !user ? (
               <motion.div
                 key="chat-messages-skeleton"
@@ -6655,10 +6724,10 @@ export const ChatPage: React.FC = () => {
               ) : (
                 <motion.div 
                   key="onboarding-view" 
-                  initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+                  initial={{ opacity: 0, scale: 1, filter: "blur(4px)" }}
                   animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.96, filter: "blur(12px)", y: -10 }}
-                  transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
+                  exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
                 >
                   {/* Subtle Premium Background Glow */}
@@ -6691,15 +6760,16 @@ export const ChatPage: React.FC = () => {
             ) : (
               <motion.div
                 key="chat-thread-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+                initial={{ opacity: 0, filter: "blur(3px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(3px)" }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4"
               >
               {messages.map((msg, idx) => {
                 return (
-                  <div 
+                  <motion.div 
+                    layout="position"
                     key={msg.client_id || msg.id || idx} 
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
@@ -6815,6 +6885,7 @@ export const ChatPage: React.FC = () => {
                         </div>
                       ) : (
                       <motion.div 
+                        layout
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -6967,15 +7038,27 @@ export const ChatPage: React.FC = () => {
 
                       {(((msg.citations && msg.citations.length > 0) || (msg.follow_ups && msg.follow_ups.length > 0))) && (
                         <>
-                          <Citations 
-                            citations={msg.citations} 
-                            dir={dir} 
-                            isOpen={!!openCitationsMap[idx]}
-                            onToggle={() => setOpenCitationsMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                          />
-                          {(!isGenerating || idx < messages.length - 1) && (
-                            <FollowUps followUps={msg.follow_ups || []} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
+                          {msg.citations && msg.citations.length > 0 && (
+                            <Citations 
+                              citations={msg.citations} 
+                              dir={dir} 
+                              isOpen={!!openCitationsMap[idx]}
+                              onToggle={() => setOpenCitationsMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                            />
                           )}
+                          <AnimatePresence mode="wait">
+                            {(!isGenerating || idx < messages.length - 1) && msg.follow_ups && msg.follow_ups.length > 0 && (
+                              <motion.div
+                                key={`follow-ups-${idx}-${msg.id || idx}`}
+                                initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
+                                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                                exit={{ opacity: 0, y: -3, filter: "blur(2px)" }}
+                                transition={{ duration: 0.35, ease: "easeOut" }}
+                              >
+                                <FollowUps followUps={msg.follow_ups || []} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </>
                       )}
                     </>
@@ -6988,34 +7071,42 @@ export const ChatPage: React.FC = () => {
                   )}
 
                   {/* Perplexta Message Toolbar - Optimized Bottom Layout */}
-                  {(!isGenerating || idx < messages.length - 1) && msg.role === 'assistant' && (
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--border-main)]/30 dark:border-[var(--border-main)]/20 px-0"
-                    >
+                  <AnimatePresence mode="wait">
+                    {(!isGenerating || idx < messages.length - 1) && msg.role === 'assistant' && (
+                      <motion.div 
+                        key={`toolbar-${idx}-${msg.id || idx}`}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        variants={toolbarVariants}
+                        className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--border-main)]/30 dark:border-[var(--border-main)]/20 px-0"
+                      >
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
-                        <button 
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
-                        </button>
-                        <div className="w-px h-3 sm:h-4 bg-[var(--border)] mx-0.5 sm:mx-1" />
-                        <button 
+                        </motion.button>
+                        <motion.div variants={toolbarItemVariants} className="w-px h-3 sm:h-4 bg-[var(--border)] mx-0.5 sm:mx-1" />
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
                           className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => handleTTS(msg.content, msg.client_id || msg.id || idx)}
                           title={playingTTSId === (msg.client_id || msg.id || idx) ? (dir === 'rtl' ? 'إيقاف الصوت' : 'Stop') : (dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud')}
                           className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
@@ -7025,15 +7116,17 @@ export const ChatPage: React.FC = () => {
                           ) : (
                             <Volume2 size={13} />
                           )}
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={() => {
                             navigator.clipboard.writeText(msg.content);
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
@@ -7042,8 +7135,9 @@ export const ChatPage: React.FC = () => {
                           className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Copy size={13} />
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={async () => {
                             const blob = new Blob([msg.content], { type: 'text/markdown' });
                             const url = URL.createObjectURL(blob);
@@ -7057,29 +7151,34 @@ export const ChatPage: React.FC = () => {
                           className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
                         >
                           <Download size={13} />
-                        </button>
+                        </motion.button>
                         {msg.id && (
-                          <button 
+                          <motion.button 
+                            variants={toolbarItemVariants}
                             id={`fork-btn-${msg.id}`}
                             onClick={() => handleForkThread(msg.id!)}
                             title={dir === 'rtl' ? 'تفريع المحادثة' : 'Fork Thread'}
                             className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
                           >
                             <GitFork size={13} />
-                          </button>
+                          </motion.button>
                         )}
                       </div>
 
                       <div className="flex items-center gap-1 sm:gap-2">
                         {msg.generation_time !== undefined && (
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 select-none mr-1 sm:mr-2">
+                          <motion.div 
+                            variants={toolbarItemVariants}
+                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 select-none mr-1 sm:mr-2"
+                          >
                             <Zap size={10} className="text-emerald-500" />
                             <span className="text-[10px] font-mono leading-none font-semibold">
                               {Number(msg.generation_time).toFixed(2)}s
                             </span>
-                          </div>
+                          </motion.div>
                         )}
-                        <button 
+                        <motion.button 
+                          variants={toolbarItemVariants}
                           onClick={async () => {
                             try {
                               if (navigator.share) {
@@ -7100,9 +7199,9 @@ export const ChatPage: React.FC = () => {
                           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-theme ml-1 sm:ml-2"
                         >
                           <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                        </button>
+                        </motion.button>
 
-                         <div className="relative">
+                         <motion.div variants={toolbarItemVariants} className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
                              className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500'}`}
@@ -7186,13 +7285,14 @@ export const ChatPage: React.FC = () => {
                                </motion.div>
                              )}
                            </AnimatePresence>
-                         </div>
+                         </motion.div>
                       </div>
                     </motion.div>
                   )}
+                  </AnimatePresence>
                   
                   </div>
-                </div>
+                </motion.div>
                 );
               })}
 

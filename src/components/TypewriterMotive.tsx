@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { motion, AnimatePresence } from 'motion/react';
 
-export const TypewriterMotive: React.FC = () => {
+export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible = true }) => {
   const { dir, language } = useAppContext();
 
   const arabicPhrases = useMemo(() => [
@@ -32,6 +33,7 @@ export const TypewriterMotive: React.FC = () => {
   const [typingSpeed, setTypingSpeed] = useState(80);
 
   useEffect(() => {
+    if (!isVisible) return;
     let timer: NodeJS.Timeout;
 
     const handleTyping = () => {
@@ -73,7 +75,7 @@ export const TypewriterMotive: React.FC = () => {
     timer = setTimeout(handleTyping, typingSpeed);
 
     return () => clearTimeout(timer);
-  }, [displayedText, isDeleting, currentPhraseIndex, phrases, typingSpeed]);
+  }, [displayedText, isDeleting, currentPhraseIndex, phrases, typingSpeed, isVisible]);
 
   const isFullyTyped = useMemo(() => {
     return displayedText === phrases[currentPhraseIndex] && !isDeleting;
@@ -134,20 +136,29 @@ export const TypewriterMotive: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex items-center justify-center h-12 sm:h-14 overflow-hidden mb-6 mt-2 select-none pointer-events-none">
-      <div 
-        style={{ fontFamily: "'29LT Bukra', '29lt bukra', 'Tajawal', sans-serif" }}
-        className="text-[14px] sm:text-[16px] md:text-[21px] font-extrabold tracking-tight leading-none text-center flex items-center justify-center gap-1.5 h-full py-2"
-      >
-        <span className="transition-all duration-500 inline-block">
-          {renderHighlightedText(displayedText, isFullyTyped)}
-        </span>
-        <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-all duration-500 ${
-          isFullyTyped 
-            ? 'bg-gray-950 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_12px_rgba(255,255,255,0.9)]' 
-            : 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
-        }`} />
-      </div>
-    </div>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6, transition: { duration: 0.25 } }}
+          className="w-full flex items-center justify-center h-12 sm:h-14 overflow-hidden mb-6 mt-2 select-none pointer-events-none"
+        >
+          <div 
+            style={{ fontFamily: "'29LT Bukra', '29lt bukra', 'Tajawal', sans-serif" }}
+            className="text-[14px] sm:text-[16px] md:text-[21px] font-extrabold tracking-tight leading-none text-center flex items-center justify-center gap-1.5 h-full py-2"
+          >
+            <span className="transition-all duration-500 inline-block">
+              {renderHighlightedText(displayedText, isFullyTyped)}
+            </span>
+            <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-all duration-500 ${
+              isFullyTyped 
+                ? 'bg-gray-950 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_12px_rgba(255,255,255,0.9)]' 
+                : 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+            }`} />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
