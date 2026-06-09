@@ -687,6 +687,7 @@ const VideoGenerationPlaceholder = ({
                 {onRetry && (
                   <button 
                     onClick={onRetry}
+                    aria-label={dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}
                     className="group flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold text-slate-100 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400/50 rounded-[4px] transition-all duration-300 shadow-[0_0_10px_rgba(244,63,94,0.1)] cursor-pointer"
                   >
                     <RefreshCw size={10} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
@@ -1351,78 +1352,120 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       const logsList: { type: 'log' | 'info' | 'warn' | 'error'; text: string; time: string }[] = [];
       const getTimestamp = () => new Date().toLocaleTimeString([], { hour12: false });
 
-      const customConsole = {
-        log: (...args: any[]) => {
+      let jsCode = editableCode;
+      if (['typescript', 'ts'].includes(language)) {
+        jsCode = jsCode
+          .replace(/import\s+[\s\S]*?\s+from\s+['"].*?['"];?/g, '')
+          .replace(/export\s+(default\s+)?/g, '')
+          .replace(/(?:interface|type)\s+\w+[\s\S]*?\{[\s\S]*?\}/g, '')
+          .replace(/(const|let|var)\s+(\w+)\s*:\s*\w+/g, '$1 $2')
+          .replace(/function\s+(\w+)\s*\((.*?)\)\s*:\s*\w+/g, 'function $1($2)')
+          .replace(/\((.*?)\)\s*:\s*\w+\s*=>/g, '($1) =>');
+      }
+
+      const iframe = document.createElement('iframe');
+      // Set sandbox permissions to script-only, denying allow-same-origin to create null-origin boundary
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      iframe.style.display = 'none';
+
+      const scriptContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <script>
+            const customConsole = {
+              log: (...args) => {
+                const text = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+                window.parent.postMessage({ type: 'PERPLEXTA_LOG', level: 'log', text }, '*');
+              },
+              info: (...args) => {
+                const text = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+                window.parent.postMessage({ type: 'PERPLEXTA_LOG', level: 'info', text }, '*');
+              },
+              warn: (...args) => {
+                const text = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+                window.parent.postMessage({ type: 'PERPLEXTA_LOG', level: 'warn', text }, '*');
+              },
+              error: (...args) => {
+                const text = args.map(arg => typeof arg === 'object' ? String(arg?.message || JSON.stringify(arg)) : String(arg)).join(' ');
+                window.parent.postMessage({ type: 'PERPLEXTA_LOG', level: 'error', text }, '*');
+              }
+            };
+            window.console = {
+              ...window.console,
+              ...customConsole
+            };
+            window.addEventListener('error', (e) => {
+              customConsole.error(e.error || e.message);
+            });
+          </script>
+        </head>
+        <body>
+          <script>
+            try {
+              ${jsCode}
+              window.parent.postMessage({ type: 'PERPLEXTA_DONE' }, '*');
+            } catch (err) {
+              window.parent.postMessage({ type: 'PERPLEXTA_LOG', level: 'error', text: err?.message || String(err) }, '*');
+              window.parent.postMessage({ type: 'PERPLEXTA_DONE' }, '*');
+            }
+          </script>
+        </body>
+        </html>
+      `;
+
+      iframe.srcdoc = scriptContent;
+      let runTimeout: any = null;
+
+      const messageHandler = (event: MessageEvent) => {
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+
+        if (data.type === 'PERPLEXTA_LOG') {
           logsList.push({
-            type: 'log',
-            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
+            type: data.level,
+            text: data.text,
             time: getTimestamp()
           });
-        },
-        info: (...args: any[]) => {
+          if (mountedRef.current) setOutputLogs([...logsList]);
+        } else if (data.type === 'PERPLEXTA_DONE') {
+          const duration = (performance.now() - startTime).toFixed(1);
           logsList.push({
             type: 'info',
-            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
+            text: `[SYSTEM] Process completed in ${duration}ms.`,
             time: getTimestamp()
           });
-        },
-        warn: (...args: any[]) => {
-          logsList.push({
-            type: 'warn',
-            text: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '),
-            time: getTimestamp()
-          });
-        },
-        error: (...args: any[]) => {
-          logsList.push({
-            type: 'error',
-            text: args.map(arg => typeof arg === 'object' ? String(arg?.message || JSON.stringify(arg)) : String(arg)).join(' '),
-            time: getTimestamp()
-          });
+          if (mountedRef.current) {
+            setOutputLogs([...logsList]);
+            setIsRunning(false);
+          }
+          cleanup();
         }
       };
 
-      try {
-        let jsCode = editableCode;
-        if (['typescript', 'ts'].includes(language)) {
-          jsCode = jsCode
-            .replace(/import\s+[\s\S]*?\s+from\s+['"].*?['"];?/g, '')
-            .replace(/export\s+(default\s+)?/g, '')
-            .replace(/(?:interface|type)\s+\w+[\s\S]*?\{[\s\S]*?\}/g, '')
-            .replace(/(const|let|var)\s+(\w+)\s*:\s*\w+/g, '$1 $2')
-            .replace(/function\s+(\w+)\s*\((.*?)\)\s*:\s*\w+/g, 'function $1($2)')
-            .replace(/\((.*?)\)\s*:\s*\w+\s*=>/g, '($1) =>');
+      const cleanup = () => {
+        if (runTimeout) clearTimeout(runTimeout);
+        window.removeEventListener('message', messageHandler);
+        if (iframe && iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
         }
+      };
 
-        const runner = new Function('console', `
-          try {
-            ${jsCode}
-          } catch (err) {
-            console.error(err);
-          }
-        `);
-        runner(customConsole);
+      window.addEventListener('message', messageHandler);
+      document.body.appendChild(iframe);
 
-        const duration = (performance.now() - startTime).toFixed(1);
+      runTimeout = setTimeout(() => {
         logsList.push({
-          type: 'info',
-          text: `[SYSTEM] Process completed in ${duration}ms.`,
+          type: 'warn',
+          text: `[SYSTEM] Process exceeded 3000ms limit. Execution aborted.`,
           time: getTimestamp()
         });
-        if (mountedRef.current) setOutputLogs(logsList);
-      } catch (err: any) {
         if (mountedRef.current) {
-          setExecutionError(err?.message || String(err));
-          logsList.push({
-            type: 'error',
-            text: `[CRASH] ${err?.message || String(err)}`,
-            time: getTimestamp()
-          });
-          setOutputLogs(logsList);
+          setOutputLogs([...logsList]);
+          setIsRunning(false);
         }
-      } finally {
-        if (mountedRef.current) setIsRunning(false);
-      }
+        cleanup();
+      }, 3000);
     }
   };
 
@@ -3952,11 +3995,18 @@ export const ChatPage: React.FC = () => {
   
   const prevUserRef = useRef<any>(null);
   useEffect(() => {
-    if (user && !prevUserRef.current) {
+    if (!user && prevUserRef.current) {
       setSelectedTool('chat');
+      setSelectedModel('fast');
     }
     prevUserRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    if (isMobile && (selectedTool === 'code' || selectedTool === 'notebook')) {
+      setSelectedTool('chat');
+    }
+  }, [isMobile, selectedTool]);
 
   const [activeDropdown, setActiveDropdown] = useState<'tool' | 'model'>('tool');
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
@@ -5912,7 +5962,7 @@ export const ChatPage: React.FC = () => {
     { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
     { id: 'tts', label: t('tts'), icon: <Volume2 size={18} />, isNew: true },
     { id: 'stt', label: t('stt'), icon: <Mic size={18} />, isNew: true },
-  ];
+  ].filter(t => !isMobile || (t.id !== 'code' && t.id !== 'notebook'));
 
   const currentModel = models.find(m => m.id === selectedModel) || models[2];
   const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
@@ -6604,7 +6654,7 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative flex flex-col scroll-smooth"
+            className="flex-1 min-h-0 overflow-y-scroll w-full overflow-anchor-none relative flex flex-col scroll-smooth"
           >
           <AnimatePresence mode="popLayout">
             {isChatMessagesLoading && messages.length === 0 && !user ? (

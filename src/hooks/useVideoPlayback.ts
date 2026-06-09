@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVideoResource, ProgressData } from '../context/VideoResourceContext';
 
 export interface UseVideoPlaybackProps {
@@ -28,7 +28,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -36,7 +36,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
 
   // Preview video states
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const [isPreviewMuted, setIsPreviewMuted] = useState(false);
+  const [isPreviewMuted, setIsPreviewMuted] = useState(true);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [previewTime, setPreviewTime] = useState(0);
   const [previewDur, setPreviewDur] = useState(0);
@@ -54,7 +54,6 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     cleanRawSrc.startsWith('http')
   );
 
-  // Retrieve cached resource state from context
   const resource = messageId ? resources[messageId] : undefined;
 
   const status: 'processing' | 'ready' | 'error' = hasInherentUrl
@@ -68,22 +67,20 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
   const progressData: ProgressData | null = resource?.progress || null;
   const generationError: string = resource?.error || '';
 
-  // Trigger status polling if a numeric message ID exists in a processing state without standard url
   useEffect(() => {
     if (messageId && typeof messageId === 'number' && !hasInherentUrl && (!resource || resource.status === 'processing')) {
       pollVideoStatus(messageId);
     }
   }, [messageId, hasInherentUrl, pollVideoStatus, resource]);
 
-  // 1. Source Detection
-  const cleanDisplayUrl = resolvedUrl.split('#')[0];
+  const cleanDisplayUrl = useMemo(() => resolvedUrl.split('#')[0], [resolvedUrl]);
+  
   let vidAspect = '16:9';
   if (resolvedUrl.includes('#aspect=')) {
     const hash = resolvedUrl.split('#aspect=')[1] || '';
     vidAspect = hash.split('&')[0] || '16:9';
   }
 
-  // 2. Provider Validation
   const validateProvider = useCallback((url: string): ProviderMeta => {
     if (!url) {
       return { provider: 'unknown', isValid: false, label: 'No Source' };
@@ -104,7 +101,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     return { provider: 'unknown', isValid: false, label: 'Unverified Provider' };
   }, []);
 
-  const providerMeta = validateProvider(cleanDisplayUrl);
+  const providerMeta = useMemo(() => validateProvider(cleanDisplayUrl), [validateProvider, cleanDisplayUrl]);
 
   // Reset states on src change
   useEffect(() => {
@@ -113,12 +110,17 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     setProgress(0);
     setCurrentTime(0);
 
+    // Fallback timer for legacy loaders or slow connections
     const timer = setTimeout(() => {
       setIsVideoLoaded(true);
-    }, 2000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [resolvedUrl]);
+
+  const handleCanPlay = useCallback(() => {
+    setIsVideoLoaded(true);
+  }, []);
 
   // Synchronize playback between preview modal and primary video player
   useEffect(() => {
@@ -135,13 +137,16 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     }
   }, [isPreviewOpen]);
 
-  // 3. Playback Controls & Utility Handlers
-  const handleDownload = useCallback(async (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleDownload = useCallback(async (e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     if (!resolvedUrl) return;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
     try {
-      const cleanUrl = resolvedUrl.split('#')[0];
-      const cleanResponse = await fetch(cleanUrl);
+      const cleanResponse = await fetch(cleanDisplayUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const cleanBlob = await cleanResponse.blob();
       const cleanObjectUrl = window.URL.createObjectURL(cleanBlob);
       const link = document.createElement('a');
@@ -152,14 +157,15 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
       document.body.removeChild(link);
       window.URL.revokeObjectURL(cleanObjectUrl);
     } catch (err) {
-      console.warn("Video download failed, using fallback direct download method...", err);
+      clearTimeout(timeoutId);
+      console.warn("Video download failed or timed out, using fallback direct download method...", err);
       const link = document.createElement('a');
       link.href = resolvedUrl;
       link.download = `Perplexta_Gen_${Date.now()}.mp4`;
       link.target = '_blank';
       link.click();
     }
-  }, [resolvedUrl]);
+  }, [resolvedUrl, cleanDisplayUrl]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -171,10 +177,9 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     }
   }, []);
 
-  const handleShare = useCallback(async (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleShare = useCallback(async (e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     if (!resolvedUrl) return;
-    const cleanUrl = resolvedUrl.split('#')[0];
 
     if (navigator.share) {
       try {
@@ -184,22 +189,22 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
           text: dir === 'rtl' 
             ? 'شاهد هذا العرض السينمائي المولد بواسطة الذكاء الاصطناعي لمنصة بيربليكستا!' 
             : 'Check out this cinematic AI synthesis artifact on Perplexta!',
-          url: cleanUrl,
+          url: cleanDisplayUrl,
         });
         setShareStatus('idle');
       } catch (err) {
         setShareStatus('idle');
         if (err && (err as any).name !== 'AbortError') {
-          copyToClipboard(cleanUrl);
+          copyToClipboard(cleanDisplayUrl);
         }
       }
     } else {
-      copyToClipboard(cleanUrl);
+      copyToClipboard(cleanDisplayUrl);
     }
-  }, [resolvedUrl, dir, copyToClipboard]);
+  }, [resolvedUrl, cleanDisplayUrl, dir, copyToClipboard]);
 
-  const togglePlay = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const togglePlay = useCallback((e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = videoRef.current;
     if (!vid) return;
     if (isPlaying) {
@@ -211,8 +216,8 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     }
   }, [isPlaying]);
 
-  const toggleMute = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const toggleMute = useCallback((e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = videoRef.current;
     if (!vid) return;
     vid.muted = !isMuted;
@@ -230,10 +235,11 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     const vid = videoRef.current;
     if (!vid) return;
     setDuration(vid.duration);
+    setIsVideoLoaded(true);
   }, []);
 
-  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
+  const handleSeek = useCallback((e: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = videoRef.current;
     if (!vid || !vid.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -242,9 +248,8 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     vid.currentTime = clickPct * vid.duration;
   }, []);
 
-  // Preview Specific Handlers
-  const togglePreviewPlay = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const togglePreviewPlay = useCallback((e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = previewVideoRef.current;
     if (!vid) return;
     if (isPreviewPlaying) {
@@ -256,16 +261,16 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     }
   }, [isPreviewPlaying]);
 
-  const togglePreviewMute = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const togglePreviewMute = useCallback((e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = previewVideoRef.current;
     if (!vid) return;
     vid.muted = !isPreviewMuted;
     setIsPreviewMuted(!isPreviewMuted);
   }, [isPreviewMuted]);
 
-  const handlePreviewSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
+  const handlePreviewSeek = useCallback((e: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     const vid = previewVideoRef.current;
     if (!vid || !vid.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -303,6 +308,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     setDuration,
     isVideoLoaded,
     setIsVideoLoaded,
+    handleCanPlay,
     
     // Preview states
     isPreviewPlaying,

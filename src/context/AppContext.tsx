@@ -2566,7 +2566,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Clear Perplexta settings and user preferences to default
     localStorage.removeItem('last_active_tool');
     localStorage.removeItem('last_active_model');
+    localStorage.removeItem('last_chat_id');
+    localStorage.removeItem('perplexta_last_activity');
+    localStorage.removeItem('perplexta_marketplace_cart');
+    localStorage.removeItem('perplexta_marketplace_ref');
+    localStorage.removeItem('perplexta_deleted_virtual_items');
+    localStorage.removeItem('socket_polling_fallback');
     sessionStorage.removeItem('draft_query');
+    
+    // Explicitly reset defaults to chat and fast model
+    localStorage.setItem('last_active_tool', 'chat');
+    localStorage.setItem('last_active_model', 'fast');
     
     // Background logout API call (fire-and-forget) to ensure zero UI delay
     if (storedToken) {
