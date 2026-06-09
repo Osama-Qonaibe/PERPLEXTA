@@ -572,6 +572,23 @@ ${refinedSystemPromptSegment}`.trim();
     { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
+  // Pre-load all candidate provider settings from database in one consolidated query
+  const vaultMap = new Map<string, any>();
+  if (modelsToTry.length > 0) {
+    try {
+      const providerNames = modelsToTry.map(m => m.provider.toLowerCase().replace(/\s+/g, ''));
+      const result = await pool.query(
+        'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
+        [providerNames]
+      );
+      for (const row of result.rows) {
+        vaultMap.set(row.provider, row);
+      }
+    } catch (err: any) {
+      console.warn('[Orchestrator Pre-fetch] Failed to pre-load configuration keys:', err.message);
+    }
+  }
+
   let generatedText = '';
   let successfulModel = null;
 
@@ -579,21 +596,32 @@ ${refinedSystemPromptSegment}`.trim();
     try {
       const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
 
-      const [apiKey, urlKey, budgetRes] = await Promise.all([
-        getProviderKey(providerId),
-        getProviderUrlKey(providerId),
-        pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
-      ]);
-
+      const apiKey = await getProviderKey(providerId);
       if (!apiKey) continue;
 
-      let isProviderActive = budgetRes.rows.length === 0 || budgetRes.rows[0].is_active;
+      const cachedRow = vaultMap.get(providerId);
+
+      let isProviderActive = true;
       let dailyBudget = 0;
       let usedToday = 0;
+      let urlKey: string | null = null;
 
-      if (budgetRes.rows.length > 0) {
-        dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
-        usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
+      if (cachedRow) {
+        isProviderActive = cachedRow.is_active;
+        dailyBudget = parseFloat(cachedRow.daily_budget || '0');
+        usedToday = parseFloat(cachedRow.used_today || '0');
+        urlKey = cachedRow.url_key;
+      } else {
+        const [fallbackUrlKey, budgetRes] = await Promise.all([
+          getProviderUrlKey(providerId),
+          pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
+        ]);
+        urlKey = fallbackUrlKey;
+        if (budgetRes.rows.length > 0) {
+          isProviderActive = budgetRes.rows[0].is_active;
+          dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
+          usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
+        }
       }
 
       if (!isProviderActive) continue;

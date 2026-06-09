@@ -652,18 +652,6 @@ export async function callAIProvider(
     }
   }
 
-  // Safe model migration / deprecation mapper for Google Gemini API
-  if (normProvider.includes('google') || normProvider.includes('gemini')) {
-    const modelLower = cleanModel.toLowerCase();
-    if (modelLower.includes('gemini-3.5-flash')) {
-      cleanModel = cleanModel.replace(/gemini-3\.5-flash/gi, 'gemini-1.5-flash');
-    } else if (modelLower.includes('gemini-2.0-flash-001')) {
-      cleanModel = cleanModel.replace(/gemini-2\.0-flash-001/gi, 'gemini-1.5-flash');
-    } else if (modelLower.includes('gemini-2.0-flash')) {
-      cleanModel = cleanModel.replace(/gemini-2\.0-flash/gi, 'gemini-1.5-flash');
-    }
-  }
-
   const messages: any[] = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   history.forEach(msg => messages.push({ role: msg.role, content: msg.content }));

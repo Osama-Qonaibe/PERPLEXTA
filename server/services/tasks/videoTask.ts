@@ -539,11 +539,6 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               }
               const modelToUse = cleanModel;
 
-              const SUPPORTED_VEO_MODELS = ['veo-2.0-generate-001', 'veo-3.0-generate-preview'];
-              if (!SUPPORTED_VEO_MODELS.includes(modelToUse)) {
-                console.warn(`[Video Task] Model '${modelToUse}' is not in the verified Google Veo list. Attempting execution...`);
-              }
-
               if (io) {
                 io.to(`user_${userId}`).emit('video_progress', {
                   progress: 20,
