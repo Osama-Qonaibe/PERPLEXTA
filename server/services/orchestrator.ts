@@ -145,7 +145,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (!pool) throw new Error('System still initializing. Please wait.');
 
-  const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes] = await Promise.all([
+  const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes, settingsRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
     checkAndIncrementQuota(userId, toolIdStr),
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
@@ -159,10 +159,12 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
          created_at DESC
        LIMIT 50`,
       [userId, chatIdNum]
-    ).catch(() => ({ rows: [] }))
+    ).catch(() => ({ rows: [] })),
+    pool.query('SELECT memory_limit_per_user FROM system_settings LIMIT 1').catch(() => ({ rows: [] }))
   ]);
 
   const route = routeResult.rows[0];
+  const memoryLimit = (settingsRes as any)?.rows?.[0]?.memory_limit_per_user || 48;
 
   let history: { role: string; content: string }[] = [];
   if (chatIdNum > 0) {
@@ -658,12 +660,8 @@ ${refinedSystemPromptSegment}`.trim();
         }
 
         if (extractedFacts.length > 0) {
-          const [countRes, settingsRes] = await Promise.all([
-            pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]),
-            pool.query('SELECT memory_limit_per_user FROM system_settings LIMIT 1')
-          ]);
+          const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           const currentCount = parseInt(countRes.rows[0].count);
-          const memoryLimit = settingsRes.rows[0]?.memory_limit_per_user || 48;
 
           if (currentCount >= memoryLimit) {
             scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
