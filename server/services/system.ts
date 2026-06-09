@@ -41,7 +41,7 @@ export async function getSystemSettings() {
         seo_description_en, seo_description_ar, keywords_en, keywords_ar,
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
         stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
+        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold
       FROM system_settings LIMIT 1
     `);
     
@@ -60,7 +60,7 @@ export async function getSystemSettings() {
           seo_description_en, seo_description_ar, keywords_en, keywords_ar,
           google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
           stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode
+          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold
         FROM system_settings LIMIT 1
       `);
       settings = secondTry.rows[0];

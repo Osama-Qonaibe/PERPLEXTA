@@ -79,9 +79,15 @@ export async function safeParseResponse(res: any, defaultErrorPrefix: string): P
   let data: any = null;
   let isJsonCorrupted = false;
 
-  const looksLikeJson = contentType.includes('application/json') || 
+  const isHtml = contentType.includes('text/html') || 
+    text.trim().toLowerCase().startsWith('<!doctype html') || 
+    text.trim().toLowerCase().startsWith('<html');
+
+  const looksLikeJson = !isHtml && (
+    contentType.includes('application/json') || 
     text.trim().startsWith('{') || 
-    text.trim().startsWith('[');
+    text.trim().startsWith('[')
+  );
 
   if (looksLikeJson) {
     try {
@@ -95,9 +101,7 @@ export async function safeParseResponse(res: any, defaultErrorPrefix: string): P
     if (isJsonCorrupted) {
       throw new Error(`${defaultErrorPrefix}: Corrupted JSON payload returned from provider API.`);
     }
-    const looksLikeHtml = contentType.includes('text/html') || 
-      text.trim().toLowerCase().startsWith('<!doctype html') || 
-      text.trim().toLowerCase().startsWith('<html');
+    const looksLikeHtml = isHtml;
 
     if (looksLikeHtml) {
        throw new Error(`${defaultErrorPrefix}: Received HTML page from gateway (HTTP ${res.status}).`);

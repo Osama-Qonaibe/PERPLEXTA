@@ -214,8 +214,18 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   let promptSuffix = '';
   const selectedStyle = String(imageSettings.style || 'Cinematic').toLowerCase().trim();
 
-  // If the prompt is already highly detailed and long (e.g. > 150 chars), avoid force-feeding heavy prefaces
-  const isCustomDetailedPrompt = finalPrompt.length > 150;
+  // If the prompt is already highly detailed and long (e.g. > threshold chars), avoid force-feeding heavy prefaces
+  let promptPrefThreshold = 150;
+  try {
+    const settingsRes = await pool.query('SELECT image_prompt_pref_threshold FROM system_settings LIMIT 1');
+    if (settingsRes.rows.length > 0 && settingsRes.rows[0].image_prompt_pref_threshold !== null) {
+      promptPrefThreshold = Number(settingsRes.rows[0].image_prompt_pref_threshold);
+    }
+  } catch (err: any) {
+    console.warn('[Image Task] Failed to fetch prompt preference threshold from system_settings:', err.message);
+  }
+
+  const isCustomDetailedPrompt = finalPrompt.length > promptPrefThreshold;
 
   if (!isCustomDetailedPrompt) {
     if (selectedStyle.includes('cinematic') || selectedStyle.includes('سينمائي')) {

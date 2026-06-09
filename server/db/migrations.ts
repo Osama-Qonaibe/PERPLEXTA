@@ -1472,6 +1472,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`UPDATE api_keys_vault SET protocol_config = '{}' WHERE protocol_config IS NULL`);
     });
 
+    await runVersioned('v47_image_prompt_pref_threshold', 'Adding image_prompt_pref_threshold to system_settings', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'image_prompt_pref_threshold', 'INTEGER', 150);
+      await tx.query(`UPDATE system_settings SET image_prompt_pref_threshold = 150 WHERE image_prompt_pref_threshold IS NULL`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1959,6 +1964,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         paypal_mode VARCHAR(20) DEFAULT 'sandbox',
         paypal_status VARCHAR(50) DEFAULT 'pending',
         paypal_last_verified_at TIMESTAMP,
+        image_prompt_pref_threshold INTEGER DEFAULT 150,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },

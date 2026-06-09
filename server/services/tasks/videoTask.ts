@@ -9,7 +9,6 @@ import {
   safeParseResponse, 
   safeDecrementOnFailure,
   validateProviderCapacity,
-  AI_CALL_TIMEOUT_MS,
   VIDEO_TIMEOUT_MS,
   getNestedField
 } from './utils.js';
@@ -45,7 +44,7 @@ async function sendGenericVideoRequest(
       body: JSON.stringify(payload),
       signal
     }),
-    AI_CALL_TIMEOUT_MS,
+    VIDEO_TIMEOUT_MS,
     timeoutName
   );
 
@@ -176,8 +175,8 @@ async function executeDynamicVideoProtocol(
           progress: progressPct,
           renderedFrames,
           totalFrames,
-          phase: `Polling dynamic generation server (${progressPct}%) [Step ${i + 1}/${maxPolls}]`,
-          phase_ar: `معالجة توليد مقطع الفيديو على الخادم الديناميكي المبرمج (${progressPct}%) [الخطوة ${i + 1}/${maxPolls}]`,
+          phase: `Generating video... (${progressPct}%) [Step ${i + 1}/${maxPolls}]`,
+          phase_ar: `جاري توليد الفيديو... (${progressPct}%) [الخطوة ${i + 1}/${maxPolls}]`,
           fps,
           currentStep: i + 1,
           totalSteps: maxPolls
@@ -333,8 +332,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   progress: 25,
                   renderedFrames: Math.round(totalFrames * 0.25),
                   totalFrames,
-                  phase: `Initiating connection request with dynamic protocol on ${target.provider}...`,
-                  phase_ar: `بدء إرسال طلب التوليد للبروتوكول التفاعلي التابع لـ ${target.provider}...`,
+                  phase: `Connecting to ${target.provider}...`,
+                  phase_ar: `جاري الاتصال بـ ${target.provider}...`,
                   fps: 0,
                   currentStep: 3,
                   totalSteps: 120
@@ -364,8 +363,8 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   progress: 25,
                   renderedFrames: Math.round(totalFrames * 0.25),
                   totalFrames,
-                  phase: `Initiating connection request with dynamic custom endpoint on ${target.provider}...`,
-                  phase_ar: `بدء إرسال طلب التوليد للواجهة البرمجية المخصصة التابعة لـ ${target.provider}...`,
+                  phase: `Connecting to ${target.provider}...`,
+                  phase_ar: `جاري الاتصال بـ ${target.provider}...`,
                   fps: 0,
                   currentStep: 3,
                   totalSteps: 120
@@ -409,7 +408,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   body: JSON.stringify({ version: modelName, input: inputPayload }),
                   signal
                 }),
-                AI_CALL_TIMEOUT_MS,
+                VIDEO_TIMEOUT_MS,
                 'replicate-video-init'
               );
               const prediction = await safeParseResponse(res, 'Replicate video error');
@@ -480,7 +479,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   }),
                   signal
                 }),
-                AI_CALL_TIMEOUT_MS,
+                VIDEO_TIMEOUT_MS,
                 'runway-video-init'
               );
               const task = await safeParseResponse(res, 'Runway error');
