@@ -419,17 +419,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           cleanModel = cleanModel.substring(7);
         }
 
-        const SUPPORTED_IMAGEN_MODELS = [
-          'imagen-3.0-generate-002',
-          'imagen-3.0-fast-generate-001',
-          'imagen-2.0-generate-002',
-          'imagen-3.5-generate-001',
-          'imagen-3.5-fast-generate-001'
-        ];
-        if (!SUPPORTED_IMAGEN_MODELS.includes(cleanModel)) {
-          console.warn(`[Image Task] Model '${cleanModel}' is not in the verified Google Imagen presets. Proceeding directly with model parameters...`);
-        }
-
         // Call Imagen using our official modern @google/genai SDK pattern
         const aiObj = new GoogleGenAI({
           apiKey: apiKey,
@@ -491,16 +480,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
         const resData = await safeParseResponse(res, `Dynamic API response status from ${target.provider}`);
         
-        const genericUrl = 
+        const rawValue = 
           resData?.data?.[0]?.url || 
           resData?.data?.[0]?.b64_json ||
-          resData?.video_url || 
           resData?.url || 
           resData?.image_url ||
           resData?.image ||
-          resData?.generatedImages?.[0]?.image?.imageBytes || 
-          (Array.isArray(resData?.output) ? resData.output[0] : resData?.output) || 
-          '';
+          (Array.isArray(resData?.output) ? resData.output[0] : resData?.output);
+
+        const genericUrl = typeof rawValue === 'string' ? rawValue : '';
 
         if (!genericUrl) {
           throw new Error(`Dynamic endpoint on provider '${target.provider}' did not return a valid image URL or base64 field.`);

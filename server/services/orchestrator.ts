@@ -4,7 +4,7 @@ import { io } from '../config/socket.js';
 import { callAIProvider, getProviderKey, getProviderUrlKey, invalidateVaultCache } from './ai.js';
 import { checkUserQuota, checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
-import { extractTextFromFile, forensicScanPDF } from './extractor.js';
+import { forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
 import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
@@ -13,7 +13,7 @@ import { SEARCH_KEYWORDS } from '../config/searchKeywords.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet, refundUsageToWallet } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
-import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS } from './tasks/utils.js';
+import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
@@ -257,13 +257,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 
-  const isSovereignSearch = toolIdStr === 'sovereign_search';
-  
   const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
     SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
 
   // 1. Segregated System Search Engine (Background Sovereign Search API Grounding path)
-  if (isSovereignSearch || chatWantsSearch) {
+  if (chatWantsSearch) {
     try {
       if (io) {
         io.to(`user_${userId}`).emit('search_steps', { 
@@ -323,7 +321,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const voiceId = reqBody.voice_id || route.primary_model || '21m00Tcm4TlvDq8ikWAM';
       const audioBuffer = await withTimeout(
         perplextaTTS(cleanUserPrompt, voiceId),
-        AI_CALL_TIMEOUT_MS,
+        TTS_TIMEOUT_MS,
         'tts'
       );
 
@@ -383,7 +381,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           headers: { 'Authorization': `Bearer ${apiKey}` },
           body: formData
         }),
-        AI_CALL_TIMEOUT_MS,
+        STT_TIMEOUT_MS,
         'stt'
       );
 
@@ -531,7 +529,7 @@ Your response MUST be highly creative, authoritative, elite, and inspiring. Use 
     refinedSystemPromptSegment = canvasInstructions;
   }
 
-  if (isSovereignSearch || chatWantsSearch) {
+  if (chatWantsSearch) {
     const searchInstructions = `[SEARCH ENGINE]
 Synthesize the live web context against the user query. Eliminate bias, structure findings with headers and bullets, cite sources precisely.
 CRITICAL CITATION RULES:

@@ -49,7 +49,13 @@ async function sendGenericVideoRequest(
   );
 
   const resData = await safeParseResponse(response, `Dynamic API response status from ${providerLabel}`);
-  const vUrl = resData?.video_url || resData?.data?.[0]?.url || resData?.url || resData?.output || '';
+  const rawValue = 
+    resData?.video_url || 
+    resData?.data?.[0]?.url || 
+    resData?.url || 
+    (Array.isArray(resData?.output) ? resData.output[0] : resData?.output);
+
+  const vUrl = typeof rawValue === 'string' ? rawValue : '';
 
   if (!vUrl) {
     throw new Error(`Dynamic endpoint on provider '${providerLabel}' did not return a valid video field.`);
