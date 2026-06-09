@@ -117,6 +117,19 @@ export async function safeParseResponse(res: any, defaultErrorPrefix: string): P
   return data || {};
 }
 
+/**
+ * Traverses a nested object hierarchy dynamically using a dot/bracket path representation (e.g., "data[0].url").
+ * Essential for modern provider-agnostic protocol parsers to avoid code modification when new backends are introduced.
+ */
+export function getNestedField(obj: any, path: string): any {
+  if (!obj || !path) return undefined;
+  return path.split(/[\.\[\]]+/).filter(Boolean).reduce((acc, key) => {
+    if (acc === undefined || acc === null) return undefined;
+    const index = parseInt(key);
+    return isNaN(index) ? acc[key] : acc[index];
+  }, obj);
+}
+
 export async function safeDecrementOnFailure(
   quotaCheck: { allowed: boolean },
   userId: number,

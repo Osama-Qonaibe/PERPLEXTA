@@ -7,7 +7,8 @@ import {
   safeParseResponse, 
   safeDecrementOnFailure, 
   validateProviderCapacity,
-  IMG_TIMEOUT_MS
+  IMG_TIMEOUT_MS,
+  getNestedField
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
 
@@ -28,6 +29,144 @@ function resolveImageDimensions(aspectRatio: string): { width: number; height: n
     return { width: 1152, height: 768 };
   }
   return { width: 1024, height: 1024 };
+}
+
+/**
+ * Executes dynamic, provider-agnostic protocol logic configured from the database.
+ * Supports sync (Direct API response) and polling (asynchronous multi-step state loop).
+ */
+async function executeDynamicImageProtocol(
+  protocol: any,
+  apiKey: string,
+  modelName: string,
+  prompt: string,
+  aspectRatio: string,
+  quality: string,
+  style: string,
+  signal: AbortSignal
+): Promise<string> {
+  const method = (protocol.method || 'POST').toUpperCase();
+  const endpoint = protocol.endpoint || protocol.init_endpoint || '';
+  if (!endpoint) {
+    throw new Error('Image Protocol Configuration error: missing endpoint/init_endpoint.');
+  }
+
+  const authHeader = protocol.auth_header || 'Authorization';
+  const authPrefix = protocol.auth_prefix !== undefined ? protocol.auth_prefix : 'Bearer';
+  const authValue = authPrefix ? `${authPrefix} ${apiKey}`.trim() : apiKey;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(protocol.extra_headers || {})
+  };
+  if (authHeader) {
+    headers[authHeader] = authValue;
+  }
+
+  const { width, height } = resolveImageDimensions(aspectRatio);
+
+  let body: any;
+  if (protocol.body_wrapper === 'version_input') {
+    body = {
+      version: modelName,
+      input: {
+        prompt,
+        width,
+        height,
+        aspect_ratio: aspectRatio,
+        quality,
+        style
+      }
+    };
+  } else {
+    body = {
+      model: modelName,
+      prompt,
+      n: 1,
+      width,
+      height,
+      size: `${width}x${height}`,
+      response_format: protocol.result_type === 'base64' ? 'b64_json' : 'url',
+      aspect_ratio: aspectRatio,
+      quality,
+      style
+    };
+  }
+
+  const requestOptions: RequestInit = {
+    method,
+    headers,
+    signal
+  };
+  if (method !== 'GET') {
+    requestOptions.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(endpoint, requestOptions);
+  const data = await safeParseResponse(res, 'Dynamic Image API Generation request failed');
+
+  if (protocol.type === 'polling' || protocol.poll_endpoint) {
+    const taskId = data.id || data.task_id || getNestedField(data, protocol.poll_id_field || 'id');
+    if (!taskId) {
+      throw new Error('Dynamic polling initialization failed: Task ID is missing from response payload.');
+    }
+
+    const pollRawEndpoint = protocol.poll_endpoint || `${endpoint}/${taskId}`;
+    const pollEndpoint = pollRawEndpoint.replace('{id}', taskId).replace('{task_id}', taskId);
+
+    const maxPolls = protocol.max_polls || 40;
+    const interval = protocol.poll_interval_ms || 2000;
+    const successValue = protocol.poll_success_value || 'succeeded';
+    const statusField = protocol.poll_status_field || 'status';
+    const failValue = protocol.poll_fail_value || 'failed';
+
+    for (let i = 0; i < maxPolls; i++) {
+      if (signal.aborted) {
+        throw new Error('Image polling timed out or aborted.');
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+
+      const pollRes = await fetch(pollEndpoint, {
+        method: 'GET',
+        headers: {
+          ...(authHeader ? { [authHeader]: authValue } : {}),
+          ...(protocol.extra_headers || {})
+        },
+        signal
+      });
+      const pollData = await safeParseResponse(pollRes, 'Dynamic polling step failed');
+      const status = String(getNestedField(pollData, statusField) || '').toLowerCase();
+
+      if (status === successValue.toLowerCase()) {
+        const value = getNestedField(pollData, protocol.result_field || 'output[0]');
+        if (!value) {
+          throw new Error('Result field was empty on succeeded dynamic poll response.');
+        }
+        return protocol.result_type === 'base64' ? `data:image/png;base64,${value}` : value;
+      }
+
+      if (status === failValue.toLowerCase()) {
+        const errorDetail = pollData.error || pollData.message || 'Execution failed';
+        throw new Error(`Dynamic API task failed: ${JSON.stringify(errorDetail)}`);
+      }
+    }
+    throw new Error(`Image generation polling timed out after ${maxPolls * interval / 1000} seconds.`);
+  }
+
+  const resultField = protocol.result_field || 'data[0].url';
+  let value = getNestedField(data, resultField);
+  if (!value) {
+    value = data?.data?.[0]?.url || data?.data?.[0]?.b64_json || data?.url || data?.image || data?.output?.[0] || data?.output;
+  }
+
+  if (!value) {
+    throw new Error(`Result field '${resultField}' was empty in dynamic API response.`);
+  }
+
+  if (protocol.result_type === 'base64' || (value.length > 1000 && !value.includes(':'))) {
+    return value.startsWith('data:') ? value : `data:image/png;base64,${value}`;
+  }
+  return value;
 }
 
 export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ result: string }> {
@@ -60,7 +199,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   try {
     const providerNames = targets.map(t => t.provider.toLowerCase().replace(/\s+/g, ''));
     const result = await pool.query(
-      'SELECT provider, is_active, daily_budget, used_today, url_key FROM api_keys_vault WHERE provider = ANY($1)',
+      'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
       [providerNames]
     );
     for (const row of result.rows) {
@@ -145,7 +284,27 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     }
 
     try {
-      if (providerId === 'openai') {
+      // Prioritize modern dynamic protocol configuration if present to enable zero-code scaling
+      const dynamicProtocol = vaultConfig?.protocol_config || (route as any).protocol_config;
+      const possessesCustomProtocol = dynamicProtocol && typeof dynamicProtocol === 'object' && Object.keys(dynamicProtocol).length > 0;
+
+      if (possessesCustomProtocol) {
+        console.log(`[Image Task] Dynamic Protocol intercepted for '${providerId}' using config:`, JSON.stringify(dynamicProtocol));
+        imageUrl = await withTimeout(
+          (signal) => executeDynamicImageProtocol(
+            dynamicProtocol,
+            apiKey,
+            modelToUse,
+            finalPrompt,
+            imageSettings.aspectRatio || '1:1',
+            imageSettings.quality || 'HD',
+            imageSettings.style || 'Cinematic',
+            signal
+          ),
+          IMG_TIMEOUT_MS,
+          `dynamic-image-generation-${providerId}`
+        );
+      } else if (providerId === 'openai') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
         const size =
           aspectRatio === '16:9' ? '1792x1024' :
@@ -258,7 +417,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           'imagen-3.5-fast-generate-001'
         ];
         if (!SUPPORTED_IMAGEN_MODELS.includes(cleanModel)) {
-          throw new Error(`Google Imagen check: model '${cleanModel}' is unsupported. Allowed models: ${SUPPORTED_IMAGEN_MODELS.join(', ')}`);
+          console.warn(`[Image Task] Model '${cleanModel}' is not in the verified Google Imagen presets. Proceeding directly with model parameters...`);
         }
 
         // Call Imagen using our official modern @google/genai SDK pattern
@@ -287,6 +446,61 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
         const base64Bytes = imageResponse.generatedImages?.[0]?.image?.imageBytes;
         imageUrl = base64Bytes ? `data:image/jpeg;base64,${base64Bytes}` : '';
+      } else {
+        // Fallback or generic path for modern custom/open-source models and arbitrary providers (C-4)
+        const finalEndpoint = vaultConfig?.url_key;
+        if (!finalEndpoint) {
+          throw new Error(`Orchestration routing check: Dynamic provider '${target.provider}' has unsupported providerId '${providerId}' and is missing a registered custom endpoint URL (url_key) in the vault.`);
+        }
+
+        console.log(`[Image Task] Executing generic/custom endpoint generation for provider: ${providerId} on endpoint: ${finalEndpoint}`);
+
+        const { width, height } = resolveImageDimensions(imageSettings.aspectRatio || '1:1');
+
+        const res = await withTimeout(
+          (signal) => fetch(finalEndpoint, {
+            method: 'POST',
+            headers: { 
+              'Authorization': `Bearer ${apiKey}`, 
+              'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({
+              model: modelToUse,
+              prompt: finalPrompt,
+              width,
+              height,
+              n: 1,
+              response_format: 'url',
+              size: `${width}x${height}`
+            }),
+            signal
+          }),
+          IMG_TIMEOUT_MS,
+          'generic-image-generation'
+        );
+
+        const resData = await safeParseResponse(res, `Dynamic API response status from ${target.provider}`);
+        
+        const genericUrl = 
+          resData?.data?.[0]?.url || 
+          resData?.data?.[0]?.b64_json ||
+          resData?.video_url || 
+          resData?.url || 
+          resData?.image_url ||
+          resData?.image ||
+          resData?.generatedImages?.[0]?.image?.imageBytes || 
+          (Array.isArray(resData?.output) ? resData.output[0] : resData?.output) || 
+          '';
+
+        if (!genericUrl) {
+          throw new Error(`Dynamic endpoint on provider '${target.provider}' did not return a valid image URL or base64 field.`);
+        }
+
+        if (genericUrl.startsWith('iVBORw0KGgo') || (genericUrl.length > 1000 && !genericUrl.includes(':'))) {
+          imageUrl = `data:image/png;base64,${genericUrl}`;
+        } else {
+          imageUrl = genericUrl;
+        }
       }
 
       if (imageUrl) {

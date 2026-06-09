@@ -10,7 +10,8 @@ import {
   safeDecrementOnFailure,
   validateProviderCapacity,
   AI_CALL_TIMEOUT_MS,
-  VIDEO_TIMEOUT_MS
+  VIDEO_TIMEOUT_MS,
+  getNestedField
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
@@ -57,6 +58,174 @@ async function sendGenericVideoRequest(
   return vUrl;
 }
 
+/**
+ * Executes dynamic, provider-agnostic protocol logic configured from the database.
+ * Supports sync (Direct API response) and polling (asynchronous multi-step state loop with socket progress tracking).
+ */
+async function executeDynamicVideoProtocol(
+  protocol: any,
+  apiKey: string,
+  modelName: string,
+  prompt: string,
+  aspectRatio: string,
+  resolution: string,
+  style: string,
+  duration: number,
+  userId: number,
+  totalFrames: number,
+  fps: number,
+  signal: AbortSignal
+): Promise<string> {
+  const method = (protocol.method || 'POST').toUpperCase();
+  const endpoint = protocol.endpoint || protocol.init_endpoint || '';
+  if (!endpoint) {
+    throw new Error('Video Protocol Configuration error: missing endpoint/init_endpoint.');
+  }
+
+  const authHeader = protocol.auth_header || 'Authorization';
+  const authPrefix = protocol.auth_prefix !== undefined ? protocol.auth_prefix : 'Bearer';
+  const authValue = authPrefix ? `${authPrefix} ${apiKey}`.trim() : apiKey;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(protocol.extra_headers || {})
+  };
+  if (authHeader) {
+    headers[authHeader] = authValue;
+  }
+
+  let calculatedRatio = aspectRatio;
+  if (aspectRatio === '9:16') {
+    calculatedRatio = protocol.ratio_9_16 || '768:1280';
+  } else if (aspectRatio === '1:1') {
+    calculatedRatio = protocol.ratio_1_1 || '768:768';
+  } else if (aspectRatio === '16:9') {
+    calculatedRatio = protocol.ratio_16_9 || '1280:768';
+  }
+
+  let body: any;
+  if (protocol.body_wrapper === 'version_input') {
+    body = {
+      version: modelName,
+      input: {
+        prompt,
+        aspect_ratio: aspectRatio,
+        ratio: calculatedRatio,
+        duration,
+        length: duration,
+        resolution,
+        style
+      }
+    };
+  } else if (protocol.body_wrapper === 'runway_style') {
+    body = {
+      model: modelName,
+      promptText: prompt,
+      duration,
+      ratio: calculatedRatio
+    };
+  } else {
+    body = {
+      model: modelName,
+      prompt,
+      aspect_ratio: aspectRatio,
+      ratio: calculatedRatio,
+      duration,
+      resolution,
+      style
+    };
+  }
+
+  const requestOptions: RequestInit = {
+    method,
+    headers,
+    signal
+  };
+  if (method !== 'GET') {
+    requestOptions.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(endpoint, requestOptions);
+  const data = await safeParseResponse(res, 'Dynamic Video API initialization request failed');
+
+  if (protocol.type === 'polling' || protocol.poll_endpoint) {
+    const taskId = data.id || data.task_id || getNestedField(data, protocol.poll_id_field || 'id');
+    if (!taskId) {
+      throw new Error('Dynamic polling initialization failed: Task ID is missing from response payload.');
+    }
+
+    const pollRawEndpoint = protocol.poll_endpoint || `${endpoint}/${taskId}`;
+    const pollEndpoint = pollRawEndpoint.replace('{id}', taskId).replace('{task_id}', taskId);
+
+    const maxPolls = protocol.max_polls || 70;
+    const interval = protocol.poll_interval_ms || 5000;
+    const successValue = protocol.poll_success_value || 'succeeded';
+    const statusField = protocol.poll_status_field || 'status';
+    const failValue = protocol.poll_fail_value || 'failed';
+
+    for (let i = 0; i < maxPolls; i++) {
+      if (signal.aborted) {
+        throw new Error('Video polling timed out or aborted.');
+      }
+
+      const progressPct = Math.min(98, Math.round(15 + (i / maxPolls) * 80));
+      const renderedFrames = Math.round((progressPct / 100) * totalFrames);
+
+      if (io) {
+        io.to(`user_${userId}`).emit('video_progress', {
+          progress: progressPct,
+          renderedFrames,
+          totalFrames,
+          phase: `Polling dynamic generation server (${progressPct}%) [Step ${i + 1}/${maxPolls}]`,
+          phase_ar: `معالجة توليد مقطع الفيديو على الخادم الديناميكي المبرمج (${progressPct}%) [الخطوة ${i + 1}/${maxPolls}]`,
+          fps,
+          currentStep: i + 1,
+          totalSteps: maxPolls
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, interval));
+
+      const pollRes = await fetch(pollEndpoint, {
+        method: 'GET',
+        headers: {
+          ...(authHeader ? { [authHeader]: authValue } : {}),
+          ...(protocol.extra_headers || {})
+        },
+        signal
+      });
+      const pollData = await safeParseResponse(pollRes, 'Dynamic video polling step failed');
+      const status = String(getNestedField(pollData, statusField) || '').toLowerCase();
+
+      if (status === successValue.toLowerCase()) {
+        const value = getNestedField(pollData, protocol.result_field || 'output[0]');
+        if (!value) {
+          throw new Error('Video result field was empty on succeeded dynamic poll response.');
+        }
+        return Array.isArray(value) ? value[0] : value;
+      }
+
+      if (status === failValue.toLowerCase()) {
+        const errorDetail = pollData.error || pollData.message || pollData.failureReason || 'Execution failed';
+        throw new Error(`Dynamic video generation failed: ${JSON.stringify(errorDetail)}`);
+      }
+    }
+    throw new Error(`Video generation polling timed out after ${maxPolls * interval / 1000} seconds.`);
+  }
+
+  const resultField = protocol.result_field || 'video_url';
+  let value = getNestedField(data, resultField);
+  if (!value) {
+    value = data?.video_url || data?.data?.[0]?.url || data?.url || data?.output?.[0] || data?.output;
+  }
+
+  if (!value) {
+    throw new Error(`Result field '${resultField}' was empty in sync Dynamic Video response.`);
+  }
+
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ result: string }> {
   const { reqBody, userId, route } = ctx;
   const { finalPrompt } = ctx;
@@ -84,7 +253,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
     try {
       const providerNames = targets.map(t => t.provider.toLowerCase().replace(/\s+/g, ''));
       const result = await pool.query(
-        'SELECT provider, is_active, daily_budget, used_today, url_key FROM api_keys_vault WHERE provider = ANY($1)',
+        'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
         [providerNames]
       );
       for (const row of result.rows) {
@@ -153,9 +322,41 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           }
 
           try {
-            const customUrl = vaultConfig?.url_key;
+            const dynamicProtocol = vaultConfig?.protocol_config || (route as any).protocol_config;
+            const possessesCustomProtocol = dynamicProtocol && typeof dynamicProtocol === 'object' && Object.keys(dynamicProtocol).length > 0;
 
-            if (customUrl) {
+            if (possessesCustomProtocol) {
+              console.log(`[Video Task] Dynamic Protocol intercepted for '${providerId}' using config:`, JSON.stringify(dynamicProtocol));
+              
+              if (io) {
+                io.to(`user_${userId}`).emit('video_progress', {
+                  progress: 25,
+                  renderedFrames: Math.round(totalFrames * 0.25),
+                  totalFrames,
+                  phase: `Initiating connection request with dynamic protocol on ${target.provider}...`,
+                  phase_ar: `بدء إرسال طلب التوليد للبروتوكول التفاعلي التابع لـ ${target.provider}...`,
+                  fps: 0,
+                  currentStep: 3,
+                  totalSteps: 120
+                });
+              }
+
+              videoUrl = await executeDynamicVideoProtocol(
+                dynamicProtocol,
+                apiKey,
+                modelName,
+                actualPrompt,
+                video_settings?.aspectRatio || "16:9",
+                video_settings?.resolution || "1080p",
+                video_settings?.style || "Cinematic",
+                requestedDuration,
+                userId,
+                totalFrames,
+                fps,
+                outerSignal!
+              );
+            } else if (vaultConfig?.url_key) {
+              const customUrl = vaultConfig.url_key;
               console.log(`[Video Task] Routing to custom URL endpoint for '${providerId}': ${customUrl}`);
               
               if (io) {
@@ -335,7 +536,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
               const SUPPORTED_VEO_MODELS = ['veo-2.0-generate-001', 'veo-3.0-generate-preview'];
               if (!SUPPORTED_VEO_MODELS.includes(modelToUse)) {
-                throw new Error(`Unsupported Veo model: '${modelToUse}'.`);
+                console.warn(`[Video Task] Model '${modelToUse}' is not in the verified Google Veo list. Attempting execution...`);
               }
 
               if (io) {

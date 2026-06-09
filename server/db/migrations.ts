@@ -1465,6 +1465,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'memory_limit_per_user', 'INTEGER', 50);
     });
 
+    await runVersioned('v46_protocol_config', 'Adding protocol_config to tool_orchestrator and api_keys_vault', async (tx) => {
+      await ensureColumn(tx, 'tool_orchestrator', 'protocol_config', 'JSONB', `'{}'`);
+      await ensureColumn(tx, 'api_keys_vault', 'protocol_config', 'JSONB', `'{}'`);
+      await tx.query(`UPDATE tool_orchestrator SET protocol_config = '{}' WHERE protocol_config IS NULL`);
+      await tx.query(`UPDATE api_keys_vault SET protocol_config = '{}' WHERE protocol_config IS NULL`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1585,7 +1592,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        url_key TEXT
+        url_key TEXT,
+        protocol_config JSONB DEFAULT '{}'
       )`
     },
     {
@@ -1605,7 +1613,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         task_description_ar TEXT,
         is_active BOOLEAN DEFAULT true,
         cost_per_usage INTEGER DEFAULT 10,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        protocol_config JSONB DEFAULT '{}'
       )`
     },
     {

@@ -81,6 +81,7 @@ export interface ApiKeyVault {
   created_at: Date | string;
   updated_at: Date | string;
   url_key: string | null;
+  protocol_config?: any;
 }
 
 export interface ToolOrchestrator {
@@ -99,6 +100,7 @@ export interface ToolOrchestrator {
   is_active: boolean;
   cost_per_usage: number;
   updated_at: Date | string;
+  protocol_config?: any;
 }
 
 export interface Wallet {
