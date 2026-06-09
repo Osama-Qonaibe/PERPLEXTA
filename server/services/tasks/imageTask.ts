@@ -15,10 +15,6 @@ import { GoogleGenAI } from "@google/genai";
 
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
-/**
- * Resolves standard aspect ratio dimensions for Together and Stability AI.
- * Handles explicit wide, vertical, and classic photographic framing modes.
- */
 function resolveImageDimensions(aspectRatio: string): { width: number; height: number } {
   if (aspectRatio === '16:9') {
     return { width: 1344, height: 768 };
@@ -174,7 +170,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   const imageSettings = reqBody.image_settings || {};
   const selectedRatio = String(imageSettings.aspectRatio || '1:1');
 
-  // Build the fallback chain routing targets array
   const targets = [
     { provider: route.primary_provider, model: route.primary_model, label: 'primary' },
     { provider: route.fallback_1_provider, model: route.fallback_1_model, label: 'fallback_1' },
@@ -191,7 +186,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     }));
   }
 
-  // Pre-fetch all targets configuration from api_keys_vault inside a single consolidated query
   const vaultMap = new Map<string, any>();
   try {
     const providerNames = targets.map(t => t.provider.toLowerCase().replace(/\s+/g, ''));
@@ -206,7 +200,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     console.warn('[Image Task Pre-fetch] Failed to pre-load configuration keys:', err.message);
   }
 
-  // Synthesize prompts with structured stylistic modifiers
   let promptPrefix = '';
   let promptSuffix = '';
   const selectedStyle = String(imageSettings.style || 'Cinematic').toLowerCase().trim();
@@ -254,7 +247,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
   promptSuffix += ' [Constraint: high-quality, clear limbs and faces].';
 
-  // Enforce prompt length boundary to prevent API context overflows while preserving the critical suffixes
   const available = 4000 - promptPrefix.length - promptSuffix.length;
   const trimmedCore = finalPrompt.substring(0, Math.max(200, available));
   finalPrompt = promptPrefix + trimmedCore + promptSuffix;
@@ -413,7 +405,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
           cleanModel = cleanModel.substring(7);
         }
 
-        // Call Imagen using our official modern @google/genai SDK pattern
         const aiObj = new GoogleGenAI({
           apiKey: apiKey,
           httpOptions: {
