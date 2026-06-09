@@ -1187,9 +1187,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   // Sandbox Mode state & execution variables
   const [sandboxMode, setSandboxMode] = useState(false);
-  
-  
-  
   const [editableCode, setEditableCode] = useState(codeContent);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -1975,7 +1972,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
   const Icon = details.icon;
   
   return (
-    <div className={`flex items-center gap-2.5 mb-5 w-fit select-none bg-gray-50/50 dark:bg-[#1a1a1c]/20 border border-gray-100/60 dark:border-gray-800/20 px-3 py-1.5 rounded-[4px] shadow-sm backdrop-blur-[2px] ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
+    <div className={`flex items-center gap-2.5 mb-5 w-fit select-none bg-gray-50/50 dark:bg-[#1a1a1c]/20 border border-gray-100/60 dark:border-gray-800/20 px-3 py-1.5 rounded-[4px] shadow-sm backdrop-blur-[2px] flex-row`}>
       <div className={`relative flex items-center justify-center w-6.5 h-6.5 rounded-[4px] border border-transparent transition-all duration-300 ${details.bgClass}`}>
         {isGenerating ? (
           <>
@@ -2014,7 +2011,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
       </div>
       
       <div className="flex flex-col min-w-0">
-        <div className={`flex items-center gap-1.5 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
+        <div className="flex items-center gap-1.5 flex-row">
           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] truncate max-w-[180px] sm:max-w-[250px]">
             {details.label}
           </span>
