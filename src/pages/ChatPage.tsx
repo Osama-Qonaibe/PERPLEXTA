@@ -6604,7 +6604,7 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className="flex-1 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative h-full flex flex-col scroll-smooth"
+            className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative flex flex-col scroll-smooth"
           >
           <AnimatePresence mode="popLayout">
             {isChatMessagesLoading && messages.length === 0 && !user ? (
@@ -7320,7 +7320,7 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-2 sm:pb-4 relative">
+      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-2 sm:pb-4 pt-2 bg-transparent relative">
         <AnimatePresence>
           {showScrollToBottom && (
             <motion.button
