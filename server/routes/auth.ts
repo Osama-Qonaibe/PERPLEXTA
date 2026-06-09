@@ -13,6 +13,8 @@ import { hashToken } from '../utils/tokenHash.js';
 
 const router = express.Router();
 
+export const pendingOAuthSessions = new Map<string, { data: any; expiresAt: number }>();
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
@@ -398,7 +400,7 @@ router.post("/refresh-token", async (req, res) => {
 
 router.get("/google/url", async (req, res) => {
   try {
-    const { ref, lang, remember, mode, theme } = req.query;
+    const { ref, lang, remember, mode, theme, authSessionId } = req.query;
     
     const nonce = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 600000);
@@ -410,7 +412,8 @@ router.get("/google/url", async (req, res) => {
         lang: lang as string || 'en', 
         mode: mode as string || 'popup', 
         remember: remember === 'true',
-        theme: theme as string || 'dark'
+        theme: theme as string || 'dark',
+        authSessionId: authSessionId as string || null
       }), expiresAt]
     );
 
@@ -425,6 +428,36 @@ router.get("/google/url", async (req, res) => {
   } catch (error: any) {
     console.error('[Google-URL Error]:', error?.message || error);
     res.status(500).json({ error: 'Internal Server Error during Google OAuth URL creation' });
+  }
+});
+
+router.get("/poll", async (req, res) => {
+  try {
+    const { authSessionId } = req.query;
+    if (!authSessionId || typeof authSessionId !== 'string') {
+      return res.status(400).json({ error: 'Missing authSessionId' });
+    }
+    
+    // Clean up expired entries to avoid memory leak
+    const now = Date.now();
+    for (const [key, val] of pendingOAuthSessions.entries()) {
+      if (val.expiresAt < now) {
+        pendingOAuthSessions.delete(key);
+      }
+    }
+    
+    const session = pendingOAuthSessions.get(authSessionId);
+    if (!session) {
+      return res.json({ status: 'pending' });
+    }
+    
+    // Consume the session
+    pendingOAuthSessions.delete(authSessionId);
+    
+    res.json({ status: 'success', data: session.data });
+  } catch (error: any) {
+    console.error('[OAuth Poll Error]:', error?.message || error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -686,6 +719,20 @@ router.get("/google/callback", async (req, res) => {
       ref: targetRef,
       remember: !!storedState.remember
     });
+
+    if (storedState.authSessionId) {
+      pendingOAuthSessions.set(storedState.authSessionId, {
+        data: {
+          token: accessToken,
+          refreshToken,
+          ...userPayload,
+          lang,
+          ref: targetRef,
+          remember: !!storedState.remember
+        },
+        expiresAt: Date.now() + 120000 // 2 minutes
+      });
+    }
 
     const isPopupMode = storedState.mode === 'popup';
     const titleText = lang === 'ar' ? 'جاري التحقق...' : 'Authenticating...';

@@ -2393,7 +2393,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Clean up synchronization flags to avoid stale locks
       localStorage.removeItem('app_oauth_syncing');
       
-      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}`);
+      // Generate a unique session ID for secure server-side tracking across window boundaries (e.g., partitioned storage, cross-origin sandbox iframes)
+      const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
       
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
@@ -2420,16 +2423,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
 
-      // Start an ultra-reliable polling fallback that checks localStorage for auth state.
-      // This bypasses COOP / opener restriction blocks completely.
+      // Start an ultra-reliable polling fallback that checks both backend session AND localStorage for auth state.
+      // This completely bypasses storage partitioning, popup sandboxes, third-party cookie restrictions, and COOP / opener blocks.
       let checkCount = 0;
-      const pollInterval = setInterval(() => {
+      const pollInterval = setInterval(async () => {
         checkCount++;
-        if (checkCount > 600) { // Limit to 5 minutes
+        if (checkCount > 300) { // Limit to 5 minutes
           clearInterval(pollInterval);
           return;
         }
 
+        // 1. Ask the server if authentication completed for this session
+        try {
+          const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
+          if (pollRes.ok) {
+            const pollData = await pollRes.json();
+            if (pollData.status === 'success' && pollData.data) {
+              clearInterval(pollInterval);
+              localStorage.removeItem('app_oauth_syncing');
+              handleAuthSuccess(pollData.data);
+              if (popup && !popup.closed) {
+                try {
+                  popup.close();
+                } catch (e) {}
+              }
+              return;
+            }
+          }
+        } catch (pollErr) {
+          console.error('Failed to poll oauth session status:', pollErr);
+        }
+
+        // 2. Client-side LocalStorage fallback for non-partitioned environments
         const storedToken = localStorage.getItem('app_token');
         const userDataJson = localStorage.getItem('app_oauth_user');
 
@@ -2451,7 +2476,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.error('Failed to parse OAuth stored data in polling fallback:', e);
           }
         }
-      }, 500);
+      }, 1000);
 
     } catch (error) {
       console.error('Login failed', error);
