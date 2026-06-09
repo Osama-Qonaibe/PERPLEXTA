@@ -2713,56 +2713,60 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   }, [status]);
 
   // Parse parameters from section text or full parent content for high precision
-  const bodyText = (fullContent || '') + '\n' + (body || '');
-  let styleName = 'Epic';
-  let vocalName = 'None';
-  let durationVal = 30;
+  const { styleName, vocalName, durationVal } = useMemo(() => {
+    const bodyText = (fullContent || '') + '\n' + (body || '');
+    let style = 'Epic';
+    let vocal = 'None';
+    let dVal = 30;
 
-  if (bodyText.includes('ملحمية') || bodyText.toLowerCase().includes('epic') || bodyText.toLowerCase().includes('orchestra')) {
-    styleName = 'Epic';
-  } else if (bodyText.includes('طرب') || bodyText.includes('شرقي') || bodyText.toLowerCase().includes('tarab') || bodyText.toLowerCase().includes('maqam')) {
-    styleName = 'Tarab';
-  } else if (bodyText.includes('إلكترونك') || bodyText.includes('دي جي') || bodyText.toLowerCase().includes('edm') || bodyText.toLowerCase().includes('techno') || bodyText.toLowerCase().includes('electronic') || bodyText.toLowerCase().includes('تقنو') || bodyText.toLowerCase().includes('تكنو')) {
-    styleName = 'EDM';
-  } else if (bodyText.includes('غيتار') || bodyText.includes('تخت') || bodyText.toLowerCase().includes('acoustic') || bodyText.toLowerCase().includes('guitar') || bodyText.toLowerCase().includes('soft') || bodyText.toLowerCase().includes('كلاسيك') || bodyText.toLowerCase().includes('هادئ')) {
-    styleName = 'Acoustic';
-  } else if (bodyText.includes('لو-فاي') || bodyText.includes('لوفاي') || bodyText.toLowerCase().includes('lofi') || bodyText.toLowerCase().includes('lo-fi') || bodyText.toLowerCase().includes('chill')) {
-    styleName = 'LoFi';
-  } else if (bodyText.includes('جاز') || bodyText.toLowerCase().includes('jazz') || bodyText.toLowerCase().includes('blues')) {
-    styleName = 'Jazz';
-  } else if (bodyText.includes('بوب') || bodyText.toLowerCase().includes('pop') || bodyText.toLowerCase().includes('upbeat')) {
-    styleName = 'Pop';
-  }
+    if (bodyText.includes('ملحمية') || bodyText.toLowerCase().includes('epic') || bodyText.toLowerCase().includes('orchestra')) {
+      style = 'Epic';
+    } else if (bodyText.includes('طرب') || bodyText.includes('شرقي') || bodyText.toLowerCase().includes('tarab') || bodyText.toLowerCase().includes('maqam')) {
+      style = 'Tarab';
+    } else if (bodyText.includes('إلكترونك') || bodyText.includes('دي جي') || bodyText.toLowerCase().includes('edm') || bodyText.toLowerCase().includes('techno') || bodyText.toLowerCase().includes('electronic') || bodyText.toLowerCase().includes('تقنو') || bodyText.toLowerCase().includes('تكنو')) {
+      style = 'EDM';
+    } else if (bodyText.includes('غيتار') || bodyText.includes('تخت') || bodyText.toLowerCase().includes('acoustic') || bodyText.toLowerCase().includes('guitar') || bodyText.toLowerCase().includes('soft') || bodyText.toLowerCase().includes('كلاسيك') || bodyText.toLowerCase().includes('هادئ')) {
+      style = 'Acoustic';
+    } else if (bodyText.includes('لو-فاي') || bodyText.includes('لوفاي') || bodyText.toLowerCase().includes('lofi') || bodyText.toLowerCase().includes('lo-fi') || bodyText.toLowerCase().includes('chill')) {
+      style = 'LoFi';
+    } else if (bodyText.includes('جاز') || bodyText.toLowerCase().includes('jazz') || bodyText.toLowerCase().includes('blues')) {
+      style = 'Jazz';
+    } else if (bodyText.includes('بوب') || bodyText.toLowerCase().includes('pop') || bodyText.toLowerCase().includes('upbeat')) {
+      style = 'Pop';
+    }
 
-  if (bodyText.includes('كورال') || bodyText.toLowerCase().includes('choir') || bodyText.toLowerCase().includes('choral')) {
-    vocalName = 'Choir';
-  } else if (bodyText.includes('أنثوي') || bodyText.toLowerCase().includes('female') || bodyText.toLowerCase().includes('soprano')) {
-    vocalName = 'Female';
-  } else if (bodyText.includes('ذكوري') || bodyText.toLowerCase().includes('male') || bodyText.toLowerCase().includes('baritone') || bodyText.toLowerCase().includes('hum') || bodyText.toLowerCase().includes('تينور')) {
-    vocalName = 'Male';
-  } else if (bodyText.includes('روبوت') || bodyText.toLowerCase().includes('vocaloid') || bodyText.toLowerCase().includes('ai synth')) {
-    vocalName = 'Vocaloid';
-  } else if (bodyText.includes('بدون غناء') || bodyText.includes('موسيقى فقط') || bodyText.includes('عزف') || bodyText.toLowerCase().includes('instrumental') || bodyText.toLowerCase().includes('none')) {
-    vocalName = 'None';
-  }
+    if (bodyText.includes('كورال') || bodyText.toLowerCase().includes('choir') || bodyText.toLowerCase().includes('choral')) {
+      vocal = 'Choir';
+    } else if (bodyText.includes('أنثوي') || bodyText.toLowerCase().includes('female') || bodyText.toLowerCase().includes('soprano')) {
+      vocal = 'Female';
+    } else if (bodyText.includes('ذكوري') || bodyText.toLowerCase().includes('male') || bodyText.toLowerCase().includes('baritone') || bodyText.toLowerCase().includes('hum') || bodyText.toLowerCase().includes('تينور')) {
+      vocal = 'Male';
+    } else if (bodyText.includes('روبوت') || bodyText.toLowerCase().includes('vocaloid') || bodyText.toLowerCase().includes('ai synth')) {
+      vocal = 'Vocaloid';
+    } else if (bodyText.includes('بدون غناء') || bodyText.includes('موسيقى فقط') || bodyText.includes('عزف') || bodyText.toLowerCase().includes('instrumental') || bodyText.toLowerCase().includes('none')) {
+      vocal = 'None';
+    }
 
-  const normalizedBody = bodyText
-    .replace(/[٠0]/g, '0')
-    .replace(/[١1]/g, '1')
-    .replace(/[٢2]/g, '2')
-    .replace(/[٣3]/g, '3')
-    .replace(/[٤4]/g, '4')
-    .replace(/[٥5]/g, '5')
-    .replace(/[٦6]/g, '6')
-    .replace(/[٧7]/g, '7')
-    .replace(/[٨8]/g, '8')
-    .replace(/[٩9]/g, '9');
+    const normalizedBody = bodyText
+      .replace(/[٠0]/g, '0')
+      .replace(/[١1]/g, '1')
+      .replace(/[٢2]/g, '2')
+      .replace(/[٣3]/g, '3')
+      .replace(/[٤4]/g, '4')
+      .replace(/[٥5]/g, '5')
+      .replace(/[٦6]/g, '6')
+      .replace(/[٧7]/g, '7')
+      .replace(/[٨8]/g, '8')
+      .replace(/[٩9]/g, '9');
 
-  const durationMatch = normalizedBody.match(/(?:المدة|Duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/i) || normalizedBody.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/i);
-  if (durationMatch) {
-    durationVal = parseInt(durationMatch[1], 10);
-    if (isNaN(durationVal) || durationVal < 10) durationVal = 30;
-  }
+    const durationMatch = normalizedBody.match(/(?:المدة|Duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/i) || normalizedBody.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/i);
+    if (durationMatch) {
+      dVal = parseInt(durationMatch[1], 10);
+      if (isNaN(dVal) || dVal < 10) dVal = 30;
+    }
+
+    return { styleName: style, vocalName: vocal, durationVal: dVal };
+  }, [fullContent, body]);
 
   // Calculate the live active mix duration
   const mixDuration = uploadedFile ? Math.max(duration, uploadedDuration) : duration;
