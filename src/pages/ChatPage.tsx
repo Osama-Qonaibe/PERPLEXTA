@@ -1636,7 +1636,14 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   {isPlaying && ['html', 'css'].includes(lang.toLowerCase()) && (
                     <>
                       <button
-                        onClick={() => { if (iframeSrc) { const blob = new Blob([iframeSrc], { type: 'text/html' }); const url = URL.createObjectURL(blob); window.open(url, '_blank'); } }}
+                        onClick={() => {
+                          if (iframeSrc) {
+                            const blob = new Blob([iframeSrc], { type: 'text/html' });
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          }
+                        }}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 border border-transparent"
                       >
                         <ExternalLink size={12} />
@@ -2099,7 +2106,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
     // PREVENT FREEZING: Only clone native primitive HTML tags like strong, em, span, etc.
     // Never clone layout containers, interactive controls, custom React components, or media.
     if (typeof node.type !== 'string') return node;
-    if (!['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button'].includes(node.type)) {
+    if (!['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'colgroup', 'col'].includes(node.type)) {
       const elementProps = node.props as any;
       if (elementProps && 'children' in elementProps) {
         return React.cloneElement(node, {
@@ -2260,8 +2267,8 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
       return data;
     })
     .catch(err => {
-      linkMetadataCache.delete(url); // Don't cache failures indefinitely so we can retry
-      throw err;
+      linkMetadataCache.delete(url);
+      return null;
     });
     
   linkMetadataCache.set(url, promise);
@@ -2773,14 +2780,20 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   // Cleanup Web Audio Context and Animation Frames on unmount
   useEffect(() => {
     return () => {
-      if (uploadedUrl) {
-        URL.revokeObjectURL(uploadedUrl);
-      }
       if (audioCtxRef.current) {
         audioCtxRef.current.close().catch(() => {});
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Safe object URL revocation when uploaded url changes or on unmount
+  useEffect(() => {
+    return () => {
+      if (uploadedUrl) {
+        URL.revokeObjectURL(uploadedUrl);
       }
     };
   }, [uploadedUrl]);
