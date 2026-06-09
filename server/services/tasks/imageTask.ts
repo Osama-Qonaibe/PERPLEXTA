@@ -464,6 +464,29 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
         const { width, height } = resolveImageDimensions(imageSettings.aspectRatio || '1:1');
 
+        const protocolConfig = vaultConfig?.protocol_config || {};
+        const omitDimensions = protocolConfig.omit_dimensions ?? true;
+        const omitResponseFormat = protocolConfig.omit_response_format ?? true;
+
+        const requestBody: any = {
+          model: modelToUse,
+          prompt: finalPrompt,
+          n: 1,
+          size: `${width}x${height}`
+        };
+
+        if (!omitDimensions) {
+          requestBody.width = width;
+          requestBody.height = height;
+        }
+        if (!omitResponseFormat) {
+          requestBody.response_format = protocolConfig.response_format || 'url';
+        }
+
+        if (protocolConfig.extra_body && typeof protocolConfig.extra_body === 'object') {
+          Object.assign(requestBody, protocolConfig.extra_body);
+        }
+
         const res = await withTimeout(
           (signal) => fetch(finalEndpoint, {
             method: 'POST',
@@ -471,15 +494,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
               'Authorization': `Bearer ${apiKey}`, 
               'Content-Type': 'application/json' 
             },
-            body: JSON.stringify({
-              model: modelToUse,
-              prompt: finalPrompt,
-              width,
-              height,
-              n: 1,
-              response_format: 'url',
-              size: `${width}x${height}`
-            }),
+            body: JSON.stringify(requestBody),
             signal
           }),
           IMG_TIMEOUT_MS,
