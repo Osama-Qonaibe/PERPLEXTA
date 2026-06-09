@@ -41,6 +41,19 @@ router.get("/profile", authenticateToken, async (req: any, res) => {
 
 router.get("/me", authenticateToken, async (req: any, res) => {
    try {
+     if (req.query.skip_profile === '1') {
+       const { pool, ledgerPool } = await import('../db/index.js');
+       if (!pool) throw new Error('Database initializing');
+       const walletRes = await (ledgerPool || pool).query(
+         'SELECT balance, points FROM wallets WHERE user_id = $1',
+         [req.user.id]
+       );
+       const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
+       return res.json({
+         balance: Number(wallet.balance || 0),
+         points: parseInt(wallet.points || 0)
+       });
+     }
      const profile = await getUserProfile(req.user.id);
      if (!profile) return res.status(404).json({ error: 'User not found' });
      res.json(profile);

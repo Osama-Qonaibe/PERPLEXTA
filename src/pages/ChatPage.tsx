@@ -1,5 +1,5 @@
 import { MemoryNotification } from '../components/MemoryNotification';
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useVideoPlayback } from '../hooks/useVideoPlayback';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -1187,7 +1187,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   // Sandbox Mode state & execution variables
   const [sandboxMode, setSandboxMode] = useState(false);
-  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   
   
   
@@ -1217,7 +1216,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const getHighlightedCode = () => {
+  const highlightedCode = useMemo(() => {
     const language = lang.toLowerCase();
     let prismLang = language;
     if (language === 'js') prismLang = 'javascript';
@@ -1240,7 +1239,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
-  };
+  }, [editableCode, lang]);
 
   const isMediaUrl = (codeContent.startsWith('http') || codeContent.startsWith('/')) && (codeContent.includes('.png') || codeContent.includes('.jpg') || codeContent.includes('.mp4') || codeContent.includes('.gif') || codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg'));
 
@@ -1791,7 +1790,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                         direction: 'ltr', 
                         textAlign: 'left' 
                       }} 
-                      dangerouslySetInnerHTML={{ __html: getHighlightedCode() }} 
+                      dangerouslySetInnerHTML={{ __html: highlightedCode }} 
                     />
                   </pre>
                 </div>
@@ -2080,7 +2079,10 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
   );
 };
 
-const renderChildrenWithCitations = (node: React.ReactNode, msg: any): React.ReactNode => {
+const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0): React.ReactNode => {
+  if (depth > 8) {
+    return node;
+  }
   if (typeof node === 'string') {
     const parts = node.split(/(\[\d+\])/g);
     return parts.map((part, i) => {
@@ -2105,7 +2107,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any): React.Rea
   if (Array.isArray(node)) {
     return node.map((child, index) => (
       <React.Fragment key={index}>
-        {renderChildrenWithCitations(child, msg)}
+        {renderChildrenWithCitations(child, msg, depth + 1)}
       </React.Fragment>
     ));
   }
@@ -2118,7 +2120,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any): React.Rea
       if (elementProps && 'children' in elementProps) {
         return React.cloneElement(node, {
           ...elementProps,
-          children: renderChildrenWithCitations(elementProps.children, msg)
+          children: renderChildrenWithCitations(elementProps.children, msg, depth + 1)
         } as any);
       }
     }
@@ -2245,6 +2247,36 @@ const getPlatformBrand = (urlStr: string) => {
   return null;
 };
 
+// Shared memory-resident global cache for SEO link metadata to prevent redundant server API invasions
+const linkMetadataCache = new Map<string, Promise<any> | any>();
+
+const fetchLinkMetadata = (url: string): Promise<any> => {
+  if (linkMetadataCache.has(url)) {
+    const cached = linkMetadataCache.get(url);
+    if (cached instanceof Promise) {
+      return cached;
+    }
+    return Promise.resolve(cached);
+  }
+  
+  const promise = fetch(`/api/system/link-metadata?url=${encodeURIComponent(url)}`)
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to fetch link metadata');
+      return res.json();
+    })
+    .then(data => {
+      linkMetadataCache.set(url, data);
+      return data;
+    })
+    .catch(err => {
+      linkMetadataCache.delete(url); // Don't cache failures indefinitely so we can retry
+      throw err;
+    });
+    
+  linkMetadataCache.set(url, promise);
+  return promise;
+};
+
 // Compact highly professional single citation row using dynamic cached SEO metadata scraper
 const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string }) => {
   const [meta, setMeta] = useState<any>(null);
@@ -2259,8 +2291,7 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, i
     let active = true;
     if (!cleanUrl) return;
 
-    fetch(`/api/system/link-metadata?url=${encodeURIComponent(cleanUrl)}`)
-      .then(res => res.json())
+    fetchLinkMetadata(cleanUrl)
       .then(data => {
         if (active) {
           setMeta(data);
@@ -2360,8 +2391,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
   useEffect(() => {
     if (!cleanUrl) return;
     let active = true;
-    fetch(`/api/system/link-metadata?url=${encodeURIComponent(cleanUrl)}`)
-      .then(res => res.json())
+    fetchLinkMetadata(cleanUrl)
       .then(data => {
         if (active) setMeta(data);
       })
@@ -2444,8 +2474,7 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
   useEffect(() => {
     if (!cleanUrl) return;
     let active = true;
-    fetch(`/api/system/link-metadata?url=${encodeURIComponent(cleanUrl)}`)
-      .then(res => res.json())
+    fetchLinkMetadata(cleanUrl)
       .then(data => {
         if (active) setMeta(data);
       })
@@ -2726,12 +2755,14 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   // Synthesize audio sequence locally on mount
   useEffect(() => {
     let active = true;
+    let createdUrl: string | null = null;
     const renderTrack = async () => {
       setStatus('rendering');
       try {
         const trackBlob = await generateProceduralTrack(styleName, vocalName, durationVal);
         if (!active) return;
         const url = URL.createObjectURL(trackBlob);
+        createdUrl = url;
         setAudioUrl(url);
         setDuration(durationVal);
         setStatus('ready');
@@ -2744,8 +2775,8 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
     return () => {
       active = false;
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
       }
     };
   }, [styleName, vocalName, durationVal]);
@@ -3924,7 +3955,7 @@ export const ChatPage: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatId, setChatId] = useState<string | null>(routeChatId || null);
+  const [chatId, setChatId] = useState<string | null>(routeChatId && routeChatId !== 'new' ? routeChatId : null);
 
   const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active');
   const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active'));
@@ -4774,12 +4805,13 @@ export const ChatPage: React.FC = () => {
   }, [chatId]);
 
   useEffect(() => {
-    if (routeChatId) {
+    if (routeChatId && routeChatId !== 'new') {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
       // This prevents the navigate() from triggering a fetch that wipes the streaming content.
       const belongsToCurrentSession =
         chatIdRef.current?.toString() === routeChatId.toString() ||
-        chatId?.toString() === routeChatId.toString();
+        chatId?.toString() === routeChatId.toString() ||
+        (!chatIdRef.current && (isGenerating || isGeneratingRef.current));
 
       if ((isGenerating || isGeneratingRef.current) && belongsToCurrentSession) {
         return;
@@ -4794,7 +4826,7 @@ export const ChatPage: React.FC = () => {
       setChatId(null);
       localStorage.removeItem('last_chat_id');
     }
-  }, [routeChatId, token, isAuthReady]);
+  }, [routeChatId, token, isAuthReady, isGenerating]);
 
   useEffect(() => {
     if (chatId) {
