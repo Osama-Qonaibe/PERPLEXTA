@@ -183,7 +183,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
       const verifyPoolWithTimeout = async (p: any, name: string) => {
         let timeoutId: any;
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error(`${name} connection timeout (2.5s)`)), 2500);
+          timeoutId = setTimeout(() => reject(new Error(`${name} connection timeout (12s)`)), 12000);
         });
         
         try {
@@ -192,7 +192,7 @@ export async function initializePerplextaPools(coreUrl: string, ledgerUrl: strin
           return true;
         } catch (err: any) {
           clearTimeout(timeoutId);
-          console.warn(`[DB] ⚠️ Warmup/Connectivity check for ${name} failed: ${err.message}`);
+          console.log(`[DB] Warmup/Connectivity check for ${name} yielded: ${err.message}. Dynamic fallback will be applied.`);
           return false;
         }
       };

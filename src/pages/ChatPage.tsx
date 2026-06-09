@@ -1194,6 +1194,14 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     setEditableCode(codeContent);
   }, [codeContent]);
@@ -1355,11 +1363,11 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             </html>
           `;
         }
-        setIframeSrc(fullHtml);
+        if (mountedRef.current) setIframeSrc(fullHtml);
       } catch (err: any) {
-        setExecutionError(err?.message || String(err));
+        if (mountedRef.current) setExecutionError(err?.message || String(err));
       } finally {
-        setIsRunning(false);
+        if (mountedRef.current) setIsRunning(false);
       }
     } else {
       setIsRunning(true);
@@ -1425,17 +1433,19 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           text: `[SYSTEM] Process completed in ${duration}ms.`,
           time: getTimestamp()
         });
-        setOutputLogs(logsList);
+        if (mountedRef.current) setOutputLogs(logsList);
       } catch (err: any) {
-        setExecutionError(err?.message || String(err));
-        logsList.push({
-          type: 'error',
-          text: `[CRASH] ${err?.message || String(err)}`,
-          time: getTimestamp()
-        });
-        setOutputLogs(logsList);
+        if (mountedRef.current) {
+          setExecutionError(err?.message || String(err));
+          logsList.push({
+            type: 'error',
+            text: `[CRASH] ${err?.message || String(err)}`,
+            time: getTimestamp()
+          });
+          setOutputLogs(logsList);
+        }
       } finally {
-        setIsRunning(false);
+        if (mountedRef.current) setIsRunning(false);
       }
     }
   };
@@ -2112,7 +2122,8 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
   if (React.isValidElement(node)) {
     // PREVENT FREEZING: Only clone native primitive HTML tags like strong, em, span, etc.
     // Never clone layout containers, interactive controls, custom React components, or media.
-    if (typeof node.type === 'string' && !['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button'].includes(node.type)) {
+    if (typeof node.type !== 'string') return node;
+    if (!['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button'].includes(node.type)) {
       const elementProps = node.props as any;
       if (elementProps && 'children' in elementProps) {
         return React.cloneElement(node, {
@@ -2254,6 +2265,13 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
       return cached;
     }
     return Promise.resolve(cached);
+  }
+  
+  if (linkMetadataCache.size > 150) {
+    const firstKey = linkMetadataCache.keys().next().value;
+    if (firstKey !== undefined) {
+      linkMetadataCache.delete(firstKey);
+    }
   }
   
   const promise = fetch(`/api/system/link-metadata?url=${encodeURIComponent(url)}`)
@@ -2778,7 +2796,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     };
   }, [styleName, vocalName, durationVal]);
 
-  // Cleanup Web Audio Context on unmount
+  // Cleanup Web Audio Context and Animation Frames on unmount
   useEffect(() => {
     return () => {
       if (uploadedUrl) {
@@ -2786,6 +2804,9 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       }
       if (audioCtxRef.current) {
         audioCtxRef.current.close().catch(() => {});
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [uploadedUrl]);
