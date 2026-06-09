@@ -2251,9 +2251,14 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
   }
   
   if (linkMetadataCache.size > 150) {
-    const firstKey = linkMetadataCache.keys().next().value;
-    if (firstKey !== undefined) {
-      linkMetadataCache.delete(firstKey);
+    const keys = linkMetadataCache.keys();
+    for (let i = 0; i < 20; i++) {
+      const key = keys.next().value;
+      if (key !== undefined) {
+        linkMetadataCache.delete(key);
+      } else {
+        break;
+      }
     }
   }
   
