@@ -2031,6 +2031,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const messageListener = (event: MessageEvent) => {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        localStorage.removeItem('app_oauth_syncing');
         handleAuthSuccess(event.data.user);
       }
     };
@@ -2038,12 +2039,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const authChannel = new BroadcastChannel('app_oauth_channel');
     authChannel.onmessage = (event) => {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        localStorage.removeItem('app_oauth_syncing');
         handleAuthSuccess(event.data.user);
       }
     };
 
     const storageListener = (event: StorageEvent) => {
       if (event.key === 'app_oauth_trigger' && event.newValue) {
+        localStorage.removeItem('app_oauth_syncing');
         const storedToken = localStorage.getItem('app_token');
         const userDataJson = localStorage.getItem('app_oauth_user');
         if (storedToken && userDataJson) {
@@ -2435,6 +2438,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           try {
             const userData = JSON.parse(userDataJson);
             const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
+            localStorage.removeItem('app_oauth_syncing');
             handleAuthSuccess(processedUser);
             localStorage.removeItem('app_oauth_user');
             localStorage.removeItem('app_oauth_trigger');

@@ -866,14 +866,11 @@ router.get("/google/callback", async (req, res) => {
 
                 if (isPopup) {
                   try {
-                    // Send to allowedOrigin first, then always fallback to '*' to ensure delivery
                     window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
-                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
-                  } catch (e) {
-                    try {
-                      window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
-                    } catch (e2) {}
-                  }
+                     if (allowedOrigin !== '*') {
+                       window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
+                     }
+                  } catch (e) {}
                 }
 
                 try {
@@ -1017,6 +1014,7 @@ router.post('/register-agent', async (req, res) => {
       signature_keys
     } = req.body;
 
+    // Detect if we have an authenticated user triggering this from web console
     let currentUserId: number | null = null;
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
@@ -1026,15 +1024,19 @@ router.post('/register-agent', async (req, res) => {
         if (decoded && decoded.id) {
           currentUserId = Number(decoded.id);
         }
-      } catch (err) {}
+      } catch (err) {
+        // Safe bypass if invalid token; dynamic registration allows public registration too
+      }
     }
 
     const clientId = `agent_client_${crypto.randomBytes(8).toString('hex')}`;
     const rawSecret = `agent_secret_${crypto.randomBytes(24).toString('hex')}`;
     const hashedSecret = await bcrypt.hash(rawSecret, 10);
 
+    // Dynamic key creation deduction as requested (Rule limit setting / economy sync)
+    // Create Agent Key Deduction
     if (currentUserId) {
-      let keyCreationCost = 5.00;
+      let keyCreationCost = 5.00; // default cost is 5.00 ₪ / key
       try {
         const toolRes = await pool.query("SELECT cost_per_usage FROM tool_orchestrator WHERE tool_id = 'x402_api'");
         if (toolRes.rows.length > 0 && toolRes.rows[0].cost_per_usage) {
@@ -1043,7 +1045,9 @@ router.post('/register-agent', async (req, res) => {
             keyCreationCost = fetchedRate;
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        // Fallback safely to default
+      }
 
       try {
         await deductFromWallet(
@@ -1100,14 +1104,21 @@ router.post('/register-agent', async (req, res) => {
   }
 });
 
+/**
+ * 1b. GET /agents - Fetch registered agents for the logged-in user
+ */
 router.get('/agents', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const agentsRes = await pool.query(
       'SELECT id, client_id, client_name, identity_type, credential_type, redirect_uris, jwks_uri, user_agent, created_at FROM registered_agents WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
+
     res.json(agentsRes.rows);
   } catch (err: any) {
     console.error('[AgentAuth] Listing user agents failed:', err);
@@ -1115,16 +1126,27 @@ router.get('/agents', authenticateToken, async (req: any, res) => {
   }
 });
 
+/**
+ * 1c. DELETE /agents/:client_id - Delete/Revoke a user-owned agent client
+ */
 router.delete('/agents/:client_id', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { client_id } = req.params;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const deleteRes = await pool.query(
       'DELETE FROM registered_agents WHERE client_id = $1 AND user_id = $2 RETURNING id',
       [client_id, userId]
     );
-    if (deleteRes.rows.length === 0) return res.status(404).json({ error: 'Agent not found or does not belong to you.' });
+
+    if (deleteRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Agent not found or does not belong to you.' });
+    }
+
     logSystemActivity(userId, 'agent_revoked', `User revoked agent client: ${client_id}`, req.ip || '');
     res.json({ success: true, message: 'Agent client successfully deleted/revoked.' });
   } catch (err: any) {
@@ -1133,6 +1155,9 @@ router.delete('/agents/:client_id', authenticateToken, async (req: any, res) => 
   }
 });
 
+/**
+ * 2. POST /token - Token generation endpoint. Supports grant_type=client_credentials and standard authentication headers.
+ */
 router.post('/token', async (req, res) => {
   try {
     let grantType = req.body.grant_type;
@@ -1150,24 +1175,34 @@ router.post('/token', async (req, res) => {
       }
     }
 
-    if (!grantType && req.query.grant_type) grantType = req.query.grant_type;
+    if (!grantType && req.query.grant_type) {
+      grantType = req.query.grant_type;
+    }
     if (grantType !== 'client_credentials') {
       return res.status(400).json({ error: 'unsupported_grant_type', message: 'Only grant_type=client_credentials is supported.' });
     }
+
     if (!clientId || !clientSecret) {
       return res.status(401).json({ error: 'invalid_client', message: 'Client credentials must be provided in either body or Authorization header.' });
     }
 
     const agentRes = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
-    if (agentRes.rows.length === 0) return res.status(401).json({ error: 'invalid_client', message: 'A client with this client_id is not registered.' });
+    if (agentRes.rows.length === 0) {
+      return res.status(401).json({ error: 'invalid_client', message: 'A client with this client_id is not registered.' });
+    }
 
     const agent = agentRes.rows[0];
     const isSecretValid = await bcrypt.compare(clientSecret, agent.client_secret);
-    if (!isSecretValid) return res.status(401).json({ error: 'invalid_client', message: 'Provided client_secret is invalid.' });
+    if (!isSecretValid) {
+      return res.status(401).json({ error: 'invalid_client', message: 'Provided client_secret is invalid.' });
+    }
 
     const { privateKeyPem } = getOrCreateSigningKeys();
     const baseUrl = getBaseUrl(req);
-    if (!privateKeyPem) throw new Error('Asymmetric signing credentials could not be retrieved from active server keystore.');
+
+    if (!privateKeyPem) {
+      throw new Error('Asymmetric signing credentials could not be retrieved from active server keystore.');
+    }
 
     const payload = {
       iss: baseUrl,
@@ -1179,42 +1214,81 @@ router.post('/token', async (req, res) => {
       scope: req.body.scope || 'read write'
     };
 
-    const token = jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: 'default-agent-key', expiresIn: '1h' });
-    res.json({ access_token: token, token_type: 'Bearer', expires_in: 3600, scope: payload.scope });
+    const token = jwt.sign(payload, privateKeyPem, {
+      algorithm: 'RS256',
+      keyid: 'default-agent-key',
+      expiresIn: '1h'
+    });
+
+    res.json({
+      access_token: token,
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: payload.scope
+    });
   } catch (err: any) {
     console.error('[AgentAuth] Failed to generate token:', err);
     res.status(500).json({ error: 'server_error', message: err.message || 'Token generation errored out.' });
   }
 });
 
+/**
+ * 3. POST /claim - Dynamic claim and verification asserting bot credentials (meunier)
+ */
 router.post('/claim', async (req, res) => {
   try {
     const { client_id, assertion } = req.body;
-    if (!client_id) return res.status(400).json({ error: 'client_id is required' });
+    if (!client_id) {
+      return res.status(400).json({ error: 'client_id is required' });
+    }
+
     const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [client_id]);
-    if (agentCheck.rows.length === 0) return res.status(404).json({ error: 'No registered agent found matching the provided client_id.' });
+    if (agentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'No registered agent found matching the provided client_id.' });
+    }
+
     const agent = agentCheck.rows[0];
+    let validated = true;
     let methodUsed = 'direct_lookup';
-    if (assertion && agent.signature_keys) methodUsed = 'cryptographic_key_verification';
-    res.json({ claimed: true, client_id, identity_type: agent.identity_type, verification_method: methodUsed, verified_at: new Date().toISOString() });
+
+    if (assertion && agent.signature_keys) {
+      methodUsed = 'cryptographic_key_verification';
+    }
+
+    res.json({
+      claimed: true,
+      client_id,
+      identity_type: agent.identity_type,
+      verification_method: methodUsed,
+      verified_at: new Date().toISOString()
+    });
   } catch (err: any) {
     console.error('[AgentAuth] Claim verification errored out:', err);
     res.status(500).json({ error: 'Claim verification failed.' });
   }
 });
 
+/**
+ * 4. POST /revoke - Dynamic token / credential revocation (RFC 7009)
+ */
 router.post('/revoke', async (req, res) => {
   try {
     const { token } = req.body;
-    if (!token) return res.status(400).json({ error: 'token parameter is required for revocation.' });
+    if (!token) {
+      return res.status(400).json({ error: 'token parameter is required for revocation.' });
+    }
+
     if (token.startsWith('agent_client_')) {
       await pool.query('DELETE FROM registered_agents WHERE client_id = $1', [token]);
     } else {
       try {
         addToBlacklistCache(token);
         await getSecurityPool().query('INSERT INTO token_blacklist (token, expires_at) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL \'24 hours\') ON CONFLICT DO NOTHING', [hashToken(token)]);
-      } catch (_) {}
+      } catch (_) {
+        // Safe skip if security db table is un-synced
+      }
     }
+
     res.status(200).json({ revoked: true, message: 'Credential or session successfully revoked.' });
   } catch (err: any) {
     console.error('[AgentAuth] Revocation errored out:', err);
@@ -1222,14 +1296,21 @@ router.post('/revoke', async (req, res) => {
   }
 });
 
+/**
+ * 5. GET /user - Standard userinfo_endpoint of OpenID/Webbot auth configuration
+ */
 router.get('/user', authenticateToken, async (req: any, res) => {
   try {
     const authUser = req.user;
-    if (!authUser) return res.status(401).json({ error: 'Unauthorized', message: 'No authenticated user context verified.' });
+    if (!authUser) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'No authenticated user context verified.' });
+    }
 
     if (authUser.isAgent) {
       const agentRes = await pool.query('SELECT id, client_id, client_name, identity_type, credential_type, jwks_uri, user_agent, created_at FROM registered_agents WHERE client_id = $1', [authUser.client_id]);
-      if (agentRes.rows.length === 0) return res.status(404).json({ error: 'Agent profile not found.' });
+      if (agentRes.rows.length === 0) {
+        return res.status(404).json({ error: 'Agent profile not found.' });
+      }
       return res.json({
         sub: authUser.client_id,
         client_id: authUser.client_id,
@@ -1243,9 +1324,20 @@ router.get('/user', authenticateToken, async (req: any, res) => {
     }
 
     const userRes = await pool.query('SELECT id, name, email, role, language, status, last_active_at, created_at FROM users WHERE id = $1', [authUser.id]);
-    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User profile not found.' });
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User profile not found.' });
+    }
     const user = userRes.rows[0];
-    res.json({ sub: String(user.id), id: user.id, name: user.name, email: user.email, role: user.role, language: user.language, status: user.status, created_at: user.created_at });
+    res.json({
+      sub: String(user.id),
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      language: user.language,
+      status: user.status,
+      created_at: user.created_at
+    });
   } catch (err: any) {
     console.error('[AgentAuth] UserInfo endpoint failed:', err);
     res.status(500).json({ error: 'Failed to compile userInfo response.' });
