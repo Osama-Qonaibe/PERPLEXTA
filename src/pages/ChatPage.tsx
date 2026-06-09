@@ -6373,40 +6373,28 @@ export const ChatPage: React.FC = () => {
           {(!user || !token) ? (
             <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
               <div className="w-full text-[var(--text-primary)] my-auto">
-                <AnimatePresence>
-                  {messages.length === 0 && (
+                <AnimatePresence mode="wait">
+                  {messages.length === 0 ? (
                     <motion.div
-                      key="welcome-motive-wrapper-guest"
-                      initial={{ opacity: 0, y: 6 }}
+                      key="welcome-and-slider-wrapper-guest"
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ 
                         opacity: 0, 
-                        y: -12,
-                        transition: { duration: 0.2 } 
+                        y: -20,
+                        transition: { duration: 0.25, ease: "easeInOut" } 
                       }}
-                      className="overflow-hidden w-full flex justify-center"
+                      className="w-full flex flex-col items-center gap-6"
                     >
                       <TypewriterMotive isVisible={true} />
-                    </motion.div>
-                  )}
-
-                  {renderInputArea()}
-
-                  {messages.length === 0 && (
-                    <motion.div
-                      key="welcome-slider-wrapper"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ 
-                        opacity: 0, 
-                        y: 12,
-                        transition: { duration: 0.2 } 
-                      }}
-                    >
                       <ToolsGallerySlider />
                     </motion.div>
-                  )}
+                  ) : null}
                 </AnimatePresence>
+
+                <div className="w-full mt-6">
+                  {renderInputArea()}
+                </div>
               </div>
               
               {/* Visual Copyright Footer for Visitors in Arabic & English */}
