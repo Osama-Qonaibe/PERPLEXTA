@@ -3,17 +3,18 @@ import { createNotification } from './notifications.js';
 
 export async function checkUserQuota(userId: number, toolId: string) {
   try {
-    if (!pool) return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' }; // FAIL-CLOSED
+    if (!pool) return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
 
     const subRes = await pool.query(`
-      SELECT s.status, u.role
+      SELECT s.status, s.current_period_end, u.role
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
       WHERE u.id = $1
     `, [userId]);
 
     const userRole = subRes.rows[0]?.role;
-    const isSubActive = subRes.rows.length > 0 && subRes.rows[0].status === 'active';
+    const row = subRes.rows[0];
+    const isSubActive = row?.status === 'active' && row?.current_period_end && new Date(row.current_period_end) > new Date();
 
     if (userRole !== 'admin' && !isSubActive) {
       return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
@@ -28,7 +29,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
           u.role,
           p.limits
         FROM users u
-        LEFT JOIN subscriptions s ON u.id = s.user_id
+        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' AND s.current_period_end > NOW()
         LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
       ),
@@ -59,7 +60,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
     
     const finalLimits = limits || {};
     if (Object.keys(finalLimits).length === 0) {
-      // If they are active but have no limits defined yet, allow access as a fallback
       return { allowed: true, currentDaily, currentMonthly };
     }
     
@@ -94,7 +94,6 @@ export async function checkUserQuota(userId: number, toolId: string) {
 
     return { allowed: true, currentDaily, currentMonthly };
   } catch (error) {
-    // FAIL-CLOSED: Secure resource boundary protection
     console.error('[Quota] Check failed:', error);
     return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
   }
@@ -108,22 +107,22 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
   currentDaily?: number;
   currentMonthly?: number;
 }> {
-  if (!pool) return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' }; // FAIL-CLOSED
+  if (!pool) return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
   
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Resolve user profile and subscription state
     const subRes = await client.query(`
-      SELECT s.status, u.role
+      SELECT s.status, s.current_period_end, u.role
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
       WHERE u.id = $1
     `, [userId]);
 
     const userRole = subRes.rows[0]?.role;
-    const isSubActive = subRes.rows.length > 0 && subRes.rows[0].status === 'active';
+    const subRow = subRes.rows[0];
+    const isSubActive = subRow?.status === 'active' && subRow?.current_period_end && new Date(subRow.current_period_end) > new Date();
 
     if (userRole !== 'admin' && !isSubActive) {
       await client.query('ROLLBACK');
@@ -135,14 +134,12 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
       return { allowed: true };
     }
 
-    // 2. Insert row atomically if non-existent to prepare for locks
     await client.query(`
       INSERT INTO user_usage (user_id, tool_id, usage_count, usage_date)
       VALUES ($1, $2, 0, CURRENT_DATE)
       ON CONFLICT (user_id, tool_id, usage_date) DO NOTHING
     `, [userId, toolId]);
 
-    // 3. Lock user_usage records for current user+tool to secure transaction sequences (Race protection)
     await client.query(`
       SELECT usage_count 
       FROM user_usage 
@@ -157,7 +154,7 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
           u.role,
           p.limits
         FROM users u
-        LEFT JOIN subscriptions s ON u.id = s.user_id
+        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' AND s.current_period_end > NOW()
         LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
       ),
@@ -190,7 +187,6 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
 
     const finalLimits = limits || {};
     if (Object.keys(finalLimits).length === 0) {
-      // If billing active with undefined limit boundaries, default allow as fallback
       await client.query(`
         UPDATE user_usage 
         SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
@@ -239,7 +235,6 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
       }
     }
 
-    // Success: Perform the pessimistic increment and commit
     await client.query(`
       UPDATE user_usage 
       SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
@@ -248,7 +243,6 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
 
     await client.query('COMMIT');
 
-    // Trigger quota warning check asynchronously to protect user response times
     checkAndTriggerQuotaWarnings(userId, toolId, currentDaily + 1, currentMonthly + 1, finalLimits).catch(err => {
       console.error('[Quota Warning Engine] Non-blocking warning flow failed:', err);
     });
@@ -290,10 +284,6 @@ export async function incrementUserUsage(userId: number, toolId: string) {
   }
 }
 
-// ==========================================
-// QUOTA LIMIT APPROACH REVENUE-DRIVEN WARNING ENGINE
-// ==========================================
-
 function getToolFriendlyName(toolId: string, lang: 'en' | 'ar'): string {
   const mapping: Record<string, { en: string; ar: string }> = {
     'chat': { en: 'Strategic Assistant', ar: 'المساعد الاستراتيجي' },
@@ -313,7 +303,6 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
   const pct = (usage / limit) * 100;
   if (pct < 50) return;
 
-  // Determine threshold
   let threshold = 0;
   if (pct >= 80) {
     threshold = 80;
@@ -325,7 +314,6 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
 
   const warningType = `quota_warning_${toolId}_${period}_${threshold}`;
 
-  // Check if already notified for this user, warning type during the daily or monthly window
   const querySql = `
     SELECT 1 FROM notifications
     WHERE user_id = $1 
@@ -334,10 +322,7 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
     LIMIT 1
   `;
   const checkRes = await pool.query(querySql, [userId, warningType, period]);
-  if (checkRes.rows.length > 0) {
-    // Already notified today or this month for this threshold
-    return;
-  }
+  if (checkRes.rows.length > 0) return;
 
   const toolNameEn = getToolFriendlyName(toolId, 'en');
   const toolNameAr = getToolFriendlyName(toolId, 'ar');
@@ -354,13 +339,11 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
   if (threshold === 50) {
     titleEn = `Quota Status Alert: ${pctString} Consumed`;
     titleAr = `تنبيه استهلاك الحدود: تم استخدام ${pctString}`;
-    
     messageEn = `Premium Optimization: You have consumed ${pctString} of your ${periodStrEn} active quota limit for "${toolNameEn}". Keep your intelligence momentum at full power! Invite elite colleagues using your personalized referral code to credit your digital wallet instantly, or explore our flexible high-capacity premium tiers today!`;
     messageAr = `تنبيه تحسين الأداء: لقد استهلكت ${pctString} من حدك ${periodStrAr} المتاح لأداة "${toolNameAr}". حافظ على استمرارية زخم تحليلاتك الذكية بكامل قوتها! شارك كود الإحالة المخصص لك مع زملائك المتميزين لكسب أرصدة فورية في محفظتك الرقمية، أو تصفح باقاتنا المرنة ذات السعات العالية المتاحة الآن!`;
   } else {
     titleEn = `Urgent Quota Limit Notice: ${pctString} Expended`;
     titleAr = `تنبيه هام ومستعجل: تم استهلاك ${pctString} من الحدود`;
-
     messageEn = `Action Advised: You are rapidly approaching full capacity with ${pctString} of your ${periodStrEn} limit spent for "${toolNameEn}". Secure your strategic tasks against interruptions: elevate your workflow by upgrading your tier with a 1-click upgrade, or seamlessly recharge your wallet instantly via the rewards section to utilize point-based fallbacks!`;
     messageAr = `إجراء موصى به: أنت تقترب بسرعة من السعة الكاملة بنسبة استهلاك بلغت ${pctString} من حدك ${periodStrAr} لأداة "${toolNameAr}". حافظ على أمن أعمالك الاستراتيجية من الانقطاع: قم بترقية حسابك بضغطة واحدة، أو أعد شحن محفظتك الرقمية فوراً وبسهولة من قسم المكافآت للاستفادة من نظام الدفع الفوري لكل عملية!`;
   }
@@ -382,7 +365,6 @@ async function checkAndTriggerQuotaWarnings(userId: number, toolId: string, curr
     const toolLimit = finalLimits[toolId];
     if (!toolLimit || toolLimit === 'unlimited') return;
 
-    // We check both daily and monthly limits
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
     let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
 

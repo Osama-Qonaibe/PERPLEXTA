@@ -66,7 +66,7 @@ export async function getSubscriptionStatus(userId: string) {
     SELECT s.*, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.limits, p.color as plan_color
     FROM subscriptions s
     JOIN plans p ON s.plan_id = p.id
-    WHERE s.user_id = $1
+    WHERE s.user_id = $1 AND s.status = 'active' AND s.current_period_end > NOW()
   `, [userId]);
   return result.rows[0] || null;
 }
