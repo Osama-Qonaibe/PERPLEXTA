@@ -1477,6 +1477,21 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`UPDATE system_settings SET image_prompt_pref_threshold = 150 WHERE image_prompt_pref_threshold IS NULL`);
     });
 
+    await runVersioned('v48_marketplace_reviews_and_ratings', 'Creating marketplace reviews and ratings table', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS marketplace_reviews (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          item_id INTEGER NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          comment TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_marketplace_reviews_user_item ON marketplace_reviews(user_id, item_id);`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
