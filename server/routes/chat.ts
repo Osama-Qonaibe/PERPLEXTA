@@ -18,31 +18,33 @@ import { VideoResourceProvider } from '../services/videoResourceProvider.js';
 
 const router = express.Router();
 
+const checkActiveSubscription = async (userId: number): Promise<boolean> => {
+  const subRes = await pool.query(`
+    SELECT s.status, s.current_period_end, u.role
+    FROM users u
+    LEFT JOIN subscriptions s ON u.id = s.user_id
+    WHERE u.id = $1
+  `, [userId]);
+  const row = subRes.rows[0];
+  if (!row) return false;
+  if (row.role === 'admin') return true;
+  return row.status === 'active' && row.current_period_end && new Date(row.current_period_end) > new Date();
+};
+
 router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    const subRes = await pool.query(`
-      SELECT s.status, u.role 
-      FROM users u 
-      LEFT JOIN subscriptions s ON u.id = s.user_id 
-      WHERE u.id = $1
-    `, [req.user.id]);
-    
-    const role = subRes.rows[0]?.role;
-    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    const hasActiveSub = await checkActiveSubscription(req.user.id);
     if (!hasActiveSub) {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to create a chat.' });
     }
-
     const { title, message, tool } = req.body;
     const chat = await createChat(req.user.id, title);
-    
     if (message) {
       await addChatMessage(chat.id, 'user', message, tool);
       generateChatTitle(chat.id, message).catch(err => {
         console.error('[ChatRoute] Background title generation fail on chat create:', err);
       });
     }
-    
     res.json(chat);
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;
@@ -62,24 +64,14 @@ router.get("/", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    const subRes = await pool.query(`
-      SELECT s.status, u.role 
-      FROM users u 
-      LEFT JOIN subscriptions s ON u.id = s.user_id 
-      WHERE u.id = $1
-    `, [req.user.id]);
-    
-    const role = subRes.rows[0]?.role;
-    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    const hasActiveSub = await checkActiveSubscription(req.user.id);
     if (!hasActiveSub) {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to send messages.' });
     }
-
     const { role: msgRole, content, tool } = req.body;
     const chatId = req.params.id;
     await addChatMessage(chatId, msgRole, content, tool);
     res.json({ success: true });
-
     const count = await getMessageCount(chatId);
     if (count === 1 && msgRole === 'user') {
       generateChatTitle(chatId, content);
@@ -160,15 +152,7 @@ router.patch("/:id", authenticateToken, async (req: any, res) => {
 
 router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) => {
   try {
-    const subRes = await pool.query(`
-      SELECT s.status, u.role 
-      FROM users u 
-      LEFT JOIN subscriptions s ON u.id = s.user_id 
-      WHERE u.id = $1
-    `, [req.user.id]);
-    
-    const role = subRes.rows[0]?.role;
-    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    const hasActiveSub = await checkActiveSubscription(req.user.id);
     if (!hasActiveSub) {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to fork a chat.' });
     }
@@ -217,19 +201,12 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
           thinking_steps, citations, follow_ups, generation_time, tool, is_pinned
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
-          newChat.id,
-          msg.role,
-          msg.content,
-          msg.tool_id,
-          msg.model,
-          msg.tokens_used,
-          msg.feedback,
+          newChat.id, msg.role, msg.content, msg.tool_id, msg.model,
+          msg.tokens_used, msg.feedback,
           JSON.stringify(msg.thinking_steps || []),
           JSON.stringify(msg.citations || []),
           JSON.stringify(msg.follow_ups || []),
-          msg.generation_time,
-          msg.tool,
-          msg.is_pinned
+          msg.generation_time, msg.tool, msg.is_pinned
         ]
       );
     }
@@ -245,15 +222,7 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
   let userMessageId = 0;
   let assistantMessageId = 0;
   try {
-    const subRes = await pool.query(`
-      SELECT s.status, u.role 
-      FROM users u 
-      LEFT JOIN subscriptions s ON u.id = s.user_id 
-      WHERE u.id = $1
-    `, [req.user.id]);
-    
-    const role = subRes.rows[0]?.role;
-    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    const hasActiveSub = await checkActiveSubscription(req.user.id);
     if (!hasActiveSub) {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to sync messages.' });
     }
@@ -263,25 +232,21 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
       return res.status(400).json({ error: 'chatId and content are required' });
     }
 
-    // 1. Add the user's message to the database with a captured ID so we can clean up on failure
     const userMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [chatId, 'user', content, toolId || 'chat', toolId || 'chat']
     );
     userMessageId = userMsgResult.rows[0].id;
 
-    // 2. Insert blank assistant message
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool, tool_id, model) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
       [chatId, 'assistant', '', toolId || 'chat', toolId || 'chat', modelId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 
-    // 3. Import dependencies and execute AI logic
     const { executeTaskLogic } = await import('../services/orchestrator.js');
     const { io } = await import('../config/socket.js');
 
-    // Notify that assistant is typing/thinking
     if (io) {
       io.to(`user_${req.user.id}`).emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta' });
     }
@@ -312,7 +277,6 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
       [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
     );
 
-    // If it was a video tool message, cleanly associate it in the database
     if (toolId === 'video' && result.result && assistantMessageId) {
       try {
         await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result);
@@ -337,7 +301,6 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
       io.to(`user_${req.user.id}`).emit('chat_updated');
     }
 
-    // Broadcast updated stats to active admins in real-time
     const { broadcastAdminStats } = await import('../services/admin.js');
     broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on sync message:', err));
 
@@ -345,7 +308,6 @@ router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, re
   } catch (error: any) {
     console.error('[SyncMessage Error]:', error);
     
-    // Cleanup polluted empty or failed messages from DB to avoid front-running abuse
     if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
       await pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup assistant empty message failed:', e));
     }

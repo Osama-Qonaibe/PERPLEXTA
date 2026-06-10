@@ -2,7 +2,7 @@ import express from 'express';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { callAIProvider, getProviderKey, getProviderUrlKey, invalidateVaultCache } from './ai.js';
-import { checkUserQuota, checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
+import { checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
@@ -27,7 +27,7 @@ export const isSocialGreeting = (text: string): boolean => {
     'hi', 'hello', 'hey', 'how are you', 'thanks', 'thank you', 'good morning', 'good evening', 'test', 'مستعد'
   ];
   const cleaned = text.trim().toLowerCase();
-  if (cleaned.length < 5) return true; // Very short prompts are conversational/simple
+  if (cleaned.length < 5) return true;
   return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 25);
 };
 
@@ -145,9 +145,8 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (!pool) throw new Error('System still initializing. Please wait.');
 
-  const [routeResult, quotaCheck, chatRes, userRes, vaultCheck, memoryRes, settingsRes] = await Promise.all([
+  const [routeResult, chatRes, userRes, vaultCheck, memoryRes, settingsRes] = await Promise.all([
     pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
-    checkAndIncrementQuota(userId, toolIdStr),
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
     pool.query('SELECT language FROM users WHERE id = $1', [userId]),
     pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
@@ -166,33 +165,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const route = routeResult.rows[0];
   const memoryLimit = (settingsRes as any)?.rows?.[0]?.memory_limit_per_user || 48;
 
-  let history: { role: string; content: string }[] = [];
-  if (chatIdNum > 0) {
-    try {
-      const countRes = await pool.query(
-        "SELECT count(*) FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != ''",
-        [chatIdNum]
-      );
-      const totalMessages = parseInt(countRes.rows[0].count);
-      const historyLimit = getDynamicHistoryLimit(totalMessages, route?.max_history_depth);
-
-      const historyRes = await pool.query(
-        "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT $2",
-        [chatIdNum, historyLimit]
-      );
-      const rawHistory = [...historyRes.rows].reverse();
-      if (rawHistory.length > 0 && rawHistory[rawHistory.length - 1].role === 'user') {
-        rawHistory.pop();
-      }
-      history = rawHistory.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
-      }));
-    } catch (err) {
-      console.error('[Orchestrator] Failed to fetch chat history:', err);
-    }
-  }
-
   if (parseInt(vaultCheck.rows[0].count) === 0) {
     throw new Error(JSON.stringify({
       error: "The intelligence core is currently undergoing a scheduled synchronization. Operations will resume momentarily.",
@@ -209,6 +181,8 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       type: "SYSTEM_INACTIVE"
     }));
   }
+
+  const quotaCheck = await checkAndIncrementQuota(userId, toolIdStr);
 
   let walletCharged: boolean | { charged: 'points' | 'balance'; amount: number } = false;
 
@@ -251,6 +225,33 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           referral: true
         }
       }));
+    }
+  }
+
+  let history: { role: string; content: string }[] = [];
+  if (chatIdNum > 0) {
+    try {
+      const countRes = await pool.query(
+        "SELECT count(*) FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != ''",
+        [chatIdNum]
+      );
+      const totalMessages = parseInt(countRes.rows[0].count);
+      const historyLimit = getDynamicHistoryLimit(totalMessages, route?.max_history_depth);
+
+      const historyRes = await pool.query(
+        "SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT $2",
+        [chatIdNum, historyLimit]
+      );
+      const rawHistory = [...historyRes.rows].reverse();
+      if (rawHistory.length > 0 && rawHistory[rawHistory.length - 1].role === 'user') {
+        rawHistory.pop();
+      }
+      history = rawHistory.map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      }));
+    } catch (err) {
+      console.error('[Orchestrator] Failed to fetch chat history:', err);
     }
   }
 
@@ -305,12 +306,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   if (toolIdStr === 'image') {
     const handler = await OrchestratorRegistry.getHandler('image');
     return await handler({
-      reqBody,
-      userId,
-      route,
-      quotaCheck,
-      walletCharged,
-      finalPrompt
+      reqBody, userId, route, quotaCheck, walletCharged, finalPrompt
     });
   }
 
@@ -384,7 +380,6 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       );
 
       const data = await safeParseResponse(res, 'STT API error');
-
       const transcription = data.text || '';
 
       const estimatedCost = (route.cost_per_usage || 0) / 1000;
@@ -412,12 +407,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   if (toolIdStr === 'video') {
     const handler = await OrchestratorRegistry.getHandler('video');
     return await handler({
-      reqBody,
-      userId,
-      route,
-      quotaCheck,
-      walletCharged,
-      finalPrompt
+      reqBody, userId, route, quotaCheck, walletCharged, finalPrompt
     });
   }
 
@@ -437,13 +427,11 @@ Extract long-term user facts from this conversation. For each worthy fact, outpu
 <extracted_memory category="general|professional|preference|identity">fact here</extracted_memory>
 Discuss memory state and provide a dense synthesis. Do not show raw XML in your reply text.
 يجب إخراج وسم <extracted_memory> لكل حقيقة مستخلصة لضمان حفظها في قاعدة البيانات.`.trim();
-
     refinedSystemPromptSegment = memoryInstructions;
   } else if (isChatOnly) {
     const conversationalMemoryInstructions = `[MEMORY ACQUISITION]
 If you detect any durable user fact, preference, or rule, silently output: <extracted_memory category="general|professional|preference|identity">fact</extracted_memory>
 Do not mention this in your reply.`.trim();
-
     refinedSystemPromptSegment = conversationalMemoryInstructions;
   } else if (toolIdStr === 'canvas') {
     const audioSet = audio_settings || {};
@@ -451,10 +439,8 @@ Do not mention this in your reply.`.trim();
     let durationCount = Number(audioSet.duration || 30);
     let vocalTypeLabel = audioSet.vocalType || 'Instrumental';
 
-    // SERVER-SIDE EXTRACTION: Extract exact parameters from prompt to prevent any hallucination
     const promptLower = (prompt || '').toLowerCase();
     
-    // Determine style / mood
     if (promptLower.includes('ملحمية') || promptLower.includes('أوركسترا') || promptLower.includes('epic') || promptLower.includes('orchestra') || promptLower.includes('orchestral')) {
       moodLabel = 'Epic';
     } else if (promptLower.includes('طرب') || promptLower.includes('شرقي') || promptLower.includes('مقام') || promptLower.includes('tarab') || promptLower.includes('maqam')) {
@@ -471,7 +457,6 @@ Do not mention this in your reply.`.trim();
       moodLabel = 'Pop';
     }
 
-    // Determine Vocal Type
     if (promptLower.includes('كورال') || promptLower.includes('choir') || promptLower.includes('choral')) {
       vocalTypeLabel = 'Choir';
     } else if (promptLower.includes('أنثوي') || promptLower.includes('سوبرانو') || promptLower.includes('female') || promptLower.includes('soprano')) {
@@ -484,9 +469,7 @@ Do not mention this in your reply.`.trim();
       vocalTypeLabel = 'Instrumental';
     }
 
-    // Determine Duration
     const normalizedPrompt = normalizeArabicNumerals(promptLower);
-
     const durationMatch = normalizedPrompt.match(/(?:المدة|duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/) || 
                           normalizedPrompt.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/);
     if (durationMatch) {
@@ -536,7 +519,6 @@ CRITICAL CITATION RULES:
 3. Every sentence making an informative or data assertion that is supported by the search results must end with its corresponding index marker (e.g. "...as reported recently [1].").
 4. Under no circumstances should you generate fake placeholder brackets. Only cite matching indices from the actual live web context.
 Always leverage the provided LIVE WEB CONTEXT to respond truthfully.`.trim();
-
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
   }
 
@@ -547,7 +529,6 @@ Your primary task is to perform an elite, multi-layered audit of the user's prov
 - If files/PDFs are uploaded, perform thorough context inspection, compliance auditing, structure checks, and hidden content analyses.
 - Present clean, structured expert conclusions with clear headers, security disclosures, and precise textual proof.
 - Direct your output structure into scientific, executive levels. Avoid general or superficial summaries. Ensure peak professional vocabulary in Tajawal style.`.trim();
-
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${analysisInstructions}` : analysisInstructions;
   }
 
@@ -570,7 +551,6 @@ ${refinedSystemPromptSegment}`.trim();
     { provider: route.fallback_3_provider, model: route.fallback_3_model }
   ].filter(m => m.provider && m.model);
 
-  // Pre-load all candidate provider settings from database in one consolidated query
   const vaultMap = new Map<string, any>();
   if (modelsToTry.length > 0) {
     try {
@@ -593,7 +573,6 @@ ${refinedSystemPromptSegment}`.trim();
   for (const target of modelsToTry) {
     try {
       const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
-
       const cachedRow = vaultMap.get(providerId);
 
       let isProviderActive = true;
@@ -728,9 +707,7 @@ ${refinedSystemPromptSegment}`.trim();
           const provLower = target.provider.toLowerCase();
           await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
           invalidateVaultCache(provLower);
-
           console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
-
           await logSecurityAlert(
             userId,
             'PROVIDER_AUTO_DEACTIVATED',
@@ -815,7 +792,6 @@ Produce the minimum number of consolidated facts needed to preserve all key info
 
     if (consolidatedFacts.length > 0) {
       await pool.query('DELETE FROM chat_memories WHERE id = ANY($1)', [oldestIds]);
-
       const insertPromises = consolidatedFacts.map(item =>
         pool.query(
           "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'consolidated')",
@@ -823,7 +799,6 @@ Produce the minimum number of consolidated facts needed to preserve all key info
         )
       );
       await Promise.all(insertPromises);
-
       console.log(`[Memory Consolidation] User ${userId}: Replaced ${oldestIds.length} facts with ${consolidatedFacts.length} consolidated facts.`);
     }
   } catch (consolidationErr: any) {

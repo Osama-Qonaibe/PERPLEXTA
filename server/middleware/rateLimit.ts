@@ -1,7 +1,5 @@
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
-// Global key generator to resolve clients by Bearer Token if present, or fall back to IP.
-// This prevents cross-user rate limit starvation in shared proxy environments.
 const resolveClientKey = (req: any): string => {
   if (req.user?.id) {
     return `user_${req.user.id}`;
@@ -10,11 +8,9 @@ const resolveClientKey = (req: any): string => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
     if (token && token !== 'null' && token !== 'undefined') {
-      // Use the last 20 characters of the token as a highly unique key safely
       return `auth_${token.slice(-20)}`;
     }
   }
-  // Try checking query token or session cookies as secondary identifiers
   if (req.cookies && req.cookies.token) {
     return `cookie_${req.cookies.token.slice(-20)}`;
   }
@@ -23,7 +19,7 @@ const resolveClientKey = (req: any): string => {
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3000, // Elevated to 3000 to prevent false positive lockouts under concurrent loading
+  max: 500,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -32,7 +28,7 @@ export const globalLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200, // Boosted to handle high-volume sign-ins/re-auth actions safely
+  max: 30,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,7 +37,7 @@ export const authLimiter = rateLimit({
 
 export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60, // Elevated to provide smooth uninterrupted conversational usage
+  max: 20,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -50,7 +46,7 @@ export const chatLimiter = rateLimit({
 
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: 5,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -59,7 +55,7 @@ export const forgotPasswordLimiter = rateLimit({
 
 export const tokenLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 1000, // Considerably boosted to easily handle heavy parallel page loads and component retries
+  max: 60,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -68,7 +64,7 @@ export const tokenLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5000,
+  max: 300,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -92,4 +88,3 @@ export const forumLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many post or comment requests. Please wait a minute.' }
 });
-
