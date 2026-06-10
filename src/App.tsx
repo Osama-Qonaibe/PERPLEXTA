@@ -151,9 +151,14 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <PWACinematicModal />
       <UpgradePromptModal />
 
-      <AnimatePresence mode="wait">
-        {!isAuthReady && <CenteredLoader key="global-loader" />}
-      </AnimatePresence>
+      {!isAuthReady && (() => {
+        const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
+        return loaderType !== 'refresh' ? (
+          <AnimatePresence mode="wait">
+            <CenteredLoader key="global-loader" />
+          </AnimatePresence>
+        ) : null;
+      })()}
 
       <motion.div
         animate={{ opacity: isAuthReady ? 1 : 0 }}
@@ -194,19 +199,7 @@ export default function App() {
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="radar" element={<AdminDashboard />} />
-                <Route path="keys" element={<AdminDashboard />} />
-                <Route path="databases" element={<AdminDashboard />} />
-                <Route path="orchestrator" element={<AdminDashboard />} />
-                <Route path="finance" element={<AdminDashboard />} />
-                <Route path="plans" element={<AdminDashboard />} />
-                <Route path="marketplace" element={<AdminDashboard />} />
-                <Route path="users" element={<AdminDashboard />} />
-                <Route path="memories" element={<AdminDashboard />} />
-                <Route path="emails" element={<AdminDashboard />} />
-                <Route path="broadcast" element={<AdminDashboard />} />
-                <Route path="settings" element={<AdminDashboard />} />
-                <Route path="audit" element={<AdminDashboard />} />
+                <Route path="*" element={<AdminDashboard />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
