@@ -76,7 +76,6 @@ const ImageGenerationPlaceholder = ({
   // Map aspect ratio to explicit responsive, compact Tailwind aspect classes and max-widths to prevent scrolling
   const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
 
-  // Dynamic status updates based on real elapsed seconds to keep the process engaging
   const getAIStatusLabel = () => {
     if (liveElapsed < 4) {
       return dir === 'rtl' 
@@ -100,24 +99,19 @@ const ImageGenerationPlaceholder = ({
   return (
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-4 w-full my-4 items-start">
-        {/* Target Image Frame */}
         <div 
           className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
         >
-          {/* Holographic Cyber Grid Background Overlay */}
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
 
-          {/* Pulse Emerald/Red Radial Glow at center */}
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${isFailed ? 'bg-rose-500/5' : 'bg-emerald-500/5'} blur-[50px] pointer-events-none`} />
 
-          {/* Dynamic Scanning Laser effect */}
           <motion.div 
             animate={{ y: ['0%', '100%', '0%'] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             className={`absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-${isFailed ? 'rose' : 'emerald'}-500/45 to-transparent shadow-[0_0_12px_rgba(${isFailed ? '244,63,94' : '16,185,129'},0.6)] pointer-events-none`}
           />
 
-          {/* Neural Network Abstract Canvas or SVG animation in background */}
           <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none overflow-hidden select-none">
             <svg className={`w-full h-full max-w-sm max-h-xs ${isFailed ? 'text-rose-500/10' : 'text-emerald-500/20'}`} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
               <motion.circle cx="100" cy="100" r="4" className={isFailed ? 'fill-rose-400/40' : 'fill-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.6)]'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2 }} />
@@ -611,11 +605,9 @@ const VideoGenerationPlaceholder = ({
   return (
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-3.5 w-full my-4 items-start">
-        {/* Target Video Frame */}
         <div 
           className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
         >
-          {/* Holographic Cyber Grid Background Overlay */}
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
 
           {/* Top bar indicators */}
@@ -761,7 +753,7 @@ const UnifiedVideoMessageWidget = ({
 
   if (status === 'ready' && resolvedUrl) {
     return (
-      <ShareableVideoOutput 
+      <VideoPlaybackComponent 
         src={resolvedUrl} 
         dir={dir} 
         alt="Generated Video"
@@ -1096,7 +1088,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
   );
 };
 
-const ShareableVideoOutput = VideoPlaybackComponent;
+// Removed ShareableVideoOutput alias to use VideoPlaybackComponent directly
 
 const BlockquoteWithActions = ({ children, dir }: any) => {
   const [copied, setCopied] = useState(false);
@@ -1735,7 +1727,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                     ) : (
                       <div className="p-4 bg-[#08080a] text-gray-300 font-mono text-xs select-text">
                         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 border-b border-gray-800/50 pb-1.5 select-none flex items-center justify-between">
-                          <span>{dir === 'rtl' ? '콘솔 مخرجات كونسول الآلة' : 'CONSOLE RUNTIME WORKSPACE'}</span>
+                          <span>{dir === 'rtl' ? 'مخرجات كونسول الآلة' : 'CONSOLE RUNTIME WORKSPACE'}</span>
                           <button
                             onClick={() => setOutputLogs([])}
                             className="text-gray-600 hover:text-emerald-500 transition-theme"
@@ -2294,15 +2286,8 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
   }
   
   if (linkMetadataCache.size > 150) {
-    const keys = linkMetadataCache.keys();
-    for (let i = 0; i < 20; i++) {
-      const key = keys.next().value;
-      if (key !== undefined) {
-        linkMetadataCache.delete(key);
-      } else {
-        break;
-      }
-    }
+    const oldKeys = Array.from(linkMetadataCache.keys()).slice(0, 20);
+    oldKeys.forEach(key => linkMetadataCache.delete(key));
   }
   
   const promise = fetch(`/api/system/link-metadata?url=${encodeURIComponent(url)}`)
@@ -7020,7 +7005,7 @@ export const ChatPage: React.FC = () => {
                                     );
                                     if (isVideo) {
                                       return (
-                                        <ShareableVideoOutput 
+                                        <VideoPlaybackComponent 
                                           src={href} 
                                           dir={dir} 
                                           alt="Generated Video"
@@ -7061,7 +7046,7 @@ export const ChatPage: React.FC = () => {
                                 />
                               ),
                             video: ({ node, ...props }) => (
-                              <ShareableVideoOutput 
+                              <VideoPlaybackComponent 
                                 src={props.src} 
                                 dir={dir} 
                                 alt={(props as any).alt || "Generated Video"}
