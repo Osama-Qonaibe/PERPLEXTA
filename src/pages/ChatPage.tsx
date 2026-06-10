@@ -1175,7 +1175,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     setEditableCode(codeContent);
   }, [codeContent]);
 
-  // Instantly deactivate Sandbox Mode if rendering or resizing on mobile to ensure optimal performance and lightweight render
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -1356,7 +1355,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       }
 
       const iframe = document.createElement('iframe');
-      // Set sandbox permissions to script-only, denying allow-same-origin to create null-origin boundary
       iframe.setAttribute('sandbox', 'allow-scripts');
       iframe.style.display = 'none';
 
@@ -2138,8 +2136,6 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
   }
   
   if (React.isValidElement(node)) {
-    // PREVENT FREEZING: Only clone native primitive HTML tags like strong, em, span, etc.
-    // Never clone layout containers, interactive controls, custom React components, or media.
     if (typeof node.type !== 'string') return node;
     if (!['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'colgroup', 'col'].includes(node.type)) {
       const elementProps = node.props as any;
@@ -2273,7 +2269,6 @@ const getPlatformBrand = (urlStr: string) => {
   return null;
 };
 
-// Shared memory-resident global cache for SEO link metadata to prevent redundant server API invasions
 const linkMetadataCache = new Map<string, Promise<any> | any>();
 
 const fetchLinkMetadata = (url: string): Promise<any> => {
