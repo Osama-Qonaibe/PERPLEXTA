@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { DEFAULT_ITEMS } from '../pages/MarketplacePage';
 
 interface MarketplaceItem {
   id: number;
@@ -320,9 +319,8 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       const discountPct = parseFloat(editDiscount) || 0;
       const finalPrice = parsedPrice - (parsedPrice * (discountPct / 100));
 
-      const isVirtual = editingItem.id < 0;
-      const url = isVirtual ? '/api/marketplace/items' : `/api/marketplace/items/${editingItem.id}`;
-      const method = isVirtual ? 'POST' : 'PATCH';
+      const url = `/api/marketplace/items/${editingItem.id}`;
+      const method = 'PATCH';
 
       const res = await fetch(url, {
         method,
@@ -377,10 +375,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       });
       if (res.ok) {
         const data = await res.json();
-        const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
-        const availableDefaults = DEFAULT_ITEMS.filter((di: any) => !deletedVirtuals.includes(di.id));
-        const combined = [...data, ...availableDefaults.filter((di: any) => !data.some((db: any) => db.title_en === di.title_en))];
-        setItems(combined);
+        setItems(data);
       }
     } catch (err) {
       console.error('Failed to fetch admin marketplace items:', err);
@@ -394,50 +389,6 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
   }, [token]);
 
   const handleUpdateStatus = async (id: number, newStatus: string) => {
-    if (id < 0) {
-      const itemToCreate = items.find(it => it.id === id);
-      if (!itemToCreate) return;
-      setActioningId(id);
-      try {
-        const res = await fetch('/api/marketplace/items', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title_ar: itemToCreate.title_ar,
-            title_en: itemToCreate.title_en,
-            description_ar: itemToCreate.description_ar,
-            description_en: itemToCreate.description_en,
-            price: itemToCreate.price,
-            category_en: itemToCreate.category_en,
-            category_ar: itemToCreate.category_ar,
-            image_url: itemToCreate.image_url,
-            contact_link: null,
-            status: newStatus,
-            download_url: itemToCreate.download_url || null,
-            preview_url: itemToCreate.preview_url || null,
-            video_url: itemToCreate.video_url || null,
-            features: itemToCreate.features || null,
-            technologies: itemToCreate.technologies || null,
-            referral_percent: itemToCreate.referral_percent || 20,
-            highlight_tag: itemToCreate.highlight_tag || null,
-            license_type: itemToCreate.license_type || 'mit'
-          })
-        });
-        if (res.ok) {
-          toast.success(language === 'ar' ? 'تم مزامنة حالة المنتج مع قاعدة البيانات' : 'Product status synchronized with database');
-          fetchAllItems();
-        }
-      } catch (err) {
-        console.error('Failed to sync virtual item status:', err);
-      } finally {
-        setActioningId(null);
-      }
-      return;
-    }
-
     setActioningId(id);
     try {
       const res = await fetch(`/api/marketplace/admin/items/${id}/status`, {
@@ -462,15 +413,6 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
   const handleDeleteItem = async (id: number) => {
     if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا المعروض نهائياً؟' : 'Are you sure you want to permanently delete this listing?')) return;
-    
-    if (id < 0) {
-      const deletedVirtuals = JSON.parse(localStorage.getItem('perplexta_deleted_virtual_items') || '[]');
-      deletedVirtuals.push(id);
-      localStorage.setItem('perplexta_deleted_virtual_items', JSON.stringify(deletedVirtuals));
-      setItems(prev => prev.filter(item => item.id !== id));
-      toast.success(language === 'ar' ? 'تم حذف المعروض بنجاح' : 'Listing deleted successfully');
-      return;
-    }
 
     setActioningId(id);
     try {
