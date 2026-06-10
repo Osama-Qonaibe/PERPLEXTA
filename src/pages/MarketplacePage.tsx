@@ -675,7 +675,7 @@ export const MarketplacePage: React.FC = () => {
     const limits = user.subscription?.limits || {};
     const maxListings = limits['marketplace_listings'];
     
-    let limitVal = 0;
+    let limitVal = 3; // Baseline 3 free listings for registered accounts
     if (typeof maxListings === 'object' && maxListings !== null) {
       const rawVal = maxListings.monthly !== undefined ? maxListings.monthly : maxListings.daily;
       if (rawVal === 'unlimited') return true;
@@ -728,7 +728,7 @@ export const MarketplacePage: React.FC = () => {
     setItemHighlightTag('');
     setItemLicenseType('mit');
     setItemContact('');
-    setItemImage(null);
+    setItemImages([]);
     setItemLinkPreview('');
     setItemLinkVideo('');
     setItemLinkDownload('');
@@ -753,7 +753,12 @@ export const MarketplacePage: React.FC = () => {
     setItemCategory(foundCat ? foundCat.id : 'saas');
     
     setItemContact(prod.contact_link || '');
-    setItemImage(prod.image_url || null);
+    
+    const urls = prod.image_url 
+      ? prod.image_url.split(',').map((url: string) => url.trim()).filter(Boolean) 
+      : [];
+    setItemImages(urls);
+    
     setItemLinkPreview(prod.preview_url || '');
     setItemLinkVideo(prod.video_url || '');
     setItemLinkDownload(prod.download_url || '');
@@ -780,7 +785,7 @@ export const MarketplacePage: React.FC = () => {
   const [itemReferralPercent, setItemReferralPercent] = useState('20');
   const [itemCategory, setItemCategory] = useState('saas');
   const [itemContact, setItemContact] = useState('');
-  const [itemImage, setItemImage] = useState<string | null>(null);
+  const [itemImages, setItemImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -918,9 +923,8 @@ export const MarketplacePage: React.FC = () => {
     if (item.highlight_tag) {
       list.push(item.highlight_tag);
     }
-    if (item.views > 15 && !list.includes('trending')) list.push('trending');
-    if (item.id % 3 === 0 && !list.includes('featured')) list.push('featured');
-    if (item.id % 5 === 0 && !list.includes('exclusive')) list.push('exclusive');
+    if (item.views > 80 && !list.includes('trending')) list.push('trending');
+    if (Number(item.price) > 300 && !list.includes('exclusive')) list.push('exclusive');
     if (list.length === 0) list.push('new');
     return Array.from(new Set(list));
   };
@@ -985,8 +989,8 @@ export const MarketplacePage: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploadingImage(true);
     setUploadError('');
@@ -1006,7 +1010,8 @@ export const MarketplacePage: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.file) {
-            setItemImage(`/uploads/${data.file.file_url}`);
+            const newUrl = `/uploads/${data.file.file_url}`;
+            setItemImages(prev => [...prev, newUrl]);
             setUploadError('');
           } else {
             setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
@@ -1025,58 +1030,63 @@ export const MarketplacePage: React.FC = () => {
       } catch (err) {
         console.error(err);
         setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
-      } finally {
-        setUploadingImage(false);
       }
     };
 
-    const reader = new FileReader();
-    reader.onerror = () => {
-      uploadRawFile(file);
-    };
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onerror = () => {
-        uploadRawFile(file);
-      };
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 1080;
-          canvas.height = 1080;
-          const ctx = canvas.getContext('2d');
+    const filesArray = Array.from(files);
+    Promise.all(filesArray.map(f => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onerror = () => {
+          uploadRawFile(f).finally(() => resolve());
+        };
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onerror = () => {
+            uploadRawFile(f).finally(() => resolve());
+          };
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = 1080;
+              canvas.height = 1080;
+              const ctx = canvas.getContext('2d');
 
-          if (ctx) {
-            const srcWidth = img.width;
-            const srcHeight = img.height;
-            const minSide = Math.min(srcWidth, srcHeight);
+              if (ctx) {
+                const srcWidth = img.width;
+                const srcHeight = img.height;
+                const minSide = Math.min(srcWidth, srcHeight);
 
-            const sx = (srcWidth - minSide) / 2;
-            const sy = (srcHeight - minSide) / 2;
+                const sx = (srcWidth - minSide) / 2;
+                const sy = (srcHeight - minSide) / 2;
 
-            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
+                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
 
-            canvas.toBlob(async (blob) => {
-              if (!blob) {
-                uploadRawFile(file);
-                return;
+                canvas.toBlob(async (blob) => {
+                  if (!blob) {
+                    uploadRawFile(f).finally(() => resolve());
+                    return;
+                  }
+
+                  const baseName = f.name.replace(/\.[^/.]+$/, "");
+                  const croppedFile = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+                  uploadRawFile(croppedFile).finally(() => resolve());
+                }, 'image/jpeg', 0.9);
+              } else {
+                uploadRawFile(f).finally(() => resolve());
               }
-
-              const baseName = file.name.replace(/\.[^/.]+$/, "");
-              const croppedFile = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
-              uploadRawFile(croppedFile);
-            }, 'image/jpeg', 0.9);
-          } else {
-            uploadRawFile(file);
-          }
-        } catch (err) {
-          console.error('[Crop Fail]', err);
-          uploadRawFile(file);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+            } catch (err) {
+              console.error('[Crop Fail]', err);
+              uploadRawFile(f).finally(() => resolve());
+            }
+          };
+          img.src = event.target?.result as string;
+        };
+        reader.readAsDataURL(f);
+      });
+    })).finally(() => {
+      setUploadingImage(false);
+    });
   };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
@@ -1108,7 +1118,7 @@ export const MarketplacePage: React.FC = () => {
           price: finalPrice,
           category_en: catObj.nEn,
           category_ar: catObj.nAr,
-          image_url: itemImage || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
+          image_url: itemImages.length > 0 ? itemImages.join(',') : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
           contact_link: null,
           download_url: itemLinkDownload,
           preview_url: itemLinkPreview,
@@ -1138,7 +1148,7 @@ export const MarketplacePage: React.FC = () => {
           setItemHighlightTag('');
           setItemLicenseType('mit');
           setItemContact('');
-          setItemImage(null);
+          setItemImages([]);
           setItemLinkPreview('');
           setItemLinkVideo('');
           setItemLinkDownload('');
@@ -1159,10 +1169,6 @@ export const MarketplacePage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleManualImageUrl = (url: string) => {
-    setItemImage(url);
   };
 
   const toggleParent = (pId: string) => {
@@ -1197,11 +1203,18 @@ export const MarketplacePage: React.FC = () => {
     const catAr = item.category_ar;
     const catEn = item.category_en;
 
+    const tech = item.technologies || '';
+    const highlight = item.highlight_tag || '';
+    const features = item.features || '';
+
     const matchesSearch =
       title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
       catAr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      catEn.toLowerCase().includes(searchQuery.toLowerCase());
+      catEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tech.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      highlight.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      features.toLowerCase().includes(searchQuery.toLowerCase());
 
     let matchesCategory = true;
     if (selectedCategory !== 'all') {
@@ -1241,18 +1254,29 @@ export const MarketplacePage: React.FC = () => {
   });
 
   const getLicensePriceMultiplier = (license: string): number => {
-    return 1;
+    switch (license) {
+      case 'extended': return 2.5;
+      case 'gpl': return 1.5;
+      case 'plr': return 5.0;
+      default: return 1.0;
+    }
   };
 
   const getPreviewAssets = (product: MarketplaceItem) => {
     const assets: { type: 'image' | 'iframe' | 'pdf'; url: string; titleEn: string; titleAr: string }[] = [];
 
-    // Main Image
-    assets.push({
-      type: 'image',
-      url: product.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
-      titleEn: 'Main Product Presentation',
-      titleAr: 'المخطط التعريفي والواجهة للمنتج'
+    // Main & Gallery Images
+    const imageUrls = product.image_url 
+      ? product.image_url.split(',').map(url => url.trim()).filter(Boolean) 
+      : ['https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'];
+
+    imageUrls.forEach((url, index) => {
+      assets.push({
+        type: 'image',
+        url,
+        titleEn: index === 0 ? 'Main Product Presentation' : `Product Gallery Image ${index + 1}`,
+        titleAr: index === 0 ? 'المخطط التعريفي والواجهة للمنتج' : `صورة المنتج الإضافية ${index + 1}`
+      });
     });
 
     // Custom Preview URL from user
@@ -1938,7 +1962,7 @@ export const MarketplacePage: React.FC = () => {
                           {/* Bento Product Header Cover */}
                           <div className="h-40 relative overflow-hidden bg-black/45 shrink-0 select-none">
                             <img
-                              src={item.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
+                              src={item.image_url ? item.image_url.split(',')[0].trim() : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
                               alt={language === 'ar' ? item.title_ar : item.title_en}
                               referrerPolicy="no-referrer"
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -2239,7 +2263,7 @@ export const MarketplacePage: React.FC = () => {
                 className="relative h-56 md:h-64 object-cover overflow-hidden bg-black/60 sticky top-0 z-[101] shrink-0 group cursor-pointer"
               >
                 <img
-                  src={selectedProduct.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
+                  src={selectedProduct.image_url ? selectedProduct.image_url.split(',')[0].trim() : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   alt=""
                   referrerPolicy="no-referrer"
@@ -3291,41 +3315,62 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 1080x1080 Image Section */}
+                  {/* Gallery Multi-Image Upload Section */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                        {language === 'ar' ? 'غلاف المعرض (صورة العرض)' : 'Asset Image / Photo Cover URL'}
+                        {language === 'ar' ? 'معرض صور المنتج (رفع صور متعددة)' : 'Product Gallery Photos (Multiple uploads supported)'}
                       </label>
-                      <input
-                        type="text"
-                        value={itemImage || ''}
-                        onChange={(e) => handleManualImageUrl(e.target.value)}
-                        placeholder="https://images.unsplash.com/photo-..."
-                        className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs mb-1.5 ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
-                        }`}
-                      />
+                      
+                      {/* Grid of uploaded images */}
+                      {itemImages.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 p-2 rounded-lg border border-emerald-500/10 bg-emerald-500/[0.01] max-h-[140px] overflow-y-auto mb-1.5 animate-fade-in">
+                          {itemImages.map((img, idx) => (
+                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-gray-200/50 dark:border-white/10 group shadow-sm shrink-0">
+                              <img src={img} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                              <span className="absolute bottom-0.5 right-1 bg-black/60 text-white text-[7px] font-bold px-0.5 rounded leading-none">
+                                #{idx + 1}
+                              </span>
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setItemImages(prev => prev.filter((_, i) => i !== idx))}
+                                  className="w-5 h-5 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center transition-all cursor-pointer shadow"
+                                  title={language === 'ar' ? 'حذف الصورة' : 'Delete photo'}
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                      <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
+                      <label className={`flex flex-col items-center justify-center w-full h-[76px] border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
                         isThemeDark ? 'border-white/10 hover:border-emerald-500/30 hover:bg-white/5' : 'border-gray-200 hover:border-emerald-500/35 hover:bg-gray-50'
                       }`}>
-                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
                         
-                        {itemImage ? (
-                          <div className="absolute inset-0 w-full h-full object-cover">
-                            <img src={itemImage} className="w-full h-full object-cover rounded-lg" alt="" />
+                        {uploadingImage ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                            <p className="text-[7.5px] font-bold text-emerald-400">
+                              {language === 'ar' ? 'جاري رفع الصور...' : 'Uploading...'}
+                            </p>
                           </div>
-                        ) : uploadingImage ? (
-                          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <div className="text-center select-none text-gray-500">
-                            <Upload className="w-4 h-4 mx-auto mb-1 opacity-50" />
-                            <p className="text-[8px] font-bold">{t.dragAndDrop}</p>
+                            <Upload className="w-4 h-4 mx-auto mb-0.5 opacity-50 text-emerald-500" />
+                            <p className="text-[8px] font-bold">
+                              {language === 'ar' ? 'انقر لرفع صور المنتج' : 'Click to Upload Product Images'}
+                            </p>
+                            <p className="text-[7px] opacity-60">
+                              {language === 'ar' ? 'يدعم صور متعددة (1:1 تلقائي)' : 'Supports multiple files (auto 1:1)'}
+                            </p>
                           </div>
                         )}
                       </label>
-                      {uploadError && <p className="text-[8px] text-red-500">{uploadError}</p>}
+                      {uploadError && <p className="text-[8px] text-red-500 mt-1">{uploadError}</p>}
                     </div>
 
                     <div className="space-y-2">
