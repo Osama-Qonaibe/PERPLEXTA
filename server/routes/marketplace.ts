@@ -95,7 +95,10 @@ router.get('/items', async (req, res) => {
              m.price, m.category_en, m.category_ar, m.image_url, m.status, m.views, 
              m.contact_link, m.preview_url, m.video_url, m.features, m.technologies,
              m.referral_percent, m.highlight_tag, m.license_type, m.created_at, m.updated_at,
-             u.name as seller_name, u.avatar as seller_avatar, u.role as seller_role
+             u.name as seller_name, u.avatar as seller_avatar, u.role as seller_role,
+             (SELECT COUNT(*)::int FROM marketplace_purchases p WHERE p.item_id = m.id) as sales_count,
+             (SELECT COALESCE(ROUND(AVG(r.rating), 1)::float, 0.0) FROM marketplace_reviews r WHERE r.item_id = m.id) as average_rating,
+             (SELECT COUNT(*)::int FROM marketplace_reviews r WHERE r.item_id = m.id) as reviews_count
       FROM marketplace_items m
       JOIN users u ON m.user_id = u.id
       WHERE m.status = 'approved'
@@ -144,7 +147,10 @@ router.get('/items/:id', async (req, res) => {
              m.price, m.category_en, m.category_ar, m.image_url, m.status, m.views, 
              m.contact_link, m.preview_url, m.video_url, m.features, m.technologies,
              m.referral_percent, m.highlight_tag, m.license_type, m.created_at, m.updated_at,
-             u.name as seller_name, u.avatar as seller_avatar, u.role as seller_role
+             u.name as seller_name, u.avatar as seller_avatar, u.role as seller_role,
+             (SELECT COUNT(*)::int FROM marketplace_purchases p WHERE p.item_id = m.id) as sales_count,
+             (SELECT COALESCE(ROUND(AVG(r.rating), 1)::float, 0.0) FROM marketplace_reviews r WHERE r.item_id = m.id) as average_rating,
+             (SELECT COUNT(*)::int FROM marketplace_reviews r WHERE r.item_id = m.id) as reviews_count
       FROM marketplace_items m
       JOIN users u ON m.user_id = u.id
       WHERE m.id = $1
@@ -518,21 +524,7 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       if (sellerProceeds > 0) {
         const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()})`;
         await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
-
-        // Notify the seller/publisher
-        try {
-          const { createNotification } = await import('../services/notifications.js');
-          await createNotification(
-            Number(item.user_id),
-            'success',
-            'Your Product was Sold!',
-            'تم بيع منتجك بنجاح!',
-            `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
-            `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
-          );
-        } catch (nErr) {
-          console.warn('Failed to notify seller in /buy:', nErr);
-        }
+        await notifySellerOfSale(item, lic, finalPrice, commissionPaid, userId);
       }
     }
 
@@ -603,6 +595,58 @@ router.get('/affiliate/stats', authenticateToken, async (req: any, res) => {
     res.status(500).json({ error: 'Failed to retrieve referral statistics.' });
   }
 });
+
+// Unified helper function to notify a seller of a successful sale on the marketplace
+async function notifySellerOfSale(item: any, lic: string, finalPrice: number, commissionPaid: number, buyerId: number | string) {
+  if (item.user_id && Number(item.user_id) !== Number(buyerId)) {
+    const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
+    if (sellerProceeds > 0) {
+      // 1. Create native in-app notification
+      try {
+        const { createNotification } = await import('../services/notifications.js');
+        await createNotification(
+          Number(item.user_id),
+          'success',
+          'Your Product was Sold!',
+          'تم بيع منتجك بنجاح!',
+          `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
+          `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
+        );
+      } catch (nErr) {
+        console.warn('Failed to notify seller in notifySellerOfSale:', nErr);
+      }
+
+      // 2. Send beautiful sales email alert to the seller
+      try {
+        const sellerUserRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [item.user_id]);
+        if (sellerUserRes.rows.length > 0) {
+          const sellerUser = sellerUserRes.rows[0];
+          const { sendEmail } = await import('../services/email.js');
+          const subject = `🎉 Congratulations! Your Listed Asset Was Sold - Perplexta`;
+          const html = `
+            <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+              <h2 style="color: #10B981; border-bottom: 2px solid #10B981; padding-bottom: 10px;">Great News, ${sellerUser.name}!</h2>
+              <p>Your listed asset <strong>"${item.title_en}"</strong> has been purchased under the <strong>${lic.toUpperCase()}</strong> license.</p>
+              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Product:</strong> ${item.title_en}</p>
+                <p style="margin: 5px 0;"><strong>License Option:</strong> ${lic.toUpperCase()}</p>
+                <p style="margin: 5px 0;"><strong>Your Sale Proceeds:</strong> $${sellerProceeds}</p>
+              </div>
+              <p>The funds of <strong>$${sellerProceeds}</strong> have been credited directly to your secure platform wallet.</p>
+              <p>Keep listing premium assets of high compliance on the platform to earn more!</p>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #9ca3af; text-align: center;">This is an automated transaction notification from Perplexta Secure Server.</p>
+            </div>
+          `;
+          await sendEmail(sellerUser.email, subject, html);
+          console.log(`[Email Sent] Successfully notified seller of sale: ${sellerUser.email}`);
+        }
+      } catch (mailErr) {
+        console.error('Failed to send sales email notification to seller:', mailErr);
+      }
+    }
+  }
+}
 
 // Helper function to fulfill a marketplace purchase after successful payment
 export async function fulfillMarketplacePurchase(
@@ -681,21 +725,7 @@ export async function fulfillMarketplacePurchase(
     if (sellerProceeds > 0) {
       const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()}) (Stripe Checkout)`;
       await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
-
-      // Notify the seller/publisher
-      try {
-        const { createNotification } = await import('../services/notifications.js');
-        await createNotification(
-          Number(item.user_id),
-          'success',
-          'Your Product was Sold!',
-          'تم بيع منتجك بنجاح!',
-          `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
-          `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
-        );
-      } catch (nErr) {
-        console.warn('Failed to notify seller in fulfillMarketplacePurchase:', nErr);
-      }
+      await notifySellerOfSale(item, lic, pricePaid, commissionPaid, userId);
     }
   }
 
@@ -1129,5 +1159,285 @@ router.get('/verify-checkout-session', authenticateToken, async (req: any, res) 
     res.status(500).json({ error: error.message || 'Payment verification failed.' });
   }
 });
+
+// ------------------------------------
+// MARKETPLACE REVIEWS & RATINGS SYSTEM
+// ------------------------------------
+
+// Submit/upsert a review (1-5 stars & comment)
+router.post('/items/:id/reviews', authenticateToken, async (req: any, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const { rating, comment } = req.body;
+
+  const rNum = Number(rating);
+  if (isNaN(rNum) || rNum < 1 || rNum > 5 || !Number.isInteger(rNum)) {
+    return res.status(400).json({ error: 'Rating must be an integer between 1 and 5.' });
+  }
+
+  try {
+    // Check if item exists
+    const itemCheck = await pool.query('SELECT id FROM marketplace_items WHERE id = $1', [id]);
+    if (itemCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Marketplace item not found.' });
+    }
+
+    // Upsert review
+    const query = `
+      INSERT INTO marketplace_reviews (user_id, item_id, rating, comment, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, item_id) 
+      DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+    const result = await pool.query(query, [userId, id, rNum, comment || '']);
+    res.json({ success: true, review: result.rows[0] });
+  } catch (error: any) {
+    console.error('Failed to submit marketplace review:', error);
+    res.status(500).json({ error: 'Failed to submit review.' });
+  }
+});
+
+// Get reviews with user details and average rating stats
+router.get('/items/:id/reviews', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const reviewsRes = await pool.query(`
+      SELECT r.*, u.name as reviewer_name, u.avatar as reviewer_avatar,
+             EXISTS(SELECT 1 FROM marketplace_purchases p WHERE p.user_id = r.user_id AND p.item_id = r.item_id) as is_verified_buyer
+      FROM marketplace_reviews r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.item_id = $1
+      ORDER BY r.created_at DESC
+    `, [id]);
+
+    const statsRes = await pool.query(`
+      SELECT COUNT(*)::int as total_reviews,
+             COALESCE(ROUND(AVG(rating), 1)::float, 0.0) as average_rating
+      FROM marketplace_reviews
+      WHERE item_id = $1
+    `, [id]);
+
+    res.json({
+      reviews: reviewsRes.rows,
+      stats: statsRes.rows[0] || { total_reviews: 0, average_rating: 0.0 }
+    });
+  } catch (error: any) {
+    console.error('Failed to retrieve reviews:', error);
+    res.status(500).json({ error: 'Failed to retrieve reviews.' });
+  }
+});
+
+// ---------------------------------
+// SELLER DASHBOARD & ANALYTICS APIs
+// ---------------------------------
+
+// Retrieve seller public details & their active items
+router.get('/seller/:sellerId', async (req, res) => {
+  const { sellerId } = req.params;
+  try {
+    const sellerRes = await pool.query('SELECT id, name, avatar, role, created_at FROM users WHERE id = $1', [sellerId]);
+    if (sellerRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Seller profile not found.' });
+    }
+
+    const itemsRes = await pool.query(`
+      SELECT m.*, u.name as seller_name, u.avatar as seller_avatar,
+             (SELECT COUNT(*)::int FROM marketplace_purchases p WHERE p.item_id = m.id) as sales_count,
+             (SELECT COALESCE(ROUND(AVG(r.rating), 1)::float, 0.0) FROM marketplace_reviews r WHERE r.item_id = m.id) as average_rating,
+             (SELECT COUNT(*)::int FROM marketplace_reviews r WHERE r.item_id = m.id) as reviews_count
+      FROM marketplace_items m
+      JOIN users u ON m.user_id = u.id
+      WHERE m.user_id = $1 AND m.status = 'approved'
+      ORDER BY m.created_at DESC
+    `, [sellerId]);
+
+    // Aggregate rating for this seller based on all their reviews
+    const ratingRes = await pool.query(`
+      SELECT COALESCE(ROUND(AVG(r.rating), 1)::float, 0.0) as avg_rating,
+             COUNT(r.id)::int as total_reviews
+      FROM marketplace_reviews r
+      JOIN marketplace_items m ON r.item_id = m.id
+      WHERE m.user_id = $1
+    `, [sellerId]);
+
+    res.json({
+      seller: sellerRes.rows[0],
+      items: itemsRes.rows,
+      stats: ratingRes.rows[0]
+    });
+  } catch (error: any) {
+    console.error('Failed to fetch seller profile:', error);
+    res.status(500).json({ error: 'Failed to fetch seller profile.' });
+  }
+});
+
+// Retrieve seller's private sales history & analytics
+router.get('/seller-dashboard/stats', authenticateToken, async (req: any, res) => {
+  const sellerId = req.user.id;
+  try {
+    // 1. Total revenue & sales count
+    const salesStatRes = await pool.query(`
+      SELECT COUNT(*)::int as total_sales_count,
+             COALESCE(SUM(price_paid * 0.8), 0.0)::float as total_estimated_revenue
+      FROM marketplace_purchases p
+      JOIN marketplace_items m ON p.item_id = m.id
+      WHERE m.user_id = $1
+    `, [sellerId]);
+
+    // 2. Individual sales transactions
+    const salesRes = await pool.query(`
+      SELECT p.id as purchase_id, p.price_paid, p.license_type, p.created_at as sold_at,
+             m.title_en, m.title_ar, m.price as base_price,
+             u.name as buyer_name, u.avatar as buyer_avatar
+      FROM marketplace_purchases p
+      JOIN marketplace_items m ON p.item_id = m.id
+      JOIN users u ON p.user_id = u.id
+      WHERE m.user_id = $1
+      ORDER BY p.created_at DESC
+    `, [sellerId]);
+
+    res.json({
+      summary: salesStatRes.rows[0],
+      sales: salesRes.rows
+    });
+  } catch (error: any) {
+    console.error('Failed to retrieve seller sales dashboard:', error);
+    res.status(500).json({ error: 'Failed to retrieve sales history.' });
+  }
+});
+
+// --------------------------------------------
+// AUTOMATED SEEDING FOR 8 DEFAULT MARKETPLACE PRODUCTS
+// --------------------------------------------
+
+async function seedDefaultItems() {
+  try {
+    const adminRes = await pool.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+    let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+    if (!authorId) {
+      const userRes = await pool.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
+      if (userRes.rows.length > 0) {
+        authorId = userRes.rows[0].id;
+      }
+    }
+    if (!authorId) return;
+
+    const defaults = [
+      {
+        title_en: 'Apex SaaS Multi-Tenant ERP Suite',
+        title_ar: 'منظومة Apex لإدارة الموارد والمؤسسات SaaS',
+        description_en: 'A complete modular hyper-optimized enterprise SaaS ERP with automated billing, analytics dashboard, dynamic routing, and role-based access control.',
+        description_ar: 'نظام تخطيط موارد المؤسسات السحابي والأكثر مرونة وكفاءة، يدمج حسابات الفوترة والتحليلات البيانية والتحكم المتقدم بالصلاحيات للمنشآت الكبرى.',
+        price: 899.00,
+        category_en: 'SaaS Systems',
+        category_ar: 'أنظمة SaaS',
+        image_url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1080&h=1080&fit=crop',
+        highlight_tag: 'featured'
+      },
+      {
+        title_en: 'Sovereign Mobile Crypto Wallet App',
+        title_ar: 'تطبيق محفظة العملات الرقمية السيادي للجوال',
+        description_en: 'Highly secure cross-platform React Native crypto wallet supporting biometric auth, real-time price feeds, gas optimization, and wallet connect.',
+        description_ar: 'محفظة عملات مشفرة فائقة الأمان مبنية لتعمل على نظامي آندرويد وآي أو إس مع واجهات تفاعلية مذهلة، ومكاملة البصمة ومؤشرات الأسعار الفورية.',
+        price: 450.00,
+        category_en: 'Mobile Apps',
+        category_ar: 'تطبيقات الجوال',
+        image_url: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=1080&h=1080&fit=crop',
+        highlight_tag: 'trending'
+      },
+      {
+        title_en: 'Quantum Scalper High-Frequency Trading Bot',
+        title_ar: 'بوت التداول الكمي المتقدم عالي التردد Quantum Scalper',
+        description_en: 'Ultra-low latency sub-second algorithmic execution bot with machine learning analytics and auto risk mitigation profiles.',
+        description_ar: 'بوت تداول آلي فائق السرعة وخوارزمية معززة بالذكاء الاصطناعي لتحليل نقاط السيولة والتحكم بالخسائر وإدارة الصفقات اللحظية بدقة متناهية.',
+        price: 699.00,
+        category_en: 'Trading Bots',
+        category_ar: 'بوتات التداول',
+        image_url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1080&h=1080&fit=crop',
+        highlight_tag: 'exclusive'
+      },
+      {
+        title_en: 'Perplexta Premium SaaS Landing Page Kit',
+        title_ar: 'حزمة الصفحات التعريفية الراقية والحديثة لـ Perplexta',
+        description_en: 'A high-converting premium modern components landing library styled strictly in tailwind v4 dark/light modes with pristine scroll animations.',
+        description_ar: 'مجموعة قوالب وواجهات برمجية لصفحات الهبوط المخصصة لعرض مشاريع التقنية والـ SaaS مع مكاملة كاملة للأقسام والخطوط والتحريكات الفاخرة.',
+        price: 120.00,
+        category_en: 'Templates & Sites',
+        category_ar: 'قوالب ومواقع',
+        image_url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1080&h=1080&fit=crop',
+        highlight_tag: 'new'
+      },
+      {
+        title_en: 'Hyper-Intelligence LLM Router Plugin',
+        title_ar: 'إضافة التوجيه الذكي الآمن Hyper-Intelligence لنماذج اللغة',
+        description_en: 'An smart router routing middleware for routing LLM prompts with semantic caching to optimize processing speeds and API cost thresholds.',
+        description_ar: 'إضافة وسيطة ذكية لتوجيه الاستعلامات إلى نماذج الذكاء الاصطناعي المختلفة مع التخزين الدلالي المؤقت لتوفير ميزانية استهلاك الـ API.',
+        price: 180.00,
+        category_en: 'System Plugins',
+        category_ar: 'إضافات الأنظمة',
+        image_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1080&h=1080&fit=crop',
+        highlight_tag: 'new'
+      },
+      {
+        title_en: 'Sovereign Startup-In-A-Box Tech Suite',
+        title_ar: 'مجموعة Sovereign Startup-In-A-Box لتأسيس المشاريع التقنية',
+        description_en: 'An all-inclusive launchpack template containing pre-built OAuth, Stripe billing, transactional emails, database mapping, and CI/CD configs.',
+        description_ar: 'مجموعة البداية الأكثر شمولية لإطلاق شركة ناشئة تقنية، مجهزة بكافة متطلبات الترخيص والدفع وأنظمة التسجيل وخوادم قواعد البيانات بقالب واحد.',
+        price: 349.00,
+        category_en: 'Startup-in-a-Box',
+        category_ar: 'Startup-in-a-Box',
+        image_url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1080&h=1080&fit=crop',
+        highlight_tag: 'featured'
+      },
+      {
+        title_en: 'Perplexta Enterprise Figma Design System v3',
+        title_ar: 'نظام تصميم Figma التقني الاحترافي والكامل Perplexta v3',
+        description_en: 'Enterprise-grade comprehensive web component system in Figma featuring autolayout, dark mode compliance and fully tokenized classes variables.',
+        description_ar: 'مكتبة ونظام تصميم الواجهات الكبرى في فيغما، يضم كافة النماذج والعناصر وبملاءمة كاملة لنظام الأنماط المعتم والمفاتيح التفاعلية.',
+        price: 89.00,
+        category_en: 'Figma Files',
+        category_ar: 'ملفات Figma',
+        image_url: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1080&h=1080&fit=crop',
+        highlight_tag: 'new'
+      },
+      {
+        title_en: 'Trend-Pulse Quantitative Pine Indicator Suite',
+        title_ar: 'مؤشر Momentum ومستويات الزخم Quantitative Pine Suite',
+        description_en: 'TradingView PineScript v5 suite for trend-pulse quantification, institutional order-block detection, and multi-timeframe divergence patterns.',
+        description_ar: 'مجموعة استراتيجيات وبوتات تداول حية مبرمجة بلغة PineScript v5 ومخصصة لتتبع السيولة ومستويات التدفق المالي للمؤسسات.',
+        price: 150.00,
+        category_en: 'Trading Bots',
+        category_ar: 'بوتات التداول',
+        image_url: 'https://images.unsplash.com/photo-1642390091310-70f1a55b7abc?w=1080&h=1080&fit=crop',
+        highlight_tag: 'trending'
+      }
+    ];
+
+    for (const item of defaults) {
+      const check = await pool.query('SELECT id FROM marketplace_items WHERE title_en = $1', [item.title_en]);
+      if (check.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO marketplace_items (
+            user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar,
+            image_url, contact_link, status, referral_percent, highlight_tag, license_type, download_url, features, technologies
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        `, [
+          authorId, item.title_en, item.title_ar, item.description_en, item.description_ar, item.price,
+          item.category_en, item.category_ar, item.image_url, 'https://t.me/perplexta_support', 'approved',
+          20.00, item.highlight_tag, 'standard', 'https://perplexta.io/delivery/mock_source.zip',
+          'Premium modular architecture,Fully responsive UI layout,Complete lifetime source code access',
+          'React, TypeScript, Tailwind CSS, Express, PostgreSQL'
+        ]);
+        console.log(`[Marketplace Seed] Dynamically registered default asset: ${item.title_en}`);
+      }
+    }
+  } catch (error) {
+    console.error('[Marketplace Seed] Seeding default assets failed:', error);
+  }
+}
+
+// Trigger lazy background seeding
+setTimeout(seedDefaultItems, 1500);
 
 export default router;
