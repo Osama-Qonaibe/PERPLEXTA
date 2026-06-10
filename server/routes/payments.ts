@@ -212,7 +212,7 @@ router.get("/verify-subscription-session", authenticateToken, async (req: any, r
       return res.status(400).json({ error: 'Payments not configured' });
     }
 
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const session = await stripe.checkout.sessions.retrieve(session_id as string);
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
@@ -229,6 +229,29 @@ router.get("/verify-subscription-session", authenticateToken, async (req: any, r
 
     if (session.payment_status !== 'paid') {
       return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
+    }
+
+    // Idempotency: skip activation if already processed for this session
+    const targetLedgerPool = ledgerPool || pool;
+    if (targetLedgerPool) {
+      const eventCheck = await targetLedgerPool.query(
+        'SELECT 1 FROM stripe_events WHERE stripe_event_id = $1',
+        [session.id]
+      );
+      if (eventCheck.rows.length > 0) {
+        return res.json({ success: true, alreadyProcessed: true });
+      }
+      try {
+        await targetLedgerPool.query(
+          'INSERT INTO stripe_events (stripe_event_id, type, status, metadata) VALUES ($1, $2, $3, $4)',
+          [session.id, 'subscription.session.verified', 'processed', JSON.stringify(session.metadata || {})]
+        );
+      } catch (e: any) {
+        if (e.code === '23505') {
+          return res.json({ success: true, alreadyProcessed: true });
+        }
+        throw e;
+      }
     }
 
     await activateStripeSubscription(userId, planId, (session.subscription as string) || '', billingCycle || 'monthly', (session.customer as string) || '');
@@ -251,8 +274,9 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
     const stripe = await getStripe();
     if (!stripe) return res.status(400).json({ error: 'Payments not configured' });
  
-    const planRes = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
-    if (planRes.rows.length === 0) return res.status(404).json({ error: 'Plan not found' });
+    // Guard: only allow active plans
+    const planRes = await pool.query('SELECT * FROM plans WHERE id = $1 AND is_active = true', [planId]);
+    if (planRes.rows.length === 0) return res.status(404).json({ error: 'Plan not found or is no longer available.' });
     const plan = planRes.rows[0];
  
     const price = billingCycle === 'annual' ? Number(plan.annual_price) : Number(plan.monthly_price);
@@ -461,15 +485,17 @@ router.post("/webhook", async (req: any, res) => {
             await createNotification(
               userId,
               'success',
-              'Subscription Updated',
+              'Subscription Renewed',
               'تم تجديد الاشتراك',
-              `Your subscription for ${planName} has been successfully synchronized and updated via Stripe.`,
+              `Your subscription for ${planName} has been successfully renewed via Stripe.`,
               `تم تجديد اشتراكك في باقة ${plan ? plan.name_ar : 'المميزة'} بنجاح عبر Stripe.`
             );
 
             const { io } = await import('../config/socket.js');
             if (io) {
               io.to(`user_${userId}`).emit('user_profile_updated');
+              // Notify frontend to refresh quota limits after renewal
+              io.to(`user_${userId}`).emit('quota_reset', { reason: 'stripe_invoice_renewal', planId, stripeSubscriptionId });
             }
             const { broadcastAdminStats } = await import('../services/admin.js');
             broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on payment:', err));
@@ -505,13 +531,14 @@ router.post("/webhook", async (req: any, res) => {
             'warning',
             'Subscription Expired',
             'انتهت صلاحية الاشتراك',
-            `Your subscription has expired.`,
-            `انتهت صلاحية اشتراكك.`
+            `Your subscription has expired. Access to premium tools has been revoked.`,
+            `انتهت صلاحية اشتراكك. تم سحب الوصول إلى الأدوات المتميزة.`
           );
 
           const { io } = await import('../config/socket.js');
           if (io) {
             io.to(`user_${userId}`).emit('user_profile_updated');
+            io.to(`user_${userId}`).emit('subscription_canceled', { userId, reason: 'stripe_deleted' });
           }
         } else {
           console.warn(`[Stripe Webhook] No user found for deleted subscription ${subscription.id}`);
@@ -545,6 +572,9 @@ router.post("/webhook", async (req: any, res) => {
           const { io } = await import('../config/socket.js');
           if (io) {
             io.to(`user_${userId}`).emit('user_profile_updated');
+            if (localStatus === 'expired') {
+              io.to(`user_${userId}`).emit('subscription_canceled', { userId, reason: 'stripe_updated_expired' });
+            }
           }
         }
         break;
@@ -582,6 +612,7 @@ router.post("/webhook", async (req: any, res) => {
           const { io } = await import('../config/socket.js');
           if (io) {
             io.to(`user_${userId}`).emit('user_profile_updated');
+            io.to(`user_${userId}`).emit('subscription_canceled', { userId, reason: 'payment_failed' });
           }
         } else {
           console.warn(`[Stripe Webhook] No user found for failed invoice ${invoice.id}`);
