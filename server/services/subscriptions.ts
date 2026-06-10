@@ -46,6 +46,7 @@ export async function purchaseSubscription(userId: string, planId: string, billi
     
     if (io) {
       io.to(`user_${userId}`).emit('user_profile_updated');
+      io.to(`user_${userId}`).emit('quota_reset', { reason: 'subscription_activated', planId });
     }
 
     return { success: true, message: 'Subscription activated' };
@@ -102,6 +103,7 @@ export async function activateStripeSubscription(userId: string, planId: string,
 
   if (io) {
     io.to(`user_${userId}`).emit('user_profile_updated');
+    io.to(`user_${userId}`).emit('quota_reset', { reason: 'stripe_renewal', planId, subscriptionId });
   }
 }
 
@@ -119,11 +121,12 @@ export async function cancelSubscription(userId: string) {
     'warning',
     'Subscription Canceled',
     'تم إلغاء الاشتراك',
-    `Your subscription has been canceled or expired.`,
-    `تم إلغاء اشتراكك أو انتهت صلاحيته.`
+    `Your subscription has been canceled or expired. Access to premium tools has been revoked.`,
+    `تم إلغاء اشتراكك أو انتهت صلاحيته. تم سحب الوصول إلى الأدوات المتميزة.`
   );
 
   if (io) {
     io.to(`user_${userId}`).emit('user_profile_updated');
+    io.to(`user_${userId}`).emit('subscription_canceled', { userId });
   }
 }

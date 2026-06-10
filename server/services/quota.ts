@@ -1,5 +1,6 @@
 import { pool } from '../db/index.js';
 import { createNotification } from './notifications.js';
+import { io } from '../config/socket.js';
 
 export async function checkUserQuota(userId: number, toolId: string) {
   try {
@@ -301,10 +302,11 @@ function getToolFriendlyName(toolId: string, lang: 'en' | 'ar'): string {
 
 async function evaluateAndNotify(userId: number, toolId: string, usage: number, limit: number, period: 'daily' | 'monthly') {
   const pct = (usage / limit) * 100;
-  if (pct < 50) return;
 
   let threshold = 0;
-  if (pct >= 80) {
+  if (pct >= 100) {
+    threshold = 100;
+  } else if (pct >= 80) {
     threshold = 80;
   } else if (pct >= 50) {
     threshold = 50;
@@ -314,14 +316,13 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
 
   const warningType = `quota_warning_${toolId}_${period}_${threshold}`;
 
-  const querySql = `
+  const checkRes = await pool.query(`
     SELECT 1 FROM notifications
     WHERE user_id = $1 
       AND type = $2 
       AND created_at >= CASE WHEN $3 = 'daily' THEN CURRENT_DATE ELSE date_trunc('month', CURRENT_DATE) END
     LIMIT 1
-  `;
-  const checkRes = await pool.query(querySql, [userId, warningType, period]);
+  `, [userId, warningType, period]);
   if (checkRes.rows.length > 0) return;
 
   const toolNameEn = getToolFriendlyName(toolId, 'en');
@@ -333,19 +334,23 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
   let titleAr = '';
   let messageEn = '';
   let messageAr = '';
+  const pctString = `${Math.round(pct)}%`;
 
-  const pctString = pct >= 80 ? '80%' : '50%';
-
-  if (threshold === 50) {
-    titleEn = `Quota Status Alert: ${pctString} Consumed`;
-    titleAr = `تنبيه استهلاك الحدود: تم استخدام ${pctString}`;
-    messageEn = `Premium Optimization: You have consumed ${pctString} of your ${periodStrEn} active quota limit for "${toolNameEn}". Keep your intelligence momentum at full power! Invite elite colleagues using your personalized referral code to credit your digital wallet instantly, or explore our flexible high-capacity premium tiers today!`;
-    messageAr = `تنبيه تحسين الأداء: لقد استهلكت ${pctString} من حدك ${periodStrAr} المتاح لأداة "${toolNameAr}". حافظ على استمرارية زخم تحليلاتك الذكية بكامل قوتها! شارك كود الإحالة المخصص لك مع زملائك المتميزين لكسب أرصدة فورية في محفظتك الرقمية، أو تصفح باقاتنا المرنة ذات السعات العالية المتاحة الآن!`;
-  } else {
-    titleEn = `Urgent Quota Limit Notice: ${pctString} Expended`;
-    titleAr = `تنبيه هام ومستعجل: تم استهلاك ${pctString} من الحدود`;
+  if (threshold === 100) {
+    titleEn = `⛔ Quota Exhausted: Limit Reached`;
+    titleAr = `⛔ استنفد الحد: وصلت إلى الحد الأقصى`;
+    messageEn = `You have fully consumed your ${periodStrEn} quota for "${toolNameEn}" (${usage}/${limit}). Further requests will be charged from your digital wallet. Upgrade your plan to continue uninterrupted.`;
+    messageAr = `لقد استنفدت حدك ${periodStrAr} الكامل لأداة "${toolNameAr}" (${usage}/${limit}). سيتم خصم الطلبات الإضافية من محفظتك الرقمية. قم بترقية باقتك للاستمرار دون انقطاع.`;
+  } else if (threshold === 80) {
+    titleEn = `⚠️ Urgent Quota Limit Notice: ${pctString} Expended`;
+    titleAr = `⚠️ تنبيه هام ومستعجل: تم استهلاك ${pctString} من الحدود`;
     messageEn = `Action Advised: You are rapidly approaching full capacity with ${pctString} of your ${periodStrEn} limit spent for "${toolNameEn}". Secure your strategic tasks against interruptions: elevate your workflow by upgrading your tier with a 1-click upgrade, or seamlessly recharge your wallet instantly via the rewards section to utilize point-based fallbacks!`;
-    messageAr = `إجراء موصى به: أنت تقترب بسرعة من السعة الكاملة بنسبة استهلاك بلغت ${pctString} من حدك ${periodStrAr} لأداة "${toolNameAr}". حافظ على أمن أعمالك الاستراتيجية من الانقطاع: قم بترقية حسابك بضغطة واحدة، أو أعد شحن محفظتك الرقمية فوراً وبسهولة من قسم المكافآت للاستفادة من نظام الدفع الفوري لكل عملية!`;
+    messageAr = `إجراء موصى به: أنت تقترب بسرعة من السعة الكاملة بنسبة استهلاك بلغت ${pctString} من حدك ${periodStrAr} لأداة "${toolNameAr}". حافظ على أمن أعمالك الاستراتيجية من الانقطاع: قم بترقية حسابك بضغطة واحدة، أو أعد شحن محفظتك الرقمية فوراً وبسهولة من قسم المكافآت!`;
+  } else {
+    titleEn = `ℹ️ Quota Status Alert: ${pctString} Consumed`;
+    titleAr = `ℹ️ تنبيه استهلاك الحدود: تم استخدام ${pctString}`;
+    messageEn = `Premium Optimization: You have consumed ${pctString} of your ${periodStrEn} active quota limit for "${toolNameEn}". Keep your intelligence momentum at full power! Invite elite colleagues using your personalized referral code to credit your digital wallet instantly, or explore our flexible high-capacity premium tiers today!`;
+    messageAr = `تنبيه تحسين الأداء: لقد استهلكت ${pctString} من حدك ${periodStrAr} المتاح لأداة "${toolNameAr}". حافظ على استمرارية زخم تحليلاتك الذكية بكامل قوتها! شارك كود الإحالة المخصص لك مع زملائك المتميزين لكسب أرصدة فورية في محفظتك الرقمية، أو تصفح باقاتنا المرنة ذات السعات العالية اليوم!`;
   }
 
   await createNotification(userId, warningType, titleEn, titleAr, messageEn, messageAr, {
@@ -356,6 +361,18 @@ async function evaluateAndNotify(userId: number, toolId: string, usage: number, 
     threshold,
     pct
   });
+
+  // Emit real-time socket event so frontend shows the warning immediately
+  if (io) {
+    io.to(`user_${userId}`).emit('quota_warning', {
+      toolId,
+      usage,
+      limit,
+      period,
+      threshold,
+      pct: Math.round(pct)
+    });
+  }
 }
 
 async function checkAndTriggerQuotaWarnings(userId: number, toolId: string, currentDailyAfter: number, currentMonthlyAfter: number, finalLimits: any) {
