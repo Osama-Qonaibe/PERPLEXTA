@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { pool, ledgerPool, getSecurityPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
 import { logSystemActivity } from '../services/notifications.js';
-import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
+import { authLimiter, forgotPasswordLimiter, refreshLimiter } from '../middleware/rateLimit.js';
 import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
 import { deductFromWallet } from '../services/wallet.js';
@@ -134,6 +134,9 @@ async function generateUniqueReferralCode(): Promise<string> {
   return code;
 }
 
+// Access token lifetime — 4 hours prevents frequent silent refreshes
+const ACCESS_TOKEN_EXPIRY = '4h';
+
 router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, name, language = 'ar', theme = 'dark', ref } = req.body;
@@ -200,7 +203,7 @@ router.post("/signup", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
     const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
@@ -274,7 +277,7 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
     const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
@@ -308,7 +311,8 @@ router.post("/login", authLimiter, async (req, res) => {
   }
 });
 
-router.post("/refresh-token", async (req, res) => {
+// Uses refreshLimiter (NOT authLimiter) to avoid blocking login after silent refreshes
+router.post("/refresh-token", refreshLimiter, async (req, res) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -333,7 +337,7 @@ router.post("/refresh-token", async (req, res) => {
     if (blacklistCheck.rows.length > 0) {
       const blacklistedTime = new Date(blacklistCheck.rows[0].created_at).getTime();
       const timeElapsed = Date.now() - blacklistedTime;
-      const gracePeriodMs = 30 * 1000; // 30-second grace period for network retries and race conditions
+      const gracePeriodMs = 30 * 1000;
       
       if (timeElapsed < gracePeriodMs) {
         console.warn(`[Session Grace Period] Concurrent/retry token refresh detected with recently blacklisted token for user ID: ${decoded.id}. Time elapsed: ${timeElapsed}ms. Retrieving active session...`);
@@ -347,7 +351,7 @@ router.post("/refresh-token", async (req, res) => {
           if (userRes.rows.length > 0) {
             const user = userRes.rows[0];
             if (user.status !== 'suspended') {
-              const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+              const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
               return res.json({ token: newAccessToken, refreshToken: activeSessionToken });
             }
           }
@@ -378,7 +382,7 @@ router.post("/refresh-token", async (req, res) => {
     }
 
     const remember = decoded.remember === true || decoded.remember === 'true';
-    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
     const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
 
     await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
@@ -438,7 +442,6 @@ router.get("/poll", async (req, res) => {
       return res.status(400).json({ error: 'Missing authSessionId' });
     }
     
-    // Clean up expired entries to avoid memory leak
     const now = Date.now();
     for (const [key, val] of pendingOAuthSessions.entries()) {
       if (val.expiresAt < now) {
@@ -451,9 +454,7 @@ router.get("/poll", async (req, res) => {
       return res.json({ status: 'pending' });
     }
     
-    // Consume the session
     pendingOAuthSessions.delete(authSessionId);
-    
     res.json({ status: 'success', data: session.data });
   } catch (error: any) {
     console.error('[OAuth Poll Error]:', error?.message || error);
@@ -663,7 +664,7 @@ router.get("/google/callback", async (req, res) => {
     }
 
     const remember = storedState?.remember === true || storedState?.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
     const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
     
     await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
@@ -730,7 +731,7 @@ router.get("/google/callback", async (req, res) => {
           ref: targetRef,
           remember: !!storedState.remember
         },
-        expiresAt: Date.now() + 120000 // 2 minutes
+        expiresAt: Date.now() + 120000
       });
     }
 
@@ -977,7 +978,6 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     const expires = new Date(Date.now() + 3600000);
 
     await pool.query('DELETE FROM password_resets WHERE email = $1', [email]);
-
     await pool.query(
       'INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, $3)',
       [email, token, expires]
@@ -1030,7 +1030,6 @@ router.post("/reset-password", authLimiter, async (req, res) => {
     );
 
     await client.query('DELETE FROM password_resets WHERE token = $1', [token]);
-
     await client.query('COMMIT');
     res.json({ success: true, message: 'Password has been reset successfully.' });
   } catch (error) {
@@ -1046,9 +1045,6 @@ router.post("/reset-password", authLimiter, async (req, res) => {
 // WEB BOT & SOFTWARE AGENT AUTH REGISTER + EXECUTE (draft-meunier-webbotauth-registry)
 // -------------------------------------------------------------------------
 
-/**
- * 1. POST /register-agent - Dynamic Client Registration (RFC 7591 / webbotauth)
- */
 router.post('/register-agent', async (req, res) => {
   try {
     const {
@@ -1061,7 +1057,6 @@ router.post('/register-agent', async (req, res) => {
       signature_keys
     } = req.body;
 
-    // Detect if we have an authenticated user triggering this from web console
     let currentUserId: number | null = null;
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
@@ -1071,19 +1066,15 @@ router.post('/register-agent', async (req, res) => {
         if (decoded && decoded.id) {
           currentUserId = Number(decoded.id);
         }
-      } catch (err) {
-        // Safe bypass if invalid token; dynamic registration allows public registration too
-      }
+      } catch (err) {}
     }
 
     const clientId = `agent_client_${crypto.randomBytes(8).toString('hex')}`;
     const rawSecret = `agent_secret_${crypto.randomBytes(24).toString('hex')}`;
     const hashedSecret = await bcrypt.hash(rawSecret, 10);
 
-    // Dynamic key creation deduction as requested (Rule limit setting / economy sync)
-    // Create Agent Key Deduction
     if (currentUserId) {
-      let keyCreationCost = 5.00; // default cost is 5.00 ₪ / key
+      let keyCreationCost = 5.00;
       try {
         const toolRes = await pool.query("SELECT cost_per_usage FROM tool_orchestrator WHERE tool_id = 'x402_api'");
         if (toolRes.rows.length > 0 && toolRes.rows[0].cost_per_usage) {
@@ -1092,9 +1083,7 @@ router.post('/register-agent', async (req, res) => {
             keyCreationCost = fetchedRate;
           }
         }
-      } catch (err) {
-        // Fallback safely to default
-      }
+      } catch (err) {}
 
       try {
         await deductFromWallet(
@@ -1119,16 +1108,9 @@ router.post('/register-agent', async (req, res) => {
         redirect_uris, jwks_uri, user_agent, signature_keys, user_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `, [
-      clientId, 
-      hashedSecret, 
-      client_name || 'Dynamic Registered Agent', 
-      identity_type, 
-      credential_type, 
-      checkUris, 
-      jwks_uri || null, 
-      user_agent || null, 
-      signature_keys ? JSON.stringify(signature_keys) : null,
-      currentUserId
+      clientId, hashedSecret, client_name || 'Dynamic Registered Agent', identity_type,
+      credential_type, checkUris, jwks_uri || null, user_agent || null,
+      signature_keys ? JSON.stringify(signature_keys) : null, currentUserId
     ]);
 
     res.status(201).json({
@@ -1151,21 +1133,14 @@ router.post('/register-agent', async (req, res) => {
   }
 });
 
-/**
- * 1b. GET /agents - Fetch registered agents for the logged-in user
- */
 router.get('/agents', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const agentsRes = await pool.query(
       'SELECT id, client_id, client_name, identity_type, credential_type, redirect_uris, jwks_uri, user_agent, created_at FROM registered_agents WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
-
     res.json(agentsRes.rows);
   } catch (err: any) {
     console.error('[AgentAuth] Listing user agents failed:', err);
@@ -1173,27 +1148,18 @@ router.get('/agents', authenticateToken, async (req: any, res) => {
   }
 });
 
-/**
- * 1c. DELETE /agents/:client_id - Delete/Revoke a user-owned agent client
- */
 router.delete('/agents/:client_id', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
     const { client_id } = req.params;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const deleteRes = await pool.query(
       'DELETE FROM registered_agents WHERE client_id = $1 AND user_id = $2 RETURNING id',
       [client_id, userId]
     );
-
     if (deleteRes.rows.length === 0) {
       return res.status(404).json({ error: 'Agent not found or does not belong to you.' });
     }
-
     logSystemActivity(userId, 'agent_revoked', `User revoked agent client: ${client_id}`, req.ip || '');
     res.json({ success: true, message: 'Agent client successfully deleted/revoked.' });
   } catch (err: any) {
@@ -1202,9 +1168,6 @@ router.delete('/agents/:client_id', authenticateToken, async (req: any, res) => 
   }
 });
 
-/**
- * 2. POST /token - Token generation endpoint. Supports grant_type=client_credentials and standard authentication headers.
- */
 router.post('/token', async (req, res) => {
   try {
     let grantType = req.body.grant_type;
@@ -1216,19 +1179,13 @@ router.post('/token', async (req, res) => {
       const credentialsBase64 = authHeader.substring(6);
       const credentialsDecoded = Buffer.from(credentialsBase64, 'base64').toString('utf-8');
       const parts = credentialsDecoded.split(':');
-      if (parts.length === 2) {
-        clientId = parts[0];
-        clientSecret = parts[1];
-      }
+      if (parts.length === 2) { clientId = parts[0]; clientSecret = parts[1]; }
     }
 
-    if (!grantType && req.query.grant_type) {
-      grantType = req.query.grant_type;
-    }
+    if (!grantType && req.query.grant_type) grantType = req.query.grant_type;
     if (grantType !== 'client_credentials') {
       return res.status(400).json({ error: 'unsupported_grant_type', message: 'Only grant_type=client_credentials is supported.' });
     }
-
     if (!clientId || !clientSecret) {
       return res.status(401).json({ error: 'invalid_client', message: 'Client credentials must be provided in either body or Authorization header.' });
     }
@@ -1246,96 +1203,51 @@ router.post('/token', async (req, res) => {
 
     const { privateKeyPem } = getOrCreateSigningKeys();
     const baseUrl = getBaseUrl(req);
-
-    if (!privateKeyPem) {
-      throw new Error('Asymmetric signing credentials could not be retrieved from active server keystore.');
-    }
+    if (!privateKeyPem) throw new Error('Asymmetric signing credentials could not be retrieved from active server keystore.');
 
     const payload = {
-      iss: baseUrl,
-      sub: clientId,
-      aud: baseUrl,
-      client_id: clientId,
-      id_type: agent.identity_type,
-      role: 'agent',
-      scope: req.body.scope || 'read write'
+      iss: baseUrl, sub: clientId, aud: baseUrl, client_id: clientId,
+      id_type: agent.identity_type, role: 'agent', scope: req.body.scope || 'read write'
     };
 
-    const token = jwt.sign(payload, privateKeyPem, {
-      algorithm: 'RS256',
-      keyid: 'default-agent-key',
-      expiresIn: '1h'
-    });
-
-    res.json({
-      access_token: token,
-      token_type: 'Bearer',
-      expires_in: 3600,
-      scope: payload.scope
-    });
+    const token = jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: 'default-agent-key', expiresIn: '1h' });
+    res.json({ access_token: token, token_type: 'Bearer', expires_in: 3600, scope: payload.scope });
   } catch (err: any) {
     console.error('[AgentAuth] Failed to generate token:', err);
     res.status(500).json({ error: 'server_error', message: err.message || 'Token generation errored out.' });
   }
 });
 
-/**
- * 3. POST /claim - Dynamic claim and verification asserting bot credentials (meunier)
- */
 router.post('/claim', async (req, res) => {
   try {
     const { client_id, assertion } = req.body;
-    if (!client_id) {
-      return res.status(400).json({ error: 'client_id is required' });
-    }
-
+    if (!client_id) return res.status(400).json({ error: 'client_id is required' });
     const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [client_id]);
     if (agentCheck.rows.length === 0) {
       return res.status(404).json({ error: 'No registered agent found matching the provided client_id.' });
     }
-
     const agent = agentCheck.rows[0];
-    let validated = true;
     let methodUsed = 'direct_lookup';
-
-    if (assertion && agent.signature_keys) {
-      methodUsed = 'cryptographic_key_verification';
-    }
-
-    res.json({
-      claimed: true,
-      client_id,
-      identity_type: agent.identity_type,
-      verification_method: methodUsed,
-      verified_at: new Date().toISOString()
-    });
+    if (assertion && agent.signature_keys) methodUsed = 'cryptographic_key_verification';
+    res.json({ claimed: true, client_id, identity_type: agent.identity_type, verification_method: methodUsed, verified_at: new Date().toISOString() });
   } catch (err: any) {
     console.error('[AgentAuth] Claim verification errored out:', err);
     res.status(500).json({ error: 'Claim verification failed.' });
   }
 });
 
-/**
- * 4. POST /revoke - Dynamic token / credential revocation (RFC 7009)
- */
 router.post('/revoke', async (req, res) => {
   try {
     const { token } = req.body;
-    if (!token) {
-      return res.status(400).json({ error: 'token parameter is required for revocation.' });
-    }
-
+    if (!token) return res.status(400).json({ error: 'token parameter is required for revocation.' });
     if (token.startsWith('agent_client_')) {
       await pool.query('DELETE FROM registered_agents WHERE client_id = $1', [token]);
     } else {
       try {
         addToBlacklistCache(token);
         await getSecurityPool().query('INSERT INTO token_blacklist (token, expires_at) VALUES ($1, CURRENT_TIMESTAMP + INTERVAL \'24 hours\') ON CONFLICT DO NOTHING', [hashToken(token)]);
-      } catch (_) {
-        // Safe skip if security db table is un-synced
-      }
+      } catch (_) {}
     }
-
     res.status(200).json({ revoked: true, message: 'Credential or session successfully revoked.' });
   } catch (err: any) {
     console.error('[AgentAuth] Revocation errored out:', err);
@@ -1343,48 +1255,25 @@ router.post('/revoke', async (req, res) => {
   }
 });
 
-/**
- * 5. GET /user - Standard userinfo_endpoint of OpenID/Webbot auth configuration
- */
 router.get('/user', authenticateToken, async (req: any, res) => {
   try {
     const authUser = req.user;
-    if (!authUser) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'No authenticated user context verified.' });
-    }
+    if (!authUser) return res.status(401).json({ error: 'Unauthorized', message: 'No authenticated user context verified.' });
 
     if (authUser.isAgent) {
       const agentRes = await pool.query('SELECT id, client_id, client_name, identity_type, credential_type, jwks_uri, user_agent, created_at FROM registered_agents WHERE client_id = $1', [authUser.client_id]);
-      if (agentRes.rows.length === 0) {
-        return res.status(404).json({ error: 'Agent profile not found.' });
-      }
+      if (agentRes.rows.length === 0) return res.status(404).json({ error: 'Agent profile not found.' });
       return res.json({
-        sub: authUser.client_id,
-        client_id: authUser.client_id,
-        name: authUser.name,
-        identity_type: authUser.id_type,
-        role: 'agent',
-        jwks_uri: agentRes.rows[0].jwks_uri,
-        user_agent: agentRes.rows[0].user_agent,
-        created_at: agentRes.rows[0].created_at
+        sub: authUser.client_id, client_id: authUser.client_id, name: authUser.name,
+        identity_type: authUser.id_type, role: 'agent',
+        jwks_uri: agentRes.rows[0].jwks_uri, user_agent: agentRes.rows[0].user_agent, created_at: agentRes.rows[0].created_at
       });
     }
 
     const userRes = await pool.query('SELECT id, name, email, role, language, status, last_active_at, created_at FROM users WHERE id = $1', [authUser.id]);
-    if (userRes.rows.length === 0) {
-      return res.status(404).json({ error: 'User profile not found.' });
-    }
+    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User profile not found.' });
     const user = userRes.rows[0];
-    res.json({
-      sub: String(user.id),
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      language: user.language,
-      status: user.status,
-      created_at: user.created_at
-    });
+    res.json({ sub: String(user.id), id: user.id, name: user.name, email: user.email, role: user.role, language: user.language, status: user.status, created_at: user.created_at });
   } catch (err: any) {
     console.error('[AgentAuth] UserInfo endpoint failed:', err);
     res.status(500).json({ error: 'Failed to compile userInfo response.' });
