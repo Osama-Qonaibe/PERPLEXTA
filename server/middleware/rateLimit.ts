@@ -26,13 +26,24 @@ export const globalLimiter = rateLimit({
   message: { error: 'Too many requests, please slow down.' }
 });
 
+// Login/Signup only — keep strict (10 attempts per 15 min)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 10,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Security: Too many auth attempts. Please try again later.' }
+});
+
+// Dedicated limiter for refresh-token endpoint — must NOT share with authLimiter
+export const refreshLimiter = rateLimit({
+  windowMs: 60 * 1000,       // 1 minute window
+  max: 10,                    // 10 refreshes per minute per user — well above normal need
+  keyGenerator: resolveClientKey,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many token refresh attempts. Please wait a moment.' }
 });
 
 export const chatLimiter = rateLimit({
