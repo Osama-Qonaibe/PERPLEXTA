@@ -120,6 +120,9 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
   }
 };
 
+// Tools measured as absolute totals — NOT daily/monthly counters
+const ABSOLUTE_TOOLS = new Set(['storage_mb', 'marketplace_listings']);
+
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
 
@@ -136,9 +139,10 @@ export async function getUserUsage(userId: string | number) {
   
   let plan = planRes.rows[0];
   const userRole = plan.role;
+  const isAdmin = userRole === 'admin';
   const hasActiveSub = plan.id && plan.status === 'active';
 
-  if (userRole !== 'admin' && !hasActiveSub) {
+  if (!isAdmin && !hasActiveSub) {
     plan = {
       ...plan,
       id: null,
@@ -151,7 +155,7 @@ export async function getUserUsage(userId: string | number) {
       current_period_end: null,
       subscription_start: null
     };
-  } else if (userRole === 'admin' && !plan.id) {
+  } else if (isAdmin && !plan.id) {
     plan = {
       ...plan,
       id: -1,
@@ -198,38 +202,73 @@ export async function getUserUsage(userId: string | number) {
 
   const usageItems = ALL_TOOLS.map(toolId => {
     const info = TOOL_INFO[toolId];
-    const limits = plan.limits?.[toolId] || null;
-    
-    let dailyLimit = null;
-    let monthlyLimit = null;
-    
-    if (userRole !== 'admin' && !hasActiveSub) {
+    const isAbsolute = ABSOLUTE_TOOLS.has(toolId);
+
+    // Admins are never bound by plan limits
+    if (isAdmin) {
+      let currentUsage = 0;
+      if (toolId === 'storage_mb') currentUsage = storageUsageMB;
+      else if (toolId === 'marketplace_listings') currentUsage = marketplaceCount;
+      else currentUsage = monthlyUsageMap[toolId] || 0;
+
+      return {
+        id: toolId,
+        name_en: info.name_en,
+        name_ar: info.name_ar,
+        desc_en: info.desc_en,
+        desc_ar: info.desc_ar,
+        usage: {
+          daily: isAbsolute ? currentUsage : (dailyUsageMap[toolId] || 0),
+          monthly: currentUsage,
+          ...(isAbsolute && { total: currentUsage })
+        },
+        limits: { daily: null, monthly: null }
+      };
+    }
+
+    const rawLimits = plan.limits?.[toolId] ?? null;
+    let dailyLimit: number | null = null;
+    let monthlyLimit: number | null = null;
+    let totalLimit: number | null = null;
+
+    if (!hasActiveSub) {
+      // No subscription — hard zero on everything
       dailyLimit = 0;
       monthlyLimit = 0;
-    } else {
-      if (limits === 'unlimited') {
-        dailyLimit = null;
-        monthlyLimit = null;
-      } else if (typeof limits === 'object' && limits !== null) {
-        dailyLimit = limits.daily !== undefined ? parseInt(limits.daily) : null;
-        monthlyLimit = limits.monthly !== undefined ? parseInt(limits.monthly) : null;
-      } else if (limits !== undefined && limits !== null) {
-        dailyLimit = parseInt(limits);
+      totalLimit = isAbsolute ? 0 : null;
+    } else if (rawLimits === 'unlimited') {
+      // null means unlimited in API response
+      dailyLimit = null;
+      monthlyLimit = null;
+    } else if (typeof rawLimits === 'object' && rawLimits !== null) {
+      dailyLimit   = rawLimits.daily   !== undefined ? parseInt(rawLimits.daily)   : null;
+      monthlyLimit = rawLimits.monthly !== undefined ? parseInt(rawLimits.monthly) : null;
+      totalLimit   = rawLimits.total   !== undefined ? parseInt(rawLimits.total)   : null;
+    } else if (rawLimits !== null && rawLimits !== undefined) {
+      // Plain number — applies as BOTH daily AND monthly limit
+      const parsed = parseInt(rawLimits);
+      if (!isNaN(parsed)) {
+        dailyLimit = parsed;
+        monthlyLimit = parsed;
       }
     }
 
-    let dailyUsage = dailyUsageMap[toolId] || 0;
-    let monthlyUsage = monthlyUsageMap[toolId] || 0;
+    // Absolute tools (storage, marketplace) use total/current, not daily/monthly counters
+    let dailyUsage: number;
+    let monthlyUsage: number;
 
     if (toolId === 'storage_mb') {
       dailyUsage = storageUsageMB;
-      monthlyUsage = storageUsageMB; 
+      monthlyUsage = storageUsageMB;
     } else if (toolId === 'marketplace_listings') {
       dailyUsage = marketplaceCount;
       monthlyUsage = marketplaceCount;
+    } else {
+      dailyUsage = dailyUsageMap[toolId] || 0;
+      monthlyUsage = monthlyUsageMap[toolId] || 0;
     }
 
-    return {
+    const result: any = {
       id: toolId,
       name_en: info.name_en,
       name_ar: info.name_ar,
@@ -240,10 +279,18 @@ export async function getUserUsage(userId: string | number) {
         monthly: monthlyUsage
       },
       limits: {
-        daily: dailyLimit,
-        monthly: monthlyLimit
+        daily: isAbsolute ? null : dailyLimit,
+        monthly: isAbsolute ? null : monthlyLimit
       }
     };
+
+    // For absolute tools expose total/totalLimit explicitly
+    if (isAbsolute) {
+      result.usage.total = dailyUsage;
+      result.limits.total = totalLimit ?? dailyLimit; // fallback to dailyLimit if no explicit total
+    }
+
+    return result;
   });
 
   return {
@@ -324,96 +371,66 @@ export async function updateUserProfile(userId: string | number, data: any) {
   let idx = 1;
 
   if (name !== undefined) {
-    if (name !== null && typeof name !== 'string') {
-      throw new Error('Name must be a string');
-    }
+    if (name !== null && typeof name !== 'string') throw new Error('Name must be a string');
     updates.push(`name = $${idx++}`);
     values.push(name);
   }
 
   if (avatar !== undefined) {
-    if (avatar !== null && typeof avatar !== 'string') {
-      throw new Error('Avatar URL must be a string');
-    }
+    if (avatar !== null && typeof avatar !== 'string') throw new Error('Avatar URL must be a string');
     updates.push(`avatar = $${idx++}`);
     values.push(avatar);
   }
 
   if (language !== undefined) {
-    if (typeof language !== 'string') {
-      throw new Error('Language must be a string');
-    }
+    if (typeof language !== 'string') throw new Error('Language must be a string');
     const cleanLang = language.trim().toLowerCase();
-    if (cleanLang !== 'en' && cleanLang !== 'ar') {
-      throw new Error('Invalid language specified. Must be "en" or "ar".');
-    }
+    if (cleanLang !== 'en' && cleanLang !== 'ar') throw new Error('Invalid language specified. Must be "en" or "ar".');
     updates.push(`language = $${idx++}`);
     values.push(cleanLang);
   }
 
   if (theme !== undefined) {
-    if (typeof theme !== 'string') {
-      throw new Error('Theme must be a string');
-    }
+    if (typeof theme !== 'string') throw new Error('Theme must be a string');
     const cleanTheme = theme.trim().toLowerCase();
-    if (cleanTheme !== 'light' && cleanTheme !== 'dark') {
-      throw new Error('Invalid theme specified. Must be "light" or "dark".');
-    }
+    if (cleanTheme !== 'light' && cleanTheme !== 'dark') throw new Error('Invalid theme specified. Must be "light" or "dark".');
     updates.push(`theme = $${idx++}`);
     values.push(cleanTheme);
   }
 
   if (custom_instructions !== undefined) {
-    if (custom_instructions !== null && typeof custom_instructions !== 'string') {
-      throw new Error('Custom instructions must be a string');
-    }
+    if (custom_instructions !== null && typeof custom_instructions !== 'string') throw new Error('Custom instructions must be a string');
     updates.push(`custom_instructions = $${idx++}`);
     values.push(custom_instructions);
   }
 
   if (email !== undefined) {
-    if (typeof email !== 'string') {
-      throw new Error('Email must be a string');
-    }
+    if (typeof email !== 'string') throw new Error('Email must be a string');
     const cleanEmail = email.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      throw new Error('Invalid email format');
-    }
-    
+    if (!emailRegex.test(cleanEmail)) throw new Error('Invalid email format');
     const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [cleanEmail, userId]);
-    if (emailCheck.rows.length > 0) {
-      throw new Error('Email is already in use by another account');
-    }
-    
+    if (emailCheck.rows.length > 0) throw new Error('Email is already in use by another account');
     updates.push(`email = $${idx++}`);
     values.push(cleanEmail);
   }
   
   if (password !== undefined && password !== '') {
-    if (typeof password !== 'string') {
-      throw new Error('Password must be a string');
-    }
-    if (password.length < 8) {
-      throw new Error('Password must be at least 8 characters long');
-    }
+    if (typeof password !== 'string') throw new Error('Password must be a string');
+    if (password.length < 8) throw new Error('Password must be at least 8 characters long');
     const hash = await bcrypt.hash(password, 10);
     updates.push(`password_hash = $${idx++}`);
     values.push(hash);
   }
 
   const userIdStr = userId.toString();
-
   if (updates.length === 0) return await getUserProfile(userIdStr);
 
   values.push(userIdStr);
   const query = `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`;
-  
   await pool.query(query, values);
   
-  if (io) {
-    io.to(`user_${userIdStr}`).emit('user_profile_updated');
-  }
+  if (io) io.to(`user_${userIdStr}`).emit('user_profile_updated');
 
   return await getUserProfile(userIdStr);
 }
