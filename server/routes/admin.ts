@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs/promises';
+import path from 'path';
 import { pool, ledgerPool, getSecurityPool, getExternalPool } from '../db/index.js';
 import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
@@ -2307,6 +2309,242 @@ router.post("/memories/consolidate", authenticateAdmin, async (req, res) => {
   } catch (err: any) {
     console.error('[Admin] Manual Memory Consolidation Error:', err);
     res.status(500).json({ error: err.message || 'Failed to consolidate user memories' });
+  }
+});
+
+// Safely identify (GET) and prune (POST) orphaned database records
+router.get("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool || !ledgerPool) {
+      return res.status(503).json({ error: 'Database connections are initializing or unavailable.' });
+    }
+
+    // 1. Audit user_files with missing physical owner or missing users
+    const orphanedFilesRes = await pool.query(`
+      SELECT id, user_id, chat_id, file_name, file_url, file_size, created_at 
+      FROM user_files 
+      WHERE user_id IS NULL OR user_id NOT IN (SELECT id FROM users)
+      ORDER BY created_at DESC
+    `);
+    
+    // 2. Audit user_files with deleted/missing chats
+    const misalignedChatFilesRes = await pool.query(`
+      SELECT id, user_id, chat_id, file_name, file_url, file_size, created_at 
+      FROM user_files 
+      WHERE chat_id IS NOT NULL AND chat_id NOT IN (SELECT id FROM chats)
+      ORDER BY created_at DESC
+    `);
+
+    // 3. Audit deposit_requests that reference non-existent users
+    const reqUsersRes = await ledgerPool.query('SELECT DISTINCT user_id FROM deposit_requests');
+    const distinctRequestUserIds = reqUsersRes.rows.map((row: any) => row.user_id);
+
+    let orphanedDepositRequestsCount = 0;
+    let orphanedDepositRequests: any[] = [];
+
+    if (distinctRequestUserIds.length > 0) {
+      const existingUsersRes = await pool.query(
+        'SELECT id FROM users WHERE id = ANY($1::int[])',
+        [distinctRequestUserIds]
+      );
+      const existingUserIds = new Set(existingUsersRes.rows.map((row: any) => row.id));
+      const orphanedUserIds = distinctRequestUserIds.filter((id: number) => !existingUserIds.has(id));
+
+      if (orphanedUserIds.length > 0) {
+        const orphanedDepRes = await ledgerPool.query(
+          `SELECT id, user_id, amount, status, created_at 
+           FROM deposit_requests 
+           WHERE user_id = ANY($1::int[]) 
+           ORDER BY created_at DESC`,
+          [orphanedUserIds]
+        );
+        orphanedDepositRequests = orphanedDepRes.rows;
+        orphanedDepositRequestsCount = orphanedDepRes.rowCount || orphanedDepositRequests.length;
+      }
+    }
+
+    res.json({
+      success: true,
+      dryRun: true,
+      summary: {
+        userFiles: {
+          missingOwnerCount: orphanedFilesRes.rows.length,
+          misalignedChatCount: misalignedChatFilesRes.rows.length,
+          totalImpacted: orphanedFilesRes.rows.length + misalignedChatFilesRes.rows.length
+        },
+        depositRequests: {
+          orphanedCount: orphanedDepositRequestsCount
+        }
+      },
+      details: {
+        orphanedUserFiles: orphanedFilesRes.rows,
+        misalignedChatFiles: misalignedChatFilesRes.rows,
+        orphanedDepositRequests: orphanedDepositRequests
+      }
+    });
+  } catch (error: any) {
+    console.error('[Admin Cleanup GET Error]:', error);
+    res.status(500).json({ error: error.message || 'Failed to complete physical audit of orphaned records.' });
+  }
+});
+
+router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool || !ledgerPool) {
+      return res.status(503).json({ error: 'Database connections are initializing or unavailable.' });
+    }
+
+    const dryRun = req.body.dryRun === true;
+
+    // Standard Identify Queries
+    const orphanedFilesRes = await pool.query(`
+      SELECT id, user_id, chat_id, file_name, file_url, file_size 
+      FROM user_files 
+      WHERE user_id IS NULL OR user_id NOT IN (SELECT id FROM users)
+    `);
+
+    const misalignedChatFilesRes = await pool.query(`
+      SELECT id, user_id, chat_id, file_name, file_url, file_size 
+      FROM user_files 
+      WHERE chat_id IS NOT NULL AND chat_id NOT IN (SELECT id FROM chats)
+    `);
+
+    // Fetch deposit request user IDs
+    const reqUsersRes = await ledgerPool.query('SELECT DISTINCT user_id FROM deposit_requests');
+    const distinctRequestUserIds = reqUsersRes.rows.map((row: any) => row.user_id);
+
+    let orphanedDepositRequests: any[] = [];
+    let orphanedUserIds: number[] = [];
+
+    if (distinctRequestUserIds.length > 0) {
+      const existingUsersRes = await pool.query(
+        'SELECT id FROM users WHERE id = ANY($1::int[])',
+        [distinctRequestUserIds]
+      );
+      const existingUserIds = new Set(existingUsersRes.rows.map((row: any) => row.id));
+      orphanedUserIds = distinctRequestUserIds.filter((id: number) => !existingUserIds.has(id));
+
+      if (orphanedUserIds.length > 0) {
+        const orphanedDepRes = await ledgerPool.query(
+          `SELECT id, user_id, amount, status FROM deposit_requests WHERE user_id = ANY($1::int[])`,
+          [orphanedUserIds]
+        );
+        orphanedDepositRequests = orphanedDepRes.rows;
+      }
+    }
+
+    if (dryRun) {
+      return res.json({
+        success: true,
+        dryRun: true,
+        summary: {
+          userFiles: {
+            missingOwnerCount: orphanedFilesRes.rows.length,
+            misalignedChatCount: misalignedChatFilesRes.rows.length,
+            totalImpacted: orphanedFilesRes.rows.length + misalignedChatFilesRes.rows.length
+          },
+          depositRequests: {
+            orphanedCount: orphanedDepositRequests.length
+          }
+        },
+        details: {
+          orphanedUserFiles: orphanedFilesRes.rows,
+          misalignedChatFiles: misalignedChatFilesRes.rows,
+          orphanedDepositRequests: orphanedDepositRequests
+        }
+      });
+    }
+
+    // Execution Mode (No dryrun) - Prune/Fix Records!
+
+    // 1. Delete user_files with missing owners
+    let physicalFilesDeleted = 0;
+    const deletedUserFileIds: number[] = [];
+    
+    if (orphanedFilesRes.rows.length > 0) {
+      const idsToDelete = orphanedFilesRes.rows.map((row: any) => row.id);
+      
+      // Perform database deletion
+      await pool.query(
+        'DELETE FROM user_files WHERE id = ANY($1::int[])',
+        [idsToDelete]
+      );
+
+      // Clean up uploads directory off physical disk
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      for (const fileRow of orphanedFilesRes.rows) {
+        if (fileRow.file_url) {
+          try {
+            // Check if file_url is a relative path name (not an external http/https URL)
+            if (!fileRow.file_url.startsWith('http://') && !fileRow.file_url.startsWith('https://')) {
+              const filePath = path.join(uploadDir, fileRow.file_url);
+              await fs.unlink(filePath).catch(() => {});
+              physicalFilesDeleted++;
+            }
+          } catch (itemErr: any) {
+            console.error(`[Admin Cleanup] Failed physical unlinking for ${fileRow.file_url}:`, itemErr.message);
+          }
+        }
+        deletedUserFileIds.push(fileRow.id);
+      }
+    }
+
+    // 2. Align chat references (Set chat_id = NULL on orphaned chats)
+    let chatReferencesAlignedCount = 0;
+    if (misalignedChatFilesRes.rows.length > 0) {
+      const idsToAlign = misalignedChatFilesRes.rows.map((row: any) => row.id);
+      const updateRes = await pool.query(
+        'UPDATE user_files SET chat_id = NULL WHERE id = ANY($1::int[])',
+        [idsToAlign]
+      );
+      chatReferencesAlignedCount = updateRes.rowCount || idsToAlign.length;
+    }
+
+    // 3. Delete orphaned deposit_requests
+    let prunedDepositRequestsCount = 0;
+    if (orphanedUserIds.length > 0) {
+      const pruneRes = await ledgerPool.query(
+        'DELETE FROM deposit_requests WHERE user_id = ANY($1::int[])',
+        [orphanedUserIds]
+      );
+      prunedDepositRequestsCount = pruneRes.rowCount || orphanedUserIds.length;
+    }
+
+    // Audit logs entry
+    await auditLog(
+      (req as any).user?.id,
+      'Executed Database Maintenance Routine Cleanup',
+      'system',
+      {
+        dryRun: false,
+        userFilesPrunedCount: deletedUserFileIds.length,
+        physicalFilesPurgedCount: physicalFilesDeleted,
+        userFilesChatFixedCount: chatReferencesAlignedCount,
+        depositRequestsPrunedCount: prunedDepositRequestsCount
+      },
+      req
+    );
+
+    res.json({
+      success: true,
+      dryRun: false,
+      message_en: 'Database routine maintenance and physical asset pruning completed successfully.',
+      message_ar: 'تم إكمال الصيانة الدورية وتطهير الأصول المادية بنجاح.',
+      summary: {
+        userFiles: {
+          prunedCount: deletedUserFileIds.length,
+          physicalFilesPurged: physicalFilesDeleted,
+          chatReferencesAligned: chatReferencesAlignedCount
+        },
+        depositRequests: {
+          prunedCount: prunedDepositRequestsCount
+        }
+      }
+    });
+
+  } catch (error: any) {
+    console.error('[Admin Cleanup Action Error]:', error);
+    res.status(500).json({ error: error.message || 'Pruning routine execution failure occurred.' });
   }
 });
 

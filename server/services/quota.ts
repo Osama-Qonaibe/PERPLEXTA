@@ -11,17 +11,21 @@ export async function checkUserQuota(userId: number, toolId: string) {
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
       WHERE u.id = $1
+      ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+      LIMIT 1
     `, [userId]);
 
     const userRole = subRes.rows[0]?.role;
     const row = subRes.rows[0];
-    const isSubActive = row?.status === 'active' && row?.current_period_end && new Date(row.current_period_end) > new Date();
+    const isSubActive = row?.status === 'active' && (!row?.current_period_end || new Date(row.current_period_end) > new Date());
+
+    const isAdminWithoutActiveSub = userRole === 'admin' && !isSubActive;
 
     if (userRole !== 'admin' && !isSubActive) {
       return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
     }
 
-    if (userRole === 'admin') return { allowed: true };
+    if (isAdminWithoutActiveSub) return { allowed: true };
 
     const res = await pool.query(`
       WITH user_info AS (
@@ -30,9 +34,11 @@ export async function checkUserQuota(userId: number, toolId: string) {
           u.role,
           p.limits
         FROM users u
-        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' AND s.current_period_end > NOW()
+        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
         LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
+        ORDER BY s.current_period_end DESC NULLS LAST
+        LIMIT 1
       ),
       daily_usage AS (
         SELECT COALESCE(usage_count, 0) as count
@@ -59,16 +65,29 @@ export async function checkUserQuota(userId: number, toolId: string) {
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
     
-    const finalLimits = limits || {};
-    if (Object.keys(finalLimits).length === 0) {
-      return { allowed: true, currentDaily, currentMonthly };
+    let finalLimits = limits || {};
+    if (typeof finalLimits === 'string') {
+      try {
+        finalLimits = JSON.parse(finalLimits);
+      } catch (e) {
+        finalLimits = {};
+      }
     }
     
     const toolLimit = finalLimits[toolId];
-    if (!toolLimit || toolLimit === 'unlimited') return { allowed: true, currentDaily, currentMonthly };
+    if (!toolLimit || toolLimit === null) {
+      return { 
+        allowed: false, 
+        limit: 0, 
+        currentUsage: currentDaily,
+        period: 'daily'
+      };
+    }
+
+    if (toolLimit === 'unlimited') return { allowed: true, currentDaily, currentMonthly };
     
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
-    if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
+    if (dailyLimitVal !== undefined && dailyLimitVal !== null && dailyLimitVal !== 'unlimited' && dailyLimitVal !== '') {
       const dailyLimit = parseInt(dailyLimitVal);
       if (!isNaN(dailyLimit) && currentDaily >= dailyLimit) {
         return { 
@@ -81,7 +100,7 @@ export async function checkUserQuota(userId: number, toolId: string) {
     }
 
     let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
-    if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
+    if (monthlyLimitVal !== undefined && monthlyLimitVal !== null && monthlyLimitVal !== 'unlimited' && monthlyLimitVal !== '') {
       const monthlyLimit = parseInt(monthlyLimitVal);
       if (!isNaN(monthlyLimit) && currentMonthly >= monthlyLimit) {
         return { 
@@ -119,18 +138,22 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
       FROM users u
       LEFT JOIN subscriptions s ON u.id = s.user_id
       WHERE u.id = $1
+      ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+      LIMIT 1
     `, [userId]);
 
     const userRole = subRes.rows[0]?.role;
     const subRow = subRes.rows[0];
-    const isSubActive = subRow?.status === 'active' && subRow?.current_period_end && new Date(subRow.current_period_end) > new Date();
+    const isSubActive = subRow?.status === 'active' && (!subRow?.current_period_end || new Date(subRow.current_period_end) > new Date());
+
+    const isAdminWithoutActiveSub = userRole === 'admin' && !isSubActive;
 
     if (userRole !== 'admin' && !isSubActive) {
       await client.query('ROLLBACK');
       return { allowed: false, limit: 0, currentUsage: 1, period: 'daily' };
     }
 
-    if (userRole === 'admin') {
+    if (isAdminWithoutActiveSub) {
       await client.query('COMMIT');
       return { allowed: true };
     }
@@ -155,9 +178,11 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
           u.role,
           p.limits
         FROM users u
-        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' AND s.current_period_end > NOW()
+        LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'
         LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
+        ORDER BY s.current_period_end DESC NULLS LAST
+        LIMIT 1
       ),
       daily_usage AS (
         SELECT COALESCE(usage_count, 0) as count
@@ -186,19 +211,27 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
     const currentDaily = parseInt(daily_count || '0');
     const currentMonthly = parseInt(monthly_count || '0');
 
-    const finalLimits = limits || {};
-    if (Object.keys(finalLimits).length === 0) {
-      await client.query(`
-        UPDATE user_usage 
-        SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $1 AND tool_id = $2 AND usage_date = CURRENT_DATE
-      `, [userId, toolId]);
-      await client.query('COMMIT');
-      return { allowed: true, currentDaily: currentDaily + 1, currentMonthly: currentMonthly + 1 };
+    let finalLimits = limits || {};
+    if (typeof finalLimits === 'string') {
+      try {
+        finalLimits = JSON.parse(finalLimits);
+      } catch (e) {
+        finalLimits = {};
+      }
     }
 
     const toolLimit = finalLimits[toolId];
-    if (!toolLimit || toolLimit === 'unlimited') {
+    if (!toolLimit || toolLimit === null) {
+      await client.query('ROLLBACK');
+      return { 
+        allowed: false, 
+        limit: 0, 
+        currentUsage: currentDaily,
+        period: 'daily'
+      };
+    }
+
+    if (toolLimit === 'unlimited') {
       await client.query(`
         UPDATE user_usage 
         SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
@@ -209,7 +242,7 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
     }
 
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
-    if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
+    if (dailyLimitVal !== undefined && dailyLimitVal !== null && dailyLimitVal !== 'unlimited' && dailyLimitVal !== '') {
       const dailyLimit = parseInt(dailyLimitVal);
       if (!isNaN(dailyLimit) && currentDaily >= dailyLimit) {
         await client.query('ROLLBACK');
@@ -223,7 +256,7 @@ export async function checkAndIncrementQuota(userId: number, toolId: string): Pr
     }
 
     let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
-    if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
+    if (monthlyLimitVal !== undefined && monthlyLimitVal !== null && monthlyLimitVal !== 'unlimited' && monthlyLimitVal !== '') {
       const monthlyLimit = parseInt(monthlyLimitVal);
       if (!isNaN(monthlyLimit) && currentMonthly >= monthlyLimit) {
         await client.query('ROLLBACK');
@@ -385,14 +418,14 @@ async function checkAndTriggerQuotaWarnings(userId: number, toolId: string, curr
     let dailyLimitVal = typeof toolLimit === 'object' ? toolLimit.daily : toolLimit;
     let monthlyLimitVal = typeof toolLimit === 'object' ? toolLimit.monthly : null;
 
-    if (dailyLimitVal && dailyLimitVal !== 'unlimited') {
+    if (dailyLimitVal !== undefined && dailyLimitVal !== null && dailyLimitVal !== 'unlimited' && dailyLimitVal !== '') {
       const limit = parseInt(dailyLimitVal);
       if (!isNaN(limit) && limit > 0) {
         await evaluateAndNotify(userId, toolId, currentDailyAfter, limit, 'daily');
       }
     }
 
-    if (monthlyLimitVal && monthlyLimitVal !== 'unlimited') {
+    if (monthlyLimitVal !== undefined && monthlyLimitVal !== null && monthlyLimitVal !== 'unlimited' && monthlyLimitVal !== '') {
       const limit = parseInt(monthlyLimitVal);
       if (!isNaN(limit) && limit > 0) {
         await evaluateAndNotify(userId, toolId, currentMonthlyAfter, limit, 'monthly');

@@ -1089,6 +1089,55 @@ const CommandCenterView = ({
                 if (
                   !window.confirm(
                     language === "ar"
+                      ? "هل أنت متأكد من فحص وتطهير السجلات المعلقة وتوريدات الملفات التالفة؟"
+                      : "Are you sure you want to run the database maintenance routine to look for and delete orphaned files and requests?",
+                  )
+                )
+                  return;
+                try {
+                  const res = await fetch(
+                    "/api/admin/maintenance/cleanup",
+                    {
+                      method: "POST",
+                      headers: { 
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify({ dryRun: false }),
+                    },
+                  );
+                  if (res.ok) {
+                    const cleanRes = await res.json();
+                    const msg = language === "ar"
+                      ? `تم التطهير بنجاح!\nالملفات المحدوفة: ${cleanRes.summary.userFiles.prunedCount}\nالطلبات المحذوفة: ${cleanRes.summary.depositRequests.prunedCount}`
+                      : `Cleanup Completed Successfully!\nPruned files: ${cleanRes.summary.userFiles.prunedCount}\nPruned requests: ${cleanRes.summary.depositRequests.prunedCount}`;
+                    alert(msg);
+                    if (typeof fetchData === 'function') fetchData();
+                  } else {
+                    const errData = await res.json();
+                    showToast(errData.error || "Cleanup failed", "error");
+                  }
+                } catch (e: any) {
+                  console.error("Cleanup failed", e);
+                  showToast(e.message || "Cleanup failed", "error");
+                }
+              }}
+              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-md bg-purple-500/5 border border-purple-500/10 hover:bg-purple-500/10 hover:border-purple-500/30 transition-theme"
+            >
+              <Database
+                size={15}
+                className="text-purple-500 group-hover:scale-110 transition-transform"
+              />
+              <span className="text-[8px] font-bold text-purple-600 uppercase text-center leading-tight">
+                {language === "ar" ? "تطهير السجلات المعلقة" : "Prune Orphaned Records"}
+              </span>
+            </button>
+
+            <button
+              onClick={async () => {
+                if (
+                  !window.confirm(
+                    language === "ar"
                       ? "هل أنت متأكد من تطهير الإشعارات القديمة؟"
                       : "Prune system notifications older than 30 days?",
                   )

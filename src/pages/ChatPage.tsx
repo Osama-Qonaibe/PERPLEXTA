@@ -3982,6 +3982,38 @@ export const ChatPage: React.FC = () => {
     prevUserRef.current = user;
   }, [user]);
 
+  // Subscription Expiry/Renewal Warning Hook
+  useEffect(() => {
+    if (!user || !user.subscription || user.subscription.status !== 'active') return;
+    const periodEnd = user.subscription.current_period_end;
+    if (!periodEnd) return;
+
+    const expiryTime = new Date(periodEnd).getTime();
+    const nowTime = Date.now();
+    const diffDays = (expiryTime - nowTime) / (1000 * 60 * 60 * 24);
+
+    // If subscription expires in less than 3 days and is still active
+    if (diffDays > 0 && diffDays <= 3) {
+      const daysLeft = Math.ceil(diffDays);
+      const planNameAr = user.subscription.plan_name_ar || user.subscription.plan_name_en;
+      const planNameEn = user.subscription.plan_name_en;
+
+      const title = dir === 'rtl' ? '⚠️ تذكير بتجديد الاشتراك' : '⚠️ Subscription Renewal Alert';
+      const desc = dir === 'rtl'
+        ? `باقي ${daysLeft} من الأيام على انتهاء/تجديد اشتراكك في باقة "${planNameAr}". يرجى التأكد من شحن حسابك للاستمرار بالخدمة.`
+        : `Your "${planNameEn}" membership will renew/expire in ${daysLeft} days. Ensure your balance is sufficient to maintain access.`;
+
+      toast.warning(title, {
+        description: desc,
+        duration: 10000,
+        action: {
+          label: dir === 'rtl' ? 'إدارة الاشتراك' : 'Manage Subscription',
+          onClick: () => navigate('/subscription')
+        }
+      });
+    }
+  }, [user, dir, navigate]);
+
   useEffect(() => {
     if (isMobile && (selectedTool === 'code' || selectedTool === 'notebook')) {
       setSelectedTool('chat');
@@ -4001,6 +4033,44 @@ export const ChatPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
   const [liveElapsed, setLiveElapsed] = useState<number>(0);
+  const [ledgerNotice, setLedgerNotice] = useState<{ textAr: string; textEn: string } | null>(null);
+  const [typedNotice, setTypedNotice] = useState<string>('');
+
+  // Real-time Ledger Typewriter Effects
+  useEffect(() => {
+    if (!ledgerNotice) {
+      setTypedNotice('');
+      return;
+    }
+    const fullText = dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn;
+    setTypedNotice('');
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      if (i <= fullText.length) {
+        setTypedNotice(fullText.slice(0, i));
+      } else {
+        clearInterval(interval);
+      }
+    }, 15);
+    return () => clearInterval(interval);
+  }, [ledgerNotice, dir]);
+
+  useEffect(() => {
+    if (!isGenerating && ledgerNotice) {
+      const handler = setTimeout(() => {
+        setLedgerNotice(null);
+      }, 4500);
+      return () => clearTimeout(handler);
+    }
+  }, [isGenerating, ledgerNotice]);
+
+  useEffect(() => {
+    if (isGenerating) {
+      setLedgerNotice(null);
+      setTypedNotice('');
+    }
+  }, [isGenerating]);
 
   useEffect(() => {
     let intervalId: any = null;
@@ -5082,15 +5152,74 @@ export const ChatPage: React.FC = () => {
       triggerMemoryNotification('cleanup', desc);
     };
 
+    const getToolFriendlyNameLocal = (toolId: string, lang: 'en' | 'ar'): string => {
+      const mapping: Record<string, { en: string; ar: string }> = {
+        'chat': { en: 'Strategic Assistant', ar: 'المساعد الاستراتيجي' },
+        'chat_fast': { en: 'Fast Technical AI', ar: 'الذكاء التقني السريع' },
+        'chat_pro': { en: 'Reasoning Pro Engine', ar: 'محرك الاستنتاج المتقدم' },
+        'chat_reasoning': { en: 'Advanced Reasoning Protocol', ar: 'بروتوكول التفكير المعقد' },
+        'perplexta_analysis': { en: 'Perplexta Analysis & Audit', ar: 'تحليل وبحث بيربليكستا' },
+        'image': { en: 'Visual Synthesis Engine', ar: 'محرك التوليد البصري' },
+        'video': { en: 'Cinematic Video Generator', ar: 'مولد الفيديو السينمائي' },
+        'tts': { en: 'Voice Synthesis Engine', ar: 'محرك التوليد الصوتي' },
+        'stt': { en: 'Speech Transcription', ar: 'التحويل الصوتي للنص' },
+      };
+      return mapping[toolId]?.[lang] || toolId;
+    };
+
     const onWalletChargeNotice = (data: any) => {
       const { toolId, charged, amount } = data;
-      const toolLabel = toolId === 'perplexta_analysis' 
-        ? (dir === 'rtl' ? 'البحث التفصيلي العسكري المعمق' : 'Deep Military-Grade Analysis')
-        : toolId;
-      const msg = dir === 'rtl'
-        ? `✓ نظام المحاسبة التلقائي: تم خصم ${charged === 'points' ? `${amount} نقطة أداة` : `$${amount.toFixed(2)} رصيد نقدي`} مقابل تشغيل أداة "${toolLabel}" بنجاح وتأصيل المعاملة بالدفتر.`
-        : `✓ Auto-Billing: Charged ${charged === 'points' ? `${amount} tool points` : `$${amount.toFixed(2)} cash balance`} for executing "${toolLabel}" under ledger reference.`;
-      toast.info(msg, { duration: 6000 });
+      const fnAr = getToolFriendlyNameLocal(toolId, 'ar');
+      const fnEn = getToolFriendlyNameLocal(toolId, 'en');
+
+      const textAr = `✓ تم خصم ${charged === 'points' ? `${amount} نقاط` : `$${amount.toFixed(2)}`} لتشغيل "${fnAr}"، يمكنك كسب المزيد من النقاط بدعوة الأصدقاء! 🎁`;
+      const textEn = `✓ Charged ${charged === 'points' ? `${amount} points` : `$${amount.toFixed(2)}`} for "${fnEn}". Earn free points now by inviting your friends! 🎁`;
+
+      setLedgerNotice({ textAr, textEn });
+    };
+
+    const onQuotaWarning = (data: any) => {
+      const { toolId, pct, threshold, period } = data;
+      const pctString = `${pct}%`;
+      const periodStrAr = period === 'daily' ? 'اليومي' : 'الشهري';
+      const periodStrEn = period === 'daily' ? 'Daily' : 'Monthly';
+      
+      let title = '';
+      let desc = '';
+      
+      const toolNameAr = getToolFriendlyNameLocal(toolId, 'ar');
+      const toolNameEn = getToolFriendlyNameLocal(toolId, 'en');
+
+      if (threshold === 100) {
+        title = dir === 'rtl' ? `⛔ استنفاد حد الاستهلاك` : `⛔ Quota Exhausted`;
+        desc = dir === 'rtl' 
+          ? `لقد استنفدت حدك ${periodStrAr} بالكامل لأداة "${toolNameAr}". سيتم السحب من الرصيد الاحتياطي في محفظتك للاستمرار دون توقف.`
+          : `You have fully consumed your ${periodStrEn} quota for "${toolNameEn}". Future charges will fall back to your wallet.`;
+      } else if (threshold === 80) {
+        title = dir === 'rtl' ? `⚠️ تنبيه هام: استهلاك ${pctString}` : `⚠️ Urgent Quota Warning: ${pctString}`;
+        desc = dir === 'rtl'
+          ? `اقتربت من السعة الكاملة بنسبة استهلاك بلغت ${pctString} من حدك ${periodStrAr} لأداة "${toolNameAr}". بادر بدعوة أصدقائك وكسب أرصدة فورية في محفظتك!`
+          : `You are approaching full capacity with ${pctString} of your ${periodStrEn} limit spent for "${toolNameEn}". Invite your friends to earn points!`;
+      } else {
+        title = dir === 'rtl' ? `ℹ️ تنبيه استهلاك الحدود: ${pctString}` : `ℹ️ Quota Status Alert: ${pctString}`;
+        desc = dir === 'rtl'
+          ? `استهلكت ${pctString} من حدك ${periodStrAr} للمساعد "${toolNameAr}". شارك كود الإحالة المخصص لك مع زملائك المتميزين لكسب أرصدة مجانية فوراً!`
+          : `You have consumed ${pctString} of your ${periodStrEn} limit for "${toolNameEn}". Share your referral link to earn points instantly!`;
+      }
+
+      toast.info(title, {
+        description: desc,
+        duration: 8000,
+        action: {
+          label: dir === 'rtl' ? 'دعوة الأصدقاء 🎁' : 'Invite Friends 🎁',
+          onClick: () => {
+            const referralCode = user?.referral_code || '';
+            const shareUrl = `${window.location.origin}/register?ref=${referralCode}`;
+            navigator.clipboard.writeText(shareUrl);
+            toast.success(dir === 'rtl' ? 'تم نسخ رابط الدعوة مجهزاً للمشاركة!' : 'Invitation link copied successfully!');
+          }
+        }
+      });
     };
 
     const onChatError = (data: any) => {
@@ -5199,6 +5328,7 @@ export const ChatPage: React.FC = () => {
     socket.on('memory_cleanup', onMemoryCleanup);
     socket.on('memory_consolidation', onMemoryConsolidation);
     socket.on('wallet_charge_notice', onWalletChargeNotice);
+    socket.on('quota_warning', onQuotaWarning);
     socket.on('chat_error', onChatError);
 
     return () => {
@@ -5216,6 +5346,7 @@ export const ChatPage: React.FC = () => {
       socket.off('memory_cleanup', onMemoryCleanup);
       socket.off('memory_consolidation', onMemoryConsolidation);
       socket.off('wallet_charge_notice', onWalletChargeNotice);
+      socket.off('quota_warning', onQuotaWarning);
       socket.off('chat_error', onChatError);
     };
   }, [socket, dir]);
@@ -5266,6 +5397,9 @@ export const ChatPage: React.FC = () => {
         navigate('/subscription');
         return;
       }
+      
+      setLedgerNotice(null);
+      setTypedNotice('');
       
       const currentQuery = overrideQuery || query;
       if (!currentQuery.trim() && !selectedFile) return;
@@ -5955,13 +6089,47 @@ export const ChatPage: React.FC = () => {
       {renderVideoSettings()}
       {renderImageSettings()}
       {renderAudioSettings()}
-      <motion.div 
-        className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
-          isFocused 
-            ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
-            : ''
-        }`}
-      >
+
+      <div className="relative w-full">
+        {/* Real-time Ledger Typewriter Notice */}
+        <AnimatePresence>
+          {ledgerNotice && typedNotice && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -2 }}
+              transition={{ 
+                opacity: { duration: 0.2, ease: "easeOut" },
+                y: { duration: 0.25, ease: "easeOut" }
+              }}
+              className="absolute bottom-full left-0 mb-2 w-full z-50 pointer-events-none"
+            >
+              <div 
+                className={`flex items-center gap-2 font-sans text-xs sm:text-[13px] md:text-[14px] font-medium leading-relaxed select-none ${dir === 'rtl' ? 'justify-start text-right pr-1' : 'justify-start text-left pl-1'}`}
+                style={{ 
+                  color: user?.subscription?.plan_color || '#10b981',
+                  textShadow: `0 0 14px ${(user?.subscription?.plan_color || '#10b981')}45`
+                }}
+              >
+                <span>{typedNotice}</span>
+                {typedNotice.length < (dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn).length && (
+                  <span 
+                    className="inline-block w-1.5 h-4 animate-pulse bg-current relative top-0.5" 
+                    style={{ backgroundColor: user?.subscription?.plan_color || '#10b981' }} 
+                  />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.div 
+          className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
+            isFocused 
+              ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
+              : ''
+          }`}
+        >
         {/* Top: File/Image Preview */}
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
@@ -6292,6 +6460,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       </motion.div>
+      </div>
       
       {user && token && (
         <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">

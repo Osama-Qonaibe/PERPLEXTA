@@ -24,13 +24,15 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
         LEFT JOIN subscriptions s ON u.id = s.user_id
         LEFT JOIN plans p ON s.plan_id = p.id
         WHERE u.id = $1
+        ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+        LIMIT 1
       `, [userId]),
       getUserStorageUsage(userId)
     ]);
 
     const row = subRes.rows[0] || {};
     const hasActiveSub = row.plan_id && row.status === 'active';
-    const limits = row.limits || {};
+    const limits = typeof row.limits === 'object' && row.limits !== null ? row.limits : (typeof row.limits === 'string' ? JSON.parse(row.limits || '{}') : {});
     const storageLimit = limits['storage_mb'];
     
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;

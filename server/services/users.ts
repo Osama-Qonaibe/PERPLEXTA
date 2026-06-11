@@ -132,6 +132,7 @@ export async function getUserUsage(userId: string | number) {
     LEFT JOIN subscriptions s ON u.id = s.user_id
     LEFT JOIN plans p ON p.id = s.plan_id
     WHERE u.id = $1
+    ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
     LIMIT 1
   `, [userId]);
 
@@ -198,14 +199,29 @@ export async function getUserUsage(userId: string | number) {
   const marketplaceCountRes = await pool.query('SELECT COUNT(*) FROM marketplace_items WHERE user_id = $1', [userId]);
   const marketplaceCount = parseInt(marketplaceCountRes.rows[0]?.count || '0', 10);
 
-  const ALL_TOOLS = Object.keys(TOOL_INFO);
+  const ALLOWED_VISIBLE_TOOLS = [
+    'chat',
+    'chat_fast',
+    'chat_pro',
+    'chat_reasoning',
+    'perplexta_analysis',
+    'legal_analysis',
+    'notebook',
+    'image',
+    'video',
+    'stt',
+    'tts',
+    'learning',
+    'code',
+    'canvas'
+  ];
 
-  const usageItems = ALL_TOOLS.map(toolId => {
+  const usageItems = ALLOWED_VISIBLE_TOOLS.map(toolId => {
     const info = TOOL_INFO[toolId];
     const isAbsolute = ABSOLUTE_TOOLS.has(toolId);
 
-    // Admins are never bound by plan limits
-    if (isAdmin) {
+    // Admins are never bound by plan limits unless they have an active subscription for sandbox testing
+    if (isAdmin && !hasActiveSub) {
       let currentUsage = 0;
       if (toolId === 'storage_mb') currentUsage = storageUsageMB;
       else if (toolId === 'marketplace_listings') currentUsage = marketplaceCount;
@@ -226,7 +242,8 @@ export async function getUserUsage(userId: string | number) {
       };
     }
 
-    const rawLimits = plan.limits?.[toolId] ?? null;
+    const parsedLimits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits : (typeof plan.limits === 'string' ? JSON.parse(plan.limits || '{}') : {});
+    const rawLimits = parsedLimits?.[toolId] ?? null;
     let dailyLimit: number | null = null;
     let monthlyLimit: number | null = null;
     let totalLimit: number | null = null;
@@ -251,6 +268,11 @@ export async function getUserUsage(userId: string | number) {
         dailyLimit = parsed;
         monthlyLimit = parsed;
       }
+    } else {
+      // Unspecified tool defaults to 0 (blocked) instead of fallback to null (unlimited)
+      dailyLimit = 0;
+      monthlyLimit = 0;
+      totalLimit = isAbsolute ? 0 : null;
     }
 
     // Absolute tools (storage, marketplace) use total/current, not daily/monthly counters
@@ -319,6 +341,8 @@ export async function getUserProfile(userId: string) {
     LEFT JOIN subscriptions s ON u.id = s.user_id
     LEFT JOIN plans p ON s.plan_id = p.id
     WHERE u.id = $1
+    ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+    LIMIT 1
   `, [userId]);
   
   if (result.rows.length === 0) return null;

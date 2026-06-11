@@ -1,7 +1,7 @@
 import express from 'express';
 import { pool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { chatLimiter } from '../middleware/rateLimit.js';
+import { chatLimiter, verifyConsumptionLimits } from '../middleware/rateLimit.js';
 import { 
   generateChatTitle, 
   createChat, 
@@ -24,11 +24,13 @@ const checkActiveSubscription = async (userId: number): Promise<boolean> => {
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
     WHERE u.id = $1
+    ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+    LIMIT 1
   `, [userId]);
   const row = subRes.rows[0];
   if (!row) return false;
   if (row.role === 'admin') return true;
-  return row.status === 'active' && row.current_period_end && new Date(row.current_period_end) > new Date();
+  return row.status === 'active' && (!row.current_period_end || new Date(row.current_period_end) > new Date());
 };
 
 router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
@@ -218,7 +220,7 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
   }
 });
 
-router.post("/sync-message", authenticateToken, chatLimiter, async (req: any, res) => {
+router.post("/sync-message", authenticateToken, chatLimiter, verifyConsumptionLimits, async (req: any, res) => {
   let userMessageId = 0;
   let assistantMessageId = 0;
   try {

@@ -486,12 +486,7 @@ export const SubscriptionPage: React.FC = () => {
                         "tts",
                         "learning",
                         "code",
-                        "canvas",
-                        "sovereign_memory",
-                        "sovereign_search",
-                        "x402_api",
-                        "storage_mb",
-                        "marketplace_listings"
+                        "canvas"
                       ];
 
                       return ALL_TOOLS.map((toolId) => {

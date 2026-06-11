@@ -216,7 +216,8 @@ router.post('/items', authenticateToken, async (req: any, res) => {
         WHERE u.id = $1
       `, [userId]);
 
-      const planLimits = subRes.rows[0]?.limits || {};
+      const rawLimits = subRes.rows[0]?.limits;
+      const planLimits = typeof rawLimits === 'object' && rawLimits !== null ? rawLimits : (typeof rawLimits === 'string' ? JSON.parse(rawLimits || '{}') : {});
       const maxListings = planLimits['marketplace_listings'];
       let limitVal: number | null = null;
       

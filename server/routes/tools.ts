@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { chatLimiter } from '../middleware/rateLimit.js';
+import { chatLimiter, verifyConsumptionLimits } from '../middleware/rateLimit.js';
 import { executeTaskLogic } from '../services/orchestrator.js';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
@@ -46,7 +46,7 @@ export interface ToolExecutionResponse {
  * Orchestration executor endpoint for executing specialized AI and digital intelligence tools.
  * Serves as the single, fully-typed source of truth for programmatic tool invocation.
  */
-router.post("/execute-task", authenticateToken, chatLimiter, async (req: express.Request & { user?: any }, res: express.Response) => {
+router.post("/execute-task", authenticateToken, chatLimiter, verifyConsumptionLimits, async (req: express.Request & { user?: any }, res: express.Response) => {
   const userId = req.user?.id;
   try {
     const subRes = (await pool.query(`
@@ -54,6 +54,8 @@ router.post("/execute-task", authenticateToken, chatLimiter, async (req: express
       FROM users u 
       LEFT JOIN subscriptions s ON u.id = s.user_id 
       WHERE u.id = $1
+      ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+      LIMIT 1
     `, [userId])) as { rows: { status: Subscription['status'] | null; role: User['role'] }[] };
     
     const role = subRes.rows[0]?.role;

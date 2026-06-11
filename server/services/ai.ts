@@ -254,6 +254,16 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
   const now = Date.now();
   
+  if (normProvider === 'google' || normProvider === 'gemini') {
+    const envKey = process.env.GEMINI_API_KEY;
+    if (envKey) {
+      const trimmed = envKey.trim();
+      if (trimmed && trimmed.startsWith('AIzaSy')) {
+        return trimmed;
+      }
+    }
+  }
+
   if (vaultCache.has(normProvider)) {
     const cached = vaultCache.get(normProvider)!;
     if (now < cached.expiresAt) {
@@ -277,8 +287,24 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   } catch (_) {}
 
   if (decryptedKey) {
+    if (normProvider === 'google' || normProvider === 'gemini') {
+      const startsWithAIza = decryptedKey.startsWith('AIzaSy');
+      const envKey = process.env.GEMINI_API_KEY;
+      if (!startsWithAIza && envKey && envKey.trim().startsWith('AIzaSy')) {
+        decryptedKey = envKey.trim();
+      }
+    }
     vaultCache.set(normProvider, { value: decryptedKey, expiresAt: now + CACHE_TTL_MS });
     return decryptedKey;
+  }
+
+  if (normProvider === 'google' || normProvider === 'gemini') {
+    const envKey = process.env.GEMINI_API_KEY;
+    if (envKey) {
+      const trimmed = envKey.trim();
+      vaultCache.set(normProvider, { value: trimmed, expiresAt: now + CACHE_TTL_MS });
+      return trimmed;
+    }
   }
 
   return null;
@@ -878,6 +904,31 @@ export async function callAIProvider(
       const errJson = await clonedRes.json();
       const errorDetail = JSON.stringify(errJson);
       
+      const isExpiredOrInvalid = errorDetail.includes('API key expired') || 
+                                errorDetail.includes('API_KEY_INVALID') || 
+                                errorDetail.includes('API key') ||
+                                res.status === 400 && (errorDetail.includes('INVALID_ARGUMENT') || errorDetail.includes('key'));
+
+      if (isExpiredOrInvalid && process.env.GEMINI_API_KEY && cleanApiKey !== process.env.GEMINI_API_KEY.trim()) {
+        console.warn(`[AI Service] Active API Key for Google/Gemini is expired or invalid. Retrying with system environment key...`);
+        const envKey = process.env.GEMINI_API_KEY.trim();
+        headers['x-goog-api-key'] = envKey;
+        const retryResEnv = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+        if (retryResEnv.ok) {
+          console.log(`[AI Service] Self-healed successfully using system environment API key.`);
+          return handleResponse(retryResEnv);
+        } else {
+          if (url.includes('/v1beta/')) {
+            const stableUrl = url.replace('/v1beta/', '/v1/');
+            const retryResEnvStable = await fetch(stableUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+            if (retryResEnvStable.ok) {
+              console.log(`[AI Service] Self-healed successfully using system environment API key on stable v1 endpoint.`);
+              return handleResponse(retryResEnvStable);
+            }
+          }
+        }
+      }
+
       const is404 = res.status === 404 || errorDetail.includes('NOT_FOUND') || errorDetail.includes('is not found') || errorDetail.includes('not found');
       
       if (is404) {
