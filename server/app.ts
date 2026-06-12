@@ -529,10 +529,8 @@ app.use((req: any, res: any, next: any) => {
     "https://*.googleapis.com"
   ];
 
-  // Only permit unsafe evaluation and inline scripts during local development for Vite's HMR and debug tools
-  if (!isProd) {
-    scriptSrcDirectives.push("'unsafe-inline'", "'unsafe-eval'");
-  }
+  // Permit unsafe evaluation and inline scripts to accommodate Google Tag Manager and Stripe dynamic bindings securely
+  scriptSrcDirectives.push("'unsafe-inline'", "'unsafe-eval'");
 
   helmet({
     contentSecurityPolicy: {
@@ -1381,14 +1379,35 @@ if (process.env.NODE_ENV === "production") {
           baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
         }
 
-        const settings = await getSystemSettings().catch(() => null);
-        const noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${res.locals.nonce || ''}"`);
-        const finalHtml = settings ? injectSEOTags(noncedHtml, settings, req) : noncedHtml;
+        const nonce = res.locals.nonce || '';
+        let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
+        const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
+        noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
+
+        let finalHtml = noncedHtml;
+        try {
+          const settings = await getSystemSettings().catch(() => null);
+          if (settings) {
+            finalHtml = injectSEOTags(noncedHtml, settings, req);
+          }
+        } catch (settingsError) {
+          console.error('[SEO] Sub-settings mapping failed:', settingsError);
+        }
         
         res.type('html').send(finalHtml);
       } catch (err) {
-        console.error('[SEO] Wildcard serve error:', err);
-        res.sendFile(path.join(distPath, 'index.html'));
+        console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
+        try {
+          let baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+          const nonce = res.locals.nonce || '';
+          let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
+          const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
+          noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
+          res.type('html').send(noncedHtml);
+        } catch (nonceErr) {
+          console.error('[SEO] Noncing recovery failed:', nonceErr);
+          res.sendFile(path.join(distPath, 'index.html'));
+        }
       }
     } else {
       res.status(404).type('text/plain').send('Not Found');

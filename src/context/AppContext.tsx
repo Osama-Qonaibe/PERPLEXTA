@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
+import { applyNonce } from '../utils/csp';
+
 
 type Language = 'ar' | 'en';
 type Theme = 'dark' | 'light';
@@ -1957,7 +1959,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profileFetched.current = false;
         fetchUserProfile();
         fetchBalance();
-        toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+        toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
       } else {
         localStorage.setItem('app_logged_in_toast', '1');
         localStorage.setItem('app_loader_type', 'login');
@@ -2337,14 +2339,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (loggedOutToast === '1') {
       localStorage.removeItem('app_logged_out_toast');
       setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!');
+        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!', { id: 'logout-success' });
       }, 100);
     }
     const loggedInToast = localStorage.getItem('app_logged_in_toast');
     if (loggedInToast === '1') {
       localStorage.removeItem('app_logged_in_toast');
       setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+        toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
       }, 100);
     }
   }, [language]);
@@ -2504,7 +2506,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
-          toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!');
+          toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
           
           return { success: true };
         } else {
@@ -2547,7 +2549,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
-          toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!');
+          toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
           
           return { success: true };
         } else {
@@ -3306,15 +3308,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!gaScript) {
         gaScript = document.createElement('script');
         gaScript.id = 'ga-script';
+        applyNonce(gaScript);
         gaScript.async = true;
         document.head.appendChild(gaScript);
       }
       gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${siteSettings.googleAnalyticsId}`;
 
-      let gaInlineScript = document.getElementById('ga-inline-script');
+      let gaInlineScript = document.getElementById('ga-inline-script') as HTMLScriptElement;
       if (!gaInlineScript) {
         gaInlineScript = document.createElement('script');
         gaInlineScript.id = 'ga-inline-script';
+        applyNonce(gaInlineScript);
         document.head.appendChild(gaInlineScript);
       }
       gaInlineScript.innerHTML = `

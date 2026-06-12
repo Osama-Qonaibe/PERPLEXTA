@@ -19,17 +19,17 @@ const resolveClientKey = (req: any): string => {
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 1500,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please slow down.' }
 });
 
-// Login/Signup only — keep strict (10 attempts per 15 min)
+// Login/Signup only — keep strict (30 attempts per 15 min)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -39,7 +39,7 @@ export const authLimiter = rateLimit({
 // Dedicated limiter for refresh-token endpoint — must NOT share with authLimiter
 export const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,       // 1 minute window
-  max: 10,                    // 10 refreshes per minute per user — well above normal need
+  max: 40,                    // 40 refreshes per minute per user — well above normal need
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -48,7 +48,7 @@ export const refreshLimiter = rateLimit({
 
 export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 60,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -57,7 +57,7 @@ export const chatLimiter = rateLimit({
 
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -66,7 +66,7 @@ export const forgotPasswordLimiter = rateLimit({
 
 export const tokenLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 150,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -75,7 +75,7 @@ export const tokenLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 1000,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -84,7 +84,7 @@ export const adminLimiter = rateLimit({
 
 export const broadcastLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 30,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -93,7 +93,7 @@ export const broadcastLimiter = rateLimit({
 
 export const forumLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 80,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,

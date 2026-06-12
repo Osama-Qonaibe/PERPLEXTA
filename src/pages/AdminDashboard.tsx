@@ -12595,7 +12595,7 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (token) {
       fetchPulseData();
-      const interval = setInterval(fetchPulseData, 5000);
+      const interval = setInterval(fetchPulseData, 20000);
       return () => clearInterval(interval);
     }
   }, [token]);

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
+import { getCSPNonce, applyNonce } from '../utils/csp';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
@@ -1354,6 +1355,9 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           .replace(/\((.*?)\)\s*:\s*\w+\s*=>/g, '($1) =>');
       }
 
+      const nonceVal = getCSPNonce();
+      const nonceAttr = nonceVal ? ` nonce="${nonceVal}"` : '';
+
       const iframe = document.createElement('iframe');
       iframe.setAttribute('sandbox', 'allow-scripts');
       iframe.style.display = 'none';
@@ -1362,7 +1366,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         <!DOCTYPE html>
         <html>
         <head>
-          <script>
+          <script${nonceAttr}>
             const customConsole = {
               log: (...args) => {
                 const text = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
@@ -1391,7 +1395,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </script>
         </head>
         <body>
-          <script>
+          <script${nonceAttr}>
             try {
               ${jsCode}
               window.parent.postMessage({ type: 'PERPLEXTA_DONE' }, '*');
@@ -4039,7 +4043,6 @@ export const ChatPage: React.FC = () => {
   // Real-time Ledger Typewriter Effects
   useEffect(() => {
     if (!ledgerNotice) {
-      setTypedNotice('');
       return;
     }
     const fullText = dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn;
@@ -4068,7 +4071,6 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (isGenerating) {
       setLedgerNotice(null);
-      setTypedNotice('');
     }
   }, [isGenerating]);
 
@@ -4527,6 +4529,7 @@ export const ChatPage: React.FC = () => {
 
         // Inject styles directly inside exportEl to ensure Tajawal loads inside isolated SVG/foreignObject elements
         const fontStyle = document.createElement('style');
+        applyNonce(fontStyle);
         fontStyle.textContent = `
           @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Tajawal:wght@200;300;400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
           * {
@@ -6093,14 +6096,14 @@ export const ChatPage: React.FC = () => {
       <div className="relative w-full">
         {/* Real-time Ledger Typewriter Notice */}
         <AnimatePresence>
-          {ledgerNotice && typedNotice && (
+          {ledgerNotice && (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -2 }}
               transition={{ 
-                opacity: { duration: 0.2, ease: "easeOut" },
-                y: { duration: 0.25, ease: "easeOut" }
+                opacity: { duration: 0.35, ease: "easeInOut" },
+                y: { duration: 0.4, ease: "easeInOut" }
               }}
               className="absolute bottom-full left-0 mb-2 w-full z-50 pointer-events-none"
             >
@@ -6111,8 +6114,8 @@ export const ChatPage: React.FC = () => {
                   textShadow: `0 0 14px ${(user?.subscription?.plan_color || '#10b981')}45`
                 }}
               >
-                <span>{typedNotice}</span>
-                {typedNotice.length < (dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn).length && (
+                <span>{typedNotice || ''}</span>
+                {typedNotice && typedNotice.length < (dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn).length && (
                   <span 
                     className="inline-block w-1.5 h-4 animate-pulse bg-current relative top-0.5" 
                     style={{ backgroundColor: user?.subscription?.plan_color || '#10b981' }} 
