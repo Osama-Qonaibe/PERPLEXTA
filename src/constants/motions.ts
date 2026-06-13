@@ -3,14 +3,14 @@ import { Variants } from 'motion/react';
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export const perplextaPageTransition: Variants = {
-  initial: { opacity: 0 },
+  initial: { opacity: 1 },
   animate: {
     opacity: 1,
-    transition: { duration: 0.15, ease: EASE },
+    transition: { duration: 0, ease: EASE },
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0.1, ease: EASE },
+    transition: { duration: 0.08, ease: EASE },
   },
 };
 
