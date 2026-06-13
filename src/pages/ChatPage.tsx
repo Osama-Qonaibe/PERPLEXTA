@@ -6875,7 +6875,7 @@ export const ChatPage: React.FC = () => {
                   key="onboarding-view" 
                   initial={{ opacity: 0, scale: 1, filter: "blur(4px)" }}
                   animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacit scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
+                  exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
                 >
@@ -6911,7 +6911,7 @@ export const ChatPage: React.FC = () => {
                 key="chat-thread-view"
                 initial={{ opacity: 0, filter: "blur(3px)" }}
                 animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacit filter: "blur(3px)" }}
+                exit={{ opacity: 0, filter: "blur(3px)" }}
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4"
               >
@@ -7797,7 +7797,7 @@ export const ChatPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacit scale: 0.95, y: 15 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
               className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
                 theme === 'dark' 
                   ? 'bg-[#161618] border-zinc-800 text-gray-100' 
