@@ -1830,7 +1830,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   try {
                     window.close();
                   } catch (e) {
-                    console.log("window.close is blocked by browser parameters", e);
+                    // Window closure blocked by browser parameters
                   }
                   window.location.href = "/?standalone=true";
                 }, 2500);
@@ -2090,7 +2090,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const performRefresh = async (): Promise<string | null> => {
       try {
-        console.log('[Session] Rotating access token/session...');
         const res = await fetch('/api/auth/refresh-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2118,7 +2117,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setRefreshTokenState(newRefreshToken);
           }
 
-          console.log('[Session] Active session tokens refreshed & rotated successfully.');
           return newAccessToken;
         }
         return null;
@@ -2197,7 +2195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
               }
 
-              console.log('[Fetch Interceptor] Re-executing failed request with pristine token.');
               return await originalFetch(resource, newConfig);
             }
           }
