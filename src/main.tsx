@@ -4,6 +4,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
 import './index.css';
 
+// Silence console calls on production to secure against potential telemetry / token info leakage
+if (!import.meta.env.DEV) {
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

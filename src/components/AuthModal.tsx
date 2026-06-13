@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSwipeToClose } from '../utils/swipe';
@@ -8,6 +8,7 @@ import { useSwipeToClose } from '../utils/swipe';
 export const AuthModal: React.FC = () => {
   const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const ref = searchParams.get('ref') || localStorage.getItem('app_ref') || undefined;
   
   const swipeHandlers = useSwipeToClose({
@@ -84,11 +85,15 @@ export const AuthModal: React.FC = () => {
         const result = await signup(email, password, email.split('@')[0], ref);
         if (!result.success) {
           setError(result.error || 'Signup failed');
+        } else {
+          navigate('/chat');
         }
       } else {
         const result = await login(email, password);
         if (!result.success) {
           setError(result.error || 'Login failed');
+        } else {
+          navigate('/chat');
         }
       }
     } catch (err) {

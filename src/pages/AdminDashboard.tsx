@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
@@ -11233,6 +11233,9 @@ const SystemSettingsView = ({
   const [googleSiteVerification, setGoogleSiteVerification] = useState(
     siteSettings.googleSiteVerification || "",
   );
+  const [blockedPaths, setBlockedPaths] = useState(
+    siteSettings.blocked_paths || "",
+  );
 
   const [logoBase64, setLogoBase64] = useState<string | null>(
     siteSettings.logoBase64,
@@ -11258,6 +11261,7 @@ const SystemSettingsView = ({
   const [crawlAuditScores, setCrawlAuditScores] = useState<{ total: number; protected: number; indexed: number } | null>(null);
   const [crawlAuditFilter, setCrawlAuditFilter] = useState<"all" | "index" | "noindex">("all");
   const [crawlAuditLogs, setCrawlAuditLogs] = useState<string[]>([]);
+  const [crawlComplianceRate, setCrawlComplianceRate] = useState<string>("100.00% SECURE");
 
   useEffect(() => {
     setIsOperationPending(isSaving);
@@ -11291,6 +11295,7 @@ const SystemSettingsView = ({
           setKeywordsAr(kwsArVal);
           setGoogleAnalyticsId(data.google_analytics_id || "");
           setGoogleSiteVerification(data.google_site_verification || "");
+          setBlockedPaths(data.blocked_paths || "");
           setLogoBase64(data.logo_url || null);
           setLogoLightBase64(data.logo_light_url || null);
           setFaviconBase64(data.favicon_url || null);
@@ -11311,6 +11316,7 @@ const SystemSettingsView = ({
             logoLightBase64: data.logo_light_url || null,
             faviconBase64: data.favicon_url || null,
             seoImageUrl: data.seo_image_url || null,
+            blocked_paths: data.blocked_paths || "",
           });
         }
       } catch (error) {
@@ -11477,6 +11483,7 @@ const SystemSettingsView = ({
           logo_url: siteSettings.logoBase64,
           favicon_url: siteSettings.faviconBase64,
           seo_image_url: seoImageUrl,
+          blocked_paths: blockedPaths,
         }),
       });
 
@@ -11490,6 +11497,7 @@ const SystemSettingsView = ({
           googleAnalyticsId,
           googleSiteVerification,
           seoImageUrl,
+          blocked_paths: blockedPaths,
         });
         showToast(t("saveSuccess") || "SEO settings saved", "success");
       } else {
@@ -11503,62 +11511,123 @@ const SystemSettingsView = ({
   };
 
   // --- CRAWLABILITY ROUTE LIST, SCANNER, AND EXPORT CONSOLE FUNCTIONS ---
-  const routesSchema = [
-    { path: "/", labelEn: "Home Gateway Redirect", labelAr: "بوابة التوجيه الرئيسية", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "بوابة توجيه عامة تقوم بتوجيه المستخدمين للواجهة الافتراضية." },
-    { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "صفحة خطط الاشتراكات", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "صفحة عامة لعرض مزايا وتفاصيل العضوية والخطط السعرية." },
-    { path: "/forum", labelEn: "Community Discussion Forum", labelAr: "منتدى النقاش المجتمعي", type: "public", status: "index", descriptionEn: "Public discussion boards to index community engagement and topics.", descriptionAr: "لوحات نقاش عامة لتعزيز وأرشفة تفاعل المجتمع والمواضيع." },
-    { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "متجر الإضافات والنماذج الذكية", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "معرض عام لعرض ملحقات الأنظمة المدمجة والقوالب الاحترافية." },
-    { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "المدونة التقنية والتعليمية", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "مركز مقالات عام لنشر التحليلات الفنية والدروس التعليمية." },
-    { path: "/terms", labelEn: "Terms of Service", labelAr: "شروط الخدمة والاستخدام", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "اتفاقية قانونية عامة تنظم الاستخدام وحقوق الملكية للمنصة." },
-    { path: "/privacy", labelEn: "Privacy Policy Charter", labelAr: "سياسة الخصوصية وحماية البيانات", type: "public", status: "index", descriptionEn: "Mandatory public charter highlighting database handling policies.", descriptionAr: "ميثاق خصوصية عام يوضح سياسات التعامل الآمن مع قواعد البيانات." },
-    { path: "/about", labelEn: "About Corporate Pitch", labelAr: "صفحة التعريف والرؤية", type: "public", status: "index", descriptionEn: "Public company presentation showcasing core tech vision.", descriptionAr: "عرض عام للمؤسسة يعزز الثقة ويوضح الرؤية الابتكارية." },
-    { path: "/chat", labelEn: "Intelligence Workspace (Chat Component)", labelAr: "مساحة المحادثة والتحليل الذكي المتطور", type: "private", status: "noindex", descriptionEn: "Highly sensitive user-curated environment containing active AI transcriptions.", descriptionAr: "مساحة عمل خاصة وسرية للغاية تحتوي على سجل محادثات الذكاء الاصطناعي." },
-    { path: "/settings", labelEn: "User Profile & Security Vault", labelAr: "إعدادات الحساب وحقيبة أمان العضو", type: "private", status: "noindex", descriptionEn: "Sensitive account configurations, referral links, and session details.", descriptionAr: "إعدادات شخصية حساسة ومفاتيح العضوية وسجلات الجلسات النشطة." },
-    { path: "/rewards", labelEn: "Affiliate Ledger & KYC Pending Board", labelAr: "نظام المكافآت والتحقق المالي المتقدم", type: "private", status: "noindex", descriptionEn: "Ledger transaction audits, KYC identities, and wallet addresses.", descriptionAr: "سجلات ماليّة لتعيين المكافآت وبيانات التحقق وإثبات الهوية." },
-    { path: "/reset-password", labelEn: "Credential Reset Gateway", labelAr: "بوابة استعادة وتعيين كلمة المرور", type: "private", status: "noindex", descriptionEn: "Temporary authentication token interface. Must stay isolated.", descriptionAr: "واجهة استعادة كلمات المرور باستخدام رموز تحقق متغيرة." },
-    { path: "/admin", labelEn: "System Command Center (Core)", labelAr: "لوحة التحكم الرئيسية والقيادة والتحكم", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged interface displaying infrastructure configurations.", descriptionAr: "واجهة تحكم فائقة الحساسية للتحكم بالبنية التحتية والموديلات." }
-  ];
-
-  const runCrawlAuditScan = () => {
-    setCrawlScanning(true);
-    setCrawlAuditLogs([]);
-    setCrawlAuditScores(null);
-    
-    const isAr = language === "ar";
-    
-    const messages = [
-      isAr
-        ? "🔎 بدء الفحص الشامل لمسارات منصة Perplexta..." 
-        : "🔎 Initiating platform-wide crawlability analysis on Perplexta...",
-      isAr
-        ? "🔗 جاري تحليل مصفوفة المسارات العامة وتفحيص رؤوس الاستجابة الأمنية للهيكل..."
-        : "🔗 Synthesizing standard route schemas and examining HTTP response headers...",
-      isAr
-         ? "📡 التحقق من وسم الروبوت بالترويسة والتحقق من X-Robots-Tag..."
-         : "📡 Querying page templates and inspecting meta:robots / X-Robots-Tag configurations...",
-      isAr
-        ? "🛡️ مطابقة النتائج بالقائمة البيضاء الدستورية (Constitution Security Whitelist)..."
-        : "🛡️ Interrogating current active paths against the Constitution Whitelist...",
-      isAr 
-        ? "✔️ تم فحص كافة المسارات بنجاح ومطابقتها للمعايير والأنظمة الأمنية الصارمة للمنصة!"
-        : "✔️ Scan completed. Search Engine Indexing protocols validated in perfect alignment!"
+  const routesSchema = useMemo(() => {
+    const base = [
+      { path: "/", labelEn: "Home Gateway Redirect", labelAr: "بوابة التوجيه الرئيسية", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "بوابة توجيه عامة تقوم بتوجيه المستخدمين للواجهة الافتراضية." },
+      { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "صفحة خطط الاشتراكات", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "صفحة عامة لعرض مزايا وتفاصيل العضوية والخطط السعرية." },
+      { path: "/forum", labelEn: "Community Discussion Forum", labelAr: "منتدى النقاش المجتمعي", type: "public", status: "index", descriptionEn: "Public discussion boards to index community engagement and topics.", descriptionAr: "لوحات نقاش عامة لتعزيز وأرشفة تفاعل المجتمع والمواضيع." },
+      { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "متجر الإضافات والنماذج الذكية", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "معرض عام لعرض ملحقات الأنظمة المدمجة والقوالب الاحترافية." },
+      { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "المدونة التقنية والتعليمية", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "مركز مقالات عام لنشر التحليلات الفنية والدروس التعليمية." },
+      { path: "/terms", labelEn: "Terms of Service", labelAr: "شروط الخدمة والاستخدام", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "اتفاقية قانونية عامة تنظم الاستخدام وحقوق الملكية للمنصة." },
+      { path: "/privacy", labelEn: "Privacy Policy Charter", labelAr: "سياسة الخصوصية وحماية البيانات", type: "public", status: "index", descriptionEn: "Mandatory public charter highlighting database handling policies.", descriptionAr: "ميثاق خصوصية عام يوضح سياسات التعامل الآمن مع قواعد البيانات." },
+      { path: "/about", labelEn: "About Corporate Pitch", labelAr: "صفحة التعريف والرؤية", type: "public", status: "index", descriptionEn: "Public company presentation showcasing core tech vision.", descriptionAr: "عرض عام للمؤسسة يعزز الثقة ويوضح الرؤية الابتكارية." },
+      { path: "/chat", labelEn: "Intelligence Workspace (Chat Component)", labelAr: "مساحة المحادثة والتحليل الذكي المتطور", type: "private", status: "noindex", descriptionEn: "Highly sensitive user-curated environment containing active AI transcriptions.", descriptionAr: "مساحة عمل خاصة وسرية للغاية تحتوي على سجل محادثات الذكاء الاصطناعي." },
+      { path: "/settings", labelEn: "User Profile & Security Vault", labelAr: "إعدادات الحساب وحقيبة أمان العضو", type: "private", status: "noindex", descriptionEn: "Sensitive account configurations, referral links, and session details.", descriptionAr: "إعدادات شخصية حساسة ومفاتيح العضوية وسجلات الجلسات النشطة." },
+      { path: "/rewards", labelEn: "Affiliate Ledger & KYC Pending Board", labelAr: "نظام المكافآت والتحقق المالي المتقدم", type: "private", status: "noindex", descriptionEn: "Ledger transaction audits, KYC identities, and wallet addresses.", descriptionAr: "سجلات ماليّة لتعيين المكافآت وبيانات التحقق وإثبات الهوية." },
+      { path: "/reset-password", labelEn: "Credential Reset Gateway", labelAr: "بوابة استعادة وتعيين كلمة المرور", type: "private", status: "noindex", descriptionEn: "Temporary authentication token interface. Must stay isolated.", descriptionAr: "واجهة استعادة كلمات المرور باستخدام رموز تحقق متغيرة." },
+      { path: "/admin-community", labelEn: "Sections Panel (Community Management)", labelAr: "لوحة تحكم الأقسام (إدارة المجتمع)", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged community, sections, and category moderation hub.", descriptionAr: "مركز إدارة ومراقبة الأقسام والفئات والمجتمع ذو صلاحيات متقدمة." },
+      { path: "/admin-sections", labelEn: "Sections Control Panel (External Modules)", labelAr: "لوحة تحكم الأقسام والأبحاث الخارجية", type: "admin", status: "noindex", descriptionEn: "External systems integration, categories block and custom module definitions.", descriptionAr: "لوحة ربط الأنظمة ومصادر الأبحاث الخارجية وتمرير المعطيات الحساسة." },
+      { path: "/admin/sections", labelEn: "Sections Dashboard Internal Portal", labelAr: "بوابة الأقسام الداخلية للأنظمة الإلكترونية", type: "admin", status: "noindex", descriptionEn: "Internal database mappings and custom categories routing matrix.", descriptionAr: "مصفوفة فحص مسارات قواعد البيانات الداخلية للأنظمة والمجتمع." },
+      { path: "/admin", labelEn: "System Command Center (Core)", labelAr: "لوحة التحكم الرئيسية والقيادة والتحكم", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged interface displaying infrastructure configurations.", descriptionAr: "واجهة تحكم فائقة الحساسية للتحكم بالبنية التحتية والموديلات." }
     ];
 
-    let step = 0;
-    const timer = setInterval(() => {
-      if (step < messages.length) {
-        setCrawlAuditLogs(prev => [...prev, `[CRAWLER-LOGS] ${messages[step]}`]);
-        step++;
-      } else {
-        clearInterval(timer);
-        setCrawlScanning(false);
-        setCrawlAuditScores({
-          total: routesSchema.length,
-          protected: routesSchema.filter(r => r.status === "noindex").length,
-          indexed: routesSchema.filter(r => r.status === "index").length
+    const dynamicBlockedList = siteSettings?.blocked_paths
+      ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
+      : [];
+
+    dynamicBlockedList.forEach((blockedPath: string) => {
+      const exists = base.some(r => r.path === blockedPath || r.path === '/' + blockedPath);
+      if (!exists) {
+        base.push({
+          path: blockedPath.startsWith('/') ? blockedPath : '/' + blockedPath,
+          labelEn: `Custom Excluded: ${blockedPath}`,
+          labelAr: `مسار محظور مخصص: ${blockedPath}`,
+          type: "custom",
+          status: "noindex",
+          descriptionEn: "Dynamically added via SEO System Exclusions control panel.",
+          descriptionAr: "تمت إضافته ديناميكياً لتأمين البيانات عبر لوحة التحكم."
         });
       }
-    }, 400);
+    });
+
+    return base;
+  }, [siteSettings, siteSettings?.blocked_paths]);
+
+  const runCrawlAuditScan = async () => {
+    if (crawlScanning) return; // Protect against concurrent scan execution
+    
+    // Explicitly reset all loading and data states for a fresh and reliable scan
+    setCrawlScanning(true);
+    setCrawlAuditLogs([
+      language === "ar" 
+        ? "⏳ يرجى الانتظار... جاري إنشاء بروتوكول اتصال آمن مع خادم التدقيق..." 
+        : "⏳ Initiating secure diagnostic connection to strict compliance core..."
+    ]);
+    setCrawlAuditScores(null);
+    setCrawlComplianceRate(language === "ar" ? "معلق" : "PENDING");
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds connection timeout
+    
+    try {
+      const response = await fetch(`/api/admin/seo-audit?lang=${language}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error("Failed to contact the SEO crawler audit core on server.");
+      }
+      const data = await response.json();
+      
+      const messages = data.logs || [];
+      setCrawlComplianceRate(data.compliance_score || "100.00% SECURE");
+      
+      let step = 0;
+      setCrawlAuditLogs([]); // Reset log queue to stream real logs
+      const timer = setInterval(() => {
+        if (step < messages.length) {
+          const logText = messages[step];
+          setCrawlAuditLogs(prev => [...prev, logText]);
+          step++;
+        } else {
+          clearInterval(timer);
+          setCrawlScanning(false);
+          setCrawlAuditScores({
+            total: routesSchema.length,
+            protected: routesSchema.filter((r: any) => r.status === "noindex").length,
+            indexed: routesSchema.filter((r: any) => r.status === "index").length
+          });
+        }
+      }, 500);
+
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error("[CrawlAudit] Scan failure:", err);
+      setCrawlScanning(false);
+      const isAr = language === "ar";
+      const isTimeout = err.name === "AbortError";
+      
+      setCrawlComplianceRate("0.00% HIGH_RISK");
+      setCrawlAuditScores({
+        total: routesSchema.length,
+        protected: 0,
+        indexed: 0
+      });
+      
+      setCrawlAuditLogs([
+        isTimeout
+          ? (isAr 
+              ? "🚨 [TIMEOUT] انتهت مهلة الاتصال بالخادم. الاستجابة متأخرة للغاية نتيجة لارتفاع زمن الاستجابة للمخدم." 
+              : "🚨 [TIMEOUT] The connection to the security compliance core timed out due to unstable network latency.")
+          : (isAr 
+              ? "🚨 [ERROR] فشل الاتصال بخادم التدقيق الصارم للتأكد من حماية بيئة المنصة." 
+              : "🚨 [ERROR] Failed to establish high-fidelity connection to strict backend audit service.")
+      ]);
+    }
   };
 
   const downloadCrawlAuditReport = () => {
@@ -11566,7 +11635,7 @@ const SystemSettingsView = ({
       platform: "Perplexta",
       timestamp: new Date().toISOString(),
       scanning_officer_id: "PERPLEXTA_ADMIN_V4",
-      security_compliance_rate: "100.00% SECURE",
+      security_compliance_rate: crawlComplianceRate,
       total_analysed_endpoints: routesSchema.length,
       indexing_policy_applied: {
         strict_user_data_isolation: "enforced",
@@ -11574,7 +11643,7 @@ const SystemSettingsView = ({
           "/", "/subscription", "/forum", "/marketplace", "/blog", "/terms", "/privacy", "/about"
         ]
       },
-      endpoints_analysis: routesSchema.map(r => ({
+      endpoints_analysis: routesSchema.map((r: any) => ({
         url_path: r.path,
         endpoint_role: r.labelEn,
         route_class: r.type.toUpperCase(),
@@ -11970,6 +12039,24 @@ const SystemSettingsView = ({
             </p>
           </div>
 
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {dir === "rtl" ? "حظر الفهرسة المخصص للمسارات (Exclusions List)" : "Dynamic Index Exclusions (Blocked Paths List)"}
+            </label>
+            <input
+              type="text"
+              placeholder={dir === "rtl" ? "مثال: /api/auth, /confidential-page (مفصولة بفاصلة)" : "e.g. /api/auth, /confidential-page, /custom-dashboard (comma-separated)"}
+              value={blockedPaths || ""}
+              onChange={(e) => setBlockedPaths(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
+              {dir === "rtl"
+                ? "أدخل المسارات الإضافية التي ترغب بحظر فهرستها مطلقاً في محركات البحث لحماية الخصوصية. يتم فصل المسارات بعلامة الفاصلة (,). المسارات الافتراضية والخاصة مع لوحات تسيير الأقسام يتم حظرها تلقائياً بالكامل في الهيكل."
+                : "Inject secondary sensitive routing paths you permanently want to shield from search rankings. Separate clean endpoints with a comma (,). Private/admin paths and Sections Control Panels are automatically shielded default."}
+            </p>
+          </div>
+
           {/* Real-time Google Search Results Preview (SERP Preview) */}
           <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
@@ -12304,7 +12391,7 @@ const SystemSettingsView = ({
         </div>
 
         {/* Audit Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
             <span className="text-xs text-gray-400">{language === "ar" ? "إجمالي المسارات" : "Total Routes Indexed"}</span>
             <div className="text-2xl font-bold mt-1 text-sky-500">
@@ -12315,7 +12402,7 @@ const SystemSettingsView = ({
           <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800/85" : "bg-gray-50 border-gray-200"}`}>
             <span className="text-xs text-gray-400">{language === "ar" ? "مسارات محمية (No-Index)" : "Shielded Secret Routes (No-Index)"}</span>
             <div className="text-2xl font-bold mt-1 text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] flex items-center gap-1.5">
-              {routesSchema.filter(r => r.status === "noindex").length}
+              {routesSchema.filter((r: any) => r.status === "noindex").length}
               <ShieldCheck size={16} className="text-emerald-500" />
             </div>
           </div>
@@ -12323,7 +12410,21 @@ const SystemSettingsView = ({
           <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
             <span className="text-xs text-gray-400">{language === "ar" ? "مسارات عامة (مؤرشفة)" : "Approved Public Domains"}</span>
             <div className="text-2xl font-bold mt-1 text-amber-500">
-              {routesSchema.filter(r => r.status === "index").length}
+              {routesSchema.filter((r: any) => r.status === "index").length}
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
+            <span className="text-xs text-gray-400">{language === "ar" ? "معدل سلامة الامتثال والأرشفة" : "Compliance & Indexing Rating"}</span>
+            <div className={`text-xl font-bold mt-1.5 uppercase tracking-tight flex items-center gap-1.5 ${
+              crawlComplianceRate.includes("SECURE") 
+                ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                : crawlComplianceRate === "PENDING" || crawlComplianceRate === "معلق"
+                ? "text-amber-500 animate-pulse"
+                : "text-rose-500"
+            }`}>
+              <span>{crawlComplianceRate}</span>
+              {crawlComplianceRate.includes("SECURE") && <CheckCircle size={14} className="text-emerald-500" />}
             </div>
           </div>
         </div>
@@ -12391,11 +12492,11 @@ const SystemSettingsView = ({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
               {routesSchema
-                .filter(r => {
+                .filter((r: any) => {
                   if (crawlAuditFilter === "all") return true;
                   return r.status === crawlAuditFilter;
                 })
-                .map((route, idx) => (
+                .map((route: any, idx: number) => (
                   <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#151517]/30 transition-all duration-200">
                     <td className={`py-3.5 font-mono text-xs ${language === "ar" ? "text-right" : "text-left"}`}>
                       <span className="text-gray-800 dark:text-gray-300 font-semibold">{route.path}</span>
@@ -12406,6 +12507,8 @@ const SystemSettingsView = ({
                           ? "bg-red-500/10 text-red-500" 
                           : route.type === "private" 
                           ? "bg-emerald-500/10 text-emerald-500" 
+                          : route.type === "custom"
+                          ? "bg-purple-500/10 text-purple-500"
                           : "bg-sky-500/10 text-sky-500"
                       }`}>
                         {route.type.toUpperCase()}
@@ -12990,28 +13093,6 @@ export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const isRtl = language === "ar";
-
-  if (isMobile) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
-          <Monitor size={36} className="text-amber-500 animate-pulse" />
-        </div>
-        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
-          {isRtl ? 'لوحة التحكم متاحة فقط عبر سطح المكتب' : 'Command Center is Desktop-Only'}
-        </h2>
-        <p className="text-xs text-gray-400 max-w-sm">
-          {isRtl 
-            ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
-            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
-        </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
-          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
-        </a>
-      </div>
-    );
-  }
-
   const isSupport = user?.role === "support";
   const path = location.pathname.split("/").pop() || "dashboard";
 
@@ -13095,6 +13176,27 @@ export const AdminDashboard: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [token]);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
+          <Monitor size={36} className="text-amber-500 animate-pulse" />
+        </div>
+        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
+          {isRtl ? 'لوحة التحكم متاحة فقط عبر سطح المكتب' : 'Command Center is Desktop-Only'}
+        </h2>
+        <p className="text-xs text-gray-400 max-w-sm">
+          {isRtl 
+            ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
+            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
+        </p>
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
+          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
+        </a>
+      </div>
+    );
+  }
 
   const formatPulseUptime = (seconds: number) => {
     if (!seconds) return "0s";

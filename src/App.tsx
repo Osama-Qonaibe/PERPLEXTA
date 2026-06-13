@@ -141,7 +141,11 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const currentPath = location.pathname;
     
-    // 1. Identify Sensitive Pages that MUST be strictly NOINDEX'ed
+    // 1. Identify Sensitive Pages that MUST be strictly NOINDEX'ed (including /admin-community representing the Sections Control Panel)
+    const dynamicBlockedList = siteSettings?.blocked_paths
+      ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
+      : [];
+
     const isSensitive = [
       '/chat',
       '/admin',
@@ -149,8 +153,14 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       '/rewards',
       '/wallet',
       '/reset-password',
-      '/admin-community'
-    ].some(sensitivePath => currentPath === sensitivePath || currentPath.startsWith(sensitivePath + '/'));
+      '/admin-community',
+      '/admin-sections',
+      '/admin/sections',
+      ...dynamicBlockedList
+    ].some(sensitivePath => {
+      const cleanPath = sensitivePath.startsWith('/') ? sensitivePath : '/' + sensitivePath;
+      return currentPath === cleanPath || currentPath.startsWith(cleanPath + '/');
+    });
 
     // Dynamic Robots Meta Tag handling
     let robotsMeta = document.querySelector('meta[name="robots"]');
@@ -168,20 +178,16 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (isSensitive) {
-      // Strictly prevent indexing of any user workspace elements/interactions/admins
       robotsMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none');
       googlebotMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
       
-      // Also suppress Open Graph leakages on private paths
       const ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.setAttribute('content', language === 'ar' ? 'بيربليكستا - مساحة عمل محصنة' : 'Perplexta - Secure Workspace');
       
       const ogDesc = document.querySelector('meta[property="og:description"]');
       if (ogDesc) ogDesc.setAttribute('content', language === 'ar' ? 'صفحة آمنة ومحمية من قبل الخوارزميات السيادية لمنصة بيربليكستا.' : 'Secure node with zero crawling, protected under deep local sovereign protocols.');
       
-      console.log(`[SEO Engine] Security Shield Applied for path "${currentPath}" (Status: noindex)`);
     } else {
-      // Make standard public sections fully crawlable and friendly to search engines
       robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
       googlebotMeta.setAttribute('content', 'index, follow');
 
@@ -194,7 +200,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const resolvedKeywords = (language === 'ar' ? siteSettings?.keywordsAr : siteSettings?.keywordsEn) || '';
       const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
 
-      // Path Specific Titles for Static Pages to improve click-through-rates (CTR)
       let pageTitlePart = '';
       if (currentPath === '/subscription') {
         pageTitlePart = language === 'ar' ? 'خطط الاشتراك والترقيات النخبة' : 'Premium Elite Subscription Plans';
@@ -215,7 +220,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const finalTitle = pageTitlePart ? `${pageTitlePart} | ${resolvedSiteName}` : `${resolvedSiteName} - ${language === 'ar' ? 'منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Sovereign High-Performance AI Analysis Platform'}`;
       document.title = finalTitle;
 
-      // Update Standard description
       let metaDescription = document.querySelector('meta[name="description"]');
       if (!metaDescription) {
         metaDescription = document.createElement('meta');
@@ -224,7 +228,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       }
       metaDescription.setAttribute('content', resolvedDesc);
 
-      // Systematically align Open Graph
       let ogTitle = document.querySelector('meta[property="og:title"]');
       if (!ogTitle) {
         ogTitle = document.createElement('meta');
@@ -249,7 +252,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       }
       ogImage.setAttribute('content', resolvedOGImage);
 
-      // Systematically align Twitter Card Tags
       let twitterTitle = document.querySelector('meta[name="twitter:title"]');
       if (!twitterTitle) {
         twitterTitle = document.createElement('meta');
@@ -274,7 +276,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       }
       twitterImage.setAttribute('content', resolvedOGImage);
 
-      // Keywords
       let metaKeywords = document.querySelector('meta[name="keywords"]');
       if (!metaKeywords) {
         metaKeywords = document.createElement('meta');
@@ -282,8 +283,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         document.head.appendChild(metaKeywords);
       }
       metaKeywords.setAttribute('content', resolvedKeywords);
-
-      console.log(`[SEO Engine] Dynamic indexing successfully applied for "${currentPath}" (Status: index, follow). Title synced.`);
     }
   }, [location.pathname, siteSettings, language]);
 

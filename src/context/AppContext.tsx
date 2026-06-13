@@ -50,6 +50,7 @@ export interface SiteSettings {
   googleAnalyticsId: string;
   googleSiteVerification: string;
   seoImageUrl: string | null;
+  blocked_paths?: string;
 }
 
 interface AppContextType {
@@ -1956,9 +1957,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => {
       localStorage.removeItem('app_oauth_syncing');
       if (isSamePage) {
-        profileFetched.current = false;
-        fetchUserProfile();
-        fetchBalance();
         toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
       } else {
         localStorage.setItem('app_logged_in_toast', '1');
@@ -1990,7 +1988,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // AND if we don't already have a valid token or this is an explicit auth callback.
     const isSensitivePage = window.location.pathname.includes('reset-password');
 
-    if (urlToken && !isSensitivePage && urlToken !== token) {
+    const isOAuthCallback = window.opener !== null || 
+      document.referrer.includes(window.location.origin) ||
+      window.location.search.includes('oauth=1');
+
+    if (urlToken && !isSensitivePage && urlToken !== token && isOAuthCallback) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
       if (urlRefreshToken) {

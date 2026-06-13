@@ -1492,6 +1492,32 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_marketplace_reviews_user_item ON marketplace_reviews(user_id, item_id);`);
     });
 
+    await runVersioned('v49_forum_categories_control', 'Adding post limit constraints and strict moderation features to forum categories', async (tx) => {
+      await tx.query(`ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS max_posts_per_day INTEGER DEFAULT 0;`);
+      await tx.query(`ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS require_approval BOOLEAN DEFAULT FALSE;`);
+      await tx.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'approved';`);
+      // Update all past posts to approved so they are immediately visible
+      await tx.query(`UPDATE forum_posts SET status = 'approved' WHERE status IS NULL;`);
+    });
+
+    await runVersioned('v50_forum_images_and_ratings', 'Adding cover image support and high-precision rating systems to forum posts', async (tx) => {
+      await tx.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);`);
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS forum_post_ratings (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_forum_post_ratings_user_post ON forum_post_ratings(user_id, post_id);`);
+    });
+
+    await runVersioned('v51_dynamic_seo_blocking', 'Adding blocked_paths column to system_settings for dynamic SEO exclusions', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'blocked_paths', 'TEXT', `''`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1980,6 +2006,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         paypal_status VARCHAR(50) DEFAULT 'pending',
         paypal_last_verified_at TIMESTAMP,
         image_prompt_pref_threshold INTEGER DEFAULT 150,
+        blocked_paths TEXT DEFAULT '',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },

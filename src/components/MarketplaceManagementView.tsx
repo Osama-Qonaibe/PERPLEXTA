@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { ActionConfirmationModal } from './ActionConfirmationModal';
 
 interface MarketplaceItem {
   id: number;
@@ -163,6 +164,36 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [actioningId, setActioningId] = useState<number | null>(null);
+
+  // Reusable confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: { ar: string; en: string };
+    description: { ar: string; en: string };
+    onConfirm: () => Promise<void> | void;
+    variant: 'danger' | 'success' | 'warning' | 'info' | 'purple';
+  }>({
+    isOpen: false,
+    title: { ar: '', en: '' },
+    description: { ar: '', en: '' },
+    onConfirm: () => {},
+    variant: 'danger'
+  });
+
+  const openConfirm = (
+    titleAr: string, titleEn: string,
+    descAr: string, descEn: string,
+    onConfirmAction: () => Promise<void> | void,
+    variant: 'danger' | 'success' | 'warning' | 'info' | 'purple' = 'danger'
+  ) => {
+    setConfirmModal({
+      isOpen: true,
+      title: { ar: titleAr, en: titleEn },
+      description: { ar: descAr, en: descEn },
+      onConfirm: onConfirmAction,
+      variant
+    });
+  };
 
   // Editing logic states
   const [editingItem, setEditingItem] = useState<MarketplaceItem | null>(null);
@@ -402,7 +433,16 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
       if (res.ok) {
         setItems(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
-        toast.success(language === 'ar' ? 'تم تحديث الحالة بنجاح' : 'Status updated successfully');
+        
+        let msg = language === 'ar' ? 'تم تحديث الحالة بنجاح' : 'Status updated successfully';
+        if (newStatus === 'approved') {
+          msg = language === 'ar' ? 'تم الموافقة على المعروض ونشره رسمياً في الماركت بليس بجودة عالية!' : 'Asset approved and officially published on the marketplace!';
+        } else if (newStatus === 'rejected') {
+          msg = language === 'ar' ? 'تم رفض إدراج هذا المعروض بنجاح.' : 'Offer listing rejected successfully.';
+        } else if (newStatus === 'sold') {
+          msg = language === 'ar' ? 'تم تحديد هذا المعروض كمباع بنجاح!' : 'Asset successfully marked as sold!';
+        }
+        toast.success(msg);
       }
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -411,27 +451,36 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
     }
   };
 
-  const handleDeleteItem = async (id: number) => {
-    if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا المعروض نهائياً؟' : 'Are you sure you want to permanently delete this listing?')) return;
+  const handleDeleteItem = (id: number) => {
+    openConfirm(
+      'تأكيد حذف المعروض', 'Confirm Listing Deletion',
+      'هل أنت متأكد من حذف هذا المعروض نهائياً؟ لا يمكن التراجع عن هذا الإجراء وسيتم إزالته من الماركت بليس للجميع.', 'Are you sure you want to permanently delete this listing? This action cannot be undone and will remove it from the marketplace for everyone.',
+      async () => {
+        setActioningId(id);
+        try {
+          const res = await fetch(`/api/marketplace/items/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-    setActioningId(id);
-    try {
-      const res = await fetch(`/api/marketplace/items/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+          if (res.ok) {
+            setItems(prev => prev.filter(item => item.id !== id));
+            toast.success(language === 'ar' ? 'تم حذف المعروض بنجاح!' : 'Listing deleted successfully!');
+          } else {
+            const errData = await res.json();
+            toast.error(errData.error || (language === 'ar' ? 'فشل الحذف' : 'Deletion failure'));
+          }
+        } catch (err) {
+          console.error('Failed to delete item:', err);
+          toast.error(language === 'ar' ? 'حدث خطأ غير متوقع بالاتصال بالخادم.' : 'An unexpected server error occurred.');
+        } finally {
+          setActioningId(null);
         }
-      });
-
-      if (res.ok) {
-        setItems(prev => prev.filter(item => item.id !== id));
-        toast.success(language === 'ar' ? 'تم حذف المعروض بنجاح' : 'Listing deleted successfully');
-      }
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-    } finally {
-      setActioningId(null);
-    }
+      },
+      'danger'
+    );
   };
 
   const filteredItems = items.filter(item => {
@@ -1122,6 +1171,15 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ActionConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        variant={confirmModal.variant}
+      />
 
     </div>
   );

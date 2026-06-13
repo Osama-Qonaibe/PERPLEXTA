@@ -41,7 +41,8 @@ export async function getSystemSettings() {
         seo_description_en, seo_description_ar, keywords_en, keywords_ar,
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
         stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold
+        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
+        blocked_paths
       FROM system_settings LIMIT 1
     `);
     
@@ -60,7 +61,8 @@ export async function getSystemSettings() {
           seo_description_en, seo_description_ar, keywords_en, keywords_ar,
           google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
           stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold
+          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
+          blocked_paths
         FROM system_settings LIMIT 1
       `);
       settings = secondTry.rows[0];
@@ -103,6 +105,15 @@ export async function getSystemSettings() {
         return getSystemSettings();
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic column addition failed:', innerErr.message);
+      }
+    } else if (errMsg.includes('blocked_paths')) {
+      console.log('[SystemSettings] blocked_paths column seems to be missing. Attempting dynamic self-healing...');
+      try {
+        await pool.query("ALTER TABLE system_settings ADD COLUMN blocked_paths TEXT DEFAULT ''");
+        console.log('[SystemSettings] Successfully added blocked_paths dynamically!');
+        return getSystemSettings();
+      } catch (innerErr: any) {
+        console.error('[SystemSettings] Dynamic blocked_paths column addition failed:', innerErr.message);
       }
     }
     throw err;
@@ -149,6 +160,7 @@ export async function updateSystemSettings(settings: any) {
 
   const google_analytics_id = settings.google_analytics_id !== undefined ? settings.google_analytics_id : existing.google_analytics_id;
   const google_site_verification = settings.google_site_verification !== undefined ? settings.google_site_verification : existing.google_site_verification;
+  const blocked_paths = settings.blocked_paths !== undefined ? settings.blocked_paths : (existing.blocked_paths || '');
 
   // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
@@ -168,11 +180,13 @@ export async function updateSystemSettings(settings: any) {
     UPDATE system_settings SET 
       site_name_en = $1, site_name_ar = $2, site_description_en = $3, site_description_ar = $4,
       seo_description_en = $5, seo_description_ar = $6, keywords_en = $7, keywords_ar = $8,
-      google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14, updated_at = CURRENT_TIMESTAMP
+      google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14,
+      blocked_paths = $15, updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
-    google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url
+    google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
+    blocked_paths
   ]);
   
   await clearSettingsCache();

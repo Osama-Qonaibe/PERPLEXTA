@@ -4049,6 +4049,10 @@ export const ChatPage: React.FC = () => {
   
   const prevUserRef = useRef<any>(null);
   useEffect(() => {
+    if (user && !prevUserRef.current) {
+      setSelectedTool('chat');
+      localStorage.setItem('last_active_tool', 'chat');
+    }
     if (!user && prevUserRef.current) {
       setSelectedTool('chat');
       setSelectedModel('fast');

@@ -5,7 +5,7 @@ import {
   MessageSquare, Pin, Lock, Eye, Trash2, Send, ArrowLeft, Plus, MessageCircle, 
   Calendar, User, UserCheck, ShieldCheck, Flag, ShieldAlert, BookOpen, AlertCircle,
   Cpu, TrendingUp, RefreshCw, Terminal, Globe, Activity, Code, Shield, Zap, Search, Layers, Filter, SlidersHorizontal,
-  Laptop, Server, Briefcase, HelpCircle
+  Laptop, Server, Briefcase, HelpCircle, Bold, Italic, Heading1, Heading2, Quote, Image, List, ListOrdered, UploadCloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,6 +36,14 @@ interface Post {
   views: number;
   comment_count: number;
   created_at: string;
+  image_url?: string | null;
+  avg_rating?: number | null;
+  rating_count?: number;
+  user_rating?: number | null;
+  author_subscription?: any;
+  author_avg_rating?: number | null;
+  author_rating_count?: number;
+  author_post_count?: number;
 }
 
 interface Comment {
@@ -63,6 +71,7 @@ export const ForumPage: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   // States
   const [loading, setLoading] = useState(true);
@@ -79,6 +88,261 @@ export const ForumPage: React.FC = () => {
   const [reportedPosts, setReportedPosts] = useState<number[]>([]);
   const [reportedComments, setReportedComments] = useState<number[]>([]);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info' | 'error'; textAr: string; textEn: string } | null>(null);
+
+  // Upload and Optimization States
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingInline, setIsUploadingInline] = useState(false);
+  const inlineImageInputRef = React.useRef<HTMLInputElement>(null);
+  const coverImageInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Client-Side Image Resize and Compression
+  const resizeAndCompressImage = (file: File, maxWidth: number = 1000, maxHeight: number = 1000): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context failed'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Blob generation failed'));
+            }
+          }, 'image/jpeg', 0.82); // high custom visual quality with optimized size
+        };
+        img.onerror = () => reject(new Error('Image load error'));
+      };
+      reader.onerror = () => reject(new Error('File reader error'));
+    });
+  };
+
+  const handleUploadImage = async (file: File, isCover: boolean) => {
+    if (!token) {
+      triggerToast('يرجى تسجيل الدخول أولاً للرفع إلى السيرفر.', 'Please login first to upload image files.', 'info');
+      return;
+    }
+
+    if (isCover) {
+      setIsUploadingCover(true);
+    } else {
+      setIsUploadingInline(true);
+    }
+
+    try {
+      // 1. Client-Side compression to "acceptable forum sizes"
+      const compressedBlob = await resizeAndCompressImage(file, 1000, 1000);
+      
+      // 2. Wrap in FormData
+      const formData = new FormData();
+      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'forum_raw';
+      formData.append('file', compressedBlob, `${baseName}_optimized.jpg`);
+
+      // 3. Upload to server
+      const res = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message_ar || errData.error || 'Upload error');
+      }
+
+      const data = await res.json();
+      if (data.success && data.file) {
+        const urlPath = `/uploads/${data.file.file_url}`;
+        
+        if (isCover) {
+          setNewImageUrl(urlPath);
+          triggerToast(
+            'تم رفع وتحسين صورة الغلاف التوضيحية بنجاح!',
+            'Illustrative cover image has been successfully optimized and uploaded!',
+            'success'
+          );
+        } else {
+          // Inline Image - insert into markdown text area at cursor positioning
+          const textarea = document.getElementById('thread-textarea') as HTMLTextAreaElement;
+          if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const replacement = `\n![صورة توضيحية](${urlPath})\n`;
+            const updatedText = newContent.slice(0, start) + replacement + newContent.slice(end);
+            setNewContent(updatedText);
+            
+            setTimeout(() => {
+              textarea.focus();
+              textarea.setSelectionRange(start + replacement.length, start + replacement.length);
+            }, 50);
+          } else {
+            setNewContent(prev => prev + `\n![صورة توضيحية](${urlPath})\n`);
+          }
+          
+          triggerToast(
+            'تم إدراج الصورة المحسّنة في محتوى منشورك!',
+            'Optimized inline image has been inserted into your draft content!',
+            'success'
+          );
+        }
+      } else {
+        throw new Error('No file returned from server');
+      }
+    } catch (err: any) {
+      console.error('Forum upload error:', err);
+      triggerToast(
+        err.message || 'فشل ضغط ورفع الملف المختار إلى السيرفر.',
+        err.message || 'Image compression or server uploading process failed.',
+        'error'
+      );
+    } finally {
+      if (isCover) {
+        setIsUploadingCover(false);
+      } else {
+        setIsUploadingInline(false);
+      }
+    }
+  };
+
+  // Formatting insert helper for premium toolbar
+  const insertFormatting = (syntaxType: string) => {
+    const textarea = document.getElementById('thread-textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selection = newContent.slice(start, end);
+    let replacement = '';
+    let cursorOffset = 0;
+
+    switch (syntaxType) {
+      case 'bold':
+        replacement = `**${selection || ''}**`;
+        cursorOffset = selection ? replacement.length : 2;
+        break;
+      case 'italic':
+        replacement = `*${selection || ''}*`;
+        cursorOffset = selection ? replacement.length : 1;
+        break;
+      case 'h1':
+        replacement = `\n# ${selection || ''}`;
+        cursorOffset = replacement.length;
+        break;
+      case 'h2':
+        replacement = `\n## ${selection || ''}`;
+        cursorOffset = replacement.length;
+        break;
+      case 'code':
+        replacement = `\n\`\`\`javascript\n${selection || ''}\n\`\`\`\n`;
+        cursorOffset = selection ? replacement.length : 15;
+        break;
+      case 'inline-code':
+        replacement = `\`${selection || ''}\``;
+        cursorOffset = selection ? replacement.length : 1;
+        break;
+      case 'quote':
+        replacement = `\n> ${selection || ''}`;
+        cursorOffset = replacement.length;
+        break;
+      case 'ul':
+        replacement = `\n- ${selection || ''}`;
+        cursorOffset = replacement.length;
+        break;
+      case 'ol':
+        replacement = `\n1. ${selection || ''}`;
+        cursorOffset = replacement.length;
+        break;
+      case 'hr':
+        replacement = `\n---\n`;
+        cursorOffset = replacement.length;
+        break;
+      default:
+        return;
+    }
+
+    const updatedText = newContent.slice(0, start) + replacement + newContent.slice(end);
+    setNewContent(updatedText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+    }, 50);
+  };
+
+  // Submit rating vote (1-5 stars)
+  const handleVotePostRating = async (ratingVal: number) => {
+    if (!token || !selectedPost) {
+      triggerToast(
+        'يرجى تسجيل الدخول لتقييم المنشورات التقنية.',
+        'Please login to submit analytical community ratings.',
+        'info'
+      );
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/forum/posts/${selectedPost.id}/rate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ rating: ratingVal })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedPost(prev => prev ? { 
+          ...prev, 
+          avg_rating: data.avg_rating, 
+          rating_count: data.rating_count,
+          user_rating: data.user_rating
+        } : null);
+
+        setPosts(prev => prev.map(p => p.id === selectedPost.id ? { 
+          ...p, 
+          avg_rating: data.avg_rating, 
+          rating_count: data.rating_count 
+        } : p));
+
+        triggerToast(
+          'شكرًا لك! تم تسجيل تقييمك للموضوع بنجاح.',
+          'Thank you! Your topic quality assessment has been logged.',
+          'success'
+        );
+      } else {
+        triggerToast(data.error || 'فشل التقييم', data.error || 'Failed to submit rating', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to submit post rating:', err);
+    }
+  };
 
   // Trigger professional toast notifications
   const triggerToast = (textAr: string, textEn: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -466,7 +730,8 @@ export const ForumPage: React.FC = () => {
         body: JSON.stringify({
           category_id: selectedCategory.id,
           title: newTitle.trim(),
-          content: newContent.trim()
+          content: newContent.trim(),
+          image_url: newImageUrl.trim() || null
         })
       });
       if (res.ok) {
@@ -474,12 +739,30 @@ export const ForumPage: React.FC = () => {
         setPosts(prev => [freshThread, ...prev]);
         setNewTitle('');
         setNewContent('');
+        setNewImageUrl('');
         setIsCreatingThread(false);
         // Refetch stats
         fetchCategories();
+        triggerToast(
+          'تم نشر موضوعك بنجاح وجاري عرضه للجميع!',
+          'Your topic has been successfully published to the community!',
+          'success'
+        );
+      } else {
+        const errData = await res.json();
+        triggerToast(
+          errData.error || 'فشل نشر الموضوع.',
+          errData.error || 'Failed to publish discussion thread.',
+          'error'
+        );
       }
     } catch (err) {
       console.error('Failed to submit post thread:', err);
+      triggerToast(
+        'حدث خطأ غير متوقع أثناء الاتصال بالخادم.',
+        'An unexpected server error occurred.',
+        'error'
+      );
     } finally {
       setSubmittingThread(false);
     }
@@ -1046,9 +1329,9 @@ export const ForumPage: React.FC = () => {
                       <div className="space-y-4">
                         {filtered.map((post, idx) => {
                           const postTags = getPostTags(
-                            post.title, 
-                            post.content, 
-                            categories.find(c => c.id === post.category_id)?.slug || '', 
+                            post.title,
+                            post.content,
+                            categories.find(c => c.id === post.category_id)?.slug || '',
                             post.category_id
                           );
                           return (
@@ -1061,48 +1344,58 @@ export const ForumPage: React.FC = () => {
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-850 hover:border-emerald-500/35' : 'bg-[#fafafa] border-gray-200 hover:border-emerald-500/30'
                               }`}
                             >
-                              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleSelectPost(post)}>
-                                <div className="flex flex-wrap items-center gap-2 mb-2 select-none">
-                                  {post.is_pinned && (
-                                    <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">
-                                      <Pin size={8} />
-                                      {isRtl ? 'مثبت' : 'Pinned'}
+                              <div className="flex-1 min-w-0 cursor-pointer flex gap-4 items-start" onClick={() => handleSelectPost(post)}>
+                                {post.image_url && (
+                                  <img 
+                                    src={post.image_url} 
+                                    alt={post.title} 
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-md object-cover border border-black/15 shrink-0" 
+                                    referrerPolicy="no-referrer"
+                                  />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2 mb-2 select-none">
+                                    {post.is_pinned && (
+                                      <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-[3px]">
+                                        <Pin size={8} />
+                                        {isRtl ? 'مثبت' : 'Pinned'}
+                                      </span>
+                                    )}
+                                    {post.is_locked && (
+                                      <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-rose-450 bg-rose-500/10 border border-rose-500/15 px-1.5 py-0.5 rounded-[3px]">
+                                        <Lock size={8} />
+                                        {isRtl ? 'مغلق' : 'Locked'}
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] text-gray-500 font-mono flex items-center gap-1">
+                                      <Calendar size={10} />
+                                      {new Date(post.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}
                                     </span>
-                                  )}
-                                  {post.is_locked && (
-                                    <span className="flex items-center gap-0.5 text-[8px] font-black uppercase text-rose-450 bg-rose-500/10 border border-rose-500/15 px-1.5 py-0.5 rounded-[3px]">
-                                      <Lock size={8} />
-                                      {isRtl ? 'مغلق' : 'Locked'}
-                                    </span>
-                                  )}
-                                  <span className="text-[9px] text-gray-500 font-mono flex items-center gap-1">
-                                    <Calendar size={10} />
-                                    {new Date(post.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}
-                                  </span>
-                                </div>
+                                  </div>
 
-                                <h2 className={`text-sm font-black font-sans tracking-tight leading-snug truncate group-hover:text-emerald-400 transition-colors ${
-                                  isThemeDark ? 'text-white' : 'text-gray-900'
-                                }`}>
-                                  {post.title}
-                                </h2>
-                                <p className={`text-[11px] mt-1 lines-clamp-2 select-text text-justify overflow-hidden leading-relaxed ${
-                                  isThemeDark ? 'text-gray-400' : 'text-gray-600'
-                                }`}>
-                                  {post.content.slice(0, 180)}
-                                  {post.content.length > 180 ? '...' : ''}
-                                </p>
+                                  <h2 className={`text-sm font-black font-sans tracking-tight leading-snug truncate group-hover:text-emerald-400 transition-colors ${
+                                    isThemeDark ? 'text-white' : 'text-gray-900'
+                                  }`}>
+                                    {post.title}
+                                  </h2>
+                                  <p className={`text-[11px] mt-1 lines-clamp-2 select-text text-justify overflow-hidden leading-relaxed ${
+                                    isThemeDark ? 'text-gray-400' : 'text-gray-600'
+                                  }`}>
+                                    {post.content.slice(0, 180)}
+                                    {post.content.length > 180 ? '...' : ''}
+                                  </p>
 
-                                {/* Smart tags section */}
-                                <div className="flex flex-wrap gap-1.5 mt-3 select-none">
-                                  {postTags.map((tag, tagIdx) => (
-                                    <span 
-                                      key={tagIdx} 
-                                      className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-[3px] bg-emerald-500/5 text-emerald-400/90 border border-emerald-500/10"
-                                    >
-                                      #{tag}
-                                    </span>
-                                  ))}
+                                  {/* Smart tags section */}
+                                  <div className="flex flex-wrap gap-1.5 mt-3 select-none">
+                                    {postTags.map((tag, tagIdx) => (
+                                      <span 
+                                        key={tagIdx} 
+                                        className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-[3px] bg-emerald-500/5 text-emerald-400/90 border border-emerald-500/10"
+                                      >
+                                        #{tag}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
 
@@ -1125,6 +1418,12 @@ export const ForumPage: React.FC = () => {
 
                                 {/* Thread statistics */}
                                 <div className="flex items-center gap-3 text-[10px] font-mono text-gray-500 select-none">
+                                  {Number(post.avg_rating || 0) > 0 && (
+                                    <span className="flex items-center gap-0.5 text-amber-500 font-bold" title={isRtl ? 'متوسط تقييم جودة التحليل الفني' : 'Average topic quality rating'}>
+                                      <span className="text-amber-500 text-xs">★</span>
+                                      {Number(post.avg_rating).toFixed(1)}
+                                    </span>
+                                  )}
                                   <span className="flex items-center gap-1" title={isRtl ? 'المشاهدات' : 'Views'}>
                                     <Eye size={12} />
                                     {post.views}
@@ -1217,49 +1516,272 @@ export const ForumPage: React.FC = () => {
 
                   {/* Minimal Markdown Editor controls */}
                   <div className={`border rounded-[4px] overflow-hidden ${isThemeDark ? 'border-white/5 bg-[#121215]' : 'border-gray-255 bg-white'}`}>
-                    <div className={`flex justify-between items-center border-b px-4 py-2 select-none ${isThemeDark ? 'bg-[#18181b] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditorTab('write')}
-                      className={`px-3 py-1 text-xs rounded-[3px] font-bold font-sans transition-all cursor-pointer ${editorTab === 'write' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-400 hover:text-white'}`}
-                    >
-                      {isRtl ? 'محرر النصوص' : 'Write Markdown'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!newContent.trim()}
-                      onClick={() => setEditorTab('preview')}
-                      className={`px-3 py-1 text-xs rounded-[3px] font-bold font-sans transition-all cursor-pointer disabled:opacity-40 ${editorTab === 'preview' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-400 hover:text-white'}`}
-                    >
-                      {isRtl ? 'معاينة حية مدمجة' : 'Live Preview'}
-                    </button>
-                  </div>
-                  
-                  <span className="text-[10px] font-mono text-gray-550">
-                    {isRtl ? 'يدعم التنسيقات البرمجية والرموز' : 'Supports Code Blocks & Markdown formatting'}
-                  </span>
-                </div>
+                    <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center border-b gap-3 p-3 select-none ${isThemeDark ? 'bg-[#18181b] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setEditorTab('write')}
+                          className={`px-3 py-1 text-xs rounded-[3px] font-bold font-sans transition-all cursor-pointer ${editorTab === 'write' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-400 hover:text-white'}`}
+                        >
+                          {isRtl ? 'محرر النصوص' : 'Write Markdown'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!newContent.trim()}
+                          onClick={() => setEditorTab('preview')}
+                          className={`px-3 py-1 text-xs rounded-[3px] font-bold font-sans transition-all cursor-pointer disabled:opacity-40 ${editorTab === 'preview' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'text-gray-400 hover:text-white'}`}
+                        >
+                          {isRtl ? 'معاينة حية مدمجة' : 'Live Preview'}
+                        </button>
+                      </div>
 
-                <div className="p-4">
-                  {editorTab === 'write' ? (
-                    <textarea
-                      required
-                      rows={10}
-                      value={newContent}
-                      onChange={(e) => setNewContent(e.target.value)}
-                      placeholder={isRtl 
-                        ? 'اكتب تفاصيل نقاشك هنا. تفضل باستخدام لغة مارك داون (Markdown) والأكواد البرمجية كالتالي:\n\n# عنوان رئيسي\n**نص عريض**\n```javascript\nconst code = "here";\n```' 
-                        : 'Draft your content. Use standard markdown structure and code segments like:\n\n# Main Title\n**Bold Text**\n```python\nprint("quantitative code")\n```'}
-                      className="w-full bg-transparent text-white placeholder-gray-650 outline-none resize-none text-[11px] sm:text-xs font-sans font-medium min-h-[180px]"
-                    />
-                  ) : (
-                    <div className={`p-3 rounded-[3px] min-h-[180px] ${isThemeDark ? 'bg-black/40' : 'bg-gray-50'}`}>
-                      {renderMarkdownPreview(newContent)}
+                      {/* Technical popular formatting buttons toolbar */}
+                      {editorTab === 'write' && (
+                        <div className="flex flex-wrap items-center gap-1 bg-black/10 dark:bg-black/20 p-1 rounded-[6px]">
+                          {/* Hidden Inputs for upload actions */}
+                          <input
+                            type="file"
+                            ref={inlineImageInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleUploadImage(file, false);
+                              }
+                              e.target.value = ''; // Reset
+                            }}
+                          />
+                          
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('bold')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'نص عريض (Bold)' : 'Bold Text'}
+                          >
+                            <Bold size={14} className="stroke-[2.5]" />
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('italic')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'نص مائل (Italic)' : 'Italic Text'}
+                          >
+                            <Italic size={14} className="stroke-[2.5]" />
+                          </button>
+                          
+                          <span className="w-px h-5 bg-gray-200 dark:bg-gray-800/80 mx-1" />
+                          
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('h1')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'عنوان رئيسي كبير (H1)' : 'Large Heading'}
+                          >
+                            <span className="font-sans font-black text-[12px]">H1</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('h2')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'عنوان فرعي (H2)' : 'Medium Heading'}
+                          >
+                            <span className="font-sans font-black text-[10px]">H2</span>
+                          </button>
+
+                          <span className="w-px h-5 bg-gray-200 dark:bg-gray-800/80 mx-1" />
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('code')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'كتلة برمجية (Code Block)' : 'Javascript Code Block'}
+                          >
+                            <Code size={14} />
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('inline-code')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'رمز برمجي سطر (Inline Code)' : 'Inline Code String'}
+                          >
+                            <span className="font-mono text-[10px]">&lt;&gt;</span>
+                          </button>
+
+                          <span className="w-px h-5 bg-gray-200 dark:bg-gray-800/80 mx-1" />
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('quote')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'اقتباس (Quote)' : 'Blockquote Section'}
+                          >
+                            <Quote size={13} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('ul')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'قائمة نقطية (Bullet List)' : 'Unordered Bullet List'}
+                          >
+                            <List size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('ol')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'قائمة رقمية (Numbered List)' : 'Ordered Number List'}
+                          >
+                            <ListOrdered size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => insertFormatting('hr')}
+                            className="w-8 h-8 flex items-center justify-center transition-all duration-300 rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                            title={isRtl ? 'خط أفقي فاصل (Horizontal Rule)' : 'Separator Line'}
+                          >
+                            <span className="font-bold text-[14px]">―</span>
+                          </button>
+
+                          <span className="w-px h-5 bg-gray-200 dark:bg-gray-800/80 mx-1" />
+
+                          <button
+                            type="button"
+                            disabled={isUploadingInline}
+                            onClick={() => inlineImageInputRef.current?.click()}
+                            className="h-8 px-2 flex items-center gap-1.5 transition-all duration-300 rounded-[4px] text-emerald-450 hover:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 hover:border-emerald-500/20 disabled:opacity-50 cursor-pointer text-[10px] font-bold"
+                            title={isRtl ? 'رفع وإدراج صورة محسَّنة ومضغوطة تلقائياً من جهازك' : 'Upload & auto-optimize local image'}
+                          >
+                            {isUploadingInline ? (
+                              <RefreshCw size={12} className="animate-spin text-emerald-500" />
+                            ) : (
+                              <Image size={13} className="text-emerald-500" />
+                            )}
+                            <span>{isRtl ? 'رفع صورة' : 'Upload Image'}</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      <span className="text-[9px] font-mono text-gray-550 sm:block hidden shrink-0">
+                        {isRtl ? 'يدعم التنسيقات البرمجية والرموز' : 'Supports Code Blocks & Markdown formatting'}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    <div className="p-4">
+                      {editorTab === 'write' ? (
+                        <textarea
+                          required
+                          id="thread-textarea"
+                          rows={10}
+                          value={newContent}
+                          onChange={(e) => setNewContent(e.target.value)}
+                          placeholder={isRtl 
+                            ? 'اكتب تفاصيل نقاشك هنا. تفضل باستخدام لغة مارك داون (Markdown) والأكواد البرمجية كالتالي:\n\n# عنوان رئيسي\n**نص عريض**\n```javascript\nconst code = "here";\n```' 
+                            : 'Draft your content. Use standard markdown structure and code segments like:\n\n# Main Title\n**Bold Text**\n```python\nprint("quantitative code")\n```'}
+                          className={`w-full bg-transparent outline-none resize-none text-[11px] sm:text-xs font-sans font-medium min-h-[180px] ${isThemeDark ? 'text-white placeholder-gray-650' : 'text-gray-900 placeholder-gray-400'}`}
+                        />
+                      ) : (
+                        <div className={`p-3 rounded-[3px] min-h-[180px] ${isThemeDark ? 'bg-black/40' : 'bg-gray-50'}`}>
+                          {renderMarkdownPreview(newContent)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dynamic cover image upload and auto-compression component */}
+                  <div>
+                    <label className={`block text-[10px] font-sans font-black uppercase mb-2 select-none ${isThemeDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {isRtl ? 'الصورة الغلافية التوضيحية للموضوع' : 'Illustrative Cover Image'}
+                    </label>
+                    
+                    <input
+                      type="file"
+                      ref={coverImageInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleUploadImage(file, true);
+                        }
+                        e.target.value = ''; // Reset
+                      }}
+                    />
+
+                    {newImageUrl ? (
+                      <div className={`relative border rounded-lg p-3 overflow-hidden group ${
+                        isThemeDark ? 'bg-black/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <img 
+                          src={newImageUrl} 
+                          alt="Cover upload" 
+                          referrerPolicy="no-referrer"
+                          className="w-full h-48 object-cover rounded-md border border-black/10 shadow-sm"
+                        />
+                        <div className="absolute inset-x-3 bottom-3 bg-black/70 backdrop-blur-sm px-3 py-2 rounded-md flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                            {isRtl ? 'تم تحسين وضغط الصورة بنجاح' : 'Optimized Cover active'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setNewImageUrl('')}
+                            className="px-2 py-1 bg-red-650 hover:bg-red-650 text-[10px] text-white font-bold rounded cursor-pointer transition-colors"
+                          >
+                            {isRtl ? 'إزالة الصورة' : 'Remove Cover'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => coverImageInputRef.current?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const file = e.dataTransfer.files?.[0];
+                          if (file && file.type.startsWith('image/')) {
+                            handleUploadImage(file, true);
+                          }
+                        }}
+                        className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
+                          isThemeDark 
+                            ? 'border-white/5 bg-[#121215] hover:bg-emerald-500/[0.02] hover:border-emerald-500/20' 
+                            : 'border-gray-250 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-500/40'
+                        }`}
+                      >
+                        {isUploadingCover ? (
+                          <div className="flex flex-col items-center gap-3">
+                            <RefreshCw size={24} className="animate-spin text-emerald-500" />
+                            <span className="text-xs font-bold text-gray-400 font-sans animate-pulse">
+                              {isRtl ? 'جاري ضغط الصورة ورفعها بنسبة فائقة...' : 'Compressing & uploading optimized image...'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <UploadCloud size={28} className="text-gray-400 group-hover:text-emerald-500 transition-colors" />
+                            <div className="text-xs font-bold text-gray-400 font-sans mt-1">
+                              {isRtl ? 'اسحب الصورة التوضيحية أو انقر للتحميل من جهازك' : 'Drag & drop cover or click to choose file'}
+                            </div>
+                            <div className="text-[9px] text-gray-550 font-mono mt-0.5">
+                              {isRtl 
+                                ? 'يتم تصغيرها وضغطها تلقائياً لأبعاد 1000 × 1000 بكسل للتصفح السريع'
+                                : 'Automatically resized and compressed scale for extreme fast load'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
               {/* Character Limit and guidelines */}
               <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 select-none pb-2">
@@ -1382,15 +1904,38 @@ export const ForumPage: React.FC = () => {
                             </div>
                           )}
                           <div>
-                            <div className="text-[12px] font-black text-white flex items-center gap-1.5">
+                            <div className="text-[12px] font-black text-white flex items-center gap-1.5 flex-wrap">
                               <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>{selectedPost.author_name}</span>
                               <span className={`text-[8px] tracking-wide font-black uppercase px-2 py-0.5 rounded-[3px] ${selectedPost.author_role === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/15' : 'text-gray-400 bg-gray-800/60 border border-gray-800'}`}>
                                 {selectedPost.author_role === 'admin' ? (isRtl ? 'إشراف وتدقيق' : 'Staff Monitor') : (isRtl ? 'عضو خبير' : 'Verified Peer')}
                               </span>
+                              {selectedPost.author_subscription && (
+                                <span 
+                                  className="text-[8px] tracking-wide font-black uppercase px-2 py-0.5 rounded-[3px] border"
+                                  style={{ 
+                                    color: selectedPost.author_subscription.color, 
+                                    borderColor: `${selectedPost.author_subscription.color}40`, 
+                                    backgroundColor: `${selectedPost.author_subscription.color}10` 
+                                  }}
+                                >
+                                  {isRtl ? selectedPost.author_subscription.name_ar : selectedPost.author_subscription.name_en}
+                                </span>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1 text-[9px] text-gray-500 font-mono mt-1">
-                              <Calendar size={10} />
-                              <span>{new Date(selectedPost.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-gray-500 font-mono mt-1">
+                              <div className="flex items-center gap-1">
+                                <Calendar size={10} />
+                                <span>{new Date(selectedPost.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                              <span className="text-gray-700">•</span>
+                              <div className="flex items-center gap-0.5 text-amber-500 font-bold" title={isRtl ? 'تقييم كفاءة العضو في الساحة' : 'Author reputation rating'}>
+                                <span>★ {selectedPost.author_avg_rating || '0.0'}</span>
+                                <span className="text-gray-500 font-normal">({selectedPost.author_rating_count || 0} {isRtl ? 'تقييم' : 'votes'})</span>
+                              </div>
+                              <span className="text-gray-700">•</span>
+                              <div className="flex items-center gap-0.5 text-emerald-400 font-bold" title={isRtl ? 'عدد المواضيع المنشورة للعضو' : 'Total discussions published'}>
+                                <span>{selectedPost.author_post_count || 1} {isRtl ? 'موضوع' : 'topics'}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1406,14 +1951,82 @@ export const ForumPage: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Cover image illustration if available */}
+                      {selectedPost.image_url && (
+                        <div className="w-full h-48 md:h-64 rounded-lg overflow-hidden mb-6 border border-white/5 relative bg-black/20">
+                          <img 
+                            src={selectedPost.image_url} 
+                            alt={selectedPost.title} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                        </div>
+                      )}
+
                       {/* Body text area with Markdown supported rendering preview */}
                       <h1 className={`text-base sm:text-lg font-black leading-snug tracking-tight mb-4 select-text font-sans ${isThemeDark ? 'text-white' : 'text-gray-900'}`}>
                         {selectedPost.title}
                       </h1>
                       
                       {/* Clean rendered body contents */}
-                      <div className={`p-4 rounded-lg select-text border ${isThemeDark ? 'bg-black/30 border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                      <div className={`p-4 rounded-lg select-text border mb-5 ${isThemeDark ? 'bg-black/30 border-white/5' : 'bg-gray-50 border-gray-200'}`}>
                         {renderMarkdownPreview(selectedPost.content)}
+                      </div>
+
+                      {/* Interactive peer ratings panel */}
+                      <div className={`mt-6 pt-5 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none ${isThemeDark ? 'border-white/5' : 'border-gray-150'}`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-mono text-gray-400">
+                            {isRtl ? 'تقييم جودة التحليل الفني:' : 'Technical Analysis Quality:'}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const isLit = star <= (selectedPost.avg_rating || 0);
+                              const isUserScore = star <= (selectedPost.user_rating || 0);
+                              return (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  disabled={user?.id === selectedPost.user_id}
+                                  onClick={() => handleVotePostRating(star)}
+                                  className={`transition-all duration-250 cursor-pointer disabled:cursor-not-allowed ${
+                                    user?.id === selectedPost.user_id ? 'opacity-70' : 'hover:scale-120'
+                                  }`}
+                                >
+                                  <span 
+                                    className={`text-sm ${
+                                      isUserScore 
+                                        ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]' 
+                                        : isLit 
+                                          ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' 
+                                          : 'text-gray-650'
+                                    }`}
+                                  >
+                                    ★
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <span className="text-[10px] text-gray-500 font-mono">
+                            ({selectedPost.avg_rating || '0.0'}/5.0 - {selectedPost.rating_count || 0} {isRtl ? 'تقييمات' : 'votes'})
+                          </span>
+                        </div>
+
+                        {user?.id === selectedPost.user_id ? (
+                          <span className="text-[9px] text-emerald-500 font-bold font-sans bg-emerald-500/5 px-2.5 py-1 border border-emerald-500/10 rounded-[3px]">
+                            {isRtl ? 'التقييمات مفعّلة لنقاشك لتعزيز جودة المحتوى' : 'Ratings enabled for your post to ensure quality standards'}
+                          </span>
+                        ) : selectedPost.user_rating && selectedPost.user_rating > 0 ? (
+                          <div className="flex items-center gap-1.5 text-[9px] text-amber-500 font-semibold bg-amber-500/5 px-2.5 py-1 border border-amber-500/10 rounded-[3px]">
+                            <span>{isRtl ? `تم التقييم بـ ${selectedPost.user_rating} نجوم` : `You rated this ${selectedPost.user_rating} stars`}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-gray-500 italic">
+                            {isRtl ? 'قيم هذا الموضوع ومشاركة جودته مع الساحة' : 'Click on stars to rate this discussion'}
+                          </span>
+                        )}
                       </div>
                     </div>
 
