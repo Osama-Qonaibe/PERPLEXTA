@@ -3914,14 +3914,11 @@ const toolbarVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0,
-      delayChildren: 0,
-    }
+    transition: { duration: 0.6, ease: [0.0, 0.0, 0.2, 1] }
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0.15 }
+    transition: { duration: 0.2 }
   }
 } as const;
 
@@ -7229,22 +7226,22 @@ export const ChatPage: React.FC = () => {
                       >
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                         >
                           <ThumbsUp size={13} />
                         </motion.button>
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => handleFeedback(msg.id!, msg.feedback === -1 ? 0 : -1)}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === -1 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-amber-500 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`}
                         >
                           <ThumbsDown size={13} />
                         </motion.button>
-                        <motion.div variants={toolbarItemVariants} className="w-px h-3 sm:h-4 bg-[var(--border)] mx-0.5 sm:mx-1" />
+                        <motion.div  className="w-px h-3 sm:h-4 bg-[var(--border)] mx-0.5 sm:mx-1" />
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
                           className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
@@ -7252,7 +7249,7 @@ export const ChatPage: React.FC = () => {
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </motion.button>
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => handleTTS(msg.content, msg.client_id || msg.id || idx)}
                           title={playingTTSId === (msg.client_id || msg.id || idx) ? (dir === 'rtl' ? 'إيقاف الصوت' : 'Stop') : (dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud')}
                           className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
@@ -7264,7 +7261,7 @@ export const ChatPage: React.FC = () => {
                           )}
                         </motion.button>
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
                           className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
@@ -7272,7 +7269,7 @@ export const ChatPage: React.FC = () => {
                           <RefreshCw size={13} />
                         </motion.button>
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={() => {
                             navigator.clipboard.writeText(msg.content);
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
@@ -7283,7 +7280,7 @@ export const ChatPage: React.FC = () => {
                           <Copy size={13} />
                         </motion.button>
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={async () => {
                             const blob = new Blob([msg.content], { type: 'text/markdown' });
                             const url = URL.createObjectURL(blob);
@@ -7300,7 +7297,7 @@ export const ChatPage: React.FC = () => {
                         </motion.button>
                         {msg.id && (
                           <motion.button 
-                            variants={toolbarItemVariants}
+                            
                             id={`fork-btn-${msg.id}`}
                             onClick={() => handleForkThread(msg.id!)}
                             title={dir === 'rtl' ? 'تفريع المحادثة' : 'Fork Thread'}
@@ -7314,7 +7311,7 @@ export const ChatPage: React.FC = () => {
                       <div className="flex items-center gap-1 sm:gap-2">
                         {msg.generation_time !== undefined && (
                           <motion.div 
-                            variants={toolbarItemVariants}
+                            
                             className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 select-none mr-1 sm:mr-2"
                           >
                             <Zap size={10} className="text-emerald-500" />
@@ -7324,7 +7321,7 @@ export const ChatPage: React.FC = () => {
                           </motion.div>
                         )}
                         <motion.button 
-                          variants={toolbarItemVariants}
+                          
                           onClick={async () => {
                             try {
                               if (navigator.share) {
@@ -7347,7 +7344,7 @@ export const ChatPage: React.FC = () => {
                           <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                         </motion.button>
 
-                         <motion.div variants={toolbarItemVariants} className="relative">
+                         <motion.div  className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
                              className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500'}`}
