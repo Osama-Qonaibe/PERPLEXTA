@@ -1,4 +1,3 @@
-import { MemoryNotification } from '../components/MemoryNotification';
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useVideoPlayback } from '../hooks/useVideoPlayback';
 import { createPortal } from 'react-dom';
@@ -14,7 +13,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, Globe, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, Library, ExternalLink, Settings, Database, GitFork, Sliders, UploadCloud, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -24,7 +23,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { encrypt } from '../utils/browserCrypto';
 import { motion, AnimatePresence } from 'motion/react';
-import { perplextaPageTransition, PERPLEXTA_TRANSITION } from '../constants/motions';
+import { perplextaPageTransition } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
 import { TypewriterMotive } from '../components/TypewriterMotive';
@@ -74,7 +73,6 @@ const ImageGenerationPlaceholder = ({
   errorMessage?: string;
   onRetry?: () => void;
 }) => {
-  // Map aspect ratio to explicit responsive, compact Tailwind aspect classes and max-widths to prevent scrolling
   const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
 
   const getAIStatusLabel = () => {
@@ -570,7 +568,6 @@ const VideoGenerationPlaceholder = ({
     totalSteps?: number;
   } | null;
 }) => {
-  // Map aspect ratio to explicit responsive, compact Tailwind aspect classes
   const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
 
   const progressValue = isFailed 
@@ -1089,8 +1086,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
   );
 };
 
-// Removed ShareableVideoOutput alias to use VideoPlaybackComponent directly
-
 const BlockquoteWithActions = ({ children, dir }: any) => {
   const [copied, setCopied] = useState(false);
 
@@ -1162,7 +1157,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const [isRunning, setIsRunning] = useState(false);
   const [outputLogs, setOutputLogs] = useState<{ type: 'log' | 'info' | 'warn' | 'error'; text: string; time: string }[]>([]);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
-  const [executionError, setExecutionError] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -1265,7 +1259,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   const handleRun = async () => {
     setIsPlaying(true);
-    setExecutionError(null);
     setIframeSrc(null);
     setOutputLogs([]);
 
@@ -1334,7 +1327,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         }
         if (mountedRef.current) setIframeSrc(fullHtml);
       } catch (err: any) {
-        if (mountedRef.current) setExecutionError(err?.message || String(err));
+        if (mountedRef.current) console.error(err);
       } finally {
         if (mountedRef.current) setIsRunning(false);
       }
@@ -2376,7 +2369,6 @@ const HighlightText = ({ text, query }: { text: string; query?: string }) => {
   }
 };
 
-// Compact highly professional single citation row using dynamic cached SEO metadata scraper
 const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string, query?: string }) => {
   const [meta, setMeta] = useState<any>(null);
 
@@ -2473,7 +2465,6 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
   );
 };
 
-// High-fidelity Markdown Link Preview Component
 const MarkdownLink = ({ href, children }: { href?: string, children: React.ReactNode }) => {
   const [meta, setMeta] = useState<any>(null);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -2556,7 +2547,6 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
   );
 };
 
-// High-fidelity Citation Inline Tooltip Preview Component
 const MarkdownCitationLink = ({ citation, index }: { citation: any, index: number }) => {
   const [meta, setMeta] = useState<any>(null);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -5029,7 +5019,6 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (routeChatId && routeChatId !== 'new') {
       // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
-      // This prevents the navigate() from triggering a fetch that wipes the streaming content.
       const belongsToCurrentSession =
         chatIdRef.current?.toString() === routeChatId.toString() ||
         chatId?.toString() === routeChatId.toString() ||

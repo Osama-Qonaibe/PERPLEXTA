@@ -367,7 +367,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
       }
       if (externalClient) {
-        const externalTables = ['forum_categories', 'forum_posts', 'forum_comments', 'blog_articles', 'blog_comments', 'blog_ratings'];
+        const externalTables = ['forum_categories', 'forum_posts', 'forum_comments', 'forum_post_ratings', 'blog_articles', 'blog_comments', 'blog_ratings'];
         for (const t of externalTables) {
           await externalClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
         }
@@ -433,6 +433,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
                 isTableMatched('forum_categories') ||
                 isTableMatched('forum_posts') ||
                 isTableMatched('forum_comments') ||
+                isTableMatched('forum_post_ratings') ||
                 isTableMatched('blog_articles') ||
                 isTableMatched('blog_comments') ||
                 isTableMatched('blog_ratings')

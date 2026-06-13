@@ -483,6 +483,15 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
     - Preserved critical functional warn/error hooks to assist in diagnostics while maintaining a silent, leakage-free environment for secure production executions.
 - **System Stability & Execution Validation**:
     - Successfully validated compiles and ran static type checks with `tsc --noEmit` and Vite parameters, achieving flawless baseline builds.
+- **Dynamic Database Migration Target Resolver Correction**:
+    - Resolved a critical migration failure during sequential boot (Specifically `v50_forum_images_and_ratings`) by updating the dynamic query client routing helper `findClientForQuery` in `./server/db/migrations.ts`.
+    - Added the newly introduced `forum_post_ratings` table to the allowed table-match check list.
+    - This ensures that operational queries like adding unique indexes or structural schemas targeting ratings are flawlessly routed to the designated `externalClient` (Secondary External DB) instead of defaulting to the `client` (Core DB), eliminating the `relation "forum_post_ratings" does not exist` database startup blocks.
+    - Updated scratch drops for clean system resets to gracefully clean up all user-created forum ratings.
+- **Refactoring & Code Quality Guard**:
+    - Cleaned up redundant imports from `ChatPage.tsx`, removing unused Lucide icons (`Globe`, `Maximize`, `Minimize2`, `Library`, `UploadCloud`) and unused components/constants (`MemoryNotification`, `PERPLEXTA_TRANSITION`).
+    - Exterminated dead state engine elements under `executionError` and its respective state setters inside the code sandboxing block, achieving cleaner resource metrics and a lower memory footprint.
+    - Sanitized explanatory developer comments from `ChatPage.tsx` to maintain a professional, clutter-free codebase alignment.
 
 **Final Message to All Future Contributors:** You are inheriting a "Technical Fortress." Your duty is to expand its borders, not weaken its walls. Build with precision. Keep it Majestic. 🛡️✨🏆
 
