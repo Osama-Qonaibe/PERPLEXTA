@@ -2626,7 +2626,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
           <motion.div
             initial={{ height: 0, opacity: 0, y: -5 }}
             animate={{ height: 'auto', opacity: 1, y: 0 }}
-            exit={{ height: 0, opacit y: -5 }}
+            exit={{ height: 0, opacity: 0, y: -5 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
@@ -6060,7 +6060,7 @@ export const ChatPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacit y: -2 }}
+              exit={{ opacity: -2 }}
               transition={{ 
                 opacity: { duration: 0.35, ease: "easeInOut" },
                 y: { duration: 0.4, ease: "easeInOut" }
@@ -6582,7 +6582,7 @@ export const ChatPage: React.FC = () => {
                   <motion.div 
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacit y: -8 }}
+                    exit={{ opacity: -8 }}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]"
                   >
@@ -7199,7 +7199,7 @@ export const ChatPage: React.FC = () => {
                                 key={`follow-ups-${idx}-${msg.id || idx}`}
                                 initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
                                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                                exit={{ opacit y: -3, filter: "blur(2px)" }}
+                                exit={{ opacity: -3, filter: "blur(2px)" }}
                                 transition={{ duration: 0.35, ease: "easeOut" }}
                               >
                                 <FollowUps followUps={msg.follow_ups || []} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
@@ -7485,7 +7485,7 @@ export const ChatPage: React.FC = () => {
               key="scroll-to-bottom-btn"
               initial={{ opacity: 0, y: 10, x: "-50%", scale: 0.8 }}
               animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
-              exit={{ opacit y: 10, x: "-50%", scale: 0.8 }}
+              exit={{ opacity: 10, x: "-50%", scale: 0.8 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={() => scrollToBottom('smooth')}
               style={{ left: '50%' }}
@@ -7516,7 +7516,7 @@ export const ChatPage: React.FC = () => {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacit y: 20 }}
+              exit={{ scale: 0.9, opacity: 20 }}
               className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
@@ -7586,7 +7586,7 @@ export const ChatPage: React.FC = () => {
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacit y: 20 }}
+              exit={{ scale: 0.9, opacity: 20 }}
               className="bg-[#0f0f11] border border-gray-800 text-gray-100 rounded-lg w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden font-sans"
             >
 
