@@ -3915,8 +3915,8 @@ const toolbarVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.02,
-      delayChildren: 0.05,
+      staggerChildren: 0,
+      delayChildren: 0,
     }
   },
   exit: {
@@ -3931,8 +3931,8 @@ const toolbarItemVariants = {
     opacity: 1,
     
     transition: {
-      duration: 0.12,
-      ease: "easeOut",
+      duration: 0.4,
+      ease: "easeIn",
     }
   }
 } as const;
