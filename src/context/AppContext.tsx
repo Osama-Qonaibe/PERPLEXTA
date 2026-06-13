@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 
-
 type Language = 'ar' | 'en';
 type Theme = 'dark' | 'light';
 
@@ -268,7 +267,7 @@ const translations = {
     standard: 'عادي',
     hd: 'عالي الجودة',
     ultra: 'فائق الجودة',
-    
+
     testConnection: 'فحص الاتصال',
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
@@ -294,7 +293,7 @@ const translations = {
     renewal: 'التجديد',
     quotaInfoTitle: 'إدارة الحصص الاحترافية',
     quotaInfoDesc: 'يتم تصفير العدادات اليومية كل 24 ساعة، بينما يتم تصفير العدادات الشهرية في بداية كل شهر ميلادي. في حال تخطي الحصة المجانية، سيقوم النظام تلقائياً بالخصم من رصيد المحفظة لضمان استمرارية الخدمة بأقل تكلفة.',
-    
+
     addNewPlan: 'خطة جديدة',
     planNameEn: 'اسم الخطة بالإنجليزية',
     planNameAr: 'اسم الخطة بالعربية',
@@ -346,7 +345,7 @@ const translations = {
     planForPros: 'للمستخدمين المتقدمين',
     planForBusiness: 'للشركات',
     planColor: 'لون الخطة',
-    
+
     consumptionRadar: 'رادار الاستهلاك',
     realTimeSync: 'مزامنة لحظية للموارد',
     liveNow: 'نشط الآن',
@@ -734,7 +733,7 @@ const translations = {
     submitKyc: 'إرسال طلب التوثيق',
     selfieCaptured: 'تم التقاط الصورة بنجاح',
     capture: 'التقاط الصورة',
-    
+
     userSettings: 'إعدادات الحساب',
     profile: 'الملف الشخصي',
     aiPreferences: 'تفضيلات الذكاء الاصطناعي',
@@ -1411,7 +1410,7 @@ const translations = {
     submitKyc: 'Submit Verification Request',
     selfieCaptured: 'Selfie Captured Successfully',
     capture: 'Capture Image',
-    
+
     userSettings: 'Account Settings',
     profile: 'Profile',
     aiPreferences: 'AI Preferences',
@@ -1580,7 +1579,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.removeItem('app_user_profile');
       }
     } catch (e) {
-      
+
     }
   }, [user]);
 
@@ -1590,7 +1589,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!rawToken || rawToken === 'null' || rawToken === 'undefined' || rawToken === '') return null;
       return rawToken;
     } catch (e) {
-      
+
       return null;
     }
   });
@@ -1618,7 +1617,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const elapsed = Date.now() - bootStartTime.current;
     const storedToken = localStorage.getItem('app_token');
     const isGuest = !storedToken || storedToken === 'null' || storedToken === 'undefined' || storedToken === '';
-    
+
     const activeMinBootTime = isGuest ? 50 : 250;
     const remaining = force ? 0 : Math.max(0, activeMinBootTime - elapsed);
     setTimeout(() => {
@@ -1683,9 +1682,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
   });
-  
+
   const dir = language === 'ar' ? 'rtl' : 'ltr';
-  
+
   const handleLanguageChange = async (lang: Language) => {
     setLanguage(lang);
     localStorage.setItem('language', lang); 
@@ -1697,7 +1696,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           body: JSON.stringify({ language: lang })
         });
       } catch (e) {
-        
+
       }
     }
   };
@@ -1743,7 +1742,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -1780,11 +1779,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        
+
         if (outcome === 'accepted') {
           setDeferredPrompt(null);
           setIsInstallable(false);
-          
+
           setIsInstallationRunning(true);
           setIsInstalling(true);
           setInstallProgress(0);
@@ -1817,13 +1816,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setInstallProgress((prev) => {
               const increment = Math.floor(Math.random() * 12) + 6;
               const next = prev + increment;
-              
+
               if (next >= 100) {
                 clearInterval(interval);
                 setInstallLogs((old) => [...old, language === 'ar' ? 'تمت إضافة جميع حزم بيربليكستا السيادية وتثبيتها بنجاح!' : 'All Perplexta packets deployed and secured successfully!']);
                 setInstallSuccess(true);
                 setIsStandalone(true);
-                
+
                 if ('vibrate' in navigator) {
                   navigator.vibrate([100, 50, 100]);
                 }
@@ -1832,7 +1831,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   try {
                     window.close();
                   } catch (e) {
-                    
+
                   }
                   window.location.href = "/?standalone=true";
                 }, 2500);
@@ -1857,12 +1856,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsInstalling(false);
         }
       } catch (err) {
-        
+
         setIsInstallationRunning(true);
         setIsInstalling(true);
         setInstallProgress(0);
         setInstallSuccess(false);
-        
+
         const interval = setInterval(() => {
           setInstallProgress((prev) => {
             const next = prev + 10;
@@ -1930,32 +1929,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(info);
     localStorage.setItem('last_active_tool', 'chat');
     setIsAuthModalOpen(false); 
-    
+
     if (authLang && (authLang === 'ar' || authLang === 'en')) {
       setLanguage(authLang as any);
       localStorage.setItem('language', authLang);
     }
-    
+
     const targetRefRaw = userData.ref || localStorage.getItem('app_ref');
-    
+
     const targetRef = targetRefRaw && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//') ? targetRefRaw : null;
     localStorage.removeItem('app_ref');
-    
+
     const currentPath = window.location.pathname;
-    
+
     const normalizePath = (p: string) => {
       let clean = p.replace(/\/$/, "");
       if (clean === "" || clean === "/chats") return "/chat";
       return clean;
     };
-    
+
     const normCurrent = normalizePath(currentPath);
     const normTarget = targetRef ? normalizePath(targetRef) : normCurrent;
-    
+
     const isSamePage = !targetRef || 
                        normCurrent === normTarget || 
                        (normCurrent.startsWith('/chat') && normTarget.startsWith('/chat'));
-    
+
     setTimeout(() => {
       localStorage.removeItem('app_oauth_syncing');
       if (isSamePage) {
@@ -1973,7 +1972,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const getParam = (name: string) => {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get(name)) return searchParams.get(name);
-      
+
       const hash = window.location.hash;
       if (hash.includes('?')) {
         const hashQueryParams = new URLSearchParams(hash.split('?')[1]);
@@ -1986,8 +1985,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const urlRefreshToken = getParam('refreshToken');
     const urlUserRaw = getParam('user');
 
-    
-    
     const isSensitivePage = window.location.pathname.includes('reset-password');
 
     const isOAuthCallback = window.opener !== null || 
@@ -2001,14 +1998,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('app_refresh_token', urlRefreshToken);
         setRefreshTokenState(urlRefreshToken);
       }
-      
+
       let userData = null;
       if (urlUserRaw) {
         try {
           userData = JSON.parse(decodeURIComponent(urlUserRaw));
           setUser(userData);
         } catch (e) {
-          
+
         }
       }
 
@@ -2017,13 +2014,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           type: 'OAUTH_AUTH_SUCCESS', 
           user: { token: urlToken, ...userData } 
         }, window.location.origin);
-        
+
         const authChannel = new BroadcastChannel('app_oauth_channel');
         authChannel.postMessage({ 
           type: 'OAUTH_AUTH_SUCCESS', 
           user: { token: urlToken, ...userData } 
         });
-        
+
         setTimeout(() => window.close(), 500);
       } else {
         handleAuthSuccess({ token: urlToken, ...userData });
@@ -2086,7 +2083,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const currentRefreshToken = localStorage.getItem('app_refresh_token');
     if (!currentRefreshToken) {
-      
+
       return null;
     }
 
@@ -2100,7 +2097,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
-            
+
             logout(false);
           }
           return null;
@@ -2123,7 +2120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return null;
       } catch (err) {
-        
+
         return null;
       } finally {
         refreshPromiseRef.current = null;
@@ -2139,14 +2136,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const customFetch = async (...args: any[]) => {
       let [resource, config] = args;
 
-      
       const urlStr = typeof resource === 'string' 
         ? resource 
         : (resource instanceof Request ? resource.url : '');
 
       const isRefreshRequest = urlStr.includes('refresh-token');
 
-      
       let isRetry = false;
       if (config && config.headers) {
         if (config.headers instanceof Headers) {
@@ -2165,12 +2160,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const json = await clone.json();
           if (json.error === 'TokenExpiredError') {
-            
-            
+
             const newToken = await silentRefreshToken();
             if (newToken) {
               const newConfig = { ...config } as any;
-              
+
               if (resource instanceof Request) {
                 resource.headers.set('Authorization', `Bearer ${newToken}`);
                 resource.headers.set('X-Is-Retry', 'true');
@@ -2178,7 +2172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (!newConfig.headers) {
                   newConfig.headers = {};
                 }
-                
+
                 if (newConfig.headers instanceof Headers) {
                   newConfig.headers.set('Authorization', `Bearer ${newToken}`);
                   newConfig.headers.set('X-Is-Retry', 'true');
@@ -2201,7 +2195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
         } catch (e) {
-          
+
         }
       }
 
@@ -2215,11 +2209,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         writable: true
       });
     } catch (e) {
-      
+
       try {
         (window as any).fetch = customFetch;
       } catch (err) {
-        
+
       }
     }
 
@@ -2234,7 +2228,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           (window as any).fetch = originalFetch;
         } catch (err) {
-          
+
         }
       }
     };
@@ -2253,7 +2247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return await res.json();
     } catch (err) {
       if (retries > 0) {
-        
+
         await new Promise(resolve => setTimeout(resolve, backoff));
         return fetchWithRetry(url, options, retries - 1, backoff * 1.5);
       }
@@ -2264,7 +2258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isAuthReady) {
-        
+
         completeBoot(true);
       }
     }, 8000); 
@@ -2276,14 +2270,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       completeBoot();
       return;
     }
-    
+
     try {
       const data = await fetchWithRetry(`/api/user/me?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       const userProfile = data.user || (data.email ? data : null);
-      
+
       if (userProfile) {
         setUser(userProfile);
         setBalance(Number(userProfile.points || 0));
@@ -2292,23 +2286,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
-        
+
         completeBoot();
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      
-      
+
       if ((errMsg.includes('401') || errMsg.includes('403')) && retryCount < 1) {
-        
+
         setTimeout(() => fetchUserProfile(retryCount + 1), 1500);
         return;
       }
 
-      
-      
       if (errMsg.includes('401') || errMsg.includes('403')) {
-        
+
         logout(false);
       } else {
         completeBoot();
@@ -2326,7 +2317,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (data.balance !== undefined) setBalanceUSD(Number(data.balance));
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      
+
       if (errMsg.includes('401') || errMsg.includes('403')) {
         logout(false);
       }
@@ -2335,7 +2326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const profileFetched = useRef(false);
   useEffect(() => {
-    
+
     const loggedOutToast = localStorage.getItem('app_logged_out_toast');
     if (loggedOutToast === '1') {
       localStorage.removeItem('app_logged_out_toast');
@@ -2353,7 +2344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [language]);
 
   useEffect(() => {
-    
+
     if (!token) {
       profileFetched.current = false;
       completeBoot();
@@ -2361,12 +2352,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const forceRefresh = localStorage.getItem('app_force_refresh') === '1';
-    
+
     if (!profileFetched.current || forceRefresh) {
       profileFetched.current = true;
       localStorage.removeItem('app_force_refresh');
-      
-      
+
       fetch(`/api/economy`)
         .then(res => res.json())
         .then(data => data && data.points_per_dollar && setEconomySettings(data))
@@ -2375,7 +2365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fetchUserProfile();
       fetchBalance();
     }
-    
+
     if (socket && !socket.connected) {
       socket.auth = { token };
       socket.connect();
@@ -2387,20 +2377,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const ref = localStorage.getItem('app_ref');
       const lang = localStorage.getItem('language') || 'en';
       const theme = localStorage.getItem('theme') || 'dark';
-      
+
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-      
+
       const mode = (isMobileDevice || isStandalone) ? 'redirect' : 'popup';
-      
-      
+
       localStorage.removeItem('app_oauth_syncing');
-      
-      
+
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-      
+
       const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
-      
+
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
       }
@@ -2408,12 +2396,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text();
-        
+
         throw new Error('Invalid server response');
       }
 
       const data = await res.json();
-      
+
       if (mode === 'redirect') {
         window.location.href = data.url;
         return;
@@ -2423,11 +2411,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
-      
+
       const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
 
-      
-      
       let checkCount = 0;
       const pollInterval = setInterval(async () => {
         checkCount++;
@@ -2436,7 +2422,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return;
         }
 
-        
         try {
           const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
           if (pollRes.ok) {
@@ -2454,10 +2439,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
         } catch (pollErr) {
-          
+
         }
 
-        
         const storedToken = localStorage.getItem('app_token');
         const userDataJson = localStorage.getItem('app_oauth_user');
 
@@ -2476,13 +2460,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               } catch (e) {}
             }
           } catch (e) {
-            
+
           }
         }
       }, 1000);
 
     } catch (error) {
-      
+
     }
   };
 
@@ -2493,7 +2477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, remember: rememberMe })
       });
-      
+
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
@@ -2509,7 +2493,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsAuthModalOpen(false);
           navigate('/chat');
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
-          
+
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -2535,7 +2519,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, ref })
       });
-      
+
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
@@ -2551,7 +2535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsAuthModalOpen(false);
           navigate('/chat');
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
-          
+
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -2571,29 +2555,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async (forceRedirect = true) => {
-    
+
     if (!token && !user) {
-      
+
       return;
     }
 
     const storedToken = token;
     const storedRefreshToken = localStorage.getItem('app_refresh_token');
 
-    
     if (forceRedirect) {
       localStorage.setItem('app_logged_out_toast', '1');
       localStorage.setItem('app_loader_type', 'logout');
     }
 
-    
     localStorage.removeItem('app_token');
     localStorage.removeItem('app_refresh_token');
     localStorage.removeItem('app_oauth_user');
     localStorage.removeItem('app_oauth_trigger');
     localStorage.removeItem('app_user_profile');
-    
-    
+
     localStorage.removeItem('last_active_tool');
     localStorage.removeItem('last_active_model');
     localStorage.removeItem('last_chat_id');
@@ -2603,12 +2584,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('perplexta_deleted_virtual_items');
     localStorage.removeItem('socket_polling_fallback');
     sessionStorage.removeItem('draft_query');
-    
-    
+
     localStorage.setItem('last_active_tool', 'chat');
     localStorage.setItem('last_active_model', 'fast');
-    
-    
+
     if (storedToken) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
@@ -2618,7 +2597,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
         body: JSON.stringify({ refreshToken: storedRefreshToken })
       }).catch((e) => {
-        
+
       });
     }
 
@@ -2626,7 +2605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         socket.disconnect();
       } catch (e) {
-        
+
       }
     }
 
@@ -2640,7 +2619,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
     setMilestoneData(null);
 
-    
     if (forceRedirect) {
       window.location.replace('/');
     } else {
@@ -2648,14 +2626,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  
   useEffect(() => {
     if (!user || !token) return;
 
-    
     localStorage.setItem('perplexta_last_activity', Date.now().toString());
 
-    
     let lastWriteTime = Date.now();
     const updateLastActivity = () => {
       const now = Date.now();
@@ -2665,16 +2640,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    
     const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     events.forEach(event => {
       window.addEventListener(event, updateLastActivity, { passive: true });
     });
 
-    
     const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
-    
-    
+
     const interval = setInterval(() => {
       const lastActivityStr = localStorage.getItem('perplexta_last_activity');
       if (!lastActivityStr) {
@@ -2710,7 +2682,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         return JSON.parse(saved);
       } catch (e) {
-        
+
       }
     }
     return {
@@ -2738,7 +2710,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const appName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
     const nameToUse = appName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
-    
+
     document.title = nameToUse;
   }, [siteSettings, language]);
 
@@ -2756,8 +2728,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    
-    
     const isExpired = (() => {
       try {
         const parts = token.split('.');
@@ -2770,9 +2740,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     })();
 
     if (isExpired) {
-      
+
       silentRefreshToken().catch(err => {
-        
+
       });
       return;
     }
@@ -2788,28 +2758,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSocket(newSocket);
 
     newSocket.on('connect_error', async (err: any) => {
-      
-      
+
       if (!usePollingFallback) {
-        
+
         try {
           localStorage.setItem('socket_polling_fallback', 'true');
         } catch (e) {
-          
+
         }
         setUsePollingFallback(true);
         return;
       }
 
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
-        
+
         const refreshedToken = await silentRefreshToken();
         if (refreshedToken) {
-          
+
           newSocket.auth = { token: refreshedToken };
           newSocket.connect();
         } else {
-          
+
           logout(false);
         }
       }
@@ -2835,7 +2804,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
       } catch (err) {
-        
+
       }
     });
 
@@ -2882,7 +2851,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       }
     } catch (error) {
-      
+
     }
   };
 
@@ -2897,7 +2866,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       }
     } catch (error) {
-      
+
     }
   };
 
@@ -2912,7 +2881,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.filter(n => n.id !== id));
       }
     } catch (error) {
-      
+
     }
   };
 
@@ -2927,7 +2896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications([]);
       }
     } catch (error) {
-      
+
     }
   };
 
@@ -2951,7 +2920,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fetchNotificationsSecure = async () => {
       if (!isMounted) return;
       if (isFetching) return;
-      
+
       if (document.visibilityState === 'hidden') {
         scheduleNext(30000);
         return;
@@ -2978,24 +2947,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           } else {
             const text = await res.text();
-            
+
           }
         } else if (res.status === 401 || res.status === 403) {
-          
+
           logout(false);
           return;
         } else if (res.status === 429) {
           currentDelay = Math.min(currentDelay * 2, 300000); 
-          
+
         } else {
-          
+
         }
       } catch (error) {
         if (!isMounted) return;
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
-          
+
         } else {
-          
+
         }
         currentDelay = Math.min(currentDelay * 1.5, 300000);
       } finally {
@@ -3041,11 +3010,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return userProfile;
         }
       } else if (res.status === 401 || res.status === 403) {
-        
+
         logout(false);
       }
     } catch (error) {
-      
+
     }
     return null;
   };
@@ -3067,7 +3036,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await res.json();
       if (res.ok) {
         await refreshUser();
-        
+
         if (typeof window !== 'undefined' && (window as any).gtag) {
           (window as any).gtag('event', 'purchase', {
             transaction_id: `bal_${Date.now()}`,
@@ -3076,7 +3045,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }],
             method: 'balance'
           });
-          
+
         }
         return { success: true, message: data.message };
       }
@@ -3102,14 +3071,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       const data = await res.json();
       if (res.ok && data.url) {
-        
+
         if (typeof window !== 'undefined' && (window as any).gtag) {
           (window as any).gtag('event', 'begin_checkout', {
             value: billingCycle === 'annual' ? 99.0 : 9.9,
             currency: 'USD',
             items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }]
           });
-          
+
         }
         window.location.href = data.url;
         return { url: data.url };
@@ -3123,7 +3092,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const fetchSettingsAndPlans = async () => {
       const options = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
-      
+
       try {
         const settingsData = await fetchWithRetry('/api/settings', options);
         setSiteSettings({
@@ -3143,14 +3112,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           seoImageUrl: settingsData.seo_image_url || null
         });
       } catch (err) {
-         
+
       }
 
       try {
         const ecoData = await fetchWithRetry('/api/economy', options, 2, 500);
         setEconomySettings(ecoData);
       } catch (ecoError) {
-        
+
       }
 
       try {
@@ -3158,17 +3127,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const formattedPlans = (plansData || []).map((p: any) => {
           let features = [];
           let limits = {};
-          
+
           try {
             features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []);
           } catch (e) {
-            
+
           }
-          
+
           try {
             limits = typeof p.limits === 'object' && p.limits !== null ? p.limits : (typeof p.limits === 'string' ? JSON.parse(p.limits || '{}') : {});
           } catch (e) {
-            
+
           }
 
           return {
@@ -3190,7 +3159,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         setPlans(formattedPlans);
       } catch (error) {
-        
+
       }
     };
     fetchSettingsAndPlans();
@@ -3200,7 +3169,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.dir = dir;
     document.documentElement.lang = language;
     localStorage.setItem('language', language);
-    
+
     const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -3218,14 +3187,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('theme', theme);
   }, [language, theme, dir]);
 
-
   useEffect(() => {
     const currentSiteName = language === 'ar' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
     const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
     const resolvedDesc = (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc;
-    
+
     document.title = currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
-    
+
     let metaDescription = document.querySelector('meta[name="description"]');
     if (!metaDescription) {
       metaDescription = document.createElement('meta');
@@ -3234,7 +3202,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     metaDescription.setAttribute('content', resolvedDesc || '');
 
-    
     let ogTitle = document.querySelector('meta[property="og:title"]');
     if (!ogTitle) {
       ogTitle = document.createElement('meta');
@@ -3259,7 +3226,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     ogImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
 
-    
     let twitterTitle = document.querySelector('meta[name="twitter:title"]');
     if (!twitterTitle) {
       twitterTitle = document.createElement('meta');
@@ -3331,7 +3297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const t = (key: string, replacements?: Record<string, string | number>) => {
     let str = (translations[language] as any)[key] || key;
-    
+
     if (key === 'appName') {
       str = language === 'ar' 
         ? (siteSettings.siteNameAr || '') 
