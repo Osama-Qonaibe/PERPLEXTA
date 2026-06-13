@@ -118,13 +118,12 @@ const ImageGenerationPlaceholder = ({
               <motion.circle cx="160" cy="60" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1.1, 0.8, 1.1] }} transition={{ repeat: Infinity, duration: 1.8 }} />
               <motion.circle cx="70" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} />
               <motion.circle cx="130" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [0.8, 1.1, 0.8] }} transition={{ repeat: Infinity, duration: 2.7 }} />
-              
+
               <motion.path d="M40 60 L100 100 M160 60 L100 100 M70 150 L100 100 M130 150 L100 100" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4,4" animate={{ strokeDashoffset: [0, -20] }} transition={{ repeat: Infinity, duration: 5, ease: 'linear' }} />
               <motion.path d="M40 60 L160 60 L130 150 L70 150 Z" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
             </svg>
           </div>
 
-          {/* Top bar indicators */}
           <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -142,7 +141,6 @@ const ImageGenerationPlaceholder = ({
             </span>
           </div>
 
-          {/* Main interactive center rendering */}
           {isFailed ? (
             <div className="flex flex-col items-center justify-center p-6 gap-3.5 select-none text-center z-10 flex-1">
               <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-bounce-slow">
@@ -171,13 +169,11 @@ const ImageGenerationPlaceholder = ({
           ) : (
             <div className="flex flex-col items-center justify-center p-6 gap-3 select-none text-center z-10 flex-1">
               <div className="relative flex items-center justify-center">
-                {/* Spinning outward orbit ring */}
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                   className="w-16 h-16 rounded-full border border-dashed border-emerald-500/40 flex items-center justify-center"
                 />
-                {/* Outward glowing orbit ring rotating opposite */}
                 <motion.div 
                   animate={{ rotate: -360 }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
@@ -199,7 +195,6 @@ const ImageGenerationPlaceholder = ({
             </div>
           )}
 
-          {/* Bottom micro metrics panel */}
           <div className={`p-2.5 w-full bg-zinc-950/50 border-t ${isFailed ? 'border-rose-500/5' : 'border-emerald-500/5'} backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500`}>
             <span>{isFailed ? 'CORES: DISENGAGED' : 'CORES: ALLOCATED'}</span>
             <span>{isFailed ? 'STATUS: HALTED 500' : `LATENCY: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
@@ -242,7 +237,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
       document.body.removeChild(link);
       window.URL.revokeObjectURL(cleanObjectUrl);
     } catch (err) {
-      console.error("Download failed, using backup method...", err);
       const link = document.createElement('a');
       link.href = srcVal;
       link.download = `Perplexta_Gen_${Date.now()}.png`;
@@ -257,7 +251,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
       setShareStatus('copied');
       setTimeout(() => setShareStatus('idle'), 2500);
     } catch (err) {
-      console.error("Clipboard write failed", err);
     }
   };
 
@@ -275,7 +268,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
         });
         setShareStatus('idle');
       } catch (err) {
-        console.warn("Native share cancelled or failed, falling back to copy Link", err);
         setShareStatus('idle');
         if (err && (err as any).name !== 'AbortError') {
           copyToClipboard(cleanUrl);
@@ -398,7 +390,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
               className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-center select-none"
               onClick={() => setIsPreviewOpen(false)}
             >
-              {/* TOP BRAND INDICATOR BAR */}
               <div 
                 className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/90 via-black/45 to-transparent flex items-center justify-between px-6 z-[1000]"
                 onClick={(e) => e.stopPropagation()}
@@ -436,7 +427,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 </div>
               </div>
 
-              {/* DYNAMIC VIEWPORT & ZOOM MANAGER */}
               <div 
                 className="w-full h-full flex items-center justify-center overflow-hidden p-6 relative cursor-zoom-out"
                 onClick={() => setIsPreviewOpen(false)}
@@ -483,7 +473,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 </motion.div>
               </div>
 
-              {/* BOTTOM FLOATING CONTROL DOCK */}
               <div 
                 className="absolute bottom-8 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-[1000] px-4 py-2.5 rounded-[4px] flex items-center gap-4 text-xs font-mono select-none"
                 onClick={(e) => e.stopPropagation()}
@@ -607,7 +596,6 @@ const VideoGenerationPlaceholder = ({
         >
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
 
-          {/* Top bar indicators */}
           <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
@@ -625,7 +613,6 @@ const VideoGenerationPlaceholder = ({
             </span>
           </div>
 
-          {/* Main unified clean screen content */}
           <div className="flex flex-col items-center justify-center p-6 gap-4 select-none text-center z-10 flex-1 w-full">
             {isFailed ? (
               <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] mb-1">
@@ -633,7 +620,6 @@ const VideoGenerationPlaceholder = ({
               </div>
             ) : (
               <div className="relative flex items-center justify-center w-12 h-12">
-                {/* Clean, quiet pulse loader */}
                 <motion.div 
                   animate={{ scale: [0.95, 1.05, 0.95], opacity: [0.5, 0.9, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -645,7 +631,6 @@ const VideoGenerationPlaceholder = ({
               </div>
             )}
 
-            {/* Micro progress section - "خط نسبة الانتاج" (The only production progress line) */}
             <div className="w-full max-w-[280px] flex flex-col gap-2">
               <div className="flex items-center justify-between text-[11px] font-mono">
                 <span className={`font-black tracking-tight ${isFailed ? 'text-rose-400' : 'text-emerald-400'}`}>
@@ -656,7 +641,6 @@ const VideoGenerationPlaceholder = ({
                 </span>
               </div>
 
-              {/* Seamless unified glowing progress line */}
               <div className={`h-1.5 w-full ${isFailed ? 'bg-rose-950/40 border-rose-900/30' : 'bg-zinc-900 border-zinc-800'} rounded-full overflow-hidden border p-0.5`}>
                 <motion.div 
                   className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
@@ -667,7 +651,6 @@ const VideoGenerationPlaceholder = ({
               </div>
             </div>
 
-            {/* Error Message Details displayed elegantly if failed */}
             {isFailed && (
               <div className="flex flex-col items-center gap-2 max-w-[90%]">
                 <span className="text-[10px] text-rose-400 font-mono bg-rose-950/20 border border-rose-500/10 px-2 py-0.5 rounded-[4px] break-words text-center">
@@ -687,7 +670,6 @@ const VideoGenerationPlaceholder = ({
             )}
           </div>
 
-          {/* Minimalist professional footer */}
           <div className="p-2.5 w-full bg-zinc-950/50 border-t border-zinc-900/40 backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500">
             <span>{isFailed ? 'STATE: HALTED' : 'PROCESS: SYNCHRONIZED'}</span>
             <span>{isFailed ? 'FAIL_CODE: 0x2A4' : `TIME_ELAPSED: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
@@ -789,21 +771,21 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     duration,
     isVideoLoaded,
     setIsVideoLoaded,
-    
+
     isPreviewPlaying,
     setIsPreviewPlaying,
     isPreviewMuted,
     previewProgress,
     previewTime,
     previewDur,
-    
+
     videoRef,
     previewVideoRef,
-    
+
     cleanDisplayUrl,
     vidAspect,
     providerMeta,
-    
+
     handleDownload,
     handleShare,
     togglePlay,
@@ -811,7 +793,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     handleTimeUpdate,
     handleLoadedMetadata,
     handleSeek,
-    
+
     togglePreviewPlay,
     togglePreviewMute,
     handlePreviewSeek,
@@ -870,10 +852,8 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             </div>
           )}
 
-          {/* Interactive Play HUD Overlay */}
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300 pointer-events-none" />
 
-          {/* Center Play Button */}
           <div 
             onClick={togglePlay}
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto cursor-pointer"
@@ -883,7 +863,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             </div>
           </div>
 
-          {/* Progress bar glow */}
           <div className="absolute bottom-0 inset-x-0 h-1 bg-zinc-900/40 backdrop-blur-xs z-10 overflow-hidden pointer-events-none">
             <div 
               className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-100" 
@@ -891,16 +870,13 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             />
           </div>
 
-          {/* Bottom Controllers Panel */}
           <div 
             className="absolute inset-x-0 bottom-0 p-3.5 bg-gradient-to-t from-black/90 via-black/45 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center backdrop-blur-[2px] z-10"
           >
-            {/* Scrubber */}
             <div onClick={handleSeek} className="absolute top-0 inset-x-0 h-1.5 bg-zinc-850 cursor-pointer overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="h-full bg-emerald-500" style={{ width: `${progress}%` }} />
             </div>
 
-            {/* Timings */}
             <div className="flex items-center gap-1.5 font-mono text-[9px] text-gray-400">
               <span className="text-gray-200">{currentTime.toFixed(0)}s</span>
               <span>/</span>
@@ -955,7 +931,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
               className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-center select-none"
               onClick={() => setIsPreviewOpen(false)}
             >
-              {/* TOP HEADER */}
               <div 
                 className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/90 via-black/45 to-transparent flex items-center justify-between px-6 z-[1000]"
                 onClick={(e) => e.stopPropagation()}
@@ -993,7 +968,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 </div>
               </div>
 
-              {/* DYNAMIC VIEWPORT & VIDEO WRAPPER */}
               <div 
                 className="w-full h-full flex flex-col items-center justify-center p-6 relative animate-fade-in"
                 onClick={() => setIsPreviewOpen(false)}
@@ -1020,7 +994,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                     playsInline
                   />
 
-                  {/* Preview Play/Pause Click Overlay */}
                   <div 
                     onClick={togglePreviewPlay}
                     className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
@@ -1032,7 +1005,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 </motion.div>
               </div>
 
-              {/* BOTTOM CONTROL DOCK */}
               <div 
                 className="absolute bottom-8 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-[1000] px-5 py-3 rounded-xl flex items-center gap-4 text-xs font-mono select-none w-full max-w-lg"
                 onClick={(e) => e.stopPropagation()}
@@ -1172,7 +1144,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         setOutputLogs([]);
       }
     };
-    handleResize(); // Run initial check
+    handleResize(); 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -1185,13 +1157,13 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     if (language === 'py') prismLang = 'python';
     if (language === 'sh') prismLang = 'bash';
     if (language === 'html' || language === 'xml' || language === 'svg') prismLang = 'markup';
-    
+
     const hasGrammar = Prism.languages[prismLang];
     if (hasGrammar) {
       try {
         return Prism.highlight(editableCode, Prism.languages[prismLang], prismLang);
       } catch (e) {
-        console.error('Prism highlighting error:', e);
+
       }
     }
     return editableCode
@@ -1214,7 +1186,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         setTimeout(() => setCopied(false), 2000);
       })
       .catch((err) => {
-        console.error('Failed to copy code: ', err);
+
         toast.error(dir === 'rtl' ? 'فشل نسخ الكود' : 'Failed to copy code');
       });
   };
@@ -1262,7 +1234,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         let fullHtml = '';
         const isDark = document.body.classList.contains('dark') || document.documentElement.className.includes('dark');
         const documentClass = isDark ? 'dark' : 'light';
-        
+
         if (language === 'html') {
           fullHtml = `
             <!DOCTYPE html>
@@ -1320,7 +1292,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         }
         if (mountedRef.current) setIframeSrc(fullHtml);
       } catch (err: any) {
-        if (mountedRef.current) console.error(err);
       } finally {
         if (mountedRef.current) setIsRunning(false);
       }
@@ -1471,7 +1442,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
 
-        {/* Action Controls & Interactive Execution Toggle */}
         <div className="flex items-center gap-2">
           {isExecutable && (
             <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
@@ -1547,7 +1517,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           </div>
         </div>
       </div>
-      
+
       {lang === 'audio' ? (
         <motion.div 
           initial={{ opacity: 0 }}
@@ -1555,9 +1525,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-b-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
-          {/* Audio Background Glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
-          
+
           <div className="relative">
              <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full" />
              <div className="relative w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
@@ -1585,7 +1554,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             <Download size={14} />
             {dir === 'rtl' ? 'تنزيل فوري' : 'INSTANT DOWNLOAD'}
           </button>
-          
+
           <div className="flex items-center gap-8 pt-2">
             <div className="flex flex-col items-center gap-1">
                <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Bitrate</span>
@@ -1606,7 +1575,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       ) : (
         <div className="relative">
           {sandboxMode ? (
-            /* Interactive Sandbox Mode (Editable code text area with Play & Reset toolbar) */
+
             <div className="flex flex-col w-full bg-[var(--bg-secondary)] overflow-hidden rounded-b-md">
               <div className="relative p-1">
                 <textarea
@@ -1620,7 +1589,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 />
               </div>
 
-              {/* Execution Action Drawer Controls */}
               <div className="flex items-center justify-between px-4 py-2 bg-gray-50/30 dark:bg-black/10">
                 <div className="flex items-center gap-3">
                   <button
@@ -1680,7 +1648,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 </div>
               </div>
 
-              {/* Sandbox Outputs Drawer */}
               <AnimatePresence>
                 {isPlaying && (
                   <motion.div
@@ -1724,7 +1691,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                             <Trash2 size={11} />
                           </button>
                         </div>
-                        
+
                         <div className="space-y-1.5 max-h-[250px] overflow-y-auto custom-scrollbar">
                           {outputLogs.map((log, lidx) => (
                             <div key={lidx} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
@@ -1751,7 +1718,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               </AnimatePresence>
             </div>
           ) : (
-            /* Standard Read Only View with Code Syntax Box */
+
             isMediaUrl ? (
               <div className="w-full p-4 bg-[var(--bg-secondary)] rounded-b-md border-t border-gray-100 dark:border-gray-800/40">
                 {codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
@@ -1773,7 +1740,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 {...props}
               >
                 <div className="flex items-start min-w-max md:min-w-full">
-                  {/* Line Numbers Column */}
                   <div className="flex select-none flex-col text-right text-[#5c5c62] py-5 pl-4 pr-3.5 border-r border-gray-100/10 dark:border-gray-800/20 font-mono text-[13px] md:text-[14px] leading-relaxed shrink-0 bg-[#0a0a0c]" style={{ userSelect: 'none' }}>
                     {Array.from({ length: editableCode.split('\n').length || 1 }, (_, i) => (
                       <span key={i + 1} className="block select-none min-w-[24px] text-right pr-0.5">
@@ -1781,7 +1747,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                       </span>
                     ))}
                   </div>
-                  {/* Code Snippet Column */}
                   <pre 
                     className="flex-1 py-5 px-5 font-mono text-[13px] md:text-[14px] leading-relaxed bg-transparent text-[#f8f8f2] block text-left overflow-x-visible"
                     style={{ 
@@ -1847,22 +1812,22 @@ const formatExactTimestamp = (createdAt: string | Date | undefined, dir: 'ltr' |
   const dateObj = createdAt ? new Date(createdAt) : new Date();
   if (isNaN(dateObj.getTime())) return '';
   const pad = (num: number, size = 2) => String(num).padStart(size, '0');
-  
+
   const yyyy = dateObj.getFullYear();
   const mm = pad(dateObj.getMonth() + 1);
   const dd = pad(dateObj.getDate());
-  
+
   const hh = pad(dateObj.getHours());
   const min = pad(dateObj.getMinutes());
   const ss = pad(dateObj.getSeconds());
   const ms = pad(dateObj.getMilliseconds(), 3);
-  
+
   return `[${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${ms}]`;
 };
 
 const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) => {
   const normId = toolId || 'chat';
-  
+
   if (normId.startsWith('chat_fast')) {
     return {
       label: dir === 'rtl' ? 'البحث السريع والتوليد الخفيف' : 'Fast Generation',
@@ -1887,7 +1852,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       bgClass: 'bg-sky-500/10 border-sky-500/20'
     };
   }
-  
+
   switch (normId) {
     case 'code':
       return {
@@ -1986,7 +1951,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
 const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, isGenerating: boolean, dir: 'ltr' | 'rtl', t: any }) => {
   const details = getToolDetails(tool, dir, t);
   const Icon = details.icon;
-  
+
   return (
     <div className={`flex items-center gap-2.5 mb-5 w-fit select-none bg-gray-50/50 dark:bg-[#1a1a1c]/20 border border-gray-100/60 dark:border-gray-800/20 px-3 py-1.5 rounded-[4px] shadow-sm backdrop-blur-[2px] flex-row`}>
       <div className={`relative flex items-center justify-center w-6.5 h-6.5 rounded-[4px] border border-transparent transition-all duration-300 ${details.bgClass}`}>
@@ -2025,7 +1990,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
           </div>
         )}
       </div>
-      
+
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-1.5 flex-row">
           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-[var(--text-primary)] truncate max-w-[180px] sm:max-w-[250px]">
@@ -2051,7 +2016,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
 
 const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 'ltr' | 'rtl' }) => {
   if (!steps || steps.length === 0) return null;
-  
+
   return (
     <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3" id="thinking-steps-container">
       <div className="flex items-center gap-2 mb-2 sm:mb-4 opacity-70">
@@ -2116,7 +2081,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
       return part;
     });
   }
-  
+
   if (Array.isArray(node)) {
     return node.map((child, index) => (
       <React.Fragment key={index}>
@@ -2124,7 +2089,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
       </React.Fragment>
     ));
   }
-  
+
   if (React.isValidElement(node)) {
     if (typeof node.type !== 'string') return node;
     if (!['img', 'video', 'a', 'iframe', 'canvas', 'svg', 'button', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'colgroup', 'col'].includes(node.type)) {
@@ -2137,7 +2102,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
       }
     }
   }
-  
+
   return node;
 };
 
@@ -2167,7 +2132,7 @@ const getFavicon = (url: string) => {
 
 const getPlatformBrand = (urlStr: string) => {
   const url = (urlStr || '').toLowerCase();
-  
+
   if (url.includes('t.me') || url.includes('telegram')) {
     return {
       name: 'Telegram',
@@ -2269,12 +2234,12 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
     }
     return Promise.resolve(cached);
   }
-  
+
   if (linkMetadataCache.size > 150) {
     const oldKeys = Array.from(linkMetadataCache.keys()).slice(0, 20);
     oldKeys.forEach(key => linkMetadataCache.delete(key));
   }
-  
+
   const promise = fetch(`/api/system/link-metadata?url=${encodeURIComponent(url)}`)
     .then(res => {
       if (!res.ok) throw new Error('Failed to fetch link metadata');
@@ -2288,7 +2253,7 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
       linkMetadataCache.delete(url);
       return null;
     });
-    
+
   linkMetadataCache.set(url, promise);
   return promise;
 };
@@ -2356,7 +2321,7 @@ const HighlightText = ({ text, query }: { text: string; query?: string }) => {
       </>
     );
   } catch (e) {
-    console.error("Regex highlight error:", e);
+
     return <>{text}</>;
   }
 };
@@ -2400,7 +2365,6 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
       rel="noopener noreferrer"
       className="flex items-center gap-3.5 p-2.5 rounded-md hover:bg-emerald-500/[0.03] dark:hover:bg-emerald-500/[0.02] transition-theme group min-w-0 cursor-pointer border-b border-[var(--border-main)]/30 dark:border-zinc-800/20 last:border-0"
     >
-      {/* Platform/Channel icon or Favicon */}
       <div className="flex-shrink-0">
         <div 
           className="w-7 h-7 rounded-full flex items-center justify-center border border-[var(--border-main)]/60 bg-white dark:bg-zinc-900 shadow-sm transition-theme group-hover:scale-105 group-hover:border-emerald-500/20"
@@ -2419,7 +2383,6 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
         </div>
       </div>
 
-      {/* Center Details */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-[9px] font-black text-emerald-500 shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-theme">
@@ -2442,7 +2405,6 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
         </span>
       </div>
 
-      {/* Small crisp SEO Thumbnail */}
       {displayImage ? (
         <div className="flex-shrink-0 self-center hidden sm:block">
           <img
@@ -2521,7 +2483,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
               </span>
             </div>
           </div>
-          
+
           {displayDesc && (
             <p className="text-[9.5px] text-[var(--text-muted)] leading-relaxed mt-0.5 pt-1.5 border-t border-[var(--border-main)]/30 dark:border-zinc-800/40 font-normal line-clamp-3">
               {displayDesc}
@@ -2595,7 +2557,7 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
               </span>
             </div>
           </div>
-          
+
           {displayDesc && (
             <p className="text-[9.5px] text-[var(--text-muted)] leading-relaxed mt-0.5 font-normal line-clamp-3">
               {displayDesc}
@@ -2668,7 +2630,6 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            {/* Extremely lightweight dynamic borderless list */}
             <div className="pt-3 max-w-full flex flex-col gap-1">
               {citations.map((cite, idx) => (
                 <CitationRow 
@@ -2769,7 +2730,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     }
   }, [status]);
 
-  // Parse parameters from section text or full parent content for high precision
   const { styleName, vocalName, durationVal } = useMemo(() => {
     const bodyText = (fullContent || '') + '\n' + (body || '');
     let style = 'Epic';
@@ -2841,7 +2801,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         setDuration(durationVal);
         setStatus('ready');
       } catch (err) {
-        console.error('Generative synthesis failed:', err);
+
         if (active) setStatus('error');
       }
     };
@@ -2874,14 +2834,12 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     };
   }, [uploadedUrl]);
 
-  // Adjust master gain level in context
   useEffect(() => {
     if (masterGainNodeRef.current) {
       masterGainNodeRef.current.gain.setValueAtTime(isMuted ? 0 : volume, audioCtxRef.current?.currentTime || 0);
     }
   }, [volume, isMuted]);
 
-  // Handle Playback Loop Updates for mixed tracks
   const updateProgress = () => {
     if (audioRef.current) {
       const mainTime = audioRef.current.currentTime;
@@ -2889,7 +2847,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
       if (audioRef.current.ended) {
         if (uploadedAudioRef.current && !uploadedAudioRef.current.ended && uploadedUrl) {
-          // If the AI track ended but the user track is longer, keep updates synced to user playback
+
           displayTime = uploadedAudioRef.current.currentTime;
           setCurrentTime(displayTime);
           animationFrameRef.current = requestAnimationFrame(updateProgress);
@@ -2901,7 +2859,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           }
         }
       } else {
-        // Enforce perfect sub-quarter-second phase lock sync between tracks
+
         if (uploadedAudioRef.current && !uploadedAudioRef.current.paused && uploadedUrl) {
           const diff = Math.abs(uploadedAudioRef.current.currentTime - mainTime);
           if (diff > 0.22) {
@@ -2917,7 +2875,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   const handlePlayPause = async () => {
     if (!audioRef.current || status !== 'ready') return;
 
-    // 1. Setup / Resume AudioContext on Gesture
     let ctx = audioCtxRef.current;
     if (!ctx) {
       try {
@@ -2925,13 +2882,12 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         ctx = new AudioContextClass();
         audioCtxRef.current = ctx;
 
-        // Create Master Volume Controller node
         const masterGain = ctx.createGain();
         masterGain.gain.setValueAtTime(isMuted ? 0 : volume, ctx.currentTime);
         masterGain.connect(ctx.destination);
         masterGainNodeRef.current = masterGain;
       } catch (e) {
-        console.warn("Web Audio API failing initiated:", e);
+
       }
     }
 
@@ -2939,7 +2895,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       await ctx.resume();
     }
 
-    // 2. Wire AI track node exactly once to the Web Audio Graph
     if (ctx && !aiSourceRef.current && masterGainNodeRef.current) {
       try {
         const aiSrc = ctx.createMediaElementSource(audioRef.current);
@@ -2951,11 +2906,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         aiSourceRef.current = aiSrc;
         aiGainNodeRef.current = aiGain;
       } catch (err) {
-        console.warn("AI source routing warning:", err);
+
       }
     }
 
-    // 3. Wire Uploaded track node exactly once to the Web Audio Graph
     if (ctx && uploadedAudioRef.current && uploadedUrl && !uploadedSourceRef.current && masterGainNodeRef.current) {
       try {
         const uplSrc = ctx.createMediaElementSource(uploadedAudioRef.current);
@@ -2967,11 +2921,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         uploadedSourceRef.current = uplSrc;
         uploadedGainNodeRef.current = uplGain;
       } catch (err) {
-        console.warn("Uploaded source routing warning:", err);
+
       }
     }
 
-    // 4. Trigger synchronized playback
     if (isPlaying) {
       audioRef.current.pause();
       if (uploadedAudioRef.current && uploadedUrl) {
@@ -2995,7 +2948,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         setIsPlaying(true);
         animationFrameRef.current = requestAnimationFrame(updateProgress);
       } catch (err) {
-        console.error("Audio playback block:", err);
+
       }
     }
   };
@@ -3045,7 +2998,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     setUploadedFile(file);
     setUploadedUrl(url);
 
-    // Stop current play of both
     if (isPlaying) {
       audioRef.current?.pause();
       if (uploadedAudioRef.current) {
@@ -3059,7 +3011,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       audioRef.current.currentTime = 0;
     }
 
-    // Force disconnect previous source reference to let it rebind on next play
     if (uploadedSourceRef.current) {
       try {
         uploadedSourceRef.current.disconnect();
@@ -3087,7 +3038,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     }
     uploadedGainNodeRef.current = null;
 
-    // Reset play positions
     setCurrentTime(0);
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
@@ -3104,7 +3054,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
-  // Style attributes translations mapping for direct localized display
   const styleDisplayMap: Record<string, { ar: string; en: string }> = {
     'Epic': { ar: 'أوركسترا ملحمية', en: 'Epic Orchestral' },
     'Tarab': { ar: 'طرب ومقام شرقي', en: 'Arabic Tarab' },
@@ -3136,7 +3085,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         />
       )}
 
-      {/* Uploaded local audio file element */}
       {uploadedUrl && (
         <audio
           ref={uploadedAudioRef}
@@ -3149,7 +3097,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         />
       )}
 
-      {/* Album cover / visual showcase space */}
       <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/15 shadow-2xl bg-black">
         {coverImageUrl ? (
           <img 
@@ -3164,7 +3111,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           </div>
         )}
 
-        {/* Floating details badge */}
+        {}
         <div className={`absolute top-4 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex flex-col gap-1 z-10`}>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-emerald-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -3175,7 +3122,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           </p>
         </div>
 
-        {/* Center operational synthesis controller overlay */}
+        {}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/30 backdrop-blur-[2px]">
           {status === 'rendering' || status === 'idle' ? (
             <div className="flex flex-col items-center gap-3">
@@ -3220,7 +3167,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   <Play size={30} className="ml-1.5 fill-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </button>
-              
+
               <div className="text-center px-6">
                 <h4 className="text-sm font-black text-white tracking-[0.2em] uppercase mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                   {dir === 'rtl' ? 'تحفة الأوركسترا من بيربليكستا' : 'PERPLEXTA ORCHESTRA MASTERPIECE'}
@@ -3233,7 +3180,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           )}
         </div>
 
-        {/* Dynamic visualizer bars responsive to track status */}
+        {}
         <div className="absolute bottom-0 left-0 w-full h-12 flex items-end justify-center gap-1 sm:gap-1.5 px-6 pb-4 opacity-65 pointer-events-none">
           {Array.from({ length: 36 }).map((_, i) => {
             let scaleVal = 4;
@@ -3250,7 +3197,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 />
               );
             } else if (status === 'rendering' || status === 'idle') {
-              // Beautiful staggered smooth wave motion during compilation
+
               return (
                 <motion.div 
                   key={i}
@@ -3267,7 +3214,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 />
               );
             } else {
-              // Soft static baseline wave
+
               scaleVal = 4 + Math.sin(i * 0.3) * 3;
               return (
                 <div 
@@ -3281,19 +3228,19 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         </div>
       </div>
 
-      {/* Aesthetic sound player operational controller bar */}
+      {}
       <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-3 ${
         theme === 'dark' 
           ? 'bg-[#151518] border-gray-800/40' 
           : 'bg-gray-50/80 border-gray-200/65'
       }`}>
         <div className="flex items-center justify-between gap-4 w-full">
-          {/* Quick timing indicator labels */}
+          {}
           <span className="text-[11px] font-mono font-bold text-[var(--text-muted)] min-w-[34px]">
             {formatTime(currentTime)}
           </span>
 
-          {/* Fully seekable slider timeline */}
+          {}
           <div 
             ref={progressBarRef}
             onClick={handleTimelineClick}
@@ -3303,7 +3250,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               style={{ width: `${(currentTime / mixDuration) * 100}%` }}
               className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.7)]"
             />
-            {/* Glowing seek cursor marker */}
+            {}
             <div 
               style={{ left: `calc(${(currentTime / mixDuration) * 100}% - 4px)` }}
               className="absolute top-0 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
@@ -3316,7 +3263,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         </div>
 
         <div className="flex items-center justify-between w-full pt-1">
-          {/* Volume control block with emerald feedback */}
+          {}
           <div className="flex items-center gap-2">
             <button 
               onClick={toggleMute}
@@ -3325,7 +3272,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             >
               <Volume2 size={16} className={isMuted ? 'text-gray-500 line-through' : 'text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'} />
             </button>
-            
+
             <input 
               type="range" 
               min="0" 
@@ -3337,7 +3284,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             />
           </div>
 
-          {/* Quick description of song setup */}
+          {}
           <div className="hidden sm:flex flex-col text-center">
             <span className="text-[10px] text-[#10b981] font-[#10b981] drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-bold uppercase tracking-widest leading-none">
               {styleName} • {vocalName}
@@ -3347,7 +3294,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             </span>
           </div>
 
-          {/* Instant WAV download button to save to local device */}
+          {}
           {audioUrl && status === 'ready' ? (
             <a 
               href={audioUrl}
@@ -3370,7 +3317,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         </div>
       </div>
 
-      {/* 🎛️ STUDIO DUAL-CHANNEL MIXING BOARD */}
+      {}
       <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-all duration-300 ${
         theme === 'dark' 
           ? 'bg-[#151518]/95 border-gray-800/40 shadow-xl' 
@@ -3405,13 +3352,13 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
         {isMixerExpanded && (
           <div className="flex flex-col gap-5 animate-fadeIn">
-            {/* 1. Mix Drag-and-Drop / Upload Area */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                   {dir === 'rtl' ? 'تحميل مسار خارجي / صوت مضاف' : 'UPLOAD COMPANION/VOCAL TRACK'}
                 </span>
-                
+
                 <div
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
@@ -3479,13 +3426,13 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 </div>
               </div>
 
-              {/* 2. Interactive Channels Mixing Board */}
+              {}
               <div className="flex flex-col gap-3 justify-center">
                 <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
                   {dir === 'rtl' ? 'لوحة التحكم بمستويات الصوت (دمج حي)' : 'CHANNEL MIXER CONTROLS'}
                 </span>
 
-                {/* AI Synthesized Channel */}
+                {}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
@@ -3514,7 +3461,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   />
                 </div>
 
-                {/* Local Uploaded Channel */}
+                {}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
@@ -3545,7 +3492,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               </div>
             </div>
 
-            {/* 3. Info / Web Audio Feedback Banner */}
+            {}
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-black/5 dark:bg-white/[0.02] border border-gray-200/50 dark:border-gray-800/30 text-[10px] text-[var(--text-muted)] font-medium leading-normal">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>
@@ -3564,11 +3511,11 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
 const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' | 'rtl'; theme: string }) => {
   const sections: { title: string; body: string; id: string }[] = [];
-  
+
   const splitRegex = /(?:^|\n)(?:#\s*|[\d]\.\s*)?\[(?:I|II|III)\.\s*[^\]]+\]/g;
   const rawSections = content.split(splitRegex).filter(s => s.trim().length > 0);
   const titles = (content.match(splitRegex) || []) as string[];
-  
+
   titles.forEach((title: string, idx: number) => {
     sections.push({
       id: `section-${idx}`,
@@ -3577,19 +3524,15 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
     });
   });
 
-  // Extract cover image if available for consolidated view
   const coverSection = sections.find(s => s.title.includes('الغلاف') || s.title.toLowerCase().includes('cover'));
   const coverMatch = coverSection?.body.match(/!\[.*?\]\((.*?)\)/);
   const coverImageUrl = coverMatch ? coverMatch[1] : null;
 
-  // Let's check if the content contains some hints of music/cover structure.
-  // If not structured at all, fallback to native Markdown.
   const isAudioConcept = content.includes('[I. Cover') || content.includes('[II. Audio') || content.includes('البيئة الصوتية') || content.includes('الأوركسترا');
   if (sections.length === 0 && !isAudioConcept) {
     return <Markdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock as any, p: 'div', a: ({ href, children }: any) => <MarkdownLink href={href}>{children}</MarkdownLink>, blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions> }}>{content}</Markdown>;
   }
 
-  // Define canonical phases matching the PERPLEXTA CREATIVE PRODUCTION PROTOCOL
   const canonicalSlots = [
     {
       phase: 1,
@@ -3620,7 +3563,6 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
     }
   ];
 
-  // Map parsed sections to their corresponding canonical slots
   const slots = canonicalSlots.map((canon, i) => {
     let matched = sections.find(sec => {
       const lowerT = sec.title.toLowerCase();
@@ -3630,7 +3572,6 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
       return false;
     });
 
-    // Fallback to direct indexing if not matched by keywords yet sections are populated sequently
     if (!matched && sections[i] && i === sections.length - 1) {
       matched = sections[i];
     }
@@ -3648,7 +3589,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
         const { canon, data, isPending } = slot;
         const isMusicSection = canon.phase === 3;
         const currentTitle = dir === 'rtl' ? canon.titleAr : canon.titleEn;
-        
+
         return (
           <motion.div
             key={canon.id}
@@ -3665,7 +3606,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                 : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
             } ${isPending ? 'opacity-85 border-dashed border-emerald-500/20 bg-emerald-500/[0.01]' : ''}`}
           >
-            {/* Executive Header */}
+            {}
             <div className={`px-8 py-6 border-b flex items-center justify-between ${
               theme === 'dark' ? 'border-[var(--border)] bg-[var(--bg-surface)]' : 'border-[var(--border)] bg-[var(--bg-base)]'
             }`}>
@@ -3683,7 +3624,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                   </h3>
                 </div>
               </div>
-              
+
               <div className="hidden md:flex items-center gap-4">
                  <div className="flex flex-col items-end">
                    <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest leading-none mb-1">
@@ -3708,13 +3649,13 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               </div>
             </div>
 
-            {/* Content Area */}
+            {}
             <div className={`p-8 md:p-10 text-[13px] md:text-base ${isMusicSection ? 'text-center' : ''}`}>
               <div className="markdown-body prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:mb-4 prose-headings:mt-8">
                 {isPending ? (
                   <div className="flex flex-col gap-4 py-4">
                     {canon.phase === 3 ? (
-                      // RENDER PLAYER IMMEDIATELY EVEN IF PENDING!
+
                       <div className="flex flex-col items-center gap-6">
                         <InteractiveAudioPlayer 
                           body="" 
@@ -3729,7 +3670,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                         </div>
                       </div>
                     ) : (
-                      // Normal loading skeletons
+
                       <div className="space-y-3">
                         <div className="h-4 bg-emerald-500/5 rounded-md w-3/4 animate-pulse border border-emerald-500/10" />
                         <div className="h-4 bg-emerald-500/5 rounded-md w-1/2 animate-pulse border border-emerald-500/10" />
@@ -3742,7 +3683,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                   </div>
                 ) : isMusicSection ? (
                   <div className="flex flex-col items-center gap-8">
-                    {/* Visual Exhibition */}
+                    {}
                     <InteractiveAudioPlayer 
                       body={data?.body || ''} 
                       fullContent={content}
@@ -3755,7 +3696,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                       remarkPlugins={[remarkGfm]} 
                       components={{ 
                         code: CodeBlock as any,
-                        img: () => null, // Suppress images inside cover section
+                        img: () => null, 
                         p: 'div',
                         blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>
                       }}
@@ -3791,14 +3732,14 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               </div>
             </div>
 
-            {/* Decorative Corner Trace */}
+            {}
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/3 blur-[100px] pointer-events-none" />
           </motion.div>
         );
       })}
 
-      {/* Global Studio Certification */}
+      {}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -3834,7 +3775,7 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
     <div className="absolute top-0 right-0 p-4 opacity-5">
       <Settings size={64} className="text-emerald-500" />
     </div>
-    
+
     <div className="flex items-start gap-4 relative z-10">
       <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
         <Settings size={24} className="animate-spin-slow" />
@@ -3894,7 +3835,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <Sparkles size={48} className="text-emerald-500" />
       </div>
-      
+
       <div className="flex items-start gap-4 relative z-10">
         <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
           <Zap size={24} className="animate-pulse" />
@@ -3920,7 +3861,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
         </div>
       </div>
 
-      {/* Referral Link Area */}
+      {}
       <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-md p-3 flex items-center gap-3">
         <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
           {referralLink}
@@ -3975,7 +3916,7 @@ const toolbarVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.03,
-      delayChildren: 0.5, // 500ms elegant delay for a calm & dynamic flow
+      delayChildren: 0.5, 
     }
   },
   exit: {
@@ -4017,7 +3958,7 @@ export const ChatPage: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<string>(() => {
     return localStorage.getItem('last_active_tool') || 'chat';
   });
-  
+
   const prevUserRef = useRef<any>(null);
   useEffect(() => {
     if (user && !prevUserRef.current) {
@@ -4031,7 +3972,6 @@ export const ChatPage: React.FC = () => {
     prevUserRef.current = user;
   }, [user]);
 
-  // Subscription Expiry/Renewal Warning Hook
   useEffect(() => {
     if (!user || !user.subscription || user.subscription.status !== 'active') return;
     const periodEnd = user.subscription.current_period_end;
@@ -4041,7 +3981,6 @@ export const ChatPage: React.FC = () => {
     const nowTime = Date.now();
     const diffDays = (expiryTime - nowTime) / (1000 * 60 * 60 * 24);
 
-    // If subscription expires in less than 3 days and is still active
     if (diffDays > 0 && diffDays <= 3) {
       const daysLeft = Math.ceil(diffDays);
       const planNameAr = user.subscription.plan_name_ar || user.subscription.plan_name_en;
@@ -4086,7 +4025,6 @@ export const ChatPage: React.FC = () => {
   const [ledgerNotice, setLedgerNotice] = useState<{ textAr: string; textEn: string } | null>(null);
   const [typedNotice, setTypedNotice] = useState<string>('');
 
-  // Real-time Ledger Typewriter Effects
   useEffect(() => {
     if (!ledgerNotice) {
       return;
@@ -4141,14 +4079,13 @@ export const ChatPage: React.FC = () => {
   const typingTimeoutRef = useRef<any>(null);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatId, setChatId] = useState<string | null>(routeChatId && routeChatId !== 'new' ? routeChatId : null);
 
   const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active');
   const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active'));
 
-  // Perplexta Preservation: Debounced sync local state to persistent storage to prevent data loss on accidental reload
   useEffect(() => {
     if (!query) {
       sessionStorage.setItem('draft_query', '');
@@ -4157,7 +4094,7 @@ export const ChatPage: React.FC = () => {
 
     const handler = setTimeout(() => {
       sessionStorage.setItem('draft_query', query);
-    }, 500); // 500ms debounce delay
+    }, 500); 
 
     return () => {
       clearTimeout(handler);
@@ -4175,13 +4112,13 @@ export const ChatPage: React.FC = () => {
 
   const handleUserTyping = () => {
     if (!socket || !user) return;
-    
+
     socket.emit('typing', { isTyping: true, role: 'user', name: user.name || 'User' });
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit('typing', { isTyping: false, role: 'user', name: user.name || 'User' });
     }, 2000);
@@ -4204,7 +4141,7 @@ export const ChatPage: React.FC = () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 120000); // 2 minutes max processing limit
+    }, 120000); 
 
     try {
       const formData = new FormData();
@@ -4240,7 +4177,7 @@ export const ChatPage: React.FC = () => {
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.error('[Forensic client scanner]', err);
+
       const isAbort = err.name === 'AbortError';
       toast.error(
         dir === 'rtl'
@@ -4259,11 +4196,10 @@ export const ChatPage: React.FC = () => {
 
   const lastDispatchedStateRef = useRef<{ isGenerating: boolean; chatId: string | null }>({ isGenerating: false, chatId: null });
 
-  // Synchronize generation state and active chat ID globally for real-time sidebar pulse
   useEffect(() => {
     const activeChatId = chatId || routeChatId || null;
     const cache = lastDispatchedStateRef.current;
-    
+
     if (cache.isGenerating !== isGenerating || cache.chatId !== activeChatId) {
       const prevWasGenerating = cache.isGenerating;
       cache.isGenerating = isGenerating;
@@ -4271,7 +4207,7 @@ export const ChatPage: React.FC = () => {
       window.dispatchEvent(new CustomEvent('ai-streaming-state', {
         detail: { isGenerating, chatId: activeChatId }
       }));
-      
+
       if (!isGenerating && activeChatId && prevWasGenerating) {
         window.dispatchEvent(new Event('chat-updated'));
       }
@@ -4299,7 +4235,6 @@ export const ChatPage: React.FC = () => {
   const [showImageSettings, setShowImageSettings] = useState(true);
   const [showAudioSettings, setShowAudioSettings] = useState(true);
 
-  // Perplexta: document.title synchronization
   useEffect(() => {
     const firstUserMsg = messages.find(m => m.role === 'user');
     if (firstUserMsg) {
@@ -4309,7 +4244,6 @@ export const ChatPage: React.FC = () => {
     }
   }, [messages, siteSettings, dir]);
 
-  // Perplexta: Prompt injection and copy insertion bridge
   useEffect(() => {
     const handleInsertToPrompt = (e: Event) => {
       const text = (e as CustomEvent).detail;
@@ -4318,7 +4252,7 @@ export const ChatPage: React.FC = () => {
         if (textareaRef.current) {
           textareaRef.current.focus();
           textareaRef.current.style.height = 'auto';
-          // Ensure container grows to fit content dynamically up to max-height limit
+
           textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
         }
         toast.success(dir === 'rtl' ? 'تم نسخ البرومبت وتطبيقه في حقل الإدخال' : 'Prompt loaded directly into the input field!');
@@ -4338,13 +4272,13 @@ export const ChatPage: React.FC = () => {
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
-    const threshold = 300; // pixels from the bottom
+    const threshold = 300; 
     const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     setShowScrollToBottom(distanceToBottom > threshold);
   };
-  
+
   const MAX_CHAT_MESSAGES = 50;
-  
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatIdRef = useRef<string | null>(chatId);
   const streamingBuffer = useRef('');
@@ -4373,7 +4307,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (messages.length > 0) {
       if (isGenerating) {
-        // Safe immediate scroll when starting target generation to align viewport
+
         scrollToBottom('auto');
       } else {
         scrollToBottom('smooth');
@@ -4428,7 +4362,7 @@ export const ChatPage: React.FC = () => {
           }
         }
         if (finalTranscript) {
-          // Perplexta: High-precision insertion
+
           setQuery(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
           if (textareaRef.current) {
              textareaRef.current.style.height = 'auto';
@@ -4438,7 +4372,7 @@ export const ChatPage: React.FC = () => {
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
+
         if (event.error === 'not-allowed') {
           toast.error(dir === 'rtl' ? 'يرجى السماح بالوصول إلى الميكروفون' : 'Please allow microphone access');
         }
@@ -4457,7 +4391,7 @@ export const ChatPage: React.FC = () => {
       recognitionRef.current.start();
       setIsRecording(true);
     } catch (err) {
-      console.error('Failed to start recognition', err);
+
       setIsRecording(false);
     }
   };
@@ -4467,8 +4401,7 @@ export const ChatPage: React.FC = () => {
       setEditingMessageIndex(null);
       return;
     }
-    
-    // Persistent branching: delete messages from DB after this index
+
     const messageToEdit = messages[index];
     if (messageToEdit.id && chatId) {
       try {
@@ -4477,7 +4410,7 @@ export const ChatPage: React.FC = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (e) {
-        console.error('Failed to truncate branch in DB:', e);
+
       }
     }
 
@@ -4499,7 +4432,7 @@ export const ChatPage: React.FC = () => {
       toast.error(dir === 'rtl' ? 'متصفحك لا يدعم تحويل النص إلى صوت' : 'Browser doesn\'t support TTS');
       return;
     }
-    
+
     if (playingTTSId === msgId) {
       window.speechSynthesis.cancel();
       setPlayingTTSId(null);
@@ -4512,7 +4445,7 @@ export const ChatPage: React.FC = () => {
     utterance.lang = detectLanguage(cleanText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
-    
+
     utterance.onend = () => setPlayingTTSId(null);
     utterance.onerror = () => setPlayingTTSId(null);
 
@@ -4560,10 +4493,9 @@ export const ChatPage: React.FC = () => {
         const chatContainer = document.getElementById('chat-messages-container');
         if (!chatContainer) throw new Error('Chat container not found');
 
-        // Create a dedicated export element to handle styling better
         const exportEl = document.createElement('div');
         exportEl.style.padding = '40px 30px';
-        exportEl.style.width = '800px'; // Wider for cleaner layout in A4 ratio
+        exportEl.style.width = '800px'; 
         exportEl.style.backgroundColor = theme === 'dark' ? '#0f0f11' : '#ffffff';
         exportEl.style.color = theme === 'dark' ? '#ffffff' : '#000000';
         exportEl.dir = dir;
@@ -4573,7 +4505,6 @@ export const ChatPage: React.FC = () => {
         exportEl.style.zIndex = '-9999';
         exportEl.style.opacity = '1';
 
-        // Inject styles directly inside exportEl to ensure Tajawal loads inside isolated SVG/foreignObject elements
         const fontStyle = document.createElement('style');
         applyNonce(fontStyle);
         fontStyle.textContent = `
@@ -4611,7 +4542,7 @@ export const ChatPage: React.FC = () => {
             ? (theme === 'dark' ? '#1a1a1c' : '#f8f9fa')
             : 'transparent';
           msgEl.style.border = theme === 'dark' ? '1px solid #2d2d2f' : '1px solid #e9ecef';
-          
+
           const roleLabel = document.createElement('div');
           roleLabel.innerText = msg.role === 'user' ? (dir === 'rtl' ? 'المستخدم' : 'User') : (dir === 'rtl' ? 'مساعد بيربليكستا' : 'Perplexta Assistant');
           roleLabel.style.fontWeight = '900';
@@ -4620,11 +4551,11 @@ export const ChatPage: React.FC = () => {
           roleLabel.style.textTransform = 'uppercase';
           roleLabel.style.letterSpacing = '1px';
           roleLabel.style.color = '#10b981';
-          
+
           const content = document.createElement('div');
           content.innerText = msg.content;
           content.className = 'msg-body-text';
-          
+
           msgEl.appendChild(roleLabel);
           msgEl.appendChild(content);
           exportEl.appendChild(msgEl);
@@ -4639,25 +4570,23 @@ export const ChatPage: React.FC = () => {
         exportEl.appendChild(footer);
 
         document.body.appendChild(exportEl);
-        
-        // Wait for system to perform fonts lookup and DOM layout rendering cleanly
+
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Use toPng to generate a high quality pixel render of the DOM with correct native Arabic shaping
         const imgData = await toPng(exportEl, {
           backgroundColor: theme === 'dark' ? '#0f0f11' : '#ffffff',
-          pixelRatio: 2, // Double DPI quality to prevent pixelation inside generated PDFs
+          pixelRatio: 2, 
           style: {
             transform: 'scale(1)',
           }
         });
-        
+
         document.body.removeChild(exportEl);
-        
+
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        
+        const imgWidth = 210; 
+        const pageHeight = 297; 
+
         const img = new Image();
         img.src = imgData;
         await new Promise((resolve) => {
@@ -4668,11 +4597,9 @@ export const ChatPage: React.FC = () => {
         let heightLeft = imgHeight;
         let position = 0;
 
-        // Add first page
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
-        // Add subsequent pages if content is longer than one page
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
@@ -4709,7 +4636,7 @@ export const ChatPage: React.FC = () => {
         });
 
         htmlContent += `</body></html>`;
-        
+
         const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -4725,7 +4652,7 @@ export const ChatPage: React.FC = () => {
         : `Conversation exported as ${formatLabels[format]} successfully`
       );
     } catch (error) {
-      console.error('Export error:', error);
+
       toast.error(dir === 'rtl' ? 'فشل تصدير المحادثة' : 'Failed to export conversation');
     } finally {
       setIsExporting(false);
@@ -4752,7 +4679,7 @@ export const ChatPage: React.FC = () => {
         toast.error(errorData.error || (dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title'));
       }
     } catch (e) {
-      console.error('Rename error:', e);
+
       toast.error(dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title');
     }
   };
@@ -4776,7 +4703,7 @@ export const ChatPage: React.FC = () => {
         navigate('/chat');
       }
     } catch (e) {
-      console.error('Delete error:', e);
+
     }
   };
 
@@ -4797,11 +4724,11 @@ export const ChatPage: React.FC = () => {
           ? (dir === 'rtl' ? 'تم تثبيت الرسالة' : 'Message pinned') 
           : (dir === 'rtl' ? 'تم إلغاء التثبيت' : 'Message unpinned')
         );
-        // Track GA pin interaction
+
         trackGAEvent(isPinned ? 'message_pinned' : 'message_unpinned', 'interaction');
       }
     } catch (err) {
-      console.error('Pin error:', err);
+
     }
   };
 
@@ -4818,12 +4745,12 @@ export const ChatPage: React.FC = () => {
       });
       if (res.ok) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, feedback } : m));
-        // Track GA feedback event
+
         const feedLabel = feedback === 1 ? 'thumbs_up' : feedback === -1 ? 'thumbs_down' : 'neutral';
         trackGAEvent('feedback_submitted', 'message_quality', feedLabel);
       }
     } catch (err) {
-      console.error('Feedback error:', err);
+
     }
   };
 
@@ -4857,7 +4784,7 @@ export const ChatPage: React.FC = () => {
       }
     } catch (err: any) {
       toast.dismiss(loader);
-      console.error('Fork error:', err);
+
       toast.error(dir === 'rtl' ? 'فشل تفريع المحادثة' : `Failed to fork thread: ${err.message || ''}`);
     }
   };
@@ -4872,8 +4799,7 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Perplexta: Auto-scrolling is strictly disabled to maintain a static, controlled screen view.
-    // The user segment demands zero-jitter, manual context control.
+
   }, [messages, isGenerating]);
 
   useEffect(() => {
@@ -4883,7 +4809,6 @@ export const ChatPage: React.FC = () => {
     }
   }, [isGenerating]);
 
-  // Clean up typewriter interval on component unmount
   useEffect(() => {
     return () => {
       if (typewriterInterval.current) {
@@ -4895,18 +4820,17 @@ export const ChatPage: React.FC = () => {
 
   const startTypewriter = () => {
     if (typewriterInterval.current) return;
-    
+
     typewriterInterval.current = setInterval(() => {
       if (streamingBuffer.current.length > 0) {
-        // PERPLEXTA HIGH-PRECISION TYPEWRITER LOGIC
-        // Dynamic pulling: scales up if queue builds up to maintain zero-latency
+
         const bufferLen = streamingBuffer.current.length;
         let pullAmount = 1;
         if (isServerDoneRef.current) {
-          // If generation is complete, pull larger chunks to flush the buffer rapidly and avoid artificial lag
+
           pullAmount = Math.min(bufferLen, Math.max(12, Math.ceil(bufferLen / 3)));
         } else if (bufferLen > 200) {
-          // Keep up with rapid server models under high load
+
           pullAmount = Math.min(bufferLen, Math.max(32, Math.ceil(bufferLen / 5)));
         } else if (bufferLen > 100) {
           pullAmount = Math.min(bufferLen, 18);
@@ -4918,10 +4842,9 @@ export const ChatPage: React.FC = () => {
           pullAmount = Math.min(bufferLen, 3);
         }
 
-        // Safe surrogate pair checker to avoid breaking emojis or complex characters helper
         if (pullAmount < bufferLen) {
           const charCode = streamingBuffer.current.charCodeAt(pullAmount - 1);
-          // If split ends on high surrogate (0xD800 - 0xDBFF), increment to keep code point units unified
+
           if (charCode >= 0xD800 && charCode <= 0xDBFF) {
             pullAmount = Math.min(bufferLen, pullAmount + 1);
           }
@@ -4933,12 +4856,12 @@ export const ChatPage: React.FC = () => {
 
         const chunk = streamingBuffer.current.substring(0, pullAmount);
         streamingBuffer.current = streamingBuffer.current.substring(pullAmount);
-        
+
         setMessages(prev => {
           const newMessages = [...prev];
           const lastIdx = newMessages.length - 1;
           const lastMessage = newMessages[lastIdx];
-          
+
           if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.is_quota_error && !lastMessage.is_system_inactive) {
             newMessages[lastIdx] = {
               ...lastMessage,
@@ -4954,11 +4877,11 @@ export const ChatPage: React.FC = () => {
           return prev;
         });
       } else if (isServerDoneRef.current) {
-        // Stop interval when buffer is empty and generation is done
+
         if (typewriterInterval.current) {
           clearInterval(typewriterInterval.current);
           typewriterInterval.current = null;
-          
+
           setMessages(prev => {
             const newMessages = [...prev];
             const lastIdx = newMessages.length - 1;
@@ -4980,12 +4903,11 @@ export const ChatPage: React.FC = () => {
     }, 20);
   };
 
-  // Synchronized scroll anchoring to eliminate typewriter visual jitter/vibration
   useLayoutEffect(() => {
     if (!isGenerating && !isOtherTyping) return;
     const container = document.getElementById('chat-messages-container');
     if (container) {
-      // 300px threshold is a highly reliable visual scanning offset
+
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 300;
       if (isNearBottom) {
         container.scrollTop = container.scrollHeight;
@@ -4999,7 +4921,7 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (routeChatId && routeChatId !== 'new') {
-      // Perplexta Resiliency: If we are already mid-generation for THIS chat ID, do not reload
+
       const belongsToCurrentSession =
         chatIdRef.current?.toString() === routeChatId.toString() ||
         chatId?.toString() === routeChatId.toString() ||
@@ -5039,7 +4961,7 @@ export const ChatPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Perplexta: Strict 100MB limit (Google-standard for high-intel analysis)
+
       const MAX_SIZE = 100 * 1024 * 1024;
       if (file.size > MAX_SIZE) {
         toast.error(
@@ -5047,7 +4969,7 @@ export const ChatPage: React.FC = () => {
             ? 'حجم الملف يتجاوز الحد المسموح (100 ميجابايت). يرجى اختيار ملف أصغر.' 
             : 'File size exceeds the 100MB limit. Please select a smaller file.'
         );
-        e.target.value = ''; // Reset input
+        e.target.value = ''; 
         return;
       }
 
@@ -5061,12 +4983,12 @@ export const ChatPage: React.FC = () => {
   const loadChat = async (id: string) => {
     if (!token || token === 'null') return;
     if (isGenerating || isGeneratingRef.current) {
-      console.log('[ChatPage] loadChat bypassed during active generation.');
+
       return;
     }
     setChatId(id);
     setIsChatMessagesLoading(true);
-    // Perplexta: Do not clear messages before fetch to prevent flash
+
     try {
       const res = await fetch(`/api/chats/${id}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -5086,11 +5008,10 @@ export const ChatPage: React.FC = () => {
           follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups,
           created_at: msg.created_at
         })));
-        // Perplexta: Static view preserves position on load
-        // setTimeout(() => scrollToBottom('auto'), 100);
+
       }
     } catch (error) {
-      console.error('Failed to load chat messages', error);
+
     } finally {
       setIsChatMessagesLoading(false);
     }
@@ -5144,7 +5065,7 @@ export const ChatPage: React.FC = () => {
     const onChatChunk = (data: any) => {
       if (data.isFinal) {
         isServerDoneRef.current = true;
-        // Prevent appending a duplicate whole response text if chunks have already stream-loaded.
+
         if (streamingBuffer.current.length === 0) {
           streamingBuffer.current += data.chunk || '';
         }
@@ -5154,10 +5075,9 @@ export const ChatPage: React.FC = () => {
     };
 
     const onChatResponse = async (data: any) => {
-      // Buffer the final response data safely to prevent early typewriter state overwrites
+
       finalResponseDataRef.current = data;
 
-      // If typing buffer has completely caught up, apply the definitive database response data immediately
       if (streamingBuffer.current.length === 0) {
         applyFinalResponse(data);
         setIsGenerating(false);
@@ -5165,9 +5085,9 @@ export const ChatPage: React.FC = () => {
         if (checkBufferIntervalRef.current) {
           clearInterval(checkBufferIntervalRef.current);
         }
-        // Set an active polling watcher to transition only after the typewriter drains remaining chunks
+
         let ticks = 0;
-        const maxTicks = 1200; // 120 seconds max (1200 * 100ms)
+        const maxTicks = 1200; 
         checkBufferIntervalRef.current = setInterval(async () => {
           ticks++;
           if (streamingBuffer.current.length === 0 || ticks >= maxTicks) {
@@ -5177,7 +5097,7 @@ export const ChatPage: React.FC = () => {
             }
             applyFinalResponse(finalResponseDataRef.current || data);
             setIsGenerating(false);
-            streamingBuffer.current = ''; // Reset buffer
+            streamingBuffer.current = ''; 
           }
         }, 100);
       }
@@ -5200,7 +5120,7 @@ export const ChatPage: React.FC = () => {
       const desc = dir === 'rtl' 
         ? `بروتوكول التحسين: تم دمج ${consolidated} سجلات قديمة في ${result} حقائق جوهرية لتحرير المساحة.`
         : `Optimization Protocol: Consolidated ${consolidated} old records into ${result} core facts to free up space.`;
-      
+
       triggerMemoryNotification('cleanup', desc);
     };
 
@@ -5235,10 +5155,10 @@ export const ChatPage: React.FC = () => {
       const pctString = `${pct}%`;
       const periodStrAr = period === 'daily' ? 'اليومي' : 'الشهري';
       const periodStrEn = period === 'daily' ? 'Daily' : 'Monthly';
-      
+
       let title = '';
       let desc = '';
-      
+
       const toolNameAr = getToolFriendlyNameLocal(toolId, 'ar');
       const toolNameEn = getToolFriendlyNameLocal(toolId, 'en');
 
@@ -5281,7 +5201,7 @@ export const ChatPage: React.FC = () => {
       let quotaData = null;
 
       try {
-        // Try parsing JSON error (e.g. quota details)
+
         const parsed = JSON.parse(data.message);
         errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
         if (parsed.type === 'QUOTA_EXCEEDED') {
@@ -5298,14 +5218,14 @@ export const ChatPage: React.FC = () => {
           quotaData = parsed;
         }
       } catch (e) {
-        // Fallback to plain message
+
         errorMessage = dir === 'rtl' ? `حدث خطأ: ${data.message}` : `Error: ${data.message}`;
       }
 
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
-        
+
         if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === '') {
           newMessages[newMessages.length - 1] = { 
             ...lastMessage, 
@@ -5411,7 +5331,7 @@ export const ChatPage: React.FC = () => {
       });
       setChatId(null);
     };
-    
+
     const handleLoadChat = (e: any) => {
       navigate(`/chat/${e.detail}`);
     };
@@ -5449,10 +5369,10 @@ export const ChatPage: React.FC = () => {
         navigate('/subscription');
         return;
       }
-      
+
       setLedgerNotice(null);
       setTypedNotice('');
-      
+
       const currentQuery = overrideQuery || query;
       if (!currentQuery.trim() && !selectedFile) return;
 
@@ -5465,7 +5385,7 @@ export const ChatPage: React.FC = () => {
         );
         return;
       }
-      
+
       const toolToUse = selectedFile ? 'perplexta_analysis' : (activeDropdown === 'model' 
         ? (selectedModel === 'fast' ? 'chat_fast' : selectedModel === 'pro' ? 'chat_pro' : selectedModel === 'thinking' ? 'chat_reasoning' : 'chat')
         : selectedTool);
@@ -5496,25 +5416,23 @@ export const ChatPage: React.FC = () => {
           created_at: new Date().toISOString()
         }
       ];
-      
+
       if (updatedMessages.length > MAX_CHAT_MESSAGES) {
         updatedMessages = updatedMessages.slice(updatedMessages.length - MAX_CHAT_MESSAGES);
         setShowChatLimitWarning(true);
       }
-      
+
       generationStartTimeRef.current = Date.now();
       setMessages(updatedMessages);
       setIsGenerating(true);
       isGeneratingRef.current = true;
       streamingBuffer.current = '';
       isServerDoneRef.current = false;
-      
-      // Track analytics event for chat submission
+
       trackGAEvent('chat_submitted', 'chat_engagement', toolToUse);
-      
-      // Small micro-task delay for first message UI sync
+
       await new Promise(resolve => setTimeout(resolve, 50));
-      
+
       setQuery('');
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -5525,7 +5443,7 @@ export const ChatPage: React.FC = () => {
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
-      
+
       abortControllerRef.current = new AbortController();
 
       const encodeHex = (str: string) => {
@@ -5536,7 +5454,7 @@ export const ChatPage: React.FC = () => {
 
       try {
         const authToken = token || localStorage.getItem('app_token');
-        
+
         let currentChatId = chatId;
         if (!currentChatId) {
           const res = await fetch('/api/chats', {
@@ -5551,12 +5469,12 @@ export const ChatPage: React.FC = () => {
               tool: toolToUse
             })
           });
-          
+
           if (res.ok) {
             const data = await res.json();
             currentChatId = data.id;
             setChatId(currentChatId);
-            chatIdRef.current = currentChatId; // Update ref immediately
+            chatIdRef.current = currentChatId; 
             navigate(`/chat/${currentChatId}`, { replace: true });
             setTimeout(() => {
               window.dispatchEvent(new Event('chat-created'));
@@ -5575,7 +5493,7 @@ export const ChatPage: React.FC = () => {
             },
             body: JSON.stringify({ role: 'user', content: currentQuery })
           });
-          
+
           if (!msgRes.ok) {
             const errorData = await msgRes.json();
             throw new Error(errorData.error || 'Failed to save message');
@@ -5590,7 +5508,6 @@ export const ChatPage: React.FC = () => {
           throw new Error(dir === 'rtl' ? 'لم يتم العثور على اتصال' : 'Socket connection not found');
         }
 
-      // Helper to convert file to base64
       const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -5599,7 +5516,7 @@ export const ChatPage: React.FC = () => {
           reader.onerror = error => reject(error);
         });
       };
-      
+
       let fileData = null;
       if (selectedFile) {
         const MAX_SIZE = 100 * 1024 * 1024;
@@ -5618,7 +5535,7 @@ export const ChatPage: React.FC = () => {
             type: selectedFile.type
           };
         } catch (error) {
-          console.error("Error converting file to base64", error);
+
         }
       }
 
@@ -5626,8 +5543,7 @@ export const ChatPage: React.FC = () => {
       if (selectedTool === 'canvas') {
         const textToParse = currentQuery.toLowerCase();
         let updated = { ...audioSettings };
-        
-        // 1. Detect Mood/Genre
+
         if (textToParse.includes('ملحمية') || textToParse.includes('أوركسترا') || textToParse.includes('epic') || textToParse.includes('orchestra') || textToParse.includes('orchestral')) {
           updated.mood = 'Epic';
         } else if (textToParse.includes('طرب') || textToParse.includes('شرقي') || textToParse.includes('مقام') || textToParse.includes('tarab') || textToParse.includes('maqam')) {
@@ -5644,7 +5560,6 @@ export const ChatPage: React.FC = () => {
           updated.mood = 'Pop';
         }
 
-        // 2. Detect Vocal Type
         if (textToParse.includes('كورال') || textToParse.includes('choir') || textToParse.includes('choral')) {
           updated.vocalType = 'Choir';
         } else if (textToParse.includes('أنثوي') || textToParse.includes('سوبرانو') || textToParse.includes('female') || textToParse.includes('soprano')) {
@@ -5657,7 +5572,6 @@ export const ChatPage: React.FC = () => {
           updated.vocalType = 'Instrumental';
         }
 
-        // 3. Detect Duration
         const normalizedPrompt = textToParse
           .replace(/[٠0]/g, '0')
           .replace(/[١1]/g, '1')
@@ -5678,7 +5592,7 @@ export const ChatPage: React.FC = () => {
             updated.duration = durVal;
           }
         }
-        
+
         setAudioSettings(updated);
         finalAudioSettings = updated;
       }
@@ -5735,17 +5649,16 @@ export const ChatPage: React.FC = () => {
                 timestamp: Date.now()
               };
               store.add(payload);
-              
+
               if ('serviceWorker' in navigator && 'SyncManager' in window) {
                 navigator.serviceWorker.ready.then(reg => {
                   return (reg as any).sync.register('sync-failed-messages');
                 }).then(() => {
-                  console.log('[PWA Client] Registered background sync tag "sync-failed-messages"');
-                }).catch(e => console.warn('Background sync registration failed:', e));
+                }).catch(() => {});
               }
             };
           } catch (e) {
-            console.error('Failed to store failed message in IndexedDB:', e);
+
           }
 
           setMessages(prev => {
@@ -5787,7 +5700,7 @@ export const ChatPage: React.FC = () => {
             return [...prev, { role: 'assistant', content: stopMessage }];
           });
         } else {
-          console.error('Generation error:', error);
+
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
@@ -5805,8 +5718,6 @@ export const ChatPage: React.FC = () => {
       }
     }
   };
-
-
 
   const models = [
     { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-emerald-500', dotColor: 'bg-emerald-500' },
@@ -6002,7 +5913,7 @@ export const ChatPage: React.FC = () => {
                 </button>
               ))}
             </div>
-            
+
             <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5 mx-1" />
 
             <button 
@@ -6024,7 +5935,7 @@ export const ChatPage: React.FC = () => {
     const ratios = ['16:9', '9:16', '1:1', '4:3'];
     const resolutions = ['720p', '1080p'];
     const styles = ['Cinematic', 'Realistic', '3D Render', 'Anime', 'Cyberpunk'];
-    
+
     const styleTrans: Record<string, string> = {
       'Cinematic': dir === 'rtl' ? 'سينمائي' : 'Cinematic',
       'Realistic': dir === 'rtl' ? 'واقعي' : 'Realistic',
@@ -6041,7 +5952,7 @@ export const ChatPage: React.FC = () => {
         className={`mb-1 w-full flex items-center justify-between pointer-events-auto px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}
       >
         <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-          {/* Format/Style Selectors */}
+
           <div className="flex items-center gap-1.5 md:gap-2">
             {styles.map(st => (
               <button
@@ -6078,7 +5989,6 @@ export const ChatPage: React.FC = () => {
 
           <div className="w-px h-3 bg-zinc-800/80" />
 
-          {/* Resolutions Group */}
           <div className="flex items-center gap-2.5 md:gap-4">
             {resolutions.map(res => (
               <button
@@ -6107,7 +6017,7 @@ export const ChatPage: React.FC = () => {
 
           <div className={`flex items-center gap-1.5 md:gap-3 min-w-[80px] md:min-w-[150px] ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
             <span className="text-[8px] font-black text-emerald-500/80 whitespace-nowrap drop-shadow-[0_0_5px_rgba(16,185,129,0.2)]">{videoSettings.duration}s</span>
-            
+
             <div className="relative flex-1 h-3 flex items-center group/slider">
               <input 
                 type="range" 
@@ -6144,7 +6054,6 @@ export const ChatPage: React.FC = () => {
   const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
   const isToolActive = selectedTool !== 'chat';
 
-
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto">
 
@@ -6153,7 +6062,7 @@ export const ChatPage: React.FC = () => {
       {renderAudioSettings()}
 
       <div className="relative w-full">
-        {/* Real-time Ledger Typewriter Notice */}
+
         <AnimatePresence>
           {ledgerNotice && (
             <motion.div
@@ -6192,7 +6101,7 @@ export const ChatPage: React.FC = () => {
               : ''
           }`}
         >
-        {/* Top: File/Image Preview */}
+
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
             <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)] flex-shrink-0`}>
@@ -6215,7 +6124,7 @@ export const ChatPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              
+
               <button 
                 onClick={() => {
                   setSelectedFile(null);
@@ -6265,7 +6174,7 @@ export const ChatPage: React.FC = () => {
         )}
 
         <div className="flex items-end px-1 sm:px-3 py-1 sm:py-3 gap-0.5 sm:gap-2">
-          {/* Send Button */}
+
           <div className="flex-shrink-0 flex items-center">
             <motion.button 
               onClick={() => handleSendOrStop()}
@@ -6313,7 +6222,6 @@ export const ChatPage: React.FC = () => {
             </motion.button>
           </div>
 
-          {/* Textarea Area */}
           <div className="flex-1 min-w-0 relative">
             <textarea
               ref={textareaRef}
@@ -6330,7 +6238,7 @@ export const ChatPage: React.FC = () => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSendOrStop();
-                  if (textareaRef.current) textareaRef.current.style.height = 'auto'; // Reset height
+                  if (textareaRef.current) textareaRef.current.style.height = 'auto'; 
                 }
               }}
               disabled={isInputDisabled}
@@ -6347,8 +6255,6 @@ export const ChatPage: React.FC = () => {
             )}
           </div>
 
-
-          {/* Attachment Button */}
           <div className="relative flex-shrink-0 flex items-center gap-1">
             <input 
               type="file" 
@@ -6373,7 +6279,7 @@ export const ChatPage: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         <div className={`flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)]`}>
           <div className="flex items-center gap-1 sm:gap-1.5">
             <div className="relative">
@@ -6397,7 +6303,7 @@ export const ChatPage: React.FC = () => {
                 </span>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentTool.label}</span>
               </button>
-              
+
               {isAdvancedToolsOpen && (
                 <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
                   <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
@@ -6441,7 +6347,6 @@ export const ChatPage: React.FC = () => {
 
             <div className="w-px h-4 bg-[var(--border-main)] mx-0.5 hidden sm:block" />
 
-            {/* Linked Model Selector */}
             <div className="relative">
               <button 
                 onClick={() => {
@@ -6495,7 +6400,6 @@ export const ChatPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Voice to Text (STT) Button */}
           <div className="relative flex-shrink-0 flex items-center">
             <button 
               onClick={toggleRecording}
@@ -6528,7 +6432,7 @@ export const ChatPage: React.FC = () => {
         </div>
       </motion.div>
       </div>
-      
+
       {user && token && (
         <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">
           {dir === 'rtl' ? (
@@ -6579,7 +6483,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {(isModelMenuOpen || isAttachmentMenuOpen || isAdvancedToolsOpen) && (
         <div 
           className="fixed inset-0 z-40" 
@@ -6662,8 +6566,7 @@ export const ChatPage: React.FC = () => {
                   {renderInputArea()}
                 </div>
               </div>
-              
-              {/* Visual Copyright Footer for Visitors in Arabic & English */}
+
               <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-none flex flex-col gap-2">
                 <div className="flex items-center justify-center gap-2.5 text-[9.5px] text-emerald-500 font-bold">
                   <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'من نحن' : 'About Us'}</span>
@@ -6691,7 +6594,7 @@ export const ChatPage: React.FC = () => {
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]"
                   >
-                    {/* Sovereign high-end loading progression bar */}
+
                     {isChatMessagesLoading && (
                       <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500/10 overflow-hidden z-40">
                         <div className="animate-sovereign-progress h-full bg-emerald-500 rounded-full animate-pulse" />
@@ -6764,7 +6667,7 @@ export const ChatPage: React.FC = () => {
                               <Bookmark size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
                             </button>
-                            
+
                             <button 
                               onClick={() => {
                                 toast.info(dir === 'rtl' ? 'تمت الإضافة للمساحة' : 'Added to space');
@@ -6776,7 +6679,7 @@ export const ChatPage: React.FC = () => {
                               <FolderPlus size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
                             </button>
- 
+
                             <button 
                               onClick={async () => {
                                 setIsRenaming(true);
@@ -6795,7 +6698,7 @@ export const ChatPage: React.FC = () => {
                                     }
                                   }
                                 } catch (e) {
-                                  console.error(e);
+
                                 }
                                 setChatRenameTitle(messages[0]?.content.substring(0, 30) || 'New Title');
                               }}
@@ -6805,9 +6708,9 @@ export const ChatPage: React.FC = () => {
                               <Pencil size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
                             </button>
- 
+
                             <div className="my-1.5 mx-2 h-px bg-[var(--border-main)]/50" />
- 
+
                             <button 
                               onClick={() => handleExportChat('pdf')}
                               disabled={isExporting}
@@ -6816,7 +6719,7 @@ export const ChatPage: React.FC = () => {
                               <FileDown size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
                             </button>
- 
+
                             <button 
                               onClick={() => handleExportChat('md')}
                               disabled={isExporting}
@@ -6825,7 +6728,7 @@ export const ChatPage: React.FC = () => {
                               <FileCode size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
                             </button>
- 
+
                             <button 
                               onClick={() => handleExportChat('docx')}
                               disabled={isExporting}
@@ -6834,9 +6737,9 @@ export const ChatPage: React.FC = () => {
                               <FileText size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
                             </button>
- 
+
                             <div className="my-1.5 mx-2 h-px bg-[var(--border-main)]/50" />
- 
+
                             <button 
                               onClick={() => {
                                 handleThreadDelete();
@@ -6896,9 +6799,9 @@ export const ChatPage: React.FC = () => {
                       delay: i * 0.2
                     }}
                   >
-                    {/* Pulsing Avatar */}
+
                     <div className="w-10 h-10 rounded-full bg-gray-200/20 dark:bg-gray-800/40 shrink-0" />
-                    {/* Pulsing Line Blocks */}
+
                     <div className="flex-1 space-y-3 pt-1">
                       <div className={`h-2.5 bg-gray-250/50 dark:bg-gray-800/50 rounded ${i === 0 ? 'w-1/4' : i === 1 ? 'w-1/5' : 'w-1/3'}`} />
                       <div className={`h-3 bg-gray-200/30 dark:bg-gray-800/30 rounded ${i === 0 ? 'w-3/4' : i === 1 ? 'w-5/6' : 'w-2/3'}`} />
@@ -6920,15 +6823,15 @@ export const ChatPage: React.FC = () => {
                   <div className="w-full max-w-xl px-4 md:px-6">
                     <div className="rounded-[var(--radius)] border bg-[var(--bg-secondary)] border-[var(--border-main)] overflow-hidden shadow-2xl relative p-6 md:p-8 flex flex-col items-center text-center">
                       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500" />
-                      
+
                       <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] mb-6 transition-all duration-300 hover:scale-110">
                         <Sparkles size={32} className="animate-pulse" />
                       </div>
-                      
+
                       <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)] tracking-tight mb-3">
                         {dir === 'rtl' ? 'تنشيط حسابك مطلوب' : 'Account Activation Required'}
                       </h2>
-                      
+
                       <p className="text-xs md:text-sm text-gray-500 leading-relaxed max-w-md mb-8">
                         {dir === 'rtl' 
                           ? 'أنت مسجل حالياً بدون خطة نشطة. للاستفادة من محادثات الذكاء الاصطناعي وخدمات الأدوات المتقدمة، يرجى تفعيل أي من الخطط المجانية أو المدفوعة.'
@@ -6953,7 +6856,7 @@ export const ChatPage: React.FC = () => {
                             ? 'احصل على نقاط إضافية عن كل صديق يسجل من خلالك لتفعيل ميزاتك المتقدمة مجاناً!'
                             : 'Get bonus points dynamically when friends register with your code to activate premium features for free!'}
                         </p>
-                        
+
                         <div className="flex items-center gap-2 w-full max-w-sm rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] p-1.5">
                           <input
                             type="text"
@@ -6984,11 +6887,11 @@ export const ChatPage: React.FC = () => {
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
                 >
-                  {/* Subtle Premium Background Glow */}
+
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/[0.02] via-transparent to-transparent pointer-events-none select-none" />
-                  
+
                   <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
-                    {/* Pulsing Emerald Sparkle Icon Container */}
+
                     <div className="w-14 h-14 rounded-full bg-emerald-500/[0.04] border border-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mb-6 transition-all duration-300 hover:scale-110">
                       <Sparkles size={24} className="animate-pulse" />
                     </div>
@@ -7090,8 +6993,7 @@ export const ChatPage: React.FC = () => {
                                 </div>
                               ) : (
                                 <div className="group relative flex items-center gap-3 w-full">
-                                  
-                                  {/* Compact, professional user text with zero background, borders, or shadows */}
+
                                   <div 
                                     className={`text-[14px] md:text-[15px] font-semibold leading-relaxed whitespace-pre-wrap text-zinc-950 dark:text-zinc-50 tracking-wide font-sans flex-1 ${
                                       dir === 'rtl' ? 'text-right' : 'text-left'
@@ -7108,7 +7010,6 @@ export const ChatPage: React.FC = () => {
                                     </div>
                                   )}
 
-                                  {/* Minimalist, low-noise action buttons visible on hover over user prompt */}
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
                                     <button 
                                       onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
@@ -7132,7 +7033,7 @@ export const ChatPage: React.FC = () => {
                                   </div>
                                 </div>
                               )}
-                              {/* Exact Forensic Timestamp for User message */}
+
                               <div className={`text-[10px] font-mono text-gray-400 dark:text-gray-500/80 mt-1 select-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                                 {formatExactTimestamp(msg.created_at, dir)}
                               </div>
@@ -7249,8 +7150,7 @@ export const ChatPage: React.FC = () => {
                                   p: ({ children, node }: any) => {
                                     const isLastMessage = idx === messages.length - 1;
                                     const isStreamingActive = isLastMessage && msg.is_streaming;
-                                    
-                                    // Identify if this is precisely the last paragraph in the markdown output
+
                                     const isLastParagraph = node && node.parent && node.parent.children[node.parent.children.length - 1] === node;
 
                                     return (
@@ -7318,14 +7218,13 @@ export const ChatPage: React.FC = () => {
                       )}
                     </>
                       )}
-                      {/* Exact Forensic Timestamp for Assistant Response */}
+
                       <div className={`text-[10px] font-mono text-gray-400 dark:text-gray-500/80 mt-2 select-none ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                         {formatExactTimestamp(msg.created_at, dir)}
                       </div>
                     </motion.div>
                   )}
 
-                  {/* Perplexta Message Toolbar - Optimized Bottom Layout */}
                   <AnimatePresence mode="wait">
                     {(!isGenerating || idx < messages.length - 1) && msg.role === 'assistant' && (
                       <motion.div 
@@ -7447,7 +7346,7 @@ export const ChatPage: React.FC = () => {
                                 toast.success(dir === 'rtl' ? 'تم نسخ الرابط للمشاركة' : 'Link copied for sharing');
                               }
                             } catch (err) {
-                              console.error('Share failed', err);
+
                             }
                           }}
                           title={dir === 'rtl' ? 'مشاركة' : 'Share'}
@@ -7463,7 +7362,7 @@ export const ChatPage: React.FC = () => {
                            >
                              <MoreHorizontal size={14} />
                            </button>
-                           
+
                            <AnimatePresence>
                              {openMenuId === (msg.id?.toString() || idx.toString()) && (
                                <motion.div 
@@ -7484,7 +7383,7 @@ export const ChatPage: React.FC = () => {
                                           });
                                           if (res.ok) toast.success(dir === 'rtl' ? 'تم حفظ التساؤل كاختصار' : 'Query saved as shortcut');
                                         } catch (e) {
-                                          console.error(e);
+
                                         }
                                      }
                                      setOpenMenuId(null);
@@ -7504,7 +7403,7 @@ export const ChatPage: React.FC = () => {
                                        });
                                        if (res.ok) toast.info(dir === 'rtl' ? 'تم إرسال بلاغ للمراجعة' : 'Report sent for review');
                                      } catch (e) {
-                                       console.error(e);
+
                                      }
                                      setOpenMenuId(null);
                                    }}
@@ -7524,7 +7423,7 @@ export const ChatPage: React.FC = () => {
                                          });
                                          if (!res.ok) throw new Error('Delete failed');
                                        } catch (e) {
-                                         console.error(e);
+
                                          toast.error(dir === 'rtl' ? 'فشل الحذف من الخادم' : 'Server deletion failed');
                                        }
                                      }
@@ -7545,7 +7444,7 @@ export const ChatPage: React.FC = () => {
                     </motion.div>
                   )}
                   </AnimatePresence>
-                  
+
                   </div>
                 </motion.div>
                 );
@@ -7647,7 +7546,7 @@ export const ChatPage: React.FC = () => {
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -7684,7 +7583,7 @@ export const ChatPage: React.FC = () => {
             </motion.div>
           </motion.div>
         )}
-        
+
         {isForensicModalOpen && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -7698,7 +7597,7 @@ export const ChatPage: React.FC = () => {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-[#0f0f11] border border-gray-800 text-gray-100 rounded-lg w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden font-sans"
             >
-              {/* Header */}
+
               <div className="p-6 border-b border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
@@ -7721,7 +7620,6 @@ export const ChatPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Body Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {isAnalyzingForensic ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -7735,7 +7633,7 @@ export const ChatPage: React.FC = () => {
                   </div>
                 ) : forensicReport ? (
                   <div className="space-y-6">
-                    {/* Highlights Alerts Grid */}
+
                     {forensicReport.anomalies.length > 0 ? (
                       <div className="p-4 rounded-md bg-red-950/20 border border-red-900/40 text-red-200">
                         <div className="flex items-center gap-2 mb-2 font-black text-xs tracking-wider uppercase">
@@ -7761,7 +7659,7 @@ export const ChatPage: React.FC = () => {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Left Side: Document Structure */}
+
                       <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
                           {dir === 'rtl' ? 'مؤشرات الهيكل الكوديكى' : 'Core Forensic Properties'}
@@ -7807,7 +7705,6 @@ export const ChatPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Hidden Layers list if any */}
                         <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-2">
                           <span className="text-xs font-black uppercase tracking-wider text-gray-400">
                             {dir === 'rtl' ? 'طبقات الوثيقة المحددة (الأطياف المخفية)' : 'Optional Content Layers List (Hidden Paths)'}
@@ -7828,7 +7725,6 @@ export const ChatPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Right Side: Document Metadata Archive */}
                       <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
                           {dir === 'rtl' ? 'سجل البيانات الوصفية الملحقة' : 'Embedded Metadata Trail'}
@@ -7862,7 +7758,6 @@ export const ChatPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Bottom section: Scanner Log */}
                     <div className="space-y-2 pt-2 border-t border-gray-800">
                       <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
                         {dir === 'rtl' ? 'سجل الفحص المعالج خطوة بخطوة' : 'Scanner Processing Stream Logs'}
@@ -7883,7 +7778,6 @@ export const ChatPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Footer close button */}
               <div className="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
                 <button
                   onClick={() => setIsForensicModalOpen(false)}
@@ -7897,7 +7791,6 @@ export const ChatPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Modern Dynamic Deletion confirmation Modal - Premium Custom styling matching Decree */}
       <AnimatePresence>
         {isDeleteModalOpen && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
@@ -7908,7 +7801,7 @@ export const ChatPage: React.FC = () => {
               onClick={() => setIsDeleteModalOpen(false)}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             />
-            
+
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -7922,13 +7815,13 @@ export const ChatPage: React.FC = () => {
               <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400">
                 {dir === 'rtl' ? 'حذف المحادثة؟' : 'Delete conversation?'}
               </h3>
-              
+
               <p className={`text-xs mt-2 font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 {dir === 'rtl' 
                   ? 'سيؤدي هذا إلى حذف المحادثة الحالية وجميع الرسائل المرتبطة بها نهائيًا ولا يمكن التراجع عن هذا العمل.' 
                   : 'This will permanently delete the current conversation and all associated messages. This action cannot be undone.'}
               </p>
-              
+
               <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                 <button
                   type="button"
@@ -7941,7 +7834,7 @@ export const ChatPage: React.FC = () => {
                 >
                   {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={handleThreadDeleteConfirm}

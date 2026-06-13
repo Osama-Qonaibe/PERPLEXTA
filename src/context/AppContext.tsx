@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
@@ -1546,6 +1547,7 @@ const translations = {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
@@ -1578,7 +1580,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.removeItem('app_user_profile');
       }
     } catch (e) {
-      console.warn('Failed to save user profile to storage', e);
+      
     }
   }, [user]);
 
@@ -1588,7 +1590,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!rawToken || rawToken === 'null' || rawToken === 'undefined' || rawToken === '') return null;
       return rawToken;
     } catch (e) {
-      console.warn('Failed to parse token from storage', e);
+      
       return null;
     }
   });
@@ -1695,7 +1697,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           body: JSON.stringify({ language: lang })
         });
       } catch (e) {
-        console.error('Failed to sync language to server', e);
+        
       }
     }
   };
@@ -1830,7 +1832,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   try {
                     window.close();
                   } catch (e) {
-                    // Window closure blocked by browser parameters
+                    
                   }
                   window.location.href = "/?standalone=true";
                 }, 2500);
@@ -1855,7 +1857,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsInstalling(false);
         }
       } catch (err) {
-        console.error("PWA prompt trigger error:", err);
+        
         setIsInstallationRunning(true);
         setIsInstalling(true);
         setInstallProgress(0);
@@ -1935,7 +1937,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     const targetRefRaw = userData.ref || localStorage.getItem('app_ref');
-    // If no explicit redirect is saved or requested, we keep the user on their exact current viewport
+    
     const targetRef = targetRefRaw && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//') ? targetRefRaw : null;
     localStorage.removeItem('app_ref');
     
@@ -1984,8 +1986,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const urlRefreshToken = getParam('refreshToken');
     const urlUserRaw = getParam('user');
 
-    // Only ingest token from URL if we are NOT on a sensitive page like reset-password 
-    // AND if we don't already have a valid token or this is an explicit auth callback.
+    
+    
     const isSensitivePage = window.location.pathname.includes('reset-password');
 
     const isOAuthCallback = window.opener !== null || 
@@ -2006,7 +2008,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           userData = JSON.parse(decodeURIComponent(urlUserRaw));
           setUser(userData);
         } catch (e) {
-          console.error('Failed to parse user from URL', e);
+          
         }
       }
 
@@ -2060,7 +2062,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             handleAuthSuccess(processedUser);
             localStorage.removeItem('app_oauth_user');
             localStorage.removeItem('app_oauth_trigger');
-          } catch (e) { console.error('Failed to parse OAuth storage data', e); }
+          } catch (e) {  }
         }
       }
     };
@@ -2084,7 +2086,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const currentRefreshToken = localStorage.getItem('app_refresh_token');
     if (!currentRefreshToken) {
-      console.warn('[Session] No refresh token found. User session cannot be refreshed.');
+      
       return null;
     }
 
@@ -2098,7 +2100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
-            console.warn('[Session] Refresh token has expired/revoked. Performing clean logout.');
+            
             logout(false);
           }
           return null;
@@ -2121,7 +2123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return null;
       } catch (err) {
-        console.error('[Session] Token rotation connection error:', err);
+        
         return null;
       } finally {
         refreshPromiseRef.current = null;
@@ -2137,14 +2139,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const customFetch = async (...args: any[]) => {
       let [resource, config] = args;
 
-      // Extract url to avoid intercepting refresh token request
+      
       const urlStr = typeof resource === 'string' 
         ? resource 
         : (resource instanceof Request ? resource.url : '');
 
       const isRefreshRequest = urlStr.includes('refresh-token');
 
-      // Check if we already retried this request to avoid recursion loops
+      
       let isRetry = false;
       if (config && config.headers) {
         if (config.headers instanceof Headers) {
@@ -2163,7 +2165,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const json = await clone.json();
           if (json.error === 'TokenExpiredError') {
-            console.warn('[Fetch Interceptor] JWT TokenExpiredError caught! Auto-refreshing session...');
+            
             
             const newToken = await silentRefreshToken();
             if (newToken) {
@@ -2199,7 +2201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
         } catch (e) {
-          // Response is not JSON or non-parsable
+          
         }
       }
 
@@ -2213,11 +2215,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         writable: true
       });
     } catch (e) {
-      console.warn('[Session] Global fetch override fallback to assignment:', e);
+      
       try {
         (window as any).fetch = customFetch;
       } catch (err) {
-        console.error('[Session] Direct fetch assignment failed too:', err);
+        
       }
     }
 
@@ -2232,7 +2234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           (window as any).fetch = originalFetch;
         } catch (err) {
-          // Silent fallback
+          
         }
       }
     };
@@ -2251,7 +2253,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return await res.json();
     } catch (err) {
       if (retries > 0) {
-        console.warn(`Fetch failed for ${url}, retrying in ${backoff}ms... (${retries} retries left)`, err);
+        
         await new Promise(resolve => setTimeout(resolve, backoff));
         return fetchWithRetry(url, options, retries - 1, backoff * 1.5);
       }
@@ -2262,7 +2264,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isAuthReady) {
-        console.warn('Auth ready took too long, forcing ready state for boot resilience.');
+        
         completeBoot(true);
       }
     }, 8000); 
@@ -2290,23 +2292,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
-        console.warn('Profile fetch returned no user data');
+        
         completeBoot();
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       
-      // If it's a 401 on initial boot, maybe the DB or server is warming up. Retry once.
+      
       if ((errMsg.includes('401') || errMsg.includes('403')) && retryCount < 1) {
-        console.warn('Initial auth 401 detected, retrying once in 1.5s...');
+        
         setTimeout(() => fetchUserProfile(retryCount + 1), 1500);
         return;
       }
 
-      console.error('Profile fetch error:', errMsg);
+      
       
       if (errMsg.includes('401') || errMsg.includes('403')) {
-        // Only logout if we've already tried retrying or it's a definitive fail
+        
         logout(false);
       } else {
         completeBoot();
@@ -2324,7 +2326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (data.balance !== undefined) setBalanceUSD(Number(data.balance));
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.error('Balance fetch error:', errMsg);
+      
       if (errMsg.includes('401') || errMsg.includes('403')) {
         logout(false);
       }
@@ -2333,7 +2335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const profileFetched = useRef(false);
   useEffect(() => {
-    // Show toasts after immediate redirects/refreshes cleanly
+    
     const loggedOutToast = localStorage.getItem('app_logged_out_toast');
     if (loggedOutToast === '1') {
       localStorage.removeItem('app_logged_out_toast');
@@ -2351,7 +2353,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [language]);
 
   useEffect(() => {
-    // Reset fetched status if token is cleared so we can fetch again on next login
+    
     if (!token) {
       profileFetched.current = false;
       completeBoot();
@@ -2359,12 +2361,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const forceRefresh = localStorage.getItem('app_force_refresh') === '1';
-    // Only fetch once per token change/mount, or if forced via refresh key
+    
     if (!profileFetched.current || forceRefresh) {
       profileFetched.current = true;
       localStorage.removeItem('app_force_refresh');
       
-      // Fetch economic settings (public)
+      
       fetch(`/api/economy`)
         .then(res => res.json())
         .then(data => data && data.points_per_dollar && setEconomySettings(data))
@@ -2391,10 +2393,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const mode = (isMobileDevice || isStandalone) ? 'redirect' : 'popup';
       
-      // Clean up synchronization flags to avoid stale locks
+      
       localStorage.removeItem('app_oauth_syncing');
       
-      // Generate a unique session ID for secure server-side tracking across window boundaries (e.g., partitioned storage, cross-origin sandbox iframes)
+      
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
       
       const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
@@ -2406,7 +2408,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await res.text();
-        console.error('Non-JSON response from Google Auth URL:', text);
+        
         throw new Error('Invalid server response');
       }
 
@@ -2424,17 +2426,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
 
-      // Start an ultra-reliable polling fallback that checks both backend session AND localStorage for auth state.
-      // This completely bypasses storage partitioning, popup sandboxes, third-party cookie restrictions, and COOP / opener blocks.
+      
+      
       let checkCount = 0;
       const pollInterval = setInterval(async () => {
         checkCount++;
-        if (checkCount > 300) { // Limit to 5 minutes
+        if (checkCount > 300) { 
           clearInterval(pollInterval);
           return;
         }
 
-        // 1. Ask the server if authentication completed for this session
+        
         try {
           const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
           if (pollRes.ok) {
@@ -2452,10 +2454,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
         } catch (pollErr) {
-          console.error('Failed to poll oauth session status:', pollErr);
+          
         }
 
-        // 2. Client-side LocalStorage fallback for non-partitioned environments
+        
         const storedToken = localStorage.getItem('app_token');
         const userDataJson = localStorage.getItem('app_oauth_user');
 
@@ -2474,13 +2476,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               } catch (e) {}
             }
           } catch (e) {
-            console.error('Failed to parse OAuth stored data in polling fallback:', e);
+            
           }
         }
       }, 1000);
 
     } catch (error) {
-      console.error('Login failed', error);
+      
     }
   };
 
@@ -2505,6 +2507,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
+          navigate('/chat');
           toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
           
           return { success: true };
@@ -2513,7 +2516,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         const text = await res.text();
-        console.error('Non-JSON response from login:', text);
         return { 
           success: false, 
           error: text.includes('Rate exceeded') 
@@ -2522,7 +2524,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
     } catch (error) {
-      console.error('Login connection error:', error);
       return { success: false, error: dir === 'rtl' ? 'خطأ في الاتصال' : 'Connection error' };
     }
   };
@@ -2548,6 +2549,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('app_token', data.token);
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
+          navigate('/chat');
           toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
           
           return { success: true };
@@ -2556,7 +2558,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         const text = await res.text();
-        console.error('Non-JSON response from signup:', text);
         return { 
           success: false, 
           error: text.includes('Rate exceeded') 
@@ -2565,35 +2566,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
     } catch (error) {
-      console.error('Signup connection error:', error);
       return { success: false, error: dir === 'rtl' ? 'خطأ في الاتصال' : 'Connection error' };
     }
   };
 
   const logout = async (forceRedirect = true) => {
-    // If there is no active session, prevent infinite redirect reload loops
+    
     if (!token && !user) {
-      console.log('[Session] Logout called but no active session found. Ignoring action.');
+      
       return;
     }
 
     const storedToken = token;
     const storedRefreshToken = localStorage.getItem('app_refresh_token');
 
-    // Instantly prepare for reload
+    
     if (forceRedirect) {
       localStorage.setItem('app_logged_out_toast', '1');
       localStorage.setItem('app_loader_type', 'logout');
     }
 
-    // Clear session storage instantly
+    
     localStorage.removeItem('app_token');
     localStorage.removeItem('app_refresh_token');
     localStorage.removeItem('app_oauth_user');
     localStorage.removeItem('app_oauth_trigger');
     localStorage.removeItem('app_user_profile');
     
-    // Clear Perplexta settings and user preferences to default
+    
     localStorage.removeItem('last_active_tool');
     localStorage.removeItem('last_active_model');
     localStorage.removeItem('last_chat_id');
@@ -2604,11 +2604,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('socket_polling_fallback');
     sessionStorage.removeItem('draft_query');
     
-    // Explicitly reset defaults to chat and fast model
+    
     localStorage.setItem('last_active_tool', 'chat');
     localStorage.setItem('last_active_model', 'fast');
     
-    // Background logout API call (fire-and-forget) to ensure zero UI delay
+    
     if (storedToken) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
@@ -2618,7 +2618,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
         body: JSON.stringify({ refreshToken: storedRefreshToken })
       }).catch((e) => {
-        console.log('Notice: Auth logout call finished in background with info', e);
+        
       });
     }
 
@@ -2626,7 +2626,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         socket.disconnect();
       } catch (e) {
-        console.error('Socket disconnect error during logout', e);
+        
       }
     }
 
@@ -2640,7 +2640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
     setMilestoneData(null);
 
-    // If forceRedirect is true, reload instantly to cleanly purge any memory state
+    
     if (forceRedirect) {
       window.location.replace('/');
     } else {
@@ -2648,14 +2648,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Automated 2-hour Inactivity Session Invalidation Service
+  
   useEffect(() => {
     if (!user || !token) return;
 
-    // Initialize/set start timestamp
+    
     localStorage.setItem('perplexta_last_activity', Date.now().toString());
 
-    // Throttled update helper (only updates if at least 15 seconds have passed)
+    
     let lastWriteTime = Date.now();
     const updateLastActivity = () => {
       const now = Date.now();
@@ -2665,16 +2665,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    // Activity listeners
+    
     const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     events.forEach(event => {
       window.addEventListener(event, updateLastActivity, { passive: true });
     });
 
-    // Inactivity threshold: 2 hours (7,200,000 milliseconds)
+    
     const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
     
-    // Check inactivity every 30 seconds
+    
     const interval = setInterval(() => {
       const lastActivityStr = localStorage.getItem('perplexta_last_activity');
       if (!lastActivityStr) {
@@ -2710,7 +2710,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error('Failed to parse saved site settings', e);
+        
       }
     }
     return {
@@ -2756,8 +2756,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Pre-flight validation constraint check: Is the token already expired?
-    // If so, trigger modern silent refresh instead of passing stale token directly
+    
+    
     const isExpired = (() => {
       try {
         const parts = token.split('.');
@@ -2770,9 +2770,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     })();
 
     if (isExpired) {
-      console.warn('[Socket Setup] Pre-flight validation caught expired JWT. Postponing socket initialization until silent refresh completes.');
+      
       silentRefreshToken().catch(err => {
-        console.error('[Socket Setup] Pre-flight refresh failed:', err);
+        
       });
       return;
     }
@@ -2788,28 +2788,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSocket(newSocket);
 
     newSocket.on('connect_error', async (err: any) => {
-      console.warn('[Socket] Connection failure:', err.message);
+      
       
       if (!usePollingFallback) {
-        console.warn('[Socket] WebSocket transport handshake failed. Gracefully falling back to secure HTTP long-polling...');
+        
         try {
           localStorage.setItem('socket_polling_fallback', 'true');
         } catch (e) {
-          console.warn('[Socket] Failed to write fallback state to local storage', e);
+          
         }
         setUsePollingFallback(true);
         return;
       }
 
       if (err.message && (err.message.includes('Authentication error') || err.message.includes('Invalid token') || err.message.includes('Token missing'))) {
-        console.warn('[Socket] Synchronizing credentials: Real-time authentication handshake refresh initialized...');
+        
         const refreshedToken = await silentRefreshToken();
         if (refreshedToken) {
-          console.log('[Socket] Token successfully refreshed in background. Re-assigning socket auth metadata and reconnecting...');
+          
           newSocket.auth = { token: refreshedToken };
           newSocket.connect();
         } else {
-          console.warn('[Socket] Credentials expired and silent rotation attempt failed. Standard logout sequence triggered.');
+          
           logout(false);
         }
       }
@@ -2835,7 +2835,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
       } catch (err) {
-        console.warn('[Notification] Failsafe wrapper caught error standard dispatch:', err);
+        
       }
     });
 
@@ -2882,7 +2882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       }
     } catch (error) {
-      console.error('Error marking as read:', error);
+      
     }
   };
 
@@ -2897,7 +2897,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       }
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      
     }
   };
 
@@ -2912,7 +2912,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(prev => prev.filter(n => n.id !== id));
       }
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      
     }
   };
 
@@ -2927,7 +2927,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications([]);
       }
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      
     }
   };
 
@@ -2974,28 +2974,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const data = await res.json();
             if (isMounted) {
               setNotifications(data);
-              currentDelay = 30000; // Reset general poll interval on success
+              currentDelay = 30000; 
             }
           } else {
             const text = await res.text();
-            console.warn('Received non-JSON response from /api/notifications:', text.substring(0, 100));
+            
           }
         } else if (res.status === 401 || res.status === 403) {
-          console.warn('Unauthorized notification fetch - token verification failed. Logging out.');
+          
           logout(false);
           return;
         } else if (res.status === 429) {
-          currentDelay = Math.min(currentDelay * 2, 300000); // Exponential backoff up to 5 mins
-          console.warn(`[Notifications] Traffic is rate-limited (429). Adapting backoff delay to ${currentDelay / 1000}s.`);
+          currentDelay = Math.min(currentDelay * 2, 300000); 
+          
         } else {
-          console.warn(`[Notifications] Status checkpoint ${res.status} when fetching notifications.`);
+          
         }
       } catch (error) {
         if (!isMounted) return;
         if (error instanceof Error && error.message.includes('Failed to fetch')) {
-          console.debug('Transient network error fetching notifications (likely server initializing)');
+          
         } else {
-          console.warn('[Notifications] Connection status checkpoint:', error);
+          
         }
         currentDelay = Math.min(currentDelay * 1.5, 300000);
       } finally {
@@ -3041,11 +3041,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return userProfile;
         }
       } else if (res.status === 401 || res.status === 403) {
-        console.warn('refreshUser failed - unauthorized, logging out');
+        
         logout(false);
       }
     } catch (error) {
-      console.error('Error refreshing user:', error);
+      
     }
     return null;
   };
@@ -3067,16 +3067,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await res.json();
       if (res.ok) {
         await refreshUser();
-        // Track completed purchase event in Google Analytics
+        
         if (typeof window !== 'undefined' && (window as any).gtag) {
           (window as any).gtag('event', 'purchase', {
             transaction_id: `bal_${Date.now()}`,
-            value: billingCycle === 'annual' ? 99.0 : 9.9, // general fallback estimate
+            value: billingCycle === 'annual' ? 99.0 : 9.9, 
             currency: 'USD',
             items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }],
             method: 'balance'
           });
-          console.log(`[Google Analytics] Tracked Completed Purchase for plan: ${planId} (${billingCycle})`);
+          
         }
         return { success: true, message: data.message };
       }
@@ -3102,14 +3102,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       const data = await res.json();
       if (res.ok && data.url) {
-        // Track begin checkout event in Google Analytics
+        
         if (typeof window !== 'undefined' && (window as any).gtag) {
           (window as any).gtag('event', 'begin_checkout', {
             value: billingCycle === 'annual' ? 99.0 : 9.9,
             currency: 'USD',
             items: [{ item_id: planId, item_name: `Plan_${planId}`, item_category: 'subscription' }]
           });
-          console.log(`[Google Analytics] Tracked Begin Checkout for plan: ${planId} (${billingCycle})`);
+          
         }
         window.location.href = data.url;
         return { url: data.url };
@@ -3143,14 +3143,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           seoImageUrl: settingsData.seo_image_url || null
         });
       } catch (err) {
-         console.warn('Settings fetch failed (likely unauthorized or server starting):', err);
+         
       }
 
       try {
         const ecoData = await fetchWithRetry('/api/economy', options, 2, 500);
         setEconomySettings(ecoData);
       } catch (ecoError) {
-        console.log('Economy fetch failed (likely unauthorized):', ecoError);
+        
       }
 
       try {
@@ -3162,13 +3162,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           try {
             features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []);
           } catch (e) {
-            console.error(`Error parsing features for plan ${p.id}:`, e);
+            
           }
           
           try {
             limits = typeof p.limits === 'object' && p.limits !== null ? p.limits : (typeof p.limits === 'string' ? JSON.parse(p.limits || '{}') : {});
           } catch (e) {
-            console.error(`Error parsing limits for plan ${p.id}:`, e);
+            
           }
 
           return {
@@ -3190,7 +3190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         setPlans(formattedPlans);
       } catch (error) {
-        console.error('CRITICAL: Error fetching public plan data:', error);
+        
       }
     };
     fetchSettingsAndPlans();
@@ -3234,7 +3234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     metaDescription.setAttribute('content', resolvedDesc || '');
 
-    // Sync Open Graph values dynamically
+    
     let ogTitle = document.querySelector('meta[property="og:title"]');
     if (!ogTitle) {
       ogTitle = document.createElement('meta');
@@ -3259,7 +3259,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     ogImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
 
-    // Sync Twitter values dynamically
+    
     let twitterTitle = document.querySelector('meta[name="twitter:title"]');
     if (!twitterTitle) {
       twitterTitle = document.createElement('meta');

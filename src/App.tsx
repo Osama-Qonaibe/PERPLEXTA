@@ -322,9 +322,9 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <VideoResourceProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AppProvider>
+        <VideoResourceProvider>
           <ErrorBoundary name="Perplexta Core Runtime">
             <PWAWrapper>
             <Routes>
@@ -355,8 +355,8 @@ export default function App() {
             </Routes>
           </PWAWrapper>
         </ErrorBoundary>
-      </BrowserRouter>
       </VideoResourceProvider>
     </AppProvider>
+    </BrowserRouter>
   );
 }
