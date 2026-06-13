@@ -2132,6 +2132,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return refreshPromiseRef.current;
   };
 
+  const tokenRef = useRef<string | null>(null);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
   useEffect(() => {
     const originalFetch = window.fetch;
     const customFetch = async (...args: any[]) => {
@@ -2233,7 +2236,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     };
-  }, [token]);
+  }, []);
 
   const fetchWithRetry = async (url: string, options: any = {}, retries = 5, backoff = 1000): Promise<any> => {
     try {
@@ -2975,7 +2978,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    fetchNotificationsSecure();
+    scheduleNext(5000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isMounted) {
@@ -3163,7 +3166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     fetchSettingsAndPlans();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = dir;
