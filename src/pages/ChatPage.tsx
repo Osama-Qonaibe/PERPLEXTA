@@ -7222,7 +7222,7 @@ export const ChatPage: React.FC = () => {
                         animate="visible"
                         exit="hidden"
                         variants={toolbarVariants}
-                        className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--border-main)]/30 dark:border-[var(--border-main)]/20 px-0"
+                        className="flex items-center justify-between mt-6 pt-4 px-0"
                       >
                       <div className="flex items-center gap-0.5 sm:gap-1.5">
                         <motion.button 
