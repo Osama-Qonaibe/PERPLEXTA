@@ -14,6 +14,7 @@ import { CORE_PROTOCOL } from '../config/protocol.js';
 import { deductUsageFromWallet, refundUsageToWallet } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
 import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
+import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
@@ -82,12 +83,18 @@ export const executeTaskLogic = async (reqBody: any, userId: number, req?: expre
   const isChatOnly = ['chat', 'chat_fast', 'chat_pro', 'chat_reasoning'].includes(toolIdStr);
   let searchCitations: any[] = [];
 
+  // Protect against excessive lengths to ensure fair use and stability
+  validatePromptLength(prompt);
+
+  // Eliminate malicious scripts, XSS triggers, and tag injections early
+  const securedUserPrompt = sanitizeHTMLAndXSS(prompt);
+
   const sanitizePrompt = (p: string) => {
     if (!p) return p;
     return p.replace(/(SYSTEM[ _]MEMORY[ _]INGESTION|LIVE[ _]WEB[ _]CONTEXT|USER[ _]PROMPT|TECHNICAL[ _]DIRECTIVE|ASSISTANT[ _]MEMORY[ _]RECORDS|CONVERSATION[ _]CONTEXT[ _]SUMMARY):/gi, '[CLEANED_MARKER]');
   };
 
-  const cleanUserPrompt = sanitizePrompt(prompt);
+  const cleanUserPrompt = sanitizePrompt(securedUserPrompt);
   let finalPrompt = cleanUserPrompt;
 
   if (file_data && file_data.data) {
@@ -130,8 +137,13 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const shouldExtractText = !isImageVideoAudio;
       if (shouldExtractText) {
         const { extractTextFromBuffer } = await import('./extractor.js');
-        const extractedText = await extractTextFromBuffer(fileBuffer, file_data.type || '', file_data.name);
+        let extractedText = await extractTextFromBuffer(fileBuffer, file_data.type || '', file_data.name);
         if (extractedText && extractedText.trim() !== '') {
+          // Truncate document outputs to fit standard safe model processing constraints under Google/Gemini bounds
+          if (extractedText.length > MAX_DOC_EXTRACT_SIZE) {
+            extractedText = extractedText.substring(0, MAX_DOC_EXTRACT_SIZE) + 
+              "\n\n[TRUNCATED: Text content truncated to 60,000 characters to ensure system stability under Google/Gemini Fair Use limits]\n[تم تقليص النص إلى 60,000 حرفاً لضمان استقرار الخدمة وسياسة الاستخدام العادل لجوجل]";
+          }
           const contentHeader = file_data.type === 'application/pdf'
             ? `[PDF CONTENT EXTRACTED - ${file_data.name}]`
             : `[FILE CONTENT - ${file_data.name}]`;
@@ -246,10 +258,23 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       if (rawHistory.length > 0 && rawHistory[rawHistory.length - 1].role === 'user') {
         rawHistory.pop();
       }
-      history = rawHistory.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
-      }));
+      let cumulativeHistoryChars = 0;
+      const boundedHistory: { role: string; content: string }[] = [];
+      // Traverse history backward to keep only the newest messages that safely fit context size limits
+      for (let i = rawHistory.length - 1; i >= 0; i--) {
+        const m = rawHistory[i];
+        const msgContent = m.content || '';
+        if (cumulativeHistoryChars + msgContent.length > MAX_CUMULATIVE_HISTORY_CHARS) {
+          console.warn(`[History Security Shield] Chat thread history length reached fair use ceiling (${cumulativeHistoryChars} chars). Truncating past conversation segments.`);
+          break;
+        }
+        cumulativeHistoryChars += msgContent.length;
+        boundedHistory.unshift({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: msgContent
+        });
+      }
+      history = boundedHistory;
     } catch (err) {
       console.error('[Orchestrator] Failed to fetch chat history:', err);
     }

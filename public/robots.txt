@@ -4,10 +4,23 @@ Allow: /terms
 Allow: /privacy
 Allow: /about
 Allow: /subscription
+Allow: /blog
+Allow: /forum
+Allow: /marketplace
+Disallow: /chat
+Disallow: /chat/
+Disallow: /admin
 Disallow: /admin/
+Disallow: /admin-community
+Disallow: /admin-community/
 Disallow: /settings
-Disallow: /api/
+Disallow: /settings/
+Disallow: /rewards
+Disallow: /rewards/
+Disallow: /wallet
+Disallow: /wallet/
 Disallow: /reset-password
+Disallow: /api/
 
 # Dynamic Sitemap location
 Sitemap: https://perplexta.com/sitemap.xml

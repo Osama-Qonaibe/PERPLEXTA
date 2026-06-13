@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
-import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
 import { useSwipeToClose } from '../utils/swipe';
 
@@ -12,6 +12,7 @@ export const RewardsPage: React.FC = () => {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [isClearHistoryConfirmOpen, setIsClearHistoryConfirmOpen] = useState(false);
   const [convertAmount, setConvertAmount] = useState('10000');
   
   const swipeHandlers = useSwipeToClose({
@@ -142,12 +143,14 @@ export const RewardsPage: React.FC = () => {
     }
   };
 
-  const handleClearHistory = async () => {
+  const handleClearHistory = () => {
     if (!token) return;
-    if (!window.confirm(dir === 'rtl' ? 'هل أنت متأكد من رغبتك في مسح سجل المعاملات بالكامل؟ لضمان عدم التضخم.' : 'Are you sure you want to clear your entire transaction history to prevent data bloat?')) {
-      return;
-    }
-    
+    setIsClearHistoryConfirmOpen(true);
+  };
+
+  const handleClearHistoryConfirm = async () => {
+    setIsClearHistoryConfirmOpen(false);
+    if (!token) return;
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/wallet/clear', {
@@ -793,7 +796,64 @@ export const RewardsPage: React.FC = () => {
         </div>
       )}
 
-
+      {/* Premium custom confirmation modal for clearing transaction history */}
+      <AnimatePresence>
+        {isClearHistoryConfirmOpen && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsClearHistoryConfirmOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+                theme === 'dark' 
+                  ? 'bg-[#161618] border-zinc-800 text-gray-100' 
+                  : 'bg-white border-gray-150 text-gray-900'
+              }`}
+            >
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400 flex items-center gap-2">
+                <AlertTriangle size={18} className="text-red-500 animate-pulse" />
+                <span>{dir === 'rtl' ? 'مسح سجل المعاملات؟' : 'Clear Transaction History?'}</span>
+              </h3>
+              
+              <p className={`text-xs mt-2.5 font-sans leading-relaxed text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {dir === 'rtl' 
+                  ? 'هل أنت متأكد من رغبتك في مسح سجل المعاملات بالكامل؟ سيتم إزالة كافة السجلات لضمان نظافة البيانات وعدم التضخم، ولا يمكن التراجع عن هذا الإتلاف.' 
+                  : 'Are you sure you want to completely clear your entire transaction history? All records will be removed to ensure clean data and prevent bloat. This action is irreversible.'}
+              </p>
+              
+              <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsClearHistoryConfirmOpen(false)}
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleClearHistoryConfirm}
+                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                >
+                  {dir === 'rtl' ? 'تطهير السجل ومسحه' : 'Wipe & Clear History'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );

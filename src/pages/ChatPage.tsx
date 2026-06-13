@@ -2307,8 +2307,77 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
   return promise;
 };
 
+// Simple regex-based query highlighting decorator
+const HighlightText = ({ text, query }: { text: string; query?: string }) => {
+  if (!query || !query.trim() || !text) {
+    return <>{text}</>;
+  }
+
+  const cleanTerm = query.trim();
+  if (!cleanTerm) return <>{text}</>;
+
+  const stopWords = new Set([
+    'the', 'and', 'a', 'an', 'or', 'to', 'for', 'in', 'of', 'on', 'with', 'is', 'at', 'by', 'from', 'this', 'that', 'these', 'those', 'it', 'its',
+    'من', 'إلى', 'عن', 'على', 'في', 'ب', 'ل', 'ك', 'و', 'أو', 'ثم', 'مع', 'هذا', 'هذه', 'ذلك', 'التي', 'الذي', 'فيما', 'حيث'
+  ]);
+
+  const keywords = cleanTerm
+    .split(/\s+/)
+    .map(word => word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim())
+    .filter(word => word.length >= 2 && !stopWords.has(word.toLowerCase()));
+
+  const searchTerms: string[] = [];
+  if (cleanTerm.split(/\s+/).length > 1) {
+    const cleanPhrase = cleanTerm.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim();
+    if (cleanPhrase.length > 2) {
+      searchTerms.push(cleanPhrase);
+    }
+  }
+  searchTerms.push(...keywords);
+
+  const uniqueTerms = Array.from(new Set(searchTerms)).filter(Boolean);
+
+  if (uniqueTerms.length === 0) {
+    return <>{text}</>;
+  }
+
+  const sortedTerms = uniqueTerms
+    .map(term => term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
+    .sort((a, b) => b.length - a.length);
+
+  try {
+    const pattern = `(${sortedTerms.join('|')})`;
+    const isAr = /[\u0600-\u06FF]/.test(cleanTerm);
+    const regex = new RegExp(pattern, isAr ? 'g' : 'gi');
+    const parts = text.split(regex);
+    const testRegex = new RegExp(`^(${sortedTerms.join('|')})$`, isAr ? '' : 'i');
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (testRegex.test(part)) {
+            return (
+              <span 
+                key={i} 
+                className="bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-medium px-0.5 rounded-[2px] drop-shadow-[0_0_4px_rgba(16,185,129,0.4)]"
+                id={`highlight-text-match-${i}`}
+              >
+                {part}
+              </span>
+            );
+          }
+          return part;
+        })}
+      </>
+    );
+  } catch (e) {
+    console.error("Regex highlight error:", e);
+    return <>{text}</>;
+  }
+};
+
 // Compact highly professional single citation row using dynamic cached SEO metadata scraper
-const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string }) => {
+const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string, query?: string }) => {
   const [meta, setMeta] = useState<any>(null);
 
   const rawUrl = cite.url || cite.link || '';
@@ -2373,14 +2442,14 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon }: { cite: any, i
             {cite.index || (idx + 1)}
           </div>
           <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
-            {displayTitle}
+            <HighlightText text={displayTitle} query={query} />
           </span>
           <ExternalLink size={10} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-2px] group-hover:translate-x-0 transition-transform duration-300" />
         </div>
 
         {displayDesc ? (
           <p className="text-[10px] text-[var(--text-muted)] truncate mt-0.5 font-normal leading-relaxed">
-            {displayDesc}
+            <HighlightText text={displayDesc} query={query} />
           </p>
         ) : null}
 
@@ -2562,7 +2631,7 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
   );
 };
 
-const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['citations'], dir: 'ltr' | 'rtl', isOpen: boolean, onToggle: () => void }) => {
+const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Message['citations'], dir: 'ltr' | 'rtl', isOpen: boolean, onToggle: () => void, query?: string }) => {
   if (!citations || citations.length === 0) return null;
 
   return (
@@ -2627,6 +2696,7 @@ const Citations = ({ citations, dir, isOpen, onToggle }: { citations: Message['c
                   dir={dir} 
                   getCleanUrl={getCleanUrl} 
                   getFavicon={getFavicon} 
+                  query={query}
                 />
               ))}
             </div>
@@ -4036,6 +4106,7 @@ export const ChatPage: React.FC = () => {
   const [isForensicModalOpen, setIsForensicModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [liveElapsed, setLiveElapsed] = useState<number>(0);
   const [ledgerNotice, setLedgerNotice] = useState<{ textAr: string; textEn: string } | null>(null);
   const [typedNotice, setTypedNotice] = useState<string>('');
@@ -4711,17 +4782,21 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  const handleThreadDelete = async () => {
+  const handleThreadDelete = () => {
     if (!chatId) return;
-    if (!window.confirm(dir === 'rtl' ? 'هل أنت متأكد من حذف هذه المحادثة؟' : 'Are you sure you want to delete this chat?')) return;
-    
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleThreadDeleteConfirm = async () => {
+    setIsDeleteModalOpen(false);
+    if (!chatId) return;
     try {
       const res = await fetch(`/api/chats/${chatId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success(dir === 'rtl' ? 'تم حذف المحادثة' : 'Chat deleted');
+        toast.success(dir === 'rtl' ? 'تم حذف المحادثة بنجاح' : 'Chat deleted successfully');
         window.dispatchEvent(new Event('chat-updated'));
         navigate('/chat');
       }
@@ -5406,6 +5481,16 @@ export const ChatPage: React.FC = () => {
       
       const currentQuery = overrideQuery || query;
       if (!currentQuery.trim() && !selectedFile) return;
+
+      const MAX_USER_PROMPT_LIMIT = 16000;
+      if (currentQuery.length > MAX_USER_PROMPT_LIMIT) {
+        toast.error(
+          dir === 'rtl' 
+            ? `تنبيه: يتجاوز هذا النص حد الاستخدام العادل المسموح به (${MAX_USER_PROMPT_LIMIT.toLocaleString()} حرفاً). يرجى تقسيمه أو اختصاره.`
+            : `Constraint Alert: This text exceeds the fair-use limit of ${MAX_USER_PROMPT_LIMIT.toLocaleString()} characters. Please partition or shorten your text.`
+        );
+        return;
+      }
       
       const toolToUse = selectedFile ? 'perplexta_analysis' : (activeDropdown === 'model' 
         ? (selectedModel === 'fast' ? 'chat_fast' : selectedModel === 'pro' ? 'chat_pro' : selectedModel === 'thinking' ? 'chat_reasoning' : 'chat')
@@ -6281,6 +6366,11 @@ export const ChatPage: React.FC = () => {
               rows={1}
               style={{ minHeight: '32px', maxHeight: '200px' }}
             />
+            {query.length > 500 && (
+              <span className={`absolute bottom-[-14px] ${dir === 'rtl' ? 'left-1' : 'right-1'} text-[10px] font-mono select-none pointer-events-none transition-all duration-300 ${query.length > 15000 ? 'text-red-500 font-bold drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-gray-400'}`}>
+                {query.length.toLocaleString()} / 16,000
+              </span>
+            )}
           </div>
 
 
@@ -7234,6 +7324,7 @@ export const ChatPage: React.FC = () => {
                               dir={dir} 
                               isOpen={!!openCitationsMap[idx]}
                               onToggle={() => setOpenCitationsMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                              query={messages.slice(0, idx).reverse().find(m => m.role === 'user')?.content || ''}
                             />
                           )}
                           <AnimatePresence mode="wait">
@@ -7829,6 +7920,64 @@ export const ChatPage: React.FC = () => {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modern Dynamic Deletion confirmation Modal - Premium Custom styling matching Decree */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+                theme === 'dark' 
+                  ? 'bg-[#161618] border-zinc-800 text-gray-100' 
+                  : 'bg-white border-gray-150 text-gray-900'
+              }`}
+            >
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400">
+                {dir === 'rtl' ? 'حذف المحادثة؟' : 'Delete conversation?'}
+              </h3>
+              
+              <p className={`text-xs mt-2 font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {dir === 'rtl' 
+                  ? 'سيؤدي هذا إلى حذف المحادثة الحالية وجميع الرسائل المرتبطة بها نهائيًا ولا يمكن التراجع عن هذا العمل.' 
+                  : 'This will permanently delete the current conversation and all associated messages. This action cannot be undone.'}
+              </p>
+              
+              <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleThreadDeleteConfirm}
+                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                >
+                  {dir === 'rtl' ? 'تأكيد الحذف' : 'Confirm Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
       </motion.div>

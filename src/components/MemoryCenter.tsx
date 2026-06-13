@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { ActionConfirmationModal } from './ActionConfirmationModal';
 
 interface Memory {
   id: number;
@@ -45,6 +47,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   const [editCategory, setEditCategory] = useState('general');
   const [isPruning, setIsPruning] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [isPruneConfirmOpen, setIsPruneConfirmOpen] = useState(false);
+  const [deletingMemory, setDeletingMemory] = useState<Memory | null>(null);
 
   const categories = [
     { id: 'all', label: t('all') },
@@ -75,15 +79,28 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
     setIsAdding(false);
   };
 
-  const handlePrune = async () => {
+  const handlePrune = () => {
     if (!onPrune) return;
-    if (!window.confirm(dir === 'rtl' ? 'هل أنت متأكد من رغبتك في حذف أقدم 10 حقائق لتوفير مساحة؟' : 'Are you sure you want to delete the 10 oldest facts to free up space?')) return;
-    
+    setIsPruneConfirmOpen(true);
+  };
+
+  const handlePruneConfirm = async () => {
+    setIsPruneConfirmOpen(false);
+    if (!onPrune) return;
     setIsPruning(true);
     try {
       await onPrune();
     } finally {
       setIsPruning(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingMemory) return;
+    try {
+      await onDelete(deletingMemory.id);
+    } finally {
+      setDeletingMemory(null);
     }
   };
 
@@ -376,8 +393,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       <Edit2 size={18} />
                     </button>
                     <button 
-                      onClick={() => onDelete(memory.id)}
-                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      onClick={() => setDeletingMemory(memory)}
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all font-sans"
                       title={dir === 'rtl' ? 'حذف' : 'Delete'}
                     >
                       <Trash2 size={18} />
@@ -389,6 +406,51 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           ))}
         </div>
       )}
+
+      {/* Reusable Memory Prune Confirmation Modal */}
+      <ActionConfirmationModal
+        isOpen={isPruneConfirmOpen}
+        onClose={() => setIsPruneConfirmOpen(false)}
+        onConfirm={handlePruneConfirm}
+        variant="danger"
+        title={{
+          ar: 'تطهير سعة الذاكرة؟',
+          en: 'Prune Memory Capacity?'
+        }}
+        description={{
+          ar: 'سيتم حذف أقدم 10 حقائق أو معلومات مسجلة كليا لتحرير سعة إضافية بشكل فوري. لا يمكن التراجع عن هذا الإتلاف.',
+          en: 'This will permanently discard the 10 oldest remembered facts or settings to reclaim storage immediately. This process cannot be undone.'
+        }}
+        confirmLabel={{
+          ar: 'تطهير وتبسط',
+          en: 'Prune & Reclaim'
+        }}
+      />
+
+      {/* Reusable Individual Memory Delete Confirmation Modal */}
+      <ActionConfirmationModal
+        isOpen={!!deletingMemory}
+        onClose={() => setDeletingMemory(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        title={{
+          ar: 'حذف هذه الحقيقة؟',
+          en: 'Delete this fact?'
+        }}
+        description={{
+          ar: 'هل أنت متأكد من رغبتك في إزالة هذه الحقيقة المعينة من ذاكرة المساعد الذكي؟',
+          en: 'Are you sure you want to discard this specific fact from the smart assistant\'s memory base?'
+        }}
+        extraContent={deletingMemory ? (
+          <div className={`p-3 rounded-lg text-xs leading-relaxed break-all text-start border italic ${
+            theme === 'dark' 
+              ? 'bg-[#212124] border-[#2d2d31] text-gray-300' 
+              : 'bg-gray-50 border-gray-200 text-gray-700'
+          }`}>
+            "{deletingMemory.fact}"
+          </div>
+        ) : undefined}
+      />
     </div>
   );
 };

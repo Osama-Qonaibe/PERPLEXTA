@@ -15,6 +15,7 @@ import {
   updateUserChatContextSummary
 } from '../services/chat.js';
 import { VideoResourceProvider } from '../services/videoResourceProvider.js';
+import { validatePromptLength } from '../utils/security.js';
 
 const router = express.Router();
 
@@ -40,6 +41,13 @@ router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to create a chat.' });
     }
     const { title, message, tool } = req.body;
+    if (message) {
+      try {
+        validatePromptLength(message);
+      } catch (err: any) {
+        return res.status(400).json(JSON.parse(err.message));
+      }
+    }
     const chat = await createChat(req.user.id, title);
     if (message) {
       await addChatMessage(chat.id, 'user', message, tool);
@@ -71,6 +79,13 @@ router.post("/:id/messages", authenticateToken, chatLimiter, async (req: any, re
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to send messages.' });
     }
     const { role: msgRole, content, tool } = req.body;
+    if (msgRole === 'user' && content) {
+      try {
+        validatePromptLength(content);
+      } catch (err: any) {
+        return res.status(400).json(JSON.parse(err.message));
+      }
+    }
     const chatId = req.params.id;
     await addChatMessage(chatId, msgRole, content, tool);
     res.json({ success: true });
@@ -232,6 +247,12 @@ router.post("/sync-message", authenticateToken, chatLimiter, verifyConsumptionLi
     const { chatId, content, toolId, modelId } = req.body;
     if (!chatId || !content) {
       return res.status(400).json({ error: 'chatId and content are required' });
+    }
+
+    try {
+      validatePromptLength(content);
+    } catch (err: any) {
+      return res.status(400).json(JSON.parse(err.message));
     }
 
     const userMsgResult = await pool.query(

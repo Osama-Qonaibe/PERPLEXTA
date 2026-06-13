@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag, MoreHorizontal } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,6 +32,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [deletingChatConfirmId, setDeletingChatConfirmId] = useState<string | null>(null);
+  const [activeOptionsMenuChatId, setActiveOptionsMenuChatId] = useState<string | null>(null);
+  const deletingChat = recentChats.find((c: any) => c.id?.toString() === deletingChatConfirmId?.toString());
+  const deletingChatTitle = deletingChat ? deletingChat.title : '';
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -107,6 +110,14 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveOptionsMenuChatId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
   const fetchChats = async () => {
@@ -398,6 +409,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       <div className={isMobile ? "space-y-1" : "space-y-1"}>
                         {recentChats.map((chat) => {
                           const isActive = activeChatId?.toString() === chat.id?.toString();
+                          const isMenuOpen = activeOptionsMenuChatId === chat.id;
                           return (
                             <motion.div
                               key={chat.id}
@@ -410,157 +422,137 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 repeat: Infinity,
                                 ease: "easeInOut"
                               }}
-                              className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 transition-all duration-300 group relative border rounded-[4px] ${
+                              className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-all duration-300 group relative border rounded-[4px] ${
                                 isActive 
                                   ? 'text-emerald-500 bg-transparent border-transparent' 
                                   : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 border-transparent'
                               }`}
                             >
-                              {editingChatId === chat.id ? (
-                                <div className="flex items-center w-full h-full pr-1">
-                                  <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                    <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-overlay)] transition-all duration-300`} />
-                                    <MessageSquare size={isMobile ? 16 : 16} className="text-emerald-500 relative z-10" />
-                                  </div>
-                                  <div className="flex-1 flex items-center gap-1 min-w-0">
-                                    <input
-                                      type="text"
-                                      value={newTitle}
-                                      onChange={(e) => setNewTitle(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleRename(chat.id);
-                                        if (e.key === 'Escape') setEditingChatId(null);
-                                      }}
-                                      className={`bg-[var(--bg-input)] text-[var(--text-primary)] ${isMobile ? 'text-[13px] px-2 py-1' : 'text-xs px-2 py-1'} rounded w-full outline-none border border-[var(--border-accent)] min-w-0 transition-theme`}
-                                      autoFocus
-                                    />
-                                    <div className="flex items-center">
-                                      <button 
-                                        onClick={() => handleRename(chat.id)}
-                                        className={`p-1.5 text-emerald-500 hover:text-emerald-400 transition-theme`}
-                                        title={t('save')}
-                                      >
-                                        <Check size={isMobile ? 16 : 14} />
-                                      </button>
-                                      <button 
-                                        onClick={() => setEditingChatId(null)}
-                                        className={`p-1.5 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-theme`}
-                                        title={t('cancel')}
-                                      >
-                                        <X size={isMobile ? 16 : 14} />
-                                      </button>
-                                    </div>
-                                  </div>
+                              <div
+                                onClick={() => {
+                                  navigate(`/chat/${chat.id}`);
+                                  if (window.innerWidth < 768) setIsSidebarOpen(false);
+                                }}
+                                className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
+                              >
+                                <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
+                                  <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 ${isActive ? 'bg-transparent' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'}`} />
+                                  <MessageSquare 
+                                    size={isMobile ? 16 : 16} 
+                                    className={`relative z-10 transition-all duration-300 ${
+                                      isActive 
+                                        ? 'text-emerald-500' 
+                                        : streamingChatId === chat.id 
+                                          ? 'text-emerald-500 animate-pulse' 
+                                          : 'text-gray-400 group-hover:text-emerald-500'
+                                    }`} 
+                                  />
                                 </div>
-                              ) : (
-                                <>
-                                  <div
-                                    onClick={() => {
-                                      navigate(`/chat/${chat.id}`);
-                                      if (window.innerWidth < 768) setIsSidebarOpen(false);
-                                    }}
-                                    className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
+                                <AnimatePresence mode="wait" initial={false}>
+                                  {isSidebarOpen && (
+                                    <motion.span
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={sidebarTransition}
+                                      className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
+                                        isActive 
+                                          ? 'text-emerald-500 font-extrabold' 
+                                          : streamingChatId === chat.id 
+                                            ? 'text-emerald-500 font-extrabold' 
+                                            : 'text-gray-400 group-hover:text-emerald-500'
+                                      }`}
+                                    >
+                                      {chat.title}
+                                    </motion.span>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                              
+                              <AnimatePresence>
+                                {isSidebarOpen && (
+                                  <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className={`flex items-center gap-1 ${activeOptionsMenuChatId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-300 ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
                                   >
-                                    <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-all duration-300 ${isActive ? 'bg-transparent' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'}`} />
-                                      <MessageSquare 
-                                        size={isMobile ? 16 : 16} 
-                                        className={`relative z-10 transition-all duration-300 ${
-                                          isActive 
-                                            ? 'text-emerald-500' 
-                                            : streamingChatId === chat.id 
-                                              ? 'text-emerald-500 animate-pulse' 
-                                              : 'text-gray-400 group-hover:text-emerald-500'
-                                        }`} 
-                                      />
-                                    </div>
-                                    <AnimatePresence mode="wait" initial={false}>
-                                      {isSidebarOpen && (
-                                        <motion.span
-                                          initial={{ opacity: 0 }}
-                                          animate={{ opacity: 1 }}
-                                          exit={{ opacity: 0 }}
-                                          transition={sidebarTransition}
-                                          className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
-                                            isActive 
-                                              ? 'text-emerald-500 font-extrabold' 
-                                              : streamingChatId === chat.id 
-                                                ? 'text-emerald-500 font-extrabold' 
-                                                : 'text-gray-400 group-hover:text-emerald-500'
-                                          }`}
-                                        >
-                                          {chat.title}
-                                        </motion.span>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                  <AnimatePresence>
-                                    {isSidebarOpen && (
-                                      <motion.div 
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className={`flex items-center gap-1 ${deletingChatConfirmId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-300 ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
+                                    <div className="relative">
+                                      <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveOptionsMenuChatId(activeOptionsMenuChatId === chat.id ? null : chat.id);
+                                        }}
+                                        className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-all duration-300 ${
+                                          activeOptionsMenuChatId === chat.id 
+                                            ? 'bg-gray-50 dark:bg-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
+                                            : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800/80'
+                                        }`}
+                                        title={language === 'ar' ? 'خيارات' : 'Options'}
                                       >
-                                        {deletingChatConfirmId === chat.id ? (
-                                          <div className="flex items-center gap-1 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/20 rounded-[4px] px-1 py-0.5">
-                                            <span className="text-[9px] text-pink-500 font-bold whitespace-nowrap px-0.5 select-none animate-pulse">
-                                              {language === 'ar' ? 'تأكيد؟' : 'Sure?'}
-                                            </span>
-                                            <button 
-                                              type="button"
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                await handleDelete(e, chat.id);
-                                                setDeletingChatConfirmId(null);
-                                              }}
-                                              className="w-5 h-5 flex items-center justify-center rounded-[3px] text-pink-500 hover:bg-pink-500/20 transition-all duration-300"
-                                              title={language === 'ar' ? 'تأكيد الحذف' : 'Confirm deletion'}
-                                            >
-                                              <Check size={11} />
-                                            </button>
-                                            <button 
+                                        <MoreHorizontal size={isMobile ? 14 : 13} />
+                                      </button>
+                                      
+                                      <AnimatePresence>
+                                        {activeOptionsMenuChatId === chat.id && (
+                                          <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                            transition={{ duration: 0.15 }}
+                                            className={`absolute ${dir === 'rtl' ? 'left-0' : 'right-0'} mt-1 z-50 min-w-[130px] rounded-lg p-1 shadow-2xl border transition-theme ${
+                                              theme === 'dark' 
+                                                ? 'bg-[#18181a] border-[#27272a]' 
+                                                : 'bg-white border-gray-200'
+                                            }`}
+                                          >
+                                            <button
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                setDeletingChatConfirmId(null);
+                                                setEditingChatId(chat.id);
+                                                setNewTitle(chat.title);
+                                                setActiveOptionsMenuChatId(null);
                                               }}
-                                              className="w-5 h-5 flex items-center justify-center rounded-[3px] text-gray-400 hover:text-emerald-500 transition-all duration-300"
-                                              title={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-all duration-200 text-start ${
+                                                theme === 'dark' 
+                                                  ? 'text-gray-300 hover:bg-gray-800 hover:text-emerald-400' 
+                                                  : 'text-gray-700 hover:bg-gray-100 hover:text-emerald-500'
+                                              }`}
                                             >
-                                              <X size={11} />
+                                              <Edit2 size={12} className="text-gray-400" />
+                                              <span>{language === 'ar' ? 'إعادة تسمية' : 'Rename'}</span>
                                             </button>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <button 
-                                              onClick={() => { setEditingChatId(chat.id); setNewTitle(chat.title); setDeletingChatConfirmId(null); }}
-                                              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
-                                            >
-                                              <Edit2 size={isMobile ? 14 : 13} />
-                                            </button>
-                                            <button 
+                                            
+                                            <button
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 setDeletingChatConfirmId(chat.id);
+                                                setActiveOptionsMenuChatId(null);
                                               }}
-                                              className="w-8 h-8 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-all duration-300"
+                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-all duration-200 text-start ${
+                                                theme === 'dark' 
+                                                  ? 'text-red-405 hover:bg-red-500/10 hover:text-red-400' 
+                                                  : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                                              }`}
                                             >
-                                              <Trash2 size={isMobile ? 14 : 13} />
+                                              <Trash2 size={12} className={theme === 'dark' ? 'text-red-400' : 'text-red-500'} />
+                                              <span>{language === 'ar' ? 'حذف' : 'Delete'}</span>
                                             </button>
-                                          </>
+                                          </motion.div>
                                         )}
-                                      </motion.div>
-                                    )}
-                                  </AnimatePresence>
-                                  {/* Left or Right indicator bar for active item */}
-                                  {isActive && (
-                                    <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 ${
-                                      dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
-                                    }`} />
-                                  )}
-                                </>
+                                      </AnimatePresence>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                              {/* Left or Right indicator bar for active item */}
+                              {isActive && (
+                                <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 ${
+                                  dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
+                                }`} />
                               )}
                             </motion.div>
                           );
@@ -943,6 +935,159 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
+
+      {/* Dynamic Professional Delete Confirmation Modal - Elite custom styling matching Image 2 */}
+      <AnimatePresence>
+        {deletingChatConfirmId && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeletingChatConfirmId(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            {/* Content Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
+                theme === 'dark' 
+                  ? 'bg-[#1a1a1c] border-[#27272a] text-gray-100' 
+                  : 'bg-white border-gray-150 text-gray-900'
+              }`}
+            >
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400">
+                {language === 'ar' ? 'حذف الجلسة؟' : 'Delete session?'}
+              </h3>
+              
+              <p className={`text-xs mt-2 font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {language === 'ar' ? 'سيؤدي هذا إلى حذف الجلسة نهائيًا:' : 'This will permanently delete the session:'}
+              </p>
+              
+              <div className={`mt-3 p-3 rounded-lg text-xs font-bold leading-relaxed break-all text-start border ${
+                theme === 'dark' 
+                  ? 'bg-[#212124] border-[#2d2d31] text-gray-200' 
+                  : 'bg-gray-50 border-gray-200 text-gray-800'
+              }`}>
+                {deletingChatTitle}
+              </div>
+              
+              <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setDeletingChatConfirmId(null)}
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    theme === 'dark' 
+					  ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    await handleDelete(e, deletingChatConfirmId);
+                    setDeletingChatConfirmId(null);
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                >
+                  {language === 'ar' ? 'حذف' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Professional Rename Modal - Elite custom styling matching the delete design */}
+      <AnimatePresence>
+        {editingChatId && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingChatId(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            {/* Content Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
+                theme === 'dark' 
+                  ? 'bg-[#1a1a1c] border-[#27272a] text-gray-100' 
+                  : 'bg-white border-gray-150 text-gray-900'
+              }`}
+            >
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-emerald-500 dark:text-emerald-400">
+                {language === 'ar' ? 'إعادة تسمية الجلسة؟' : 'Rename session?'}
+              </h3>
+              
+              <p className={`text-xs mt-2 font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                {language === 'ar' ? 'أدخل الاسماً الجديداً للجلسة:' : 'Please enter a new name for this session:'}
+              </p>
+              
+              <div className="mt-4">
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && newTitle.trim()) {
+                      await handleRename(editingChatId);
+                    }
+                    if (e.key === 'Escape') setEditingChatId(null);
+                  }}
+                  className={`w-full px-3 py-2 text-xs font-semibold leading-relaxed text-start border rounded-lg outline-none transition-theme ${
+                    theme === 'dark' 
+                      ? 'bg-[#212124] border-[#2d2d31] text-gray-100 focus:border-emerald-500/50 focus:shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.1)]'
+                  }`}
+                  autoFocus
+                  placeholder={language === 'ar' ? 'اسم الجلسة...' : 'Session name...'}
+                />
+              </div>
+              
+              <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setEditingChatId(null)}
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    theme === 'dark' 
+					  ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                
+                <button
+                  type="button"
+                  disabled={!newTitle.trim()}
+                  onClick={async () => {
+                    if (newTitle.trim()) {
+                      await handleRename(editingChatId);
+                    }
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                >
+                  {language === 'ar' ? 'حفظ' : 'Save'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { MainLayout } from './layouts/MainLayout';
@@ -135,7 +135,157 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { theme, isAuthReady } = useAppContext();
+  const { theme, isAuthReady, siteSettings, language } = useAppContext();
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // 1. Identify Sensitive Pages that MUST be strictly NOINDEX'ed
+    const isSensitive = [
+      '/chat',
+      '/admin',
+      '/settings',
+      '/rewards',
+      '/wallet',
+      '/reset-password',
+      '/admin-community'
+    ].some(sensitivePath => currentPath === sensitivePath || currentPath.startsWith(sensitivePath + '/'));
+
+    // Dynamic Robots Meta Tag handling
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.setAttribute('name', 'robots');
+      document.head.appendChild(robotsMeta);
+    }
+
+    let googlebotMeta = document.querySelector('meta[name="googlebot"]');
+    if (!googlebotMeta) {
+      googlebotMeta = document.createElement('meta');
+      googlebotMeta.setAttribute('name', 'googlebot');
+      document.head.appendChild(googlebotMeta);
+    }
+
+    if (isSensitive) {
+      // Strictly prevent indexing of any user workspace elements/interactions/admins
+      robotsMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none');
+      googlebotMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
+      
+      // Also suppress Open Graph leakages on private paths
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', language === 'ar' ? 'بيربليكستا - مساحة عمل محصنة' : 'Perplexta - Secure Workspace');
+      
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', language === 'ar' ? 'صفحة آمنة ومحمية من قبل الخوارزميات السيادية لمنصة بيربليكستا.' : 'Secure node with zero crawling, protected under deep local sovereign protocols.');
+      
+      console.log(`[SEO Engine] Security Shield Applied for path "${currentPath}" (Status: noindex)`);
+    } else {
+      // Make standard public sections fully crawlable and friendly to search engines
+      robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+      googlebotMeta.setAttribute('content', 'index, follow');
+
+      const siteName = language === 'ar' ? (siteSettings?.siteNameAr || siteSettings?.siteName) : siteSettings?.siteName;
+      const resolvedSiteName = siteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
+      
+      const siteDesc = language === 'ar' ? (siteSettings?.siteDescriptionAr || siteSettings?.siteDescription) : siteSettings?.siteDescription;
+      const resolvedDesc = (language === 'ar' ? siteSettings?.seoDescriptionAr : siteSettings?.seoDescriptionEn) || siteDesc || '';
+      
+      const resolvedKeywords = (language === 'ar' ? siteSettings?.keywordsAr : siteSettings?.keywordsEn) || '';
+      const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
+
+      // Path Specific Titles for Static Pages to improve click-through-rates (CTR)
+      let pageTitlePart = '';
+      if (currentPath === '/subscription') {
+        pageTitlePart = language === 'ar' ? 'خطط الاشتراك والترقيات النخبة' : 'Premium Elite Subscription Plans';
+      } else if (currentPath === '/forum') {
+        pageTitlePart = language === 'ar' ? 'منتدى النقاش العام والمشاركة المعرفية' : 'Public Forum & AI Knowledge Sharing';
+      } else if (currentPath === '/marketplace') {
+        pageTitlePart = language === 'ar' ? 'متجر الأكواد ونخب مطالبات الذكاء الاصطناعي' : 'Elite Prompts & Advanced Software Marketplace';
+      } else if (currentPath === '/blog') {
+        pageTitlePart = language === 'ar' ? 'المدونة التقنية والتقارير الاستخباراتية' : 'Tech Intelligence Blog & Decoded Publications';
+      } else if (currentPath === '/about') {
+        pageTitlePart = language === 'ar' ? 'من نحن ورؤية بيربليكستا السيادية' : 'About Our Sovereign High-Precision Framework';
+      } else if (currentPath === '/terms') {
+        pageTitlePart = language === 'ar' ? 'شروط الخدمة والاتفاقية الرقمية' : 'Terms of Service';
+      } else if (currentPath === '/privacy') {
+        pageTitlePart = language === 'ar' ? 'سياسة الخصوصية وحقوق حماية البيانات' : 'Strict Privacy & Data Security Regulations';
+      }
+
+      const finalTitle = pageTitlePart ? `${pageTitlePart} | ${resolvedSiteName}` : `${resolvedSiteName} - ${language === 'ar' ? 'منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Sovereign High-Performance AI Analysis Platform'}`;
+      document.title = finalTitle;
+
+      // Update Standard description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute('content', resolvedDesc);
+
+      // Systematically align Open Graph
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.setAttribute('content', finalTitle);
+
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (!ogDesc) {
+        ogDesc = document.createElement('meta');
+        ogDesc.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDesc);
+      }
+      ogDesc.setAttribute('content', resolvedDesc);
+
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (!ogImage) {
+        ogImage = document.createElement('meta');
+        ogImage.setAttribute('property', 'og:image');
+        document.head.appendChild(ogImage);
+      }
+      ogImage.setAttribute('content', resolvedOGImage);
+
+      // Systematically align Twitter Card Tags
+      let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+      if (!twitterTitle) {
+        twitterTitle = document.createElement('meta');
+        twitterTitle.setAttribute('name', 'twitter:title');
+        document.head.appendChild(twitterTitle);
+      }
+      twitterTitle.setAttribute('content', finalTitle);
+
+      let twitterDesc = document.querySelector('meta[name="twitter:description"]');
+      if (!twitterDesc) {
+        twitterDesc = document.createElement('meta');
+        twitterDesc.setAttribute('name', 'twitter:description');
+        document.head.appendChild(twitterDesc);
+      }
+      twitterDesc.setAttribute('content', resolvedDesc);
+
+      let twitterImage = document.querySelector('meta[name="twitter:image"]');
+      if (!twitterImage) {
+        twitterImage = document.createElement('meta');
+        twitterImage.setAttribute('name', 'twitter:image');
+        document.head.appendChild(twitterImage);
+      }
+      twitterImage.setAttribute('content', resolvedOGImage);
+
+      // Keywords
+      let metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (!metaKeywords) {
+        metaKeywords = document.createElement('meta');
+        metaKeywords.setAttribute('name', 'keywords');
+        document.head.appendChild(metaKeywords);
+      }
+      metaKeywords.setAttribute('content', resolvedKeywords);
+
+      console.log(`[SEO Engine] Dynamic indexing successfully applied for "${currentPath}" (Status: index, follow). Title synced.`);
+    }
+  }, [location.pathname, siteSettings, language]);
 
   return (
     <Suspense fallback={null}>

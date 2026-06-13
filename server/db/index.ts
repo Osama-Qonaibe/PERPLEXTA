@@ -10,6 +10,12 @@ let currentCoreUrl: string = '';
 let currentLedgerUrl: string = '';
 let currentExternalUrl: string = '';
 let currentSecurityUrl: string = '';
+let currentCoreMaxPoolSize: number = 0;
+let currentLedgerMaxPoolSize: number = 0;
+let currentExternalMaxPoolSize: number = 0;
+let currentSecurityMaxPoolSize: number = 0;
+let poolInitPromise: Promise<void> | null = null;
+let lastInitUrls = { core: '', ledger: '', external: '', security: '', coreMax: 0, ledgerMax: 0, externalMax: 0, securityMax: 0 };
 
 export function getExternalPool() {
   return externalPool || pool;
@@ -52,198 +58,274 @@ export function createInternalPool(connectionString: string, max = 1) {
   });
 }
 
-export async function initializePerplextaPools(coreUrl: string, ledgerUrl: string, externalUrl?: string, securityUrl?: string) {
-  const redactedUrl = (url: string) => {
-    try {
-      const u = new URL(url);
-      u.password = '****';
-      return u.toString();
-    } catch {
-      return 'invalid-url';
-    }
-  };
-
-  console.log(`[DB] Initializing Perplexta Pools...`);
-  if (coreUrl) console.log(`[DB] Core Target: ${redactedUrl(coreUrl)}`);
-  
-  if (!coreUrl) {
-    console.warn('[DB] ⚠️ DATABASE_URL is missing. Operating in Degraded Mode (No DB).');
-    pool = null;
-    ledgerPool = null;
-    externalPool = null;
-    securityPool = null;
-    return;
-  }
-
+export async function initializePerplextaPools(
+  coreUrl: string, 
+  ledgerUrl: string, 
+  externalUrl?: string, 
+  securityUrl?: string,
+  coreMax?: number,
+  ledgerMax?: number,
+  externalMax?: number,
+  securityMax?: number
+): Promise<void> {
   const finalLedgerUrl = ledgerUrl || coreUrl;
   const finalExternalUrl = externalUrl || coreUrl;
   const finalSecurityUrl = securityUrl || coreUrl;
-  
-  try {
-    validateDatabaseUrl(coreUrl, 'DATABASE_URL');
-    validateDatabaseUrl(finalLedgerUrl, 'LEDGER_DATABASE_URL');
-    validateDatabaseUrl(finalExternalUrl, 'EXTERNAL_DATABASE_URL');
-    validateDatabaseUrl(finalSecurityUrl, 'SECURITY_DATABASE_URL');
-  } catch (validationError: any) {
-    console.error(`[DB] Validation Failed: ${validationError.message}`);
-    if (process.env.NODE_ENV === 'production' && coreUrl) {
-      throw validationError;
-    }
-    pool = null;
-    ledgerPool = null;
-    externalPool = null;
-    securityPool = null;
+
+  const finalCoreMax = coreMax || Number(process.env.DB_CORE_MAX_POOL_SIZE || process.env.DB_CORE_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS) || 20;
+  const finalLedgerMax = ledgerMax || Number(process.env.DB_LEDGER_MAX_POOL_SIZE || process.env.DB_LEDGER_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+  const finalExternalMax = externalMax || Number(process.env.DB_EXTERNAL_MAX_POOL_SIZE || process.env.DB_EXTERNAL_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+  const finalSecurityMax = securityMax || Number(process.env.DB_SECURITY_MAX_POOL_SIZE || process.env.DB_SECURITY_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+
+  // Singleton guard to avoid redundant pool creation if settings and pool sizes match
+  if (pool && 
+      currentCoreUrl === coreUrl && 
+      currentLedgerUrl === finalLedgerUrl && 
+      currentExternalUrl === finalExternalUrl && 
+      currentSecurityUrl === finalSecurityUrl &&
+      currentCoreMaxPoolSize === finalCoreMax &&
+      currentLedgerMaxPoolSize === finalLedgerMax &&
+      currentExternalMaxPoolSize === finalExternalMax &&
+      currentSecurityMaxPoolSize === finalSecurityMax) {
+    console.log('[DB] Pools already initialized with matching configurations and pool sizes. Skipping redundant initialization.');
     return;
   }
 
-  if (pool) {
-    pool.end().catch((err: any) => console.error('[DB] Error closing old core pool:', err));
-  }
-  if (ledgerPool && ledgerPool !== pool) {
-    ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
-  }
-  if (externalPool && externalPool !== pool) {
-    externalPool.end().catch((err: any) => console.error('[DB] Error closing old external pool:', err));
-  }
-  if (securityPool && securityPool !== pool) {
-    securityPool.end().catch((err: any) => console.error('[DB] Error closing old security pool:', err));
+  // Safe concurrent-initialization singleton guard to avoid racing connection setups
+  if (poolInitPromise &&
+      lastInitUrls.core === coreUrl &&
+      lastInitUrls.ledger === finalLedgerUrl &&
+      lastInitUrls.external === finalExternalUrl &&
+      lastInitUrls.security === finalSecurityUrl &&
+      lastInitUrls.coreMax === finalCoreMax &&
+      lastInitUrls.ledgerMax === finalLedgerMax &&
+      lastInitUrls.externalMax === finalExternalMax &&
+      lastInitUrls.securityMax === finalSecurityMax) {
+    console.log('[DB] Active pool initialization identical to request in progress. Re-using active promise.');
+    return poolInitPromise;
   }
 
-  const sslConfig = process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
-    ? { rejectUnauthorized: false }
-    : undefined;
+  lastInitUrls = {
+    core: coreUrl,
+    ledger: finalLedgerUrl,
+    external: finalExternalUrl,
+    security: finalSecurityUrl,
+    coreMax: finalCoreMax,
+    ledgerMax: finalLedgerMax,
+    externalMax: finalExternalMax,
+    securityMax: finalSecurityMax
+  };
 
-  currentCoreUrl = coreUrl;
-  currentLedgerUrl = finalLedgerUrl;
-  currentExternalUrl = finalExternalUrl;
-  currentSecurityUrl = finalSecurityUrl;
+  poolInitPromise = (async () => {
+    const redactedUrl = (url: string) => {
+      try {
+        const u = new URL(url);
+        u.password = '****';
+        return u.toString();
+      } catch {
+        return 'invalid-url';
+      }
+    };
+
+    console.log(`[DB] Initializing Perplexta Pools (Factory Mode)...`);
+    if (coreUrl) console.log(`[DB] Core Target: ${redactedUrl(coreUrl)}`);
+    console.log(`[DB] Pool Sizes - Core: ${finalCoreMax}, Ledger: ${finalLedgerMax}, External: ${finalExternalMax}, Security: ${finalSecurityMax}`);
+    
+    if (!coreUrl) {
+      console.warn('[DB] ⚠️ DATABASE_URL is missing. Operating in Degraded Mode (No DB).');
+      pool = null;
+      ledgerPool = null;
+      externalPool = null;
+      securityPool = null;
+      return;
+    }
+    
+    try {
+      validateDatabaseUrl(coreUrl, 'DATABASE_URL');
+      validateDatabaseUrl(finalLedgerUrl, 'LEDGER_DATABASE_URL');
+      validateDatabaseUrl(finalExternalUrl, 'EXTERNAL_DATABASE_URL');
+      validateDatabaseUrl(finalSecurityUrl, 'SECURITY_DATABASE_URL');
+    } catch (validationError: any) {
+      console.error(`[DB] Validation Failed: ${validationError.message}`);
+      if (process.env.NODE_ENV === 'production' && coreUrl) {
+        throw validationError;
+      }
+      pool = null;
+      ledgerPool = null;
+      externalPool = null;
+      securityPool = null;
+      return;
+    }
+
+    if (pool) {
+      pool.end().catch((err: any) => console.error('[DB] Error closing old core pool:', err));
+    }
+    if (ledgerPool && ledgerPool !== pool) {
+      ledgerPool.end().catch((err: any) => console.error('[DB] Error closing old ledger pool:', err));
+    }
+    if (externalPool && externalPool !== pool) {
+      externalPool.end().catch((err: any) => console.error('[DB] Error closing old external pool:', err));
+    }
+    if (securityPool && securityPool !== pool) {
+      securityPool.end().catch((err: any) => console.error('[DB] Error closing old security pool:', err));
+    }
+
+    const sslConfig = process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
+      ? { rejectUnauthorized: false }
+      : undefined;
+
+    currentCoreUrl = coreUrl;
+    currentLedgerUrl = finalLedgerUrl;
+    currentExternalUrl = finalExternalUrl;
+    currentSecurityUrl = finalSecurityUrl;
+    currentCoreMaxPoolSize = finalCoreMax;
+    currentLedgerMaxPoolSize = finalLedgerMax;
+    currentExternalMaxPoolSize = finalExternalMax;
+    currentSecurityMaxPoolSize = finalSecurityMax;
+
+    try {
+      pool = new Pool({
+        connectionString: coreUrl,
+        ssl: sslConfig,
+        max: finalCoreMax,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+      });
+
+      ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
+        connectionString: finalLedgerUrl,
+        ssl: sslConfig,
+        max: finalLedgerMax,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+      });
+
+      externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
+        connectionString: finalExternalUrl,
+        ssl: sslConfig,
+        max: finalExternalMax,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+      });
+
+      securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
+        connectionString: finalSecurityUrl,
+        ssl: sslConfig,
+        max: finalSecurityMax,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 20000,
+      });
+
+      // Maintain error event handlers for unexpected client connection crashes
+      pool.on('error', (err: any) => {
+        console.error('[DB] Unexpected error on idle core client:', err.message);
+      });
+
+      if (ledgerPool !== pool) {
+        ledgerPool.on('error', (err: any) => {
+          console.error('[DB] Unexpected error on idle ledger client:', err.message);
+        });
+      }
+
+      if (externalPool !== pool) {
+        externalPool.on('error', (err: any) => {
+          console.error('[DB] Unexpected error on idle external client:', err.message);
+        });
+      }
+
+      if (securityPool !== pool) {
+        securityPool.on('error', (err: any) => {
+          console.error('[DB] Unexpected error on idle security client:', err.message);
+        });
+      }
+
+      console.log('[DB] Pools initiated successfully. Verifying connectivity...');
+      try {
+        const verifyPoolWithTimeout = async (p: any, name: string) => {
+          let timeoutId: any;
+          const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`${name} connection timeout (12s)`)), 12000);
+          });
+          
+          try {
+            await Promise.race([p.query('SELECT 1'), timeoutPromise]);
+            clearTimeout(timeoutId);
+            return true;
+          } catch (err: any) {
+            clearTimeout(timeoutId);
+            console.log(`[DB] Warmup/Connectivity check for ${name} yielded: ${err.message}. Dynamic fallback will be applied.`);
+            return false;
+          }
+        };
+
+        const coreOk = await verifyPoolWithTimeout(pool, 'Core DB');
+        if (coreOk) {
+          console.log('[DB] Core PostgreSQL database connection verified successfully.');
+        } else {
+          console.error('[DB] ❌ Warning: Core Database is currently unreachable or slow to respond.');
+        }
+
+        if (ledgerPool && ledgerPool !== pool) {
+          const ledgerOk = await verifyPoolWithTimeout(ledgerPool, 'Ledger DB');
+          if (ledgerOk) {
+            console.log('[DB] Ledger PostgreSQL database connection verified successfully.');
+          } else {
+            console.warn('[DB] Swapping Ledger Pool to point to Core Database Pool due to failure.');
+            try { await ledgerPool.end(); } catch {}
+            ledgerPool = pool;
+          }
+        } else {
+          console.log('[DB] Ledger PostgreSQL is sharing the Core Database Pool connection.');
+        }
+
+        if (externalPool && externalPool !== pool) {
+          const externalOk = await verifyPoolWithTimeout(externalPool, 'External DB');
+          if (externalOk) {
+            console.log('[DB] External PostgreSQL database connection verified successfully.');
+          } else {
+            console.warn('[DB] Swapping External Pool to point to Core Database Pool due to failure.');
+            try { await externalPool.end(); } catch {}
+            externalPool = pool;
+          }
+        } else {
+          console.log('[DB] External PostgreSQL is sharing the Core Database Pool connection.');
+        }
+
+        if (securityPool && securityPool !== pool) {
+          const securityOk = await verifyPoolWithTimeout(securityPool, 'Security DB');
+          if (securityOk) {
+            console.log('[DB] Security PostgreSQL database connection verified successfully.');
+          } else {
+            console.warn('[DB] Swapping Security Pool to point to Core Database Pool due to failure.');
+            try { await securityPool.end(); } catch {}
+            securityPool = pool;
+          }
+        } else {
+          console.log('[DB] Security PostgreSQL is sharing the Core Database Pool connection.');
+        }
+
+        console.log('[DB] Perplexta Pools verification and seamless fallback assignment complete.');
+
+      } catch (verifyError: any) {
+        console.warn('[DB] ⚠️ Connectivity post-flight assessment returned error:', verifyError.message);
+      }
+
+    } catch (poolCreationError: any) {
+      console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
+      if (process.env.NODE_ENV === 'production') {
+        throw poolCreationError;
+      }
+      pool = null;
+      ledgerPool = null;
+      externalPool = null;
+      securityPool = null;
+    }
+  })();
 
   try {
-    pool = new Pool({
-      connectionString: coreUrl,
-      ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
-    });
-
-    ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
-      connectionString: finalLedgerUrl,
-      ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
-    });
-
-    externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
-      connectionString: finalExternalUrl,
-      ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
-    });
-
-    securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
-      connectionString: finalSecurityUrl,
-      ssl: sslConfig,
-      max: Number(process.env.DB_MAX_CONNECTIONS) || 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 20000,
-    });
-
-    pool.on('connect', () => console.log('[DB] Core PostgreSQL connected successfully.'));
-    
-    if (ledgerPool !== pool) {
-      ledgerPool.on('connect', () => console.log('[DB] Ledger PostgreSQL connected successfully.'));
-      ledgerPool.on('error', (err: any) => {
-        console.error('[DB] Unexpected error on idle ledger client:', err.message);
-      });
-    }
-
-    if (externalPool !== pool) {
-      externalPool.on('connect', () => console.log('[DB] External Categories PostgreSQL connected successfully.'));
-      externalPool.on('error', (err: any) => {
-        console.error('[DB] Unexpected error on idle external client:', err.message);
-      });
-    }
-
-    if (securityPool !== pool) {
-      securityPool.on('connect', () => console.log('[DB] Security PostgreSQL connected successfully.'));
-      securityPool.on('error', (err: any) => {
-        console.error('[DB] Unexpected error on idle security client:', err.message);
-      });
-    }
-    
-    pool.on('error', (err: any) => {
-      console.error('[DB] Unexpected error on idle core client:', err.message);
-    });
-
-    console.log('[DB] Verifying connectivity...');
-    try {
-      const verifyPoolWithTimeout = async (p: any, name: string) => {
-        let timeoutId: any;
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error(`${name} connection timeout (12s)`)), 12000);
-        });
-        
-        try {
-          await Promise.race([p.query('SELECT 1'), timeoutPromise]);
-          clearTimeout(timeoutId);
-          return true;
-        } catch (err: any) {
-          clearTimeout(timeoutId);
-          console.log(`[DB] Warmup/Connectivity check for ${name} yielded: ${err.message}. Dynamic fallback will be applied.`);
-          return false;
-        }
-      };
-
-      const coreOk = await verifyPoolWithTimeout(pool, 'Core DB');
-      if (!coreOk) {
-        console.error('[DB] ❌ Warning: Core Database is currently unreachable or slow to respond.');
-      }
-
-      if (ledgerPool && ledgerPool !== pool) {
-        const ledgerOk = await verifyPoolWithTimeout(ledgerPool, 'Ledger DB');
-        if (!ledgerOk) {
-          console.warn('[DB] Swapping Ledger Pool to point to Core Database Pool due to failure.');
-          try { await ledgerPool.end(); } catch {}
-          ledgerPool = pool;
-        }
-      }
-
-      if (externalPool && externalPool !== pool) {
-        const externalOk = await verifyPoolWithTimeout(externalPool, 'External DB');
-        if (!externalOk) {
-          console.warn('[DB] Swapping External Pool to point to Core Database Pool due to failure.');
-          try { await externalPool.end(); } catch {}
-          externalPool = pool;
-        }
-      }
-
-      if (securityPool && securityPool !== pool) {
-        const securityOk = await verifyPoolWithTimeout(securityPool, 'Security DB');
-        if (!securityOk) {
-          console.warn('[DB] Swapping Security Pool to point to Core Database Pool due to failure.');
-          try { await securityPool.end(); } catch {}
-          securityPool = pool;
-        }
-      }
-
-      console.log('[DB] Perplexta Pools verification and seamless fallback assignment complete.');
-
-    } catch (verifyError: any) {
-      console.warn('[DB] ⚠️ Connectivity post-flight assessment returned error:', verifyError.message);
-    }
-
-  } catch (poolCreationError: any) {
-    console.error('[DB] Critical error during Pool creation:', poolCreationError.message);
-    if (process.env.NODE_ENV === 'production') {
-      throw poolCreationError;
-    }
-    pool = null;
-    ledgerPool = null;
-    externalPool = null;
-    securityPool = null;
+    await poolInitPromise;
+  } finally {
+    poolInitPromise = null;
   }
 }
 
@@ -261,9 +343,30 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       const defaultExternal = process.env.EXTERNAL_DATABASE_URL || defaultCore;
       const defaultSecurity = process.env.SECURITY_DATABASE_URL || defaultCore;
       
-      if (currentCoreUrl !== defaultCore || currentLedgerUrl !== defaultLedger || currentExternalUrl !== defaultExternal || currentSecurityUrl !== defaultSecurity) {
+      const defaultCoreMax = Number(process.env.DB_CORE_MAX_POOL_SIZE || process.env.DB_CORE_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS) || 20;
+      const defaultLedgerMax = Number(process.env.DB_LEDGER_MAX_POOL_SIZE || process.env.DB_LEDGER_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || defaultCoreMax) || 20;
+      const defaultExternalMax = Number(process.env.DB_EXTERNAL_MAX_POOL_SIZE || process.env.DB_EXTERNAL_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || defaultCoreMax) || 20;
+      const defaultSecurityMax = Number(process.env.DB_SECURITY_MAX_POOL_SIZE || process.env.DB_SECURITY_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || defaultCoreMax) || 20;
+
+      if (currentCoreUrl !== defaultCore || 
+          currentLedgerUrl !== defaultLedger || 
+          currentExternalUrl !== defaultExternal || 
+          currentSecurityUrl !== defaultSecurity ||
+          currentCoreMaxPoolSize !== defaultCoreMax ||
+          currentLedgerMaxPoolSize !== defaultLedgerMax ||
+          currentExternalMaxPoolSize !== defaultExternalMax ||
+          currentSecurityMaxPoolSize !== defaultSecurityMax) {
         console.log('[DB] No active registry overrides. Reverting Perplexta Pools to environment defaults.');
-        await initializePerplextaPools(defaultCore, defaultLedger, defaultExternal, defaultSecurity);
+        await initializePerplextaPools(
+          defaultCore, 
+          defaultLedger, 
+          defaultExternal, 
+          defaultSecurity,
+          defaultCoreMax,
+          defaultLedgerMax,
+          defaultExternalMax,
+          defaultSecurityMax
+        );
       } else {
         console.log('[DB] No overrides found. Already using environment defaults.');
       }
@@ -305,8 +408,20 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     
     if (!coreUrl) return;
 
-    if (coreUrl === currentCoreUrl && ledgerUrl === currentLedgerUrl && externalUrl === currentExternalUrl && securityUrl === currentSecurityUrl) {
-      console.log('[DB] Synchronized: In-memory pools already match active configuration.');
+    const coreMax = Number(coreReg?.pool_size) || Number(process.env.DB_CORE_MAX_POOL_SIZE || process.env.DB_CORE_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS) || 20;
+    const ledgerMax = Number(ledgerReg?.pool_size) || Number(process.env.DB_LEDGER_MAX_POOL_SIZE || process.env.DB_LEDGER_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+    const externalMax = Number(externalReg?.pool_size) || Number(process.env.DB_EXTERNAL_MAX_POOL_SIZE || process.env.DB_EXTERNAL_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+    const securityMax = Number(securityReg?.pool_size) || Number(process.env.DB_SECURITY_MAX_POOL_SIZE || process.env.DB_SECURITY_MAX_CONNECTIONS || process.env.DB_MAX_CONNECTIONS || coreMax) || 20;
+
+    if (coreUrl === currentCoreUrl && 
+        ledgerUrl === currentLedgerUrl && 
+        externalUrl === currentExternalUrl && 
+        securityUrl === currentSecurityUrl &&
+        coreMax === currentCoreMaxPoolSize &&
+        ledgerMax === currentLedgerMaxPoolSize &&
+        externalMax === currentExternalMaxPoolSize &&
+        securityMax === currentSecurityMaxPoolSize) {
+      console.log('[DB] Synchronized: In-memory pools and sizes already match active configuration.');
       return;
     }
 
@@ -342,7 +457,16 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     ]);
 
     console.log('[DB] Registry connections verified. Swapping pools...');
-    await initializePerplextaPools(coreUrl, ledgerUrl || coreUrl, externalUrl || coreUrl, securityUrl || coreUrl);
+    await initializePerplextaPools(
+      coreUrl, 
+      ledgerUrl || coreUrl, 
+      externalUrl || coreUrl, 
+      securityUrl || coreUrl,
+      coreMax,
+      ledgerMax,
+      externalMax,
+      securityMax
+    );
     console.log('[DB] Perplexta Pools synchronized with active registry configuration.');
   } catch (syncErr: any) {
     console.warn('[DB] Registry synchronization skipped:', syncErr.message);

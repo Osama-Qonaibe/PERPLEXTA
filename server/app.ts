@@ -1222,38 +1222,47 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
 
   const preferredLang = getPreferredLanguage(req);
 
-  const nameAr = settings.site_name_ar || 'بيربليكستا';
-  const nameEn = settings.site_name_en || 'Perplexta';
-  const seoAr = settings.seo_description_ar || settings.site_description_ar || 'منصة التحليلات المتقدمة والذكاء الاصطناعي';
-  const seoEn = settings.seo_description_en || settings.site_description_en || 'Professional elite AI and advanced analytics platform';
-  const keywordsAr = settings.keywords_ar || 'ذكاء اصطناعي, تحليل تقني, تداول, برمجة';
-  const keywordsEn = settings.keywords_en || 'AI, technical analysis, trading, coding';
+  // Dynamic configuration loaded directly from admin dashboard with cascading fallbacks
+  const nameAr = settings.site_name_ar || '';
+  const nameEn = settings.site_name_en || '';
+  const defaultSiteName = nameAr || nameEn || 'بيربليكستا';
 
-  let currentTitle = nameAr;
-  let currentDesc = seoAr;
-  let currentKeywords = keywordsAr;
-  let currentSiteName = nameAr;
+  const descAr = settings.seo_description_ar || settings.site_description_ar || '';
+  const descEn = settings.seo_description_en || settings.site_description_en || '';
+  const defaultDesc = descAr || descEn || '';
+
+  const keywordsAr = settings.keywords_ar || '';
+  const keywordsEn = settings.keywords_en || '';
+  const defaultKeywords = keywordsAr || keywordsEn || '';
+
+  // Select primary language values first, fallback dynamically to other configured languages to prevent override with hardcoded values
+  let currentTitle = defaultSiteName;
+  let currentDesc = defaultDesc;
+  let currentKeywords = defaultKeywords;
+  let currentSiteName = defaultSiteName;
 
   if (preferredLang === 'en') {
-    currentTitle = nameEn;
-    currentDesc = seoEn;
-    currentKeywords = keywordsEn;
-    currentSiteName = nameEn;
-  } else if (preferredLang === 'fr') {
-    currentTitle = settings.site_name_fr || 'Perplexta';
-    currentDesc = settings.seo_description_fr || settings.site_description_fr || 'Plateforme d\'IA d\'élite professionnelle et d\'analyse avancée';
-    currentKeywords = settings.keywords_fr || 'IA, analyse technique, trading, codage';
-    currentSiteName = settings.site_name_fr || 'Perplexta';
-  } else if (preferredLang === 'es') {
-    currentTitle = settings.site_name_es || 'Perplexta';
-    currentDesc = settings.seo_description_es || settings.site_description_es || 'Plataforma de IA de élite profesional y análisis avanzado';
-    currentKeywords = settings.keywords_es || 'IA, análisis técnico, trading, codificación';
-    currentSiteName = settings.site_name_es || 'Perplexta';
-  } else if (preferredLang === 'de') {
-    currentTitle = settings.site_name_de || 'Perplexta';
-    currentDesc = settings.seo_description_de || settings.site_description_de || 'Professionelle Elite-KI und fortschrittliche Analyseplattform';
-    currentKeywords = settings.keywords_de || 'KI, technische Analyse, Trading, Programmierung';
-    currentSiteName = settings.site_name_de || 'Perplexta';
+    currentTitle = nameEn || nameAr || defaultSiteName;
+    currentDesc = descEn || descAr || defaultDesc;
+    currentKeywords = keywordsEn || keywordsAr || defaultKeywords;
+    currentSiteName = nameEn || nameAr || defaultSiteName;
+  } else if (preferredLang === 'ar') {
+    currentTitle = nameAr || nameEn || defaultSiteName;
+    currentDesc = descAr || descEn || defaultDesc;
+    currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
+    currentSiteName = nameAr || nameEn || defaultSiteName;
+  } else {
+    // Dynamic matching for other languages configured by the admin (e.g. site_name_fr/seo_description_fr, site_name_es, site_name_de)
+    const langKey = preferredLang;
+    const siteKey = `site_name_${langKey}`;
+    const seoKey = `seo_description_${langKey}`;
+    const descKey = `site_description_${langKey}`;
+    const keyKey = `keywords_${langKey}`;
+
+    currentTitle = settings[siteKey] || nameAr || nameEn || defaultSiteName;
+    currentDesc = settings[seoKey] || settings[descKey] || descAr || descEn || defaultDesc;
+    currentKeywords = settings[keyKey] || keywordsAr || keywordsEn || defaultKeywords;
+    currentSiteName = settings[siteKey] || nameAr || nameEn || defaultSiteName;
   }
 
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
@@ -1273,6 +1282,8 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   }
 
   const currentUrl = `${baseUrl}${req.originalUrl || req.path}`;
+  const canonicalPath = req.path === '/' ? '/' : req.path.replace(/\/$/, '');
+  const canonicalUrl = `${baseUrl}${canonicalPath}`;
 
   // Escape all dynamic database fields inserted into HTML templates (Strict anti Stored-XSS)
   const escTitle = escapeHtmlAttribute(currentTitle);
@@ -1280,11 +1291,32 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const escKeywords = escapeHtmlAttribute(currentKeywords);
   const escImage = escapeHtmlAttribute(imageUrl);
   const escUrl = escapeHtmlAttribute(currentUrl);
+  const escCanonical = escapeHtmlAttribute(canonicalUrl);
   const escFavicon = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  // Build fully-compliant SEO, OpenGraph and Twitter meta tags block
-  let metaBlock = `
+  // Normalize path and match against explicit public routes whitelist
+  const requestPath = req.path || '/';
+  const normalizedPath = requestPath === '/' ? '/' : requestPath.replace(/\/$/, '');
+  
+  const PUBLIC_WHITELIST = [
+    '/',
+    '/subscription',
+    '/forum',
+    '/marketplace',
+    '/blog',
+    '/terms',
+    '/privacy',
+    '/about'
+  ];
+
+  const isPublicRoute = PUBLIC_WHITELIST.includes(normalizedPath);
+
+  let metaBlock = '';
+
+  if (isPublicRoute) {
+    // Build fully-compliant SEO, OpenGraph and Twitter meta tags block for explicitly public routes
+    metaBlock = `
     <meta name="description" content="${escDesc}" />
     <meta name="keywords" content="${escKeywords}" />
     <meta property="og:title" content="${escTitle}" />
@@ -1297,11 +1329,142 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     <meta name="twitter:title" content="${escTitle}" />
     <meta name="twitter:description" content="${escDesc}" />
     <meta name="twitter:image" content="${escImage}" />
-  `;
+    <meta name="robots" content="index, follow" />
+    `;
 
-  if (settings.google_site_verification) {
-    const escVerification = escapeHtmlAttribute(settings.google_site_verification);
-    metaBlock += `\n    <meta name="google-site-verification" content="${escVerification}" />`;
+    if (settings.google_site_verification) {
+      const escVerification = escapeHtmlAttribute(settings.google_site_verification);
+      metaBlock += `\n    <meta name="google-site-verification" content="${escVerification}" />`;
+    }
+
+    // Build localization mappings for public route breadcrumb list names
+    const breadcrumbNamesAr: { [key: string]: string } = {
+      '/': 'الرئيسية',
+      '/subscription': 'الاشتراكات',
+      '/forum': 'المنتدى',
+      '/marketplace': 'المتجر',
+      '/blog': 'المدونة',
+      '/terms': 'الشروط والأحكام',
+      '/privacy': 'سياسة الخصوصية',
+      '/about': 'عن المنصة'
+    };
+
+    const breadcrumbNamesEn: { [key: string]: string } = {
+      '/': 'Home',
+      '/subscription': 'Subscriptions',
+      '/forum': 'Forum',
+      '/marketplace': 'Marketplace',
+      '/blog': 'Blog',
+      '/terms': 'Terms & Conditions',
+      '/privacy': 'Privacy Policy',
+      '/about': 'About Us'
+    };
+
+    let breadcrumbNames = breadcrumbNamesAr;
+    if (preferredLang === 'en') {
+      breadcrumbNames = breadcrumbNamesEn;
+    } else if (preferredLang === 'fr') {
+      breadcrumbNames = {
+        '/': 'Accueil',
+        '/subscription': 'Abonnements',
+        '/forum': 'Forum',
+        '/marketplace': 'Boutique',
+        '/blog': 'Blog',
+        '/terms': 'Conditions d\'utilisation',
+        '/privacy': 'Politique de confidentialité',
+        '/about': 'À propos'
+      };
+    } else if (preferredLang === 'es') {
+      breadcrumbNames = {
+        '/': 'Inicio',
+        '/subscription': 'Suscripciones',
+        '/forum': 'Foro',
+        '/marketplace': 'Mercado',
+        '/blog': 'Blog',
+        '/terms': 'Términos y condiciones',
+        '/privacy': 'Política de privacidad',
+        '/about': 'Acerca de'
+      };
+    } else if (preferredLang === 'de') {
+      breadcrumbNames = {
+        '/': 'Startseite',
+        '/subscription': 'Abonnements',
+        '/forum': 'Forum',
+        '/marketplace': 'Marktplatz',
+        '/blog': 'Blog',
+        '/terms': 'Allgemeine Geschäftsbedingungen',
+        '/privacy': 'Datenschutzerklärung',
+        '/about': 'Über uns'
+      };
+    }
+
+    const breadcrumbItems = [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": breadcrumbNames['/'] || 'Home',
+        "item": baseUrl
+      }
+    ];
+
+    if (normalizedPath !== '/') {
+      const pageName = breadcrumbNames[normalizedPath] || normalizedPath.replace(/^\//, '').charAt(0).toUpperCase() + normalizedPath.replace(/^\//, '').slice(1);
+      breadcrumbItems.push({
+        "@type": "ListItem",
+        "position": 2,
+        "name": pageName,
+        "item": `${baseUrl}${normalizedPath}`
+      });
+    }
+
+    const breadcrumbList = {
+      "@type": "BreadcrumbList",
+      "@id": `${baseUrl}${normalizedPath}/#breadcrumb`,
+      "itemListElement": breadcrumbItems
+    };
+
+    // Build fully-compliant JSON-LD structured data for WebSite, Organization, and BreadcrumbList
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": `${baseUrl}/#organization`,
+          "name": currentSiteName,
+          "url": baseUrl,
+          "logo": faviconUrl,
+          "description": currentDesc,
+          "image": imageUrl
+        },
+        {
+          "@type": "WebSite",
+          "@id": `${baseUrl}/#website`,
+          "url": baseUrl,
+          "name": currentSiteName,
+          "description": currentDesc,
+          "publisher": {
+            "@id": `${baseUrl}/#organization`
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": `${baseUrl}/?q={search_term_string}`
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        breadcrumbList
+      ]
+    };
+
+    const structuredDataJson = JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script');
+    metaBlock += `\n    <script type="application/ld+json">\n${structuredDataJson}\n    </script>`;
+  } else {
+    // Strictly prevent indexing on non-public routes to guard user data privacy and prevent search engine leakage
+    metaBlock = `
+    <meta name="robots" content="noindex, nofollow" />
+    `;
   }
 
   let processedHtml = html;
@@ -1313,8 +1476,10 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     processedHtml = processedHtml.replace('</head>', `<title>${escTitle}</title>\n</head>`);
   }
 
-  // Strip standard viewport/description to prevent duplication
+  // Strip standard viewport/description/canonical link tags to prevent duplication
   processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
+  processedHtml = processedHtml.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
+  processedHtml = processedHtml.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
 
   // Update favicon reference if customized
   if (settings.favicon_url) {
@@ -1322,8 +1487,8 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" href="${escFavicon}" />`);
   }
 
-  // Inject metaBlock right before </head>
-  processedHtml = processedHtml.replace('</head>', `${metaBlock}\n  </head>`);
+  // Inject dynamic canonical link tag and metaBlock right before </head>
+  processedHtml = processedHtml.replace('</head>', `<link rel="canonical" href="${escCanonical}" />\n  ${metaBlock}\n  </head>`);
 
   return processedHtml;
 }

@@ -103,6 +103,25 @@ export async function handleChatMessage(socket: any, data: any) {
     finalPrompt = decrypt(data_p);
   }
 
+  // Early client request length audit
+  try {
+    const { validatePromptLength } = await import('../utils/security.js');
+    validatePromptLength(finalPrompt);
+  } catch (lengthErr: any) {
+    try {
+      const parsedErr = JSON.parse(lengthErr.message);
+      let userLang = 'en';
+      try {
+        const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
+        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'en';
+      } catch (_) {}
+      const errorMsg = userLang === 'ar' ? parsedErr.error_ar : parsedErr.error;
+      return socket.emit('chat_error', { message: errorMsg });
+    } catch (_) {
+      return socket.emit('chat_error', { message: 'Security Alert: Prompt exceeds maximum available limit.' });
+    }
+  }
+
   let customInstructions = '';
 
   let assistantMessageId: number | undefined;
