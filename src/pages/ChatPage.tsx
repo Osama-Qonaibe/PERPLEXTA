@@ -6241,7 +6241,7 @@ export const ChatPage: React.FC = () => {
               className={`w-full bg-transparent border-none outline-none px-1 py-1 text-[16px] sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
               dir="auto"
               rows={1}
-              style={{ minHeight: '32px', maxHeight: '200px' }}
+              style={{ minHeight: '32px', maxHeight: '200px', height: '32px' }}
             />
             {query.length > 500 && (
               <span className={`absolute bottom-[-14px] ${dir === 'rtl' ? 'left-1' : 'right-1'} text-[10px] font-mono select-none pointer-events-none transition-all duration-300 ${query.length > 15000 ? 'text-red-500 font-bold drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-gray-400'}`}>
