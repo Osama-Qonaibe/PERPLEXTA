@@ -140,8 +140,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const currentPath = location.pathname;
-    
-    // 1. Identify Sensitive Pages that MUST be strictly NOINDEX'ed (including /admin-community representing the Sections Control Panel)
+
     const dynamicBlockedList = siteSettings?.blocked_paths
       ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
       : [];
@@ -162,7 +161,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       return currentPath === cleanPath || currentPath.startsWith(cleanPath + '/');
     });
 
-    // Dynamic Robots Meta Tag handling
     let robotsMeta = document.querySelector('meta[name="robots"]');
     if (!robotsMeta) {
       robotsMeta = document.createElement('meta');
