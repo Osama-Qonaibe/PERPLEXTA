@@ -286,7 +286,6 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
     }
   };
 
-  // Reset zoom settings on close/open
   const resetZoom = () => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
@@ -791,7 +790,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     isVideoLoaded,
     setIsVideoLoaded,
     
-    // Preview states
     isPreviewPlaying,
     setIsPreviewPlaying,
     isPreviewMuted,
@@ -799,16 +797,13 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     previewTime,
     previewDur,
     
-    // Refs
     videoRef,
     previewVideoRef,
     
-    // Extracted layout metrics
     cleanDisplayUrl,
     vidAspect,
     providerMeta,
     
-    // Handlers
     handleDownload,
     handleShare,
     togglePlay,
@@ -817,7 +812,6 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
     handleLoadedMetadata,
     handleSeek,
     
-    // Preview Handlers
     togglePreviewPlay,
     togglePreviewMute,
     handlePreviewSeek,
@@ -1150,7 +1144,6 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const lang = match ? match[1] : 'text';
   const codeContent = String(children).trim();
 
-  // Sandbox Mode state & execution variables
   const [sandboxMode, setSandboxMode] = useState(false);
   const [editableCode, setEditableCode] = useState(codeContent);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2300,7 +2293,6 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
   return promise;
 };
 
-// Simple regex-based query highlighting decorator
 const HighlightText = ({ text, query }: { text: string; query?: string }) => {
   if (!query || !query.trim() || !text) {
     return <>{text}</>;
@@ -2739,7 +2731,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   const [volume, setVolume] = useState(0.85);
   const [isMuted, setIsMuted] = useState(false);
 
-  // 🎛️ Live Multi-Channel Web Audio API Mixing Controls State
   const [aiVolume, setAiVolume] = useState(0.85);
   const [uploadedVolume, setUploadedVolume] = useState(0.70);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -2748,13 +2739,11 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   const [isDragging, setIsDragging] = useState(false);
   const [isMixerExpanded, setIsMixerExpanded] = useState(true);
 
-  // HTML Media Elements Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const uploadedAudioRef = useRef<HTMLAudioElement | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Web Audio Context Graph Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
   const aiSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const uploadedSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -2764,7 +2753,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
   const animationFrameRef = useRef<number | null>(null);
 
-  // Simulate incremental compilation progress percentage
   useEffect(() => {
     if (status === 'rendering') {
       setProgressPercent(0);
@@ -2837,10 +2825,8 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     return { styleName: style, vocalName: vocal, durationVal: dVal };
   }, [fullContent, body]);
 
-  // Calculate the live active mix duration
   const mixDuration = uploadedFile ? Math.max(duration, uploadedDuration) : duration;
 
-  // Synthesize audio sequence locally on mount
   useEffect(() => {
     let active = true;
     let createdUrl: string | null = null;
@@ -2869,7 +2855,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     };
   }, [styleName, vocalName, durationVal]);
 
-  // Cleanup Web Audio Context and Animation Frames on unmount
   useEffect(() => {
     return () => {
       if (audioCtxRef.current) {
@@ -2881,7 +2866,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     };
   }, []);
 
-  // Safe object URL revocation when uploaded url changes or on unmount
   useEffect(() => {
     return () => {
       if (uploadedUrl) {
@@ -3114,7 +3098,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     }
   };
 
-  // Convert raw seconds to localized mm:ss string
   const formatTime = (timeInSecs: number) => {
     const min = Math.floor(timeInSecs / 60);
     const sec = Math.floor(timeInSecs % 60);
@@ -3580,10 +3563,8 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 };
 
 const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' | 'rtl'; theme: string }) => {
-  // Parsing the structured output based on the PERPLEXTA CREATIVE PRODUCTION PROTOCOL
   const sections: { title: string; body: string; id: string }[] = [];
   
-  // High-precision split for the three perplexta phases
   const splitRegex = /(?:^|\n)(?:#\s*|[\d]\.\s*)?\[(?:I|II|III)\.\s*[^\]]+\]/g;
   const rawSections = content.split(splitRegex).filter(s => s.trim().length > 0);
   const titles = (content.match(splitRegex) || []) as string[];
