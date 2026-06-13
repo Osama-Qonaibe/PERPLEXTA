@@ -4799,10 +4799,6 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-
-  }, [messages, isGenerating]);
-
-  useEffect(() => {
     isGeneratingRef.current = isGenerating;
     if (isGenerating) {
       startTypewriter();
@@ -5423,7 +5419,6 @@ export const ChatPage: React.FC = () => {
       }
 
       generationStartTimeRef.current = Date.now();
-      setMessages(updatedMessages);
       setIsGenerating(true);
       isGeneratingRef.current = true;
       streamingBuffer.current = '';
@@ -5431,7 +5426,7 @@ export const ChatPage: React.FC = () => {
 
       trackGAEvent('chat_submitted', 'chat_engagement', toolToUse);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      setMessages(updatedMessages);
 
       setQuery('');
       if (typingTimeoutRef.current) {
