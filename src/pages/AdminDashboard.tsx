@@ -82,6 +82,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
+import { validateToolRoutePricing } from "../utils/orchestratorValidator";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -3794,6 +3795,8 @@ const OrchestratorView = ({
             fallback3Model: "",
             isActive: true,
             costPerUsage: t.cost_per_usage || 10,
+            costPer1kInputTokens: t.cost_per_1k_input_tokens !== undefined ? t.cost_per_1k_input_tokens : 5,
+            costPer1kOutputTokens: t.cost_per_1k_output_tokens !== undefined ? t.cost_per_1k_output_tokens : 15,
             isSaving: false,
           }));
 
@@ -3838,6 +3841,8 @@ const OrchestratorView = ({
                   fallback3Model: savedRoute.fallback_3_model || "",
                   isActive: savedRoute.is_active ?? true,
                   costPerUsage: savedRoute.cost_per_usage || tool.costPerUsage,
+                  costPer1kInputTokens: savedRoute.cost_per_1k_input_tokens !== undefined ? savedRoute.cost_per_1k_input_tokens : tool.costPer1kInputTokens,
+                  costPer1kOutputTokens: savedRoute.cost_per_1k_output_tokens !== undefined ? savedRoute.cost_per_1k_output_tokens : tool.costPer1kOutputTokens,
                 };
               }
               return { ...tool, icon: iconMap[tool.id] || LayoutGrid };
@@ -3862,6 +3867,12 @@ const OrchestratorView = ({
   const handleSave = async (id: string, overrideTool?: any) => {
     const toolToSave = overrideTool || tools.find((t) => t.id === id);
     if (!toolToSave) return;
+
+    const validation = validateToolRoutePricing(toolToSave, language === "ar" ? "ar" : "en");
+    if (!validation.isValid) {
+      showToast(validation.errors.join(" | "), "error");
+      return;
+    }
 
     if (!overrideTool) {
       setTools((ts) =>
@@ -3890,6 +3901,8 @@ const OrchestratorView = ({
               fallback_3_model: toolToSave.fallback3Model,
               is_active: toolToSave.isActive,
               cost_per_usage: toolToSave.costPerUsage,
+              cost_per_1k_input_tokens: toolToSave.costPer1kInputTokens !== undefined ? toolToSave.costPer1kInputTokens : 5,
+              cost_per_1k_output_tokens: toolToSave.costPer1kOutputTokens !== undefined ? toolToSave.costPer1kOutputTokens : 15,
             },
           ],
         }),
@@ -4103,7 +4116,7 @@ const OrchestratorView = ({
                 <div className="space-y-6 relative z-10">
                   <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
-                      {t("costPoints")}
+                      {language === "ar" ? "رسم تشغيل الخدمة الثابت (Flat Execution Base)" : "Flat Execution Base Cost"}
                     </label>
                     <div className="relative">
                       <input
@@ -4126,6 +4139,66 @@ const OrchestratorView = ({
                         className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
                       >
                         {t("points")}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
+                        {language === "ar" ? "سعر مدخلات /1K توكن" : "Input /1k Token Cost"}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={tool.costPer1kInputTokens || 0}
+                          onChange={(e) =>
+                            handleChange(tool.id, "costPer1kInputTokens", e.target.value)
+                          }
+                          className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-sky-500 focus:ring-1 focus:ring-sky-500/30`}
+                        />
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-sky-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                        >
+                          <Coins
+                            size={16}
+                            className="drop-shadow-[0_0_5px_rgba(14,165,233,0.3)]"
+                          />
+                        </div>
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
+                        >
+                          {t("points")}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
+                        {language === "ar" ? "سعر مخرجات /1K توكن" : "Output /1k Token Cost"}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={tool.costPer1kOutputTokens || 0}
+                          onChange={(e) =>
+                            handleChange(tool.id, "costPer1kOutputTokens", e.target.value)
+                          }
+                          className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-indigo-500 focus:ring-1 focus:ring-indigo-500/30`}
+                        />
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-indigo-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                        >
+                          <Coins
+                            size={16}
+                            className="drop-shadow-[0_0_5px_rgba(99,102,241,0.3)]"
+                          />
+                        </div>
+                        <div
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
+                        >
+                          {t("points")}
+                        </div>
                       </div>
                     </div>
                   </div>

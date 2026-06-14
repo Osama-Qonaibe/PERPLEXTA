@@ -1,5 +1,5 @@
 import { decrementUserUsage } from '../quota.js';
-import { refundUsageToWallet } from '../wallet.js';
+import { getEconomySettings } from '../wallet.js';
 
 export const AI_CALL_TIMEOUT_MS = 90000;
 export const TTS_TIMEOUT_MS = 30000;
@@ -11,11 +11,11 @@ export const VIDEO_TIMEOUT_MS = 660000; // 11 minutes
  * Validates available provider daily budgets, quota limits, and system activation status.
  * Consolidates capacity controls across image and video tasks with absolute transactional safety.
  */
-export function validateProviderCapacity(
+export async function validateProviderCapacity(
   vaultConfig: any,
   providerId: string,
   costPerUsage: number
-): { warning?: string; valid: boolean } {
+): Promise<{ warning?: string; valid: boolean }> {
   if (!providerId) return { valid: true };
 
   if (!vaultConfig) {
@@ -36,7 +36,10 @@ export function validateProviderCapacity(
 
   const budget = parseFloat(daily_budget || '0');
   const used = parseFloat(used_today || '0');
-  const estimatedCost = (costPerUsage || 0) / 1000;
+  
+  const settings = await getEconomySettings();
+  const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+  const estimatedCost = (costPerUsage || 0) / pointsPerDollar;
 
   if (budget > 0 && (used + estimatedCost) > budget) {
     return { 
@@ -143,11 +146,8 @@ export async function safeDecrementOnFailure(
   try {
     if (quotaCheck && quotaCheck.allowed) {
       await decrementUserUsage(userId, toolIdStr);
-    } else if (walletCharged && typeof walletCharged === 'object') {
-      // Corrected: refund the charge instead of incrementing usage (incrementing usage is reversed logic)
-      await refundUsageToWallet(userId, toolIdStr, walletCharged);
     } else {
-      console.info(`[safeDecrementOnFailure] No rollback or backup refund needed for user ${userId} / tool "${toolIdStr}": walletCharged=false.`);
+      console.info(`[safeDecrementOnFailure] Centralized billing middleware is active for user ${userId} / tool "${toolIdStr}". Balanced allocation will handle refund/reconciliation.`);
     }
   } catch (e) {
     console.error('[Orchestrator Shared Task Utils] safeDecrementOnFailure failed:', e);

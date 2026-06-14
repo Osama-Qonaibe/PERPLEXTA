@@ -514,94 +514,9 @@ export async function depositToWallet(userId: string | number, amount: number, m
   }
 }
 
-export async function deductUsageFromWallet(userId: string | number, toolId: string) {
-  if (!ledgerPool) throw new Error('Ledger database not available');
 
-  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
-  if (isNaN(userIdNum)) throw new Error('Invalid User ID');
+// Removed dead and unused deductUsageFromWallet to keep the economy clean and purely database-orchestrated
 
-  const client = await ledgerPool.connect();
-  try {
-    await client.query('BEGIN');
-    const wallet = await getUserWallet(userIdNum, client);
-    const settings = await getEconomySettings();
-    const rate = parseFloat(settings.conversion_rate || '0.001');
 
-    const pointsCost = 10;
-    const usdCost = pointsCost * rate;
-
-    if (wallet.points >= pointsCost) {
-      await client.query(
-        'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [pointsCost, wallet.id]
-      );
-      await client.query(
-        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userIdNum, wallet.id, 0, -pointsCost, 'tool_usage_points', `Exceeded ${toolId} quota. Charged ${pointsCost} tool points.`, 'success']
-      );
-      await enforceTransactionLimit(userIdNum, client);
-      await client.query('COMMIT');
-      return { charged: 'points', amount: pointsCost };
-    } else if (Number(wallet.balance) >= usdCost) {
-      await client.query(
-        'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [usdCost, wallet.id]
-      );
-      await client.query(
-        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userIdNum, wallet.id, -usdCost, 0, 'tool_usage_balance', `Exceeded ${toolId} quota. Charged ₪${usdCost.toFixed(2)} from wallet cache balance.`, 'success']
-      );
-      await enforceTransactionLimit(userIdNum, client);
-      await client.query('COMMIT');
-      return { charged: 'balance', amount: usdCost };
-    } else {
-      throw new Error('Insufficient balance and points');
-    }
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-export async function refundUsageToWallet(userId: string | number, toolId: string, chargeResult: { charged: 'points' | 'balance'; amount: number }) {
-  if (!ledgerPool) return;
-  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
-  if (isNaN(userIdNum)) return;
-
-  const client = await ledgerPool.connect();
-  try {
-    await client.query('BEGIN');
-    const wallet = await getUserWallet(userIdNum, client);
-
-    if (chargeResult && chargeResult.charged === 'points') {
-      await client.query(
-        'UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [chargeResult.amount, wallet.id]
-      );
-      await client.query(
-        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, 0, $3, $4, $5, $6)',
-        [userIdNum, wallet.id, chargeResult.amount, 'tool_usage_refund', `Refunded ${chargeResult.amount} tool points for failing ${toolId}.`, 'success']
-      );
-    } else if (chargeResult && chargeResult.charged === 'balance') {
-      await client.query(
-        'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [chargeResult.amount, wallet.id]
-      );
-      await client.query(
-        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, $3, 0, $4, $5, $6)',
-        [userIdNum, wallet.id, chargeResult.amount, 'tool_usage_refund', `Refunded ₪${chargeResult.amount.toFixed(2)} for failing ${toolId}.`, 'success']
-      );
-    }
-    await enforceTransactionLimit(userIdNum, client);
-    await client.query('COMMIT');
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('[Wallet] refundUsageToWallet failed:', err);
-  } finally {
-    client.release();
-  }
-}
 
 

@@ -13,6 +13,7 @@ import { consolidateAllUserMemories } from '../services/memory.js';
 import { getSystemSettings } from '../services/system.js';
 import { isSafeHost } from '../utils/helpers.js';
 import { authLimiter, adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
+import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
   getDatabaseRegistry, 
   saveDatabaseConfig, 
@@ -534,6 +535,14 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const rawRoutes = req.body.routes || [req.body];
     
+    // Server-side validation for numerical, positive, and non-empty prices
+    for (const route of rawRoutes) {
+      const v = validateServerToolRoute(route);
+      if (!v.isValid) {
+        return res.status(400).json({ error: `Validation failed: ${v.errors.join(' | ')}` });
+      }
+    }
+    
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -543,7 +552,8 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
           fallback_1_provider, fallback_1_model, 
           fallback_2_provider, fallback_2_model,
           fallback_3_provider, fallback_3_model,
-          is_active, cost_per_usage 
+          is_active, cost_per_usage,
+          cost_per_1k_input_tokens, cost_per_1k_output_tokens
         } = route;
         
         if (!tool_id) continue;
@@ -554,9 +564,10 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
             fallback_1_provider, fallback_1_model, 
             fallback_2_provider, fallback_2_model,
             fallback_3_provider, fallback_3_model,
-            is_active, cost_per_usage
+            is_active, cost_per_usage,
+            cost_per_1k_input_tokens, cost_per_1k_output_tokens
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           ON CONFLICT (tool_id) DO UPDATE SET
             primary_provider = EXCLUDED.primary_provider,
             primary_model = EXCLUDED.primary_model,
@@ -568,6 +579,8 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
             fallback_3_model = EXCLUDED.fallback_3_model,
             is_active = EXCLUDED.is_active,
             cost_per_usage = EXCLUDED.cost_per_usage,
+            cost_per_1k_input_tokens = EXCLUDED.cost_per_1k_input_tokens,
+            cost_per_1k_output_tokens = EXCLUDED.cost_per_1k_output_tokens,
             updated_at = CURRENT_TIMESTAMP
         `, [
           tool_id, 
@@ -576,7 +589,9 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
           fallback_2_provider || '', fallback_2_model || '',
           fallback_3_provider || '', fallback_3_model || '',
           is_active !== undefined ? is_active : true, 
-          cost_per_usage || 10
+          cost_per_usage || 10,
+          cost_per_1k_input_tokens !== undefined ? cost_per_1k_input_tokens : 5,
+          cost_per_1k_output_tokens !== undefined ? cost_per_1k_output_tokens : 15
         ]);
       }
       await client.query('COMMIT');

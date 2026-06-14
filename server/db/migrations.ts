@@ -1519,6 +1519,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'blocked_paths', 'TEXT', `''`);
     });
 
+    await runVersioned('v52_token_based_billing', 'Adding cost_per_1k_input_tokens and cost_per_1k_output_tokens to tool_orchestrator', async (tx) => {
+      await ensureColumn(tx, 'tool_orchestrator', 'cost_per_1k_input_tokens', 'INTEGER', 5);
+      await ensureColumn(tx, 'tool_orchestrator', 'cost_per_1k_output_tokens', 'INTEGER', 15);
+      await tx.query('UPDATE tool_orchestrator SET cost_per_1k_input_tokens = 5 WHERE cost_per_1k_input_tokens IS NULL');
+      await tx.query('UPDATE tool_orchestrator SET cost_per_1k_output_tokens = 15 WHERE cost_per_1k_output_tokens IS NULL');
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;

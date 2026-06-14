@@ -8,7 +8,7 @@ import { logSystemActivity } from '../services/notifications.js';
 import { authLimiter, forgotPasswordLimiter, refreshLimiter } from '../middleware/rateLimit.js';
 import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
-import { deductFromWallet } from '../services/wallet.js';
+import { deductFromWallet, getEconomySettings } from '../services/wallet.js';
 import { hashToken } from '../utils/tokenHash.js';
 
 const router = express.Router();
@@ -1078,7 +1078,9 @@ router.post('/register-agent', async (req, res) => {
       try {
         const toolRes = await pool.query("SELECT cost_per_usage FROM tool_orchestrator WHERE tool_id = 'x402_api'");
         if (toolRes.rows.length > 0 && toolRes.rows[0].cost_per_usage) {
-          const fetchedRate = parseFloat(toolRes.rows[0].cost_per_usage) / 100;
+          const settings = await getEconomySettings();
+          const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+          const fetchedRate = parseFloat(toolRes.rows[0].cost_per_usage) / pointsPerDollar;
           if (!isNaN(fetchedRate) && fetchedRate > 0) {
             keyCreationCost = fetchedRate;
           }

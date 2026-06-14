@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { chatLimiter, verifyConsumptionLimits } from '../middleware/rateLimit.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
+import { verifyBillingFunds } from '../middleware/billing.js';
 import { executeTaskLogic } from '../services/orchestrator.js';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
@@ -46,7 +47,7 @@ export interface ToolExecutionResponse {
  * Orchestration executor endpoint for executing specialized AI and digital intelligence tools.
  * Serves as the single, fully-typed source of truth for programmatic tool invocation.
  */
-router.post("/execute-task", authenticateToken, chatLimiter, verifyConsumptionLimits, async (req: express.Request & { user?: any }, res: express.Response) => {
+router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds, async (req: express.Request & { user?: any }, res: express.Response) => {
   const userId = req.user?.id;
   try {
     const subRes = (await pool.query(`

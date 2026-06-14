@@ -3,6 +3,7 @@ import { getProviderKey } from '../ai.js';
 import { getSystemSettings } from '../system.js';
 import { logSystemActivity } from '../notifications.js';
 import { saveGeneratedImageToDisk } from '../files.js';
+import { io } from '../../config/socket.js';
 import { 
   withTimeout, 
   safeParseResponse, 
@@ -12,6 +13,7 @@ import {
   getNestedField
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
+import { getEconomySettings } from '../wallet.js';
 
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
@@ -167,6 +169,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   let { finalPrompt } = ctx;
   const toolIdStr = 'image';
 
+  if (io) {
+    io.to(`user_${userId}`).emit('image_progress', {
+      progress: 10,
+      status: 'analyzing',
+      status_ar: 'تحليل المطلب الفني وتجهيز الأنماط العصبية الدقيقة...',
+      status_en: 'Evaluating artistic prompt & aligning premium style maps...'
+    });
+  }
+
   const imageSettings = reqBody.image_settings || {};
   const selectedRatio = String(imageSettings.aspectRatio || '1:1');
 
@@ -255,6 +266,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   let successfulProvider = '';
   let successfulModel = '';
 
+  if (io) {
+    io.to(`user_${userId}`).emit('image_progress', {
+      progress: 35,
+      status: 'validating',
+      status_ar: 'التحقق من جاهزية المحرك الفني وجدولة الطلب العصبوني...',
+      status_en: 'Verifying image core availability & scheduling neural task...'
+    });
+  }
+
   for (const target of targets) {
     const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
     const modelToUse = target.model || '';
@@ -263,7 +283,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
     const vaultConfig = vaultMap.get(providerId);
 
-    const validation = validateProviderCapacity(
+    const validation = await validateProviderCapacity(
       vaultConfig,
       providerId,
       route.cost_per_usage || 0
@@ -278,6 +298,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     if (!apiKey) {
       console.warn(`[Image Orchestrator Check] Missing associated API key for ${providerId}. Skipping.`);
       continue;
+    }
+
+    if (io) {
+      io.to(`user_${userId}`).emit('image_progress', {
+        progress: 55,
+        status: 'synthesizing',
+        status_ar: `طلب ترخيص الإنشاء من المزود [${target.provider}] وتوليد مصفوفة البيكسلات...`,
+        status_en: `Requesting synthesis authorization from Provider [${target.provider}] & launching pixel generation...`
+      });
     }
 
     try {
@@ -378,6 +407,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
             for (let i = 0; i < 40; i++) {
               if (signal.aborted) {
                 throw new Error('Replicate polling aborted due to timeout.');
+              }
+              const progressPct = Math.min(95, 55 + Math.round((i / 40) * 40));
+              if (io) {
+                io.to(`user_${userId}`).emit('image_progress', {
+                  progress: progressPct,
+                  status: 'processing',
+                  status_ar: `توليد ترصيع البيكسلات من Replicate... ${progressPct}%`,
+                  status_en: `Synthesizing pixel rendering from Replicate... ${progressPct}%`
+                });
               }
               await new Promise(r => setTimeout(r, 2000));
               const poll = await fetch(pollUrl, { 
@@ -544,6 +582,15 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     }));
   }
 
+  if (io) {
+    io.to(`user_${userId}`).emit('image_progress', {
+      progress: 100,
+      status: 'completed',
+      status_ar: 'اكتمل توليد الصورة فائقة الدقة بنجاح!',
+      status_en: 'Premium image synthesized and refined successfully!'
+    });
+  }
+
   let savedUrl = imageUrl;
   try {
     savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
@@ -552,7 +599,9 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   }
 
   try {
-    const estimatedCost = (route.cost_per_usage || 0) / 1000;
+    const settings = await getEconomySettings();
+    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+    const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
     if (estimatedCost > 0 && successfulProvider) {
       await pool.query(
         'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',

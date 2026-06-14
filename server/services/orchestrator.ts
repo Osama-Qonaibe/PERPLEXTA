@@ -11,7 +11,8 @@ import { getAppName } from './system.js';
 import { extractFollowUps, normalizeArabicNumerals } from '../utils/helpers.js';
 import { SEARCH_KEYWORDS } from '../config/searchKeywords.js';
 import { CORE_PROTOCOL } from '../config/protocol.js';
-import { deductUsageFromWallet, refundUsageToWallet } from './wallet.js';
+import { executeWithBillingMiddleware } from './billing.js';
+import { getEconomySettings } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
 import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
 import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
@@ -196,51 +197,13 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const quotaCheck = await checkAndIncrementQuota(userId, toolIdStr);
 
-  let walletCharged: boolean | { charged: 'points' | 'balance'; amount: number } = false;
-
-  if (!quotaCheck.allowed) {
-    try {
-      const chargeRes = await deductUsageFromWallet(userId, toolIdStr);
-      walletCharged = chargeRes as any;
-      if (io) {
-        io.to(`user_${userId}`).emit('user_profile_updated');
-        io.to(`user_${userId}`).emit('wallet_charge_notice', {
-          toolId: toolIdStr,
-          charged: chargeRes.charged,
-          amount: chargeRes.amount
-        });
-      }
-      await incrementUserUsage(userId, toolIdStr).catch(async (err) => {
-        console.error('[Orchestrator Quota Sync] Failed to increment usage, rolling back charge:', err);
-        await refundUsageToWallet(userId, toolIdStr, chargeRes as { charged: 'points' | 'balance'; amount: number });
-        walletCharged = false;
-        throw err;
-      });
-    } catch (chargeErr: any) {
-      const periodStrEn = quotaCheck.period === 'daily' ? 'Daily' : 'Monthly';
-      const periodStrAr = quotaCheck.period === 'daily' ? 'يومي' : 'شهري';
-
-      const msgEn = `Premium Membership Required: You have reached your ${periodStrEn} limit for this tool. Please upgrade your plan or recharge your digital wallet (Pay-per-Request: 10 Tool Points or equivalents) to execute excess actions.`;
-      const msgAr = `تتطلب هذه العملية رصيداً أو عضوية ممتازة: لقد تجاوزت الحد ال${periodStrAr} المسموح به. يرجى شحن محفظتك الرقمية أو ترقية باقتك للاستمرار بالاستفادة بالدفع لكل معاملة (10 نقاط أو ما يعادلها).`;
-
-      await logSecurityAlert(userId, 'QUOTA_LIMIT_HIT', 'low', `User attempted to access tool "${toolIdStr}" but hit ${quotaCheck.period} quota (${quotaCheck.currentUsage}/${quotaCheck.limit}) and wallet fallback failed: ${chargeErr.message}`, { toolIdStr, quota: quotaCheck });
-
-      throw new Error(JSON.stringify({
-        error: msgEn,
-        error_ar: msgAr,
-        type: 'QUOTA_EXCEEDED',
-        limit: quotaCheck.limit,
-        current: quotaCheck.currentUsage,
-        period: quotaCheck.period,
-        cta: {
-          upgrade: true,
-          referral: true
-        }
-      }));
-    }
-  }
-
-  let history: { role: string; content: string }[] = [];
+  return await executeWithBillingMiddleware(
+    userId,
+    toolIdStr,
+    finalPrompt,
+    quotaCheck,
+    async (updateCostProgress, onSuccess, walletCharged) => {
+      let history: { role: string; content: string }[] = [];
   if (chatIdNum > 0) {
     try {
       const countRes = await pool.query(
@@ -330,9 +293,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'image') {
     const handler = await OrchestratorRegistry.getHandler('image');
-    return await handler({
+    const res = await handler({
       reqBody, userId, route, quotaCheck, walletCharged, finalPrompt
     });
+    await onSuccess('');
+    return res;
   }
 
   if (toolIdStr === 'tts') {
@@ -344,15 +309,18 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         'tts'
       );
 
-      const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      if (estimatedCost > 0) {
-        await pool.query(
-          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-          [estimatedCost, route.primary_provider.toLowerCase()]
-        );
-      }
+       const settings = await getEconomySettings();
+       const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+       const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
+       if (estimatedCost > 0) {
+         await pool.query(
+           'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+           [estimatedCost, route.primary_provider.toLowerCase()]
+         );
+       }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `TTS generated via ElevenLabs voice=${voiceId}`, { toolIdStr });
+      await onSuccess('');
 
       return { result: audioBuffer.toString('base64'), result_type: 'audio_base64' };
     } catch (ttsErr: any) {
@@ -407,7 +375,9 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const data = await safeParseResponse(res, 'STT API error');
       const transcription = data.text || '';
 
-      const estimatedCost = (route.cost_per_usage || 0) / 1000;
+      const settings = await getEconomySettings();
+      const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+      const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
       if (estimatedCost > 0) {
         await pool.query(
           'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
@@ -416,6 +386,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       }
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `STT transcription via ${route.primary_provider}/${route.primary_model}`, { toolIdStr });
+      await onSuccess('');
 
       return { result: transcription };
     } catch (sttErr: any) {
@@ -431,9 +402,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'video') {
     const handler = await OrchestratorRegistry.getHandler('video');
-    return await handler({
+    const res = await handler({
       reqBody, userId, route, quotaCheck, walletCharged, finalPrompt
     });
+    await onSuccess('');
+    return res;
   }
 
   let userMemoriesStr = '';
@@ -594,175 +567,193 @@ ${refinedSystemPromptSegment}`.trim();
 
   let generatedText = '';
   let successfulModel = null;
+  let outerAccumulatedOutput = '';
 
   for (const target of modelsToTry) {
     try {
-      const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
-      const cachedRow = vaultMap.get(providerId);
+        const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
+        const cachedRow = vaultMap.get(providerId);
 
-      let isProviderActive = true;
-      let dailyBudget = 0;
-      let usedToday = 0;
-      let urlKey: string | null = null;
+        let isProviderActive = true;
+        let dailyBudget = 0;
+        let usedToday = 0;
+        let urlKey: string | null = null;
 
-      if (cachedRow) {
-        isProviderActive = cachedRow.is_active;
-        dailyBudget = parseFloat(cachedRow.daily_budget || '0');
-        usedToday = parseFloat(cachedRow.used_today || '0');
-        urlKey = cachedRow.url_key;
-      }
-
-      if (!isProviderActive) continue;
-
-      const apiKey = await getProviderKey(providerId);
-      if (!apiKey) continue;
-
-      if (!cachedRow) {
-        const [fallbackUrlKey, budgetRes] = await Promise.all([
-          getProviderUrlKey(providerId),
-          pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
-        ]);
-        urlKey = fallbackUrlKey;
-        if (budgetRes.rows.length > 0) {
-          isProviderActive = budgetRes.rows[0].is_active;
-          dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
-          usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
+        if (cachedRow) {
+          isProviderActive = cachedRow.is_active;
+          dailyBudget = parseFloat(cachedRow.daily_budget || '0');
+          usedToday = parseFloat(cachedRow.used_today || '0');
+          urlKey = cachedRow.url_key;
         }
+
         if (!isProviderActive) continue;
-      }
 
-      if (dailyBudget > 0 && usedToday >= dailyBudget) {
-        await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
-        continue;
-      }
+        const apiKey = await getProviderKey(providerId);
+        if (!apiKey) continue;
 
-      generatedText = await withTimeout(
-        callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, onChunk, history, { fileData: file_data }, urlKey ?? undefined),
-        AI_CALL_TIMEOUT_MS,
-        `${target.provider}/${target.model}`
-      );
-      successfulModel = target;
-
-      const estimatedCost = (route.cost_per_usage || 0) / 1000;
-      if (estimatedCost > 0) {
-        await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
-      }
-
-      if (chatIdNum > 0) {
-        scheduleChatSummaryUpdate(chatIdNum, userId, target.provider, target.model, apiKey);
-      }
-
-      try {
-        const extractedFacts: { fact: string; category: string }[] = [];
-        const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
-        let match;
-
-        while ((match = memRegex.exec(generatedText)) !== null) {
-          const category = match[1] || 'general';
-          const fact = match[2]?.trim();
-          if (fact) extractedFacts.push({ fact, category });
+        if (!cachedRow) {
+          const [fallbackUrlKey, budgetRes] = await Promise.all([
+            getProviderUrlKey(providerId),
+            pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
+          ]);
+          urlKey = fallbackUrlKey;
+          if (budgetRes.rows.length > 0) {
+            isProviderActive = budgetRes.rows[0].is_active;
+            dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
+            usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
+          }
+          if (!isProviderActive) continue;
         }
 
-        if (extractedFacts.length > 0) {
-          const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-          const currentCount = parseInt(countRes.rows[0].count);
+        if (dailyBudget > 0 && usedToday >= dailyBudget) {
+          await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
+          continue;
+        }
 
-          if (currentCount >= memoryLimit) {
-            scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
+        const wrappedOnChunk = (chunk: string) => {
+          updateCostProgress(chunk);
+          if (onChunk) onChunk(chunk);
+        };
+
+        generatedText = await withTimeout(
+          callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, wrappedOnChunk, history, { fileData: file_data }, urlKey ?? undefined),
+          AI_CALL_TIMEOUT_MS,
+          `${target.provider}/${target.model}`
+        );
+        successfulModel = target;
+
+        const settings = await getEconomySettings();
+        const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+        const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
+        if (estimatedCost > 0) {
+          await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
+        }
+
+        if (chatIdNum > 0) {
+          scheduleChatSummaryUpdate(chatIdNum, userId, target.provider, target.model, apiKey);
+        }
+
+        try {
+          const extractedFacts: { fact: string; category: string }[] = [];
+          const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
+          let match;
+
+          while ((match = memRegex.exec(generatedText)) !== null) {
+            const category = match[1] || 'general';
+            const fact = match[2]?.trim();
+            if (fact) extractedFacts.push({ fact, category });
           }
 
-          const insertPromises = extractedFacts.map(item =>
-            pool.query(
-              "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
-              [userId, chatIdNum || null, item.fact, item.category]
-            ).then((insertRes: any) => {
-              if (io) {
-                io.to(`user_${userId}`).emit('memory_extracted', {
-                  fact: item.fact,
-                  category: item.category,
-                  id: insertRes.rows[0].id
-                });
+          if (extractedFacts.length > 0) {
+            const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+            const currentCount = parseInt(countRes.rows[0].count);
+
+            if (currentCount >= memoryLimit) {
+              scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
+            }
+
+            const insertPromises = extractedFacts.map(item =>
+              pool.query(
+                "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
+                [userId, chatIdNum || null, item.fact, item.category]
+              ).then((insertRes: any) => {
+                if (io) {
+                  io.to(`user_${userId}`).emit('memory_extracted', {
+                    fact: item.fact,
+                    category: item.category,
+                    id: insertRes.rows[0].id
+                  });
+                }
+              })
+            );
+
+            await Promise.all(insertPromises);
+
+            if (io) {
+              const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
+              const newCount = parseInt(checkNewCount.rows[0].count);
+              if (newCount >= memoryLimit) {
+                io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
               }
-            })
-          );
-
-          await Promise.all(insertPromises);
-
-          if (io) {
-            const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-            const newCount = parseInt(checkNewCount.rows[0].count);
-            if (newCount >= memoryLimit) {
-              io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
             }
           }
+
+          generatedText = generatedText.replace(memRegex, '').trim();
+        } catch (memProcErr) {
+          console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
         }
 
-        generatedText = generatedText.replace(memRegex, '').trim();
-      } catch (memProcErr) {
-        console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
-      }
+        break; // exit trials on model execution success
+      } catch (innerErr: any) {
+        if (innerErr.message === 'OUT_OF_POINTS_BUDGET_HALT') {
+          throw innerErr; // rethrow directly to trigger external abort
+        }
+        console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, innerErr);
 
-      break;
-    } catch (e: any) {
-      console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, e);
+        const errMessage = innerErr.message || '';
+        const isTemporaryRateLimit = errMessage.includes('429') || errMessage.toLowerCase().includes('rate limit') || errMessage.toLowerCase().includes('too many requests');
 
-      const errMessage = e.message || '';
-      const isTemporaryRateLimit = errMessage.includes('429') || errMessage.toLowerCase().includes('rate limit') || errMessage.toLowerCase().includes('too many requests');
+        if (isTemporaryRateLimit) {
+          console.warn(`[Orchestrator] Temporary 429 rate limit hit on provider "${target.provider}" / model "${target.model}". Proceeding to fallback if available.`);
+        }
 
-      if (isTemporaryRateLimit) {
-        console.warn(`[Orchestrator] Temporary 429 rate limit hit on provider "${target.provider}" / model "${target.model}". Proceeding to fallback if available.`);
-      }
-
-      const isQuotaOrAuthExhausted =
-        !isTemporaryRateLimit && (
-          errMessage.includes('401') ||
-          errMessage.includes('403') ||
-          errMessage.includes('1113') ||
-          errMessage.includes('Insufficient balance') ||
-          errMessage.includes('resource package') ||
-          errMessage.includes('quota') ||
-          errMessage.includes('recharge') ||
-          errMessage.includes('balance') ||
-          errMessage.includes('subscription') ||
-          errMessage.includes('upgrade')
-        );
-
-      if (isQuotaOrAuthExhausted && !errMessage.includes('AI_TIMEOUT')) {
-        try {
-          const provLower = target.provider.toLowerCase();
-          await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
-          invalidateVaultCache(provLower);
-          console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
-          await logSecurityAlert(
-            userId,
-            'PROVIDER_AUTO_DEACTIVATED',
-            'high',
-            `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`,
-            { provider: target.provider, error: errMessage }
+        const isQuotaOrAuthExhausted =
+          !isTemporaryRateLimit && (
+            errMessage.includes('401') ||
+            errMessage.includes('403') ||
+            errMessage.includes('1113') ||
+            errMessage.includes('Insufficient balance') ||
+            errMessage.includes('resource package') ||
+            errMessage.includes('quota') ||
+            errMessage.includes('recharge') ||
+            errMessage.includes('balance') ||
+            errMessage.includes('subscription') ||
+            errMessage.includes('upgrade')
           );
-        } catch (dbErr) {
-          console.error('[Orchestrator] Error deactivating failed provider in DB:', dbErr);
+
+        if (isQuotaOrAuthExhausted && !errMessage.includes('AI_TIMEOUT')) {
+          try {
+            const provLower = target.provider.toLowerCase();
+            await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
+            invalidateVaultCache(provLower);
+            console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
+            await logSecurityAlert(
+              userId,
+              'PROVIDER_AUTO_DEACTIVATED',
+              'high',
+              `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`,
+              { provider: target.provider, error: errMessage }
+            );
+          } catch (dbErr) {
+            console.error('[Orchestrator] Error deactivating failed provider in DB:', dbErr);
+          }
         }
       }
     }
-  }
 
-  if (!generatedText) {
-    await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
-    await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
+    if (!successfulModel && modelsToTry.length > 0) {
+      throw new Error('All models requested under active orchestrator strategies failed to return a validated solution.');
+    }
 
-    throw new Error(JSON.stringify({
-      error: "The service for this tool is temporarily suspended due to scheduled technical maintenance or capacity limits. Please try again in a few moments.",
-      error_ar: "تم إيقاف الخدمة المرتبطة بهذه الأداة مؤقتاً لأغراض الصيانة والتحديث الفني الجاري لتحسين الأداء. يُرجى المحاولة مرة أخرى بعد قليل.",
-      type: "SYSTEM_INACTIVE"
-    }));
-  }
+    if (!generatedText) {
+      await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
 
-  if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
-    await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
-  }
+      throw new Error(JSON.stringify({
+        error: "The service for this tool is temporarily suspended due to scheduled technical maintenance or capacity limits. Please try again in a few moments.",
+        error_ar: "تم إيقاف الخدمة المرتبطة بهذه الأداة مؤقتاً لأغراض الصيانة والتحديث الفني الجاري لتحسين الأداء. يُرجى المحاولة مرة أخرى بعد قليل.",
+        type: "SYSTEM_INACTIVE"
+      }));
+    }
 
-  return { result: generatedText, citations: searchCitations };
+    if (toolIdStr !== 'chat' && toolIdStr !== 'chat_fast') {
+      await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `Executed specialized tool "${toolIdStr}" using ${successfulModel?.provider}/${successfulModel?.model}`, { toolIdStr, model: successfulModel });
+    }
+
+    await onSuccess(generatedText);
+    await incrementUserUsage(userId, toolIdStr).catch(() => {});
+
+    return { result: generatedText, citations: searchCitations };
+  });
 };
 
 async function runMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {

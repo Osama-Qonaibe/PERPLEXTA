@@ -1,7 +1,8 @@
 import express from 'express';
 import { pool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { chatLimiter, verifyConsumptionLimits } from '../middleware/rateLimit.js';
+import { chatLimiter } from '../middleware/rateLimit.js';
+import { verifyBillingFunds } from '../middleware/billing.js';
 import { 
   generateChatTitle, 
   createChat, 
@@ -235,7 +236,7 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
   }
 });
 
-router.post("/sync-message", authenticateToken, chatLimiter, verifyConsumptionLimits, async (req: any, res) => {
+router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds, async (req: any, res) => {
   let userMessageId = 0;
   let assistantMessageId = 0;
   try {

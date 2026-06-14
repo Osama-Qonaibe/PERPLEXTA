@@ -754,14 +754,20 @@ export async function callAIProvider(
                 chunk = data.choices?.[0]?.delta?.content || '';
               }
               if (chunk) { resultText += chunk; onChunk(chunk); }
-            } catch (e) {
+            } catch (e: any) {
+              if (e && e.message && e.message.includes('OUT_OF_POINTS_BUDGET_HALT')) {
+                throw e;
+              }
             }
           } else if (normProvider.includes('ollama') && trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
              try {
                const data = JSON.parse(trimmedLine);
                let chunk = data.message?.content || '';
                if (chunk) { resultText += chunk; onChunk(chunk); }
-             } catch (e) {
+             } catch (e: any) {
+               if (e && e.message && e.message.includes('OUT_OF_POINTS_BUDGET_HALT')) {
+                 throw e;
+               }
              }
           }
         }

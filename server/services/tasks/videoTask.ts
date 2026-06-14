@@ -13,6 +13,7 @@ import {
   getNestedField
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
+import { getEconomySettings } from '../wallet.js';
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 const RUNWAY_API_VERSION = '2024-11-06';
@@ -288,7 +289,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const vaultConfig = vaultMap.get(providerId);
 
           // Perform capacity security checks
-          const validation = validateProviderCapacity(
+          const validation = await validateProviderCapacity(
             vaultConfig,
             providerId,
             route.cost_per_usage || 0
@@ -687,7 +688,9 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
       });
     }
 
-    const estimatedCost = (route.cost_per_usage || 0) / 1000;
+    const settings = await getEconomySettings();
+    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+    const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
     if (estimatedCost > 0 && successfulProvider) {
       await pool.query(
         'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',

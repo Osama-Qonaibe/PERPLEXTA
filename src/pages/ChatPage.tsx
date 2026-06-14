@@ -13,7 +13,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -61,7 +61,9 @@ const ImageGenerationPlaceholder = ({
   t,
   isFailed = false,
   errorMessage = '',
-  onRetry
+  onRetry,
+  progress,
+  statusLabel
 }: { 
   dir: 'ltr' | 'rtl'; 
   aspectRatio?: string; 
@@ -72,10 +74,13 @@ const ImageGenerationPlaceholder = ({
   isFailed?: boolean;
   errorMessage?: string;
   onRetry?: () => void;
+  progress?: number;
+  statusLabel?: string;
 }) => {
   const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
 
   const getAIStatusLabel = () => {
+    if (statusLabel) return statusLabel;
     if (liveElapsed < 4) {
       return dir === 'rtl' 
         ? 'تحليل المطلب الفني وتجهيز الأنماط العصبية الدقيقة...' 
@@ -180,7 +185,7 @@ const ImageGenerationPlaceholder = ({
                   className="absolute w-12 h-12 rounded-full border border-t-emerald-500 border-r-transparent border-b-emerald-500/20 border-l-transparent"
                 />
                 <div className="absolute text-[10px] font-mono font-black text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
-                  {liveElapsed.toFixed(1)}s
+                  {progress !== undefined ? `${progress}%` : `${liveElapsed.toFixed(1)}s`}
                 </div>
               </div>
 
@@ -1791,6 +1796,7 @@ interface Message {
   is_pinned?: boolean;
   is_quota_error?: boolean;
   is_system_inactive?: boolean;
+  is_insufficient_funds?: boolean;
   is_image_failed?: boolean;
   is_video_failed?: boolean;
   quota_data?: any;
@@ -3908,6 +3914,108 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
   );
 };
 
+export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
+  const [copied, setCopied] = useState(false);
+  const { triggerUpgradePrompt } = useAppContext();
+  const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Perplexta Intelligence',
+          text: dir === 'rtl' ? 'انضم إلي في بيربليكستا واستخدم الذكاء الاصطناعي الأقوى.' : 'Join me on Perplexta and use the most powerful AI.',
+          url: referralLink,
+        });
+      } catch (err) {
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="mt-4 p-5 rounded-lg border border-red-500/20 bg-red-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group"
+    >
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <Sparkles size={48} className="text-red-500" />
+      </div>
+
+      <div className="flex items-start gap-4 relative z-10">
+        <div className="w-12 h-12 rounded-md bg-red-500/10 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+          <AlertCircle size={24} className="animate-pulse" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500">
+              {dir === 'rtl' ? 'رصيد غير كافٍ' : 'Insufficient Wallet Balance'}
+            </span>
+          </div>
+          <p className="text-[14px] font-bold text-[var(--text-primary)] leading-relaxed mb-1">
+            {dir === 'rtl' ? (data?.error_ar || data?.error) : (data?.error || data?.error_ar)}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1 font-sans">
+            {dir === 'rtl' ? 'رصيد محفظتك غير كافٍ لتشغيل الخدمة. يرجى إعادة شحن محفظتك أو دعوة الأصدقاء للمزيد من النقاط مجاناً.' : 'Your wallet balance is insufficient to execute the service. Please top up your wallet or invite friends for free points.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative z-10 bg-[var(--bg-overlay)] border border-red-500/10 rounded-md p-3 flex items-center gap-3">
+        <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)] p-1">
+          {referralLink}
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleCopy}
+            className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-theme"
+            title="Copy Link"
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
+          <button 
+            onClick={handleShare}
+            className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-red-500/20"
+            title="Share"
+          >
+            <Share2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mt-1 relative z-10">
+        <button 
+          onClick={() => {
+            if (triggerUpgradePrompt) {
+              triggerUpgradePrompt('wallet');
+            } else {
+              navigate('/settings?tab=wallet');
+            }
+          }}
+          className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(239,68,68,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+        >
+          {dir === 'rtl' ? 'شحن رصيد المحفظة الأن' : 'Recharge Wallet Now'}
+        </button>
+        <button 
+          onClick={() => navigate('/rewards')}
+          className="flex-1 bg-[var(--bg-surface)] border border-red-500/20 hover:bg-red-500/5 text-red-500 py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme hover:translate-y-[-2px] active:translate-y-0"
+        >
+          {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const toolbarVariants = {
@@ -4016,6 +4124,7 @@ export const ChatPage: React.FC = () => {
   const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [liveElapsed, setLiveElapsed] = useState<number>(0);
+  const [imageProgress, setImageProgress] = useState<{ progress?: number; statusLabel?: string } | null>(null);
   const [ledgerNotice, setLedgerNotice] = useState<{ textAr: string; textEn: string } | null>(null);
   const [typedNotice, setTypedNotice] = useState<string>('');
 
@@ -4910,6 +5019,9 @@ export const ChatPage: React.FC = () => {
   }, [chatId]);
 
   useEffect(() => {
+    if (isGenerating || isGeneratingRef.current) {
+      return;
+    }
     if (routeChatId && routeChatId !== 'new') {
 
       const belongsToCurrentSession =
@@ -5130,12 +5242,8 @@ export const ChatPage: React.FC = () => {
     };
 
     const onWalletChargeNotice = (data: any) => {
-      const { toolId, charged, amount } = data;
-      const fnAr = getToolFriendlyNameLocal(toolId, 'ar');
-      const fnEn = getToolFriendlyNameLocal(toolId, 'en');
-
-      const textAr = `✓ تم خصم ${charged === 'points' ? `${amount} نقاط` : `$${amount.toFixed(2)}`} لتشغيل "${fnAr}"، يمكنك كسب المزيد من النقاط بدعوة الأصدقاء! 🎁`;
-      const textEn = `✓ Charged ${charged === 'points' ? `${amount} points` : `$${amount.toFixed(2)}`} for "${fnEn}". Earn free points now by inviting your friends! 🎁`;
+      const textAr = `✓ سيتم خصم من رصيد محفظتك لتشغيل الخدمة. لمزيد من النقاط، قم بدعوة الأصدقاء`;
+      const textEn = `✓ Your wallet balance will be debited to run the service. For more points, invite friends.`;
 
       setLedgerNotice({ textAr, textEn });
     };
@@ -5188,6 +5296,7 @@ export const ChatPage: React.FC = () => {
       let errorMessage = '';
       let isQuota = false;
       let isInactive = false;
+      let isFunds = false;
       let quotaData = null;
 
       try {
@@ -5199,6 +5308,12 @@ export const ChatPage: React.FC = () => {
           quotaData = parsed;
           if (triggerUpgradePrompt) {
             triggerUpgradePrompt(selectedTool || 'chat', parsed.limit, parsed.current, parsed.period);
+          }
+        } else if (parsed.type === 'INSUFFICIENT_FUNDS') {
+          isFunds = true;
+          quotaData = parsed;
+          if (triggerUpgradePrompt) {
+            triggerUpgradePrompt('wallet');
           }
         } else if (parsed.type === 'TOKEN_EXPIRED') {
           errorMessage = dir === 'rtl' ? 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة أو تسجيل الدخول مرة أخرى.' : 'Session expired. Please refresh the page or login again.';
@@ -5222,6 +5337,7 @@ export const ChatPage: React.FC = () => {
             content: errorMessage,
             is_quota_error: isQuota,
             is_system_inactive: isInactive,
+            is_insufficient_funds: isFunds,
             quota_data: quotaData,
             is_image_failed: lastMessage.tool === 'image' || selectedTool === 'image',
             is_video_failed: lastMessage.tool === 'video' || selectedTool === 'video',
@@ -5234,6 +5350,7 @@ export const ChatPage: React.FC = () => {
           content: errorMessage,
           is_quota_error: isQuota,
           is_system_inactive: isInactive,
+          is_insufficient_funds: isFunds,
           quota_data: quotaData,
           is_image_failed: selectedTool === 'image',
           is_video_failed: selectedTool === 'video',
@@ -5280,6 +5397,13 @@ export const ChatPage: React.FC = () => {
       }
     };
 
+    const onImageProgress = (data: { progress?: number; status_ar?: string; status_en?: string }) => {
+      setImageProgress({
+        progress: data.progress,
+        statusLabel: dir === 'rtl' ? data.status_ar : data.status_en
+      });
+    };
+
     socket.on('chat_chunk', onChatChunk);
     socket.on('chat_response', onChatResponse);
     socket.on('search_steps', onSearchSteps);
@@ -5292,6 +5416,7 @@ export const ChatPage: React.FC = () => {
     socket.on('wallet_charge_notice', onWalletChargeNotice);
     socket.on('quota_warning', onQuotaWarning);
     socket.on('chat_error', onChatError);
+    socket.on('image_progress', onImageProgress);
 
     return () => {
       if (checkBufferIntervalRef.current) {
@@ -5310,6 +5435,7 @@ export const ChatPage: React.FC = () => {
       socket.off('wallet_charge_notice', onWalletChargeNotice);
       socket.off('quota_warning', onQuotaWarning);
       socket.off('chat_error', onChatError);
+      socket.off('image_progress', onImageProgress);
     };
   }, [socket, dir]);
 
@@ -5413,6 +5539,7 @@ export const ChatPage: React.FC = () => {
       }
 
       generationStartTimeRef.current = Date.now();
+      setImageProgress(null);
       setIsGenerating(true);
       isGeneratingRef.current = true;
       streamingBuffer.current = '';
@@ -7069,6 +7196,8 @@ export const ChatPage: React.FC = () => {
                               style={imageSettings.style}
                               quality={imageSettings.quality}
                               t={t}
+                              progress={imageProgress?.progress}
+                              statusLabel={imageProgress?.statusLabel}
                             />
                           ) : (
                             <ResponseSkeleton dir={dir} />
@@ -7092,6 +7221,8 @@ export const ChatPage: React.FC = () => {
                           />
                         ) : msg.is_quota_error ? (
                            <QuotaExceededCard tool={msg.tool} data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
+                        ) : msg.is_insufficient_funds ? (
+                           <InsufficientFundsCard data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
                         ) : msg.is_system_inactive ? (
                            <SystemInactiveCard data={msg.quota_data} dir={dir} />
                         ) : (

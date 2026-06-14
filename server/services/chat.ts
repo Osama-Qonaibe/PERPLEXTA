@@ -217,28 +217,35 @@ export async function handleChatMessage(socket: any, data: any) {
       pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[ChatService] Placeholder deletion failed:', e));
     }
     
-    let userMessage = 'An unexpected system error occurred. Please try again later.';
+    let finalJsonMessage = '';
     try {
+      // Check if it is already a structured JSON error
       const parsed = JSON.parse(error.message);
-      
-      let userLang = 'en';
+      if (parsed && (parsed.error || parsed.error_ar)) {
+        finalJsonMessage = error.message;
+      }
+    } catch (e) {}
+
+    if (!finalJsonMessage) {
+      let isSystemInactive = false;
       try {
-        const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
-        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'en';
+        const parsedErr = JSON.parse(error.message);
+        if (parsedErr && parsedErr.type === 'SYSTEM_INACTIVE') {
+          isSystemInactive = true;
+        }
       } catch (_) {}
+
+      const rawMsg = error.message || 'An unexpected system error occurred. Please try again later.';
+      const rawMsgAr = error.message || 'حدث خطأ غير متوقع في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
       
-      if (userLang === 'ar' && parsed.error_ar) {
-        userMessage = parsed.error_ar;
-      } else if (parsed.error) {
-        userMessage = parsed.error;
-      }
-    } catch (e) {
-      if (error.message && (error.message.includes('provider') || error.message.includes('quota') || error.message.includes('Unauthorized'))) {
-        userMessage = error.message;
-      }
+      finalJsonMessage = JSON.stringify({
+        error: rawMsg,
+        error_ar: rawMsgAr,
+        type: isSystemInactive ? 'SYSTEM_INACTIVE' : 'GENERAL_ERROR'
+      });
     }
-    
-    socket.emit('chat_error', { message: userMessage });
+
+    socket.emit('chat_error', { message: finalJsonMessage });
   }
 }
 
