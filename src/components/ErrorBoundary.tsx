@@ -12,6 +12,30 @@ interface State {
   error: Error | null;
 }
 
+/**
+ * Reports the caught error to the server so it appears in pm2 logs
+ * even when the browser console is silenced in production.
+ * Fire-and-forget — never throws, never blocks rendering.
+ */
+function reportToServer(name: string, error: Error, errorInfo: ErrorInfo): void {
+  try {
+    fetch('/api/system/client-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        boundary: name,
+        message:  error.message,
+        stack:    error.stack?.slice(0, 2000),
+        componentStack: errorInfo.componentStack?.slice(0, 2000),
+        url:      window.location.href,
+        ts:       new Date().toISOString(),
+      }),
+    }).catch(() => { /* server unreachable — ignore */ });
+  } catch {
+    // never let the reporter itself crash
+  }
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -23,7 +47,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error(`[ErrorBoundary] [${this.props.name || 'General'}] Caught error:`, error, errorInfo);
+    const boundaryName = this.props.name || 'General';
+    // console.error is kept alive in production (see main.tsx) so this line
+    // always reaches the browser devtools AND the server-side reporter below.
+    console.error(`[ErrorBoundary] [${boundaryName}] Caught error:`, error, errorInfo);
+    reportToServer(boundaryName, error, errorInfo);
   }
 
   private handleReset = () => {
