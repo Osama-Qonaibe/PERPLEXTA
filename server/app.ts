@@ -9,6 +9,7 @@ import { csrfProtection } from './middleware/csrf.js';
 import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
 import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
+import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
@@ -64,7 +65,6 @@ const x402Middleware = paymentMiddlewareFromConfig(
   false // syncFacilitatorOnStart = false to avoid startup crashes
 );
 
-
 // Explicitly trust proxy headers (including X-Forwarded-For and X-Forwarded-Proto) to handle load balancers / reverse proxies correctly
 const trustProxyVal = process.env.TRUST_PROXIES || '1';
 if (trustProxyVal === 'true' || trustProxyVal === '1') {
@@ -88,388 +88,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-function getPreferredLanguage_REMOVED_USE_IMPORT() {}
-
-function generateAuthMd(baseUrl: string, lang: string): string {
-  if (lang === 'ar') {
-    return [
-      '# auth.md',
-      '',
-      `هذا هو مستند تسجيل الوكيل لـ ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'يمكن للوكلاء التسجيل نيابة عن المستخدمين باستخدام هذه الخدمة.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (الاكتشاف)',
-      '',
-      'جلب البيانات التعريفية لخادم المصادقة لاكتشاف نقاط نهاية التسجيل:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (التسجيل)',
-      '',
-      'إرسال طلب POST لتسجيل وكيل جديد:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (المطالبة والمطابقة)',
-      '',
-      'ربط وثيقة الاعتماد بهوية مستخدم تم التحقق منها:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (إبطال الصلاحية)',
-      '',
-      'إبطال وثيقة اعتماد:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (مزيد من المعلومات)',
-      '',
-      '- Protocol (البروتوكول): https://workos.com/auth-md',
-      '- GitHub (جيت هاب): https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'fr') {
-    return [
-      '# auth.md',
-      '',
-      `Ceci est le document d'enregistrement de l'agent pour ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Les agents peuvent s\'enregistrer au nom des utilisateurs via ce service.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Découvrir)',
-      '',
-      'Récupérer les métadonnées du serveur d\'autorisation pour découvrir les points de terminaison d\'enregistrement :',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (S\'enregistrer)',
-      '',
-      'Envoyer une requête POST pour enregistrer un agent :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Revendiquer)',
-      '',
-      'Associer l\'identifiant à une identité utilisateur vérifiée :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Révoquer)',
-      '',
-      'Révoquer un identifiant :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Plus d\'infos)',
-      '',
-      '- Protocole: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'es') {
-    return [
-      '# auth.md',
-      '',
-      `Este es el documento de registro de agentes para ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Los agentes pueden registrarse en nombre de los usuarios utilizando este servicio.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Descubrir)',
-      '',
-      'Obtener los metadatos del servidor de autorización para descubrir los endpoints de registro:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (Registrar)',
-      '',
-      'Enviar una solicitud POST para registrar un agente:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Reclamar)',
-      '',
-      'Asociar la credencial con una identidad de usuario verificada:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Revocar)',
-      '',
-      'Revocar una credencial:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Más información)',
-      '',
-      '- Protocolo: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'de') {
-    return [
-      '# auth.md',
-      '',
-      `Dies ist das Agenten-Registrierungsdokument für ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Agenten können sich im Namen von Benutzern über diesen Dienst registrieren.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Entdecken)',
-      '',
-      'Abrufen der Metadaten des Autorisierungsservers, um Registrierungs-Endpunkte zu ermitteln:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (Registrieren)',
-      '',
-      'Senden Sie eine POST-Anfrage, um einen Agenten zu registrieren:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Beanspruchen)',
-      '',
-      'Verknüpfen Sie das Berechtigungsnachweis-Token mit einer verifizierten Benutzeridentität:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Widerrufen)',
-      '',
-      'Widerrufen eines Berechtigungsnachweises:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Weitere Informationen)',
-      '',
-      '- Protokoll: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  }
-
-  // Fallback to English
-  return [
-    '# auth.md',
-    '',
-    `This is the agent registration document for ${baseUrl}.`,
-    '',
-    '## agent_auth',
-    '',
-    'Agents can register on behalf of users using this service.',
-    '',
-    `- register_uri: ${baseUrl}/api/auth/agent-register`,
-    '- identity_types_supported: anonymous, identity_assertion',
-    '- credential_types_supported: api_key, access_token',
-    `- claim_uri: ${baseUrl}/api/auth/claim`,
-    `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-    '',
-    '## Discover',
-    '',
-    'Fetch the authorization server metadata to discover registration endpoints:',
-    '',
-    '```http',
-    `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-    `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-    '```',
-    '',
-    '## Register',
-    '',
-    'Send a POST request to register an agent:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/agent-register`,
-    'Content-Type: application/json',
-    '',
-    '{',
-    '  "client_name": "My Agent",',
-    '  "identity_type": "anonymous",',
-    '  "credential_type": "api_key",',
-    '  "scopes": ["read", "write"]',
-    '}',
-    '```',
-    '',
-    '## Claim',
-    '',
-    'Bind the credential to a verified user identity:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/claim`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "identity_type": "identity_assertion",',
-    '  "assertion": "<id_jag_token>"',
-    '}',
-    '```',
-    '',
-    '## Revoke',
-    '',
-    'Revoke a credential:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/revoke`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "client_id": "agent_..."',
-    '}',
-    '```',
-    '',
-    '## More Info',
-    '',
-    '- Protocol: https://workos.com/auth-md',
-    '- GitHub: https://github.com/workos/auth.md',
-  ].join('\n');
-}
 
 // Markdown for Agents (Accept: text/markdown content negotiation)
 app.use((req, res, next) => {
@@ -607,10 +225,9 @@ app.get('/auth.md', (req, res) => {
   res.setHeader('X-Auth-Md-Version', '1.0');
 
   const preferredLang = getPreferredLanguage(req);
-  const markdownContent = generateAuthMd(baseUrl, preferredLang);
-
-  res.send(markdownContent);
+  res.send(generateAuthMd(baseUrl, preferredLang));
 });
+
 app.get('/.well-known/oauth-protected-resource', (req, res) => {
   const baseUrl = getBaseUrl(req);
 
@@ -764,16 +381,9 @@ app.get('/.well-known/mcp/server-card.json', (req, res) => {
       url: `${baseUrl}/api/mcp/sse`
     },
     capabilities: {
-      resources: {
-        subscribe: true,
-        listChanged: true
-      },
-      prompts: {
-        listChanged: true
-      },
-      tools: {
-        listChanged: true
-      }
+      resources: { subscribe: true, listChanged: true },
+      prompts: { listChanged: true },
+      tools: { listChanged: true }
     },
     supportedProtocolVersions: ['2024-11-05'],
     instructions: 'The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query core and ledger databases, run semantic document searches, and invoke secure tools.'
@@ -786,9 +396,7 @@ app.get('/api/auth/jwks', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
   const { jwk } = getOrCreateSigningKeys();
-  res.json({
-    keys: [jwk]
-  });
+  res.json({ keys: [jwk] });
 });
 
 app.get('/.well-known/api-catalog', (req, res) => {
@@ -803,24 +411,9 @@ app.get('/.well-known/api-catalog', (req, res) => {
     linkset: [
       {
         anchor: `${baseUrl}/api`,
-        'service-desc': [
-          {
-            href: `${baseUrl}/api/docs/openapi.json`,
-            type: 'application/openapi+json'
-          }
-        ],
-        'service-doc': [
-          {
-            href: `${baseUrl}/#docs`,
-            type: 'text/html'
-          }
-        ],
-        status: [
-          {
-            href: `${baseUrl}/api/health`,
-            type: 'application/json'
-          }
-        ]
+        'service-desc': [{ href: `${baseUrl}/api/docs/openapi.json`, type: 'application/openapi+json' }],
+        'service-doc': [{ href: `${baseUrl}/#docs`, type: 'text/html' }],
+        status: [{ href: `${baseUrl}/api/health`, type: 'application/json' }]
       }
     ]
   });
@@ -835,15 +428,10 @@ app.get('/.well-known/acp.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
   res.json({
-    protocol: {
-      name: "acp",
-      version: "1.0"
-    },
+    protocol: { name: "acp", version: "1.0" },
     api_base_url: `${baseUrl}/api`,
     transports: ["http"],
-    capabilities: {
-      services: ["checkout"]
-    }
+    capabilities: { services: ["checkout"] }
   });
 });
 
@@ -929,10 +517,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
 
-        if (authorized) {
-          return res.sendFile(resolvedPath);
-        }
-
+        if (authorized) return res.sendFile(resolvedPath);
         return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
       } catch (dbErr) {
         console.error('[Upload Secure Handler] Database error:', dbErr);
@@ -950,7 +535,6 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
   const userQuery = String(req.body?.prompt || req.body?.query || req.body?.task || req.query?.query || "Evaluate latest structural liquidity arbitrage and system latency optimization paths.");
 
   try {
-    // 1. Fetch dynamic Orchestrator route for 'x402_api'
     const toolRes = (await pool.query("SELECT * FROM tool_orchestrator WHERE tool_id = 'x402_api' AND is_active = true")) as { rows: ToolOrchestrator[] };
     
     if (toolRes.rows.length > 0) {
@@ -963,7 +547,6 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
       ].filter(m => m.provider && m.model) as { provider: string; model: string }[];
 
       if (modelsToTry.length > 0) {
-        // Safe dynamic imports to avoid circular dependancy at module loading level
         const { callAIProvider, getProviderKey, getProviderUrlKey } = await import('./services/ai.js');
         const systemPrompt = `You are the Perplexta Intelligence Engine powering the payment-protected elite analytics programmatic gateway.
 The developer client is authenticated under a verified x402 payment agreement.
@@ -995,17 +578,9 @@ Verification: Do not include conversational text or markdown codeblocks before o
             
             if (apiKey) {
               const urlKey = await getProviderUrlKey(providerId);
-              
               const rawTxt = await callAIProvider(
-                target.provider,
-                target.model,
-                apiKey,
-                userQuery,
-                systemPrompt,
-                undefined,
-                [],
-                {},
-                urlKey ?? undefined
+                target.provider, target.model, apiKey, userQuery,
+                systemPrompt, undefined, [], {}, urlKey ?? undefined
               );
 
               if (rawTxt) {
@@ -1013,12 +588,9 @@ Verification: Do not include conversational text or markdown codeblocks before o
                 if (cleanTxt.startsWith('```')) {
                   cleanTxt = cleanTxt.replace(/^```[a-zA-Z]*\n/g, '').replace(/\n```$/g, '').trim();
                 }
-                
                 try {
-                  const sanitizedJson = JSON.parse(cleanTxt);
-                  return res.json(sanitizedJson);
+                  return res.json(JSON.parse(cleanTxt));
                 } catch {
-                  // If response is not valid JSON, envelop it beautifully in formal schema
                   return res.json({
                     success: true,
                     data: {
@@ -1030,8 +602,8 @@ Verification: Do not include conversational text or markdown codeblocks before o
                         modelPerformance: "99.4%",
                         latencyScore: "8ms",
                         paths: [
-                          { "route": "USDC-USDT-USDC", "profit": "0.24%" },
-                          { "route": "WETH-DAI-WETH", "profit": "0.41%" }
+                          { route: "USDC-USDT-USDC", profit: "0.24%" },
+                          { route: "WETH-DAI-WETH", profit: "0.41%" }
                         ]
                       }
                     }
@@ -1049,7 +621,6 @@ Verification: Do not include conversational text or markdown codeblocks before o
     console.error('[x402 Dynamic Gateway] Error processing dynamic route, failing over to high-fidelity default:', err);
   }
 
-  // Graceful visual/functional system default fallback when no key/model is configured yet
   return res.json({
     success: true,
     data: {
@@ -1062,8 +633,8 @@ Verification: Do not include conversational text or markdown codeblocks before o
         modelPerformance: "99.4%",
         latencyScore: "8ms",
         paths: [
-          { "route": "USDC-USDT-USDC", "profit": "0.24%" },
-          { "route": "WETH-DAI-WETH", "profit": "0.41%" }
+          { route: "USDC-USDT-USDC", profit: "0.24%" },
+          { route: "WETH-DAI-WETH", profit: "0.41%" }
         ]
       }
     }
@@ -1072,7 +643,6 @@ Verification: Do not include conversational text or markdown codeblocks before o
 
 app.use('/api', globalLimiter);
 app.use('/api', csrfProtection);
-
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -1095,15 +665,7 @@ app.get('/api/docs/openapi.json', (req, res) => {
               description: 'API is online and healthy',
               content: {
                 'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      status: {
-                        type: 'string',
-                        example: 'ok'
-                      }
-                    }
-                  }
+                  schema: { type: 'object', properties: { status: { type: 'string', example: 'ok' } } }
                 }
               }
             }
@@ -1175,7 +737,6 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const preferredLang = getPreferredLanguage(req);
   const baseUrl = getBaseUrl(req);
 
-  // Dynamic configuration loaded directly from admin dashboard with cascading fallbacks
   const nameAr = settings.site_name_ar || '';
   const nameEn = settings.site_name_en || '';
   const defaultSiteName = nameAr || nameEn || 'بيربليكستا';
@@ -1188,7 +749,6 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const keywordsEn = settings.keywords_en || '';
   const defaultKeywords = keywordsAr || keywordsEn || '';
 
-  // Select primary language values first, fallback dynamically to other configured languages to prevent override with hardcoded values
   let currentTitle = defaultSiteName;
   let currentDesc = defaultDesc;
   let currentKeywords = defaultKeywords;
@@ -1205,66 +765,44 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
     currentSiteName = nameAr || nameEn || defaultSiteName;
   } else {
-    // Dynamic matching for other languages configured by the admin (e.g. site_name_fr/seo_description_fr, site_name_es, site_name_de)
     const langKey = preferredLang;
-    const siteKey = `site_name_${langKey}`;
-    const seoKey = `seo_description_${langKey}`;
-    const descKey = `site_description_${langKey}`;
-    const keyKey = `keywords_${langKey}`;
-
-    currentTitle = settings[siteKey] || nameAr || nameEn || defaultSiteName;
-    currentDesc = settings[seoKey] || settings[descKey] || descAr || descEn || defaultDesc;
-    currentKeywords = settings[keyKey] || keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = settings[siteKey] || nameAr || nameEn || defaultSiteName;
+    currentTitle = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
+    currentDesc = settings[`seo_description_${langKey}`] || settings[`site_description_${langKey}`] || descAr || descEn || defaultDesc;
+    currentKeywords = settings[`keywords_${langKey}`] || keywordsAr || keywordsEn || defaultKeywords;
+    currentSiteName = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
   }
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
-    const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-    imageUrl = `${baseUrl}${cleanPath}`;
+    imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
   }
 
   let faviconUrl = settings.favicon_url || '/app-assets/icon.png';
   if (faviconUrl && !faviconUrl.startsWith('http') && !faviconUrl.startsWith('data:')) {
-    const cleanFavicon = faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`;
-    faviconUrl = `${baseUrl}${cleanFavicon}`;
+    faviconUrl = `${baseUrl}${faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`}`;
   }
 
   const currentUrl = `${baseUrl}${req.originalUrl || req.path}`;
   const canonicalPath = req.path === '/' ? '/' : req.path.replace(/\/$/, '');
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
 
-  // Escape all dynamic database fields inserted into HTML templates (Strict anti Stored-XSS)
-  const escTitle = escapeHtmlAttribute(currentTitle);
-  const escDesc = escapeHtmlAttribute(currentDesc);
+  const escTitle    = escapeHtmlAttribute(currentTitle);
+  const escDesc     = escapeHtmlAttribute(currentDesc);
   const escKeywords = escapeHtmlAttribute(currentKeywords);
-  const escImage = escapeHtmlAttribute(imageUrl);
-  const escUrl = escapeHtmlAttribute(currentUrl);
+  const escImage    = escapeHtmlAttribute(imageUrl);
+  const escUrl      = escapeHtmlAttribute(currentUrl);
   const escCanonical = escapeHtmlAttribute(canonicalUrl);
-  const escFavicon = escapeHtmlAttribute(faviconUrl);
+  const escFavicon  = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  // Normalize path and match against explicit public routes whitelist
-  const requestPath = req.path || '/';
-  const normalizedPath = requestPath === '/' ? '/' : requestPath.replace(/\/$/, '');
-  
-  const PUBLIC_WHITELIST = [
-    '/',
-    '/subscription',
-    '/forum',
-    '/marketplace',
-    '/blog',
-    '/terms',
-    '/privacy',
-    '/about'
-  ];
+  const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
 
+  const PUBLIC_WHITELIST = ['/', '/subscription', '/forum', '/marketplace', '/blog', '/terms', '/privacy', '/about'];
   const isPublicRoute = PUBLIC_WHITELIST.includes(normalizedPath);
 
   let metaBlock = '';
 
   if (isPublicRoute) {
-    // Build fully-compliant SEO, OpenGraph and Twitter meta tags block for explicitly public routes
     metaBlock = `
     <meta name="description" content="${escDesc}" />
     <meta name="keywords" content="${escKeywords}" />
@@ -1282,161 +820,59 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     `;
 
     if (settings.google_site_verification) {
-      const escVerification = escapeHtmlAttribute(settings.google_site_verification);
-      metaBlock += `\n    <meta name="google-site-verification" content="${escVerification}" />`;
+      metaBlock += `\n    <meta name="google-site-verification" content="${escapeHtmlAttribute(settings.google_site_verification)}" />`;
     }
 
-    // Build localization mappings for public route breadcrumb list names
-    const breadcrumbNamesAr: { [key: string]: string } = {
-      '/': 'الرئيسية',
-      '/subscription': 'الاشتراكات',
-      '/forum': 'المنتدى',
-      '/marketplace': 'المتجر',
-      '/blog': 'المدونة',
-      '/terms': 'الشروط والأحكام',
-      '/privacy': 'سياسة الخصوصية',
-      '/about': 'عن المنصة'
+    const breadcrumbNames: Record<string, Record<string, string>> = {
+      ar: { '/': 'الرئيسية', '/subscription': 'الاشتراكات', '/forum': 'المنتدى', '/marketplace': 'المتجر', '/blog': 'المدونة', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
+      en: { '/': 'Home', '/subscription': 'Subscriptions', '/forum': 'Forum', '/marketplace': 'Marketplace', '/blog': 'Blog', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
+      fr: { '/': 'Accueil', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Boutique', '/blog': 'Blog', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
+      es: { '/': 'Inicio', '/subscription': 'Suscripciones', '/forum': 'Foro', '/marketplace': 'Mercado', '/blog': 'Blog', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
+      de: { '/': 'Startseite', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Marktplatz', '/blog': 'Blog', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
     };
+    const names = breadcrumbNames[preferredLang] ?? breadcrumbNames['ar'];
 
-    const breadcrumbNamesEn: { [key: string]: string } = {
-      '/': 'Home',
-      '/subscription': 'Subscriptions',
-      '/forum': 'Forum',
-      '/marketplace': 'Marketplace',
-      '/blog': 'Blog',
-      '/terms': 'Terms & Conditions',
-      '/privacy': 'Privacy Policy',
-      '/about': 'About Us'
-    };
-
-    let breadcrumbNames = breadcrumbNamesAr;
-    if (preferredLang === 'en') {
-      breadcrumbNames = breadcrumbNamesEn;
-    } else if (preferredLang === 'fr') {
-      breadcrumbNames = {
-        '/': 'Accueil',
-        '/subscription': 'Abonnements',
-        '/forum': 'Forum',
-        '/marketplace': 'Boutique',
-        '/blog': 'Blog',
-        '/terms': 'Conditions d\'utilisation',
-        '/privacy': 'Politique de confidentialité',
-        '/about': 'À propos'
-      };
-    } else if (preferredLang === 'es') {
-      breadcrumbNames = {
-        '/': 'Inicio',
-        '/subscription': 'Suscripciones',
-        '/forum': 'Foro',
-        '/marketplace': 'Mercado',
-        '/blog': 'Blog',
-        '/terms': 'Términos y condiciones',
-        '/privacy': 'Política de privacidad',
-        '/about': 'Acerca de'
-      };
-    } else if (preferredLang === 'de') {
-      breadcrumbNames = {
-        '/': 'Startseite',
-        '/subscription': 'Abonnements',
-        '/forum': 'Forum',
-        '/marketplace': 'Marktplatz',
-        '/blog': 'Blog',
-        '/terms': 'Allgemeine Geschäftsbedingungen',
-        '/privacy': 'Datenschutzerklärung',
-        '/about': 'Über uns'
-      };
-    }
-
-    const breadcrumbItems = [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": breadcrumbNames['/'] || 'Home',
-        "item": baseUrl
-      }
-    ];
-
+    const breadcrumbItems: any[] = [{ "@type": "ListItem", "position": 1, "name": names['/'] || 'Home', "item": baseUrl }];
     if (normalizedPath !== '/') {
-      const pageName = breadcrumbNames[normalizedPath] || normalizedPath.replace(/^\//, '').charAt(0).toUpperCase() + normalizedPath.replace(/^\//, '').slice(1);
-      breadcrumbItems.push({
-        "@type": "ListItem",
-        "position": 2,
-        "name": pageName,
-        "item": `${baseUrl}${normalizedPath}`
-      });
+      const pageName = names[normalizedPath] || normalizedPath.replace(/^\//, '').charAt(0).toUpperCase() + normalizedPath.replace(/^\//, '').slice(1);
+      breadcrumbItems.push({ "@type": "ListItem", "position": 2, "name": pageName, "item": `${baseUrl}${normalizedPath}` });
     }
 
-    const breadcrumbList = {
-      "@type": "BreadcrumbList",
-      "@id": `${baseUrl}${normalizedPath}/#breadcrumb`,
-      "itemListElement": breadcrumbItems
-    };
-
-    // Build fully-compliant JSON-LD structured data for WebSite, Organization, and BreadcrumbList
     const structuredData = {
       "@context": "https://schema.org",
       "@graph": [
+        { "@type": "Organization", "@id": `${baseUrl}/#organization`, "name": currentSiteName, "url": baseUrl, "logo": faviconUrl, "description": currentDesc, "image": imageUrl },
         {
-          "@type": "Organization",
-          "@id": `${baseUrl}/#organization`,
-          "name": currentSiteName,
-          "url": baseUrl,
-          "logo": faviconUrl,
-          "description": currentDesc,
-          "image": imageUrl
+          "@type": "WebSite", "@id": `${baseUrl}/#website`, "url": baseUrl, "name": currentSiteName, "description": currentDesc,
+          "publisher": { "@id": `${baseUrl}/#organization` },
+          "potentialAction": { "@type": "SearchAction", "target": { "@type": "EntryPoint", "urlTemplate": `${baseUrl}/?q={search_term_string}` }, "query-input": "required name=search_term_string" }
         },
-        {
-          "@type": "WebSite",
-          "@id": `${baseUrl}/#website`,
-          "url": baseUrl,
-          "name": currentSiteName,
-          "description": currentDesc,
-          "publisher": {
-            "@id": `${baseUrl}/#organization`
-          },
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-              "@type": "EntryPoint",
-              "urlTemplate": `${baseUrl}/?q={search_term_string}`
-            },
-            "query-input": "required name=search_term_string"
-          }
-        },
-        breadcrumbList
+        { "@type": "BreadcrumbList", "@id": `${baseUrl}${normalizedPath}/#breadcrumb`, "itemListElement": breadcrumbItems }
       ]
     };
 
-    const structuredDataJson = JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script');
-    metaBlock += `\n    <script type="application/ld+json">\n${structuredDataJson}\n    </script>`;
+    metaBlock += `\n    <script type="application/ld+json">\n${JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script')}\n    </script>`;
   } else {
-    // Strictly prevent indexing on non-public routes to guard user data privacy and prevent search engine leakage
-    metaBlock = `
-    <meta name="robots" content="noindex, nofollow" />
-    `;
+    metaBlock = `\n    <meta name="robots" content="noindex, nofollow" />\n    `;
   }
 
   let processedHtml = html;
 
-  // Replace existing title or inject if missing
   if (/<title>[^]*?<\/title>/i.test(processedHtml)) {
     processedHtml = processedHtml.replace(/<title>[^]*?<\/title>/gi, `<title>${escTitle}</title>`);
   } else {
     processedHtml = processedHtml.replace('</head>', `<title>${escTitle}</title>\n</head>`);
   }
 
-  // Strip standard viewport/description/canonical link tags to prevent duplication
   processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
 
-  // Update favicon reference if customized
   if (settings.favicon_url) {
     processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+type="image\/png"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" type="image/png" href="${escFavicon}" />`);
     processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" href="${escFavicon}" />`);
   }
 
-  // Inject dynamic canonical link tag and metaBlock right before </head>
   processedHtml = processedHtml.replace('</head>', `<link rel="canonical" href="${escCanonical}" />\n  ${metaBlock}\n  </head>`);
 
   return processedHtml;
@@ -1450,16 +886,12 @@ if (process.env.NODE_ENV === "production") {
     index: false,
     setHeaders: (res, filePath) => {
       if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
-        // Built hashed files from Vite
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(js|css)$/.test(filePath)) {
-        // Standard JS/CSS (non-hashed fallback)
         res.setHeader('Cache-Control', 'public, max-age=86400');
       } else if (/\.(woff2?|ttf|otf|eot)$/.test(filePath)) {
-        // Fonts
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(png|jpg|jpeg|gif|svg|ico)$/i.test(filePath)) {
-        // Images / Favicon
         res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     }
@@ -1475,35 +907,26 @@ if (process.env.NODE_ENV === "production") {
   app.get('*', async (req, res) => {
     const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      // Content Negotiation: Return markdown if requested by Agents
       const acceptHeader = req.headers['accept'] || '';
       if (acceptHeader.includes('text/markdown')) {
         const originUrl = `${req.protocol}://${req.get('host')}`;
         const markdownBody = generateMarkdownForPage(req.path, originUrl);
         const tokenCount = estimateMarkdownTokens(markdownBody);
-
         res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
         res.setHeader('X-Markdown-Tokens', String(tokenCount));
         return res.send(markdownBody);
       }
 
       try {
-        let baseHtml = cachedIndexHtml;
-        if (!baseHtml) {
-          baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
-        }
-
+        let baseHtml = cachedIndexHtml || fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
         const nonce = res.locals.nonce || '';
         let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-        const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
-        noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
+        noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
 
         let finalHtml = noncedHtml;
         try {
           const settings = await getSystemSettings().catch(() => null);
-          if (settings) {
-            finalHtml = injectSEOTags(noncedHtml, settings, req);
-          }
+          if (settings) finalHtml = injectSEOTags(noncedHtml, settings, req);
         } catch (settingsError) {
           console.error('[SEO] Sub-settings mapping failed:', settingsError);
         }
@@ -1512,10 +935,9 @@ if (process.env.NODE_ENV === "production") {
       } catch (err) {
         console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
         try {
-          let baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+          const baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
           const nonce = res.locals.nonce || '';
-          const noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-          res.type('html').send(noncedHtml);
+          res.type('html').send(baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`) );
         } catch (readErr) {
           console.error('[SEO] Critical: Could not read index.html:', readErr);
           res.status(500).send('Internal Server Error');
