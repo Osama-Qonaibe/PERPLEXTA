@@ -88,6 +88,16 @@ app.use((req, res, next) => {
   next();
 });
 
+/**
+ * Derives the canonical base URL from the incoming request,
+ * respecting X-Forwarded-Proto and X-Forwarded-Host set by reverse proxies / load balancers.
+ */
+function getBaseUrl(req: express.Request): string {
+  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
+  return `${protocol}://${host}`;
+}
+
 function getPreferredLanguage(req: express.Request): string {
   const acceptLang = req.headers['accept-language'];
   if (!acceptLang) return 'ar'; // Default is Arabic
@@ -505,9 +515,7 @@ function generateAuthMd(baseUrl: string, lang: string): string {
 app.use((req, res, next) => {
   const accept = req.headers["accept"] || "";
   if (accept.includes("text/markdown") && (req.path === "/" || req.path === "/index.html")) {
-    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-    const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getBaseUrl(req);
     const preferredLang = getPreferredLanguage(req);
     const content = generateAuthMd(baseUrl, preferredLang);
     const tokens = content.split(/\s+/).length;
@@ -630,9 +638,7 @@ app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 app.get('/auth.md', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -646,9 +652,7 @@ app.get('/auth.md', (req, res) => {
   res.send(markdownContent);
 });
 app.get('/.well-known/oauth-protected-resource', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -679,9 +683,7 @@ app.get('/.well-known/oauth-protected-resource', (req, res) => {
 });
 
 app.get('/.well-known/openid-configuration', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -717,9 +719,7 @@ app.get('/.well-known/openid-configuration', (req, res) => {
 });
 
 app.get('/.well-known/oauth-authorization-server', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -747,9 +747,7 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
 });
 
 app.get('/.well-known/agent-skills/index.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -788,9 +786,7 @@ app.get('/.well-known/agent-skills/index.json', (req, res) => {
 });
 
 app.get('/.well-known/mcp/server-card.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -836,9 +832,7 @@ app.get('/api/auth/jwks', (req, res) => {
 });
 
 app.get('/.well-known/api-catalog', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -873,9 +867,7 @@ app.get('/.well-known/api-catalog', (req, res) => {
 });
 
 app.get('/.well-known/acp.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -1265,9 +1257,7 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     currentSiteName = settings[siteKey] || nameAr || nameEn || defaultSiteName;
   }
 
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
