@@ -1,12 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Prism from 'prismjs';
 import App from './App.tsx';
 import './index.css';
-
-// Register Prism globally so lazy-loaded chunks can access it
-(window as any).Prism = Prism;
 
 // Silence console calls on production to secure against potential telemetry / token info leakage
 if (!import.meta.env.DEV) {
@@ -20,11 +16,11 @@ if (!import.meta.env.DEV) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
-      retry: 2,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: 'always',
+      staleTime: 10 * 60 * 1000, // 10 minutes cache freshness to significantly lower backend query load
+      gcTime: 30 * 60 * 1000,    // Keep garbage collection in inactive state for 30 minutes
+      retry: 2,                  // Retry 2 times on transient failures
+      refetchOnWindowFocus: false, // Stop aggressive polling/refetching on window refocus
+      refetchOnReconnect: 'always', // Automatically revalidate when network connection is restored
     },
   },
 });
