@@ -8,6 +8,10 @@ import { createNotification } from '../services/notifications.js';
 
 const router = express.Router();
 
+// Resolved once at module load — all handlers reference this single constant.
+// ledgerPool is preferred for all financial writes; falls back to pool if not configured.
+const ledgerTarget = () => ledgerPool || pool;
+
 // ─── PayPal ──────────────────────────────────────────────────────────────────
 
 router.post("/paypal-deposit", authenticateToken, async (req: any, res) => {
@@ -16,15 +20,13 @@ router.post("/paypal-deposit", authenticateToken, async (req: any, res) => {
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ error: 'Invalid deposit amount' });
     }
-
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const orderData = await createPayPalOrder(
       Number(amount),
       `${appUrl}/settings?tab=wallet&status=paypal-success`,
       `${appUrl}/settings?tab=wallet&status=paypal-cancel`
     );
-
-    const target = ledgerPool || pool;
+    const target = ledgerTarget();
     if (target) {
       await target.query(
         `INSERT INTO deposit_requests (user_id, amount, method, proof_url, status)
@@ -44,7 +46,7 @@ router.post("/paypal-capture", authenticateToken, async (req: any, res) => {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: 'Order ID is required' });
 
-    const target = ledgerPool || pool;
+    const target = ledgerTarget();
     let validOrder: any = null;
 
     if (target) {
@@ -80,7 +82,7 @@ router.post("/paypal-capture", authenticateToken, async (req: any, res) => {
   }
 });
 
-// ─── Stripe Checkout ─────────────────────────────────────────────────────────
+// ─── Stripe Checkout ──────────────────────────────────────────────────────────
 
 router.post("/stripe-deposit", authenticateToken, async (req: any, res) => {
   try {
@@ -92,7 +94,7 @@ router.post("/stripe-deposit", authenticateToken, async (req: any, res) => {
     if (!stripe) {
       return res.status(400).json({
         error: 'Stripe is not configured or activated by the administrator.',
-        error_ar: 'عذراً، بوابة الدفع Stripe غير مهيأة أو غير مفعلة من قِبل مسؤول النظام حالياً.'
+        error_ar: 'عذراً، بوابة الدفع Stripe غير مهيأة أو غير مفعلة من قِبل مسؤول النظام حالياً.',
       });
     }
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
@@ -102,14 +104,14 @@ router.post("/stripe-deposit", authenticateToken, async (req: any, res) => {
         price_data: {
           currency: 'usd',
           product_data: { name: 'Perplexta Wallet Deposit', description: 'Deposit to Perplexta Digital Wallet' },
-          unit_amount: Math.round(Number(amount) * 100)
+          unit_amount: Math.round(Number(amount) * 100),
         },
-        quantity: 1
+        quantity: 1,
       }],
       mode: 'payment',
       success_url: `${appUrl}/settings?tab=wallet&status=stripe-success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${appUrl}/settings?tab=wallet&status=cancel`,
-      metadata: { userId: req.user.id.toString(), amount: amount.toString(), type: 'deposit' }
+      metadata: { userId: req.user.id.toString(), amount: amount.toString(), type: 'deposit' },
     });
     res.json({ url: session.url });
   } catch (error: any) {
@@ -137,7 +139,7 @@ router.get("/verify-stripe-session", authenticateToken, async (req: any, res) =>
       return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
     }
 
-    const target = ledgerPool || pool;
+    const target = ledgerTarget();
     if (target) {
       const eventCheck = await target.query('SELECT 1 FROM stripe_events WHERE stripe_event_id = $1', [session.id]);
       if (eventCheck.rows.length === 0) {
@@ -177,11 +179,11 @@ router.get("/verify-subscription-session", authenticateToken, async (req: any, r
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
     const { userId, planId, billingCycle } = session.metadata || {};
-    if (!userId || !planId)              return res.status(400).json({ error: 'Invalid session metadata: user_id or plan_id is missing' });
+    if (!userId || !planId)               return res.status(400).json({ error: 'Invalid session metadata: user_id or plan_id is missing' });
     if (userId !== req.user.id.toString()) return res.status(403).json({ error: 'Unauthorized: Session details mismatch.' });
     if (session.payment_status !== 'paid') return res.status(400).json({ error: 'Unpaid session: payment has not been successfully completed.' });
 
-    const target = ledgerPool || pool;
+    const target = ledgerTarget();
     if (target) {
       const eventCheck = await target.query('SELECT 1 FROM stripe_events WHERE stripe_event_id = $1', [session.id]);
       if (eventCheck.rows.length > 0) return res.json({ success: true, alreadyProcessed: true });
@@ -225,17 +227,17 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
           currency: 'usd',
           product_data: { name: `Perplexta - ${plan.name_en}`, description: `Subscription: ${billingCycle}` },
           unit_amount: Math.round(price * 100),
-          recurring: { interval: billingCycle === 'annual' ? 'year' : 'month' }
+          recurring: { interval: billingCycle === 'annual' ? 'year' : 'month' },
         },
-        quantity: 1
+        quantity: 1,
       }],
       mode: 'subscription',
       subscription_data: {
-        metadata: { userId: req.user.id.toString(), planId: planId.toString(), billingCycle }
+        metadata: { userId: req.user.id.toString(), planId: planId.toString(), billingCycle },
       },
       success_url: `${appUrl}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${appUrl}/subscription?canceled=true`,
-      metadata: { userId: req.user.id.toString(), planId: planId.toString(), billingCycle }
+      metadata: { userId: req.user.id.toString(), planId: planId.toString(), billingCycle },
     });
     res.json({ url: session.url });
   } catch (error: any) {
@@ -265,16 +267,16 @@ router.post("/webhook", async (req: any, res) => {
       sig, webhookSecret
     );
   } catch (err: any) {
-    console.error(`[Stripe] Webhook signature verification failed: ${err.message}`);
+    console.error(`[Stripe] Signature verification failed: ${err.message}`);
     return res.status(400).send(`Webhook signature invalid: ${err.message}`);
   }
 
-  // Helper: verify userId exists in core DB before any wallet operation
+  /** Verify userId exists in core DB before any wallet/subscription operation. */
   async function assertUserExists(userId: string | undefined): Promise<boolean> {
     if (!userId) return false;
     const check = await pool.query('SELECT 1 FROM users WHERE id = $1', [userId]);
     if (check.rows.length === 0) {
-      console.warn(`[Stripe Webhook] Skipping event ${event.type} — user ${userId} not found in core DB`);
+      console.warn(`[Stripe Webhook] Skipping ${event.type} — user ${userId} not found`);
       return false;
     }
     return true;
@@ -292,7 +294,7 @@ router.post("/webhook", async (req: any, res) => {
           const userId = session.metadata.userId;
           const amount = session.amount_total ? session.amount_total / 100 : parseFloat(session.metadata?.amount || '0');
           if (userId && !isNaN(amount)) {
-            const target = ledgerPool || pool;
+            const target = ledgerTarget();
             if (target) {
               const eventCheck = await target.query('SELECT 1 FROM stripe_events WHERE stripe_event_id = $1', [session.id]);
               if (eventCheck.rows.length === 0) {
@@ -334,8 +336,9 @@ router.post("/webhook", async (req: any, res) => {
         const stripeSubscriptionId = invoice.subscription;
         if (!stripeSubscriptionId) break;
 
-        let userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
-        let planId = invoice.subscription_details?.metadata?.planId  || invoice.metadata?.planId;
+        // Resolve userId / planId from metadata, then DB, then Stripe API
+        let userId       = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
+        let planId       = invoice.subscription_details?.metadata?.planId  || invoice.metadata?.planId;
         let billingCycle = invoice.subscription_details?.metadata?.billingCycle || invoice.metadata?.billingCycle || 'monthly';
 
         if (!userId) {
@@ -360,11 +363,11 @@ router.post("/webhook", async (req: any, res) => {
         }
 
         if (!userId || !planId) {
-          console.warn(`[Stripe Webhook] Could not resolve user/plan IDs for invoice ${invoice.id}`);
+          console.warn(`[Stripe Webhook] Could not resolve user/plan for invoice ${invoice.id}`);
           break;
         }
 
-        // Fix: verify user exists in core DB before any wallet operation
+        // Guard: user must exist before any wallet operation
         if (!await assertUserExists(userId)) break;
 
         const planRes  = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
@@ -382,34 +385,46 @@ router.post("/webhook", async (req: any, res) => {
             (user_id, plan_id, status, billing_period, current_period_end, last_period_start, stripe_customer_id, stripe_subscription_id)
           VALUES ($1,$2,'active',$3,$4,$5,$6,$7)
           ON CONFLICT (user_id) DO UPDATE SET
-            plan_id = EXCLUDED.plan_id, status = 'active',
-            billing_period = EXCLUDED.billing_period,
-            current_period_end = EXCLUDED.current_period_end,
-            last_period_start = EXCLUDED.last_period_start,
-            stripe_customer_id = EXCLUDED.stripe_customer_id,
+            plan_id                = EXCLUDED.plan_id,
+            status                 = 'active',
+            billing_period         = EXCLUDED.billing_period,
+            current_period_end     = EXCLUDED.current_period_end,
+            last_period_start      = EXCLUDED.last_period_start,
+            stripe_customer_id     = EXCLUDED.stripe_customer_id,
             stripe_subscription_id = EXCLUDED.stripe_subscription_id,
-            updated_at = CURRENT_TIMESTAMP
+            updated_at             = CURRENT_TIMESTAMP
         `, [userId, planId, billingCycle, periodEnd, periodStart, invoice.customer, stripeSubscriptionId]);
 
-        // Fix: use depositToWallet-style atomic pattern — getUserWallet inside a ledger transaction
+        // Atomic ledger entry: BEGIN → getUserWallet(FOR UPDATE) → INSERT → COMMIT
         const amountUSD = (invoice.amount_paid || 0) / 100;
-        const target    = ledgerPool || pool;
-        if (target) {
-          const wallet = await getUserWallet(userId);
-          await target.query(`
-            INSERT INTO ledger_transactions
-              (user_id, wallet_id, amount, transaction_type, status, reference_id, description, metadata)
-            VALUES ($1,$2,$3,'subscription_stripe','success',$4,$5,$6)
-          `, [
-            userId, wallet.id, -amountUSD, invoice.id,
-            `Stripe Subscription Payment for ${planName} (${billingCycle})`,
-            JSON.stringify({
-              stripe_invoice_id:       invoice.id,
-              stripe_subscription_id:  stripeSubscriptionId,
-              stripe_customer_id:      invoice.customer,
-              amount_paid_cents:       invoice.amount_paid
-            })
-          ]);
+        const lTarget   = ledgerTarget();
+        if (lTarget && amountUSD > 0) {
+          const client = await lTarget.connect();
+          try {
+            await client.query('BEGIN');
+            const wallet = await getUserWallet(userId, client); // uses FOR UPDATE via txClient
+            await client.query(
+              `INSERT INTO ledger_transactions
+                 (user_id, wallet_id, amount, transaction_type, status, reference_id, description, metadata)
+               VALUES ($1,$2,$3,'subscription_stripe','success',$4,$5,$6)`,
+              [
+                userId, wallet.id, -amountUSD, invoice.id,
+                `Stripe Subscription Payment for ${planName} (${billingCycle})`,
+                JSON.stringify({
+                  stripe_invoice_id:      invoice.id,
+                  stripe_subscription_id: stripeSubscriptionId,
+                  stripe_customer_id:     invoice.customer,
+                  amount_paid_cents:      invoice.amount_paid,
+                }),
+              ]
+            );
+            await client.query('COMMIT');
+          } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+          } finally {
+            client.release();
+          }
         }
 
         await createNotification(
@@ -425,7 +440,7 @@ router.post("/webhook", async (req: any, res) => {
           io.to(`user_${userId}`).emit('quota_reset', { reason: 'stripe_invoice_renewal', planId, stripeSubscriptionId });
         }
         const { broadcastAdminStats } = await import('../services/admin.js');
-        broadcastAdminStats().catch(err => console.error('[Socket] broadcastAdminStats failed:', err));
+        broadcastAdminStats().catch((err: any) => console.error('[Socket] broadcastAdminStats failed:', err));
         break;
       }
 
@@ -439,7 +454,8 @@ router.post("/webhook", async (req: any, res) => {
         if (!userId) { console.warn(`[Stripe Webhook] No user for deleted subscription ${subscription.id}`); break; }
 
         await pool.query(`UPDATE subscriptions SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`, [userId]);
-        await createNotification(userId, 'warning', 'Subscription Expired', 'انتهت صلاحية الاشتراك',
+        await createNotification(userId, 'warning',
+          'Subscription Expired', 'انتهت صلاحية الاشتراك',
           'Your subscription has expired. Access to premium tools has been revoked.',
           'انتهت صلاحية اشتراكك. تم سحب الوصول إلى الأدوات المتميزة.');
         const { io } = await import('../config/socket.js');
@@ -459,7 +475,7 @@ router.post("/webhook", async (req: any, res) => {
         }
         if (!userId) break;
 
-        const localStatus = ['active','trialing'].includes(subscription.status) ? 'active' : 'expired';
+        const localStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
         await pool.query(`UPDATE subscriptions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2`, [localStatus, userId]);
         const { io } = await import('../config/socket.js');
         if (io) {
@@ -482,7 +498,7 @@ router.post("/webhook", async (req: any, res) => {
         await createNotification(userId, 'warning',
           'Subscription Expired due to Failed Payment', 'انتهى الاشتراك بسبب فشل الدفع',
           'Your recurring subscription payment failed and your subscription has expired.',
-          'فشلت عملية الدفع الخاصة بالاشتراك ولذلك انتهت صلاحية اشتراكك.');
+          'فشلت عملية الدفع ولذلك انتهت صلاحية اشتراكك.');
         const { io } = await import('../config/socket.js');
         if (io) {
           io.to(`user_${userId}`).emit('user_profile_updated');
