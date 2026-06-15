@@ -11,6 +11,7 @@ import { getOrCreateSigningKeys } from '../utils/keys.js';
 import { deductFromWallet, getEconomySettings } from '../services/wallet.js';
 import { hashToken } from '../utils/tokenHash.js';
 import { issueTokenPair, parseRemember } from '../utils/issueTokenPair.js';
+import { getBaseUrl, getRedirectUri } from '../utils/request.js';
 
 const router = express.Router();
 
@@ -20,33 +21,6 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
 }
-
-const getBaseUrl = (req: express.Request) => {
-  const xProto = req.get('x-forwarded-proto');
-  const xHost = req.get('x-forwarded-host');
-  const host = req.get('host');
-  
-  const protocol = xProto || req.protocol;
-  const finalHost = xHost || host;
-  
-  const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
-  
-  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
-  }
-  
-  let finalProto = protocol;
-  if (finalHost && !finalHost.includes('localhost') && !finalHost.includes('127.0.0.1') && !finalHost.includes('0.0.0.0')) {
-    finalProto = 'https';
-  }
-  
-  let origin = `${finalProto}://${finalHost}`;
-  return origin.endsWith('/') ? origin.slice(0, -1) : origin;
-};
-
-const getRedirectUri = (req: express.Request) => {
-  return `${getBaseUrl(req)}/api/auth/google/callback`;
-};
 
 const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {
   console.log(`[GoogleAvatarDiagnostic] [${context}]`);
