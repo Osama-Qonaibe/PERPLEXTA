@@ -5306,15 +5306,9 @@ export const ChatPage: React.FC = () => {
         if (parsed.type === 'QUOTA_EXCEEDED') {
           isQuota = true;
           quotaData = parsed;
-          if (triggerUpgradePrompt) {
-            triggerUpgradePrompt(selectedTool || 'chat', parsed.limit, parsed.current, parsed.period);
-          }
         } else if (parsed.type === 'INSUFFICIENT_FUNDS') {
           isFunds = true;
           quotaData = parsed;
-          if (triggerUpgradePrompt) {
-            triggerUpgradePrompt('wallet');
-          }
         } else if (parsed.type === 'TOKEN_EXPIRED') {
           errorMessage = dir === 'rtl' ? 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة أو تسجيل الدخول مرة أخرى.' : 'Session expired. Please refresh the page or login again.';
           setTimeout(() => window.location.reload(), 3000);
