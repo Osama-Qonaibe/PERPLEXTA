@@ -8,6 +8,7 @@ import { globalLimiter, adminLimiter, authLimiter } from './middleware/rateLimit
 import { csrfProtection } from './middleware/csrf.js';
 import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
+import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
@@ -88,48 +89,7 @@ app.use((req, res, next) => {
   next();
 });
 
-/**
- * Derives the canonical base URL from the incoming request,
- * respecting X-Forwarded-Proto and X-Forwarded-Host set by reverse proxies / load balancers.
- */
-function getBaseUrl(req: express.Request): string {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  return `${protocol}://${host}`;
-}
-
-function getPreferredLanguage(req: express.Request): string {
-  const acceptLang = req.headers['accept-language'];
-  if (!acceptLang) return 'ar'; // Default is Arabic
-
-  const supported = ['ar', 'en', 'fr', 'es', 'de'];
-  const parsed = acceptLang.split(',')
-    .map(lang => {
-      const parts = lang.split(';');
-      const code = parts[0].trim().toLowerCase().split('-')[0];
-      let q = 1.0;
-      if (parts[1]) {
-        const qMatch = parts[1].match(/q=([\d.]+)/);
-        if (qMatch) q = parseFloat(qMatch[1]);
-      }
-      return { code, q };
-    })
-    .filter(item => supported.includes(item.code))
-    .sort((a, b) => b.q - a.q);
-
-  if (parsed.length > 0) {
-    return parsed[0].code;
-  }
-
-  const lowerHeader = acceptLang.toLowerCase();
-  for (const lang of supported) {
-    if (lowerHeader.includes(lang)) {
-      return lang;
-    }
-  }
-
-  return 'ar';
-}
+function getPreferredLanguage_REMOVED_USE_IMPORT() {}
 
 function generateAuthMd(baseUrl: string, lang: string): string {
   if (lang === 'ar') {
@@ -1213,6 +1173,7 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   if (!settings) return html;
 
   const preferredLang = getPreferredLanguage(req);
+  const baseUrl = getBaseUrl(req);
 
   // Dynamic configuration loaded directly from admin dashboard with cascading fallbacks
   const nameAr = settings.site_name_ar || '';
@@ -1256,8 +1217,6 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     currentKeywords = settings[keyKey] || keywordsAr || keywordsEn || defaultKeywords;
     currentSiteName = settings[siteKey] || nameAr || nameEn || defaultSiteName;
   }
-
-  const baseUrl = getBaseUrl(req);
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
@@ -1555,27 +1514,26 @@ if (process.env.NODE_ENV === "production") {
         try {
           let baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
           const nonce = res.locals.nonce || '';
-          let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-          const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
-          noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
+          const noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
           res.type('html').send(noncedHtml);
-        } catch (nonceErr) {
-          console.error('[SEO] Noncing recovery failed:', nonceErr);
-          res.sendFile(path.join(distPath, 'index.html'));
+        } catch (readErr) {
+          console.error('[SEO] Critical: Could not read index.html:', readErr);
+          res.status(500).send('Internal Server Error');
         }
       }
-    } else {
-      res.status(404).type('text/plain').send('Not Found');
+    }
+  });
+} else {
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
+      const indexPath = path.join(publicPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Not found');
+      }
     }
   });
 }
 
-import { globalErrorHandler } from './middleware/error.js';
-
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
-});
-
-app.use(globalErrorHandler);
-
-export { app };
+export default app;
