@@ -269,4 +269,24 @@ router.post("/admin/settings", authenticateAdmin, async (req, res) => {
   }
 });
 
+// ─── Client-Side Error Reporting (ErrorBoundary) ─────────────────────────────
+// Receives crash reports from the browser ErrorBoundary component.
+// Public endpoint (no auth) — payload is harmless metadata, not user data.
+// Rate-limited by the global limiter already applied in app.ts.
+router.post("/client-error", (req, res) => {
+  try {
+    const { boundary, message, stack, componentStack, url, ts } = req.body || {};
+    console.error(
+      `[ClientError] [${boundary || 'Unknown'}] ${message || 'No message'}`,
+      `\n  URL: ${url || '-'}`,
+      `\n  Time: ${ts || new Date().toISOString()}`,
+      stack    ? `\n  Stack: ${stack}`           : '',
+      componentStack ? `\n  Component: ${componentStack}` : ''
+    );
+    res.status(204).end();
+  } catch {
+    res.status(204).end();
+  }
+});
+
 export default router;
