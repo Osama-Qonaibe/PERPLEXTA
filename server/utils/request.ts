@@ -1,19 +1,41 @@
 import type express from 'express';
 
+const HOST_REGEX = /^[a-zA-Z0-9.-]+(:\d+)?$/;
+
+function sanitizeHost(raw: string, fallback: string): string {
+  const clean = (raw || '').split(',')[0].trim();
+  return HOST_REGEX.test(clean) ? clean : fallback;
+}
+
 /**
- * Derives the canonical base URL from the incoming request,
- * respecting X-Forwarded-Proto and X-Forwarded-Host set by
- * reverse proxies / load balancers.
+ * Derives the canonical base URL from the incoming request.
+ * Priority:
+ *   1. VITE_APP_URL / APP_URL env vars (production override)
+ *   2. X-Forwarded-Proto + X-Forwarded-Host (reverse proxy)
+ *   3. req.protocol + Host header (direct)
  */
 export function getBaseUrl(req: express.Request): string {
+  const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/$/, '');
+  }
+
   const protocol =
-    req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (
+    (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const rawHost =
     (req.headers['x-forwarded-host'] as string) ||
-    req.headers.host ||
-    'perplexta.com'
-  ).replace(/:\d+$/, '');
+    (req.headers['host'] as string) ||
+    'localhost:3000';
+
+  const host = sanitizeHost(rawHost, 'localhost:3000');
   return `${protocol}://${host}`;
+}
+
+/**
+ * Builds the Google OAuth callback URI from the canonical base URL.
+ */
+export function getRedirectUri(req: express.Request): string {
+  return `${getBaseUrl(req)}/api/auth/google/callback`;
 }
 
 const SUPPORTED_LANGUAGES = ['ar', 'en', 'fr', 'es', 'de'] as const;
@@ -40,7 +62,6 @@ export function getPreferredLanguage(req: express.Request): SupportedLang {
 
   if (parsed.length > 0) return parsed[0].code;
 
-  // Substring fallback for headers like "en-GB, ar"
   const lower = acceptLang.toLowerCase();
   return SUPPORTED_LANGUAGES.find(l => lower.includes(l)) ?? 'ar';
 }
