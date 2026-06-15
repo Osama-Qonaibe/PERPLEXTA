@@ -455,6 +455,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/system', systemRoutes);
 app.use('/api/memories', memoryRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/mail-services-v3', emailRoutes);
@@ -462,7 +463,6 @@ app.use('/api/forum', forumRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/video-resources', videoResourcesRoutes);
-app.use('/api', systemRoutes);
 app.use('/api/tools', toolRoutes);
 
 function escapeHtmlAttribute(str: string): string {

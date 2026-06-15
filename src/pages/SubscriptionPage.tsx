@@ -13,7 +13,7 @@ const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export const SubscriptionPage: React.FC = () => {
-  const { t, dir, plans, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
+  const { t, dir, plans, plansLoaded, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,6 +100,13 @@ export const SubscriptionPage: React.FC = () => {
     if (activeTab === 'developer') return plan.planType === 'developer';
     return !plan.planType || plan.planType === 'user';
   });
+
+  if (!plansLoaded) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="w-10 h-10 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+      <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">{dir === 'rtl' ? 'جاري تحميل الخطط...' : 'Loading plans...'}</p>
+    </div>
+  );
 
   const getDisplayPrice = (plan: any, cycle: 'monthly' | 'annual') => {
     const m = Number(plan.monthlyPrice || 0);
