@@ -78,17 +78,7 @@ export default defineConfig(({ mode }) => {
     ],
     define: {},
     build: {
-      chunkSizeWarningLimit: 1000,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              const pkg = id.split('node_modules/')[1].split('/')[0];
-              return `vendor-${pkg}`;
-            }
-          }
-        }
-      }
+      chunkSizeWarningLimit: 2500,
     },
     resolve: {
       alias: {
