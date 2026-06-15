@@ -1,31 +1,33 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
-import { ChatPage } from './pages/ChatPage';
-import { RewardsPage } from './pages/RewardsPage';
-import { SubscriptionPage } from './pages/SubscriptionPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { Terms } from './pages/Terms';
-import { Privacy } from './pages/Privacy';
-import { About } from './pages/About';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { ForumPage } from './pages/ForumPage';
-import { BlogPage } from './pages/BlogPage';
-import { AdminCommunityPage } from './pages/AdminCommunityPage';
-import { MarketplacePage } from './pages/MarketplacePage';
-import { IncentiveCard } from './components/IncentiveCard';
-import { PWACinematicModal } from './components/PWACinematicModal';
-import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck } from 'lucide-react';
 import { DefaultLogo } from './components/DefaultLogo';
+import { IncentiveCard } from './components/IncentiveCard';
+import { PWACinematicModal } from './components/PWACinematicModal';
+import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
+
+// Lazy-loaded pages
+const ChatPage           = lazy(() => import('./pages/ChatPage').then(m => ({ default: m.ChatPage })));
+const RewardsPage        = lazy(() => import('./pages/RewardsPage').then(m => ({ default: m.RewardsPage })));
+const SubscriptionPage   = lazy(() => import('./pages/SubscriptionPage').then(m => ({ default: m.SubscriptionPage })));
+const SettingsPage       = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const AdminDashboard     = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
+const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
+const About              = lazy(() => import('./pages/About').then(m => ({ default: m.About })));
+const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
+const ForumPage          = lazy(() => import('./pages/ForumPage').then(m => ({ default: m.ForumPage })));
+const BlogPage           = lazy(() => import('./pages/BlogPage').then(m => ({ default: m.BlogPage })));
+const AdminCommunityPage = lazy(() => import('./pages/AdminCommunityPage').then(m => ({ default: m.AdminCommunityPage })));
+const MarketplacePage    = lazy(() => import('./pages/MarketplacePage').then(m => ({ default: m.MarketplacePage })));
 
 const CenteredLoader = () => {
   const { siteSettings, language, theme } = useAppContext();
