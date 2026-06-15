@@ -107,7 +107,6 @@ app.use((req, res, next) => {
 });
 
 app.use((req: any, res: any, next: any) => {
-  const isProd = process.env.NODE_ENV === 'production';
   const scriptSrcDirectives = [
     "'self'",
     `'nonce-${res.locals.nonce}'`,
@@ -200,7 +199,6 @@ app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 // ─── Public discovery & well-known routes (A-3) ──────────────────────────────
-// All CORS headers are applied once inside wellKnownRouter via router.use().
 app.use(wellKnownRouter);
 
 app.use(express.static(publicPath));
@@ -478,11 +476,16 @@ function escapeHtmlAttribute(str: string): string {
     .replace(/\//g, '&#x2F;');
 }
 
-function injectSEOTags(html: string, settings: any, req: express.Request): string {
+// A-4: baseUrl is now passed in by the caller — no redundant getBaseUrl(req) inside.
+function injectSEOTags(
+  html: string,
+  settings: any,
+  req: express.Request,
+  baseUrl: string,           // ← injected, no longer re-computed here
+): string {
   if (!settings) return html;
 
   const preferredLang = getPreferredLanguage(req);
-  const baseUrl = getBaseUrl(req);
 
   const nameAr = settings.site_name_ar || '';
   const nameEn = settings.site_name_en || '';
@@ -654,10 +657,12 @@ if (process.env.NODE_ENV === "production") {
   app.get('*', async (req, res) => {
     const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
+      // A-4: compute baseUrl once here and pass it into injectSEOTags
+      const baseUrl = getBaseUrl(req);
+
       const acceptHeader = req.headers['accept'] || '';
       if (acceptHeader.includes('text/markdown')) {
-        const originUrl = `${req.protocol}://${req.get('host')}`;
-        const markdownBody = generateMarkdownForPage(req.path, originUrl);
+        const markdownBody = generateMarkdownForPage(req.path, baseUrl);
         const tokenCount = estimateMarkdownTokens(markdownBody);
         res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
         res.setHeader('X-Markdown-Tokens', String(tokenCount));
@@ -673,7 +678,7 @@ if (process.env.NODE_ENV === "production") {
         let finalHtml = noncedHtml;
         try {
           const settings = await getSystemSettings().catch(() => null);
-          if (settings) finalHtml = injectSEOTags(noncedHtml, settings, req);
+          if (settings) finalHtml = injectSEOTags(noncedHtml, settings, req, baseUrl);
         } catch (settingsError) {
           console.error('[SEO] Sub-settings mapping failed:', settingsError);
         }
