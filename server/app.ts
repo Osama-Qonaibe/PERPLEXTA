@@ -481,7 +481,7 @@ function injectSEOTags(
   html: string,
   settings: any,
   req: express.Request,
-  baseUrl: string,           // ← injected, no longer re-computed here
+  baseUrl: string,
 ): string {
   if (!settings) return html;
 
@@ -657,7 +657,6 @@ if (process.env.NODE_ENV === "production") {
   app.get('*', async (req, res) => {
     const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      // A-4: compute baseUrl once here and pass it into injectSEOTags
       const baseUrl = getBaseUrl(req);
 
       const acceptHeader = req.headers['accept'] || '';
@@ -675,13 +674,16 @@ if (process.env.NODE_ENV === "production") {
         let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
         noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
 
+        // A-5: explicit try/catch instead of silent .catch(()=>null).
+        // Errors are now logged so they surface in production logs.
         let finalHtml = noncedHtml;
         try {
-          const settings = await getSystemSettings().catch(() => null);
-          if (settings) finalHtml = injectSEOTags(noncedHtml, settings, req, baseUrl);
+          const settings = await getSystemSettings();
+          finalHtml = injectSEOTags(noncedHtml, settings, req, baseUrl);
         } catch (settingsError) {
-          console.error('[SEO] Sub-settings mapping failed:', settingsError);
+          console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
         }
+
         res.type('html').send(finalHtml);
       } catch (err) {
         console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
