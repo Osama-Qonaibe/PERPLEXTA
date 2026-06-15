@@ -76,7 +76,6 @@ interface AppContextType {
   setIsAuthModalOpen: (isOpen: boolean) => void;
   plans: any[];
   setPlans: (plans: any[]) => void;
-  plansLoaded: boolean;
   siteSettings: SiteSettings;
   setSiteSettings: (settings: SiteSettings) => void;
   economySettings: any;
@@ -1669,18 +1668,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const triggerUpgradePrompt = (toolId: string, limit?: number, currentUsage?: number, period?: 'daily' | 'monthly') => {
-    const openPrompt = () => setUpgradePromptState({ isOpen: true, toolId, limit, currentUsage, period });
-    if (!plans || plans.length === 0) {
-      const interval = setInterval(() => {
-        if (plans && plans.length > 0) {
-          clearInterval(interval);
-          openPrompt();
-        }
-      }, 200);
-      setTimeout(() => clearInterval(interval), 5000);
-    } else {
-      openPrompt();
-    }
+    setUpgradePromptState({
+      isOpen: true,
+      toolId,
+      limit,
+      currentUsage,
+      period
+    });
   };
 
   const closeUpgradePrompt = () => {
@@ -2474,9 +2468,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 1000);
 
     } catch (error) {
-        console.error('fetchSettingsAndPlans failed:', error);
-        setPlansLoaded(true);
-      }
+
+    }
   };
 
   const login = async (email: string, password: string) => {
@@ -2725,7 +2718,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [siteSettings, language]);
 
   const [plans, setPlans] = useState<any[]>([]);
-  const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [milestoneData, setMilestoneData] = useState<any>(null);
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -3169,9 +3161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
         setPlans(formattedPlans);
-        setPlansLoaded(true);
       } catch (error) {
-        setPlansLoaded(true); // allow UI to render even on error
 
       }
     };
@@ -3336,7 +3326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       login, signup,
       loginWithGoogle, logout,
       isAuthModalOpen, setIsAuthModalOpen,
-      plans, setPlans, plansLoaded,
+      plans, setPlans,
       siteSettings, setSiteSettings,
       economySettings, setEconomySettings,
       payWithBalance, stripeCheckout, refreshUser, balanceUSD,
