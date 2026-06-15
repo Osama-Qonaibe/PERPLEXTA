@@ -11,6 +11,7 @@ import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdow
 import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
 import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
+import wellKnownRouter from './routes/well-known.js';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
@@ -115,7 +116,6 @@ app.use((req: any, res: any, next: any) => {
     "https://*.googleapis.com"
   ];
 
-  // Permit unsafe evaluation and inline scripts to accommodate Google Tag Manager and Stripe dynamic bindings securely
   scriptSrcDirectives.push("'unsafe-inline'", "'unsafe-eval'");
 
   helmet({
@@ -127,11 +127,9 @@ app.use((req: any, res: any, next: any) => {
         imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
         connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        // Strict ancestors limit frame loading to local self origin and reliable Google/AI Studio platforms, blocking wildcard run.app exploits
         frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio"]
       }
     },
-    // Keep COEP disabled to ensure third-party external resources (Google Fonts, Stripe interfaces, Dicebear avatars) load successfully without CORP headers
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   })(req, res, next);
@@ -146,17 +144,12 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    
-    // In dev mode, or if origin matches configured allowed list, let it pass
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
-    // Fallback: Check if the request origin comes from Cloud Run (.run.app) or localhost / loopback interfaces
     if (origin.endsWith('.run.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    
     callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
   },
   credentials: true,
@@ -189,23 +182,14 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     const distFile = path.join(distPath, fileName);
     const publicFile = path.join(publicPath, fileName);
-    
-    if (fs.existsSync(distFile)) {
-      return res.sendFile(distFile);
-    } else if (fs.existsSync(publicFile)) {
-      return res.sendFile(publicFile);
-    }
-    
+    if (fs.existsSync(distFile)) return res.sendFile(distFile);
+    if (fs.existsSync(publicFile)) return res.sendFile(publicFile);
     if (fallbackFileName) {
       const distFallback = path.join(distPath, fallbackFileName);
       const publicFallback = path.join(publicPath, fallbackFileName);
-      if (fs.existsSync(distFallback)) {
-        return res.sendFile(distFallback);
-      } else if (fs.existsSync(publicFallback)) {
-        return res.sendFile(publicFallback);
-      }
+      if (fs.existsSync(distFallback)) return res.sendFile(distFallback);
+      if (fs.existsSync(publicFallback)) return res.sendFile(publicFallback);
     }
-    
     res.status(404).type('text/plain').send('Not Found');
   };
 };
@@ -215,225 +199,9 @@ app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'ma
 app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
-app.get('/auth.md', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Vary', 'Accept, Accept-Language');
-  res.setHeader('X-Auth-Md-Version', '1.0');
-
-  const preferredLang = getPreferredLanguage(req);
-  res.send(generateAuthMd(baseUrl, preferredLang));
-});
-
-app.get('/.well-known/oauth-protected-resource', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-
-  res.json({
-    resource: baseUrl,
-    authorization_servers: [baseUrl],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    resource_signing_alg_values_supported: ['RS256'],
-    bearer_methods_supported: ['header', 'body', 'query'],
-    resource_documentation: `${baseUrl}/auth.md`,
-    agent_auth: {
-      register_uri: `${baseUrl}/api/auth/agent-register`,
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`,
-      identity_types_supported: ['anonymous', 'identity_assertion'],
-      anonymous: {
-        credential_types_supported: ['api_key']
-      },
-      identity_assertion: {
-        assertion_types_supported: ['urn:ietf:params:oauth:token-type:id-jag', 'verified_email'],
-        credential_types_supported: ['access_token', 'api_key']
-      }
-    }
-  });
-});
-
-app.get('/.well-known/openid-configuration', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/api/auth/authorize`,
-    token_endpoint: `${baseUrl}/api/auth/token`,
-    jwks_uri: `${baseUrl}/api/auth/jwks`,
-    userinfo_endpoint: `${baseUrl}/api/auth/user`,
-    grant_types_supported: ['authorization_code', 'client_credentials', 'refresh_token'],
-    response_types_supported: ['code', 'token'],
-    token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
-    id_token_signing_alg_values_supported: ['RS256'],
-    subject_types_supported: ['public'],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    agent_auth: {
-      register_uri: `${baseUrl}/api/auth/register-agent`,
-      supported_identity_types: ['agent', 'user', 'app'],
-      identity_types_supported: ['agent', 'user', 'app'],
-      credential_types: ['api_key', 'bearer_token', 'client_credentials'],
-      credential_types_supported: ['api_key', 'bearer_token', 'client_credentials'],
-      claim_endpoint: `${baseUrl}/api/auth/claim`,
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      claim_url: `${baseUrl}/api/auth/claim`,
-      revocation_endpoint: `${baseUrl}/api/auth/revoke`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`,
-      revocation_url: `${baseUrl}/api/auth/revoke`
-    }
-  });
-});
-
-app.get('/.well-known/oauth-authorization-server', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/api/auth/authorize`,
-    token_endpoint: `${baseUrl}/api/auth/token`,
-    jwks_uri: `${baseUrl}/api/auth/jwks`,
-    grant_types_supported: ['authorization_code', 'client_credentials', 'refresh_token'],
-    response_types_supported: ['code', 'token'],
-    token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    agent_auth: {
-      auth_md: `${baseUrl}/auth.md`,
-      register_uri: `${baseUrl}/api/auth/agent-register`,
-      identity_types_supported: ['anonymous', 'identity_assertion'],
-      credential_types_supported: ['api_key', 'access_token'],
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`
-    }
-  });
-});
-
-app.get('/.well-known/agent-skills/index.json', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    $schema: 'https://agentskills.io/schemas/v0.2.0/agent-skills-index.json',
-    skills: [
-      {
-        name: 'Perplexta MCP Server',
-        type: 'mcp',
-        description: 'The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query databases, and invoke secure tools.',
-        url: `${baseUrl}/.well-known/mcp/server-card.json`,
-        sha256: '8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c',
-        digest: '8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c'
-      },
-      {
-        name: 'Perplexta OpenAPI Spec',
-        type: 'openapi',
-        description: 'Exposes technical metadata and standard full-stack routing pathways to execute enterprise actions.',
-        url: `${baseUrl}/api/docs/openapi.json`,
-        sha256: '2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d',
-        digest: '2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d'
-      },
-      {
-        name: 'Perplexta API Catalog',
-        type: 'api-catalog',
-        description: 'A linkset-based catalog pointing to description, documentation, and status endpoints.',
-        url: `${baseUrl}/.well-known/api-catalog`,
-        sha256: '61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa',
-        digest: '61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa'
-      }
-    ]
-  });
-});
-
-app.get('/.well-known/mcp/server-card.json', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    serverInfo: {
-      name: 'Perplexta Platform MCP Server',
-      version: '1.0.0'
-    },
-    transport: {
-      type: 'sse',
-      endpoint: `${baseUrl}/api/mcp/sse`,
-      url: `${baseUrl}/api/mcp/sse`
-    },
-    capabilities: {
-      resources: { subscribe: true, listChanged: true },
-      prompts: { listChanged: true },
-      tools: { listChanged: true }
-    },
-    supportedProtocolVersions: ['2024-11-05'],
-    instructions: 'The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query core and ledger databases, run semantic document searches, and invoke secure tools.'
-  });
-});
-
-app.get('/api/auth/jwks', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'application/json');
-  
-  const { jwk } = getOrCreateSigningKeys();
-  res.json({ keys: [jwk] });
-});
-
-app.get('/.well-known/api-catalog', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/linkset+json');
-  
-  res.json({
-    linkset: [
-      {
-        anchor: `${baseUrl}/api`,
-        'service-desc': [{ href: `${baseUrl}/api/docs/openapi.json`, type: 'application/openapi+json' }],
-        'service-doc': [{ href: `${baseUrl}/#docs`, type: 'text/html' }],
-        status: [{ href: `${baseUrl}/api/health`, type: 'application/json' }]
-      }
-    ]
-  });
-});
-
-app.get('/.well-known/acp.json', (req, res) => {
-  const baseUrl = getBaseUrl(req);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    protocol: { name: "acp", version: "1.0" },
-    api_base_url: `${baseUrl}/api`,
-    transports: ["http"],
-    capabilities: { services: ["checkout"] }
-  });
-});
+// ─── Public discovery & well-known routes (A-3) ──────────────────────────────
+// All CORS headers are applied once inside wellKnownRouter via router.use().
+app.use(wellKnownRouter);
 
 app.use(express.static(publicPath));
 
@@ -452,28 +220,20 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
     }
-
     if (!fs.existsSync(resolvedPath)) {
       return res.status(404).json({ error: 'File not found' });
     }
 
     const ext = path.extname(filename).toLowerCase();
     const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav', '.m4a'];
-
-    if (publicExtensions.includes(ext)) {
-      return res.sendFile(resolvedPath);
-    }
+    if (publicExtensions.includes(ext)) return res.sendFile(resolvedPath);
 
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
-
     if (token) {
       token = token.trim();
-      if (token.startsWith('"') && token.endsWith('"')) {
-        token = token.slice(1, -1);
-      }
+      if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     }
-
     if (!token || token === 'null' || token === 'undefined') {
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to download this document.' });
     }
@@ -484,47 +244,37 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       return res.status(500).json({ error: 'Server misconfiguration: Secure verification key not configured.' });
     }
     jwt.verify(token, jwtSecret, async (err: any, decoded: any) => {
-      if (err) {
-        return res.status(403).json({ error: 'Forbidden: Invalid token' });
-      }
+      if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
 
       const user = decoded as any;
-      if (user.role === 'admin') {
-        return res.sendFile(resolvedPath);
-      }
+      if (user.role === 'admin') return res.sendFile(resolvedPath);
 
       const cacheKey = `${user.id}:${filename}`;
       const now = Date.now();
       if (filePermissionCache.has(cacheKey)) {
         const cached = filePermissionCache.get(cacheKey)!;
         if (now < cached.expiresAt) {
-          if (cached.authorized) {
-            return res.sendFile(resolvedPath);
-          } else {
-            return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
-          }
-        } else {
-          filePermissionCache.delete(cacheKey);
+          return cached.authorized
+            ? res.sendFile(resolvedPath)
+            : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
         }
+        filePermissionCache.delete(cacheKey);
       }
 
       try {
         const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]) as Promise<{ rows: { id: UserFile['id'] }[] }>;
         const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]) as Promise<{ rows: { id: DepositRequest['id'] }[] }>;
-        
         const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
-        
         const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
-
-        if (authorized) return res.sendFile(resolvedPath);
-        return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+        return authorized
+          ? res.sendFile(resolvedPath)
+          : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
       } catch (dbErr) {
         console.error('[Upload Secure Handler] Database error:', dbErr);
         return res.status(500).json({ error: 'Database verification failure' });
       }
     });
-
   } catch (error) {
     next(error);
   }
@@ -536,7 +286,6 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
 
   try {
     const toolRes = (await pool.query("SELECT * FROM tool_orchestrator WHERE tool_id = 'x402_api' AND is_active = true")) as { rows: ToolOrchestrator[] };
-    
     if (toolRes.rows.length > 0) {
       const route = toolRes.rows[0];
       const modelsToTry = [
@@ -575,14 +324,12 @@ Verification: Do not include conversational text or markdown codeblocks before o
           try {
             const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
             const apiKey = await getProviderKey(providerId);
-            
             if (apiKey) {
               const urlKey = await getProviderUrlKey(providerId);
               const rawTxt = await callAIProvider(
                 target.provider, target.model, apiKey, userQuery,
                 systemPrompt, undefined, [], {}, urlKey ?? undefined
               );
-
               if (rawTxt) {
                 let cleanTxt = rawTxt.trim();
                 if (cleanTxt.startsWith('```')) {
@@ -930,7 +677,6 @@ if (process.env.NODE_ENV === "production") {
         } catch (settingsError) {
           console.error('[SEO] Sub-settings mapping failed:', settingsError);
         }
-        
         res.type('html').send(finalHtml);
       } catch (err) {
         console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
