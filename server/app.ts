@@ -8,7 +8,10 @@ import { globalLimiter, adminLimiter, authLimiter } from './middleware/rateLimit
 import { csrfProtection } from './middleware/csrf.js';
 import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
+import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
+import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
+import wellKnownRouter from './routes/well-known.js';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
@@ -63,7 +66,6 @@ const x402Middleware = paymentMiddlewareFromConfig(
   false // syncFacilitatorOnStart = false to avoid startup crashes
 );
 
-
 // Explicitly trust proxy headers (including X-Forwarded-For and X-Forwarded-Proto) to handle load balancers / reverse proxies correctly
 const trustProxyVal = process.env.TRUST_PROXIES || '1';
 if (trustProxyVal === 'true' || trustProxyVal === '1') {
@@ -88,426 +90,11 @@ app.use((req, res, next) => {
   next();
 });
 
-function getPreferredLanguage(req: express.Request): string {
-  const acceptLang = req.headers['accept-language'];
-  if (!acceptLang) return 'ar'; // Default is Arabic
-
-  const supported = ['ar', 'en', 'fr', 'es', 'de'];
-  const parsed = acceptLang.split(',')
-    .map(lang => {
-      const parts = lang.split(';');
-      const code = parts[0].trim().toLowerCase().split('-')[0];
-      let q = 1.0;
-      if (parts[1]) {
-        const qMatch = parts[1].match(/q=([\d.]+)/);
-        if (qMatch) q = parseFloat(qMatch[1]);
-      }
-      return { code, q };
-    })
-    .filter(item => supported.includes(item.code))
-    .sort((a, b) => b.q - a.q);
-
-  if (parsed.length > 0) {
-    return parsed[0].code;
-  }
-
-  const lowerHeader = acceptLang.toLowerCase();
-  for (const lang of supported) {
-    if (lowerHeader.includes(lang)) {
-      return lang;
-    }
-  }
-
-  return 'ar';
-}
-
-function generateAuthMd(baseUrl: string, lang: string): string {
-  if (lang === 'ar') {
-    return [
-      '# auth.md',
-      '',
-      `هذا هو مستند تسجيل الوكيل لـ ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'يمكن للوكلاء التسجيل نيابة عن المستخدمين باستخدام هذه الخدمة.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (الاكتشاف)',
-      '',
-      'جلب البيانات التعريفية لخادم المصادقة لاكتشاف نقاط نهاية التسجيل:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (التسجيل)',
-      '',
-      'إرسال طلب POST لتسجيل وكيل جديد:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (المطالبة والمطابقة)',
-      '',
-      'ربط وثيقة الاعتماد بهوية مستخدم تم التحقق منها:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (إبطال الصلاحية)',
-      '',
-      'إبطال وثيقة اعتماد:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (مزيد من المعلومات)',
-      '',
-      '- Protocol (البروتوكول): https://workos.com/auth-md',
-      '- GitHub (جيت هاب): https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'fr') {
-    return [
-      '# auth.md',
-      '',
-      `Ceci est le document d'enregistrement de l'agent pour ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Les agents peuvent s\'enregistrer au nom des utilisateurs via ce service.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Découvrir)',
-      '',
-      'Récupérer les métadonnées du serveur d\'autorisation pour découvrir les points de terminaison d\'enregistrement :',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (S\'enregistrer)',
-      '',
-      'Envoyer une requête POST pour enregistrer un agent :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Revendiquer)',
-      '',
-      'Associer l\'identifiant à une identité utilisateur vérifiée :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Révoquer)',
-      '',
-      'Révoquer un identifiant :',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Plus d\'infos)',
-      '',
-      '- Protocole: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'es') {
-    return [
-      '# auth.md',
-      '',
-      `Este es el documento de registro de agentes para ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Los agentes pueden registrarse en nombre de los usuarios utilizando este servicio.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Descubrir)',
-      '',
-      'Obtener los metadatos del servidor de autorización para descubrir los endpoints de registro:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (Registrar)',
-      '',
-      'Enviar una solicitud POST para registrar un agente:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Reclamar)',
-      '',
-      'Asociar la credencial con una identidad de usuario verificada:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Revocar)',
-      '',
-      'Revocar una credencial:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Más información)',
-      '',
-      '- Protocolo: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  } else if (lang === 'de') {
-    return [
-      '# auth.md',
-      '',
-      `Dies ist das Agenten-Registrierungsdokument für ${baseUrl}.`,
-      '',
-      '## agent_auth',
-      '',
-      'Agenten können sich im Namen von Benutzern über diesen Dienst registrieren.',
-      '',
-      `- register_uri: ${baseUrl}/api/auth/agent-register`,
-      '- identity_types_supported: anonymous, identity_assertion',
-      '- credential_types_supported: api_key, access_token',
-      `- claim_uri: ${baseUrl}/api/auth/claim`,
-      `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-      '',
-      '## Discover (Entdecken)',
-      '',
-      'Abrufen der Metadaten des Autorisierungsservers, um Registrierungs-Endpunkte zu ermitteln:',
-      '',
-      '```http',
-      `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-      `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-      '```',
-      '',
-      '## Register (Registrieren)',
-      '',
-      'Senden Sie eine POST-Anfrage, um einen Agenten zu registrieren:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/agent-register`,
-      'Content-Type: application/json',
-      '',
-      '{',
-      '  "client_name": "My Agent",',
-      '  "identity_type": "anonymous",',
-      '  "credential_type": "api_key",',
-      '  "scopes": ["read", "write"]',
-      '}',
-      '```',
-      '',
-      '## Claim (Beanspruchen)',
-      '',
-      'Verknüpfen Sie das Berechtigungsnachweis-Token mit einer verifizierten Benutzeridentität:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/claim`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "identity_type": "identity_assertion",',
-      '  "assertion": "<id_jag_token>"',
-      '}',
-      '```',
-      '',
-      '## Revoke (Widerrufen)',
-      '',
-      'Widerrufen eines Berechtigungsnachweises:',
-      '',
-      '```http',
-      `POST ${baseUrl}/api/auth/revoke`,
-      'Content-Type: application/json',
-      'Authorization: Bearer <api_key>',
-      '',
-      '{',
-      '  "client_id": "agent_..."',
-      '}',
-      '```',
-      '',
-      '## More Info (Weitere Informationen)',
-      '',
-      '- Protokoll: https://workos.com/auth-md',
-      '- GitHub: https://github.com/workos/auth.md',
-    ].join('\n');
-  }
-
-  // Fallback to English
-  return [
-    '# auth.md',
-    '',
-    `This is the agent registration document for ${baseUrl}.`,
-    '',
-    '## agent_auth',
-    '',
-    'Agents can register on behalf of users using this service.',
-    '',
-    `- register_uri: ${baseUrl}/api/auth/agent-register`,
-    '- identity_types_supported: anonymous, identity_assertion',
-    '- credential_types_supported: api_key, access_token',
-    `- claim_uri: ${baseUrl}/api/auth/claim`,
-    `- revocation_uri: ${baseUrl}/api/auth/revoke`,
-    '',
-    '## Discover',
-    '',
-    'Fetch the authorization server metadata to discover registration endpoints:',
-    '',
-    '```http',
-    `GET ${baseUrl}/.well-known/oauth-protected-resource`,
-    `GET ${baseUrl}/.well-known/oauth-authorization-server`,
-    '```',
-    '',
-    '## Register',
-    '',
-    'Send a POST request to register an agent:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/agent-register`,
-    'Content-Type: application/json',
-    '',
-    '{',
-    '  "client_name": "My Agent",',
-    '  "identity_type": "anonymous",',
-    '  "credential_type": "api_key",',
-    '  "scopes": ["read", "write"]',
-    '}',
-    '```',
-    '',
-    '## Claim',
-    '',
-    'Bind the credential to a verified user identity:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/claim`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "identity_type": "identity_assertion",',
-    '  "assertion": "<id_jag_token>"',
-    '}',
-    '```',
-    '',
-    '## Revoke',
-    '',
-    'Revoke a credential:',
-    '',
-    '```http',
-    `POST ${baseUrl}/api/auth/revoke`,
-    'Content-Type: application/json',
-    'Authorization: Bearer <api_key>',
-    '',
-    '{',
-    '  "client_id": "agent_..."',
-    '}',
-    '```',
-    '',
-    '## More Info',
-    '',
-    '- Protocol: https://workos.com/auth-md',
-    '- GitHub: https://github.com/workos/auth.md',
-  ].join('\n');
-}
-
 // Markdown for Agents (Accept: text/markdown content negotiation)
 app.use((req, res, next) => {
   const accept = req.headers["accept"] || "";
   if (accept.includes("text/markdown") && (req.path === "/" || req.path === "/index.html")) {
-    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-    const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getBaseUrl(req);
     const preferredLang = getPreferredLanguage(req);
     const content = generateAuthMd(baseUrl, preferredLang);
     const tokens = content.split(/\s+/).length;
@@ -520,7 +107,6 @@ app.use((req, res, next) => {
 });
 
 app.use((req: any, res: any, next: any) => {
-  const isProd = process.env.NODE_ENV === 'production';
   const scriptSrcDirectives = [
     "'self'",
     `'nonce-${res.locals.nonce}'`,
@@ -529,7 +115,6 @@ app.use((req: any, res: any, next: any) => {
     "https://*.googleapis.com"
   ];
 
-  // Permit unsafe evaluation and inline scripts to accommodate Google Tag Manager and Stripe dynamic bindings securely
   scriptSrcDirectives.push("'unsafe-inline'", "'unsafe-eval'");
 
   helmet({
@@ -541,11 +126,9 @@ app.use((req: any, res: any, next: any) => {
         imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
         connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        // Strict ancestors limit frame loading to local self origin and reliable Google/AI Studio platforms, blocking wildcard run.app exploits
         frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio"]
       }
     },
-    // Keep COEP disabled to ensure third-party external resources (Google Fonts, Stripe interfaces, Dicebear avatars) load successfully without CORP headers
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   })(req, res, next);
@@ -560,17 +143,12 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    
-    // In dev mode, or if origin matches configured allowed list, let it pass
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
-    // Fallback: Check if the request origin comes from Cloud Run (.run.app) or localhost / loopback interfaces
     if (origin.endsWith('.run.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    
     callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
   },
   credentials: true,
@@ -603,23 +181,14 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     const distFile = path.join(distPath, fileName);
     const publicFile = path.join(publicPath, fileName);
-    
-    if (fs.existsSync(distFile)) {
-      return res.sendFile(distFile);
-    } else if (fs.existsSync(publicFile)) {
-      return res.sendFile(publicFile);
-    }
-    
+    if (fs.existsSync(distFile)) return res.sendFile(distFile);
+    if (fs.existsSync(publicFile)) return res.sendFile(publicFile);
     if (fallbackFileName) {
       const distFallback = path.join(distPath, fallbackFileName);
       const publicFallback = path.join(publicPath, fallbackFileName);
-      if (fs.existsSync(distFallback)) {
-        return res.sendFile(distFallback);
-      } else if (fs.existsSync(publicFallback)) {
-        return res.sendFile(publicFallback);
-      }
+      if (fs.existsSync(distFallback)) return res.sendFile(distFallback);
+      if (fs.existsSync(publicFallback)) return res.sendFile(publicFallback);
     }
-    
     res.status(404).type('text/plain').send('Not Found');
   };
 };
@@ -629,271 +198,8 @@ app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'ma
 app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
-app.get('/auth.md', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Vary', 'Accept, Accept-Language');
-  res.setHeader('X-Auth-Md-Version', '1.0');
-
-  const preferredLang = getPreferredLanguage(req);
-  const markdownContent = generateAuthMd(baseUrl, preferredLang);
-
-  res.send(markdownContent);
-});
-app.get('/.well-known/oauth-protected-resource', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-
-  res.json({
-    resource: baseUrl,
-    authorization_servers: [baseUrl],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    resource_signing_alg_values_supported: ['RS256'],
-    bearer_methods_supported: ['header', 'body', 'query'],
-    resource_documentation: `${baseUrl}/auth.md`,
-    agent_auth: {
-      register_uri: `${baseUrl}/api/auth/agent-register`,
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`,
-      identity_types_supported: ['anonymous', 'identity_assertion'],
-      anonymous: {
-        credential_types_supported: ['api_key']
-      },
-      identity_assertion: {
-        assertion_types_supported: ['urn:ietf:params:oauth:token-type:id-jag', 'verified_email'],
-        credential_types_supported: ['access_token', 'api_key']
-      }
-    }
-  });
-});
-
-app.get('/.well-known/openid-configuration', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/api/auth/authorize`,
-    token_endpoint: `${baseUrl}/api/auth/token`,
-    jwks_uri: `${baseUrl}/api/auth/jwks`,
-    userinfo_endpoint: `${baseUrl}/api/auth/user`,
-    grant_types_supported: ['authorization_code', 'client_credentials', 'refresh_token'],
-    response_types_supported: ['code', 'token'],
-    token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
-    id_token_signing_alg_values_supported: ['RS256'],
-    subject_types_supported: ['public'],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    agent_auth: {
-      register_uri: `${baseUrl}/api/auth/register-agent`,
-      supported_identity_types: ['agent', 'user', 'app'],
-      identity_types_supported: ['agent', 'user', 'app'],
-      credential_types: ['api_key', 'bearer_token', 'client_credentials'],
-      credential_types_supported: ['api_key', 'bearer_token', 'client_credentials'],
-      claim_endpoint: `${baseUrl}/api/auth/claim`,
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      claim_url: `${baseUrl}/api/auth/claim`,
-      revocation_endpoint: `${baseUrl}/api/auth/revoke`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`,
-      revocation_url: `${baseUrl}/api/auth/revoke`
-    }
-  });
-});
-
-app.get('/.well-known/oauth-authorization-server', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/api/auth/authorize`,
-    token_endpoint: `${baseUrl}/api/auth/token`,
-    jwks_uri: `${baseUrl}/api/auth/jwks`,
-    grant_types_supported: ['authorization_code', 'client_credentials', 'refresh_token'],
-    response_types_supported: ['code', 'token'],
-    token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
-    scopes_supported: ['openid', 'profile', 'email', 'read', 'write'],
-    agent_auth: {
-      auth_md: `${baseUrl}/auth.md`,
-      register_uri: `${baseUrl}/api/auth/agent-register`,
-      identity_types_supported: ['anonymous', 'identity_assertion'],
-      credential_types_supported: ['api_key', 'access_token'],
-      claim_uri: `${baseUrl}/api/auth/claim`,
-      revocation_uri: `${baseUrl}/api/auth/revoke`
-    }
-  });
-});
-
-app.get('/.well-known/agent-skills/index.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    $schema: 'https://agentskills.io/schemas/v0.2.0/agent-skills-index.json',
-    skills: [
-      {
-        name: 'Perplexta MCP Server',
-        type: 'mcp',
-        description: 'The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query databases, and invoke secure tools.',
-        url: `${baseUrl}/.well-known/mcp/server-card.json`,
-        sha256: '8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c',
-        digest: '8120e2e2832148af1ca1ca25e219fb0ec577c41fe1d7a8d5f308cecfbb5aa95c'
-      },
-      {
-        name: 'Perplexta OpenAPI Spec',
-        type: 'openapi',
-        description: 'Exposes technical metadata and standard full-stack routing pathways to execute enterprise actions.',
-        url: `${baseUrl}/api/docs/openapi.json`,
-        sha256: '2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d',
-        digest: '2195f4118ea1b0dfab9ca0ea9fc52b0c577c41fe1d7a8d5f308cec5fbbaa95d'
-      },
-      {
-        name: 'Perplexta API Catalog',
-        type: 'api-catalog',
-        description: 'A linkset-based catalog pointing to description, documentation, and status endpoints.',
-        url: `${baseUrl}/.well-known/api-catalog`,
-        sha256: '61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa',
-        digest: '61a0b32148af12ca0ea9fabca25ea219fb0ec577c41fe1a7a8f5f30cecfbb5aa'
-      }
-    ]
-  });
-});
-
-app.get('/.well-known/mcp/server-card.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    serverInfo: {
-      name: 'Perplexta Platform MCP Server',
-      version: '1.0.0'
-    },
-    transport: {
-      type: 'sse',
-      endpoint: `${baseUrl}/api/mcp/sse`,
-      url: `${baseUrl}/api/mcp/sse`
-    },
-    capabilities: {
-      resources: {
-        subscribe: true,
-        listChanged: true
-      },
-      prompts: {
-        listChanged: true
-      },
-      tools: {
-        listChanged: true
-      }
-    },
-    supportedProtocolVersions: ['2024-11-05'],
-    instructions: 'The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query core and ledger databases, run semantic document searches, and invoke secure tools.'
-  });
-});
-
-app.get('/api/auth/jwks', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'application/json');
-  
-  const { jwk } = getOrCreateSigningKeys();
-  res.json({
-    keys: [jwk]
-  });
-});
-
-app.get('/.well-known/api-catalog', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/linkset+json');
-  
-  res.json({
-    linkset: [
-      {
-        anchor: `${baseUrl}/api`,
-        'service-desc': [
-          {
-            href: `${baseUrl}/api/docs/openapi.json`,
-            type: 'application/openapi+json'
-          }
-        ],
-        'service-doc': [
-          {
-            href: `${baseUrl}/#docs`,
-            type: 'text/html'
-          }
-        ],
-        status: [
-          {
-            href: `${baseUrl}/api/health`,
-            type: 'application/json'
-          }
-        ]
-      }
-    ]
-  });
-});
-
-app.get('/.well-known/acp.json', (req, res) => {
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-  
-  res.json({
-    protocol: {
-      name: "acp",
-      version: "1.0"
-    },
-    api_base_url: `${baseUrl}/api`,
-    transports: ["http"],
-    capabilities: {
-      services: ["checkout"]
-    }
-  });
-});
+// ─── Public discovery & well-known routes (A-3) ──────────────────────────────
+app.use(wellKnownRouter);
 
 app.use(express.static(publicPath));
 
@@ -912,28 +218,20 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
     }
-
     if (!fs.existsSync(resolvedPath)) {
       return res.status(404).json({ error: 'File not found' });
     }
 
     const ext = path.extname(filename).toLowerCase();
     const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav', '.m4a'];
-
-    if (publicExtensions.includes(ext)) {
-      return res.sendFile(resolvedPath);
-    }
+    if (publicExtensions.includes(ext)) return res.sendFile(resolvedPath);
 
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
-
     if (token) {
       token = token.trim();
-      if (token.startsWith('"') && token.endsWith('"')) {
-        token = token.slice(1, -1);
-      }
+      if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     }
-
     if (!token || token === 'null' || token === 'undefined') {
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to download this document.' });
     }
@@ -944,50 +242,37 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       return res.status(500).json({ error: 'Server misconfiguration: Secure verification key not configured.' });
     }
     jwt.verify(token, jwtSecret, async (err: any, decoded: any) => {
-      if (err) {
-        return res.status(403).json({ error: 'Forbidden: Invalid token' });
-      }
+      if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
 
       const user = decoded as any;
-      if (user.role === 'admin') {
-        return res.sendFile(resolvedPath);
-      }
+      if (user.role === 'admin') return res.sendFile(resolvedPath);
 
       const cacheKey = `${user.id}:${filename}`;
       const now = Date.now();
       if (filePermissionCache.has(cacheKey)) {
         const cached = filePermissionCache.get(cacheKey)!;
         if (now < cached.expiresAt) {
-          if (cached.authorized) {
-            return res.sendFile(resolvedPath);
-          } else {
-            return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
-          }
-        } else {
-          filePermissionCache.delete(cacheKey);
+          return cached.authorized
+            ? res.sendFile(resolvedPath)
+            : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
         }
+        filePermissionCache.delete(cacheKey);
       }
 
       try {
         const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]) as Promise<{ rows: { id: UserFile['id'] }[] }>;
         const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]) as Promise<{ rows: { id: DepositRequest['id'] }[] }>;
-        
         const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
-        
         const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
-
-        if (authorized) {
-          return res.sendFile(resolvedPath);
-        }
-
-        return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+        return authorized
+          ? res.sendFile(resolvedPath)
+          : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
       } catch (dbErr) {
         console.error('[Upload Secure Handler] Database error:', dbErr);
         return res.status(500).json({ error: 'Database verification failure' });
       }
     });
-
   } catch (error) {
     next(error);
   }
@@ -998,9 +283,7 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
   const userQuery = String(req.body?.prompt || req.body?.query || req.body?.task || req.query?.query || "Evaluate latest structural liquidity arbitrage and system latency optimization paths.");
 
   try {
-    // 1. Fetch dynamic Orchestrator route for 'x402_api'
     const toolRes = (await pool.query("SELECT * FROM tool_orchestrator WHERE tool_id = 'x402_api' AND is_active = true")) as { rows: ToolOrchestrator[] };
-    
     if (toolRes.rows.length > 0) {
       const route = toolRes.rows[0];
       const modelsToTry = [
@@ -1011,7 +294,6 @@ app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
       ].filter(m => m.provider && m.model) as { provider: string; model: string }[];
 
       if (modelsToTry.length > 0) {
-        // Safe dynamic imports to avoid circular dependancy at module loading level
         const { callAIProvider, getProviderKey, getProviderUrlKey } = await import('./services/ai.js');
         const systemPrompt = `You are the Perplexta Intelligence Engine powering the payment-protected elite analytics programmatic gateway.
 The developer client is authenticated under a verified x402 payment agreement.
@@ -1040,33 +322,20 @@ Verification: Do not include conversational text or markdown codeblocks before o
           try {
             const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
             const apiKey = await getProviderKey(providerId);
-            
             if (apiKey) {
               const urlKey = await getProviderUrlKey(providerId);
-              
               const rawTxt = await callAIProvider(
-                target.provider,
-                target.model,
-                apiKey,
-                userQuery,
-                systemPrompt,
-                undefined,
-                [],
-                {},
-                urlKey ?? undefined
+                target.provider, target.model, apiKey, userQuery,
+                systemPrompt, undefined, [], {}, urlKey ?? undefined
               );
-
               if (rawTxt) {
                 let cleanTxt = rawTxt.trim();
                 if (cleanTxt.startsWith('```')) {
                   cleanTxt = cleanTxt.replace(/^```[a-zA-Z]*\n/g, '').replace(/\n```$/g, '').trim();
                 }
-                
                 try {
-                  const sanitizedJson = JSON.parse(cleanTxt);
-                  return res.json(sanitizedJson);
+                  return res.json(JSON.parse(cleanTxt));
                 } catch {
-                  // If response is not valid JSON, envelop it beautifully in formal schema
                   return res.json({
                     success: true,
                     data: {
@@ -1078,8 +347,8 @@ Verification: Do not include conversational text or markdown codeblocks before o
                         modelPerformance: "99.4%",
                         latencyScore: "8ms",
                         paths: [
-                          { "route": "USDC-USDT-USDC", "profit": "0.24%" },
-                          { "route": "WETH-DAI-WETH", "profit": "0.41%" }
+                          { route: "USDC-USDT-USDC", profit: "0.24%" },
+                          { route: "WETH-DAI-WETH", profit: "0.41%" }
                         ]
                       }
                     }
@@ -1097,7 +366,6 @@ Verification: Do not include conversational text or markdown codeblocks before o
     console.error('[x402 Dynamic Gateway] Error processing dynamic route, failing over to high-fidelity default:', err);
   }
 
-  // Graceful visual/functional system default fallback when no key/model is configured yet
   return res.json({
     success: true,
     data: {
@@ -1110,8 +378,8 @@ Verification: Do not include conversational text or markdown codeblocks before o
         modelPerformance: "99.4%",
         latencyScore: "8ms",
         paths: [
-          { "route": "USDC-USDT-USDC", "profit": "0.24%" },
-          { "route": "WETH-DAI-WETH", "profit": "0.41%" }
+          { route: "USDC-USDT-USDC", profit: "0.24%" },
+          { route: "WETH-DAI-WETH", profit: "0.41%" }
         ]
       }
     }
@@ -1120,7 +388,6 @@ Verification: Do not include conversational text or markdown codeblocks before o
 
 app.use('/api', globalLimiter);
 app.use('/api', csrfProtection);
-
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -1143,15 +410,7 @@ app.get('/api/docs/openapi.json', (req, res) => {
               description: 'API is online and healthy',
               content: {
                 'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      status: {
-                        type: 'string',
-                        example: 'ok'
-                      }
-                    }
-                  }
+                  schema: { type: 'object', properties: { status: { type: 'string', example: 'ok' } } }
                 }
               }
             }
@@ -1217,12 +476,17 @@ function escapeHtmlAttribute(str: string): string {
     .replace(/\//g, '&#x2F;');
 }
 
-function injectSEOTags(html: string, settings: any, req: express.Request): string {
+// A-4: baseUrl is now passed in by the caller — no redundant getBaseUrl(req) inside.
+function injectSEOTags(
+  html: string,
+  settings: any,
+  req: express.Request,
+  baseUrl: string,
+): string {
   if (!settings) return html;
 
   const preferredLang = getPreferredLanguage(req);
 
-  // Dynamic configuration loaded directly from admin dashboard with cascading fallbacks
   const nameAr = settings.site_name_ar || '';
   const nameEn = settings.site_name_en || '';
   const defaultSiteName = nameAr || nameEn || 'بيربليكستا';
@@ -1235,7 +499,6 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
   const keywordsEn = settings.keywords_en || '';
   const defaultKeywords = keywordsAr || keywordsEn || '';
 
-  // Select primary language values first, fallback dynamically to other configured languages to prevent override with hardcoded values
   let currentTitle = defaultSiteName;
   let currentDesc = defaultDesc;
   let currentKeywords = defaultKeywords;
@@ -1252,70 +515,44 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
     currentSiteName = nameAr || nameEn || defaultSiteName;
   } else {
-    // Dynamic matching for other languages configured by the admin (e.g. site_name_fr/seo_description_fr, site_name_es, site_name_de)
     const langKey = preferredLang;
-    const siteKey = `site_name_${langKey}`;
-    const seoKey = `seo_description_${langKey}`;
-    const descKey = `site_description_${langKey}`;
-    const keyKey = `keywords_${langKey}`;
-
-    currentTitle = settings[siteKey] || nameAr || nameEn || defaultSiteName;
-    currentDesc = settings[seoKey] || settings[descKey] || descAr || descEn || defaultDesc;
-    currentKeywords = settings[keyKey] || keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = settings[siteKey] || nameAr || nameEn || defaultSiteName;
+    currentTitle = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
+    currentDesc = settings[`seo_description_${langKey}`] || settings[`site_description_${langKey}`] || descAr || descEn || defaultDesc;
+    currentKeywords = settings[`keywords_${langKey}`] || keywordsAr || keywordsEn || defaultKeywords;
+    currentSiteName = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
   }
-
-  const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = (req.headers['x-forwarded-host'] as string || req.headers.host || 'perplexta.com').replace(/:\d+$/, '');
-  const baseUrl = `${protocol}://${host}`;
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
-    const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-    imageUrl = `${baseUrl}${cleanPath}`;
+    imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
   }
 
   let faviconUrl = settings.favicon_url || '/app-assets/icon.png';
   if (faviconUrl && !faviconUrl.startsWith('http') && !faviconUrl.startsWith('data:')) {
-    const cleanFavicon = faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`;
-    faviconUrl = `${baseUrl}${cleanFavicon}`;
+    faviconUrl = `${baseUrl}${faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`}`;
   }
 
   const currentUrl = `${baseUrl}${req.originalUrl || req.path}`;
   const canonicalPath = req.path === '/' ? '/' : req.path.replace(/\/$/, '');
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
 
-  // Escape all dynamic database fields inserted into HTML templates (Strict anti Stored-XSS)
-  const escTitle = escapeHtmlAttribute(currentTitle);
-  const escDesc = escapeHtmlAttribute(currentDesc);
+  const escTitle    = escapeHtmlAttribute(currentTitle);
+  const escDesc     = escapeHtmlAttribute(currentDesc);
   const escKeywords = escapeHtmlAttribute(currentKeywords);
-  const escImage = escapeHtmlAttribute(imageUrl);
-  const escUrl = escapeHtmlAttribute(currentUrl);
+  const escImage    = escapeHtmlAttribute(imageUrl);
+  const escUrl      = escapeHtmlAttribute(currentUrl);
   const escCanonical = escapeHtmlAttribute(canonicalUrl);
-  const escFavicon = escapeHtmlAttribute(faviconUrl);
+  const escFavicon  = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  // Normalize path and match against explicit public routes whitelist
-  const requestPath = req.path || '/';
-  const normalizedPath = requestPath === '/' ? '/' : requestPath.replace(/\/$/, '');
-  
-  const PUBLIC_WHITELIST = [
-    '/',
-    '/subscription',
-    '/forum',
-    '/marketplace',
-    '/blog',
-    '/terms',
-    '/privacy',
-    '/about'
-  ];
+  const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
 
+  const PUBLIC_WHITELIST = ['/', '/subscription', '/forum', '/marketplace', '/blog', '/terms', '/privacy', '/about'];
   const isPublicRoute = PUBLIC_WHITELIST.includes(normalizedPath);
 
   let metaBlock = '';
 
   if (isPublicRoute) {
-    // Build fully-compliant SEO, OpenGraph and Twitter meta tags block for explicitly public routes
     metaBlock = `
     <meta name="description" content="${escDesc}" />
     <meta name="keywords" content="${escKeywords}" />
@@ -1333,161 +570,59 @@ function injectSEOTags(html: string, settings: any, req: express.Request): strin
     `;
 
     if (settings.google_site_verification) {
-      const escVerification = escapeHtmlAttribute(settings.google_site_verification);
-      metaBlock += `\n    <meta name="google-site-verification" content="${escVerification}" />`;
+      metaBlock += `\n    <meta name="google-site-verification" content="${escapeHtmlAttribute(settings.google_site_verification)}" />`;
     }
 
-    // Build localization mappings for public route breadcrumb list names
-    const breadcrumbNamesAr: { [key: string]: string } = {
-      '/': 'الرئيسية',
-      '/subscription': 'الاشتراكات',
-      '/forum': 'المنتدى',
-      '/marketplace': 'المتجر',
-      '/blog': 'المدونة',
-      '/terms': 'الشروط والأحكام',
-      '/privacy': 'سياسة الخصوصية',
-      '/about': 'عن المنصة'
+    const breadcrumbNames: Record<string, Record<string, string>> = {
+      ar: { '/': 'الرئيسية', '/subscription': 'الاشتراكات', '/forum': 'المنتدى', '/marketplace': 'المتجر', '/blog': 'المدونة', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
+      en: { '/': 'Home', '/subscription': 'Subscriptions', '/forum': 'Forum', '/marketplace': 'Marketplace', '/blog': 'Blog', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
+      fr: { '/': 'Accueil', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Boutique', '/blog': 'Blog', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
+      es: { '/': 'Inicio', '/subscription': 'Suscripciones', '/forum': 'Foro', '/marketplace': 'Mercado', '/blog': 'Blog', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
+      de: { '/': 'Startseite', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Marktplatz', '/blog': 'Blog', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
     };
+    const names = breadcrumbNames[preferredLang] ?? breadcrumbNames['ar'];
 
-    const breadcrumbNamesEn: { [key: string]: string } = {
-      '/': 'Home',
-      '/subscription': 'Subscriptions',
-      '/forum': 'Forum',
-      '/marketplace': 'Marketplace',
-      '/blog': 'Blog',
-      '/terms': 'Terms & Conditions',
-      '/privacy': 'Privacy Policy',
-      '/about': 'About Us'
-    };
-
-    let breadcrumbNames = breadcrumbNamesAr;
-    if (preferredLang === 'en') {
-      breadcrumbNames = breadcrumbNamesEn;
-    } else if (preferredLang === 'fr') {
-      breadcrumbNames = {
-        '/': 'Accueil',
-        '/subscription': 'Abonnements',
-        '/forum': 'Forum',
-        '/marketplace': 'Boutique',
-        '/blog': 'Blog',
-        '/terms': 'Conditions d\'utilisation',
-        '/privacy': 'Politique de confidentialité',
-        '/about': 'À propos'
-      };
-    } else if (preferredLang === 'es') {
-      breadcrumbNames = {
-        '/': 'Inicio',
-        '/subscription': 'Suscripciones',
-        '/forum': 'Foro',
-        '/marketplace': 'Mercado',
-        '/blog': 'Blog',
-        '/terms': 'Términos y condiciones',
-        '/privacy': 'Política de privacidad',
-        '/about': 'Acerca de'
-      };
-    } else if (preferredLang === 'de') {
-      breadcrumbNames = {
-        '/': 'Startseite',
-        '/subscription': 'Abonnements',
-        '/forum': 'Forum',
-        '/marketplace': 'Marktplatz',
-        '/blog': 'Blog',
-        '/terms': 'Allgemeine Geschäftsbedingungen',
-        '/privacy': 'Datenschutzerklärung',
-        '/about': 'Über uns'
-      };
-    }
-
-    const breadcrumbItems = [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": breadcrumbNames['/'] || 'Home',
-        "item": baseUrl
-      }
-    ];
-
+    const breadcrumbItems: any[] = [{ "@type": "ListItem", "position": 1, "name": names['/'] || 'Home', "item": baseUrl }];
     if (normalizedPath !== '/') {
-      const pageName = breadcrumbNames[normalizedPath] || normalizedPath.replace(/^\//, '').charAt(0).toUpperCase() + normalizedPath.replace(/^\//, '').slice(1);
-      breadcrumbItems.push({
-        "@type": "ListItem",
-        "position": 2,
-        "name": pageName,
-        "item": `${baseUrl}${normalizedPath}`
-      });
+      const pageName = names[normalizedPath] || normalizedPath.replace(/^\//, '').charAt(0).toUpperCase() + normalizedPath.replace(/^\//, '').slice(1);
+      breadcrumbItems.push({ "@type": "ListItem", "position": 2, "name": pageName, "item": `${baseUrl}${normalizedPath}` });
     }
 
-    const breadcrumbList = {
-      "@type": "BreadcrumbList",
-      "@id": `${baseUrl}${normalizedPath}/#breadcrumb`,
-      "itemListElement": breadcrumbItems
-    };
-
-    // Build fully-compliant JSON-LD structured data for WebSite, Organization, and BreadcrumbList
     const structuredData = {
       "@context": "https://schema.org",
       "@graph": [
+        { "@type": "Organization", "@id": `${baseUrl}/#organization`, "name": currentSiteName, "url": baseUrl, "logo": faviconUrl, "description": currentDesc, "image": imageUrl },
         {
-          "@type": "Organization",
-          "@id": `${baseUrl}/#organization`,
-          "name": currentSiteName,
-          "url": baseUrl,
-          "logo": faviconUrl,
-          "description": currentDesc,
-          "image": imageUrl
+          "@type": "WebSite", "@id": `${baseUrl}/#website`, "url": baseUrl, "name": currentSiteName, "description": currentDesc,
+          "publisher": { "@id": `${baseUrl}/#organization` },
+          "potentialAction": { "@type": "SearchAction", "target": { "@type": "EntryPoint", "urlTemplate": `${baseUrl}/?q={search_term_string}` }, "query-input": "required name=search_term_string" }
         },
-        {
-          "@type": "WebSite",
-          "@id": `${baseUrl}/#website`,
-          "url": baseUrl,
-          "name": currentSiteName,
-          "description": currentDesc,
-          "publisher": {
-            "@id": `${baseUrl}/#organization`
-          },
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-              "@type": "EntryPoint",
-              "urlTemplate": `${baseUrl}/?q={search_term_string}`
-            },
-            "query-input": "required name=search_term_string"
-          }
-        },
-        breadcrumbList
+        { "@type": "BreadcrumbList", "@id": `${baseUrl}${normalizedPath}/#breadcrumb`, "itemListElement": breadcrumbItems }
       ]
     };
 
-    const structuredDataJson = JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script');
-    metaBlock += `\n    <script type="application/ld+json">\n${structuredDataJson}\n    </script>`;
+    metaBlock += `\n    <script type="application/ld+json">\n${JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script')}\n    </script>`;
   } else {
-    // Strictly prevent indexing on non-public routes to guard user data privacy and prevent search engine leakage
-    metaBlock = `
-    <meta name="robots" content="noindex, nofollow" />
-    `;
+    metaBlock = `\n    <meta name="robots" content="noindex, nofollow" />\n    `;
   }
 
   let processedHtml = html;
 
-  // Replace existing title or inject if missing
   if (/<title>[^]*?<\/title>/i.test(processedHtml)) {
     processedHtml = processedHtml.replace(/<title>[^]*?<\/title>/gi, `<title>${escTitle}</title>`);
   } else {
     processedHtml = processedHtml.replace('</head>', `<title>${escTitle}</title>\n</head>`);
   }
 
-  // Strip standard viewport/description/canonical link tags to prevent duplication
   processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
 
-  // Update favicon reference if customized
   if (settings.favicon_url) {
     processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+type="image\/png"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" type="image/png" href="${escFavicon}" />`);
     processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" href="${escFavicon}" />`);
   }
 
-  // Inject dynamic canonical link tag and metaBlock right before </head>
   processedHtml = processedHtml.replace('</head>', `<link rel="canonical" href="${escCanonical}" />\n  ${metaBlock}\n  </head>`);
 
   return processedHtml;
@@ -1501,16 +636,12 @@ if (process.env.NODE_ENV === "production") {
     index: false,
     setHeaders: (res, filePath) => {
       if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
-        // Built hashed files from Vite
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(js|css)$/.test(filePath)) {
-        // Standard JS/CSS (non-hashed fallback)
         res.setHeader('Cache-Control', 'public, max-age=86400');
       } else if (/\.(woff2?|ttf|otf|eot)$/.test(filePath)) {
-        // Fonts
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(png|jpg|jpeg|gif|svg|ico)$/i.test(filePath)) {
-        // Images / Favicon
         res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     }
@@ -1526,66 +657,58 @@ if (process.env.NODE_ENV === "production") {
   app.get('*', async (req, res) => {
     const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
     if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      // Content Negotiation: Return markdown if requested by Agents
+      const baseUrl = getBaseUrl(req);
+
       const acceptHeader = req.headers['accept'] || '';
       if (acceptHeader.includes('text/markdown')) {
-        const originUrl = `${req.protocol}://${req.get('host')}`;
-        const markdownBody = generateMarkdownForPage(req.path, originUrl);
+        const markdownBody = generateMarkdownForPage(req.path, baseUrl);
         const tokenCount = estimateMarkdownTokens(markdownBody);
-
         res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
         res.setHeader('X-Markdown-Tokens', String(tokenCount));
         return res.send(markdownBody);
       }
 
       try {
-        let baseHtml = cachedIndexHtml;
-        if (!baseHtml) {
-          baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
-        }
-
+        let baseHtml = cachedIndexHtml || fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
         const nonce = res.locals.nonce || '';
         let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-        const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
-        noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
+        noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
 
+        // A-5: explicit try/catch instead of silent .catch(()=>null).
+        // Errors are now logged so they surface in production logs.
         let finalHtml = noncedHtml;
         try {
-          const settings = await getSystemSettings().catch(() => null);
-          if (settings) {
-            finalHtml = injectSEOTags(noncedHtml, settings, req);
-          }
+          const settings = await getSystemSettings();
+          finalHtml = injectSEOTags(noncedHtml, settings, req, baseUrl);
         } catch (settingsError) {
-          console.error('[SEO] Sub-settings mapping failed:', settingsError);
+          console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
         }
-        
+
         res.type('html').send(finalHtml);
       } catch (err) {
         console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
         try {
-          let baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+          const baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
           const nonce = res.locals.nonce || '';
-          let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-          const nonceInject = `<script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`;
-          noncedHtml = noncedHtml.replace('<head>', `<head>\n  ${nonceInject}`);
-          res.type('html').send(noncedHtml);
-        } catch (nonceErr) {
-          console.error('[SEO] Noncing recovery failed:', nonceErr);
-          res.sendFile(path.join(distPath, 'index.html'));
+          res.type('html').send(baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`) );
+        } catch (readErr) {
+          console.error('[SEO] Critical: Could not read index.html:', readErr);
+          res.status(500).send('Internal Server Error');
         }
       }
-    } else {
-      res.status(404).type('text/plain').send('Not Found');
+    }
+  });
+} else {
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
+      const indexPath = path.join(publicPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Not found');
+      }
     }
   });
 }
 
-import { globalErrorHandler } from './middleware/error.js';
-
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: `Endpoint ${req.originalUrl} not found` });
-});
-
-app.use(globalErrorHandler);
-
-export { app };
+export default app;

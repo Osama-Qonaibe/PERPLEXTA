@@ -4,23 +4,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
 import './index.css';
 
-// Silence console calls on production to secure against potential telemetry / token info leakage
+// Silence non-critical console calls in production to prevent telemetry / token leakage.
+// console.error is intentionally kept alive so ErrorBoundary crash reports
+// reach the server logger and are never silently swallowed.
 if (!import.meta.env.DEV) {
-  console.log = () => {};
-  console.error = () => {};
-  console.warn = () => {};
-  console.info = () => {};
+  console.log   = () => {};
+  console.warn  = () => {};
+  console.info  = () => {};
   console.debug = () => {};
+  // console.error — intentionally NOT silenced (required for ErrorBoundary reporting)
 }
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // 10 minutes cache freshness to significantly lower backend query load
-      gcTime: 30 * 60 * 1000,    // Keep garbage collection in inactive state for 30 minutes
-      retry: 2,                  // Retry 2 times on transient failures
-      refetchOnWindowFocus: false, // Stop aggressive polling/refetching on window refocus
-      refetchOnReconnect: 'always', // Automatically revalidate when network connection is restored
+      staleTime: 10 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: 'always',
     },
   },
 });

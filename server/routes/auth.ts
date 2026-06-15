@@ -10,6 +10,8 @@ import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
 import { deductFromWallet, getEconomySettings } from '../services/wallet.js';
 import { hashToken } from '../utils/tokenHash.js';
+import { issueTokenPair, parseRemember } from '../utils/issueTokenPair.js';
+import { getBaseUrl, getRedirectUri } from '../utils/request.js';
 
 const router = express.Router();
 
@@ -19,33 +21,6 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
 }
-
-const getBaseUrl = (req: express.Request) => {
-  const xProto = req.get('x-forwarded-proto');
-  const xHost = req.get('x-forwarded-host');
-  const host = req.get('host');
-  
-  const protocol = xProto || req.protocol;
-  const finalHost = xHost || host;
-  
-  const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
-  
-  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
-  }
-  
-  let finalProto = protocol;
-  if (finalHost && !finalHost.includes('localhost') && !finalHost.includes('127.0.0.1') && !finalHost.includes('0.0.0.0')) {
-    finalProto = 'https';
-  }
-  
-  let origin = `${finalProto}://${finalHost}`;
-  return origin.endsWith('/') ? origin.slice(0, -1) : origin;
-};
-
-const getRedirectUri = (req: express.Request) => {
-  return `${getBaseUrl(req)}/api/auth/google/callback`;
-};
 
 const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {
   console.log(`[GoogleAvatarDiagnostic] [${context}]`);
@@ -134,9 +109,6 @@ async function generateUniqueReferralCode(): Promise<string> {
   return code;
 }
 
-// Access token lifetime — 4 hours prevents frequent silent refreshes
-const ACCESS_TOKEN_EXPIRY = '4h';
-
 router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { email, password, name, language = 'ar', theme = 'dark', ref } = req.body;
@@ -202,11 +174,8 @@ router.post("/signup", authLimiter, async (req, res) => {
       }
     }
 
-    const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
-    
-    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
+    const { accessToken, refreshToken, rememberMe } = issueTokenPair(user, parseRemember(req.body.remember), jwtSecret);
+    await createUserSession(user.id, refreshToken, req, rememberMe ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -276,11 +245,8 @@ router.post("/login", authLimiter, async (req, res) => {
       await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [userAvatar, user.id]);
     }
 
-    const remember = req.body.remember === true || req.body.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
-    
-    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
+    const { accessToken, refreshToken, rememberMe } = issueTokenPair(user, parseRemember(req.body.remember), jwtSecret);
+    await createUserSession(user.id, refreshToken, req, rememberMe ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -351,7 +317,7 @@ router.post("/refresh-token", refreshLimiter, async (req, res) => {
           if (userRes.rows.length > 0) {
             const user = userRes.rows[0];
             if (user.status !== 'suspended') {
-              const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
+              const { accessToken: newAccessToken } = issueTokenPair(user, parseRemember(decoded.remember), jwtSecret);
               return res.json({ token: newAccessToken, refreshToken: activeSessionToken });
             }
           }
@@ -381,9 +347,11 @@ router.post("/refresh-token", refreshLimiter, async (req, res) => {
       return res.status(403).json({ error: 'Suspended', message: 'User account is suspended' });
     }
 
-    const remember = decoded.remember === true || decoded.remember === 'true';
-    const newAccessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const newRefreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken, rememberMe } = issueTokenPair(
+      user,
+      parseRemember(decoded.remember),
+      jwtSecret
+    );
 
     await pool.query("UPDATE user_sessions SET status = 'inactive' WHERE session_token = $1", [refreshToken]);
 
@@ -393,7 +361,7 @@ router.post("/refresh-token", refreshLimiter, async (req, res) => {
       [hashToken(refreshToken), expirySec]
     );
 
-    await createUserSession(user.id, newRefreshToken, req, remember ? 30 : 1);
+    await createUserSession(user.id, newRefreshToken, req, rememberMe ? 30 : 1);
 
     res.json({ token: newAccessToken, refreshToken: newRefreshToken });
   } catch (error: any) {
@@ -663,11 +631,12 @@ router.get("/google/callback", async (req, res) => {
       await logSystemActivity(user.id, 'login', 'User logged in via Google', {}, req);
     }
 
-    const remember = storedState?.remember === true || storedState?.remember === 'true';
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role, type: 'access', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role, remember, type: 'refresh', jti: crypto.randomUUID() }, jwtSecret, { expiresIn: remember ? '30d' : '1d' });
-    
-    await createUserSession(user.id, refreshToken, req, remember ? 30 : 1);
+    const { accessToken, refreshToken, rememberMe } = issueTokenPair(
+      user,
+      parseRemember(storedState?.remember),
+      jwtSecret
+    );
+    await createUserSession(user.id, refreshToken, req, rememberMe ? 30 : 1);
 
     const fullProfile = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.referral_code,
@@ -718,7 +687,7 @@ router.get("/google/callback", async (req, res) => {
       ...userPayload,
       lang,
       ref: targetRef,
-      remember: !!storedState.remember
+      remember: rememberMe
     });
 
     if (storedState.authSessionId) {
@@ -729,7 +698,7 @@ router.get("/google/callback", async (req, res) => {
           ...userPayload,
           lang,
           ref: targetRef,
-          remember: !!storedState.remember
+          remember: rememberMe
         },
         expiresAt: Date.now() + 120000
       });

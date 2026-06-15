@@ -3,278 +3,145 @@ import { getEconomySettings, getUserWallet, enforceTransactionLimit } from './wa
 import { io } from '../config/socket.js';
 import { logSecurityAlert } from './notifications.js';
 
+// ─── Token Estimation ─────────────────────────────────────────────────────────
+
+/**
+ * Language-aware token estimator.
+ * Arabic/Hebrew/CJK characters tokenize at ~1.5 tokens/char.
+ * Latin/ASCII characters tokenize at ~0.25 tokens/char (4 chars per token).
+ * Mixed text is split and each group calculated separately.
+ */
+export function estimateTokens(text: string): number {
+  if (!text) return 0;
+  // Unicode ranges: Arabic (0600–06FF), Hebrew (0590–05FF), CJK (4E00–9FFF + ext)
+  const multibyteChars = (text.match(/[\u0590-\u06FF\u4E00-\u9FFF\u3400-\u4DBF]/g) || []).length;
+  const asciiChars = text.length - multibyteChars;
+  return Math.ceil(multibyteChars * 1.5 + asciiChars * 0.25);
+}
+
+// ─── Core Billing ─────────────────────────────────────────────────────────────
+
 /**
  * Calculates dynamic token usage points cost for a specific tool and token counts.
- * It is a centralized pricing calculation function based on tool's orchestrator configuration.
+ * Centralized pricing function based on tool's orchestrator configuration.
  */
 export async function calculateTokenPointsCost(toolId: string, inputTokens: number, outputTokens: number): Promise<number> {
   if (!pool) return 0;
-  
   try {
-    const toolRes = await pool.query(
+    const { rows } = await pool.query(
       'SELECT cost_per_usage, cost_per_1k_input_tokens, cost_per_1k_output_tokens FROM tool_orchestrator WHERE tool_id = $1',
       [toolId]
     );
-    if (toolRes.rows.length === 0) {
-      console.warn(`[Billing - Token Calc] Missing orchestrator configuration for tool_id: ${toolId}. Execution prohibited.`);
+    if (!rows.length) {
+      console.warn(`[Billing] Missing orchestrator config for tool_id: ${toolId}`);
       return 0;
     }
+    const row = rows[0];
+    const baseCost   = parseInt(row.cost_per_usage,           10) || 0;
+    const costInput  = parseFloat(row.cost_per_1k_input_tokens)  || 0;
+    const costOutput = parseFloat(row.cost_per_1k_output_tokens) || 0;
 
-    const row = toolRes.rows[0];
-    
-    // Parse active settings
-    const baseCostParsed = parseInt(row.cost_per_usage, 10);
-    const baseCost = !isNaN(baseCostParsed) ? baseCostParsed : 0;
+    const inputCost  = (inputTokens  / 1000) * costInput;
+    const outputCost = (outputTokens / 1000) * costOutput;
+    const total      = Math.ceil(baseCost + inputCost + outputCost);
 
-    const costInputParsed = parseFloat(row.cost_per_1k_input_tokens);
-    const costInput = !isNaN(costInputParsed) ? costInputParsed : 0;
-
-    const costOutputParsed = parseFloat(row.cost_per_1k_output_tokens);
-    const costOutput = !isNaN(costOutputParsed) ? costOutputParsed : 0;
-
-    // Separate calculations for auditing and granular billing precision
-    const fixedServiceFee = baseCost;
-    const inputTokenCost = (inputTokens / 1000) * costInput;
-    const outputTokenCost = (outputTokens / 1000) * costOutput;
-    const tokenUsageCost = inputTokenCost + outputTokenCost;
-    const grandTotalCalculated = fixedServiceFee + tokenUsageCost;
-    const finalPointsCost = Math.ceil(grandTotalCalculated);
-
-    // Detailed execution breakdown
     console.log(
-      `[Billing - Token Calc] [Tool: ${toolId}] [Inputs: ${inputTokens} @ ${costInput}/1k] [Outputs: ${outputTokens} @ ${costOutput}/1k] ` +
-      `-> Breakdown: { Fixed Service Fee: ${fixedServiceFee} pts | Token Usage Cost: ${tokenUsageCost.toFixed(4)} pts (In: ${inputTokenCost.toFixed(4)}, Out: ${outputTokenCost.toFixed(4)}) } ` +
-      `-> Raw Total: ${grandTotalCalculated.toFixed(4)} pts -> Ceiled Final: ${finalPointsCost} pts`
+      `[Billing] [Tool: ${toolId}] In: ${inputTokens}t @ ${costInput}/1k | Out: ${outputTokens}t @ ${costOutput}/1k` +
+      ` | Base: ${baseCost} | Total: ${total} pts`
     );
-
-    return finalPointsCost;
+    return total;
   } catch (err) {
-    console.error('[Billing] Failed to calculate token points cost from orchestrator parameters:', err);
+    console.error('[Billing] calculateTokenPointsCost failed:', err);
     return 0;
   }
 }
 
-/**
- * Converts points to USD based on the centralized points_per_dollar setting.
- */
+/** Converts points to USD based on the centralized points_per_dollar setting. */
 export async function convertPointsToUsd(points: number): Promise<number> {
   try {
     const settings = await getEconomySettings();
-    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-    return points / pointsPerDollar;
+    return points / (parseFloat(settings.points_per_dollar || '1000'));
   } catch (err) {
-    console.error('[Billing] Failed to convert points to USD:', err);
+    console.error('[Billing] convertPointsToUsd failed:', err);
     return points / 1000;
   }
 }
 
-/**
- * Determines if a user can afford the points cost either using points, or points converted to wallet balance.
- */
-export async function checkUserAffordability(userId: string | number, toolId: string, estimatedInputTokens: number = 0): Promise<{
-  allowed: boolean;
-  requiredPoints: number;
-  availablePoints: number;
-  availableBalanceUSD: number;
-  pointsPerDollar: number;
-}> {
-  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
-  const wallet = await getUserWallet(userIdNum);
-  const settings = await getEconomySettings();
+/** Determines if a user can afford the estimated cost from their wallet. */
+export async function checkUserAffordability(userId: string | number, toolId: string, estimatedInputTokens = 0) {
+  const userIdNum      = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  const wallet         = await getUserWallet(userIdNum);
+  const settings       = await getEconomySettings();
   const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-
-  const requiredPoints = await calculateTokenPointsCost(toolId, estimatedInputTokens, 0);
-  const availablePoints = Number(wallet.points || 0);
+  const requiredPoints  = await calculateTokenPointsCost(toolId, estimatedInputTokens, 0);
+  const availablePoints = Number(wallet.points  || 0);
   const availableBalanceUSD = Number(wallet.balance || 0);
-  const totalPointsAvailable = availablePoints + (availableBalanceUSD * pointsPerDollar);
 
   return {
-    allowed: totalPointsAvailable >= requiredPoints,
+    allowed: availablePoints + (availableBalanceUSD * pointsPerDollar) >= requiredPoints,
     requiredPoints,
     availablePoints,
     availableBalanceUSD,
-    pointsPerDollar
+    pointsPerDollar,
   };
 }
 
-/**
- * Deducts points upfront from user's account to secure execution authorization (hold).
- */
-export async function applyUpfrontHold(userId: string | number, toolId: string, estimatedInputTokens: number = 0): Promise<{
-  heldPoints: number;
-  totalPointsAvailable: number;
-}> {
+// ─── Hold / Reconcile / Refund ────────────────────────────────────────────────
+
+/** Deducts points upfront to secure execution authorization (hold). */
+export async function applyUpfrontHold(userId: string | number, toolId: string, prompt: string) {
   if (!ledgerPool) throw new Error('Ledger database not available');
   const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  const client    = await ledgerPool.connect();
 
-  const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
-    
-    // Acquire a strict row-level lock (FOR UPDATE) via getUserWallet with client passed in
     const wallet = await getUserWallet(userIdNum, client);
-    console.log(`[Billing - Security] Row-level FOR UPDATE lock acquired for User ${userIdNum}. Securing account against concurrent transactions.`);
 
-    const settings = await getEconomySettings();
+    const settings        = await getEconomySettings();
     const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-
-    // Calculate required points based on input estimate
-    const requiredPoints = await calculateTokenPointsCost(toolId, estimatedInputTokens, 0);
-    const availablePoints = Number(wallet.points || 0);
+    const estimatedTokens = estimateTokens(prompt);
+    const requiredPoints  = await calculateTokenPointsCost(toolId, estimatedTokens, 0);
+    const availablePoints = Number(wallet.points  || 0);
     const availableBalanceUSD = Number(wallet.balance || 0);
     const totalPointsAvailable = availablePoints + (availableBalanceUSD * pointsPerDollar);
 
-    console.log(`[Billing - Hold] Evaluation for User ${userIdNum}: Required points=${requiredPoints} | Current: { Points: ${availablePoints}, Balance USD: ${availableBalanceUSD} (${availableBalanceUSD * pointsPerDollar} pts equivalent) } | Total Available: ${totalPointsAvailable} pts`);
+    console.log(`[Billing - Hold] User ${userIdNum}: Required=${requiredPoints} pts | Available=${totalPointsAvailable} pts (${availablePoints} pts + $${availableBalanceUSD})`);
 
     if (totalPointsAvailable < requiredPoints) {
-      console.warn(`[Billing - Security Fail] User ${userIdNum} failed upfront evaluation: Required ${requiredPoints} pts, has ${totalPointsAvailable} pts.`);
+      console.warn(`[Billing - Hold] User ${userIdNum} INSUFFICIENT_FUNDS: need ${requiredPoints}, has ${totalPointsAvailable}`);
       throw new Error('INSUFFICIENT_FUNDS');
     }
 
-    // Determine the exact upfront hold determined purely by the orchestrator configuration with supreme precision
-    const holdPoints = requiredPoints;
-
-    let pointsToDeduct = 0;
+    let pointsToDeduct    = 0;
     let balanceToDeductUSD = 0;
 
-    if (availablePoints >= holdPoints) {
-      pointsToDeduct = holdPoints;
-      await client.query(
-        'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [holdPoints, wallet.id]
-      );
-      console.log(`[Billing - Hold Deduct] User ${userIdNum} paid fully from Points bucket: Deducted ${holdPoints} points.`);
+    if (availablePoints >= requiredPoints) {
+      pointsToDeduct = requiredPoints;
+      await client.query('UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [requiredPoints, wallet.id]);
+      console.log(`[Billing - Hold] User ${userIdNum}: Deducted ${requiredPoints} pts from Points bucket.`);
     } else {
-      pointsToDeduct = availablePoints;
-      const remainingPointsNeeded = holdPoints - pointsToDeduct;
-      balanceToDeductUSD = remainingPointsNeeded / pointsPerDollar;
-
-      await client.query(
-        'UPDATE wallets SET points = 0, balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [balanceToDeductUSD, wallet.id]
-      );
-      console.log(`[Billing - Hold Deduct] User ${userIdNum} paid with split-purse: Deducted all ${pointsToDeduct} points and $${balanceToDeductUSD.toFixed(4)} USD balance.`);
+      pointsToDeduct     = availablePoints;
+      balanceToDeductUSD = (requiredPoints - pointsToDeduct) / pointsPerDollar;
+      await client.query('UPDATE wallets SET points = 0, balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [balanceToDeductUSD, wallet.id]);
+      console.log(`[Billing - Hold] User ${userIdNum}: Split-purse — ${pointsToDeduct} pts + $${balanceToDeductUSD.toFixed(4)} USD.`);
     }
 
-    const desc = `Deducted upfront checking hold of ${holdPoints} points for tool ${toolId} execution.`;
     await client.query(
-      "INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) VALUES ($1, $2, $3, $4, 'tool_usage_hold', 'pending', $5)",
-      [userIdNum, wallet.id, -balanceToDeductUSD, -pointsToDeduct, desc]
+      `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
+       VALUES ($1,$2,$3,$4,'tool_usage_hold','pending',$5)`,
+      [userIdNum, wallet.id, -balanceToDeductUSD, -pointsToDeduct,
+       `Upfront hold of ${requiredPoints} pts for tool ${toolId}.`]
     );
-
     await enforceTransactionLimit(userIdNum, client);
     await client.query('COMMIT');
-    
-    console.log(`[Billing - Security Output] Upfront hold transaction committed successfully for User ${userIdNum}. Hold Amount: ${holdPoints} points.`);
 
-    return {
-      heldPoints: holdPoints,
-      totalPointsAvailable: totalPointsAvailable - holdPoints
-    };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error(`[Billing - Security Error] Transaction rollback for User ${userIdNum} during upfront hold:`, error);
-    throw error;
-  } finally {
-    client.release();
-  }
-}
+    console.log(`[Billing - Hold] Committed for User ${userIdNum}. Held: ${requiredPoints} pts.`);
+    return { heldPoints: requiredPoints, totalPointsAvailable: totalPointsAvailable - requiredPoints };
 
-/**
- * Reconciles the upfront held points using actual real-time token usage calculated upon execution completion.
- * Correctly refunds excessive holds or surcharges underpaid amounts.
- */
-export async function reconcileHold(
-  userId: string | number,
-  toolId: string,
-  heldPoints: number,
-  inputTokens: number,
-  outputTokens: number
-): Promise<{ actualPointsCost: number; refundPoints: number }> {
-  if (!ledgerPool) return { actualPointsCost: 0, refundPoints: 0 };
-  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
-
-  const client = await ledgerPool.connect();
-  try {
-    await client.query('BEGIN');
-    
-    // Acquire active lock for high-concurrency safety
-    const wallet = await getUserWallet(userIdNum, client);
-    console.log(`[Billing - Security] Row-level FOR UPDATE lock acquired for User ${userIdNum} during reconciliation state.`);
-
-    const settings = await getEconomySettings();
-    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-
-    // Calculate actual points based on actual input/output token usage
-    const actualPointsCost = await calculateTokenPointsCost(toolId, inputTokens, outputTokens);
-    const refundPoints = heldPoints - actualPointsCost;
-
-    console.log(`[Billing - Reconcile] User ${userIdNum}: Held=${heldPoints} pts | ActualRequired=${actualPointsCost} pts | NetAdjustment=${refundPoints} pts (Positive=Refund, Negative=Surcharge)`);
-
-    // Direct resolution update on the pending hold transaction record
-    await client.query(
-      "UPDATE ledger_transactions SET status = 'success' WHERE user_id = $1 AND transaction_type = 'tool_usage_hold' AND status = 'pending'",
-      [userIdNum]
-    );
-
-    if (refundPoints > 0) {
-      await client.query(
-        'UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [refundPoints, wallet.id]
-      );
-      const desc = `Reconciled tool ${toolId} execution. Actual: ${actualPointsCost} points. Refunded unused: ${refundPoints} points.`;
-      await client.query(
-        "INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) VALUES ($1, $2, 0, $3, 'tool_usage_reconcile', 'success', $4)",
-        [userIdNum, wallet.id, refundPoints, desc]
-      );
-      console.log(`[Billing - Reconcile Adjust] User ${userIdNum}: Successfully refunded ${refundPoints} unused points to wallet.`);
-    } else if (refundPoints < 0) {
-      const extraPoints = Math.abs(refundPoints);
-      let extraPointsDeducted = 0;
-      let extraUSDToDeduct = 0;
-
-      if (Number(wallet.points) >= extraPoints) {
-        extraPointsDeducted = extraPoints;
-        await client.query(
-          'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [extraPoints, wallet.id]
-        );
-        console.log(`[Billing - Reconcile Adjust] User ${userIdNum}: Surcharged extra ${extraPoints} points from Points bucket.`);
-      } else {
-        extraPointsDeducted = Number(wallet.points);
-        const extraNeeded = extraPoints - extraPointsDeducted;
-        extraUSDToDeduct = extraNeeded / pointsPerDollar;
-
-        await client.query(
-          'UPDATE wallets SET points = 0, balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [extraUSDToDeduct, wallet.id]
-        );
-        console.log(`[Billing - Reconcile Adjust] User ${userIdNum}: Split-purse surcharge. Deducted ${extraPointsDeducted} points and $${extraUSDToDeduct.toFixed(4)} USD balance.`);
-      }
-
-      const desc = `Reconciled tool ${toolId} execution. Under-deducted surcharge of ${extraPoints} points applied. Actual: ${actualPointsCost} points.`;
-      await client.query(
-        "INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) VALUES ($1, $2, $3, $4, 'tool_usage_reconcile', 'success', $5)",
-        [userIdNum, wallet.id, -extraUSDToDeduct, -extraPointsDeducted, desc]
-      );
-    } else {
-      const desc = `Reconciled tool ${toolId} execution. Cost matched hold exactly: ${actualPointsCost} points.`;
-      await client.query(
-        "INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) VALUES ($1, $2, 0, 0, 'tool_usage_reconcile', 'success', $3)",
-        [userIdNum, wallet.id, desc]
-      );
-      console.log(`[Billing - Reconcile Adjust] User ${userIdNum}: Perfect match. No adjustments needed.`);
-    }
-
-    await enforceTransactionLimit(userIdNum, client);
-    await client.query('COMMIT');
-    
-    console.log(`[Billing - Security Output] Reconcile transaction committed successfully for User ${userIdNum}.`);
-
-    return { actualPointsCost, refundPoints };
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(`[Billing - Security Error] Failure in reconcile transaction for User ${userIdNum}:`, err);
+    console.error(`[Billing - Hold] Rollback for User ${userIdNum}:`, err);
     throw err;
   } finally {
     client.release();
@@ -282,38 +149,116 @@ export async function reconcileHold(
 }
 
 /**
- * General helper to fully refund a held transaction upon absolute execution failure.
+ * Reconciles the upfront hold against actual token usage.
+ * Refunds over-charged or surcharges under-charged amounts.
  */
-export async function refundExecutionHold(userId: string | number, toolId: string, heldPoints: number) {
-  if (!ledgerPool) return;
+export async function reconcileHold(
+  userId: string | number, toolId: string,
+  heldPoints: number, inputTokens: number, outputTokens: number
+): Promise<{ actualPointsCost: number; refundPoints: number }> {
+  if (!ledgerPool) return { actualPointsCost: 0, refundPoints: 0 };
   const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  const client    = await ledgerPool.connect();
 
-  const client = await ledgerPool.connect();
   try {
     await client.query('BEGIN');
     const wallet = await getUserWallet(userIdNum, client);
 
+    const settings        = await getEconomySettings();
+    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+    const actualPointsCost = await calculateTokenPointsCost(toolId, inputTokens, outputTokens);
+    const refundPoints     = heldPoints - actualPointsCost;
+
+    console.log(`[Billing - Reconcile] User ${userIdNum}: Held=${heldPoints} | Actual=${actualPointsCost} | Adjustment=${refundPoints} pts`);
+
     await client.query(
-      'UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [heldPoints, wallet.id]
+      `UPDATE ledger_transactions SET status='success' WHERE user_id=$1 AND transaction_type='tool_usage_hold' AND status='pending'`,
+      [userIdNum]
     );
-    await client.query(
-      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1, $2, 0, $3, $4, $5, $6)',
-      [userIdNum, wallet.id, heldPoints, 'tool_usage_refund', `Refunded upfront hold of ${heldPoints} points for failing execution of ${toolId}.`, 'success']
-    );
+
+    if (refundPoints > 0) {
+      await client.query('UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [refundPoints, wallet.id]);
+      await client.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
+         VALUES ($1,$2,0,$3,'tool_usage_reconcile','success',$4)`,
+        [userIdNum, wallet.id, refundPoints,
+         `Reconciled ${toolId}. Actual: ${actualPointsCost} pts. Refunded: ${refundPoints} pts.`]
+      );
+      console.log(`[Billing - Reconcile] User ${userIdNum}: Refunded ${refundPoints} pts.`);
+
+    } else if (refundPoints < 0) {
+      const extraPoints = Math.abs(refundPoints);
+      let extraPointsDeducted = 0;
+      let extraUSDToDeduct    = 0;
+
+      if (Number(wallet.points) >= extraPoints) {
+        extraPointsDeducted = extraPoints;
+        await client.query('UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [extraPoints, wallet.id]);
+        console.log(`[Billing - Reconcile] User ${userIdNum}: Surcharged ${extraPoints} pts from Points bucket.`);
+      } else {
+        extraPointsDeducted = Number(wallet.points);
+        extraUSDToDeduct    = (extraPoints - extraPointsDeducted) / pointsPerDollar;
+        await client.query('UPDATE wallets SET points = 0, balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [extraUSDToDeduct, wallet.id]);
+        console.log(`[Billing - Reconcile] User ${userIdNum}: Split-purse surcharge — ${extraPointsDeducted} pts + $${extraUSDToDeduct.toFixed(4)}.`);
+      }
+      await client.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
+         VALUES ($1,$2,$3,$4,'tool_usage_reconcile','success',$5)`,
+        [userIdNum, wallet.id, -extraUSDToDeduct, -extraPointsDeducted,
+         `Reconciled ${toolId}. Surcharge: ${extraPoints} pts. Actual: ${actualPointsCost} pts.`]
+      );
+
+    } else {
+      await client.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
+         VALUES ($1,$2,0,0,'tool_usage_reconcile','success',$3)`,
+        [userIdNum, wallet.id, `Reconciled ${toolId}. Perfect match: ${actualPointsCost} pts.`]
+      );
+      console.log(`[Billing - Reconcile] User ${userIdNum}: Perfect match.`);
+    }
+
     await enforceTransactionLimit(userIdNum, client);
     await client.query('COMMIT');
+    return { actualPointsCost, refundPoints };
+
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[Billing] Failed to refund hold on failure:', err);
+    console.error(`[Billing - Reconcile] Rollback for User ${userIdNum}:`, err);
+    throw err;
   } finally {
     client.release();
   }
 }
 
+/** Fully refunds a held transaction on execution failure. */
+export async function refundExecutionHold(userId: string | number, toolId: string, heldPoints: number) {
+  if (!ledgerPool) return;
+  const userIdNum = typeof userId === 'number' ? userId : parseInt(userId, 10);
+  const client    = await ledgerPool.connect();
+  try {
+    await client.query('BEGIN');
+    const wallet = await getUserWallet(userIdNum, client);
+    await client.query('UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [heldPoints, wallet.id]);
+    await client.query(
+      `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status)
+       VALUES ($1,$2,0,$3,'tool_usage_refund',$4,'success')`,
+      [userIdNum, wallet.id, heldPoints, `Refunded hold of ${heldPoints} pts for failed ${toolId}.`]
+    );
+    await enforceTransactionLimit(userIdNum, client);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[Billing] refundExecutionHold failed:', err);
+  } finally {
+    client.release();
+  }
+}
+
+// ─── Billing Middleware ───────────────────────────────────────────────────────
+
 /**
- * Functional Middleware that wraps a tool call, intercepts executions,
- * handles real-time token calculations, and reconciles user balances dynamically.
+ * Wraps a tool call with full billing lifecycle:
+ * hold → execute (with real-time budget check) → reconcile.
  */
 export async function executeWithBillingMiddleware(
   userId: string | number,
@@ -330,155 +275,100 @@ export async function executeWithBillingMiddleware(
   let holdPointsResult: { heldPoints: number; totalPointsAvailable: number } | null = null;
   let outerAccumulatedOutput = '';
 
-  // Pre-fetch dynamic tool configurations for instant high-precision synchronous calculators
-  let baseCost = 0;
-  let costInput = 0;
-  let costOutput = 0;
-
+  // Pre-fetch tool costs for synchronous streaming budget checks (no async in hot path)
+  let baseCost = 0, costInput = 0, costOutput = 0;
   try {
-    const toolRes = await pool.query(
+    const { rows } = await pool.query(
       'SELECT cost_per_usage, cost_per_1k_input_tokens, cost_per_1k_output_tokens FROM tool_orchestrator WHERE tool_id = $1',
       [toolId]
     );
-    if (toolRes.rows.length > 0) {
-      const row = toolRes.rows[0];
-      const baseCostParsed = parseInt(row.cost_per_usage, 10);
-      baseCost = !isNaN(baseCostParsed) ? baseCostParsed : 0;
-      
-      const costInputParsed = parseFloat(row.cost_per_1k_input_tokens);
-      costInput = !isNaN(costInputParsed) ? costInputParsed : 0;
-
-      const costOutputParsed = parseFloat(row.cost_per_1k_output_tokens);
-      costOutput = !isNaN(costOutputParsed) ? costOutputParsed : 0;
+    if (rows.length) {
+      baseCost   = parseInt(rows[0].cost_per_usage,           10) || 0;
+      costInput  = parseFloat(rows[0].cost_per_1k_input_tokens)  || 0;
+      costOutput = parseFloat(rows[0].cost_per_1k_output_tokens) || 0;
     }
   } catch (err) {
-    console.error('[Billing Middleware Prep] Failed to pre-fetch tool dynamic configs:', err);
+    console.error('[Billing Middleware] Failed to pre-fetch tool costs:', err);
   }
 
-  // 1. If complimentary quota exceeded, apply upfront balance/points hold
+  // 1. Quota exceeded → apply upfront hold
   if (!quotaCheck.allowed) {
     try {
-      const estimatedInputTokens = Math.ceil(initialPrompt.length / 4);
-      const holdRes = await applyUpfrontHold(userIdNum, toolId, estimatedInputTokens);
-      holdPointsResult = holdRes;
-
-      if (io) {
-        io.to(`user_${userIdNum}`).emit('user_profile_updated');
-        io.to(`user_${userIdNum}`).emit('wallet_charge_notice', {
-          toolId,
-          charged: 'points',
-          amount: holdRes.heldPoints,
-          isHold: true
-        });
-      }
+      holdPointsResult = await applyUpfrontHold(userIdNum, toolId, initialPrompt);
+      io?.to(`user_${userIdNum}`).emit('user_profile_updated');
+      io?.to(`user_${userIdNum}`).emit('wallet_charge_notice', {
+        toolId, charged: 'points', amount: holdPointsResult.heldPoints, isHold: true,
+      });
     } catch (chargeErr: any) {
-      const period = quotaCheck.period || 'daily';
-      const periodStrEn = period === 'daily' ? 'Daily' : 'Monthly';
-      const periodStrAr = period === 'daily' ? 'يومي' : 'شهري';
-
-      const msgEn = `Premium Credits Required: You have reached your complimentary ${periodStrEn} limit for this tool. Please recharge your digital wallet (Pay-per-Token) to execute this action.`;
-      const msgAr = `تتطلب هذه العملية رصيداً إضافياً: لقد تجاوزت الحد ال${periodStrAr} المسموح به. يرجى شحن محفظتك الرقمية (الدفع لكل توكن) للاستمرار بالاستفادة.`;
-
-      await logSecurityAlert(userIdNum, 'QUOTA_LIMIT_HIT', 'low', `User hit ${period} quota but wallet hold failed: ${chargeErr.message}`, { toolId, quota: quotaCheck });
-
+      const period    = quotaCheck.period || 'daily';
+      const periodEn  = period === 'daily' ? 'Daily' : 'Monthly';
+      const periodAr  = period === 'daily' ? 'يومي'  : 'شهري';
+      await logSecurityAlert(userIdNum, 'QUOTA_LIMIT_HIT', 'low',
+        `User hit ${period} quota but wallet hold failed: ${chargeErr.message}`, { toolId, quota: quotaCheck });
       throw new Error(JSON.stringify({
-        error: msgEn,
-        error_ar: msgAr,
-        type: 'QUOTA_EXCEEDED',
-        limit: quotaCheck.limit || 0,
-        current: quotaCheck.currentUsage || 0,
-        period: period,
-        cta: { upgrade: true, referral: true }
+        error:    `Premium Credits Required: You have reached your complimentary ${periodEn} limit. Please recharge your digital wallet to continue.`,
+        error_ar: `تتطلب هذه العملية رصيداً إضافياً: لقد تجاوزت الحد ال${periodAr} المسموح به. يرجى شحن محفظتك الرقمية للاستمرار.`,
+        type: 'QUOTA_EXCEEDED', limit: quotaCheck.limit || 0,
+        current: quotaCheck.currentUsage || 0, period,
+        cta: { upgrade: true, referral: true },
       }));
     }
   }
 
-  // Interceptor callback for real-time progress billing checks
+  // 2. Real-time budget check on each streaming chunk (synchronous — no DB calls)
+  const inputTokens = estimateTokens(initialPrompt);
   const updateCostProgress = (chunkText: string) => {
     outerAccumulatedOutput += chunkText;
-    if (holdPointsResult) {
-      const actualInput = Math.ceil(initialPrompt.length / 4);
-      const actualOutput = Math.ceil(outerAccumulatedOutput.length / 4);
-
-      // Perform high-precision calculation synchronously! No async gaps, no race conditions!
-      const estPointsCost = Math.ceil(baseCost + (actualInput / 1000) * costInput + (actualOutput / 1000) * costOutput);
-      const totalWalletAvailable = holdPointsResult.heldPoints + holdPointsResult.totalPointsAvailable;
-
-      if (estPointsCost >= totalWalletAvailable) {
-        if (io) {
-          io.to(`user_${userIdNum}`).emit('billing_limit_reached', {
-            message_en: 'Streaming halted: Your digital wallet points have been fully exhausted. Please recharge your wallet or invite friends to continue.',
-            message_ar: 'تم إيقاف البث مؤقتاً: لقد نفدت نقاط محفظتك الرقمية تماماً. يرجى شحن الرصيد أو دعوة الأصدقاء للمتابعة.'
-          });
-        }
-        throw new Error('OUT_OF_POINTS_BUDGET_HALT');
-      }
+    if (!holdPointsResult) return;
+    const outputTokens   = estimateTokens(outerAccumulatedOutput);
+    const estPointsCost  = Math.ceil(baseCost + (inputTokens / 1000) * costInput + (outputTokens / 1000) * costOutput);
+    const totalAvailable = holdPointsResult.heldPoints + holdPointsResult.totalPointsAvailable;
+    if (estPointsCost >= totalAvailable) {
+      io?.to(`user_${userIdNum}`).emit('billing_limit_reached', {
+        message_en: 'Streaming halted: Your digital wallet points have been fully exhausted. Please recharge your wallet or invite friends to continue.',
+        message_ar: 'تم إيقاف البث مؤقتاً: لقد نفدت نقاط محفظتك الرقمية تماماً. يرجى شحن الرصيد أو دعوة الأصدقاء للمتابعة.',
+      });
+      throw new Error('OUT_OF_POINTS_BUDGET_HALT');
     }
   };
 
-  const walletChargedRepresentation = holdPointsResult ? { charged: 'points' as const, amount: holdPointsResult.heldPoints } : false;
+  const walletCharged = holdPointsResult
+    ? { charged: 'points' as const, amount: holdPointsResult.heldPoints }
+    : false;
 
+  // 3. Execute
   try {
     let finalGeneratedText = '';
     const result = await executeBlock(
       updateCostProgress,
-      async (generatedText) => {
-        finalGeneratedText = generatedText;
-      },
-      walletChargedRepresentation
+      async (text) => { finalGeneratedText = text; },
+      walletCharged
     );
 
-    // 3. Success reconciliation using real-time calculated token costs
+    // 4. Success reconciliation
     if (holdPointsResult) {
       try {
-        const actualInput = Math.ceil(initialPrompt.length / 4);
-        const actualOutput = Math.ceil(finalGeneratedText.length / 4);
-
-        const { actualPointsCost, refundPoints } = await reconcileHold(
-          userIdNum,
-          toolId,
-          holdPointsResult.heldPoints,
-          actualInput,
-          actualOutput
-        );
-
-        if (io) {
-          io.to(`user_${userIdNum}`).emit('user_profile_updated');
-        }
-      } catch (recErr) {
-        console.error('[Billing] Success reconcile failed:', recErr);
-      }
+        await reconcileHold(userIdNum, toolId, holdPointsResult.heldPoints,
+          inputTokens, estimateTokens(finalGeneratedText));
+        io?.to(`user_${userIdNum}`).emit('user_profile_updated');
+      } catch (err) { console.error('[Billing] Success reconcile failed:', err); }
     }
-
     return result;
+
   } catch (err: any) {
-    // 4. Failure / Exhaustion reconciliation
+    // 5. Failure / budget-halt reconciliation
     if (holdPointsResult) {
       try {
-        const actualInput = Math.ceil(initialPrompt.length / 4);
-        const actualOutput = Math.ceil(outerAccumulatedOutput.length / 4);
-
-        await reconcileHold(
-          userIdNum,
-          toolId,
-          holdPointsResult.heldPoints,
-          actualInput,
-          actualOutput
-        );
-        if (io) {
-          io.to(`user_${userIdNum}`).emit('user_profile_updated');
-        }
-      } catch (recErr) {
-        console.error('[Billing] Failure reconcile failed:', recErr);
-      }
+        await reconcileHold(userIdNum, toolId, holdPointsResult.heldPoints,
+          inputTokens, estimateTokens(outerAccumulatedOutput));
+        io?.to(`user_${userIdNum}`).emit('user_profile_updated');
+      } catch (recErr) { console.error('[Billing] Failure reconcile failed:', recErr); }
     }
-
-    if (err.message === 'OUT_OF_POINTS_BUDGET_HALT' || (err.message && err.message.includes('OUT_OF_POINTS_BUDGET_HALT'))) {
+    if (err.message?.includes('OUT_OF_POINTS_BUDGET_HALT')) {
       throw new Error(JSON.stringify({
-        error: "Streaming halted: Your digital wallet points have been fully exhausted. Please recharge your wallet or invite friends to continue.",
-        error_ar: "تم إيقاف الخدمة: رصيد محفظتك الرقمية غير كافٍ. يرجى إعادة شحن محفظتك أو دعوة الأصدقاء للمتابعة.",
-        type: 'INSUFFICIENT_FUNDS',
-        cta: { upgrade: true, referral: true }
+        error:    'Streaming halted: Your digital wallet points have been fully exhausted. Please recharge your wallet or invite friends to continue.',
+        error_ar: 'تم إيقاف الخدمة: رصيد محفظتك الرقمية غير كافٍ. يرجى إعادة شحن محفظتك أو دعوة الأصدقاء للمتابعة.',
+        type: 'INSUFFICIENT_FUNDS', cta: { upgrade: true, referral: true },
       }));
     }
     throw err;
