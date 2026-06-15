@@ -1,9 +1,6 @@
 import net from 'net';
 import dns from 'dns';
 
-// getBaseUrl and getRedirectUri live in utils/request.ts
-export { getBaseUrl, getRedirectUri } from './request.js';
-
 export const extractFollowUps = (text: string): { cleanText: string, followUps: string[] } => {
   const followUpRegex = /\[FOLLOW_UPS\]\n?([\s\S]*)$|\[أسئلة_متابعة\]\n?([\s\S]*)$/;
   const match = text.match(followUpRegex);
