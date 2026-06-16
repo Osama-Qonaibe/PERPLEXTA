@@ -76,6 +76,7 @@ interface AppContextType {
   setIsAuthModalOpen: (isOpen: boolean) => void;
   plans: any[];
   setPlans: (plans: any[]) => void;
+  plansLoaded: boolean;
   siteSettings: SiteSettings;
   setSiteSettings: (settings: SiteSettings) => void;
   economySettings: any;
@@ -2361,7 +2362,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       profileFetched.current = true;
       localStorage.removeItem('app_force_refresh');
 
-      fetch(`/api/economy`)
+      fetch(`/api/system/economy`)
         .then(res => res.json())
         .then(data => data && data.points_per_dollar && setEconomySettings(data))
         .catch(() => {});
@@ -2718,6 +2719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [siteSettings, language]);
 
   const [plans, setPlans] = useState<any[]>([]);
+  const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [milestoneData, setMilestoneData] = useState<any>(null);
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -2793,7 +2795,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    newSocket.on('new_notification', (notif: any) => {
+    const handleIncomingNotification = (notif: any) => {
       setNotifications(prev => {
         if (prev.some(n => n.id === notif.id)) return prev;
         return [notif, ...prev];
@@ -2809,7 +2811,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
 
       }
-    });
+    };
+
+    newSocket.on('new_notification', handleIncomingNotification);
+    newSocket.on('notification', handleIncomingNotification);
 
     newSocket.on('quota_milestone', (data: any) => {
       setMilestoneData(data);
@@ -3096,74 +3101,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fetchSettingsAndPlans = async () => {
       const options = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
 
-      try {
-        const settingsData = await fetchWithRetry('/api/settings', options);
-        setSiteSettings({
-          siteName: settingsData.site_name_en || '',
-          siteNameAr: settingsData.site_name_ar || '',
-          siteDescription: settingsData.site_description_en || '',
-          siteDescriptionAr: settingsData.site_description_ar || '',
-          seoDescriptionEn: settingsData.seo_description_en || '',
-          seoDescriptionAr: settingsData.seo_description_ar || '',
-          keywordsEn: settingsData.keywords_en || '',
-          keywordsAr: settingsData.keywords_ar || '',
-          googleAnalyticsId: settingsData.google_analytics_id || '',
-          googleSiteVerification: settingsData.google_site_verification || '',
-          logoBase64: settingsData.logo_url || null,
-          logoLightBase64: settingsData.logo_light_url || null,
-          faviconBase64: settingsData.favicon_url || null,
-          seoImageUrl: settingsData.seo_image_url || null
-        });
-      } catch (err) {
+      const fetchSettings = async () => {
+        try {
+          const settingsData = await fetchWithRetry('/api/system/settings', options, 1, 300);
+          setSiteSettings({
+            siteName: settingsData.site_name_en || '',
+            siteNameAr: settingsData.site_name_ar || '',
+            siteDescription: settingsData.site_description_en || '',
+            siteDescriptionAr: settingsData.site_description_ar || '',
+            seoDescriptionEn: settingsData.seo_description_en || '',
+            seoDescriptionAr: settingsData.seo_description_ar || '',
+            keywordsEn: settingsData.keywords_en || '',
+            keywordsAr: settingsData.keywords_ar || '',
+            googleAnalyticsId: settingsData.google_analytics_id || '',
+            googleSiteVerification: settingsData.google_site_verification || '',
+            logoBase64: settingsData.logo_url || null,
+            logoLightBase64: settingsData.logo_light_url || null,
+            faviconBase64: settingsData.favicon_url || null,
+            seoImageUrl: settingsData.seo_image_url || null
+          });
+        } catch (err) {
+          console.error('[AppContext] Settings fetch error:', err);
+        }
+      };
 
-      }
+      const fetchEconomy = async () => {
+        try {
+          const ecoData = await fetchWithRetry('/api/system/economy', options, 1, 300);
+          setEconomySettings(ecoData);
+        } catch (ecoError) {
+          console.error('[AppContext] Economy fetch error:', ecoError);
+        }
+      };
 
-      try {
-        const ecoData = await fetchWithRetry('/api/economy', options, 2, 500);
-        setEconomySettings(ecoData);
-      } catch (ecoError) {
+      const fetchPlans = async () => {
+        try {
+          const plansData = await fetchWithRetry('/api/plans', options, 2, 500);
+          const formattedPlans = (plansData || []).map((p: any) => {
+            let features = [];
+            let limits = {};
 
-      }
+            try {
+              features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []);
+            } catch (e) {
 
-      try {
-        const plansData = await fetchWithRetry('/api/plans', options);
-        const formattedPlans = (plansData || []).map((p: any) => {
-          let features = [];
-          let limits = {};
+            }
 
-          try {
-            features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []);
-          } catch (e) {
+            try {
+              limits = typeof p.limits === 'object' && p.limits !== null ? p.limits : (typeof p.limits === 'string' ? JSON.parse(p.limits || '{}') : {});
+            } catch (e) {
 
-          }
+            }
 
-          try {
-            limits = typeof p.limits === 'object' && p.limits !== null ? p.limits : (typeof p.limits === 'string' ? JSON.parse(p.limits || '{}') : {});
-          } catch (e) {
+            return {
+              id: p.id.toString(),
+              nameEn: p.name_en || '',
+              nameAr: p.name_ar || '',
+              descEn: p.desc_en || '',
+              descAr: p.desc_ar || '',
+              badge: p.badge || 'none',
+              discount: p.discount || 0,
+              isActive: p.is_active ?? true,
+              isVisible: p.is_visible ?? true,
+              monthlyPrice: parseFloat(p.monthly_price || 0),
+              annualPrice: parseFloat(p.annual_price || 0),
+              color: p.color || '#10b981',
+              planType: p.plan_type || 'user',
+              features,
+              limits
+            };
+          });
+          setPlans(formattedPlans);
+        } catch (error) {
+          console.error('[AppContext] Plans fetch error:', error);
+        } finally {
+          setPlansLoaded(true);
+        }
+      };
 
-          }
-
-          return {
-            id: p.id.toString(),
-            nameEn: p.name_en || '',
-            nameAr: p.name_ar || '',
-            descEn: p.desc_en || '',
-            descAr: p.desc_ar || '',
-            badge: p.badge || 'none',
-            discount: p.discount || 0,
-            isActive: p.is_active ?? true,
-            isVisible: p.is_visible ?? true,
-            monthlyPrice: parseFloat(p.monthly_price || 0),
-            annualPrice: parseFloat(p.annual_price || 0),
-            color: p.color || '#10b981',
-            features,
-            limits
-          };
-        });
-        setPlans(formattedPlans);
-      } catch (error) {
-
-      }
+      // Execute concurrently
+      await Promise.allSettled([fetchSettings(), fetchEconomy(), fetchPlans()]);
     };
     fetchSettingsAndPlans();
   }, []);
@@ -3326,7 +3343,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       login, signup,
       loginWithGoogle, logout,
       isAuthModalOpen, setIsAuthModalOpen,
-      plans, setPlans,
+      plans, setPlans, plansLoaded,
       siteSettings, setSiteSettings,
       economySettings, setEconomySettings,
       payWithBalance, stripeCheckout, refreshUser, balanceUSD,

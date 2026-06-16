@@ -456,6 +456,17 @@ app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/system', systemRoutes);
+
+// Backwards compatibility aliases for direct api endpoints
+app.use('/api/settings', (req, res, next) => {
+  req.url = '/settings';
+  systemRoutes(req, res, next);
+});
+app.use('/api/economy', (req, res, next) => {
+  req.url = '/economy';
+  systemRoutes(req, res, next);
+});
+
 app.use('/api/memories', memoryRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/mail-services-v3', emailRoutes);
@@ -695,17 +706,6 @@ if (process.env.NODE_ENV === "production") {
           console.error('[SEO] Critical: Could not read index.html:', readErr);
           res.status(500).send('Internal Server Error');
         }
-      }
-    }
-  });
-} else {
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/')) {
-      const indexPath = path.join(publicPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(404).send('Not found');
       }
     }
   });
