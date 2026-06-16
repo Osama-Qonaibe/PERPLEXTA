@@ -1543,6 +1543,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_referral_invitations_email ON referral_invitations(email)`);
     });
 
+    await runVersioned('v54_referral_invitations_fields_v2', 'Adding requested referred_email and invite_code columns to referral_invitations', async (tx) => {
+      await ensureColumn(tx, 'referral_invitations', 'referred_email', 'VARCHAR(255)', 'NULL');
+      await ensureColumn(tx, 'referral_invitations', 'invite_code', 'VARCHAR(100)', 'NULL');
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_referral_invitations_referred_email ON referral_invitations(referred_email)`);
+      await tx.query(`UPDATE referral_invitations SET referred_email = email WHERE referred_email IS NULL`);
+      await tx.query(`
+        UPDATE referral_invitations r 
+        SET invite_code = u.referral_code 
+        FROM users u 
+        WHERE r.referrer_id = u.id AND r.invite_code IS NULL
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;

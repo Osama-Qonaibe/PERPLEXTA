@@ -485,10 +485,12 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
       );
     } else {
       await pool.query(
-        'INSERT INTO referral_invitations (referrer_id, email, status, subject, body) VALUES ($1, $2, $3, $4, $5)',
+        'INSERT INTO referral_invitations (referrer_id, email, referred_email, invite_code, status, subject, body) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [
           referrerId,
           email.trim().toLowerCase(),
+          email.trim().toLowerCase(),
+          referrer.referral_code || null,
           'sent',
           lang === 'ar' ? 'دعوة تفعيل حصرية لمنصة التحليلات - بيربليكستا' : 'Exclusive Terminal Authorization Invitation - Perplexta',
           invitationLink
@@ -588,10 +590,12 @@ router.post("/remind-email", authenticateToken, async (req: any, res) => {
     } else {
       // Create invitation log with 'reminded' status
       await pool.query(
-        'INSERT INTO referral_invitations (referrer_id, email, status, subject, body) VALUES ($1, $2, $3, $4, $5)',
+        'INSERT INTO referral_invitations (referrer_id, email, referred_email, invite_code, status, subject, body) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [
           referrerId,
           email.trim().toLowerCase(),
+          email.trim().toLowerCase(),
+          referrer.referral_code || null,
           'reminded',
           lang === 'ar' ? 'تذكير تفعيل حصري معلق للمنصة - بيربليكستا' : 'Pending Terminal Activation Reminder - Perplexta',
           invitationLink
