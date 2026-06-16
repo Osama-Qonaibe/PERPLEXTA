@@ -348,8 +348,8 @@ export async function getUserProfile(userId: string) {
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
   
-  const walletRes = await (ledgerPool || pool).query('SELECT balance, points FROM wallets WHERE user_id = $1', [userId]);
-  const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
+  const walletRes = await (ledgerPool || pool).query('SELECT balance, points, referral_activated FROM wallets WHERE user_id = $1', [userId]);
+  const wallet = walletRes.rows[0] || { balance: 0.0, points: 0, referral_activated: false };
   
   let subscription = null;
 
@@ -382,7 +382,8 @@ export async function getUserProfile(userId: string) {
     custom_limits: {},
     subscription,
     balance: wallet.balance,
-    points: parseInt(wallet.points)
+    points: parseInt(wallet.points),
+    referral_activated: !!wallet.referral_activated
   };
 }
 

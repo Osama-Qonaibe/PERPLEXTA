@@ -17,6 +17,7 @@ import {
 } from '../services/chat.js';
 import { VideoResourceProvider } from '../services/videoResourceProvider.js';
 import { validatePromptLength } from '../utils/security.js';
+import { getUserWallet } from '../services/wallet.js';
 
 const router = express.Router();
 
@@ -32,7 +33,19 @@ const checkActiveSubscription = async (userId: number): Promise<boolean> => {
   const row = subRes.rows[0];
   if (!row) return false;
   if (row.role === 'admin') return true;
-  return row.status === 'active' && (!row.current_period_end || new Date(row.current_period_end) > new Date());
+  
+  const hasSub = row.status === 'active' && (!row.current_period_end || new Date(row.current_period_end) > new Date());
+  if (hasSub) return true;
+
+  try {
+    const wallet = await getUserWallet(userId);
+    const points = Number(wallet.points || 0);
+    const balance = Number(wallet.balance || 0);
+    return points > 0 || balance > 0;
+  } catch (err) {
+    console.warn('[CheckSubscription] Failed to fetch user wallet for fallback check:', err);
+    return false;
+  }
 };
 
 router.post("/", authenticateToken, chatLimiter, async (req: any, res) => {

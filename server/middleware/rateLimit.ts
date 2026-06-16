@@ -1,5 +1,8 @@
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
+const isProd = process.env.NODE_ENV === 'production';
+const limitMultiplier = isProd ? 1 : 100;
+
 const resolveClientKey = (req: any): string => {
   if (req.user?.id) {
     return `user_${req.user.id}`;
@@ -19,7 +22,7 @@ const resolveClientKey = (req: any): string => {
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1500,
+  max: 1500 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -29,7 +32,7 @@ export const globalLimiter = rateLimit({
 // Login/Signup only — keep strict (30 attempts per 15 min)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 30 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -39,7 +42,7 @@ export const authLimiter = rateLimit({
 // Dedicated limiter for refresh-token endpoint — must NOT share with authLimiter
 export const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,       // 1 minute window
-  max: 40,                    // 40 refreshes per minute per user — well above normal need
+  max: 40 * limitMultiplier,                    // 40 refreshes per minute per user — well above normal need
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -48,7 +51,7 @@ export const refreshLimiter = rateLimit({
 
 export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 60 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -57,7 +60,7 @@ export const chatLimiter = rateLimit({
 
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: 10 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -66,7 +69,7 @@ export const forgotPasswordLimiter = rateLimit({
 
 export const tokenLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 150,
+  max: 150 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -75,7 +78,7 @@ export const tokenLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 1000 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -84,7 +87,7 @@ export const adminLimiter = rateLimit({
 
 export const broadcastLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 30 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -93,7 +96,7 @@ export const broadcastLimiter = rateLimit({
 
 export const forumLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 80,
+  max: 80 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,

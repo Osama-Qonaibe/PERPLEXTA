@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
+import { toast } from 'sonner';
 
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
@@ -135,6 +136,11 @@ export const SubscriptionPage: React.FC = () => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast.success(
+      dir === 'rtl' 
+        ? 'تم نسخ رابط الإحالة الخاص بك بنجاح!' 
+        : 'Referral link copied to clipboard successfully!'
+    );
     setTimeout(() => setCopied(false), 2000);
   };
 

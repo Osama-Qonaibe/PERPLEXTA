@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Share2, Copy, Check, X, Megaphone, Users, ArrowUpRight, MousePointer2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { toast } from 'sonner';
 
 export const IncentiveCard: React.FC = () => {
   const { dir, t, user, milestoneData, setMilestoneData, theme, siteSettings } = useAppContext();
@@ -59,6 +60,11 @@ export const IncentiveCard: React.FC = () => {
     e.stopPropagation();
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast.success(
+      dir === 'rtl' 
+        ? 'تم نسخ رابط الإحالة الخاص بك بنجاح!' 
+        : 'Referral link copied to clipboard successfully!'
+    );
     setTimeout(() => setCopied(false), 2000);
   };
 

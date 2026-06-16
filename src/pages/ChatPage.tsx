@@ -3807,12 +3807,18 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
 
 export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any, tool?: string }) => {
   const [copied, setCopied] = useState(false);
-  const { triggerUpgradePrompt } = useAppContext();
+  const { triggerUpgradePrompt, economySettings } = useAppContext();
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
+  const minDeposit = economySettings?.referral_activation_min_deposit || 10;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast.success(
+      dir === 'rtl' 
+        ? 'تم نسخ رابط الإحالة الخاص بك بنجاح!' 
+        : 'Referral link copied to clipboard successfully!'
+    );
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -3868,27 +3874,49 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
       </div>
 
       {}
-      <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-md p-3 flex items-center gap-3">
-        <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
-          {referralLink}
+      {user?.referral_activated ? (
+        <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-md p-3 flex items-center gap-3">
+          <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
+            {referralLink}
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleCopy}
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme"
+              title="Copy Link"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+            <button 
+              onClick={handleShare}
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
+              title="Share"
+            >
+              <Share2 size={16} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleCopy}
-            className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme"
-            title="Copy Link"
+      ) : (
+        <div className="relative z-10 bg-[var(--bg-overlay)] border border-amber-500/10 rounded-md p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex-1">
+            <span className="text-[10px] font-extrabold text-amber-500 uppercase tracking-widest block mb-1">
+              {dir === 'rtl' ? 'مطلوب تفعيل نظام الأرباح' : 'Earnings Activation Required'}
+            </span>
+            <p className="text-[10px] text-[var(--text-secondary)] font-medium leading-relaxed">
+              {dir === 'rtl' 
+                ? `للوصول إلى رابط الإحالة الخاص بك وكسب المكافآت، يرجى تفعيل حساب الإحالات عبر إيداع حد أدنى بقيمة $${minDeposit}.` 
+                : `To obtain your referral link and earn rewards, please activate your referral account with an initial deposit of $${minDeposit}.`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/rewards')}
+            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all duration-300"
           >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
-          <button 
-            onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
-            title="Share"
-          >
-            <Share2 size={16} />
+            {dir === 'rtl' ? `إيداع $${minDeposit} وتفعيل الأرباح` : `Deposit $${minDeposit} to Activate`}
           </button>
         </div>
-      </div>
+      )}
 
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
@@ -3916,12 +3944,18 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
 
 export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
   const [copied, setCopied] = useState(false);
-  const { triggerUpgradePrompt } = useAppContext();
+  const { triggerUpgradePrompt, economySettings } = useAppContext();
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
+  const minDeposit = economySettings?.referral_activation_min_deposit || 10;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast.success(
+      dir === 'rtl' 
+        ? 'تم نسخ رابط الإحالة الخاص بك بنجاح!' 
+        : 'Referral link copied to clipboard successfully!'
+    );
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -3970,27 +4004,49 @@ export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: 
         </div>
       </div>
 
-      <div className="relative z-10 bg-[var(--bg-overlay)] border border-red-500/10 rounded-md p-3 flex items-center gap-3">
-        <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)] p-1">
-          {referralLink}
+      {user?.referral_activated ? (
+        <div className="relative z-10 bg-[var(--bg-overlay)] border border-red-500/10 rounded-md p-3 flex items-center gap-3">
+          <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)] p-1">
+            {referralLink}
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleCopy}
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-theme"
+              title="Copy Link"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+            <button 
+              onClick={handleShare}
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-red-500/20"
+              title="Share"
+            >
+              <Share2 size={16} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleCopy}
-            className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-theme"
-            title="Copy Link"
+      ) : (
+        <div className="relative z-10 bg-[var(--bg-overlay)] border border-amber-500/10 rounded-md p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex-1">
+            <span className="text-[10px] font-extrabold text-amber-500 uppercase tracking-widest block mb-1">
+              {dir === 'rtl' ? 'مطلوب تفعيل نظام الأرباح' : 'Earnings Activation Required'}
+            </span>
+            <p className="text-[10px] text-[var(--text-secondary)] font-medium leading-relaxed">
+              {dir === 'rtl' 
+                ? `للوصول إلى رابط الإحالة الخاص بك وكسب المكافآت، يرجى تفعيل حساب الإحالات عبر إيداع حد أدنى بقيمة $${minDeposit}.` 
+                : `To obtain your referral link and earn rewards, please activate your referral account with an initial deposit of $${minDeposit}.`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/rewards')}
+            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all duration-300"
           >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
-          <button 
-            onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-red-500/20"
-            title="Share"
-          >
-            <Share2 size={16} />
+            {dir === 'rtl' ? `إيداع $${minDeposit} وتفعيل الأرباح` : `Deposit $${minDeposit} to Activate`}
           </button>
         </div>
-      </div>
+      )}
 
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
@@ -4046,7 +4102,7 @@ export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile, isInstallable, 
     installApp, isInstalling, siteSettings, setIsOperationPending, isAuthReady,
-    refreshUser, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt
+    refreshUser, balance, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt
   } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
@@ -4186,8 +4242,8 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatId, setChatId] = useState<string | null>(routeChatId && routeChatId !== 'new' ? routeChatId : null);
 
-  const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active');
-  const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active'));
+  const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active') || (balance > 0 || balanceUSD > 0);
+  const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active') && (balance <= 0 && balanceUSD <= 0));
 
   useEffect(() => {
     if (!query) {
@@ -6352,7 +6408,7 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               disabled={isInputDisabled}
-              placeholder={isInputDisabled ? (dir === 'rtl' ? 'يرجى تنشيط حسابك بتفعيل باقة اشتراك للبدء...' : 'Activate your account with a subscription to start...') : t('askAssistant')}
+              placeholder={isInputDisabled ? (dir === 'rtl' ? 'يرجى تفعيل باقة اشتراك أو شحن الرصيد للبدء بالاستخدام...' : 'Please activate a subscription plan or top up your balance to start...') : t('askAssistant')}
               className={`w-full bg-transparent border-none outline-none px-1 py-1 text-[16px] sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
               dir="auto"
               rows={1}
@@ -6921,109 +6977,40 @@ export const ChatPage: React.FC = () => {
                 ))}
               </motion.div>
             ) : messages.length === 0 && !routeChatId ? (
-              !hasActiveSub ? (
-                <motion.div
-                  key="subscription-blocker-onboarding"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="flex-1 flex flex-col items-center justify-center min-h-full py-8 md:py-16 selection:bg-emerald-500/10 w-full"
-                >
-                  <div className="w-full max-w-xl px-4 md:px-6">
-                    <div className="rounded-[var(--radius)] border bg-[var(--bg-secondary)] border-[var(--border-main)] overflow-hidden shadow-2xl relative p-6 md:p-8 flex flex-col items-center text-center">
-                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500" />
+              <motion.div 
+                key="onboarding-view" 
+                initial={{ opacity: 0, scale: 1, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
+              >
 
-                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] mb-6 transition-all duration-300 hover:scale-110">
-                        <Sparkles size={32} className="animate-pulse" />
-                      </div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/[0.02] via-transparent to-transparent pointer-events-none select-none" />
 
-                      <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)] tracking-tight mb-3">
-                        {dir === 'rtl' ? 'تنشيط حسابك مطلوب' : 'Account Activation Required'}
-                      </h2>
+                <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
 
-                      <p className="text-xs md:text-sm text-gray-500 leading-relaxed max-w-md mb-8">
-                        {dir === 'rtl' 
-                          ? 'أنت مسجل حالياً بدون خطة نشطة. للاستفادة من محادثات الذكاء الاصطناعي وخدمات الأدوات المتقدمة، يرجى تفعيل أي من الخطط المجانية أو المدفوعة.'
-                          : 'You are currently registered without an active subscription plan. To use AI conversations and analytical tools, please subscribe to a free or premium plan.'}
-                      </p>
-
-                      <div className="w-full flex flex-col sm:flex-row gap-3 justify-center mb-8">
-                        <button
-                          onClick={() => navigate('/subscription')}
-                          className="px-6 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                          {dir === 'rtl' ? 'اختر خطة لتنشيط الحساب' : 'Choose Plan to Activate'}
-                        </button>
-                      </div>
-
-                      <div className="w-full border-t border-[var(--border-main)] pt-6 flex flex-col items-center">
-                        <h4 className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-wider mb-2">
-                          {dir === 'rtl' ? 'ادعُ أصدقاءك واربح الرصيد' : 'Invite Friends and Earn Credits'}
-                        </h4>
-                        <p className="text-[9px] md:text-[11px] text-gray-500 mb-4 max-w-sm">
-                          {dir === 'rtl'
-                            ? 'احصل على نقاط إضافية عن كل صديق يسجل من خلالك لتفعيل ميزاتك المتقدمة مجاناً!'
-                            : 'Get bonus points dynamically when friends register with your code to activate premium features for free!'}
-                        </p>
-
-                        <div className="flex items-center gap-2 w-full max-w-sm rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] p-1.5">
-                          <input
-                            type="text"
-                            readOnly
-                            value={`${window.location.origin}/?ref=${user?.referral_code || user?.id || 'guest'}`}
-                            className="bg-transparent text-[10px] md:text-xs flex-1 outline-none text-[var(--text-secondary)] px-2 font-mono truncate animate-none border-none shadow-none"
-                          />
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/?ref=${user?.referral_code || user?.id || 'guest'}`);
-                              alert(dir === 'rtl' ? 'تم نسخ رابط الدعوة!' : 'Invitation link copied!');
-                            }}
-                            className="h-8 px-3 rounded-[4px] border border-[var(--border-main)] hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1 hover:text-emerald-500"
-                          >
-                            {dir === 'rtl' ? 'نسخ' : 'Copy'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="w-14 h-14 rounded-full bg-emerald-500/[0.04] border border-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mb-6 transition-all duration-300 hover:scale-110">
+                    <Sparkles size={24} className="animate-pulse" />
                   </div>
-                </motion.div>
-              ) : (
-                <motion.div 
-                  key="onboarding-view" 
-                  initial={{ opacity: 0, scale: 1, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
-                >
 
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/[0.02] via-transparent to-transparent pointer-events-none select-none" />
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
+                    {dir === 'rtl' 
+                      ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'} 👋`
+                      : `Welcome back, ${user?.name || 'Perplexta Elite Member'} 👋`
+                    }
+                  </h1>
 
-                  <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
+                  <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
+                    {dir === 'rtl'
+                      ? 'كيف يمكنني مساندة رؤيتك الاستثمارية والتحليلية اليوم؟'
+                      : 'How can I support your investment and analytical vision today?'
+                    }
+                  </p>
 
-                    <div className="w-14 h-14 rounded-full bg-emerald-500/[0.04] border border-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mb-6 transition-all duration-300 hover:scale-110">
-                      <Sparkles size={24} className="animate-pulse" />
-                    </div>
-
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
-                      {dir === 'rtl' 
-                        ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'} 👋`
-                        : `Welcome back, ${user?.name || 'Perplexta Elite Member'} 👋`
-                      }
-                    </h1>
-
-                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
-                      {dir === 'rtl'
-                        ? 'كيف يمكنني مساندة رؤيتك الاستثمارية والتحليلية اليوم؟'
-                        : 'How can I support your investment and analytical vision today?'
-                      }
-                    </p>
-
-                    <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
-                  </div>
-                </motion.div>
-              )
+                  <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+                </div>
+              </motion.div>
             ) : (
               <motion.div
                 key="chat-thread-view"

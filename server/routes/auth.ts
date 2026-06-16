@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { pool, ledgerPool, getSecurityPool } from '../db/index.js';
 import { sendSmartEmail } from '../services/email.js';
-import { logSystemActivity } from '../services/notifications.js';
+import { logSystemActivity, createNotification } from '../services/notifications.js';
 import { authLimiter, forgotPasswordLimiter, refreshLimiter } from '../middleware/rateLimit.js';
 import { authenticateToken, addToBlacklistCache } from '../middleware/auth.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
@@ -147,7 +147,42 @@ router.post("/signup", authLimiter, async (req, res) => {
 
     const user = result.rows[0];
     
-    await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+    let welcomeBonusPoints = 600;
+    try {
+      const econ = await getEconomySettings();
+      if (econ && econ.welcome_bonus_points !== undefined) {
+        welcomeBonusPoints = parseInt(econ.welcome_bonus_points) || 0;
+      }
+    } catch (econErr) {
+      console.error('Failed to query welcome_bonus_points from economy settings:', econErr);
+    }
+
+    const walletRes = await ledgerPool.query(
+      `INSERT INTO wallets (user_id, points) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET points = wallets.points + EXCLUDED.points RETURNING id`, 
+      [user.id, welcomeBonusPoints]
+    );
+    const walletId = walletRes.rows[0]?.id;
+
+    if (walletId && welcomeBonusPoints > 0) {
+      await ledgerPool.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) 
+         VALUES ($1, $2, 0, $3, 'welcome_bonus', 'success', $4)`,
+        [user.id, walletId, welcomeBonusPoints, 'مكافأة التسجيل الترحيبية / Welcome registration bonus']
+      );
+
+      try {
+        await createNotification(
+          user.id,
+          'gift',
+          'Welcome Bonus Awarded!',
+          'مكافأة التسجيل الترحيبية!',
+          `Welcome to Perplexta! You have received ${welcomeBonusPoints} points as a registration bonus. Start using our advanced services immediately!`,
+          `مرحباً بك في بيربليكستا! لقد حصلت على ${welcomeBonusPoints} نقطة كمكافأة ترحيبية للتسجيل. يمكنك البدء باستخدام خدماتنا المتقدمة فوراً!`
+        );
+      } catch (notifErr) {
+        console.error('Failed to create welcome bonus notification:', notifErr);
+      }
+    }
 
     if (referredBy) {
       let bonusPoints = 1000;
@@ -555,18 +590,51 @@ router.get("/google/callback", async (req, res) => {
       );
       user = insertResult.rows[0];
       
-      await ledgerPool.query(`INSERT INTO wallets (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+      let welcomeBonusPoints = 600;
+      let referralBonusPointsSetting = 1000;
+      try {
+        const econ = await getEconomySettings();
+        if (econ) {
+          if (econ.welcome_bonus_points !== undefined) {
+            welcomeBonusPoints = parseInt(econ.welcome_bonus_points) || 0;
+          }
+          if (econ.referral_bonus_points !== undefined) {
+            referralBonusPointsSetting = parseInt(econ.referral_bonus_points) || 1000;
+          }
+        }
+      } catch (econErr) {
+        console.error('Failed to query welcome_bonus_points from economy settings:', econErr);
+      }
+
+      const walletRes = await ledgerPool.query(
+        `INSERT INTO wallets (user_id, points) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET points = wallets.points + EXCLUDED.points RETURNING id`, 
+        [user.id, welcomeBonusPoints]
+      );
+      const walletId = walletRes.rows[0]?.id;
+
+      if (walletId && welcomeBonusPoints > 0) {
+        await ledgerPool.query(
+          `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) 
+           VALUES ($1, $2, 0, $3, 'welcome_bonus', 'success', $4)`,
+          [user.id, walletId, welcomeBonusPoints, 'مكافأة التسجيل الترحيبية عبر جوجل / Google registration welcome bonus']
+        );
+
+        try {
+          await createNotification(
+            user.id,
+            'gift',
+            'Welcome Bonus Awarded!',
+            'مكافأة التسجيل الترحيبية!',
+            `Welcome to Perplexta! You have received ${welcomeBonusPoints} points as a registration bonus. Start using our advanced services immediately!`,
+            `مرحباً بك في بيربليكستا! لقد حصلت على ${welcomeBonusPoints} نقطة كمكافأة ترحيبية للتسجيل. يمكنك البدء باستخدام خدماتنا المتقدمة فوراً!`
+          );
+        } catch (notifErr) {
+          console.error('Failed to create welcome bonus notification:', notifErr);
+        }
+      }
 
       if (referredBy) {
-        let bonusPoints = 1000;
-        try {
-          const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
-          if (econRes.rows.length > 0) {
-            bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
-          }
-        } catch (econErr) {
-          console.error('Failed to query economy settings in Google registration:', econErr);
-        }
+        let bonusPoints = referralBonusPointsSetting;
 
         try {
           await ledgerPool.query(

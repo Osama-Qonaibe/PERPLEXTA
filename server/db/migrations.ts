@@ -2181,6 +2181,19 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         metadata JSONB DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
+    },
+    {
+      name: 'referral_invitations',
+      query: `CREATE TABLE IF NOT EXISTS referral_invitations (
+        id SERIAL PRIMARY KEY,
+        referrer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        email VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'sent',
+        subject VARCHAR(255),
+        body TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
@@ -2190,6 +2203,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   }
 
   const indexes = [
+    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS referral_invitations_pkey ON referral_invitations(id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_referral_invitations_referrer ON referral_invitations(referrer_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_referral_invitations_email ON referral_invitations(email)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS api_keys_vault_pkey ON api_keys_vault(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS api_keys_vault_provider_key ON api_keys_vault(provider)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS chat_memories_pkey ON chat_memories(id)` },

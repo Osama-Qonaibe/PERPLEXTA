@@ -1,5 +1,7 @@
 import { ledgerPool, pool } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { createNotification } from './notifications.js';
+import { io } from '../config/socket.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -55,17 +57,72 @@ export async function getUserWallet(userId: string | number, txClient?: any) {
       'SELECT id, balance, points, referral_activated FROM wallets WHERE user_id = $1 FOR UPDATE',
       [userIdNum]
     );
-    if (existing.rows.length > 0) return existing.rows[0];
+    if (existing.rows.length > 0) {
+      const wallet = existing.rows[0];
+      // One-time auto-healing check: if points = 0 AND balance = 0, check if we should award the welcome bonus
+      if (Number(wallet.points || 0) === 0 && Number(wallet.balance || 0) === 0) {
+        const transCheck = await txClient.query('SELECT count(*) FROM ledger_transactions WHERE user_id = $1', [userIdNum]);
+        if (parseInt(transCheck.rows[0].count, 10) === 0) {
+          let welcomeBonusPoints = 600;
+          try {
+            const settings = await getEconomySettings();
+            if (settings && settings.welcome_bonus_points !== undefined) {
+              welcomeBonusPoints = parseInt(settings.welcome_bonus_points, 10) || 0;
+            }
+          } catch (err) {
+            console.warn('[Wallet] Failed to resolve welcome bonus for healing:', err);
+          }
+          if (welcomeBonusPoints > 0) {
+            await txClient.query('UPDATE wallets SET points = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [welcomeBonusPoints, wallet.id]);
+            await txClient.query(
+              `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) 
+               VALUES ($1, $2, 0, $3, 'welcome_bonus', 'success', $4)`,
+              [userIdNum, wallet.id, welcomeBonusPoints, 'مكافأة التسجيل الترحيبية المصححة / Healed welcome registration bonus']
+            );
+            wallet.points = welcomeBonusPoints;
+            console.log(`[Wallet] Auto-healed welcome bonus of ${welcomeBonusPoints} points for User ${userIdNum}`);
+          }
+        }
+      }
+      return wallet;
+    }
+  }
+
+  let welcomeBonusPoints = 600;
+  try {
+    const settings = await getEconomySettings();
+    if (settings && settings.welcome_bonus_points !== undefined) {
+      welcomeBonusPoints = parseInt(settings.welcome_bonus_points, 10) || 0;
+    }
+  } catch (err) {
+    console.warn('[Wallet] Failed to resolve welcome bonus for default wallet:', err);
   }
 
   const result = await target.query(`
     INSERT INTO wallets (user_id, balance, points)
-    VALUES ($1, 0, 0)
+    VALUES ($1, 0, $2)
     ON CONFLICT (user_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
     RETURNING id, balance, points, referral_activated
-  `, [userIdNum]);
+  `, [userIdNum, welcomeBonusPoints]);
 
-  return result.rows[0];
+  const wallet = result.rows[0];
+
+  // If the wallet was already in the database (e.g. conflict was resolved but points was zero), auto-heal
+  if (wallet && Number(wallet.points || 0) === 0 && Number(wallet.balance || 0) === 0) {
+    const transCheck = await target.query('SELECT count(*) FROM ledger_transactions WHERE user_id = $1', [userIdNum]);
+    if (parseInt(transCheck.rows[0].count, 10) === 0 && welcomeBonusPoints > 0) {
+      await target.query('UPDATE wallets SET points = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [welcomeBonusPoints, wallet.id]);
+      await target.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) 
+         VALUES ($1, $2, 0, $3, 'welcome_bonus', 'success', $4)`,
+        [userIdNum, wallet.id, welcomeBonusPoints, 'مكافأة التسجيل الترحيبية المصححة / Healed welcome registration bonus']
+      );
+      wallet.points = welcomeBonusPoints;
+      console.log(`[Wallet] Auto-healed welcome bonus of ${welcomeBonusPoints} points in non-tx for User ${userIdNum}`);
+    }
+  }
+
+  return wallet;
 }
 
 // ─── Economy Settings ─────────────────────────────────────────────────────────
@@ -305,6 +362,62 @@ export async function checkReferralActivation(userId: string | number) {
   );
   if (parseFloat(depositResult.rows[0].total || '0') >= parseFloat(minDeposit)) {
     await ledgerPool.query('UPDATE wallets SET referral_activated = true WHERE user_id = $1', [userIdNum]);
+
+    // Find pending referrals for this referred user
+    const pendingRefs = await ledgerPool.query(
+      "SELECT id, referrer_id, bonus_points FROM referrals WHERE referred_id = $1 AND status = 'pending'",
+      [userIdNum]
+    );
+
+    for (const ref of pendingRefs.rows) {
+      const { id: refId, referrer_id: referrerId, bonus_points: refBonusPoints } = ref;
+
+      // Update referral record to active
+      await ledgerPool.query(
+        "UPDATE referrals SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+        [refId]
+      );
+
+      // Get or create referrer wallet and credit points
+      const referrerWallet = await getUserWallet(referrerId);
+      await ledgerPool.query(
+        "UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [refBonusPoints, referrerWallet.id]
+      );
+
+      // Record transaction in ledger representing programmatic credit
+      await ledgerPool.query(
+        `INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description) 
+         VALUES ($1, $2, 0, $3, 'referral_bonus', 'success', $4)`,
+        [referrerId, referrerWallet.id, refBonusPoints, `مكافأة إحالة صديق فعال / Active friend referral reward`]
+      );
+
+      // Send real-time notification to the referrer
+      try {
+        await createNotification(
+          referrerId,
+          'gift',
+          'Referral Bonus Activated! 🎁',
+          'تم تفعيل مكافأة الإحالة! 🎁',
+          `Your invited friend has met the system activation threshold. You have been awarded ${refBonusPoints} points!`,
+          `لقد استوفى صديقك المدعو شروط التفعيل المعتمدة في النظام. تم منحك ${refBonusPoints} نقطة مكافأة!`
+        );
+      } catch (notifErr) {
+        console.error('Failed to create referral bonus notification:', notifErr);
+      }
+
+      // Sync and broadcast points update for the referrer
+      io?.to(`user_${referrerId}`).emit("balance_update", {
+        points: Number(referrerWallet.points) + Number(refBonusPoints),
+        balance: Number(referrerWallet.balance)
+      });
+    }
+
+    // Sync and broadcast points update for the active referred user
+    io?.to(`user_${userIdNum}`).emit("balance_update", {
+      points: Number(wallet.points),
+      balance: Number(wallet.balance)
+    });
   }
 }
 
@@ -406,10 +519,17 @@ export async function adjustWalletBalance(
       );
     }
 
-    await client.query(
-      'INSERT INTO ledger_transactions (user_id, wallet_id, amount, transaction_type, description, status) VALUES ($1,$2,$3,$4,$5,$6)',
-      [userIdNum, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
-    );
+    if (target === 'points') {
+      await client.query(
+        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1,$2,0,$3,$4,$5,$6)',
+        [userIdNum, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
+      );
+    } else {
+      await client.query(
+        'INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, description, status) VALUES ($1,$2,$3,0,$4,$5,$6)',
+        [userIdNum, wallet.id, finalAmount, 'admin_adjustment', `[${target.toUpperCase()}] ${reason}`, 'success']
+      );
+    }
     await enforceTransactionLimit(userIdNum, client);
     await client.query('COMMIT');
     return { newBalance: result.rows[0].balance, newPoints: result.rows[0].points };

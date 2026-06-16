@@ -2082,6 +2082,14 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
 
       await client.query('COMMIT');
 
+      // 5.5 Check and trigger referral activation if applicable
+      try {
+        const { checkReferralActivation } = await import('../services/wallet.js');
+        await checkReferralActivation(request.user_id);
+      } catch (refErr) {
+        console.error('[Admin] Failed to check and activate referral for user:', request.user_id, refErr);
+      }
+
       // 6. Dispatch Notification & Real-Time Broadcast
       const { createNotification } = await import('../services/notifications.js');
       await createNotification(

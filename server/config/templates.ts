@@ -469,5 +469,51 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل انضمام بنجاح للمعرّف <strong>{{referredUser}}</strong> في منصة بيربليكستا من خلال رابط الدعوة الخاص بالبروتوكول الخاص بك.</p>
       <p style="color: #64748b; font-size: 14px;">عند قيام العقدة الجديدة بإجراء اشتراك مؤهل للمنصة، ستتم مزامنة حوافز الإحالة وإيداعها في رصيد محفظتكم تلقائياً.</p>
     `, 'ar')
+  },
+  {
+    name: 'referral_invitation',
+    subject_en: 'Exclusive Terminal Authorization Invitation - Perplexta',
+    subject_ar: 'دعوة تفعيل حصرية لمنصة التحليلات - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Terminal Access Invitation</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">You have been invited by <strong>{{referrerName}}</strong> to join the Perplexta Advanced Analytics Terminal.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">The Perplexta Terminal is an elite high-capacity analytical environment. By registering through this authorized network path, your profile will be provisioned with specialized entry options.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{invitationLink}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Activate Invitation Pathway</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; line-height: 1.6;">Invitation Reference Code: <code>{{referralCode}}</code></p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">دعوة حصرية للدخول للمنصة</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">لقد تلقيتم دعوة خاصة من المعرّف <strong>{{referrerName}}</strong> للانضمام إلى نظام بيربليكستا للتحليلات المتقدمة.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">منصة بيربليكستا هي بيئة تحليلية نخبوية عالية القدرة. عند تسجيلكم عبر هذا المسار المعتمد، سيتم تهيئة حسابكم الرقمي بميزات ترحيبية خاصة ومزايا حصرية للبدء.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{invitationLink}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block;">قبول وتفعيل الدعوة</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">رمز الإحالة المعتمد: <code>{{referralCode}}</code></p>
+    `, 'ar')
+  },
+  {
+    name: 'referral_reminder',
+    subject_en: 'Pending Terminal Activation Reminder - Perplexta',
+    subject_ar: 'تذكير تفعيل حصري معلق للمنصة - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Terminal Access Reminder</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">This is a friendly reminder from your peer <strong>{{referrerName}}</strong> about your pending invitation to register at the Perplexta Advanced Analytics Terminal.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">Complete your deposit verification pathway to unlock your professional analytical accounts and activate your credited referral incentives.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{invitationLink}}" style="background-color: #10b981; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">Activate & Verify Now</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; line-height: 1.6;">Invitation Reference Code: <code>{{referralCode}}</code></p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تذكير بتفعيل حساب الإحالة الخاص بك</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">نود تذكيركم بالدعوة الحصرية المقدمة من الزميل <strong>{{referrerName}}</strong> لإكمال تسجيلكم وتفعيل مسار إحالتكم في نظام بيربليكستا للتحليلات المتقدمة.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">يرجى إكمال خطوات التحقق من الإيداع الخاصة بكم لتفعيل خيارات حسابكم التحليلي وعمولاتكم الترحيبية المرتبطة بالحساب.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{invitationLink}}" style="background-color: #10b981; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">تفقد وتفعيل الحساب الآن</a>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">رمز الإحالة المعتمد: <code>{{referralCode}}</code></p>
+    `, 'ar')
   }
 ];

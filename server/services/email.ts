@@ -55,7 +55,12 @@ export async function sendEmail(to: string, subject: string, html: string, admin
 
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
-    console.error('[Email] Failed to send email to:', to, 'Error:', error);
+    const errMsg = error?.message || '';
+    if (errMsg.includes('are not configured') || errMsg.includes('not specified in settings')) {
+      console.warn('[Email] Outgoing email skipped (SMTP is not fully configured):', to);
+    } else {
+      console.warn('[Email] Failed to send email to:', to, 'Error:', error);
+    }
 
     await pool.query(
       `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
@@ -98,7 +103,7 @@ export const sendSmartEmail = async (userId: number | null, toEmail: string, tem
     const result = await sendEmail(toEmail, subject, body, userId);
     return result.success;
   } catch (error) {
-    console.error('[Email] Smart email failed:', error);
+    console.warn('[Email] Smart email failed:', error);
     return false;
   }
 };

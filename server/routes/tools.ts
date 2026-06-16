@@ -6,6 +6,7 @@ import { executeTaskLogic } from '../services/orchestrator.js';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { User, Subscription } from '../db/types.js';
+import { getUserWallet } from '../services/wallet.js';
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
   const userId = req.user?.id;
   try {
     const subRes = (await pool.query(`
-      SELECT s.status, u.role 
+      SELECT s.status, u.role
       FROM users u 
       LEFT JOIN subscriptions s ON u.id = s.user_id 
       WHERE u.id = $1
@@ -59,10 +60,22 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
       LIMIT 1
     `, [userId])) as { rows: { status: Subscription['status'] | null; role: User['role'] }[] };
     
-    const role = subRes.rows[0]?.role;
-    const hasActiveSub = (role === 'admin' || (subRes.rows.length > 0 && subRes.rows[0].status === 'active'));
+    const row = subRes.rows[0];
+    const role = row?.role;
+    
+    let points = 0;
+    let balance = 0;
+    try {
+      const wallet = await getUserWallet(userId);
+      points = Number(wallet.points || 0);
+      balance = Number(wallet.balance || 0);
+    } catch (err) {
+      console.warn('[ToolsRoute] Failed to fetch user wallet:', err);
+    }
+
+    const hasActiveSub = (role === 'admin' || (row && row.status === 'active') || points > 0 || balance > 0);
     if (!hasActiveSub) {
-      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription is required to execute tools.' });
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription or positive wallet balance is required to execute tools.' });
     }
 
     const { socketId } = req.body as ExecuteToolRequestBody;

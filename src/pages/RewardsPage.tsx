@@ -2,10 +2,159 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
-import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw, AlertTriangle, Users, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
 import { useSwipeToClose } from '../utils/swipe';
+
+const getTxTypeBadgeClass = (type: string, points: number, amount: number) => {
+  const isPositive = points > 0 || (points === 0 && amount > 0);
+  if (type === 'welcome_bonus' || type === 'referral_bonus') {
+    return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+  }
+  if (type === 'deposit') {
+    return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+  }
+  if (type === 'withdrawal') {
+    return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+  }
+  if (type === 'tool_usage_hold') {
+    return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
+  }
+  if (type === 'tool_usage_reconcile') {
+    return isPositive 
+      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+  }
+  if (type === 'admin_adjustment') {
+    return isPositive
+      ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+  }
+  return isPositive 
+    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+    : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
+};
+
+const getTxLabel = (type: string, isAr: boolean) => {
+  const mapping: Record<string, { en: string; ar: string }> = {
+    welcome_bonus: { en: 'Welcome Bonus', ar: 'مكافأة التسجيل الترحيبية' },
+    referral_bonus: { en: 'Referral Reward', ar: 'مكافأة إحالة' },
+    deposit: { en: 'Top-up Deposit', ar: 'شحن رصيد' },
+    withdrawal: { en: 'Withdrawal', ar: 'سحب رصيد' },
+    tool_usage_hold: { en: 'Quota Reserved Hold', ar: 'حجز رصيد للعملية' },
+    tool_usage_reconcile: { en: 'Usage Adjustment', ar: 'تسوية الاستخدام' },
+    admin_adjustment: { en: 'Admin Adjustment', ar: 'تعديل إداري' },
+    conversion: { en: 'Points Conversion', ar: 'تحويل نقاط' }
+  };
+  return mapping[type] ? (isAr ? mapping[type].ar : mapping[type].en) : type;
+};
+
+const getToolLabel = (toolId: string, isAr: boolean) => {
+  const tools: Record<string, { en: string; ar: string }> = {
+    chat: { en: 'Chat', ar: 'المحادثة والدردشة' },
+    image_generation: { en: 'Image Generation', ar: 'توليد الصور' },
+    code_analysis: { en: 'Code Analysis', ar: 'تحليل الأكواد' },
+    smart_search: { en: 'Smart Search', ar: 'البحث الذكي' },
+    custom_tool: { en: 'Custom Tool', ar: 'أداة مخصصة' },
+    document_summarizer: { en: 'Document Summarizer', ar: 'ملخص المستندات' },
+    academic_search: { en: 'Academic Search', ar: 'البحث الأكاديمي' },
+    translator: { en: 'Translator', ar: 'المترجم الاحترافي' },
+  };
+  const normalized = toolId.toLowerCase().replace(/[\-_]/g, '_');
+  return tools[normalized] ? (isAr ? tools[normalized].ar : tools[normalized].en) : toolId;
+};
+
+const getTranslatedDescription = (description: string, isAr: boolean) => {
+  if (!description) return '';
+
+  // 1. Welcome Bonus Registration description
+  if (description.toLowerCase().includes('welcome registration bonus') || description.toLowerCase().includes('welcome_bonus') || description.includes('مكافأة التسجيل الترحيبية')) {
+    return isAr ? 'مكافأة التسجيل الترحيبية' : 'Welcome registration bonus';
+  }
+
+  // 2. Upfront hold description
+  const holdRegex = /(?:\.)?Upfront hold of (\d+) pts for tool ([\w_\-]+)/i;
+  const holdMatch = description.match(holdRegex);
+  if (holdMatch) {
+    const pts = parseInt(holdMatch[1], 10);
+    const toolId = holdMatch[2];
+    const toolName = getToolLabel(toolId, isAr);
+    return isAr 
+      ? `حجز مؤقت لـ ${pts} نقطة لاستخدام أداة ${toolName}`
+      : `Temporary reservation of ${pts} points for tool ${toolName}`;
+  }
+
+  // 3. Reconciled surcharge / refund
+  // Pattern 1: ".Reconciled chat. Surcharge: 5 pts. Actual: 106 pts"
+  const surchargeRegex = /(?:\.)?Reconciled ([\w_\-]+)\. Surcharge: (\d+) pts\. Actual: (\d+) pts/i;
+  const surchargeMatch = description.match(surchargeRegex);
+  if (surchargeMatch) {
+    const toolId = surchargeMatch[1];
+    const surcharge = parseInt(surchargeMatch[2], 10);
+    const actual = parseInt(surchargeMatch[3], 10);
+    const toolName = getToolLabel(toolId, isAr);
+    return isAr
+      ? `تسوية أداة ${toolName}: خصم إضافي ${surcharge} نقطة (الاستهلاك الفعلي: ${actual} نقطة)`
+      : `Reconciliation for ${toolName}: Surcharge of ${surcharge} points (Actual use: ${actual} points)`;
+  }
+
+  // Pattern 2: ".Reconciled chat. Refunded 5 pts. Actual: 106 pts"
+  const refundRegex = /(?:\.)?Reconciled ([\w_\-]+)\. Refunded (\d+) pts\. Actual: (\d+) pts/i;
+  const refundMatch = description.match(refundRegex);
+  if (refundMatch) {
+    const toolId = refundMatch[1];
+    const refund = parseInt(refundMatch[2], 10);
+    const actual = parseInt(refundMatch[3], 10);
+    const toolName = getToolLabel(toolId, isAr);
+    return isAr
+      ? `تسوية أداة ${toolName}: استرجاع ${refund} نقطة (الاستهلاك الفعلي: ${actual} نقطة)`
+      : `Reconciliation for ${toolName}: Refunded ${refund} points (Actual use: ${actual} points)`;
+  }
+
+  // 4. Admin adjustment
+  const adminRegex = /^\[(POINTS|BALANCE)\]\s*(.*)$/i;
+  const adminMatch = description.match(adminRegex);
+  if (adminMatch) {
+    const target = adminMatch[1].toLowerCase();
+    const reasonValue = adminMatch[2].trim();
+    const isPoints = target === 'points';
+    
+    let translatedReason = reasonValue;
+    if (reasonValue.toLowerCase().includes('welcome bonus') || reasonValue.includes('مكافأة التسجيل الترحيبية')) {
+      translatedReason = isAr ? 'مكافأة التسجيل الترحيبية الصالحة' : 'Welcome Registration Bonus';
+    } else if (reasonValue.toLowerCase() === 'referral registration bonus' || reasonValue.includes('مكافأة إحالة ترحيبية')) {
+      translatedReason = isAr ? 'مكافأة رصيد الإحالة عند التسجيل' : 'Referral Registration Bonus';
+    } else if (reasonValue.toLowerCase() === 'kyc verification points' || reasonValue.includes('نقاط تفعيل الهوية')) {
+      translatedReason = isAr ? 'نقاط مكافأة تفعيل الحساب وتوثيق الهوية' : 'Identity Verification Bonus';
+    }
+
+    if (isAr) {
+      return `تعديل إداري (${isPoints ? 'نقاط' : 'رصيد'}): ${translatedReason}`;
+    } else {
+      return `Admin adjustment (${isPoints ? 'Points' : 'Balance'}): ${translatedReason}`;
+    }
+  }
+
+  // 5. Points conversion
+  if (description.toLowerCase().includes('points conversion') || description.toLowerCase().includes('convert') || description.includes('تحويل النقاط')) {
+    return isAr ? 'تحويل النقاط إلى رصيد المحفظة' : 'Conversion of points to wallet balance';
+  }
+
+  // 6. Referral Commission / signup reward
+  if (description.toLowerCase().includes('referral signup reward') || description.includes('مكافأة إحالة')) {
+    return isAr ? 'مكافأة تسجيل صديق جديد عبر رمز الإحالة الخاص بك' : 'Reward for a friend signing up via your referral link';
+  }
+
+  if (description.includes('/') && (description.toLowerCase().includes('welcome') || description.includes('مكافأة'))) {
+    const parts = description.split('/');
+    if (parts.length === 2) {
+      return isAr ? parts[1].trim() : parts[0].trim();
+    }
+  }
+
+  return description;
+};
 
 export const RewardsPage: React.FC = () => {
   const { t, theme, dir, token, user: contextUser, setUser, refreshUser, economySettings, isMobile } = useAppContext();
@@ -26,18 +175,37 @@ export const RewardsPage: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const activationFileInputRef = useRef<HTMLInputElement>(null);
   const [kycFullName, setKycFullName] = useState('');
   const [selfieCaptured, setSelfieCaptured] = useState(false);
   const [selfieData, setSelfieData] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [wallet, setWallet] = useState({ points: 0, balance: 0 });
+  const [wallet, setWallet] = useState<any>({ points: 0, balance: 0, referral_activated: false });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [referralCount, setReferralCount] = useState(0);
+  const [referredFriends, setReferredFriends] = useState<any[]>([]);
+  const [isLoadingReferredFriends, setIsLoadingReferredFriends] = useState(false);
+  const [friendsFilter, setFriendsFilter] = useState<'all' | 'verified' | 'pending' | 'nodeposityet'>('all');
+  const [friendsSort, setFriendsSort] = useState<'joined_at' | 'deposit_amount'>('joined_at');
   const [txOffset, setTxOffset] = useState(0);
   const [hasMoreTx, setHasMoreTx] = useState(true);
   const TX_LIMIT = 20;
+
+  // Activation Deposit Form States
+  const [showActivationForm, setShowActivationForm] = useState(false);
+  const [activationMethod, setActivationMethod] = useState<'balance' | 'crypto' | 'bank' | 'paypal' | 'stripe'>('balance');
+  const [activationRefId, setActivationRefId] = useState('');
+  const [activationProofFile, setActivationProofFile] = useState<File | null>(null);
+  const [isActivating, setIsActivating] = useState(false);
+  const [activationStep, setActivationStep] = useState(0); // 0: idle, 1: uploading, 2: processing
   
+  // Email Invitation States
+  const [sentInvitations, setSentInvitations] = useState<any[]>([]);
+  const [isFetchingInvitations, setIsFetchingInvitations] = useState<boolean>(false);
+  const [inviteEmail, setInviteEmail] = useState<string>('');
+  const [isInviting, setIsInviting] = useState<boolean>(false);
+  const [remindingEmails, setRemindingEmails] = useState<Record<string, boolean>>({});
   const startCamera = async () => {
     setIsCapturing(true);
     try {
@@ -177,6 +345,264 @@ export const RewardsPage: React.FC = () => {
     }
   };
 
+  const handleActivateWithBalance = async () => {
+    setIsActivating(true);
+    setActivationStep(2);
+    try {
+      const res = await fetch('/api/wallet/activate-referral-balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          dir === 'rtl'
+            ? '🚀 تهانينا! لقد تم تفعيل نظام الأرباح الخاص بك بنجاح خصماً من رصيدك المتاح.'
+            : '🚀 Congratulations! Your referral and earnings program has been successfully activated from your wallet balance.'
+        );
+        setWallet((prev: any) => ({ ...prev, referral_activated: true, balance: data.newBalance }));
+        if (setUser && contextUser) {
+          setUser({ ...contextUser, referral_activated: true, balance: data.newBalance } as any);
+        }
+        setShowActivationForm(false);
+      } else {
+        toast.error(data.error_ar && dir === 'rtl' ? data.error_ar : data.error || 'Activation failed');
+      }
+    } catch (err) {
+      toast.error(dir === 'rtl' ? 'فشل الاتصال لتفعيل نظام الأرباح' : 'Failed to connect for activation');
+    } finally {
+      setIsActivating(false);
+      setActivationStep(0);
+    }
+  };
+
+  const handleActivateWithDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    
+    const minAmount = Number(economySettings?.referral_activation_min_deposit || 10);
+    
+    if (activationMethod === 'stripe') {
+      setIsActivating(true);
+      setActivationStep(2);
+      try {
+        const stripeRes = await fetch('/api/payments/stripe-deposit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ amount: minAmount })
+        });
+        if (stripeRes.ok) {
+          const stripeData = await stripeRes.json();
+          if (stripeData.url) {
+            toast.success(dir === 'rtl' ? 'جاري تحويلك إلى نافذة دفع Stripe الآمنة...' : 'Redirecting to secure Stripe checkout...');
+            setTimeout(() => {
+              window.location.href = stripeData.url;
+            }, 800);
+            return;
+          }
+        }
+        toast.error(dir === 'rtl' ? 'فشل توليد رابط الدفع آلياً' : 'Failed to create payment session');
+      } catch (err) {
+        toast.error(dir === 'rtl' ? 'حدث خطأ في التهيئة' : 'An error occurred during initialization');
+      } finally {
+        setIsActivating(false);
+        setActivationStep(0);
+      }
+      return;
+    }
+
+    // Manual deposits
+    if (!activationRefId.trim()) {
+      toast.error(dir === 'rtl' ? 'يرجى إدخال الرقم المرجعي أو إثبات الشحن' : 'Please enter transaction reference / ID');
+      return;
+    }
+
+    setIsActivating(true);
+    setActivationStep(1); // Uploading files
+
+    let uploadedFileUrl = '';
+    if (activationProofFile) {
+      try {
+        const formData = new FormData();
+        formData.append('file', activationProofFile);
+        const uploadRes = await fetch('/api/files/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        if (!uploadRes.ok) {
+          throw new Error('Screenshot upload failed');
+        }
+        const data = await uploadRes.json();
+        uploadedFileUrl = data.file.file_url;
+      } catch (uploadErr) {
+        toast.error(dir === 'rtl' ? 'فشل تحميل صورة إثبات المعاملة' : 'Failed to upload transaction proof image.');
+        setIsActivating(false);
+        setActivationStep(0);
+        return;
+      }
+    }
+
+    setActivationStep(2); // Recording and sync
+
+    try {
+      const res = await fetch('/api/wallet/deposit-manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: minAmount,
+          method: 
+            activationMethod === 'crypto'
+              ? 'USDT (TRC-20)'
+              : activationMethod === 'paypal'
+              ? 'PAYPAL'
+              : 'BANK TRANSFER',
+          reference_id: activationRefId,
+          proof_url: uploadedFileUrl
+        })
+      });
+
+      if (res.ok) {
+        toast.success(
+          dir === 'rtl'
+            ? 'تم إرسال طلب تفعيل نظام الأرباح الخاص بك بنجاح! سيقوم المشرف بالتحقق من الإيداع وقبوله فوراً.'
+            : 'Referral activation deposit requested successfully! Administrator will verify and unlock your link.'
+        );
+        setActivationRefId('');
+        setActivationProofFile(null);
+        setShowActivationForm(false);
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || (dir === 'rtl' ? 'فشل إرسال طلب الشحن للتفعيل' : 'Failed to request activation deposit.'));
+      }
+    } catch (err) {
+      toast.error(dir === 'rtl' ? 'عطل في الاتصال بخادم المحفظة المالية' : 'Database connection error.');
+    } finally {
+      setIsActivating(false);
+      setActivationStep(0);
+    }
+  };
+
+  const fetchSentInvitations = async () => {
+    if (!token) return;
+    setIsFetchingInvitations(true);
+    try {
+      const res = await fetch('/api/wallet/referral-invitations', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSentInvitations(data);
+      }
+    } catch (err) {
+      console.error('Error fetching referral invitations:', err);
+    } finally {
+      setIsFetchingInvitations(false);
+    }
+  };
+
+  const handleSendInvitation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      toast.error(
+        dir === 'rtl'
+          ? 'تنسيق البريد الإلكتروني غير صالح.'
+          : 'Please enter a valid email address.'
+      );
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const res = await fetch('/api/wallet/invite-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: inviteEmail })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(dir === 'rtl' ? data.message_ar || 'تم إرسال الدعوة بنجاح!' : data.message || 'Invitation sent successfully!');
+        setInviteEmail('');
+        fetchSentInvitations();
+      } else {
+        toast.error(dir === 'rtl' ? data.error_ar || data.error || 'فشل إرسال الدعوة.' : data.error || 'Failed to send invitation.');
+      }
+    } catch (err) {
+      console.error('Error sending referral invitation:', err);
+      toast.error(
+        dir === 'rtl'
+          ? 'عملية الاتصال بالخادم فشلت.'
+          : 'Server communication failed.'
+      );
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRemindInvitation = async (email: string) => {
+    if (!token || !email) return;
+
+    setRemindingEmails((prev) => ({ ...prev, [email]: true }));
+    try {
+      const res = await fetch('/api/wallet/remind-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          dir === 'rtl'
+            ? data.message_ar || 'تم إرسال تذكير بضغطة زر بنجاح!'
+            : data.message || 'One-click reminder dispatched successfully!'
+        );
+        fetchSentInvitations();
+      } else {
+        toast.error(
+          dir === 'rtl'
+            ? data.error_ar || data.error || 'فشل إرسال التذكير.'
+            : data.error || 'Failed to dispatch invitation reminder.'
+        );
+      }
+    } catch (err) {
+      console.error('Error sending invitation reminder:', err);
+      toast.error(
+        dir === 'rtl'
+          ? 'عملية الاتصال بالخادم فشلت.'
+          : 'Server communication failed.'
+      );
+    } finally {
+      setRemindingEmails((prev) => ({ ...prev, [email]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchSentInvitations();
+    }
+  }, [token]);
+
   
   useEffect(() => {
     const fetchData = async () => {
@@ -234,6 +660,21 @@ export const RewardsPage: React.FC = () => {
             const data = await refRes.json();
             setReferralCount(data.count);
           }
+
+          setIsLoadingReferredFriends(true);
+          try {
+            const detailedRefRes = await fetch('/api/wallet/referred-friends-detailed', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (detailedRefRes.ok) {
+              const detailedData = await detailedRefRes.json();
+              setReferredFriends(detailedData);
+            }
+          } catch (detailedErr) {
+            console.error('Error fetching detailed referred friends:', detailedErr);
+          } finally {
+            setIsLoadingReferredFriends(false);
+          }
         }
       } catch (error) {
         console.error('Error fetching rewards data:', error);
@@ -255,6 +696,11 @@ export const RewardsPage: React.FC = () => {
     if (!contextUser) return;
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast.success(
+      dir === 'rtl' 
+        ? 'تم نسخ رابط الإحالة الخاص بك بنجاح!' 
+        : 'Referral link copied to clipboard successfully!'
+    );
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -415,38 +861,816 @@ export const RewardsPage: React.FC = () => {
           </div>
 
           <div className="mt-auto space-y-4 md:space-y-6">
-            <div className="space-y-1.5 md:space-y-2">
-              <label className="text-xs md:text-sm text-[var(--text-secondary)] font-bold uppercase tracking-widest">{t('yourReferralLink')}</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 p-2.5 md:p-3 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-mono text-[11px] md:text-xs overflow-hidden text-ellipsis whitespace-nowrap shadow-inner">
-                  {referralLink}
-                </div>
-                <button 
-                  onClick={handleCopy}
-                  className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-all duration-300 ${
-                    copied 
-                      ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] px-6' 
-                      : `bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20`
-                  }`}
-                >
-                  {copied ? <Check size={16} /> : <Copy size={16} />}
-                  <span className="hidden sm:inline text-xs md:text-sm font-bold">{copied ? t('copied') : t('copy')}</span>
-                </button>
-              </div>
-            </div>
+            {!wallet?.referral_activated ? (
+              <div className="p-4 md:p-6 rounded-[var(--radius)] border border-amber-500/20 bg-amber-500/[0.02] flex flex-col gap-4 text-center">
+                {!showActivationForm ? (
+                  <>
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mx-auto">
+                      <Zap className="animate-bounce" size={18} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs md:text-sm font-extrabold text-amber-500 uppercase tracking-wider">
+                        {dir === 'rtl' ? 'مطلوب تفعيل نظام الأرباح' : 'Earnings Activation Required'}
+                      </h4>
+                      <p className="text-[10px] md:text-xs text-[var(--text-secondary)] font-medium leading-relaxed max-w-sm mx-auto">
+                        {dir === 'rtl'
+                          ? `سعر تفعيل خدمة الأرباح والحصول على رابط إحالة خاص بك هو إيداع حد أدنى بقيمة $${economySettings?.referral_activation_min_deposit || 10}. يمكنك شحن رصيدك أو التنشيط الفوري للاشتراك وجني المكافآت.`
+                          : `To activate your referral link and start receiving rewards, you must first deposit or pay a minimum of $${economySettings?.referral_activation_min_deposit || 10}.`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowActivationForm(true);
+                        const cost = Number(economySettings?.referral_activation_min_deposit || 10);
+                        if (Number(wallet?.balance || 0) >= cost) {
+                          setActivationMethod('balance');
+                        } else {
+                          setActivationMethod('stripe');
+                        }
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius)] bg-amber-500 text-white hover:bg-amber-600 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-amber-500/10 border border-amber-400/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                    >
+                      <Zap size={14} className="animate-pulse" />
+                      {dir === 'rtl' ? 'تفعيل نظام الأرباح الآن' : 'Activate Earnings Now'}
+                    </button>
+                  </>
+                ) : (
+                  <form onSubmit={handleActivateWithDeposit} className="text-left space-y-4">
+                    <div className="flex items-center justify-between border-b border-[var(--border-main)] pb-2 mb-2">
+                      <span className="text-xs font-black text-amber-500 uppercase tracking-widest">
+                        {dir === 'rtl' ? 'تفعيل حساب الإحالات والعمولات' : 'Referral Activation Hub'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowActivationForm(false)}
+                        className="text-[10px] uppercase font-bold text-[var(--text-secondary)] hover:text-amber-500 transition-all cursor-pointer"
+                      >
+                        {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                      </button>
+                    </div>
 
-            <div className={`flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-rose-500/20 transition-all`}>
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-rose-500/10 flex items-center justify-center text-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
-                  <Gift size={20} className="md:w-6 md:h-6" />
-                </div>
-                <span className="font-bold text-xs md:text-base text-[var(--text-primary)] uppercase tracking-tight">{t('totalSuccessfulReferralsUser')}</span>
+                    {/* Method Selector Tabs */}
+                    <div className="grid grid-cols-5 gap-1 bg-[var(--bg-primary)] p-0.5 rounded-sm border border-[var(--border-main)]">
+                      <button
+                        type="button"
+                        onClick={() => setActivationMethod('balance')}
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                          activationMethod === 'balance'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                        title={dir === 'rtl' ? 'رصيد المحفظة' : 'Wallet Balance'}
+                      >
+                        {dir === 'rtl' ? 'الرصيد' : 'Balance'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivationMethod('stripe')}
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                          activationMethod === 'stripe'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                        title={dir === 'rtl' ? 'بطاقة الائتمان' : 'Credit Card'}
+                      >
+                        {dir === 'rtl' ? 'البطاقة' : 'Card'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivationMethod('crypto')}
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                          activationMethod === 'crypto'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                        title={dir === 'rtl' ? 'عملة USDT' : 'USDT Crypto'}
+                      >
+                        USDT
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivationMethod('paypal')}
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                          activationMethod === 'paypal'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                        title="PayPal"
+                      >
+                        PayPal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivationMethod('bank')}
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
+                          activationMethod === 'bank'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                        title={dir === 'rtl' ? 'تحويل بنكي' : 'Bank Transfer'}
+                      >
+                        {dir === 'rtl' ? 'البنك' : 'Bank'}
+                      </button>
+                    </div>
+
+                    {/* Method Content */}
+                    <div className="bg-[var(--bg-primary)] p-3 rounded-md border border-[var(--border-main)] text-xs space-y-3">
+                      {activationMethod === 'balance' && (
+                        <div className="space-y-3 text-left">
+                          <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                            {dir === 'rtl'
+                              ? `يمكنك تفعيل حساب الأرباح فوراً باستخدام رصيدك المتوفر حالياً في المحفظة التقنية.`
+                              : `Directly activate your referrals and earnings using your available tech wallet balance.`}
+                          </p>
+                          <div className="flex items-center justify-between bg-emerald-500/[0.02] border border-emerald-500/10 p-2 rounded-sm text-[11px] font-black">
+                            <span className="text-[var(--text-secondary)]">{dir === 'rtl' ? 'الرصيد المتاح:' : 'Available Balance:'}</span>
+                            <span className="text-emerald-500 font-mono">${wallet?.balance || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-amber-500/[0.02] border border-amber-500/10 p-2 rounded-sm text-[11px] font-black">
+                            <span className="text-[var(--text-secondary)]">{dir === 'rtl' ? 'رسوم التفعيل:' : 'Activation Fee:'}</span>
+                            <span className="text-amber-500 font-mono">${economySettings?.referral_activation_min_deposit || 10}</span>
+                          </div>
+                          {Number(wallet?.balance || 0) >= Number(economySettings?.referral_activation_min_deposit || 10) ? (
+                            <button
+                              type="button"
+                              disabled={isActivating}
+                              onClick={handleActivateWithBalance}
+                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                            >
+                              {isActivating ? (
+                                <RefreshCw size={12} className="animate-spin" />
+                              ) : (
+                                <ShieldCheck size={12} />
+                              )}
+                              {dir === 'rtl' ? 'تفعيل فوري وخصم من الرصيد' : 'Deduct Balance & Activate Now'}
+                            </button>
+                          ) : (
+                            <div className="p-2 border border-rose-500/10 bg-rose-500/[0.02] rounded-sm text-[9px] text-rose-500 font-bold leading-relaxed flex items-center gap-2">
+                              <AlertTriangle size={12} className="flex-shrink-0" />
+                              <span>
+                                {dir === 'rtl'
+                                  ? 'رصيدك الحالي غير كافٍ للتفعيل الفوري. يرجى اختيار وسيلة دفع أخرى لشحن رصيد وتفعيله.'
+                                  : 'Your wallet balance is insufficient. Please use another deposit channel.'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {activationMethod === 'stripe' && (
+                        <div className="space-y-3 text-left">
+                          <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                            {dir === 'rtl'
+                              ? `سوف تصدر معاملة إيداع فوري بمبلغ التفعيل ($${economySettings?.referral_activation_min_deposit || 10})، وسيتم تحويلك لبوابة Stripe الآمنة لتأكيد الدفع بالبطاقة.`
+                              : `Initiate a secure card checkout session for exactly the activation fee ($${economySettings?.referral_activation_min_deposit || 10}) via Stripe.`}
+                          </p>
+                          <button
+                            type="submit"
+                            disabled={isActivating}
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          >
+                            {isActivating ? (
+                              <RefreshCw size={12} className="animate-spin" />
+                            ) : (
+                              <CreditCard size={12} />
+                            )}
+                            {dir === 'rtl' ? 'الدفع الآمن بالبطاقة والتفعيل الفوري' : 'Pay Safely & Activate Instantly'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Manual USDT Deposit Channel */}
+                      {activationMethod === 'crypto' && (
+                        <div className="space-y-3.5 text-left">
+                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-1.5">
+                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">USDT TRC-20 Address</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[9px] text-[var(--text-primary)] select-all truncate block flex-1 bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] py-1 shadow-inner rounded-[3px]">
+                                {economySettings?.crypto_address || 'No Address available'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (economySettings?.crypto_address) {
+                                    navigator.clipboard.writeText(economySettings.crypto_address);
+                                    toast.success(dir === 'rtl' ? 'تم نسخ العنوان بنجاح!' : 'USDT TRC-20 Address Copied!');
+                                  }
+                                }}
+                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-all border border-emerald-500/20"
+                              >
+                                {dir === 'rtl' ? 'نسخ' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'الرقم المرجعي أو هاش العملية *' : 'Transaction Hash / TxID *'}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={activationRefId}
+                              onChange={(e) => setActivationRefId(e.target.value)}
+                              placeholder="e.g. 0x82c1f301ae9f..."
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'صورة إثبات التحويل (اختياري)' : 'Proof Screenshot / Image (Optional)'}
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              ref={activationFileInputRef}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setActivationProofFile(file);
+                              }}
+                              className="hidden"
+                            />
+                            <div
+                              onClick={() => activationFileInputRef.current?.click()}
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
+                            >
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
+                              <span className="font-semibold select-none">
+                                {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار لقطة شاشة إثبات الدفع' : 'Click to select transaction screenshot')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isActivating}
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          >
+                            {isActivating ? (
+                              <span className="flex items-center gap-1.5 text-[9px]">
+                                <RefreshCw size={11} className="animate-spin" />
+                                {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
+                              </span>
+                            ) : (
+                              <>
+                                <Send size={11} />
+                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Manual PayPal Channel */}
+                      {activationMethod === 'paypal' && (
+                        <div className="space-y-3.5 text-left">
+                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-1.5">
+                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">PayPal Recipient Email</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[9px] text-[var(--text-primary)] select-all truncate block flex-1 bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] py-1 shadow-inner rounded-[3px]">
+                                {economySettings?.paypal_email || 'No email configured'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (economySettings?.paypal_email) {
+                                    navigator.clipboard.writeText(economySettings.paypal_email);
+                                    toast.success(dir === 'rtl' ? 'تم نسخ ايميل بايبال!' : 'PayPal Email Copied!');
+                                  }
+                                }}
+                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-all border border-emerald-500/20"
+                              >
+                                {dir === 'rtl' ? 'نسخ' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'الرقم المرجعي أو بريد الدافع *' : 'Transaction Reference / Email *'}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={activationRefId}
+                              onChange={(e) => setActivationRefId(e.target.value)}
+                              placeholder="e.g. PP-581023 or sender@example.com"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'لقطة شاشة تثبت الدفع والخصم (اختياري)' : 'Proof Screenshot / Image (Optional)'}
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              ref={activationFileInputRef}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setActivationProofFile(file);
+                              }}
+                              className="hidden"
+                            />
+                            <div
+                              onClick={() => activationFileInputRef.current?.click()}
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
+                            >
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
+                              <span className="font-semibold select-none">
+                                {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إثبات بايبال' : 'Click to select PayPal screenshot')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isActivating}
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          >
+                            {isActivating ? (
+                              <span className="flex items-center gap-1.5 text-[9px]">
+                                <RefreshCw size={11} className="animate-spin" />
+                                {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
+                              </span>
+                            ) : (
+                              <>
+                                <Send size={11} />
+                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Manual Bank Transfer Channel */}
+                      {activationMethod === 'bank' && (
+                        <div className="space-y-3 text-left">
+                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-2 text-[9px] font-bold">
+                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">Official Bank Details</span>
+                            <div className="grid grid-cols-2 gap-2 text-[9px]">
+                              <div>
+                                <span className="text-[var(--text-secondary)] block">Bank Name:</span>
+                                <span className="text-[var(--text-primary)] block font-black truncate">{economySettings?.bank_name || 'Bank'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[var(--text-secondary)] block">Recipient / Name:</span>
+                                <span className="text-[var(--text-primary)] block font-black truncate">{economySettings?.bank_recipient || 'Perplexta Tech'}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-[var(--text-secondary)] block">IBAN Number:</span>
+                                <span className="text-[var(--text-primary)] font-mono block font-black select-all whitespace-normal bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] mb-1 rounded-[3px]">{economySettings?.bank_iban || 'SA0380000000000'}</span>
+                              </div>
+                              {economySettings?.bank_swift && (
+                                <div className="col-span-2">
+                                  <span className="text-[var(--text-secondary)] block">Bank SWIFT / BIC:</span>
+                                  <span className="text-[var(--text-primary)] font-mono block font-black select-all bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] rounded-[3px]">{economySettings.bank_swift}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'اسم المحول أو الرقم المرجعي *' : 'Sender Name / Transaction ID *'}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={activationRefId}
+                              onChange={(e) => setActivationRefId(e.target.value)}
+                              placeholder={dir === 'rtl' ? 'مثل: محمد أحمد أحمد / كود 58210' : 'e.g. John Doe / Ref ID 9821a'}
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                              {dir === 'rtl' ? 'صورة إيصال التحويل البنكي (اختياري)' : 'Bank Receipt Image / Copy (Optional)'}
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              ref={activationFileInputRef}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setActivationProofFile(file);
+                              }}
+                              className="hidden"
+                            />
+                            <div
+                              onClick={() => activationFileInputRef.current?.click()}
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
+                            >
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
+                              <span className="font-semibold select-none">
+                                {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إيصال البنك' : 'Click to select transaction statement receipt')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isActivating}
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
+                          >
+                            {isActivating ? (
+                              <span className="flex items-center gap-1.5 text-[9px]">
+                                <RefreshCw size={11} className="animate-spin" />
+                                {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
+                              </span>
+                            ) : (
+                              <>
+                                <Send size={11} />
+                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                )}
               </div>
-              <span className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">{referralCount}</span>
+            ) : (
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="text-xs md:text-sm text-[var(--text-secondary)] font-bold uppercase tracking-widest">{t('yourReferralLink')}</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 p-2.5 md:p-3 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-mono text-[11px] md:text-xs overflow-hidden text-ellipsis whitespace-nowrap shadow-inner">
+                    {referralLink}
+                  </div>
+                  <button 
+                    onClick={handleCopy}
+                    className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-all duration-300 ${
+                      copied 
+                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] px-6' 
+                        : `bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20`
+                    }`}
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    <span className="hidden sm:inline text-xs md:text-sm font-bold">{copied ? t('copied') : t('copy')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Email Invitation Form - Integrated with Status Check */}
+            {wallet?.referral_activated && (
+              <div className="pt-6 border-t border-[var(--border-main)] space-y-4">
+                <div className="space-y-1.5" style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
+                  <label className={`text-xs md:text-sm text-[var(--text-secondary)] font-bold uppercase tracking-widest flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                    <Mail size={14} className="text-emerald-500" />
+                    <span>{dir === 'rtl' ? 'دعوة صديق عبر البريد الإلكتروني' : 'Invite Friend via Email'}</span>
+                  </label>
+                  <p className="text-[10px] md:text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    {dir === 'rtl'
+                      ? 'أدخل البريد الإلكتروني لصديقك لإرسال دعوة انضمام مهنية مشفرة وموثقة برمز الإحالة الخاص بك تلقائياً.'
+                      : "Send a professional, cryptographically certified invitation directly to your peer's inbox with your referral credentials."}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSendInvitation} className="flex gap-2">
+                  <input
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder={dir === 'rtl' ? 'البريد الإلكتروني للزميل (مثال: peer@example.com)' : 'Peer email address (e.g., peer@example.com)'}
+                    className="flex-1 px-3 md:px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[var(--radius)] text-xs md:text-sm focus:outline-none focus:border-emerald-500 font-sans text-[var(--text-primary)] transition-all"
+                    disabled={isInviting}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isInviting}
+                    className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500 text-white font-bold text-xs md:text-sm shadow-md transition-all duration-300 ${
+                      isInviting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-emerald-600 hover:shadow-emerald-500/20'
+                    }`}
+                  >
+                    {isInviting ? (
+                      <RefreshCw size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                    <span>{isInviting ? (dir === 'rtl' ? 'جاري الإرسال...' : 'Sending...') : (dir === 'rtl' ? 'إرسال الدعوة' : 'Send Invite')}</span>
+                  </button>
+                </form>
+
+                {/* Sent Invitations Ledger Log */}
+                {sentInvitations.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] block" style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
+                      {dir === 'rtl' ? 'سجل الدعوات المرسلة' : 'Sent Invitations Ledger'}
+                    </span>
+                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin border border-[var(--border-main)] rounded-[var(--radius)] bg-[var(--bg-primary)]/40 p-2 md:p-3">
+                      {sentInvitations.map((inv: any) => (
+                        <div key={inv.id} className="flex items-center justify-between text-[11px] py-1 border-b border-[var(--border-main)]/40 last:border-0" style={{ direction: dir === 'rtl' ? 'rtl' : 'ltr' }}>
+                          <span className="font-mono text-[var(--text-secondary)] font-bold">{inv.email}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                              {new Date(inv.created_at).toLocaleDateString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              {inv.status === 'reminded' ? (dir === 'rtl' ? 'تم التذكير' : 'Reminded') : (dir === 'rtl' ? 'تم الإرسال' : 'Sent')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemindInvitation(inv.email)}
+                              disabled={remindingEmails[inv.email]}
+                              className="px-2 py-0.5 rounded-sm text-[9px] font-black uppercase bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              {remindingEmails[inv.email] ? (
+                                <RefreshCw size={10} className="animate-spin text-amber-500" />
+                              ) : (
+                                <Zap size={10} className="text-amber-500 fill-amber-500/20" />
+                              )}
+                              <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
+                  <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <span className="font-black text-xs md:text-base text-black dark:text-white group-hover:text-emerald-500 transition-colors duration-300 uppercase tracking-tight">
+                  {t('totalSuccessfulReferralsUser')}
+                </span>
+              </div>
+              <span className="text-2xl md:text-3xl font-black text-black dark:text-white group-hover:text-emerald-500 transition-colors duration-300">
+                {referralCount}
+              </span>
             </div>
           </div>
         </div>
 
+      </div>
+
+      {/* Referred Friends & Deposit Verification History List */}
+      <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-all duration-300 hover:border-emerald-500/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[var(--border-main)] pb-6">
+          <div>
+            <h3 className="text-lg font-bold text-emerald-500 flex items-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+              <Users size={20} className="text-emerald-500" />
+              {dir === 'rtl' ? 'سجل الأصدقاء والعمولات' : 'Invited Friends & Verification Status'}
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium select-none">
+              {dir === 'rtl' 
+                ? 'تتبع الأصدقاء المسجلين، وثائق الإثبات وعمليات المراجعة الخاصة بمدفوعاتهم.' 
+                : 'Track your invited friends, their manual deposit receipts, and verification cycles.'}
+            </p>
+          </div>
+          
+          {/* Filters & Sorting */}
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-center">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-1 bg-[var(--bg-primary)] p-1 rounded-sm border border-[var(--border-main)]">
+              {(['all', 'verified', 'pending', 'nodeposityet'] as const).map((filterOpt) => {
+                const label = {
+                  all: dir === 'rtl' ? 'الكل' : 'All',
+                  verified: dir === 'rtl' ? 'مكتمل ومفعل' : 'Verified',
+                  pending: dir === 'rtl' ? 'قيد المراجعة' : 'Reviewing',
+                  nodeposityet: dir === 'rtl' ? 'بانتظار الإيداع' : 'Awaiting Dep.'
+                }[filterOpt];
+                
+                return (
+                  <button
+                    key={filterOpt}
+                    type="button"
+                    onClick={() => setFriendsFilter(filterOpt)}
+                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase text-center transition-all cursor-pointer ${
+                      friendsFilter === filterOpt
+                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sorting Dropdown */}
+            <div className="flex items-center gap-1.5 bg-[var(--bg-primary)] px-2 py-1.5 rounded-sm border border-[var(--border-main)] text-xs font-bold text-[var(--text-secondary)]">
+              <span className="text-[10px] uppercase font-black tracking-wider select-none">
+                {dir === 'rtl' ? 'ترتيب:' : 'Sort:'}
+              </span>
+              <select
+                value={friendsSort}
+                onChange={(e) => setFriendsSort(e.target.value as 'joined_at' | 'deposit_amount')}
+                className="bg-transparent border-none outline-none text-[var(--text-primary)] font-black text-[10px] uppercase cursor-pointer py-0.5"
+              >
+                <option value="joined_at" className="bg-[var(--bg-secondary)] text-[var(--text-primary)] font-bold">
+                  {dir === 'rtl' ? 'التاريخ' : 'Date'}
+                </option>
+                <option value="deposit_amount" className="bg-[var(--bg-secondary)] text-[var(--text-primary)] font-bold">
+                  {dir === 'rtl' ? 'مبلغ الإيداع' : 'Deposit Amount'}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Spinner */}
+        {isLoadingReferredFriends ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--text-secondary)]">
+            <RefreshCw className="animate-spin text-emerald-500" size={24} />
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {dir === 'rtl' ? 'جاري تحميل سجل الأرباح...' : 'Loading referral ledger...'}
+            </span>
+          </div>
+        ) : (() => {
+          // Filter calculation
+          const filtered = referredFriends.filter((f) => {
+            if (friendsFilter === 'verified') return f.referral_status === 'active';
+            if (friendsFilter === 'pending') return f.referral_status === 'pending' && f.deposit_status === 'pending';
+            if (friendsFilter === 'nodeposityet') return f.referral_status === 'pending' && (f.deposit_status === null || f.deposit_status === 'rejected');
+            return true;
+          });
+
+          if (filtered.length === 0) {
+            return (
+              <div className="py-12 text-center rounded-[var(--radius)] border border-dashed border-[var(--border-main)] bg-[var(--bg-primary)]/40">
+                <Users className="mx-auto text-[var(--text-muted)] opacity-30 mb-3" size={32} />
+                <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                  {dir === 'rtl' ? 'لا توجد نتائج مطابقة لتصفيتك' : 'No Friends Fit This Filter'}
+                </h4>
+                <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-xs mx-auto">
+                  {dir === 'rtl' 
+                    ? 'الأصدقاء المسجلين برابط إحالتك سيظهرون هنا لتتبع الإيداع وتأكيد نقاط العمليات.' 
+                    : 'Invitees will represent dynamic ledger lines here to monitor deposit checks and verified reward claims.'}
+                </p>
+              </div>
+            );
+          }
+
+          const sortedAndFiltered = [...filtered].sort((a, b) => {
+            if (friendsSort === 'joined_at') {
+              const dateA = a.joined_at ? new Date(a.joined_at).getTime() : 0;
+              const dateB = b.joined_at ? new Date(b.joined_at).getTime() : 0;
+              return dateB - dateA;
+            } else if (friendsSort === 'deposit_amount') {
+              const amountA = Number(a.deposit_amount || 0);
+              const amountB = Number(b.deposit_amount || 0);
+              return amountB - amountA;
+            }
+            return 0;
+          });
+
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--border-main)] text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-extrabold select-none">
+                    <th className={`pb-3 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                      {dir === 'rtl' ? 'المستخدم' : 'User'}
+                    </th>
+                    <th className={`pb-3 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                      {dir === 'rtl' ? 'تاريخ التسجيل' : 'Registration Date'}
+                    </th>
+                    <th className={`pb-3 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                      {dir === 'rtl' ? 'التحقق من الإيداع' : 'Deposit Verification'}
+                    </th>
+                    <th className={`pb-3 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                      {dir === 'rtl' ? 'حالة العمولة' : 'Commissions / Balance'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-main)]/50">
+                  {sortedAndFiltered.map((friend) => {
+                    // Decide deposit badge styling
+                    let depBadgeProps = {
+                      bg: 'bg-gray-500/10 border-gray-500/20 text-gray-500 dark:bg-gray-400/5 dark:text-gray-400',
+                      label: dir === 'rtl' ? 'بانتظار الإيداع' : 'Pending First Deposit'
+                    };
+                    if (friend.referral_status === 'active') {
+                      depBadgeProps = {
+                        bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500',
+                        label: dir === 'rtl' ? 'مقبول وتم التأكيد' : 'Approved & Verified'
+                      };
+                    } else if (friend.deposit_status === 'pending') {
+                      depBadgeProps = {
+                        bg: 'bg-amber-500/10 border-amber-500/20 text-amber-500 animate-pulse',
+                        label: dir === 'rtl' ? 'قيد المراجعة اليدوية' : 'Under Review'
+                      };
+                    } else if (friend.deposit_status === 'rejected') {
+                      depBadgeProps = {
+                        bg: 'bg-red-500/10 border-red-500/20 text-red-500',
+                        label: dir === 'rtl' ? 'مرفوض إدارياً' : 'Rejected Proof'
+                      };
+                    }
+
+                    // Decide referral reward / status props
+                    let refStatusProps = {
+                      bg: 'bg-amber-500/10 text-amber-500 border border-amber-500/20',
+                      label: dir === 'rtl' ? 'قيد الانتظار' : 'Pending Activation'
+                    };
+                    if (friend.referral_status === 'active') {
+                      refStatusProps = {
+                        bg: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.1)]',
+                        label: dir === 'rtl' ? 'مكافأة مكتسبة' : 'Earned & Counted'
+                      };
+                    } else {
+                      refStatusProps = {
+                        bg: 'bg-gray-500/10 text-[var(--text-secondary)] border border-gray-500/20',
+                        label: dir === 'rtl' ? 'غير مسدد' : 'Inactive Account'
+                      };
+                    }
+
+                    return (
+                      <tr key={friend.referral_id} className="hover:bg-[var(--bg-primary)]/40 transition-all">
+                        <td className="py-4 pr-3">
+                          <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/5 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase border border-emerald-500/10 select-none">
+                              {friend.name ? friend.name.charAt(0) : 'U'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-[var(--text-primary)] text-sm">{friend.name}</div>
+                              <div className="text-[10px] text-[var(--text-muted)] font-mono">{friend.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={`py-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                          <span className="block font-semibold text-[var(--text-primary)]">
+                            {new Date(friend.joined_at).toLocaleDateString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                          <span className="text-[9px] text-[var(--text-muted)] font-mono block mt-0.5">
+                            {new Date(friend.joined_at).toLocaleTimeString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </td>
+                        <td className={`py-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                          <div className="inline-flex flex-col">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-[3px] text-[9px] font-black border uppercase tracking-wider ${depBadgeProps.bg}`}>
+                              {depBadgeProps.label}
+                            </span>
+                            {friend.deposit_rejection_reason && friend.deposit_status === 'rejected' && (
+                              <span className="text-[8px] text-red-400 mt-1 max-w-[150px] break-words">
+                                {dir === 'rtl' ? 'السبب: ' : 'Reason: '}{friend.deposit_rejection_reason}
+                              </span>
+                            )}
+                            {friend.deposit_status === 'pending' && friend.deposit_method && (
+                              <span className="text-[8px] text-[var(--text-muted)] mt-1 uppercase font-mono">
+                                {friend.deposit_method} • ${Number(friend.deposit_amount).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className={`py-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider ${refStatusProps.bg}`}>
+                                {refStatusProps.label}
+                              </span>
+                              {friend.referral_status === 'pending' && (
+                                <button
+                                  onClick={() => handleRemindInvitation(friend.email)}
+                                  disabled={remindingEmails[friend.email]}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                                >
+                                  {remindingEmails[friend.email] ? (
+                                    <RefreshCw size={10} className="animate-spin text-emerald-500" />
+                                  ) : (
+                                    <Zap size={10} className="text-emerald-500 fill-emerald-500/20" />
+                                  )}
+                                  <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
+                                </button>
+                              )}
+                            </div>
+                            {friend.referral_status === 'active' && (
+                              <span className="block text-[10px] text-emerald-500 font-extrabold tracking-tight">
+                                +{Number(friend.bonus_points || 0).toLocaleString()} PTS
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
 
       {/* KYC Verification Card */}
@@ -690,24 +1914,55 @@ export const RewardsPage: React.FC = () => {
                     </tr>
                   ) : (
                     <>
-                      {transactions.map((tx) => (
-                        <tr key={tx.id} className={`border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors`}>
-                          <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius)] text-xs font-medium ${
-                              tx.transaction_type === 'welcome_bonus' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
-                            }`}>
-                              {tx.transaction_type}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-bold text-[var(--text-primary)] whitespace-nowrap">
-                            {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toLocaleString()} PTS
-                          </td>
-                          <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">{tx.description}</td>
-                          <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">
-                            {new Date(tx.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
+                      {transactions.map((tx) => {
+                        const pts = Number(tx.points || 0);
+                        const amt = Number(tx.amount || 0);
+                        const hasPoints = pts !== 0;
+                        const hasAmount = amt !== 0;
+
+                        const badgeClass = getTxTypeBadgeClass(tx.transaction_type, pts, amt);
+                        const label = getTxLabel(tx.transaction_type, dir === 'rtl');
+
+                        return (
+                          <tr key={tx.id} className="border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors">
+                            <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius)] text-xs font-semibold ${badgeClass}`}>
+                                {label}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-[var(--text-primary)] whitespace-nowrap">
+                              {hasPoints ? (
+                                <span className={pts > 0 ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+                                  {pts > 0 ? '+' : ''}{pts.toLocaleString()} PTS
+                                </span>
+                              ) : hasAmount ? (
+                                <span className={amt > 0 ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+                                  {amt > 0 ? '+' : '-'}${Math.abs(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 font-medium">0 PTS</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap">{getTranslatedDescription(tx.description, dir === 'rtl')}</td>
+                             <td className="px-6 py-4 text-[var(--text-secondary)] whitespace-nowrap text-xs">
+                              <span className="block font-semibold">
+                                {new Date(tx.created_at).toLocaleDateString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
+                                {new Date(tx.created_at).toLocaleTimeString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit'
+                                })}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {hasMoreTx && (
                         <tr>
                           <td colSpan={4} className="px-6 py-4 text-center">
