@@ -790,6 +790,390 @@ router.get("/stats", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/referrals/stats", authenticateAdmin, async (req, res) => {
+  try {
+    // 1. Summary Counts
+    const totalResult = await pool.query('SELECT COUNT(*) as total FROM referral_invitations');
+    const totalSent = parseInt(totalResult.rows[0]?.total || '0', 10);
+
+    const statusResult = await pool.query('SELECT status, COUNT(*) as count FROM referral_invitations GROUP BY status');
+    
+    let accepted = 0;
+    let pending = 0;
+    let reminded = 0;
+
+    statusResult.rows.forEach((row: any) => {
+      const cnt = parseInt(row.count, 10);
+      if (row.status === 'accepted') {
+        accepted += cnt;
+      } else if (row.status === 'reminded') {
+        reminded += cnt;
+        pending += cnt;
+      } else {
+        pending += cnt; // e.g. 'sent' or default any other pending state
+      }
+    });
+
+    const conversionRate = totalSent > 0 ? parseFloat(((accepted / totalSent) * 100).toFixed(2)) : 0;
+
+    const uniqueReferrersRes = await pool.query('SELECT COUNT(DISTINCT referrer_id) as total_referrers FROM referral_invitations');
+    const totalReferrers = parseInt(uniqueReferrersRes.rows[0]?.total_referrers || '0', 10);
+
+    // 2. Most Active Referrers
+    const activeReferrersResult = await pool.query(`
+      SELECT 
+        u.id as referrer_id,
+        u.name as referrer_name,
+        u.email as referrer_email,
+        COUNT(r.id) as total_sent,
+        SUM(CASE WHEN r.status = 'accepted' THEN 1 ELSE 0 END) as total_accepted,
+        SUM(CASE WHEN r.status IN ('sent', 'reminded') THEN 1 ELSE 0 END) as total_pending
+      FROM referral_invitations r
+      JOIN users u ON r.referrer_id = u.id
+      GROUP BY u.id, u.name, u.email
+      ORDER BY total_sent DESC, total_accepted DESC
+      LIMIT 10
+    `);
+
+    const mostActiveReferrers = activeReferrersResult.rows.map((row: any) => ({
+      referrer_id: row.referrer_id,
+      referrer_name: row.referrer_name,
+      referrer_email: row.referrer_email,
+      total_sent: parseInt(row.total_sent || '0', 10),
+      total_accepted: parseInt(row.total_accepted || '0', 10),
+      total_pending: parseInt(row.total_pending || '0', 10),
+      conversion_rate: row.total_sent > 0 ? parseFloat(((row.total_accepted / row.total_sent) * 100).toFixed(2)) : 0
+    }));
+
+    // 3. Recent Invitations list for the feed
+    const recentInvitationsResult = await pool.query(`
+      SELECT 
+        r.id,
+        COALESCE(r.referred_email, r.email) as referred_email,
+        r.status,
+        r.created_at,
+        u.name as referrer_name,
+        u.email as referrer_email
+      FROM referral_invitations r
+      JOIN users u ON r.referrer_id = u.id
+      ORDER BY r.created_at DESC
+      LIMIT 15
+    `);
+
+    // 4. Daily trend for the last 30 days
+    const dailyTrendResult = await pool.query(`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM-DD') as invite_date, 
+        COUNT(*) as count,
+        SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as accepted_count
+      FROM referral_invitations 
+      WHERE created_at >= NOW() - INTERVAL '30 days' 
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD') 
+      ORDER BY invite_date ASC
+    `);
+
+    const trendMap = new Map();
+    dailyTrendResult.rows.forEach((row: any) => {
+      trendMap.set(row.invite_date, {
+        sent: parseInt(row.count || '0', 10),
+        accepted: parseInt(row.accepted_count || '0', 10),
+      });
+    });
+
+    const dailyTrend = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const val = trendMap.get(dateStr) || { sent: 0, accepted: 0 };
+      dailyTrend.push({
+        date: dateStr,
+        sent: val.sent,
+        accepted: val.accepted,
+      });
+    }
+
+    res.json({
+      summary: {
+        totalSent,
+        accepted,
+        pending,
+        reminded,
+        conversionRate,
+        totalReferrers
+      },
+      mostActiveReferrers,
+      topPerformers: (await pool.query(`
+        SELECT 
+          u.id as referrer_id,
+          u.name as referrer_name,
+          u.email as referrer_email,
+          COUNT(r.id) as total_sent,
+          SUM(CASE WHEN r.status = 'accepted' THEN 1 ELSE 0 END) as total_accepted,
+          SUM(CASE WHEN r.status IN ('sent', 'reminded') THEN 1 ELSE 0 END) as total_pending
+        FROM referral_invitations r
+        JOIN users u ON r.referrer_id = u.id
+        GROUP BY u.id, u.name, u.email
+        HAVING SUM(CASE WHEN r.status = 'accepted' THEN 1 ELSE 0 END) > 0
+        ORDER BY total_accepted DESC, total_sent DESC
+        LIMIT 10
+      `)).rows.map((row: any) => ({
+        referrer_id: row.referrer_id,
+        referrer_name: row.referrer_name,
+        referrer_email: row.referrer_email,
+        total_sent: parseInt(row.total_sent || '0', 10),
+        total_accepted: parseInt(row.total_accepted || '0', 10),
+        total_pending: parseInt(row.total_pending || '0', 10),
+        conversion_rate: row.total_sent > 0 ? parseFloat(((row.total_accepted / row.total_sent) * 100).toFixed(2)) : 0
+      })),
+      recentInvitations: recentInvitationsResult.rows,
+      dailyTrend
+    });
+  } catch (error: any) {
+    console.error('[Admin] Referral stats query error:', error);
+    res.status(500).json({ error: error.message || 'Internal Error' });
+  }
+});
+
+router.get("/referrals/export", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        r.id as invitation_id,
+        r.referrer_id,
+        u.name as referrer_name,
+        u.email as referrer_email,
+        r.email as recipient_email,
+        r.status,
+        r.invite_code,
+        r.created_at,
+        r.updated_at
+      FROM referral_invitations r
+      JOIN users u ON r.referrer_id = u.id
+      ORDER BY r.created_at DESC
+    `);
+
+    const headers = [
+      "Invitation ID",
+      "Referrer ID",
+      "Referrer Name",
+      "Referrer Email",
+      "Recipient Email",
+      "Status",
+      "Invite Code",
+      "Created At",
+      "Updated At"
+    ];
+
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = result.rows.map((row: any) => {
+      return [
+        row.invitation_id,
+        row.referrer_id,
+        escapeCsv(row.referrer_name),
+        escapeCsv(row.referrer_email),
+        escapeCsv(row.recipient_email),
+        escapeCsv(row.status),
+        escapeCsv(row.invite_code),
+        row.created_at ? new Date(row.created_at).toISOString() : '',
+        row.updated_at ? new Date(row.updated_at).toISOString() : ''
+      ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\r\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=referrals_export_${Date.now()}.csv`);
+    return res.status(200).send(csvContent);
+  } catch (error: any) {
+    console.error('[Admin] Referral export error:', error);
+    res.status(500).json({ error: error.message || 'Internal Error', error_ar: 'فشل في تصدير البيانات' });
+  }
+});
+
+router.post("/referrals/remind", authenticateAdmin, async (req, res) => {
+  try {
+    const { invitationId } = req.body;
+    if (!invitationId) {
+      return res.status(400).json({ error: 'invitationId is required', error_ar: 'معرف الدعوة مطلوب' });
+    }
+
+    const inviteResult = await pool.query(
+      `SELECT r.id, r.email, r.status, r.referrer_id,
+              u.name as referrer_name, u.referral_code, u.language as referrer_language
+       FROM referral_invitations r
+       JOIN users u ON r.referrer_id = u.id
+       WHERE r.id = $1`,
+      [invitationId]
+    );
+
+    if (inviteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Invitation not found', error_ar: 'الدعوة غير موجودة' });
+    }
+
+    const invite = inviteResult.rows[0];
+
+    // Check if invitation is pending (sent or reminded)
+    if (invite.status === 'accepted') {
+      return res.status(400).json({ error: 'This invitation has already been accepted', error_ar: 'تم قبول هذه الدعوة بالفعل' });
+    }
+
+    const { getBaseUrl } = await import('../utils/request.js');
+    const { sendSmartEmail } = await import('../services/email.js');
+
+    const baseUrl = getBaseUrl(req);
+    const invitationLink = `${baseUrl}/signup?ref=${invite.referral_code || ''}`;
+    const lang = invite.referrer_language === 'ar' ? 'ar' : 'en';
+
+    // Send the smart email reminder template
+    const emailSent = await sendSmartEmail(
+      invite.referrer_id,
+      invite.email.trim(),
+      'referral_reminder',
+      {
+        referrerName: invite.referrer_name || 'A Peer Analyst',
+        referralCode: invite.referral_code || '',
+        invitationLink,
+        baseUrl
+      },
+      lang as any
+    );
+
+    if (!emailSent) {
+      return res.status(500).json({ 
+        error: 'Failed to dispatch reminder email.',
+        error_ar: 'فشل في إرسال بريد التذكير.'
+      });
+    }
+
+    // Update status to 'reminded' and set updated_at
+    await pool.query(
+      "UPDATE referral_invitations SET status = 'reminded', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [invitationId]
+    );
+
+    // Write system log
+    try {
+      await pool.query(
+        "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
+        [
+          (req as any).user.id,
+          `Admins manual reminder sent to ${invite.email}`,
+          'referral_reminder',
+          JSON.stringify({ invitationId, email: invite.email })
+        ]
+      );
+    } catch (logErr) {
+      console.warn('[Admin] System log reference warning:', logErr);
+    }
+
+    res.json({ success: true, status: 'reminded' });
+  } catch (error: any) {
+    console.error('[Admin] Referral manual remind error:', error);
+    res.status(500).json({ error: error.message || 'Internal Error', error_ar: 'خطأ داخلي في الخادم' });
+  }
+});
+
+router.post("/referrals/remind-bulk", authenticateAdmin, async (req, res) => {
+  try {
+    const { invitationIds } = req.body;
+    if (!invitationIds || !Array.isArray(invitationIds) || invitationIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'invitationIds array is required', 
+        error_ar: 'مصفوفة معرّفات الدعوات مطلوبة' 
+      });
+    }
+
+    const inviteResult = await pool.query(
+      `SELECT r.id, r.email, r.status, r.referrer_id,
+              u.name as referrer_name, u.referral_code, u.language as referrer_language
+       FROM referral_invitations r
+       JOIN users u ON r.referrer_id = u.id
+       WHERE r.id = ANY($1) AND r.status != 'accepted'`,
+      [invitationIds]
+    );
+
+    if (inviteResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'No pending invitations found for the provided IDs', 
+        error_ar: 'لم يتم العثور على دعوات معلقة للمعادلات المحددة' 
+      });
+    }
+
+    const { getBaseUrl } = await import('../utils/request.js');
+    const { sendSmartEmail } = await import('../services/email.js');
+
+    const baseUrl = getBaseUrl(req);
+    let successCount = 0;
+    const processedIds: number[] = [];
+
+    for (const invite of inviteResult.rows) {
+      try {
+        const invitationLink = `${baseUrl}/signup?ref=${invite.referral_code || ''}`;
+        const lang = invite.referrer_language === 'ar' ? 'ar' : 'en';
+
+        // Send the smart email reminder template
+        const emailSent = await sendSmartEmail(
+          invite.referrer_id,
+          invite.email.trim(),
+          'referral_reminder',
+          {
+            referrerName: invite.referrer_name || 'A Peer Analyst',
+            referralCode: invite.referral_code || '',
+            invitationLink,
+            baseUrl
+          },
+          lang as any
+        );
+
+        if (emailSent) {
+          successCount++;
+          processedIds.push(invite.id);
+        }
+      } catch (err) {
+        console.error(`[Admin] Failed bulk remind for invitation ${invite.id}:`, err);
+      }
+    }
+
+    if (processedIds.length > 0) {
+      // Update status to 'reminded' and set updated_at
+      await pool.query(
+        "UPDATE referral_invitations SET status = 'reminded', updated_at = CURRENT_TIMESTAMP WHERE id = ANY($1)",
+        [processedIds]
+      );
+
+      // Write system log
+      try {
+        await pool.query(
+          "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
+          [
+            (req as any).user.id,
+            `Admins bulk manual reminders sent to ${processedIds.length} invitees`,
+            'referral_reminder_bulk',
+            JSON.stringify({ invitationIds: processedIds })
+          ]
+        );
+      } catch (logErr) {
+        console.warn('[Admin] System log bulk reference warning:', logErr);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      sentCount: successCount, 
+      processedIds 
+    });
+  } catch (error: any) {
+    console.error('[Admin] Referral manual bulk remind error:', error);
+    res.status(500).json({ error: error.message || 'Internal Error', error_ar: 'خطأ داخلي في الخادم' });
+  }
+});
+
 router.get("/security-alerts", authenticateAdmin, async (req, res) => {
   try {
     const result = await getSecurityPool().query('SELECT * FROM security_alerts ORDER BY created_at DESC LIMIT 50');

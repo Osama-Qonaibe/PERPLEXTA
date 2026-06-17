@@ -83,6 +83,7 @@ import {
 } from "lucide-react";
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { validateToolRoutePricing } from "../utils/orchestratorValidator";
+import { ReferralDashboardView } from "./ReferralDashboardView";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -13321,6 +13322,8 @@ export const AdminDashboard: React.FC = () => {
         return t("systemSettings");
       case "audit":
         return language === "ar" ? "التدقيق والامتثال" : "Compliance Audit Trail";
+      case "referrals":
+        return t("referralDashboard");
       default:
         return t("commandCenter");
     }
@@ -13376,6 +13379,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "مراقبة العمليات الحساسة وإعدادات الامتثال الأمني"
           : "SECURE CRITICAL METADATA AUDITING & SECURITY COMPLIANCE";
+      case "referrals":
+        return language === "ar"
+          ? "مراقبة وإحصاءات برنامج الإحالات والتحويلات"
+          : "REFERRAL PROGRAM STATISTICS & CONVERSION INTELLIGENCE";
       default:
         return "MANAGEMENT COMMAND CENTER";
     }
@@ -13409,6 +13416,8 @@ export const AdminDashboard: React.FC = () => {
         return <Settings size={28} className={iconClass} />;
       case "audit":
         return <ShieldAlert size={28} className={iconClass} />;
+      case "referrals":
+        return <UserPlus size={28} className={iconClass} />;
       default:
         return <Settings2 size={28} className={iconClass} />;
     }
@@ -13681,7 +13690,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals"].includes(
             path,
           )
             ? ""
@@ -13734,6 +13743,8 @@ export const AdminDashboard: React.FC = () => {
             <SystemSettingsView theme={theme} t={t} dir={dir} />
           ) : path === "audit" ? (
             <ComplianceAuditLogsView theme={theme} t={t} dir={dir} />
+          ) : path === "referrals" ? (
+            <ReferralDashboardView theme={theme} t={t} dir={dir} />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <div className="mb-6 opacity-50">{getIcon()}</div>

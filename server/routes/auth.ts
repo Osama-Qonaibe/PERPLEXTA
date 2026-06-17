@@ -204,6 +204,16 @@ router.post("/signup", authLimiter, async (req, res) => {
           `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
           [referredBy, user.id]
         );
+        try {
+          await pool.query(
+            `UPDATE referral_invitations 
+             SET status = 'accepted', updated_at = CURRENT_TIMESTAMP 
+             WHERE LOWER(email) = LOWER($1) AND status IN ('sent', 'reminded')`,
+            [lowerEmail]
+          );
+        } catch (invErr) {
+          console.error('Failed to update referral invitation status on signup:', invErr);
+        }
       } catch (refErr) {
         console.error('Failed to insert referral record on signup:', refErr);
       }
@@ -645,6 +655,16 @@ router.get("/google/callback", async (req, res) => {
             `INSERT INTO referral_tree (referrer_id, referred_id, level, status) VALUES ($1, $2, 1, 'active') ON CONFLICT (referred_id) DO NOTHING`,
             [referredBy, user.id]
           );
+          try {
+            await pool.query(
+              `UPDATE referral_invitations 
+               SET status = 'accepted', updated_at = CURRENT_TIMESTAMP 
+               WHERE LOWER(email) = LOWER($1) AND status IN ('sent', 'reminded')`,
+              [lowerEmail]
+            );
+          } catch (invErr) {
+            console.error('Failed to update referral invitation status on Google signup:', invErr);
+          }
         } catch (refErr) {
           console.error('Failed to insert referral record on Google registration:', refErr);
         }
