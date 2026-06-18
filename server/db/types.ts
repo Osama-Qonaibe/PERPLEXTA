@@ -224,6 +224,8 @@ export interface SystemSettings {
   id: number;
   site_name_en: string;
   site_name_ar: string;
+  seo_site_name_en: string | null;
+  seo_site_name_ar: string | null;
   logo_url: string | null;
   logo_light_url: string | null;
   favicon_url: string | null;

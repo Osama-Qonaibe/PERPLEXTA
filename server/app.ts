@@ -500,7 +500,10 @@ function injectSEOTags(
 
   const nameAr = settings.site_name_ar || '';
   const nameEn = settings.site_name_en || '';
-  const defaultSiteName = nameAr || nameEn || 'بيربليكستا';
+  
+  const seoNameAr = settings.seo_site_name_ar || nameAr || '';
+  const seoNameEn = settings.seo_site_name_en || nameEn || '';
+  const defaultSiteName = seoNameAr || seoNameEn || 'بيربليكستا';
 
   const descAr = settings.seo_description_ar || settings.site_description_ar || '';
   const descEn = settings.seo_description_en || settings.site_description_en || '';
@@ -516,21 +519,21 @@ function injectSEOTags(
   let currentSiteName = defaultSiteName;
 
   if (preferredLang === 'en') {
-    currentTitle = nameEn || nameAr || defaultSiteName;
+    currentTitle = seoNameEn || seoNameAr || defaultSiteName;
     currentDesc = descEn || descAr || defaultDesc;
     currentKeywords = keywordsEn || keywordsAr || defaultKeywords;
-    currentSiteName = nameEn || nameAr || defaultSiteName;
+    currentSiteName = seoNameEn || seoNameAr || defaultSiteName;
   } else if (preferredLang === 'ar') {
-    currentTitle = nameAr || nameEn || defaultSiteName;
+    currentTitle = seoNameAr || seoNameEn || defaultSiteName;
     currentDesc = descAr || descEn || defaultDesc;
     currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = nameAr || nameEn || defaultSiteName;
+    currentSiteName = seoNameAr || seoNameEn || defaultSiteName;
   } else {
     const langKey = preferredLang;
-    currentTitle = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
+    currentTitle = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
     currentDesc = settings[`seo_description_${langKey}`] || settings[`site_description_${langKey}`] || descAr || descEn || defaultDesc;
     currentKeywords = settings[`keywords_${langKey}`] || keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = settings[`site_name_${langKey}`] || nameAr || nameEn || defaultSiteName;
+    currentSiteName = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
   }
 
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';

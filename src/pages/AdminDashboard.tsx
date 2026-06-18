@@ -11291,6 +11291,8 @@ const SystemSettingsView = ({
 
   const [siteName, setSiteName] = useState(siteSettings.siteName);
   const [siteNameAr, setSiteNameAr] = useState(siteSettings.siteNameAr || "");
+  const [seoSiteNameEn, setSeoSiteNameEn] = useState("");
+  const [seoSiteNameAr, setSeoSiteNameAr] = useState("");
   const [siteDescription, setSiteDescription] = useState(
     siteSettings.siteDescription,
   );
@@ -11325,6 +11327,7 @@ const SystemSettingsView = ({
   );
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isSeoUploading, setIsSeoUploading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -11356,6 +11359,11 @@ const SystemSettingsView = ({
           const data = await res.json();
           setSiteName(data.site_name_en || "");
           setSiteNameAr(data.site_name_ar || "");
+          const seoSiteNameEnVal = data.seo_site_name_en || "";
+          const seoSiteNameArVal = data.seo_site_name_ar || "";
+          setSeoSiteNameEn(seoSiteNameEnVal);
+          setSeoSiteNameAr(seoSiteNameArVal);
+
           setSiteDescription(data.site_description_en || "");
           setSiteDescriptionAr(data.site_description_ar || "");
           const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
@@ -11379,6 +11387,8 @@ const SystemSettingsView = ({
             ...siteSettings,
             siteName: data.site_name_en || "",
             siteNameAr: data.site_name_ar || "",
+            seoSiteNameEn: seoSiteNameEnVal,
+            seoSiteNameAr: seoSiteNameArVal,
             siteDescription: data.site_description_en || "",
             siteDescriptionAr: data.site_description_ar || "",
             seoDescriptionEn: seoEnVal,
@@ -11400,20 +11410,72 @@ const SystemSettingsView = ({
     if (token) fetchSettings();
   }, [token]);
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "logo" | "logo_light" | "favicon" | "seo",
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (type === "logo") setLogoBase64(reader.result as string);
-        else if (type === "logo_light") setLogoLightBase64(reader.result as string);
-        else if (type === "favicon") setFaviconBase64(reader.result as string);
-        else if (type === "seo") setSeoImageUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (type === "seo") {
+        if (file.size > 2 * 1024 * 1024) {
+          showToast(
+            dir === "rtl" 
+              ? "حجم الصورة يتجاوز الحد الأقصى المسموح به وهو 2 ميغابايت" 
+              : "SEO Image must be less than 2MB", 
+            "error"
+          );
+          return;
+        }
+
+        setIsSeoUploading(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/admin/settings/upload-seo-image", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to upload image");
+          }
+
+          const data = await response.json();
+          if (data.success && data.imageUrl) {
+            setSeoImageUrl(data.imageUrl);
+            showToast(
+              dir === "rtl" 
+                ? "تم رفع صورة محركات البحث بنجاح" 
+                : "SEO preview image uploaded successfully", 
+              "success"
+            );
+          } else {
+            throw new Error("Upload response was unsuccessful");
+          }
+        } catch (error) {
+          console.error('[SEOImageUpload] Frontend upload error:', error);
+          showToast(
+            dir === "rtl" 
+              ? "فشل رفع الصورة المخصصة، يرجى المحاولة لاحقاً" 
+              : "Failed to upload SEO image. Please try again.", 
+            "error"
+          );
+        } finally {
+          setIsSeoUploading(false);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (type === "logo") setLogoBase64(reader.result as string);
+          else if (type === "logo_light") setLogoLightBase64(reader.result as string);
+          else if (type === "favicon") setFaviconBase64(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -11444,7 +11506,7 @@ const SystemSettingsView = ({
           logo_url: logoBase64,
           logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
-          seo_image_url: siteSettings.seoImageUrl,
+          seo_image_url: seoImageUrl,
         }),
       });
 
@@ -11459,6 +11521,7 @@ const SystemSettingsView = ({
           seoDescriptionAr: seoDescriptionAr,
           keywordsEn: keywordsEn,
           keywordsAr: keywordsAr,
+          seoImageUrl: seoImageUrl,
         });
         showToast(t("saveSuccess") || "General settings saved", "success");
       } else {
@@ -11501,7 +11564,7 @@ const SystemSettingsView = ({
           logo_url: logoBase64,
           logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
-          seo_image_url: siteSettings.seoImageUrl,
+          seo_image_url: seoImageUrl,
         }),
       });
 
@@ -11511,6 +11574,7 @@ const SystemSettingsView = ({
           logoBase64,
           logoLightBase64,
           faviconBase64,
+          seoImageUrl: seoImageUrl,
         });
         showToast(t("saveSuccess") || "Visual settings saved", "success");
       } else {
@@ -11524,14 +11588,8 @@ const SystemSettingsView = ({
   };
 
   const handleSaveSeoSettings = async () => {
-    if (
-      !seoDescriptionEn ||
-      !seoDescriptionAr ||
-      !keywordsEn ||
-      !keywordsAr ||
-      !googleAnalyticsId
-    ) {
-      showToast(t("allFieldsRequired") || "All fields are required", "error");
+    if (!siteName) {
+      showToast(dir === "rtl" ? "اسم الموقع بالإنجليزية مطلوب" : "Site Name in English is required", "error");
       return;
     }
     setIsSaving(true);
@@ -11543,27 +11601,35 @@ const SystemSettingsView = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          site_name_en: siteSettings.siteName,
-          site_name_ar: siteSettings.siteNameAr,
-          site_description_en: siteSettings.siteDescription,
-          site_description_ar: siteSettings.siteDescriptionAr,
-          seo_description: JSON.stringify({
-            en: seoDescriptionEn,
-            ar: seoDescriptionAr,
-          }),
-          keywords: JSON.stringify({ en: keywordsEn, ar: keywordsAr }),
-          google_analytics_id: googleAnalyticsId,
-          google_site_verification: googleSiteVerification,
-          logo_url: siteSettings.logoBase64,
-          favicon_url: siteSettings.faviconBase64,
+          site_name_en: siteName,
+          site_name_ar: siteNameAr,
+          seo_site_name_en: seoSiteNameEn,
+          seo_site_name_ar: seoSiteNameAr,
+          site_description_en: siteDescription,
+          site_description_ar: siteDescriptionAr,
+          seo_description_en: seoDescriptionEn,
+          seo_description_ar: seoDescriptionAr,
+          keywords_en: keywordsEn,
+          keywords_ar: keywordsAr,
+          google_analytics_id: googleAnalyticsId || "",
+          google_site_verification: googleSiteVerification || "",
+          logo_url: logoBase64 || siteSettings.logoBase64,
+          logo_light_url: logoLightBase64 || siteSettings.logoLightBase64,
+          favicon_url: faviconBase64 || siteSettings.faviconBase64,
           seo_image_url: seoImageUrl,
-          blocked_paths: blockedPaths,
+          blocked_paths: blockedPaths || "",
         }),
       });
 
       if (res.ok) {
         setSiteSettings({
           ...siteSettings,
+          siteName,
+          siteNameAr,
+          seoSiteNameEn,
+          seoSiteNameAr,
+          siteDescription,
+          siteDescriptionAr,
           seoDescriptionEn,
           seoDescriptionAr,
           keywordsEn,
@@ -12029,6 +12095,96 @@ const SystemSettingsView = ({
         </div>
 
         <div className="space-y-5">
+          {/* Site Identity Name Fields (SEO integrated) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "اسم الموقع والمنصة (بالإنجليزية)" : "Site Name (English)"}
+              </label>
+              <input
+                type="text"
+                value={siteName || ""}
+                onChange={(e) => setSiteName(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="e.g. Perplexta Platform"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "اسم الموقع والمنصة (بالعربية)" : "Site Name (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={siteNameAr || ""}
+                onChange={(e) => setSiteNameAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="مثال: منصة بيربليكستا"
+              />
+            </div>
+          </div>
+
+          {/* SEO Site Name Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالإنجليزية)" : "SEO Site Title (English)"}
+              </label>
+              <input
+                type="text"
+                value={seoSiteNameEn || ""}
+                onChange={(e) => setSeoSiteNameEn(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="e.g. Perplexta | Premium Financial Analytics"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                {dir === "rtl" ? "العنوان المحدد لمحركات البحث الإنجليزية وعلامات تبويب المتصفح." : "Optimized English title displayed in Google search listings and browser tabs."}
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالعربية)" : "SEO Site Title (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={seoSiteNameAr || ""}
+                onChange={(e) => setSeoSiteNameAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="مثال: منصة بيربليكستا | الاختيار الاحترافي للتحليل"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                {dir === "rtl" ? "العنوان المعرّب المحدد لزيادة ظهور الموقع في نتائج البحث العربية." : "Optimized Arabic title targeting maximum visibility across Arabic search result engines."}
+              </p>
+            </div>
+          </div>
+
+          {/* Site Identity Description Fields (SEO integrated) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "الوصف التعريفي العام (بالإنجليزية)" : "General Description (English)"}
+              </label>
+              <textarea
+                rows={2}
+                value={siteDescription || ""}
+                onChange={(e) => setSiteDescription(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="Enter general tagline description..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+                {dir === "rtl" ? "الوصف التعريفي العام (بالعربية)" : "General Description (Arabic)"}
+              </label>
+              <textarea
+                rows={2}
+                value={siteDescriptionAr || ""}
+                onChange={(e) => setSiteDescriptionAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="اكتب نبذة تعريفية عامة هنا..."
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -12151,7 +12307,7 @@ const SystemSettingsView = ({
                       )}
                       <div className="flex flex-col leading-none items-end">
                         <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
-                          {siteNameAr || siteName || "بيربليكستا"}
+                          {seoSiteNameAr || siteNameAr || siteName || "بيربليكستا"}
                         </span>
                         <span className="text-[10px] text-gray-400 font-sans tracking-tight">
                           https://perplexta.com
@@ -12160,7 +12316,7 @@ const SystemSettingsView = ({
                     </div>
                     
                     <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans text-right">
-                      {siteNameAr || siteName || "بيربليكستا"} | منصة التحليل التقني
+                      {seoSiteNameAr || seoSiteNameEn || siteNameAr || siteName || "بيربليكستا"} | منصة التحليل التقني
                     </h4>
                     
                     <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans text-right">
@@ -12214,7 +12370,7 @@ const SystemSettingsView = ({
                       )}
                       <div className="flex flex-col leading-none">
                         <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
-                          {siteName || "Perplexta Platform"}
+                          {seoSiteNameEn || siteName || "Perplexta Platform"}
                         </span>
                         <span className="text-[10px] text-gray-400 font-sans tracking-tight">
                           https://perplexta.com
@@ -12223,7 +12379,7 @@ const SystemSettingsView = ({
                     </div>
                     
                     <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans">
-                      {siteName || "Perplexta Platform"} | Best Technical Analysis
+                      {seoSiteNameEn || seoSiteNameAr || siteName || "Perplexta Platform"} | Best Technical Analysis
                     </h4>
                     
                     <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans">
@@ -12290,10 +12446,18 @@ const SystemSettingsView = ({
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
                     onChange={(e) => handleImageUpload(e, "seo")}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    disabled={isSeoUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                   />
                   
-                  {seoImageUrl ? (
+                  {isSeoUploading ? (
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <RefreshCw className="animate-spin text-emerald-500 mb-3" size={28} />
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {dir === "rtl" ? "جاري رفع الصورة..." : "Uploading image..."}
+                      </p>
+                    </div>
+                  ) : seoImageUrl ? (
                     <div className="relative w-full h-full flex flex-col items-center">
                       <img
                         src={seoImageUrl}
@@ -12388,7 +12552,7 @@ const SystemSettingsView = ({
                     <div className={`text-sm font-semibold mt-1 line-clamp-1 ${
                       theme === "dark" ? "text-white" : "text-gray-800"
                     }`}>
-                      {language === "ar" ? (siteNameAr || "منصة بيربليكستا") : (siteName || "Perplexta Platform")}
+                      {language === "ar" ? (seoSiteNameAr || siteNameAr || "منصة بيربليكستا") : (seoSiteNameEn || siteName || "Perplexta Platform")}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                       {language === "ar" 

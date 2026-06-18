@@ -38,6 +38,8 @@ export interface User {
 export interface SiteSettings {
   siteName: string;
   siteNameAr: string;
+  seoSiteNameEn?: string;
+  seoSiteNameAr?: string;
   siteDescription: string;
   siteDescriptionAr: string;
   logoBase64: string | null;
@@ -2694,6 +2696,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return {
       siteName: '',
       siteNameAr: '',
+      seoSiteNameEn: '',
+      seoSiteNameAr: '',
       siteDescription: '',
       siteDescriptionAr: '',
       logoBase64: null,
@@ -3210,7 +3214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [language, theme, dir]);
 
   useEffect(() => {
-    const currentSiteName = language === 'ar' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
+    const currentSiteName = language === 'ar' ? (siteSettings.seoSiteNameAr || siteSettings.siteNameAr || siteSettings.siteName) : (siteSettings.seoSiteNameEn || siteSettings.siteName);
     const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
     const resolvedDesc = (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc;
 

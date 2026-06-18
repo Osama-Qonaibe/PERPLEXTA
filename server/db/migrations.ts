@@ -1556,6 +1556,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v55_seo_site_name_fields', 'Adding dedicated seo_site_name_en and seo_site_name_ar columns to system_settings', async (tx) => {
+      await ensureColumn(tx, 'system_settings', 'seo_site_name_en', 'TEXT', "NULL");
+      await ensureColumn(tx, 'system_settings', 'seo_site_name_ar', 'TEXT', "NULL");
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -2045,6 +2050,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         paypal_last_verified_at TIMESTAMP,
         image_prompt_pref_threshold INTEGER DEFAULT 150,
         blocked_paths TEXT DEFAULT '',
+        seo_site_name_en TEXT,
+        seo_site_name_ar TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },

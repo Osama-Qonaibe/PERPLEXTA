@@ -42,7 +42,7 @@ export async function getSystemSettings() {
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
         stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
         paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
-        blocked_paths
+        blocked_paths, seo_site_name_en, seo_site_name_ar
       FROM system_settings LIMIT 1
     `);
     
@@ -62,7 +62,7 @@ export async function getSystemSettings() {
           google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
           stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
           paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
-          blocked_paths
+          blocked_paths, seo_site_name_en, seo_site_name_ar
         FROM system_settings LIMIT 1
       `);
       settings = secondTry.rows[0];
@@ -128,7 +128,22 @@ export async function updateSystemSettings(settings: any) {
   let keywords_en = settings.keywords_en !== undefined ? settings.keywords_en : existing.keywords_en;
   let keywords_ar = settings.keywords_ar !== undefined ? settings.keywords_ar : existing.keywords_ar;
 
+  let seo_site_name_en = settings.seo_site_name_en !== undefined ? settings.seo_site_name_en : existing.seo_site_name_en;
+  let seo_site_name_ar = settings.seo_site_name_ar !== undefined ? settings.seo_site_name_ar : existing.seo_site_name_ar;
+
   // Gracefully adopt nested JSON object or string format if sent from Admin Dashboard
+  if (settings.seo_site_name) {
+    try {
+      const parsedTitle = typeof settings.seo_site_name === 'string'
+        ? JSON.parse(settings.seo_site_name)
+        : settings.seo_site_name;
+      if (parsedTitle.en !== undefined) seo_site_name_en = parsedTitle.en;
+      if (parsedTitle.ar !== undefined) seo_site_name_ar = parsedTitle.ar;
+    } catch (e) {
+      console.warn('[System] Failed to parse nested seo_site_name:', e);
+    }
+  }
+
   if (settings.seo_description) {
     try {
       const parsedSeo = typeof settings.seo_description === 'string' 
@@ -181,12 +196,12 @@ export async function updateSystemSettings(settings: any) {
       site_name_en = $1, site_name_ar = $2, site_description_en = $3, site_description_ar = $4,
       seo_description_en = $5, seo_description_ar = $6, keywords_en = $7, keywords_ar = $8,
       google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14,
-      blocked_paths = $15, updated_at = CURRENT_TIMESTAMP
+      blocked_paths = $15, seo_site_name_en = $16, seo_site_name_ar = $17, updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
     google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-    blocked_paths
+    blocked_paths, seo_site_name_en || '', seo_site_name_ar || ''
   ]);
   
   await clearSettingsCache();

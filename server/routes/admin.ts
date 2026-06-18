@@ -10,8 +10,9 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
-import { getSystemSettings } from '../services/system.js';
+import { getSystemSettings, updateSystemSettings } from '../services/system.js';
 import { isSafeHost } from '../utils/helpers.js';
+import { upload, handleMulterError } from '../middleware/upload.js';
 import { authLimiter, adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
@@ -2042,6 +2043,25 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/settings", authenticateAdmin, async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.post("/settings", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await updateSystemSettings(req.body);
+    res.json(result);
+  } catch (error: any) {
+    console.error('[SystemSettings] Failed to update system settings:', error);
+    res.status(500).json({ error: error.message || 'Internal Error' });
+  }
+});
+
 router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
   try {
     const { secretKey, publishableKey, webhookSecret, isLiveMode } = req.body;
@@ -2953,6 +2973,21 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
   } catch (error: any) {
     console.error('[Admin Cleanup Action Error]:', error);
     res.status(500).json({ error: error.message || 'Pruning routine execution failure occurred.' });
+  }
+});
+
+// Dedicated endpoint to upload SEO Open Graph Images
+router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded or file invalid' });
+    }
+    const filename = req.file.filename;
+    const imageUrl = `/uploads/${filename}`;
+    res.json({ success: true, imageUrl });
+  } catch (error: any) {
+    console.error('[SEOImageUpload] Upload failed:', error);
+    res.status(500).json({ error: error.message || 'Image upload failed' });
   }
 });
 
