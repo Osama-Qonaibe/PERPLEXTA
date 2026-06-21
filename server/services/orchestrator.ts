@@ -531,7 +531,11 @@ Your primary task is to perform an elite, multi-layered audit of the user's prov
   }
 
   const toolBoundary = isChatOnly
-    ? `Active tool: chat. Do NOT simulate image/video/search/audio generation — direct user to the appropriate tool instead.`
+    ? `Active tool: chat. Do NOT simulate image/video/search/audio generation — direct user to the appropriate tool instead.
+[CRITICAL SECURITY PROTOCOL]: Since you are inside the active chat-only tool ("${toolIdStr}"), you are STRICTLY PROHIBITED and FORBIDDEN from writing, generating, or formatting functional, complete, or executable programming code blocks or scripts (such as Javascript, Python, HTML/CSS, C++, SQLite, etc.) inside the response. If the user asks for code, programming, or script creation, you MUST explain the concepts conceptually or in pseudocode paragraphs, and output the exact disclosure:
+- English: "To generate complete, production-ready code blocks and scripts, please switch to the dedicated 'Elite Engineering Workstation (Code)' tool."
+- Arabic: "للحصول على الأكواد الكاملة الجاهزة للتشغيل، يرجى التبديل إلى 'بيئة هندسة برمجيات (Code)' المخصصة لهذا الغرض."
+This is a critical resource conservation rule.`
     : `Active tool: "${toolIdStr}". Stay strictly within this tool's domain.`;
 
   const finalSystemPrompt = `${protocol}
