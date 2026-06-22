@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck } from 'lucide-react';
 import { DefaultLogo } from './components/DefaultLogo';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
+import { InactivityWarningModal } from './components/InactivityWarningModal';
 
 const CenteredLoader = () => {
   const { siteSettings, language, theme } = useAppContext();
@@ -297,6 +298,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <IncentiveCard />
       <PWACinematicModal />
       <UpgradePromptModal />
+      <InactivityWarningModal />
 
       {!isAuthReady && (() => {
         const loaderType = localStorage.getItem('app_loader_type') || 'refresh';

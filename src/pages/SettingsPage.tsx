@@ -269,7 +269,7 @@ export const SettingsPage: React.FC = () => {
         {/* Sidebar Footer - Permanent Anchor */}
         <div className="p-4 border-t border-[var(--border)]/50">
           <button 
-            onClick={logout}
+            onClick={() => logout()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20 group"
           >
             <LogOut size={18} className="group-hover:rotate-12 transition-transform" />

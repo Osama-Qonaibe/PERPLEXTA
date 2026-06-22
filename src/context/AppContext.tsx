@@ -73,7 +73,7 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<{ success: boolean, error?: string }>;
   signup: (email: string, password: string, name: string, ref?: string) => Promise<{ success: boolean, error?: string }>;
   loginWithGoogle: () => void;
-  logout: () => void;
+  logout: (forceRedirect?: boolean) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (isOpen: boolean) => void;
   plans: any[];
@@ -127,6 +127,11 @@ interface AppContextType {
   setUpgradePromptState: (state: any) => void;
   triggerUpgradePrompt: (toolId: string, limit?: number, currentUsage?: number, period?: 'daily' | 'monthly') => void;
   closeUpgradePrompt: () => void;
+  showInactivityWarning: boolean;
+  setShowInactivityWarning: (val: boolean) => void;
+  inactivityCountdown: number;
+  setInactivityCountdown: (val: number) => void;
+  extendSession: () => void;
 }
 
 const translations = {
@@ -134,6 +139,10 @@ const translations = {
     rewards: 'المكافآت',
     subscription: 'الاشتراكات',
     consumption: 'الاستهلاك',
+    inactivityWarningTitle: 'جلسة العمل على وشك الانتهاء',
+    inactivityWarningDesc: 'لقد كنت غير نشط لفترة من الوقت. لحماية حسابك وأمان بياناتك، سيتم تسجيل خروجك تلقائياً خلال {seconds} ثانية.',
+    stayLoggedInBtn: 'البقاء متصلاً',
+    logoutNowBtn: 'تسجيل الخروج الآن',
     usageRadar: 'رادار الاستهلاك',
     realTimeUsageSync: 'مزامنة لحظية للموارد',
     dashboard: 'لوحة التحكم',
@@ -841,6 +850,10 @@ const translations = {
     rewards: 'Rewards',
     subscription: 'Subscriptions',
     consumption: 'Consumption',
+    inactivityWarningTitle: 'Session is About to Expire',
+    inactivityWarningDesc: 'We noticed you have been inactive. For your security, you will be automatically logged out in {seconds} seconds.',
+    stayLoggedInBtn: 'Stay Logged In',
+    logoutNowBtn: 'Logout Now',
     usageRadar: 'Usage Radar',
     realTimeUsageSync: 'Real-time resource synchronization',
     dashboard: 'Dashboard',
@@ -1562,6 +1575,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return 'dark';
     }
   });
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [inactivityCountdown, setInactivityCountdown] = useState(60);
+
+  const showWarningRef = useRef(showInactivityWarning);
+  useEffect(() => {
+    showWarningRef.current = showInactivityWarning;
+  }, [showInactivityWarning]);
+
+  const extendSession = () => {
+    localStorage.setItem('perplexta_last_activity', Date.now().toString());
+    setShowInactivityWarning(false);
+  };
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem('app_user_profile');
@@ -2635,13 +2660,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user || !token) {
+      setShowInactivityWarning(false);
+      return;
+    }
 
     localStorage.setItem('perplexta_last_activity', Date.now().toString());
 
     let lastWriteTime = Date.now();
+    const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
+    const WARNING_BEFORE_SECONDS = 60;
+    const WARNING_THRESHOLD = INACTIVITY_LIMIT - WARNING_BEFORE_SECONDS * 1000;
+
     const updateLastActivity = () => {
       const now = Date.now();
+      
+      if (showWarningRef.current) {
+        localStorage.setItem('perplexta_last_activity', now.toString());
+        lastWriteTime = now;
+        setShowInactivityWarning(false);
+        return;
+      }
+
       if (now - lastWriteTime > 15000) {
         localStorage.setItem('perplexta_last_activity', now.toString());
         lastWriteTime = now;
@@ -2653,8 +2693,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.addEventListener(event, updateLastActivity, { passive: true });
     });
 
-    const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
-
     const interval = setInterval(() => {
       const lastActivityStr = localStorage.getItem('perplexta_last_activity');
       if (!lastActivityStr) {
@@ -2664,17 +2702,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const lastActivity = parseInt(lastActivityStr, 10);
       const now = Date.now();
+      const diff = now - lastActivity;
 
-      if (!isNaN(lastActivity) && (now - lastActivity >= INACTIVITY_LIMIT)) {
-        clearInterval(interval);
-        toast.warning(
-          language === 'ar'
-            ? 'تم تسجيل الخروج تلقائياً بسبب عدم النشاط لمدة ساعتين لحماية حسابك.'
-            : 'Session expired due to 2 hours of inactivity.'
-        );
-        logout(true);
+      if (!isNaN(lastActivity)) {
+        if (diff >= INACTIVITY_LIMIT) {
+          clearInterval(interval);
+          setShowInactivityWarning(false);
+          toast.warning(
+            language === 'ar'
+              ? 'تم تسجيل الخروج تلقائياً بسبب عدم النشاط لمدة ساعتين لحماية حسابك.'
+              : 'Session expired due to 2 hours of inactivity.'
+          );
+          logout(true);
+        } else if (diff >= WARNING_THRESHOLD) {
+          setShowInactivityWarning(true);
+          const remainingSeconds = Math.max(0, Math.ceil((INACTIVITY_LIMIT - diff) / 1000));
+          setInactivityCountdown(remainingSeconds);
+        } else {
+          if (showWarningRef.current) {
+            setShowInactivityWarning(false);
+          }
+        }
       }
-    }, 30000);
+    }, 1000);
 
     return () => {
       events.forEach(event => {
@@ -2682,7 +2732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       clearInterval(interval);
     };
-  }, [user, token, language]);
+  }, [user, token, language, logout]);
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     const saved = localStorage.getItem('site_settings');
@@ -3379,7 +3429,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       upgradePromptState,
       setUpgradePromptState,
       triggerUpgradePrompt,
-      closeUpgradePrompt
+      closeUpgradePrompt,
+      showInactivityWarning,
+      setShowInactivityWarning,
+      inactivityCountdown,
+      setInactivityCountdown,
+      extendSession
     }}>
       {children}
     </AppContext.Provider>
