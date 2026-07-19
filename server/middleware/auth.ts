@@ -4,6 +4,7 @@ import { pool, getSecurityPool } from '../db/index.js';
 import { tokenLimiter } from './rateLimit.js';
 import { getOrCreateSigningKeys } from '../utils/keys.js';
 import { hashToken } from '../utils/tokenHash.js';
+import { userLoader } from '../db/queries.js';
 
 interface UserCacheEntry {
   status: string;
@@ -25,6 +26,7 @@ const BLACKLIST_CACHE_TTL = 60 * 1000;
 
 export function invalidateUserCache(userId: string | number) {
   userStatusCache.delete(userId);
+  userLoader.clear(userId);
 }
 
 export function addToBlacklistCache(token: string) {
@@ -148,34 +150,16 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         }
 
         let userData: any = null;
-        const cachedUser = userStatusCache.get(userPayload.id);
-
-        if (cachedUser && cachedUser.expiryTime > nowMs) {
-          userData = {
-            status: cachedUser.status,
-            role: cachedUser.role,
-            last_active_at: new Date(cachedUser.lastActiveAtVal)
-          };
-        } else {
-          try {
-            const userCheck = await pool.query('SELECT status, role, last_active_at FROM users WHERE id = $1', [userPayload.id]);
-            if (userCheck.rows.length === 0) {
-              res.status(401).json({ error: 'User not found' });
-              return;
-            }
-
-            userData = userCheck.rows[0];
-            userStatusCache.set(userPayload.id, {
-              status: userData.status,
-              role: userData.role,
-              lastActiveAtVal: userData.last_active_at ? new Date(userData.last_active_at).getTime() : 0,
-              expiryTime: nowMs + USER_CACHE_TTL
-            });
-          } catch (dbErr) {
-            console.error('[Security] Failed to verify user status:', dbErr);
-            res.status(503).json({ error: 'Service temporarily unavailable' });
+        try {
+          userData = await userLoader.load(userPayload.id);
+          if (!userData) {
+            res.status(401).json({ error: 'User not found' });
             return;
           }
+        } catch (dbErr) {
+          console.error('[Security] Failed to verify user status via userLoader:', dbErr);
+          res.status(503).json({ error: 'Service temporarily unavailable' });
+          return;
         }
 
         if (userData.status === 'suspended') {

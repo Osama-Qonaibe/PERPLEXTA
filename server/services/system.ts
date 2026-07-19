@@ -1,27 +1,23 @@
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
 import { getEconomySettings, updateEconomySettings } from './wallet.js';
+import { getCachedSystemSettings, invalidateSystemSettingsCache } from '../db/queries.js';
 
 export { getEconomySettings, updateEconomySettings };
 
 let cachedAppNameEn = '';
 let cachedAppNameAr = '';
 
-let cachedSettings: any = null;
-let settingsCacheTime = 0;
-const SETTINGS_CACHE_TTL = 300000; // 5 minutes in-memory cache
-
 export async function clearSettingsCache() {
-  cachedSettings = null;
-  settingsCacheTime = 0;
+  invalidateSystemSettingsCache();
 }
 
 export async function refreshCachedAppName() {
   try {
-    const res = await pool.query('SELECT site_name_en, site_name_ar FROM system_settings LIMIT 1');
-    if (res.rows.length > 0) {
-      cachedAppNameEn = res.rows[0].site_name_en || '';
-      cachedAppNameAr = res.rows[0].site_name_ar || '';
+    const settings = await getCachedSystemSettings();
+    if (settings) {
+      cachedAppNameEn = settings.site_name_en || '';
+      cachedAppNameAr = settings.site_name_ar || '';
     }
   } catch (e) {
     console.error('[System] Failed to refresh cached app name:', e);
@@ -29,63 +25,8 @@ export async function refreshCachedAppName() {
 }
 
 export async function getSystemSettings() {
-  const now = Date.now();
-  if (cachedSettings && (now - settingsCacheTime < SETTINGS_CACHE_TTL)) {
-    return cachedSettings;
-  }
-
   try {
-    const result = await pool.query(`
-      SELECT 
-        site_name_en, site_name_ar, site_description_en, site_description_ar,
-        seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-        google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-        stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
-        blocked_paths, seo_site_name_en, seo_site_name_ar
-      FROM system_settings LIMIT 1
-    `);
-    
-    let settings = result.rows[0];
-
-    // Seed default if database table is completely empty
-    if (!settings) {
-      console.log('[SystemSettings] Table system_settings is empty. Seeding default row...');
-      await pool.query(`
-        INSERT INTO system_settings (site_name_en, site_name_ar, logo_url, logo_light_url, favicon_url)
-        VALUES ('Premium AI', 'منصة النخبة', null, null, null)
-      `);
-      const secondTry = await pool.query(`
-        SELECT 
-          site_name_en, site_name_ar, site_description_en, site_description_ar,
-          seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-          google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-          stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-          paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
-          blocked_paths, seo_site_name_en, seo_site_name_ar
-        FROM system_settings LIMIT 1
-      `);
-      settings = secondTry.rows[0];
-    }
-    
-    if (settings.stripe_publishable_key) {
-      try {
-        settings.stripe_publishable_key = decrypt(settings.stripe_publishable_key);
-      } catch (e) {
-        console.warn('[System] Failed to decrypt stripe_publishable_key:', e);
-      }
-    }
-    if (settings.paypal_client_id) {
-      try {
-        settings.paypal_client_id = decrypt(settings.paypal_client_id);
-      } catch (e) {
-        console.warn('[System] Failed to decrypt paypal_client_id:', e);
-      }
-    }
-
-    cachedSettings = settings;
-    settingsCacheTime = now;
-    return settings;
+    return await getCachedSystemSettings();
   } catch (err: any) {
     const errMsg = err.message || '';
     if (errMsg.includes('relation "system_settings" does not exist')) {
@@ -93,7 +34,8 @@ export async function getSystemSettings() {
       try {
         const { runDatabaseMigrations } = await import('../db/migrations.js');
         await runDatabaseMigrations();
-        return getSystemSettings();
+        invalidateSystemSettingsCache();
+        return getCachedSystemSettings();
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic migration running failed:', innerErr.message);
       }
@@ -102,7 +44,8 @@ export async function getSystemSettings() {
       try {
         await pool.query('ALTER TABLE system_settings ADD COLUMN logo_light_url TEXT');
         console.log('[SystemSettings] Successfully added logo_light_url dynamically!');
-        return getSystemSettings();
+        invalidateSystemSettingsCache();
+        return getCachedSystemSettings();
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic column addition failed:', innerErr.message);
       }
@@ -111,7 +54,8 @@ export async function getSystemSettings() {
       try {
         await pool.query("ALTER TABLE system_settings ADD COLUMN blocked_paths TEXT DEFAULT ''");
         console.log('[SystemSettings] Successfully added blocked_paths dynamically!');
-        return getSystemSettings();
+        invalidateSystemSettingsCache();
+        return getCachedSystemSettings();
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic blocked_paths column addition failed:', innerErr.message);
       }

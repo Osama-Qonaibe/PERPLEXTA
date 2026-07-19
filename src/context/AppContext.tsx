@@ -6,7 +6,7 @@ import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 
 type Language = 'ar' | 'en';
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'system';
 
 export interface User {
   id?: number;
@@ -771,6 +771,7 @@ const translations = {
     language: 'اللغة',
     lightMode: 'فاتح',
     darkMode: 'داكن',
+    systemMode: 'تلقائي',
     arabic: 'العربية',
     english: 'English',
     termsOfUse: 'شروط الخدمة',
@@ -1453,6 +1454,7 @@ const translations = {
     language: 'Language',
     lightMode: 'Light',
     darkMode: 'Dark',
+    systemMode: 'System',
     arabic: 'العربية',
     english: 'English',
     termsOfUse: 'Terms of Service',
@@ -1570,11 +1572,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('theme') as Theme) || 'dark';
+      return (localStorage.getItem('theme') as Theme) || 'system';
     } catch (e) {
-      return 'dark';
+      return 'system';
     }
   });
+  const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else {
+      (mediaQuery as any).addListener(handleSystemThemeChange);
+    }
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } else {
+        (mediaQuery as any).removeListener(handleSystemThemeChange);
+      }
+    };
+  }, []);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [inactivityCountdown, setInactivityCountdown] = useState(60);
 
@@ -3246,8 +3272,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.lang = language;
     localStorage.setItem('language', language);
 
+    const resolvedTheme = theme === 'system' ? systemTheme : theme;
+
     const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
-    if (theme === 'dark') {
+    if (resolvedTheme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
       document.documentElement.style.backgroundColor = '#080809';
@@ -3261,7 +3289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (meta) meta.setAttribute('content', '#fcfcfc');
     }
     localStorage.setItem('theme', theme);
-  }, [language, theme, dir]);
+  }, [language, theme, systemTheme, dir]);
 
   useEffect(() => {
     const currentSiteName = language === 'ar' ? (siteSettings.seoSiteNameAr || siteSettings.siteNameAr || siteSettings.siteName) : (siteSettings.seoSiteNameEn || siteSettings.siteName);

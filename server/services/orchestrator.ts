@@ -16,6 +16,7 @@ import { getEconomySettings } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
 import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
 import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
+import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCachedApiKeysVault } from '../db/queries.js';
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
@@ -158,11 +159,11 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (!pool) throw new Error('System still initializing. Please wait.');
 
-  const [routeResult, chatRes, userRes, vaultCheck, memoryRes, settingsRes] = await Promise.all([
-    pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolIdStr]),
+  const [route, chatRes, user, activeKeys, memoryRes, systemSettings] = await Promise.all([
+    getCachedOrchestratorConfig(toolIdStr),
     chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
-    pool.query('SELECT language FROM users WHERE id = $1', [userId]),
-    pool.query('SELECT count(*) FROM api_keys_vault WHERE is_active = true'),
+    userLoader.load(userId),
+    getCachedApiKeysVault(),
     pool.query(
       `SELECT fact FROM chat_memories
        WHERE user_id = $1
@@ -172,13 +173,12 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
        LIMIT 50`,
       [userId, chatIdNum]
     ).catch(() => ({ rows: [] })),
-    pool.query('SELECT memory_limit_per_user FROM system_settings LIMIT 1').catch(() => ({ rows: [] }))
+    getCachedSystemSettings().catch(() => ({ memory_limit_per_user: 48 }))
   ]);
 
-  const route = routeResult.rows[0];
-  const memoryLimit = (settingsRes as any)?.rows?.[0]?.memory_limit_per_user || 48;
+  const memoryLimit = systemSettings?.memory_limit_per_user || 48;
 
-  if (parseInt(vaultCheck.rows[0].count) === 0) {
+  if (activeKeys.length === 0) {
     throw new Error(JSON.stringify({
       error: "The intelligence core is currently undergoing a scheduled synchronization. Operations will resume momentarily.",
       error_ar: "نظام الذكاء الاصطناعي يخضع حالياً لمزامنة مبرمجة. ستستأنف العمليات خلال لحظات.",
@@ -186,7 +186,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     }));
   }
 
-  if (routeResult.rows.length === 0 || !routeResult.rows[0].primary_provider || !routeResult.rows[0].primary_model) {
+  if (!route || !route.primary_provider || !route.primary_model) {
     await logSystemActivity(userId, 'INACTIVE_TOOL_ACCESS', `User attempted to access tool "${toolIdStr}" but it is currently inactive or undergoing maintenance.`, { toolId: toolIdStr });
     throw new Error(JSON.stringify({
       error: "This specialized service is temporarily unavailable for optimization. Our engineers have been notified.",
@@ -243,7 +243,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     }
   }
 
-  const userLang = userRes.rows[0]?.language || 'en';
+  const userLang = user?.language || 'en';
   const appName = getAppName(userLang);
   const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
 

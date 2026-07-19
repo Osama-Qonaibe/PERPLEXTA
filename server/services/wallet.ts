@@ -125,52 +125,12 @@ export async function getUserWallet(userId: string | number, txClient?: any) {
   return wallet;
 }
 
+import { getCachedEconomySettings, invalidateEconomySettingsCache } from '../db/queries.js';
+
 // ─── Economy Settings ─────────────────────────────────────────────────────────
 
-let economyCache: any = null;
-let lastCacheUpdate = 0;
-const CACHE_TTL = 60 * 1000;
-
 export async function getEconomySettings() {
-  if (economyCache && Date.now() - lastCacheUpdate < CACHE_TTL) return economyCache;
-
-  const target = ledgerPool || pool;
-  const res = await target.query('SELECT * FROM economy_settings LIMIT 1');
-
-  let settings: any;
-  if (res.rows.length > 0) {
-    settings = { ...res.rows[0] };
-  } else {
-    settings = {
-      points_per_dollar:               1000,
-      min_payout_usd:                  10,
-      min_deposit_usd:                 5,
-      referral_bonus_percent:          10,
-      welcome_bonus_points:            600,
-      referral_bonus_points:           1000,
-      conversion_rate:                 0.001,
-      min_withdrawal_cents:            1000,
-      referral_activation_min_deposit: 10,
-      crypto_address:  process.env.DEFAULT_CRYPTO_ADDRESS  || 'YOUR_DEFAULT_CRYPTO_ADDRESS',
-      bank_name:       process.env.DEFAULT_BANK_NAME       || 'Your Default Bank',
-      bank_recipient:  process.env.DEFAULT_BANK_RECIPIENT  || 'Your Default Business Platforms LTD.',
-      bank_iban:       process.env.DEFAULT_BANK_IBAN       || 'IL00000000000000000000',
-      bank_swift:      process.env.DEFAULT_BANK_SWIFT      || 'TESTIL33XXX',
-      paypal_email:    process.env.DEFAULT_PAYPAL_EMAIL    || 'paypal-sandbox@yourdomain.com',
-    };
-  }
-
-  // safeDecrypt handles both encrypted DB values and plain-text env fallbacks
-  settings.crypto_address  = safeDecrypt(settings.crypto_address,  process.env.DEFAULT_CRYPTO_ADDRESS  || 'YOUR_DEFAULT_CRYPTO_ADDRESS');
-  settings.bank_name       = safeDecrypt(settings.bank_name,       process.env.DEFAULT_BANK_NAME       || 'Your Default Bank');
-  settings.bank_recipient  = safeDecrypt(settings.bank_recipient,  process.env.DEFAULT_BANK_RECIPIENT  || 'Your Default Business Platforms LTD.');
-  settings.bank_iban       = safeDecrypt(settings.bank_iban,       process.env.DEFAULT_BANK_IBAN       || 'IL00000000000000000000');
-  settings.bank_swift      = safeDecrypt(settings.bank_swift,      process.env.DEFAULT_BANK_SWIFT      || 'TESTIL33XXX');
-  settings.paypal_email    = safeDecrypt(settings.paypal_email,    process.env.DEFAULT_PAYPAL_EMAIL    || 'paypal-sandbox@yourdomain.com');
-
-  economyCache    = settings;
-  lastCacheUpdate = Date.now();
-  return settings;
+  return getCachedEconomySettings();
 }
 
 export async function updateEconomySettings(settings: any) {
@@ -208,8 +168,7 @@ export async function updateEconomySettings(settings: any) {
 }
 
 export function clearEconomyCache() {
-  economyCache    = null;
-  lastCacheUpdate = 0;
+  invalidateEconomySettingsCache();
 }
 
 // ─── Transaction History ──────────────────────────────────────────────────────

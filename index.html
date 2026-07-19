@@ -9,7 +9,14 @@
       (function() {
         try {
           var savedTheme = localStorage.getItem('theme');
-          var isDark = (savedTheme === 'dark' || !savedTheme);
+          var isDark = false;
+          if (savedTheme === 'dark') {
+            isDark = true;
+          } else if (savedTheme === 'light') {
+            isDark = false;
+          } else {
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          }
           var meta = document.getElementById('theme-color-meta');
           if (isDark) {
             document.documentElement.className = 'dark';
@@ -17,7 +24,7 @@
             document.documentElement.style.color = '#f8fafc';
             if (meta) meta.setAttribute('content', '#080809');
           } else {
-            document.documentElement.className = '';
+            document.documentElement.className = 'light';
             document.documentElement.style.backgroundColor = '#fcfcfc';
             document.documentElement.style.color = '#0f172a';
             if (meta) meta.setAttribute('content', '#fcfcfc');

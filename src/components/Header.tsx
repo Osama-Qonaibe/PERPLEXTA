@@ -67,6 +67,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
+  const [isHeaderThemeDark, setIsHeaderThemeDark] = useState(false);
+  useEffect(() => {
+    setIsHeaderThemeDark(document.documentElement.classList.contains('dark'));
+  }, [theme]);
+
   const [chatTitle, setChatTitle] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
@@ -514,11 +519,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           </button>
 
            <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={() => setTheme(isHeaderThemeDark ? 'light' : 'dark')}
                 className="flex items-center justify-center w-10 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
-                aria-label={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                aria-label={isHeaderThemeDark ? 'Light Mode' : 'Dark Mode'}
               >
-                {theme === 'dark' ? (
+                {isHeaderThemeDark ? (
                   <Sun size={18} className="text-gray-400 group-hover:text-amber-500 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-theme" />
                 ) : (
                   <Moon size={18} className="text-gray-400 group-hover:text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.6)] transition-theme" />

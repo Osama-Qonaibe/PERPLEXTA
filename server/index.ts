@@ -4,7 +4,7 @@ import app from './app.js';
 import { initSocket } from './config/socket.js';
 import { initializePerplextaPools, synchronizePerplextaPoolsFromRegistry } from './db/index.js';
 import { createServer as createViteServer } from 'vite';
-import { runDatabaseMigrations, setIo } from './db/migrations.js';
+import { runDatabaseMigrations, setIo, verifySchemaIntegrity } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
@@ -29,6 +29,7 @@ async function initDatabase(): Promise<boolean> {
       );
       await synchronizePerplextaPoolsFromRegistry();
       await runDatabaseMigrations();
+      await verifySchemaIntegrity();
       await syncSystemTemplates();
       await refreshCachedAppName();
       return true;

@@ -2505,3 +2505,320 @@ export async function monitorDatabases() {
     isMonitoring = false;
   }
 }
+
+export async function verifySchemaIntegrity() {
+  if (!pool) {
+    console.warn('[Schema Integrity] Skipping validation: No core pool initialized.');
+    return;
+  }
+  console.log('[Schema Integrity] Starting comprehensive database schema audit...');
+
+  const report: {
+    passed: boolean;
+    missingTables: { db: string; table: string }[];
+    missingColumns: { db: string; table: string; column: string; expectedType: string }[];
+    repairedTables: string[];
+    repairedColumns: string[];
+    errors: string[];
+  } = {
+    passed: true,
+    missingTables: [],
+    missingColumns: [],
+    repairedTables: [],
+    repairedColumns: [],
+    errors: [],
+  };
+
+  // Safe client helper
+  const queryColumns = async (p: any, schemaName = 'public'): Promise<Record<string, Set<string>>> => {
+    try {
+      const res = await p.query(`
+        SELECT table_name, column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = $1
+      `, [schemaName]);
+      
+      const tables: Record<string, Set<string>> = {};
+      for (const row of res.rows) {
+        if (!tables[row.table_name]) {
+          tables[row.table_name] = new Set();
+        }
+        tables[row.table_name].add(row.column_name);
+      }
+      return tables;
+    } catch (e: any) {
+      throw new Error(`Failed to query information_schema: ${e.message}`);
+    }
+  };
+
+  // Expected Schema Map: dbName -> tableName -> columnNames[]
+  const expectedSchema: Record<string, Record<string, { columns: string[]; ddl?: string; repairCols?: Record<string, string> }>> = {
+    core: {
+      users: {
+        columns: [
+          'id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status',
+          'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by',
+          'language', 'theme', 'memory', 'support_notes', 'custom_instructions',
+          'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar'
+        ],
+        repairCols: {
+          last_active_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+          theme: "VARCHAR(10) DEFAULT 'dark'",
+          referred_by: 'INTEGER',
+          kyc_submitted_at: 'TIMESTAMP',
+          kyc_rejection_reason: 'TEXT',
+          memory: 'TEXT',
+          support_notes: 'TEXT',
+          custom_instructions: 'TEXT',
+          avatar: 'TEXT',
+          status: "VARCHAR(50) DEFAULT 'active'",
+          provider: "VARCHAR(50) DEFAULT 'local'",
+          language: "VARCHAR(5) DEFAULT 'en'"
+        }
+      },
+      chats: {
+        columns: ['id', 'user_id', 'title', 'tool_id', 'context_summary', 'is_pinned', 'created_at', 'updated_at', 'tool'],
+        repairCols: {
+          tool: "VARCHAR(100) DEFAULT 'chat'",
+          context_summary: 'TEXT',
+          is_pinned: 'BOOLEAN DEFAULT false'
+        }
+      },
+      messages: {
+        columns: [
+          'id', 'chat_id', 'role', 'content', 'tool_id', 'model', 'tokens_used',
+          'feedback', 'thinking_steps', 'citations', 'follow_ups', 'generation_time',
+          'created_at', 'tool', 'is_pinned', 'updated_at'
+        ],
+        repairCols: {
+          thinking_steps: "JSONB DEFAULT '[]'",
+          citations: "JSONB DEFAULT '[]'",
+          follow_ups: "JSONB DEFAULT '[]'",
+          feedback: 'SMALLINT DEFAULT 0',
+          generation_time: 'NUMERIC',
+          tool: 'VARCHAR(100)',
+          is_pinned: 'BOOLEAN DEFAULT false',
+          updated_at: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        }
+      },
+      api_keys_vault: {
+        columns: ['id', 'provider', 'encrypted_key', 'daily_budget', 'used_today', 'last_reset_date', 'models', 'model_list', 'is_active', 'created_at', 'updated_at', 'url_key', 'protocol_config'],
+        repairCols: {
+          model_list: "JSONB DEFAULT '[]'",
+          protocol_config: "JSONB DEFAULT '{}'",
+          url_key: 'TEXT'
+        }
+      },
+      tool_orchestrator: {
+        columns: [
+          'id', 'tool_id', 'primary_provider', 'primary_model', 'fallback_1_provider', 'fallback_1_model',
+          'fallback_2_provider', 'fallback_2_model', 'fallback_3_provider', 'fallback_3_model',
+          'task_description', 'task_description_ar', 'is_active', 'cost_per_usage', 'updated_at', 'protocol_config',
+          'max_history_depth', 'cost_per_1k_input_tokens', 'cost_per_1k_output_tokens'
+        ],
+        repairCols: {
+          fallback_1_provider: 'VARCHAR(100)',
+          fallback_1_model: 'VARCHAR(255)',
+          fallback_2_provider: 'VARCHAR(100)',
+          fallback_2_model: 'VARCHAR(255)',
+          fallback_3_provider: 'VARCHAR(100)',
+          fallback_3_model: 'VARCHAR(255)',
+          max_history_depth: 'INTEGER DEFAULT 16',
+          protocol_config: "JSONB DEFAULT '{}'",
+          cost_per_1k_input_tokens: 'INTEGER DEFAULT 5',
+          cost_per_1k_output_tokens: 'INTEGER DEFAULT 15'
+        }
+      },
+      subscriptions: {
+        columns: ['id', 'user_id', 'plan_id', 'stripe_customer_id', 'stripe_subscription_id', 'status', 'billing_period', 'current_period_end', 'last_period_start', 'updated_at', 'created_at'],
+        repairCols: {
+          stripe_customer_id: 'VARCHAR(255)',
+          stripe_subscription_id: 'VARCHAR(255)',
+          billing_period: "VARCHAR(20) DEFAULT 'monthly'",
+          last_period_start: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        }
+      },
+      user_files: {
+        columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'metadata', 'created_at', 'updated_at'],
+        repairCols: {
+          file_type: 'VARCHAR(100)',
+          mime_type: 'VARCHAR(100)',
+          file_size: 'INTEGER',
+          file_url: 'TEXT',
+          file_content: 'TEXT',
+          metadata: "JSONB DEFAULT '{}'"
+        }
+      },
+      system_settings: {
+        columns: [
+          'id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url',
+          'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar',
+          'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification',
+          'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret',
+          'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id',
+          'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at',
+          'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at'
+        ],
+        repairCols: {
+          logo_light_url: 'TEXT',
+          stripe_status: "VARCHAR(50) DEFAULT 'pending'",
+          stripe_last_verified_at: 'TIMESTAMP',
+          stripe_secret_key: 'TEXT',
+          stripe_publishable_key: 'TEXT',
+          stripe_webhook_secret: 'TEXT',
+          stripe_live_mode: 'BOOLEAN DEFAULT false',
+          paypal_client_id: 'TEXT',
+          paypal_client_secret: 'TEXT',
+          paypal_mode: "VARCHAR(20) DEFAULT 'sandbox'",
+          paypal_status: "VARCHAR(50) DEFAULT 'pending'",
+          paypal_last_verified_at: 'TIMESTAMP',
+          image_prompt_pref_threshold: 'INTEGER DEFAULT 150',
+          blocked_paths: "TEXT DEFAULT ''",
+          seo_site_name_en: 'TEXT',
+          seo_site_name_ar: 'TEXT'
+        }
+      }
+    },
+    ledger: {
+      wallets: {
+        columns: ['id', 'user_id', 'balance', 'usd_balance', 'points', 'created_at', 'updated_at', 'referral_activated'],
+        repairCols: {
+          usd_balance: "NUMERIC(15, 4) DEFAULT '0.0000'",
+          points: 'INTEGER DEFAULT 0',
+          referral_activated: 'BOOLEAN DEFAULT false'
+        }
+      },
+      ledger_transactions: {
+        columns: ['id', 'wallet_id', 'user_id', 'amount', 'points', 'transaction_type', 'status', 'reference_id', 'metadata', 'ip_address', 'description', 'created_at', 'updated_at'],
+        repairCols: {
+          user_id: 'INTEGER',
+          status: "VARCHAR(50) DEFAULT 'success'",
+          metadata: "JSONB DEFAULT '{}'",
+          ip_address: 'VARCHAR(100)'
+        }
+      },
+      deposit_requests: {
+        columns: ['id', 'user_id', 'amount', 'currency', 'method', 'proof_url', 'status', 'rejection_reason', 'admin_id', 'created_at', 'updated_at'],
+        repairCols: {
+          currency: "VARCHAR(10) DEFAULT 'USD'",
+          proof_url: 'TEXT',
+          status: "VARCHAR(20) DEFAULT 'pending'",
+          rejection_reason: 'TEXT',
+          admin_id: 'INTEGER'
+        }
+      },
+      economy_settings: {
+        columns: [
+          'id', 'welcome_bonus_points', 'referral_bonus_points', 'min_withdrawal_cents',
+          'points_per_dollar', 'conversion_rate', 'referral_bonus_percent', 'min_payout_usd',
+          'min_deposit_usd', 'referral_activation_min_deposit', 'crypto_address', 'bank_name',
+          'bank_recipient', 'bank_iban', 'bank_swift', 'paypal_email', 'updated_at'
+        ],
+        repairCols: {
+          referral_bonus_percent: 'INTEGER DEFAULT 10',
+          min_payout_usd: "NUMERIC(10, 2) DEFAULT '10.00'",
+          min_deposit_usd: "NUMERIC(10, 2) DEFAULT '5.00'",
+          referral_activation_min_deposit: "NUMERIC(10, 2) DEFAULT '10.00'"
+        }
+      }
+    }
+  };
+
+  const verifyDbGroup = async (groupName: 'core' | 'ledger', targetPool: any) => {
+    if (!targetPool) return;
+    try {
+      const activeTables = await queryColumns(targetPool);
+      const expectedTables = expectedSchema[groupName];
+
+      for (const [tableName, spec] of Object.entries(expectedTables)) {
+        if (!activeTables[tableName]) {
+          report.passed = false;
+          report.missingTables.push({ db: groupName, table: tableName });
+          console.warn(`[Schema Integrity] ❌ Missing table: ${tableName} in database group ${groupName}`);
+          
+          // Attempt auto-recovery/re-run initDb
+          try {
+            console.log(`[Schema Integrity] 🔧 Attempting table reconstruction for ${tableName}...`);
+            await initDb('additive', pool, ledgerPool);
+            report.repairedTables.push(tableName);
+            console.log(`[Schema Integrity] ✅ Table ${tableName} reconstructed successfully.`);
+          } catch (repairErr: any) {
+            console.error(`[Schema Integrity] ❌ Reconstruction failed for table ${tableName}:`, repairErr.message);
+          }
+          continue;
+        }
+
+        const activeCols = activeTables[tableName];
+        for (const colName of spec.columns) {
+          if (!activeCols.has(colName)) {
+            report.passed = false;
+            report.missingColumns.push({
+              db: groupName,
+              table: tableName,
+              column: colName,
+              expectedType: spec.repairCols?.[colName] || 'VARCHAR'
+            });
+            console.warn(`[Schema Integrity] ❌ Missing column: ${tableName}.${colName} in database group ${groupName}`);
+
+            // Attempt column auto-repair
+            if (spec.repairCols?.[colName]) {
+              try {
+                console.log(`[Schema Integrity] 🔧 Attempting dynamic column addition: ${tableName}.${colName}...`);
+                await ensureColumn(targetPool, tableName, colName, spec.repairCols[colName]);
+                report.repairedColumns.push(`${tableName}.${colName}`);
+                console.log(`[Schema Integrity] ✅ Column ${tableName}.${colName} added successfully.`);
+              } catch (repairErr: any) {
+                console.error(`[Schema Integrity] ❌ Column repair failed for ${tableName}.${colName}:`, repairErr.message);
+              }
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      report.passed = false;
+      report.errors.push(`${groupName} DB: ${e.message}`);
+      console.error(`[Schema Integrity] Error auditing database group ${groupName}:`, e.message);
+    }
+  };
+
+  // Run audit on Core Pool
+  await verifyDbGroup('core', pool);
+
+  // Run audit on Ledger Pool
+  await verifyDbGroup('ledger', ledgerPool || pool);
+
+  // Log results and write audit report to the database
+  if (report.passed) {
+    console.log('[Schema Integrity] 🛡️ All expected tables and columns verified successfully across all active pools!');
+  } else {
+    console.warn(`[Schema Integrity] ⚠️ Schema verification detected deviations:`, {
+      missingTables: report.missingTables.length,
+      missingColumns: report.missingColumns.length,
+      repairedTables: report.repairedTables.length,
+      repairedColumns: report.repairedColumns.length,
+    });
+  }
+
+  // Persist Audit Record in Core DB for operational transparency
+  try {
+    await pool.query(`
+      INSERT INTO migration_security_audit (migration_name, status, error_message, details)
+      VALUES ($1, $2, $3, $4)
+    `, [
+      'schema_integrity_audit_verification',
+      report.passed ? 'info' : 'conflict',
+      report.passed ? 'No anomalies detected.' : `Detected missing tables/columns. Repaired: ${report.repairedColumns.length + report.repairedTables.length}`,
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        passed: report.passed,
+        missingTables: report.missingTables,
+        missingColumns: report.missingColumns,
+        repairedTables: report.repairedTables,
+        repairedColumns: report.repairedColumns,
+        errors: report.errors
+      })
+    ]);
+  } catch (dbErr: any) {
+    console.error('[Schema Integrity] Failed to write audit record to migration_security_audit:', dbErr.message);
+  }
+}

@@ -7,7 +7,7 @@ interface AccountSettingsProps {
   user: any;
   onUpdate: (updates: any) => void;
   dir: 'rtl' | 'ltr';
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'system';
   showToast?: (message: string, type?: 'success' | 'error') => void;
 }
 
@@ -342,7 +342,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('themePreference')}</p>
-                    <p className="font-bold text-base text-slate-800 dark:text-slate-100 uppercase">{theme}</p>
+                    <p className="font-bold text-base text-slate-800 dark:text-slate-100 uppercase">{theme === 'system' ? t('systemMode') : theme === 'dark' ? t('darkMode') : t('lightMode')}</p>
                   </div>
                </div>
                <div className="flex gap-2 p-1 bg-white dark:bg-zinc-900 rounded-[var(--radius)] border border-slate-200 dark:border-zinc-800">
@@ -350,7 +350,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     onClick={() => setTheme('light')}
                     className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${theme === 'light' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/40' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
                   >
-                    Light
+                    {t('lightMode')}
                   </button>
                   <button 
                     onClick={() => setTheme('dark')}
@@ -360,7 +360,17 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
                     }`}
                   >
-                    Dark
+                    {t('darkMode')}
+                  </button>
+                  <button 
+                    onClick={() => setTheme('system')}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-all ${
+                      theme === 'system' 
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' 
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    {t('systemMode')}
                   </button>
                </div>
             </div>

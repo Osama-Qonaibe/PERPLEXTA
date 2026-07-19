@@ -23,7 +23,7 @@ interface MemoryCenterProps {
   onDelete: (id: number) => Promise<void>;
   onPrune?: () => Promise<void>;
   dir: 'rtl' | 'ltr';
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'system';
   stickyOffset?: number;
 }
 
