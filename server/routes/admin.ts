@@ -1975,70 +1975,29 @@ router.post("/economy", authenticateAdmin, async (req, res) => {
 
     const min_withdrawal_cents = Math.round(min_payout_usd * 100);
 
-    // Ledger DB is the Source of Truth for Economy Settings
-    const ledgerTarget = ledgerPool || pool;
-    try {
-      const ledgerCheck = await ledgerTarget.query('SELECT count(*) FROM economy_settings');
-      if (parseInt(ledgerCheck.rows[0].count) > 0) {
-        await ledgerTarget.query(`
-          UPDATE economy_settings SET 
-            points_per_dollar = $1, 
-            min_payout_usd = $2, 
-            min_deposit_usd = $3, 
-            referral_bonus_percent = $4,
-            welcome_bonus_points = $5, 
-            referral_bonus_points = $6, 
-            conversion_rate = $7, 
-            min_withdrawal_cents = $8,
-            referral_activation_min_deposit = $9,
-            crypto_address = $10,
-            bank_name = $11,
-            bank_recipient = $12,
-            bank_iban = $13,
-            bank_swift = $14,
-            paypal_email = $15,
-            updated_at = CURRENT_TIMESTAMP
-        `, [
-          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-          referral_activation_min_deposit,
-          encrypt(crypto_address || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
-          encrypt(bank_name || 'Your Default Bank'),
-          encrypt(bank_recipient || 'Your Default Business Platforms LTD.'),
-          encrypt(bank_iban || 'IL00000000000000000000'),
-          encrypt(bank_swift || 'TESTIL33XXX'),
-          encrypt(paypal_email || 'paypal-sandbox@yourdomain.com')
-        ]);
-      } else {
-        await ledgerTarget.query(`
-          INSERT INTO economy_settings (
-            points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-            welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-            referral_activation_min_deposit, crypto_address, bank_name, bank_recipient, bank_iban, bank_swift, paypal_email
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        `, [
-          points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-          welcome_bonus_points, referral_bonus_points, conversion_rate, min_withdrawal_cents,
-          referral_activation_min_deposit,
-          encrypt(crypto_address || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
-          encrypt(bank_name || 'Your Default Bank'),
-          encrypt(bank_recipient || 'Your Default Business Platforms LTD.'),
-          encrypt(bank_iban || 'IL00000000000000000000'),
-          encrypt(bank_swift || 'TESTIL33XXX'),
-          encrypt(paypal_email || 'paypal-sandbox@yourdomain.com')
-        ]);
-      }
-    } catch (ledgerErr) {
-      console.warn('[Admin] Failed to update economy settings in Ledger:', ledgerErr);
-      return res.status(500).json({ error: 'Failed to update finance settings' });
-    }
-
-    const { clearEconomyCache } = await import('../services/wallet.js');
-    clearEconomyCache();
+    const { updateEconomySettings } = await import('../services/wallet.js');
+    await updateEconomySettings({
+      points_per_dollar,
+      min_payout_usd,
+      min_deposit_usd,
+      referral_bonus_percent,
+      welcome_bonus_points,
+      referral_bonus_points,
+      conversion_rate,
+      min_withdrawal_cents,
+      referral_activation_min_deposit,
+      crypto_address,
+      bank_name,
+      bank_recipient,
+      bank_iban,
+      bank_swift,
+      paypal_email
+    });
     
     await auditLog((req as any).user?.id, 'Update Economy Settings', 'finance', req.body);
     res.json({ success: true, message: 'Finance settings updated successfully' });
-  } catch {
+  } catch (err: any) {
+    console.error('[Admin] Failed to update economy settings:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

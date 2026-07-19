@@ -142,26 +142,49 @@ export async function updateEconomySettings(settings: any) {
   } = settings;
 
   const target = ledgerPool || pool;
-  await target.query(`
-    UPDATE economy_settings SET
-      points_per_dollar = $1, min_payout_usd = $2, min_deposit_usd = $3,
-      referral_bonus_percent = $4, welcome_bonus_points = $5,
-      referral_bonus_points = $6, min_withdrawal_cents = $7,
-      conversion_rate = $8, referral_activation_min_deposit = $9,
-      crypto_address = $10, bank_name = $11, bank_recipient = $12,
-      bank_iban = $13, bank_swift = $14, paypal_email = $15,
-      updated_at = CURRENT_TIMESTAMP
-  `, [
-    points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
-    welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
-    referral_activation_min_deposit,
-    encrypt(crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
-    encrypt(bank_name      || process.env.DEFAULT_BANK_NAME      || 'Your Default Bank'),
-    encrypt(bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.'),
-    encrypt(bank_iban      || process.env.DEFAULT_BANK_IBAN      || 'IL00000000000000000000'),
-    encrypt(bank_swift     || process.env.DEFAULT_BANK_SWIFT     || 'TESTIL33XXX'),
-    encrypt(paypal_email   || process.env.DEFAULT_PAYPAL_EMAIL   || 'paypal-sandbox@yourdomain.com'),
-  ]);
+  const countCheck = await target.query('SELECT count(*) FROM economy_settings');
+  const hasRows = parseInt(countCheck.rows[0].count, 10) > 0;
+
+  if (hasRows) {
+    await target.query(`
+      UPDATE economy_settings SET
+        points_per_dollar = $1, min_payout_usd = $2, min_deposit_usd = $3,
+        referral_bonus_percent = $4, welcome_bonus_points = $5,
+        referral_bonus_points = $6, min_withdrawal_cents = $7,
+        conversion_rate = $8, referral_activation_min_deposit = $9,
+        crypto_address = $10, bank_name = $11, bank_recipient = $12,
+        bank_iban = $13, bank_swift = $14, paypal_email = $15,
+        updated_at = CURRENT_TIMESTAMP
+    `, [
+      points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+      welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
+      referral_activation_min_deposit,
+      encrypt(crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+      encrypt(bank_name      || process.env.DEFAULT_BANK_NAME      || 'Your Default Bank'),
+      encrypt(bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.'),
+      encrypt(bank_iban      || process.env.DEFAULT_BANK_IBAN      || 'IL00000000000000000000'),
+      encrypt(bank_swift     || process.env.DEFAULT_BANK_SWIFT     || 'TESTIL33XXX'),
+      encrypt(paypal_email   || process.env.DEFAULT_PAYPAL_EMAIL   || 'paypal-sandbox@yourdomain.com'),
+    ]);
+  } else {
+    await target.query(`
+      INSERT INTO economy_settings (
+        points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+        welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
+        referral_activation_min_deposit, crypto_address, bank_name, bank_recipient, bank_iban, bank_swift, paypal_email
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `, [
+      points_per_dollar, min_payout_usd, min_deposit_usd, referral_bonus_percent,
+      welcome_bonus_points, referral_bonus_points, min_withdrawal_cents, conversion_rate,
+      referral_activation_min_deposit,
+      encrypt(crypto_address || process.env.DEFAULT_CRYPTO_ADDRESS || 'YOUR_DEFAULT_CRYPTO_ADDRESS'),
+      encrypt(bank_name      || process.env.DEFAULT_BANK_NAME      || 'Your Default Bank'),
+      encrypt(bank_recipient || process.env.DEFAULT_BANK_RECIPIENT || 'Your Default Business Platforms LTD.'),
+      encrypt(bank_iban      || process.env.DEFAULT_BANK_IBAN      || 'IL00000000000000000000'),
+      encrypt(bank_swift     || process.env.DEFAULT_BANK_SWIFT     || 'TESTIL33XXX'),
+      encrypt(paypal_email   || process.env.DEFAULT_PAYPAL_EMAIL   || 'paypal-sandbox@yourdomain.com'),
+    ]);
+  }
 
   clearEconomyCache();
   return { success: true };

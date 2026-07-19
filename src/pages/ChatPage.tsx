@@ -13,7 +13,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -2706,6 +2706,112 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
   const [isDragging, setIsDragging] = useState(false);
   const [isMixerExpanded, setIsMixerExpanded] = useState(true);
 
+  const [isLyriaGenerating, setIsLyriaGenerating] = useState(false);
+  const [lyriaPrompt, setLyriaPrompt] = useState(() => {
+    const cleaned = (body || '').replace(/\[.*?\]/g, '').replace(/[#*`_]/g, '').trim();
+    return cleaned || 'مقطوعة موسيقية ملحمية بطابع شرقي مميز';
+  });
+  const [lyriaModel, setLyriaModel] = useState<'lyria-3-clip-preview' | 'lyria-3-pro-preview'>('lyria-3-clip-preview');
+  const [lyriaLyrics, setLyriaLyrics] = useState('');
+  const [lyriaLyricsResponse, setLyriaLyricsResponse] = useState('');
+  const [isLyriaActive, setIsLyriaActive] = useState(false);
+  const [lyriaError, setLyriaError] = useState<string | null>(null);
+  const [isLyriaPanelExpanded, setIsLyriaPanelExpanded] = useState(false);
+
+  const [generatedAudioBase64, setGeneratedAudioBase64] = useState<string | null>(null);
+  const [generatedAudioMime, setGeneratedAudioMime] = useState<string | null>(null);
+  const [isSavingTrack, setIsSavingTrack] = useState(false);
+  const [isTrackSaved, setIsTrackSaved] = useState(false);
+
+  const handleGenerateLyria = async () => {
+    setIsLyriaGenerating(true);
+    setLyriaError(null);
+    setGeneratedAudioBase64(null);
+    setGeneratedAudioMime(null);
+    setIsTrackSaved(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/tools/generate-music', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          prompt: lyriaPrompt || 'Beautiful epic orchestral track',
+          model: lyriaModel,
+          lyrics: lyriaLyrics
+        })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(dir === 'rtl' ? (data.error_ar || data.error) : data.error);
+      }
+      
+      const binary = atob(data.audioBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: data.mimeType || 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      
+      setAudioUrl(url);
+      setIsPlaying(false);
+      setStatus('ready');
+      setCurrentTime(0);
+      setDuration(lyriaModel === 'lyria-3-clip-preview' ? 30 : 90);
+      setIsLyriaActive(true);
+      setGeneratedAudioBase64(data.audioBase64);
+      setGeneratedAudioMime(data.mimeType);
+      if (data.lyrics) {
+        setLyriaLyricsResponse(data.lyrics);
+      }
+      toast.success(dir === 'rtl' ? 'تم توليد الموسيقى بالذكاء الاصطناعي بنجاح!' : 'AI Music generated successfully!');
+    } catch (err: any) {
+      console.error('Lyria generation failed:', err);
+      setLyriaError(err.message || 'Failed to generate AI music.');
+      toast.error(err.message || 'Failed to generate AI music.');
+    } finally {
+      setIsLyriaGenerating(false);
+    }
+  };
+
+  const handleSaveTrackToLibrary = async () => {
+    if (!generatedAudioBase64) return;
+    setIsSavingTrack(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/tools/save-music', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          audioBase64: generatedAudioBase64,
+          mimeType: generatedAudioMime,
+          prompt: lyriaPrompt,
+          lyrics: lyriaLyricsResponse || lyriaLyrics
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save track.');
+      }
+
+      setIsTrackSaved(true);
+      toast.success(dir === 'rtl' ? 'تم حفظ المقطوعة بنجاح في مكتبة ملفاتك!' : 'Track successfully saved to your storage library!');
+    } catch (err: any) {
+      console.error('[SaveTrack] Error:', err);
+      toast.error(err.message || 'Failed to save track.');
+    } finally {
+      setIsSavingTrack(false);
+    }
+  };
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const uploadedAudioRef = useRef<HTMLAudioElement | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -3511,6 +3617,172 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           </div>
         )}
       </div>
+
+      {/* Google Lyria AI Music Generator Panel */}
+      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-all duration-300 ${
+        theme === 'dark' 
+          ? 'bg-[#151518]/95 border-gray-800/40 shadow-xl' 
+          : 'bg-white border-gray-200/65 shadow-sm'
+      }`}>
+        <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <span className="absolute inset-0 bg-emerald-500 rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <Music size={16} className="text-emerald-400 relative drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">
+                {dir === 'rtl' ? 'توليد الموسيقى الذكي عبر Google Lyria' : 'GOOGLE LYRIA AI MUSIC GENERATOR'}
+              </span>
+              <h5 className="text-[12px] font-bold text-[var(--text-primary)] leading-none">
+                {dir === 'rtl' ? 'إنتاج مقاطع موسيقية حقيقية بالذكاء الاصطناعي' : 'Generate Real Professional Music and Audio Tracks'}
+              </h5>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => setIsLyriaPanelExpanded(!isLyriaPanelExpanded)}
+            className="text-[10px] font-black text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] uppercase tracking-wider transition-colors pt-1"
+          >
+            {isLyriaPanelExpanded 
+              ? (dir === 'rtl' ? 'إغلاق اللوحة' : 'CLOSE STUDIO') 
+              : (dir === 'rtl' ? 'افتح أستوديو التوليد' : 'OPEN AI STUDIO')}
+          </button>
+        </div>
+
+        {isLyriaPanelExpanded && (
+          <div className="flex flex-col gap-4 animate-fadeIn">
+            {/* Model Selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                {dir === 'rtl' ? 'نموذج التوليد المتاح' : 'AI MUSIC GENERATION MODEL'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLyriaModel('lyria-3-clip-preview')}
+                  className={`py-2 px-3 rounded-[4px] border text-[11px] font-bold transition-all flex flex-col items-center justify-center text-center gap-1 ${
+                    lyriaModel === 'lyria-3-clip-preview'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]'
+                      : 'border-gray-200 dark:border-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span className="font-black uppercase">Lyria Clip</span>
+                  <span className="text-[9px] font-medium opacity-80">{dir === 'rtl' ? 'مقطع قصير (حتى ٣٠ ثانية)' : 'Short Clip (Up to 30s)'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLyriaModel('lyria-3-pro-preview')}
+                  className={`py-2 px-3 rounded-[4px] border text-[11px] font-bold transition-all flex flex-col items-center justify-center text-center gap-1 ${
+                    lyriaModel === 'lyria-3-pro-preview'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]'
+                      : 'border-gray-200 dark:border-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span className="font-black uppercase">Lyria Pro</span>
+                  <span className="text-[9px] font-medium opacity-80">{dir === 'rtl' ? 'مقطوعة كاملة واحترافية' : 'Full Professional Track'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Prompt input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                {dir === 'rtl' ? 'المطالبة الصوتية الإبداعية' : 'SONIC PROMPT INSTRUCTIONS'}
+              </label>
+              <textarea
+                value={lyriaPrompt}
+                onChange={(e) => setLyriaPrompt(e.target.value)}
+                placeholder={dir === 'rtl' ? 'مثال: معزوفة عود هادئة مع قانون وإيقاع شرقي كلاسيكي...' : 'e.g. A serene acoustic guitar track with soft violin ambient backing...'}
+                className="w-full min-h-[70px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
+              />
+            </div>
+
+            {/* Lyrics input (Pro only) */}
+            {lyriaModel === 'lyria-3-pro-preview' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  {dir === 'rtl' ? 'الكلمات المرافقة (اختياري)' : 'SONG LYRICS (OPTIONAL)'}
+                </label>
+                <textarea
+                  value={lyriaLyrics}
+                  onChange={(e) => setLyriaLyrics(e.target.value)}
+                  placeholder={dir === 'rtl' ? 'اكتب كلمات الأغنية ليقوم الذكاء الاصطناعي بغنائها أو دمجها...' : 'Write lyrics for the AI model to sing or voice...'}
+                  className="w-full min-h-[50px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
+                />
+              </div>
+            )}
+
+            {/* Error display */}
+            {lyriaError && (
+              <div className="p-3 rounded-[4px] border border-red-500/20 bg-red-500/5 text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>{lyriaError}</span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex justify-end gap-2 mt-1">
+              {generatedAudioBase64 && (
+                <button
+                  type="button"
+                  onClick={handleSaveTrackToLibrary}
+                  disabled={isSavingTrack || isTrackSaved}
+                  className={`py-2.5 px-4 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isSavingTrack ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>{dir === 'rtl' ? 'جاري الحفظ...' : 'SAVING...'}</span>
+                    </>
+                  ) : isTrackSaved ? (
+                    <>
+                      <Check size={13} className="text-emerald-500" />
+                      <span>{dir === 'rtl' ? 'تم الحفظ في مكتبتك' : 'SAVED TO LIBRARY'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={13} />
+                      <span>{dir === 'rtl' ? 'حفظ في مكتبة الملفات' : 'SAVE TO LIBRARY'}</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleGenerateLyria}
+                disabled={isLyriaGenerating || !lyriaPrompt.trim()}
+                className={`py-2.5 px-5 rounded-[4px] bg-emerald-500 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
+                  isLyriaGenerating ? 'animate-pulse' : ''
+                }`}
+              >
+                {isLyriaGenerating ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>{dir === 'rtl' ? 'جاري توليد اللحن الفني...' : 'ORCHESTRATING MUSIC...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={13} className="drop-shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                    <span>{dir === 'rtl' ? 'توليد المسار الفني بالذكاء الاصطناعي' : 'GENERATE AI TRACK NOW'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Generated Lyrics section */}
+            {lyriaLyricsResponse && (
+              <div className="mt-2 p-4 rounded-[4px] border border-emerald-500/10 bg-emerald-500/[0.01] flex flex-col gap-1.5">
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{dir === 'rtl' ? 'كلمات الأغنية المولدة من الذكاء الاصطناعي' : 'AI GENERATED LYRICS & TRANSCRIPT'}</span>
+                <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap font-sans italic">
+                  {lyriaLyricsResponse}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -4176,6 +4448,12 @@ export const ChatPage: React.FC = () => {
   const [isAnalyzingForensic, setIsAnalyzingForensic] = useState(false);
   const [forensicReport, setForensicReport] = useState<any | null>(null);
   const [isForensicModalOpen, setIsForensicModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareMsgContent, setShareMsgContent] = useState('');
+  const [shareMsgTitle, setShareMsgTitle] = useState('');
+  const [shareMsgModel, setShareMsgModel] = useState('');
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const [generatedShareId, setGeneratedShareId] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -7434,23 +7712,18 @@ export const ChatPage: React.FC = () => {
                         )}
                         <motion.button 
                           
-                          onClick={async () => {
-                            try {
-                              if (navigator.share) {
-                                await navigator.share({
-                                  title: 'Perplexta AI Response',
-                                  text: msg.content,
-                                  url: window.location.href
-                                });
-                              } else {
-                                navigator.clipboard.writeText(msg.content);
-                                toast.success(dir === 'rtl' ? 'تم نسخ الرابط للمشاركة' : 'Link copied for sharing');
-                              }
-                            } catch (err) {
-
-                            }
+                          onClick={() => {
+                            const userMsg = messages.slice(0, idx).reverse().find(m => m.role === 'user');
+                            const smartTitle = userMsg ? userMsg.content.slice(0, 80) : '';
+                            
+                            setShareMsgContent(msg.content);
+                            setShareMsgTitle(smartTitle);
+                            setShareMsgModel((msg as any).model_name || (msg as any).provider || 'Perplexta Intelligence');
+                            setGeneratedShareId('');
+                            setIsGeneratingShare(false);
+                            setIsShareModalOpen(true);
                           }}
-                          title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+                          title={dir === 'rtl' ? 'مشاركة كلقطة اجتماعية' : 'Share to Social'}
                           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-theme ml-1 sm:ml-2"
                         >
                           <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
@@ -7944,6 +8217,219 @@ export const ChatPage: React.FC = () => {
                   {dir === 'rtl' ? 'تأكيد الحذف' : 'Confirm Delete'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" dir={dir}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsShareModalOpen(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className={`relative max-w-md w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+                theme === 'dark' 
+                  ? 'bg-[#161618] border-zinc-800 text-gray-100' 
+                  : 'bg-white border-gray-150 text-gray-900'
+              }`}
+            >
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-emerald-500 dark:text-emerald-400 flex items-center gap-2">
+                <Share2 size={16} />
+                {dir === 'rtl' ? 'مشاركة اللقطة مع الشبكات الاجتماعية' : 'Share Snapshot to Social'}
+              </h3>
+
+              {!generatedShareId ? (
+                /* Step 1: Customize Title & Generate */
+                <div className="mt-4 space-y-4">
+                  <p className={`text-xs font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {dir === 'rtl' 
+                      ? 'قم بتوليد رابط عام للقطة جميلة من هذا التحليل لتشاركه على منصات التواصل الاجتماعي.' 
+                      : 'Generate a public link with a beautiful snapshot of this strategic insight to share across social platforms.'}
+                  </p>
+
+                  <div className="space-y-1 text-start">
+                    <label className="text-[10px] font-mono text-gray-500 uppercase tracking-wider block">
+                      {dir === 'rtl' ? 'عنوان اللقطة (اختياري)' : 'Snapshot Title (Optional)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={shareMsgTitle}
+                      onChange={(e) => setShareMsgTitle(e.target.value)}
+                      placeholder={dir === 'rtl' ? 'مثال: تحليل البيتكوين الاستراتيجي...' : 'e.g., Strategic Bitcoin Analysis...'}
+                      className={`w-full px-3 py-2 text-xs font-sans rounded-[4px] border outline-none transition-theme ${
+                        theme === 'dark' 
+                          ? 'bg-[#1e1e21] border-zinc-800 text-white focus:border-emerald-500' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-emerald-500'
+                      }`}
+                    />
+                  </div>
+
+                  <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                    <button
+                      type="button"
+                      disabled={isGeneratingShare}
+                      onClick={() => setIsShareModalOpen(false)}
+                      className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                        theme === 'dark' 
+                          ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
+                          : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                      }`}
+                    >
+                      {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isGeneratingShare}
+                      onClick={async () => {
+                        try {
+                          setIsGeneratingShare(true);
+                          const res = await fetch('/api/share-snapshot', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                              content: shareMsgContent,
+                              title: shareMsgTitle,
+                              model_name: shareMsgModel
+                            })
+                          });
+
+                          if (!res.ok) throw new Error('Failed to generate snapshot');
+                          const data = await res.json();
+                          setGeneratedShareId(data.id);
+                          toast.success(dir === 'rtl' ? 'تم توليد اللقطة بنجاح!' : 'Snapshot generated successfully!');
+                        } catch (err: any) {
+                          toast.error(dir === 'rtl' ? 'فشل توليد اللقطة العامة' : 'Failed to generate snapshot');
+                        } finally {
+                          setIsGeneratingShare(false);
+                        }
+                      }}
+                      className="px-4 py-2 text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-black rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
+                    >
+                      {isGeneratingShare ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>{dir === 'rtl' ? 'جاري التوليد...' : 'Generating...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={13} />
+                          <span>{dir === 'rtl' ? 'توليد اللقطة' : 'Generate'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Step 2: Share Links & Copier */
+                <div className="mt-4 space-y-5">
+                  <p className={`text-xs font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {dir === 'rtl' 
+                      ? 'لقد تم توليد لقطتك العامة بنجاح! انسخ الرابط أدناه أو شاركه مباشرة على شبكاتك المفضلة.' 
+                      : 'Your public snapshot has been generated! Copy the link below or share it directly with your networks.'}
+                  </p>
+
+                  {/* Share Link Copier Field */}
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/share/${generatedShareId}`}
+                      className={`w-full pe-10 ps-3 py-2 text-[11px] font-mono rounded-[4px] border outline-none ${
+                        theme === 'dark' 
+                          ? 'bg-[#1e1e21] border-zinc-800 text-gray-300' 
+                          : 'bg-gray-50 border-gray-200 text-gray-600'
+                      }`}
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(`${window.location.origin}/share/${generatedShareId}`);
+                          toast.success(dir === 'rtl' ? 'تم نسخ الرابط!' : 'Link copied!');
+                        } catch (e) {}
+                      }}
+                      className="absolute right-2 text-emerald-500 hover:text-emerald-400 p-1"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+
+                  {/* Social Buttons row */}
+                  <div className="flex items-center justify-center gap-3 py-2 border-t border-b border-zinc-200 dark:border-zinc-800">
+                    {/* X / Twitter */}
+                    <button
+                      onClick={() => {
+                        const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
+                        const tweetText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(targetUrl)}`, '_blank');
+                      }}
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      title="Share on X"
+                    >
+                      <Twitter size={16} />
+                    </button>
+
+                    {/* LinkedIn */}
+                    <button
+                      onClick={() => {
+                        const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
+                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(targetUrl)}`, '_blank');
+                      }}
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      title="Share on LinkedIn"
+                    >
+                      <Linkedin size={16} />
+                    </button>
+
+                    {/* Telegram */}
+                    <button
+                      onClick={() => {
+                        const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
+                        const tText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
+                        window.open(`https://t.me/share/url?url=${encodeURIComponent(targetUrl)}&text=${encodeURIComponent(tText)}`, '_blank');
+                      }}
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      title="Share on Telegram"
+                    >
+                      <Send size={16} />
+                    </button>
+
+                    {/* WhatsApp */}
+                    <button
+                      onClick={() => {
+                        const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
+                        const waText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
+                        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText + ' ' + targetUrl)}`, '_blank');
+                      }}
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      title="Share on WhatsApp"
+                    >
+                      <MessageSquare size={16} />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsShareModalOpen(false)}
+                      className="px-5 py-2 text-xs font-bold bg-zinc-800 hover:bg-zinc-750 text-white rounded-[4px] font-sans transition-all duration-300 border border-zinc-700/60"
+                    >
+                      {dir === 'rtl' ? 'إغلاق' : 'Close'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

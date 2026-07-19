@@ -4,6 +4,29 @@ import { pool } from '../db/index.js';
 
 const router = express.Router();
 
+// Helper to check message ownership and handle unauthorized/not found errors
+async function checkMessageOwnership(messageId: string | number, userId: string | number): Promise<{ success: boolean; status?: number; error?: string }> {
+  if (!pool) throw new Error('Database initializing');
+  
+  const checkRes = await pool.query(`
+    SELECT m.id, c.user_id 
+    FROM messages m
+    JOIN chats c ON m.chat_id = c.id
+    WHERE m.id = $1
+  `, [messageId]);
+
+  if (checkRes.rows.length === 0) {
+    return { success: false, status: 404, error: 'Message not found' };
+  }
+
+  const chatOwnerId = checkRes.rows[0].user_id;
+  if (chatOwnerId !== parseInt(userId as string) && chatOwnerId !== userId) {
+    return { success: false, status: 403, error: 'Unauthorized to modify this message' };
+  }
+
+  return { success: true };
+}
+
 // Toggle Pin Message
 router.patch("/:messageId/pin", authenticateToken, async (req: any, res) => {
   try {
@@ -11,23 +34,9 @@ router.patch("/:messageId/pin", authenticateToken, async (req: any, res) => {
     const { is_pinned } = req.body;
     const userId = req.user.id;
 
-    if (!pool) throw new Error('Database initializing');
-
-    // Check ownership of the chat containing the message
-    const checkRes = await pool.query(`
-      SELECT m.id, c.user_id 
-      FROM messages m
-      JOIN chats c ON m.chat_id = c.id
-      WHERE m.id = $1
-    `, [messageId]);
-
-    if (checkRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const chatOwnerId = checkRes.rows[0].user_id;
-    if (chatOwnerId !== parseInt(userId) && chatOwnerId !== userId) {
-      return res.status(403).json({ error: 'Unauthorized to modify this message' });
+    const authCheck = await checkMessageOwnership(messageId, userId);
+    if (!authCheck.success) {
+      return res.status(authCheck.status!).json({ error: authCheck.error });
     }
 
     await pool.query('UPDATE messages SET is_pinned = $1 WHERE id = $2', [is_pinned, messageId]);
@@ -44,23 +53,9 @@ router.post("/:messageId/feedback", authenticateToken, async (req: any, res) => 
     const { feedback } = req.body; // e.g. 1 for up, -1 for down, 0 for clear
     const userId = req.user.id;
 
-    if (!pool) throw new Error('Database initializing');
-
-    // Check ownership
-    const checkRes = await pool.query(`
-      SELECT m.id, c.user_id 
-      FROM messages m
-      JOIN chats c ON m.chat_id = c.id
-      WHERE m.id = $1
-    `, [messageId]);
-
-    if (checkRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const chatOwnerId = checkRes.rows[0].user_id;
-    if (chatOwnerId !== parseInt(userId) && chatOwnerId !== userId) {
-      return res.status(403).json({ error: 'Unauthorized to modify this message' });
+    const authCheck = await checkMessageOwnership(messageId, userId);
+    if (!authCheck.success) {
+      return res.status(authCheck.status!).json({ error: authCheck.error });
     }
 
     await pool.query('UPDATE messages SET feedback = $1 WHERE id = $2', [feedback, messageId]);
@@ -76,23 +71,9 @@ router.delete("/:messageId", authenticateToken, async (req: any, res) => {
     const { messageId } = req.params;
     const userId = req.user.id;
 
-    if (!pool) throw new Error('Database initializing');
-
-    // Check ownership
-    const checkRes = await pool.query(`
-      SELECT m.id, c.user_id 
-      FROM messages m
-      JOIN chats c ON m.chat_id = c.id
-      WHERE m.id = $1
-    `, [messageId]);
-
-    if (checkRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const chatOwnerId = checkRes.rows[0].user_id;
-    if (chatOwnerId !== parseInt(userId) && chatOwnerId !== userId) {
-      return res.status(403).json({ error: 'Unauthorized' });
+    const authCheck = await checkMessageOwnership(messageId, userId);
+    if (!authCheck.success) {
+      return res.status(authCheck.status!).json({ error: authCheck.error });
     }
 
     await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);

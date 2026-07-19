@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
-import { pool } from '../db/index.js';
-import { decrypt } from '../utils/crypto.js';
+import { getCachedSystemSettings } from '../db/queries.js';
 
 let stripeClient: Stripe | null = null;
 let stripeWebhookSecret: string | null = null;
@@ -9,11 +8,11 @@ export async function getStripe(): Promise<Stripe | null> {
   if (stripeClient) return stripeClient;
 
   try {
-    // 1. Try Database (Dynamic Config)
-    const settings = await pool.query('SELECT stripe_secret_key, stripe_webhook_secret FROM system_settings LIMIT 1');
-    if (settings.rows.length > 0 && settings.rows[0].stripe_secret_key) {
-      stripeClient = new Stripe(decrypt(settings.rows[0].stripe_secret_key), { apiVersion: '2025-01-27.acacia' as any });
-      stripeWebhookSecret = settings.rows[0].stripe_webhook_secret ? decrypt(settings.rows[0].stripe_webhook_secret) : null;
+    // 1. Try Database (Cached Dynamic Config)
+    const settings = await getCachedSystemSettings();
+    if (settings && settings.stripe_secret_key) {
+      stripeClient = new Stripe(settings.stripe_secret_key, { apiVersion: '2025-01-27.acacia' as any });
+      stripeWebhookSecret = settings.stripe_webhook_secret || null;
       return stripeClient;
     }
 
@@ -45,12 +44,12 @@ export function invalidateStripeClient() {
 // ==========================================
 
 export async function getPayPalCredentials() {
-  const settings = await pool.query('SELECT paypal_client_id, paypal_client_secret, paypal_mode FROM system_settings LIMIT 1');
-  if (settings.rows.length > 0 && settings.rows[0].paypal_client_id && settings.rows[0].paypal_client_secret) {
+  const settings = await getCachedSystemSettings();
+  if (settings && settings.paypal_client_id && settings.paypal_client_secret) {
     return {
-      clientId: decrypt(settings.rows[0].paypal_client_id),
-      clientSecret: decrypt(settings.rows[0].paypal_client_secret),
-      mode: settings.rows[0].paypal_mode || 'sandbox'
+      clientId: settings.paypal_client_id,
+      clientSecret: settings.paypal_client_secret,
+      mode: settings.paypal_mode || 'sandbox'
     };
   }
   // Try environment fallbacks

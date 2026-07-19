@@ -442,6 +442,7 @@ import forumRoutes from './routes/forum.js';
 import blogRoutes from './routes/blog.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import videoResourcesRoutes from './routes/videoResources.js';
+import shareRoutes from './routes/share.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -456,6 +457,7 @@ app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/share-snapshot', shareRoutes);
 
 // Backwards compatibility aliases for direct api endpoints
 app.use('/api/settings', (req, res, next) => {

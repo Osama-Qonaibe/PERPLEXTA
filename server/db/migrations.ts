@@ -1561,6 +1561,21 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'seo_site_name_ar', 'TEXT', "NULL");
     });
 
+    await runVersioned('v56_shared_snapshots', 'Creating shared_snapshots table for public-facing insights snapshots', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS shared_snapshots (
+          id VARCHAR(100) PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          title TEXT,
+          content TEXT NOT NULL,
+          model_name VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          views_count INTEGER DEFAULT 0
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_shared_snapshots_user_id ON shared_snapshots(user_id)`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -2230,6 +2245,18 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         body TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'shared_snapshots',
+      query: `CREATE TABLE IF NOT EXISTS shared_snapshots (
+        id VARCHAR(100) PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        title TEXT,
+        content TEXT NOT NULL,
+        model_name VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        views_count INTEGER DEFAULT 0
       )`
     }
   ];

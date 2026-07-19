@@ -37,8 +37,10 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
     
-    // Non-admin without any active subscription gets a 20MB free storage tier instead of 0
-    if (row.role !== 'admin' && !hasActiveSub) {
+    // Admins get unlimited storage, non-admins without subscription get a 20MB free storage tier
+    if (row.role === 'admin') {
+      limitMb = 'unlimited';
+    } else if (!hasActiveSub) {
       limitMb = '20';
     }
     

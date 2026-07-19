@@ -17,6 +17,7 @@ import { ForumPage } from './pages/ForumPage';
 import { BlogPage } from './pages/BlogPage';
 import { AdminCommunityPage } from './pages/AdminCommunityPage';
 import { MarketplacePage } from './pages/MarketplacePage';
+import { SharedSnapshotPage } from './pages/SharedSnapshotPage';
 import { IncentiveCard } from './components/IncentiveCard';
 import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
@@ -342,6 +343,8 @@ export default function App() {
                 <Route path="about" element={<About />} />
                 <Route path="reset-password" element={<ResetPasswordPage />} />
               </Route>
+
+              <Route path="share/:id" element={<SharedSnapshotPage />} />
 
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 

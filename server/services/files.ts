@@ -173,3 +173,37 @@ export async function saveGeneratedVideoToDisk(userId: string, videoData: string
   return `/uploads/${randomFilename}`;
 }
 
+export async function saveGeneratedAudioToDisk(userId: string, audioBase64: string, mimeType = 'audio/wav', prompt = 'AI_Track', lyrics = ''): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  // Confirm uploads directory exists
+  await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+  const buffer = Buffer.from(audioBase64, 'base64');
+  let fileExtension = 'wav';
+  if (mimeType.includes('mp3')) fileExtension = 'mp3';
+  else if (mimeType.includes('mpeg')) fileExtension = 'mp3';
+  else if (mimeType.includes('ogg')) fileExtension = 'ogg';
+
+  const randomFilename = `${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+  const filePath = path.join(uploadDir, randomFilename);
+
+  await fs.writeFile(filePath, buffer);
+
+  // Register the file metadata
+  await saveFileMetadata(userId, {
+    file_name: `${prompt.replace(/[^a-zA-Z0-9\s_\u0600-\u06FF-]/g, '').substring(0, 30) || 'Perplexta_Audio'}_${Date.now()}.${fileExtension}`,
+    file_url: randomFilename,
+    file_size: buffer.length,
+    mime_type: mimeType,
+    file_type: 'audio',
+    metadata: {
+      generated: true,
+      origin: 'AI_Orchestrator_Audio_Studio',
+      lyrics,
+      prompt
+    }
+  });
+
+  return `/uploads/${randomFilename}`;
+}
+

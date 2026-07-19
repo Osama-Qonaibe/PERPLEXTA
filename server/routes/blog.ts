@@ -45,48 +45,54 @@ async function hydrateAuthors(items: any[], userIdKey = 'user_id') {
 // Helper to validate URLs (protects from SSRF / Phishing)
 function isSafeUrl(urlStr: string): boolean {
   if (!urlStr) return true;
-  try {
-    if (urlStr.startsWith('/')) {
-      return !urlStr.includes('..') && !urlStr.includes('\\');
-    }
-    if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+  const urls = urlStr.split(',').map(u => u.trim()).filter(Boolean);
+  for (const singleUrl of urls) {
+    try {
+      if (singleUrl.startsWith('/')) {
+        if (singleUrl.includes('..') || singleUrl.includes('\\')) {
+          return false;
+        }
+        continue;
+      }
+      if (!singleUrl.startsWith('http://') && !singleUrl.startsWith('https://')) {
+        return false;
+      }
+      const parsed = new URL(singleUrl);
+      const hostname = parsed.hostname.toLowerCase();
+      const blockedHosts = [
+        'localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254',
+        '::1', '::', 'metadata.google.internal'
+      ];
+      if (blockedHosts.includes(hostname)) {
+        return false;
+      }
+      if (
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('172.16.') ||
+        hostname.startsWith('172.17.') ||
+        hostname.startsWith('172.18.') ||
+        hostname.startsWith('172.19.') ||
+        hostname.startsWith('172.20.') ||
+        hostname.startsWith('172.21.') ||
+        hostname.startsWith('172.22.') ||
+        hostname.startsWith('172.23.') ||
+        hostname.startsWith('172.24.') ||
+        hostname.startsWith('172.25.') ||
+        hostname.startsWith('172.26.') ||
+        hostname.startsWith('172.27.') ||
+        hostname.startsWith('172.28.') ||
+        hostname.startsWith('172.29.') ||
+        hostname.startsWith('172.30.') ||
+        hostname.startsWith('172.31.')
+      ) {
+        return false;
+      }
+    } catch (err) {
       return false;
     }
-    const parsed = new URL(urlStr);
-    const hostname = parsed.hostname.toLowerCase();
-    const blockedHosts = [
-      'localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254',
-      '::1', '::', 'metadata.google.internal'
-    ];
-    if (blockedHosts.includes(hostname)) {
-      return false;
-    }
-    if (
-      hostname.startsWith('10.') ||
-      hostname.startsWith('192.168.') ||
-      hostname.startsWith('172.16.') ||
-      hostname.startsWith('172.17.') ||
-      hostname.startsWith('172.18.') ||
-      hostname.startsWith('172.19.') ||
-      hostname.startsWith('172.20.') ||
-      hostname.startsWith('172.21.') ||
-      hostname.startsWith('172.22.') ||
-      hostname.startsWith('172.23.') ||
-      hostname.startsWith('172.24.') ||
-      hostname.startsWith('172.25.') ||
-      hostname.startsWith('172.26.') ||
-      hostname.startsWith('172.27.') ||
-      hostname.startsWith('172.28.') ||
-      hostname.startsWith('172.29.') ||
-      hostname.startsWith('172.30.') ||
-      hostname.startsWith('172.31.')
-    ) {
-      return false;
-    }
-    return true;
-  } catch (err) {
-    return false;
   }
+  return true;
 }
 
 // Helper to slugify

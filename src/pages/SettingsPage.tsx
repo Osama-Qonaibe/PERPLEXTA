@@ -7,10 +7,11 @@ import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
 import { MarketplacePortfolio } from '../components/MarketplacePortfolio';
 import { DeveloperAgentPortal } from '../components/DeveloperAgentPortal';
+import { GoogleContacts } from '../components/GoogleContacts';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { 
-  User, Settings2, Shield, CreditCard, 
+  User, Users, Settings2, Shield, CreditCard, 
   Wallet, Palette, Keyboard, BrainCircuit, Globe,
   ChevronRight, ChevronLeft, LogOut, Link2,
   Trash2, Edit2, Save, X, Plus, Loader2,
@@ -203,6 +204,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
     { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'سوق المنصة' : 'Marketplace Hub' },
     { id: 'memory', icon: <BrainCircuit size={18} />, label: t('memoryCenter') },
+    { id: 'contacts', icon: <Users size={18} />, label: language === 'ar' ? 'جهات اتصال جوجل' : 'Google Contacts' },
     { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'بوابة المطورين والوكلاء' : 'Developer & Bot Portal' },
   ];
 
@@ -352,6 +354,11 @@ export const SettingsPage: React.FC = () => {
                 <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-2xl">
                   <DeveloperAgentPortal />
                 </div>
+              )}
+
+              {/* Google Contacts Hub Tab */}
+              {activeTab === 'contacts' && (
+                <GoogleContacts dir={dir} theme={theme} />
               )}
             </motion.div>
           </AnimatePresence>

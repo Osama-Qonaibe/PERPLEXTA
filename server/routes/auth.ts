@@ -187,9 +187,9 @@ router.post("/signup", authLimiter, async (req, res) => {
     if (referredBy) {
       let bonusPoints = 1000;
       try {
-        const econRes = await ledgerPool.query('SELECT referral_bonus_points FROM economy_settings LIMIT 1');
-        if (econRes.rows.length > 0) {
-          bonusPoints = parseInt(econRes.rows[0].referral_bonus_points) || 1000;
+        const econ = await getEconomySettings();
+        if (econ && econ.referral_bonus_points !== undefined) {
+          bonusPoints = parseInt(econ.referral_bonus_points) || 1000;
         }
       } catch (econErr) {
         console.error('Failed to query economy settings:', econErr);

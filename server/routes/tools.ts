@@ -7,6 +7,8 @@ import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { User, Subscription } from '../db/types.js';
 import { getUserWallet } from '../services/wallet.js';
+import { getProviderKey } from '../services/ai.js';
+import { saveGeneratedAudioToDisk } from '../services/files.js';
 
 const router = express.Router();
 
@@ -139,6 +141,145 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
     }
     const isQuotaError = userMessage.includes('quota') || userMessage.includes('recharge') || userMessage.includes('رصيد') || userMessage.includes('باقة');
     res.status(isQuotaError ? 400 : 500).json({ error: userMessage });
+  }
+});
+
+/**
+ * POST /api/tools/generate-music
+ * High-performance, secure endpoint to invoke Google GenAI Lyria music generation models.
+ */
+router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFunds, async (req: express.Request & { user?: any }, res: express.Response) => {
+  const userId = req.user?.id;
+  try {
+    const { prompt, model, lyrics: userLyrics } = req.body;
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ error: 'A valid text prompt is required for music generation.' });
+    }
+
+    // Subscription & user verification
+    const subRes = (await pool.query(`
+      SELECT s.status, u.role
+      FROM users u 
+      LEFT JOIN subscriptions s ON u.id = s.user_id 
+      WHERE u.id = $1
+      ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END, s.current_period_end DESC NULLS LAST
+      LIMIT 1
+    `, [userId])) as { rows: { status: Subscription['status'] | null; role: User['role'] }[] };
+    
+    const row = subRes.rows[0];
+    const role = row?.role;
+    
+    let points = 0;
+    let balance = 0;
+    try {
+      const wallet = await getUserWallet(userId);
+      points = Number(wallet.points || 0);
+      balance = Number(wallet.balance || 0);
+    } catch (err) {
+      console.warn('[GenerateMusicRoute] Failed to fetch user wallet:', err);
+    }
+
+    const hasActiveSub = (role === 'admin' || (row && row.status === 'active') || points > 0 || balance > 0);
+    if (!hasActiveSub) {
+      return res.status(403).json({ error: 'subscription_required', message: 'An active subscription or positive wallet balance is required to execute tools.' });
+    }
+
+    // Obtain Gemini API key
+    const apiKey = await getProviderKey('gemini');
+    if (!apiKey) {
+      return res.status(400).json({ 
+        error: 'Google Gemini API key not configured or not found in system vault.',
+        error_ar: 'مفتاح Google Gemini API غير مهيأ أو غير متوفر في خزينة النظام.'
+      });
+    }
+
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({ apiKey });
+
+    const modelName = model === 'lyria-3-pro-preview' ? 'lyria-3-pro-preview' : 'lyria-3-clip-preview';
+
+    let fullPrompt = prompt;
+    if (modelName === 'lyria-3-pro-preview' && userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {
+      fullPrompt = `${prompt}\n\nLyrics:\n${userLyrics}`;
+    }
+
+    console.log(`[Music Generation] Invoking model "${modelName}" for user: ${userId} with prompt: "${prompt.substring(0, 100)}..."`);
+
+    const response = await ai.models.generateContentStream({
+      model: modelName,
+      contents: fullPrompt,
+      config: {
+        responseModalities: ["AUDIO"]
+      }
+    });
+
+    let audioBase64 = "";
+    let lyrics = "";
+    let mimeType = "audio/wav";
+
+    for await (const chunk of response) {
+      const parts = chunk.candidates?.[0]?.content?.parts;
+      if (!parts) continue;
+
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          if (!audioBase64 && part.inlineData.mimeType) {
+            mimeType = part.inlineData.mimeType;
+          }
+          audioBase64 += part.inlineData.data;
+        }
+        if (part.text && !lyrics) {
+          lyrics = part.text;
+        }
+      }
+    }
+
+    if (!audioBase64) {
+      throw new Error("No audio track was produced by the Google Lyria API. Please check your prompt instructions.");
+    }
+
+    res.json({
+      success: true,
+      audioBase64,
+      lyrics: lyrics || userLyrics || '',
+      mimeType,
+      model: modelName
+    });
+
+  } catch (error: any) {
+    console.error('[GenerateMusicRoute] Critical failure in music generation:', error);
+    res.status(500).json({ 
+      error: error.message || 'Music generation service encountered an unexpected error.',
+      error_ar: 'واجهت خدمة توليد الموسيقى خطأ غير متوقع أثناء المعالجة.'
+    });
+  }
+});
+
+/**
+ * POST /api/tools/save-music
+ * Saves generated AI music base64 track to disk and registers file metadata.
+ */
+router.post("/save-music", authenticateToken, async (req: express.Request & { user?: any }, res: express.Response) => {
+  const userId = req.user?.id;
+  const { audioBase64, mimeType, prompt, lyrics } = req.body;
+
+  if (!audioBase64) {
+    return res.status(400).json({ error: 'Missing audio base64 payload' });
+  }
+
+  try {
+    const fileUrl = await saveGeneratedAudioToDisk(
+      userId,
+      audioBase64,
+      mimeType || 'audio/wav',
+      prompt || 'AI_Music_Track',
+      lyrics || ''
+    );
+
+    res.json({ success: true, fileUrl });
+  } catch (error: any) {
+    console.error('[SaveMusicRoute] Failed to save track:', error);
+    res.status(500).json({ error: error.message || 'Failed to save generated audio track to library.' });
   }
 });
 

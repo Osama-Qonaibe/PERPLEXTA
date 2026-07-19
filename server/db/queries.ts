@@ -204,8 +204,8 @@ export async function getCachedSystemSettings(): Promise<any> {
       site_name_en, site_name_ar, site_description_en, site_description_ar,
       seo_description_en, seo_description_ar, keywords_en, keywords_ar,
       google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-      paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
+      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, stripe_live_mode,
+      paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
       blocked_paths, seo_site_name_en, seo_site_name_ar
     FROM system_settings LIMIT 1
   `);
@@ -222,8 +222,8 @@ export async function getCachedSystemSettings(): Promise<any> {
         site_name_en, site_name_ar, site_description_en, site_description_ar,
         seo_description_en, seo_description_ar, keywords_en, keywords_ar,
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-        stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_live_mode,
-        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_mode, image_prompt_pref_threshold,
+        stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, stripe_live_mode,
+        paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
         blocked_paths, seo_site_name_en, seo_site_name_ar
       FROM system_settings LIMIT 1
     `);
@@ -233,8 +233,17 @@ export async function getCachedSystemSettings(): Promise<any> {
   if (settings.stripe_publishable_key) {
     settings.stripe_publishable_key = safeDecrypt(settings.stripe_publishable_key, '');
   }
+  if (settings.stripe_secret_key) {
+    settings.stripe_secret_key = safeDecrypt(settings.stripe_secret_key, '');
+  }
+  if (settings.stripe_webhook_secret) {
+    settings.stripe_webhook_secret = safeDecrypt(settings.stripe_webhook_secret, '');
+  }
   if (settings.paypal_client_id) {
     settings.paypal_client_id = safeDecrypt(settings.paypal_client_id, '');
+  }
+  if (settings.paypal_client_secret) {
+    settings.paypal_client_secret = safeDecrypt(settings.paypal_client_secret, '');
   }
 
   systemSettingsCache.set('global', { data: settings, timestamp: now });
