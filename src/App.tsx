@@ -334,9 +334,9 @@ export default function App() {
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
                 <Route path="subscription" element={<SubscriptionPage />} />
                 <Route path="chat/:id?" element={<ChatPage />} />
-                <Route path="forum" element={<ForumPage />} />
-                <Route path="marketplace" element={<MarketplacePage />} />
-                <Route path="blog" element={<BlogPage />} />
+                <Route path="forum/:id?" element={<ForumPage />} />
+                <Route path="marketplace/:id?" element={<MarketplacePage />} />
+                <Route path="blog/:slug?" element={<BlogPage />} />
                 <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
                 <Route path="terms" element={<Terms />} />
                 <Route path="privacy" element={<Privacy />} />

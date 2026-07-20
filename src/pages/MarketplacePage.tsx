@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
@@ -659,6 +659,7 @@ export const DEFAULT_ITEMS: MarketplaceItem[] = [
 export const MarketplacePage: React.FC = () => {
   const { language, token, user, theme, balanceUSD, refreshUser } = useAppContext();
   const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -667,6 +668,17 @@ export const MarketplacePage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'recent' | 'price-asc' | 'price-desc'>('recent');
 
   const [referralCode, setReferralCode] = useState<string>('');
+  const [showAdPopup, setShowAdPopup] = useState(false);
+
+  useEffect(() => {
+    const isAdDismissed = localStorage.getItem('hide_marketplace_ad');
+    if (!isAdDismissed) {
+      const timer = setTimeout(() => {
+        setShowAdPopup(true);
+      }, 5000); // Trigger 5 seconds after load
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const canPublish = (() => {
     if (!user) return false;
@@ -891,6 +903,20 @@ export const MarketplacePage: React.FC = () => {
   useEffect(() => {
     fetchItems();
   }, [user?.role, token]);
+
+  useEffect(() => {
+    if (id && items.length > 0) {
+      const itemId = parseInt(id, 10);
+      if (!isNaN(itemId)) {
+        const found = items.find(item => item.id === itemId);
+        if (found) {
+          setSelectedProduct(found);
+        }
+      }
+    } else if (!id) {
+      setSelectedProduct(null);
+    }
+  }, [id, items]);
 
   const getSubcategoryKey = (item: MarketplaceItem): string => {
     const cat = item.category_en.toLowerCase();
@@ -1952,7 +1978,7 @@ export const MarketplacePage: React.FC = () => {
                           exit={{ opacity: 0, scale: 0.95 }}
                           whileHover={{ y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
                           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                          onClick={() => setSelectedProduct(item)}
+                          onClick={() => navigate(`/marketplace/${item.id}`)}
                           className={`rounded-xl border overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer relative group ${
                             isThemeDark
                               ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
@@ -2240,6 +2266,7 @@ export const MarketplacePage: React.FC = () => {
               onClick={() => {
                 setSelectedProduct(null);
                 setBuyingProgress('idle');
+                navigate('/marketplace');
               }}
               className="absolute inset-0 bg-black/85 backdrop-blur-md"
             />
@@ -2286,6 +2313,7 @@ export const MarketplacePage: React.FC = () => {
                     e.stopPropagation();
                     setSelectedProduct(null);
                     setBuyingProgress('idle');
+                    navigate('/marketplace');
                   }}
                   className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-all hover:bg-black/80 hover:text-emerald-500 text-white cursor-pointer z-20"
                 >
@@ -3683,6 +3711,85 @@ export const MarketplacePage: React.FC = () => {
               )}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Pop-up Ad */}
+      <AnimatePresence>
+        {showAdPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-lg w-full max-w-md p-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => {
+                  setShowAdPopup(false);
+                  localStorage.setItem('hide_marketplace_ad', 'true');
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-all duration-300"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex flex-col gap-4">
+                {/* Promo Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
+                    {language === 'ar' ? 'عرض الماركت بليس' : 'Marketplace Special'}
+                  </span>
+                  <div className="h-px flex-1 bg-[var(--border-main)]/50" />
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                    <Gift size={24} />
+                  </div>
+                  <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                    <h3 className="text-sm font-black text-[var(--text-primary)]">
+                      {language === 'ar' ? 'احصل على خصم 20% على الاشتراك السنوي' : 'Get 20% Off Your Annual Plan'}
+                    </h3>
+                    <p className="text-xs text-gray-500 leading-relaxed font-sans">
+                      {language === 'ar'
+                        ? 'ضاعف قوتك التحليلية الآن! اشترك في خطة النخبة السنوية لتحصل على وصول كامل وغير محدود لأقوى نماذج الذكاء الاصطناعي وبوتات التداول.'
+                        : 'Maximize your analytical capabilities today! Upgrade to our VIP Annual Plan and enjoy absolute, unrestricted access to top-tier models and indicators.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_marketplace_ad', 'true');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all duration-300 border border-[var(--border)]"
+                  >
+                    {language === 'ar' ? 'تخطي العرض' : 'Dismiss'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_marketplace_ad', 'true');
+                      navigate('/subscription');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-all duration-300 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                  >
+                    <span>{language === 'ar' ? 'استفد من الخصم' : 'Claim Offer'}</span>
+                    <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

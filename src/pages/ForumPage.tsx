@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   MessageSquare, Pin, Lock, Eye, Trash2, Send, ArrowLeft, Plus, MessageCircle, 
   Calendar, User, UserCheck, ShieldCheck, Flag, ShieldAlert, BookOpen, AlertCircle,
   Cpu, TrendingUp, RefreshCw, Terminal, Globe, Activity, Code, Shield, Zap, Search, Layers, Filter, SlidersHorizontal,
-  Laptop, Server, Briefcase, HelpCircle, Bold, Italic, Heading1, Heading2, Quote, Image, List, ListOrdered, UploadCloud
+  Laptop, Server, Briefcase, HelpCircle, Bold, Italic, Heading1, Heading2, Quote, Image, List, ListOrdered, UploadCloud,
+  X, Megaphone, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -60,6 +61,7 @@ interface Comment {
 export const ForumPage: React.FC = () => {
   const { language, token, user, theme } = useAppContext();
   const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const isThemeDark = theme === 'dark';
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -88,6 +90,17 @@ export const ForumPage: React.FC = () => {
   const [reportedPosts, setReportedPosts] = useState<number[]>([]);
   const [reportedComments, setReportedComments] = useState<number[]>([]);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info' | 'error'; textAr: string; textEn: string } | null>(null);
+  const [showAdPopup, setShowAdPopup] = useState(false);
+
+  useEffect(() => {
+    const isAdDismissed = localStorage.getItem('hide_forum_ad');
+    if (!isAdDismissed) {
+      const timer = setTimeout(() => {
+        setShowAdPopup(true);
+      }, 6000); // Trigger 6 seconds after load
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Upload and Optimization States
   const [isUploadingCover, setIsUploadingCover] = useState(false);
@@ -675,6 +688,34 @@ export const ForumPage: React.FC = () => {
     fetchCategories();
     handleSelectCategory(null);
   }, []);
+
+  useEffect(() => {
+    if (id) {
+      const postId = parseInt(id, 10);
+      if (!isNaN(postId)) {
+        setPostDetailLoading(true);
+        fetch(`/api/forum/posts/${postId}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Failed to load deep-linked post');
+          })
+          .then(data => {
+            setSelectedPost(data.post);
+            setComments(data.comments);
+            if (data.post && categories.length > 0) {
+              const matchedCat = categories.find(c => c.id === data.post.category_id);
+              if (matchedCat) {
+                setSelectedCategory(matchedCat);
+              }
+            }
+          })
+          .catch(err => console.error(err))
+          .finally(() => setPostDetailLoading(false));
+      }
+    } else {
+      setSelectedPost(null);
+    }
+  }, [id, categories]);
 
   // Fetch posts under selected category
   const handleSelectCategory = async (cat: Category | null) => {
@@ -1344,7 +1385,7 @@ export const ForumPage: React.FC = () => {
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-850 hover:border-emerald-500/35' : 'bg-[#fafafa] border-gray-200 hover:border-emerald-500/30'
                               }`}
                             >
-                              <div className="flex-1 min-w-0 cursor-pointer flex gap-4 items-start" onClick={() => handleSelectPost(post)}>
+                              <div className="flex-1 min-w-0 cursor-pointer flex gap-4 items-start" onClick={() => navigate(`/forum/${post.id}`)}>
                                 {post.image_url && (
                                   <img 
                                     src={post.image_url} 
@@ -1840,7 +1881,10 @@ export const ForumPage: React.FC = () => {
               <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
               <div className="flex justify-between items-center">
                 <button
-                  onClick={() => setSelectedPost(null)}
+                   onClick={() => {
+                     setSelectedPost(null);
+                     navigate('/forum');
+                   }}
                   className="group flex items-center gap-1.5 text-xs font-black text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer"
                 >
                   <ArrowLeft size={16} className={`group-hover:scale-115 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
@@ -2245,6 +2289,86 @@ export const ForumPage: React.FC = () => {
           </motion.button>
         </div>
       )}
+
+      {/* Dynamic Pop-up Ad */}
+      <AnimatePresence>
+        {showAdPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-lg w-full max-w-md p-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => {
+                  setShowAdPopup(false);
+                  localStorage.setItem('hide_forum_ad', 'true');
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-all duration-300"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex flex-col gap-4">
+                {/* Promo Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
+                    {language === 'ar' ? 'شبكة العمولات' : 'Affiliate Network'}
+                  </span>
+                  <div className="h-px flex-1 bg-[var(--border-main)]/50" />
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                    <Megaphone size={24} />
+                  </div>
+                  <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                    <h3 className="text-sm font-black text-[var(--text-primary)]">
+                      {language === 'ar' ? 'شارك في بناء المجتمع واكسب عمولات فورية' : 'Build Community & Earn Cash Rewards'}
+                    </h3>
+                    <p className="text-xs text-gray-500 leading-relaxed font-sans">
+                      {language === 'ar'
+                        ? 'احصل على عمولة نقدية بنسبة 15% مباشرة في محفظتك عن كل مستخدم يشترك في الباقات المميزة عبر رابط إحالتك الخاص.'
+                        : 'Earn a premium 15% cash commission directly into your wallet for every user who upgrades via your unique referral link.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_forum_ad', 'true');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all duration-300 border border-[var(--border)]"
+                  >
+                    {language === 'ar' ? 'ليس الآن' : 'Later'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_forum_ad', 'true');
+                      navigate('/rewards');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-all duration-300 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                  >
+                    <span>{language === 'ar' ? 'لوحة الأرباح' : 'Affiliate Portal'}</span>
+                    <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

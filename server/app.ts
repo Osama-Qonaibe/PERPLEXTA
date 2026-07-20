@@ -520,11 +520,158 @@ async function injectSEOTags(
   let currentKeywords = defaultKeywords;
   let currentSiteName = defaultSiteName;
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
+  if (imageUrl && imageUrl.startsWith('/uploads/')) {
+    const localPath = path.join(process.cwd(), imageUrl);
+    if (!fs.existsSync(localPath)) {
+      imageUrl = '/app-assets/og-image.png';
+    }
+  }
 
   const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
 
+  const queryParam = (req.query.search || req.query.q || req.query.query || '').toString().trim();
+
   // Dynamic check and fetching for public subroutes
-  if (normalizedPath.startsWith('/share/')) {
+  if (queryParam) {
+    if (normalizedPath.startsWith('/forum')) {
+      try {
+        const searchRes = await pool.query(
+          'SELECT id, title, content, image_url FROM forum_posts WHERE title ILIKE $1 OR content ILIKE $1 ORDER BY id DESC LIMIT 1',
+          [`%${queryParam}%`]
+        );
+        if (searchRes.rows.length > 0) {
+          const post = searchRes.rows[0];
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث لـ "${queryParam}": ${post.title}` 
+            : `Search results for "${queryParam}": ${post.title}`;
+          let cleanContent = post.content || '';
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (post.image_url) {
+            imageUrl = post.image_url;
+          }
+        } else {
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
+            : `Search results for "${queryParam}" - Perplexta`;
+          currentDesc = preferredLang === 'ar' 
+            ? `استكشف نتائج البحث والاستشارات التقنية والتحليلات السيادية المتعلقة بـ "${queryParam}".` 
+            : `Explore search results, technical consultations, and sovereign analysis related to "${queryParam}".`;
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to search forum posts for SEO:', err);
+      }
+    } else if (normalizedPath.startsWith('/blog')) {
+      try {
+        const searchRes = await pool.query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+          [`%${queryParam}%`]
+        );
+        if (searchRes.rows.length > 0) {
+          const article = searchRes.rows[0];
+          const articleTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث لـ "${queryParam}": ${articleTitle}` 
+            : `Search results for "${queryParam}": ${articleTitle}`;
+          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (article.image_url) {
+            imageUrl = article.image_url;
+          }
+        } else {
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث عن "${queryParam}" - مدونة بيربليكستا` 
+            : `Search results for "${queryParam}" - Perplexta Blog`;
+          currentDesc = preferredLang === 'ar' 
+            ? `استكشف أحدث المقالات والدراسات التقنية المتعلقة بـ "${queryParam}" في مدونتنا.` 
+            : `Explore the latest technical articles and deep research related to "${queryParam}" in our blog.`;
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to search blog articles for SEO:', err);
+      }
+    } else if (normalizedPath.startsWith('/marketplace')) {
+      try {
+        const searchRes = await pool.query(
+          'SELECT title_en, title_ar, description_en, description_ar, image_url FROM marketplace_items WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR description_en ILIKE $1 OR description_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+          [`%${queryParam}%`]
+        );
+        if (searchRes.rows.length > 0) {
+          const item = searchRes.rows[0];
+          const itemTitle = preferredLang === 'ar' ? item.title_ar : item.title_en;
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث لـ "${queryParam}": ${itemTitle}` 
+            : `Search results for "${queryParam}": ${itemTitle}`;
+          let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (item.image_url) {
+            imageUrl = item.image_url;
+          }
+        } else {
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث عن "${queryParam}" - متجر بيربليكستا` 
+            : `Search results for "${queryParam}" - Perplexta Marketplace`;
+          currentDesc = preferredLang === 'ar' 
+            ? `تصفح المنتجات والأدوات والحلول التقنية المتوفرة للبحث "${queryParam}".` 
+            : `Browse technical products, tools, and solutions available for "${queryParam}".`;
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to search marketplace items for SEO:', err);
+      }
+    } else {
+      try {
+        const blogRes = await pool.query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+          [`%${queryParam}%`]
+        );
+        if (blogRes.rows.length > 0) {
+          const article = blogRes.rows[0];
+          const articleTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث لـ "${queryParam}": ${articleTitle}` 
+            : `Search results for "${queryParam}": ${articleTitle}`;
+          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (article.image_url) {
+            imageUrl = article.image_url;
+          }
+        } else {
+          const forumRes = await pool.query(
+            'SELECT title, content, image_url FROM forum_posts WHERE title ILIKE $1 OR content ILIKE $1 ORDER BY id DESC LIMIT 1',
+            [`%${queryParam}%`]
+          );
+          if (forumRes.rows.length > 0) {
+            const post = forumRes.rows[0];
+            currentTitle = preferredLang === 'ar' 
+              ? `نتائج البحث لـ "${queryParam}": ${post.title}` 
+              : `Search results for "${queryParam}": ${post.title}`;
+            let cleanContent = post.content || '';
+            cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+            currentDesc = cleanContent.slice(0, 160).trim();
+            if (cleanContent.length > 160) currentDesc += '...';
+            if (post.image_url) {
+              imageUrl = post.image_url;
+            }
+          } else {
+            currentTitle = preferredLang === 'ar' 
+              ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
+              : `Search results for "${queryParam}" - Perplexta`;
+            currentDesc = preferredLang === 'ar' 
+              ? `نتائج البحث والتحليلات التقنية لـ "${queryParam}".` 
+              : `Search results and proactive technical analysis for "${queryParam}".`;
+          }
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to search general records for SEO:', err);
+      }
+    }
+  } else if (normalizedPath.startsWith('/share/')) {
     const shareId = normalizedPath.split('/share/')[1];
     if (shareId && /^[a-f0-9]+$/i.test(shareId)) {
       try {
@@ -748,58 +895,90 @@ if (process.env.NODE_ENV === "production") {
       }
     }
   }));
+}
 
-  let cachedIndexHtml = '';
+let cachedIndexHtml = '';
+if (process.env.NODE_ENV === "production") {
   try {
     cachedIndexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
   } catch (err) {
     console.warn('[Server] Could not pre-load index.html for noncing:', err);
   }
+}
 
-  app.get('*', async (req, res) => {
-    const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
-    if (!req.path.startsWith('/api/') && !req.path.startsWith('/uploads/') && !hasStaticExtension) {
-      const baseUrl = getBaseUrl(req);
+app.get('*', async (req, res, next) => {
+  const isApiOrUploads = req.path.startsWith('/api/') || req.path.startsWith('/uploads/');
+  const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
+  
+  const isDevVitePath = process.env.NODE_ENV !== 'production' && (
+    req.path.startsWith('/@') ||
+    req.path.startsWith('/node_modules/') ||
+    req.path.startsWith('/src/') ||
+    /\.(tsx?|jsx?)$/i.test(req.path) ||
+    req.query.v !== undefined ||
+    req.query.import !== undefined
+  );
 
-      const acceptHeader = req.headers['accept'] || '';
-      if (acceptHeader.includes('text/markdown')) {
-        const markdownBody = generateMarkdownForPage(req.path, baseUrl);
-        const tokenCount = estimateMarkdownTokens(markdownBody);
-        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-        res.setHeader('X-Markdown-Tokens', String(tokenCount));
-        return res.send(markdownBody);
-      }
+  if (isApiOrUploads || hasStaticExtension || isDevVitePath) {
+    return next();
+  }
 
-      try {
-        let baseHtml = cachedIndexHtml || fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
-        const nonce = res.locals.nonce || '';
-        let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-        noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
+  const baseUrl = getBaseUrl(req);
 
-        // A-5: explicit try/catch instead of silent .catch(()=>null).
-        // Errors are now logged so they surface in production logs.
-        let finalHtml = noncedHtml;
-        try {
-          const settings = await getSystemSettings();
-          finalHtml = await injectSEOTags(noncedHtml, settings, req, baseUrl);
-        } catch (settingsError) {
-          console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
+  const acceptHeader = req.headers['accept'] || '';
+  if (acceptHeader.includes('text/markdown')) {
+    const markdownBody = generateMarkdownForPage(req.path, baseUrl);
+    const tokenCount = estimateMarkdownTokens(markdownBody);
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('X-Markdown-Tokens', String(tokenCount));
+    return res.send(markdownBody);
+  }
+
+  try {
+    let baseHtml = '';
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction) {
+      baseHtml = cachedIndexHtml || fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
+    } else {
+      const indexPath = path.join(process.cwd(), 'index.html');
+      if (fs.existsSync(indexPath)) {
+        baseHtml = fs.readFileSync(indexPath, 'utf8');
+        const viteInstance = req.app.locals.vite;
+        if (viteInstance) {
+          baseHtml = await viteInstance.transformIndexHtml(req.originalUrl || req.url, baseHtml);
         }
-
-        res.type('html').send(finalHtml);
-      } catch (err) {
-        console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
-        try {
-          const baseHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
-          const nonce = res.locals.nonce || '';
-          res.type('html').send(baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`) );
-        } catch (readErr) {
-          console.error('[SEO] Critical: Could not read index.html:', readErr);
-          res.status(500).send('Internal Server Error');
-        }
+      } else {
+        throw new Error('Root index.html not found');
       }
     }
-  });
-}
+
+    const nonce = res.locals.nonce || '';
+    let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
+    noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
+
+    let finalHtml = noncedHtml;
+    try {
+      const settings = await getSystemSettings();
+      finalHtml = await injectSEOTags(noncedHtml, settings, req, baseUrl);
+    } catch (settingsError) {
+      console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
+    }
+
+    res.type('html').send(finalHtml);
+  } catch (err) {
+    console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
+    try {
+      const isProduction = process.env.NODE_ENV === 'production';
+      const indexPath = isProduction ? path.join(distPath, 'index.html') : path.join(process.cwd(), 'index.html');
+      const baseHtml = fs.readFileSync(indexPath, 'utf8');
+      const nonce = res.locals.nonce || '';
+      res.type('html').send(baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`) );
+    } catch (readErr) {
+      console.error('[SEO] Critical: Could not read index.html fallback:', readErr);
+      res.status(500).send('Internal Server Error');
+    }
+  }
+});
 
 export default app;

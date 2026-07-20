@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 interface Article {
   id: number;
@@ -39,6 +40,7 @@ interface ArticleComment {
 export const BlogPage: React.FC = () => {
   const { language, token, user, t, theme } = useAppContext();
   const navigate = useNavigate();
+  const { slug } = useParams<{ slug?: string }>();
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [comments, setComments] = useState<ArticleComment[]>([]);
@@ -60,6 +62,17 @@ export const BlogPage: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCommentsOpenOnMobile, setIsCommentsOpenOnMobile] = useState(false);
   const [mobileCategoryPage, setMobileCategoryPage] = useState(0);
+  const [showAdPopup, setShowAdPopup] = useState(false);
+
+  useEffect(() => {
+    const isAdDismissed = localStorage.getItem('hide_blog_ad');
+    if (!isAdDismissed) {
+      const timer = setTimeout(() => {
+        setShowAdPopup(true);
+      }, 7000); // Trigger 7 seconds after load
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const categories = [
     { id: 'All', labelEn: 'All Sectors', labelAr: 'كل الاقسام' },
@@ -195,6 +208,46 @@ export const BlogPage: React.FC = () => {
     fetchArticles();
   }, []);
 
+  useEffect(() => {
+    if (slug) {
+      setCommentsLoading(true);
+      setUserRating(0);
+      fetch(`/api/blog/articles/${slug}`)
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error('Failed to load deep-linked article');
+        })
+        .then(data => {
+          setSelectedArticle(data.article);
+          setComments(data.comments);
+          // Sync back to list views and ratings counts
+          setArticles(prev => prev.map(a => a.id === data.article.id ? { 
+            ...a, 
+            views: data.article.views, 
+            avg_rating: data.article.avg_rating, 
+            ratings_count: data.article.ratings_count 
+          } : a));
+
+          if (token && data.article) {
+            fetch(`/api/blog/articles/${data.article.id}/user-rating`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(ratingRes => {
+                if (ratingRes.ok) return ratingRes.json();
+              })
+              .then(rData => {
+                if (rData) setUserRating(rData.rating || 0);
+              })
+              .catch(err => console.error(err));
+          }
+        })
+        .catch(err => console.error(err))
+        .finally(() => setCommentsLoading(false));
+    } else {
+      setSelectedArticle(null);
+    }
+  }, [slug, token]);
+
   // Fetch article detailed (increment views too on server)
   const handleSelectArticle = async (article: Article) => {
     setSelectedArticle(article);
@@ -321,6 +374,7 @@ export const BlogPage: React.FC = () => {
   const handleBackToList = () => {
     setSelectedArticle(null);
     setComments([]);
+    navigate('/blog');
   };
 
   const isRtl = language === 'ar';
@@ -660,7 +714,7 @@ export const BlogPage: React.FC = () => {
                                   ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
                                   : 'bg-white border-gray-150 hover:border-emerald-500/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
                               }`}
-                              onClick={() => handleSelectArticle(article)}
+                              onClick={() => navigate(`/blog/${article.slug}`)}
                             >
                               <div className="h-40 relative overflow-hidden bg-black/45 shrink-0 select-none">
                                 {article.image_url ? (
@@ -755,7 +809,7 @@ export const BlogPage: React.FC = () => {
                                 className={`rounded-xl overflow-hidden border flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                   isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                                 }`}
-                                onClick={() => handleSelectArticle(article)}
+                                onClick={() => navigate(`/blog/${article.slug}`)}
                               >
                                 <div className="h-36 sm:h-44 relative bg-black/40 shrink-0 select-none">
                                   {article.image_url ? (
@@ -795,7 +849,7 @@ export const BlogPage: React.FC = () => {
                               className={`p-3.5 rounded-xl border flex gap-3.5 cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                               }`}
-                              onClick={() => handleSelectArticle(article)}
+                              onClick={() => navigate(`/blog/${article.slug}`)}
                             >
                               <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-white/5 relative">
                                 {article.image_url ? (
@@ -1015,7 +1069,7 @@ export const BlogPage: React.FC = () => {
                         {finalRelated.map(item => (
                           <div
                             key={item.id}
-                            onClick={() => handleSelectArticle(item)}
+                            onClick={() => navigate(`/blog/${item.slug}`)}
                             className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-emerald-500/5 transition-all duration-300"
                           >
                             <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-white/5">
@@ -1681,6 +1735,86 @@ export const BlogPage: React.FC = () => {
           </span>
         </div>
       </footer>
+
+      {/* Dynamic Pop-up Ad */}
+      <AnimatePresence>
+        {showAdPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-lg w-full max-w-md p-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => {
+                  setShowAdPopup(false);
+                  localStorage.setItem('hide_blog_ad', 'true');
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-all duration-300"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex flex-col gap-4">
+                {/* Promo Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
+                    {language === 'ar' ? 'نشرة النخبة الفنية' : 'Elite Insight Club'}
+                  </span>
+                  <div className="h-px flex-1 bg-[var(--border-main)]/50" />
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                    <BookOpen size={24} />
+                  </div>
+                  <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                    <h3 className="text-sm font-black text-[var(--text-primary)]">
+                      {language === 'ar' ? 'كن أول من يحصل على تحليلات الخبراء الاستراتيجية' : 'Join Elite Technical Newsletter'}
+                    </h3>
+                    <p className="text-xs text-gray-500 leading-relaxed font-sans">
+                      {language === 'ar'
+                        ? 'اشترك للحصول على توصيات تداول مؤتمتة وتقارير الماكرو العميقة أسبوعياً مباشرة إلى بريدك الإلكتروني.'
+                        : 'Receive automated trading indicator setups and deep macro research articles weekly direct to your inbox.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_blog_ad', 'true');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all duration-300 border border-[var(--border)]"
+                  >
+                    {language === 'ar' ? 'ليس الآن' : 'Later'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAdPopup(false);
+                      localStorage.setItem('hide_blog_ad', 'true');
+                      toast.success(language === 'ar' ? 'تم تسجيل بريدك بنجاح لتلقي نشرة النخبة!' : 'Successfully subscribed to Elite Insights!');
+                    }}
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-all duration-300 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                  >
+                    <span>{language === 'ar' ? 'انضمام فوري' : 'Subscribe Now'}</span>
+                    <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       </div>
     </div>
   );
