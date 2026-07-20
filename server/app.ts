@@ -490,12 +490,12 @@ function escapeHtmlAttribute(str: string): string {
 }
 
 // A-4: baseUrl is now passed in by the caller — no redundant getBaseUrl(req) inside.
-function injectSEOTags(
+async function injectSEOTags(
   html: string,
   settings: any,
   req: express.Request,
   baseUrl: string,
-): string {
+): Promise<string> {
   if (!settings) return html;
 
   const preferredLang = getPreferredLanguage(req);
@@ -519,26 +519,109 @@ function injectSEOTags(
   let currentDesc = defaultDesc;
   let currentKeywords = defaultKeywords;
   let currentSiteName = defaultSiteName;
-
-  if (preferredLang === 'en') {
-    currentTitle = seoNameEn || seoNameAr || defaultSiteName;
-    currentDesc = descEn || descAr || defaultDesc;
-    currentKeywords = keywordsEn || keywordsAr || defaultKeywords;
-    currentSiteName = seoNameEn || seoNameAr || defaultSiteName;
-  } else if (preferredLang === 'ar') {
-    currentTitle = seoNameAr || seoNameEn || defaultSiteName;
-    currentDesc = descAr || descEn || defaultDesc;
-    currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = seoNameAr || seoNameEn || defaultSiteName;
-  } else {
-    const langKey = preferredLang;
-    currentTitle = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
-    currentDesc = settings[`seo_description_${langKey}`] || settings[`site_description_${langKey}`] || descAr || descEn || defaultDesc;
-    currentKeywords = settings[`keywords_${langKey}`] || keywordsAr || keywordsEn || defaultKeywords;
-    currentSiteName = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
-  }
-
   let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
+
+  const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
+
+  // Dynamic check and fetching for public subroutes
+  if (normalizedPath.startsWith('/share/')) {
+    const shareId = normalizedPath.split('/share/')[1];
+    if (shareId && /^[a-f0-9]+$/i.test(shareId)) {
+      try {
+        const snapRes = await pool.query('SELECT title, content, model_name FROM shared_snapshots WHERE id = $1', [shareId]);
+        if (snapRes.rows.length > 0) {
+          const snapshot = snapRes.rows[0];
+          currentTitle = snapshot.title || (preferredLang === 'ar' ? 'لقطة تحليل استراتيجي - بيربليكستا' : 'Strategic Insight Snapshot - Perplexta');
+          let cleanContent = (snapshot.content || '').replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          currentSiteName = `${snapshot.model_name || 'Perplexta Intelligence'} Shared Snapshot`;
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to fetch shared snapshot details:', err);
+      }
+    }
+  } else if (normalizedPath.startsWith('/blog/')) {
+    const slug = normalizedPath.split('/blog/')[1];
+    if (slug) {
+      try {
+        const blogRes = await pool.query('SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE slug = $1', [slug]);
+        if (blogRes.rows.length > 0) {
+          const article = blogRes.rows[0];
+          currentTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
+          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (article.image_url) {
+            imageUrl = article.image_url;
+          }
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to fetch blog article details:', err);
+      }
+    }
+  } else if (normalizedPath.startsWith('/forum/')) {
+    const postIdStr = normalizedPath.split('/forum/')[1];
+    const postId = parseInt(postIdStr, 10);
+    if (!isNaN(postId)) {
+      try {
+        const forumRes = await pool.query('SELECT title, content, image_url FROM forum_posts WHERE id = $1', [postId]);
+        if (forumRes.rows.length > 0) {
+          const post = forumRes.rows[0];
+          currentTitle = post.title;
+          let cleanContent = post.content || '';
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (post.image_url) {
+            imageUrl = post.image_url;
+          }
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to fetch forum post details:', err);
+      }
+    }
+  } else if (normalizedPath.startsWith('/marketplace/')) {
+    const itemIdStr = normalizedPath.split('/marketplace/')[1];
+    const itemId = parseInt(itemIdStr, 10);
+    if (!isNaN(itemId)) {
+      try {
+        const marketRes = await pool.query('SELECT title_en, title_ar, description_en, description_ar, image_url FROM marketplace_items WHERE id = $1', [itemId]);
+        if (marketRes.rows.length > 0) {
+          const item = marketRes.rows[0];
+          currentTitle = preferredLang === 'ar' ? item.title_ar : item.title_en;
+          let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
+          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          if (item.image_url) {
+            imageUrl = item.image_url;
+          }
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to fetch marketplace item details:', err);
+      }
+    }
+  } else {
+    if (preferredLang === 'en') {
+      currentTitle = seoNameEn || seoNameAr || defaultSiteName;
+      currentDesc = descEn || descAr || defaultDesc;
+      currentKeywords = keywordsEn || keywordsAr || defaultKeywords;
+      currentSiteName = seoNameEn || seoNameAr || defaultSiteName;
+    } else if (preferredLang === 'ar') {
+      currentTitle = seoNameAr || seoNameEn || defaultSiteName;
+      currentDesc = descAr || descEn || defaultDesc;
+      currentKeywords = keywordsAr || keywordsEn || defaultKeywords;
+      currentSiteName = seoNameAr || seoNameEn || defaultSiteName;
+    } else {
+      const langKey = preferredLang;
+      currentTitle = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
+      currentDesc = settings[`seo_description_${langKey}`] || settings[`site_description_${langKey}`] || descAr || descEn || defaultDesc;
+      currentKeywords = settings[`keywords_${langKey}`] || keywordsAr || keywordsEn || defaultKeywords;
+      currentSiteName = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
+    }
+  }
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
     imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
   }
@@ -561,10 +644,13 @@ function injectSEOTags(
   const escFavicon  = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
-
   const PUBLIC_WHITELIST = ['/', '/subscription', '/forum', '/marketplace', '/blog', '/terms', '/privacy', '/about'];
-  const isPublicRoute = PUBLIC_WHITELIST.includes(normalizedPath);
+  const isPublicRoute = 
+    PUBLIC_WHITELIST.includes(normalizedPath) ||
+    normalizedPath.startsWith('/share/') ||
+    normalizedPath.startsWith('/blog/') ||
+    normalizedPath.startsWith('/forum/') ||
+    normalizedPath.startsWith('/marketplace/');
 
   let metaBlock = '';
 
@@ -695,7 +781,7 @@ if (process.env.NODE_ENV === "production") {
         let finalHtml = noncedHtml;
         try {
           const settings = await getSystemSettings();
-          finalHtml = injectSEOTags(noncedHtml, settings, req, baseUrl);
+          finalHtml = await injectSEOTags(noncedHtml, settings, req, baseUrl);
         } catch (settingsError) {
           console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
         }

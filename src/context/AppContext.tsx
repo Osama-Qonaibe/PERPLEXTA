@@ -3191,6 +3191,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             siteNameAr: settingsData.site_name_ar || '',
             siteDescription: settingsData.site_description_en || '',
             siteDescriptionAr: settingsData.site_description_ar || '',
+            seoSiteNameEn: settingsData.seo_site_name_en || '',
+            seoSiteNameAr: settingsData.seo_site_name_ar || '',
             seoDescriptionEn: settingsData.seo_description_en || '',
             seoDescriptionAr: settingsData.seo_description_ar || '',
             keywordsEn: settingsData.keywords_en || '',
