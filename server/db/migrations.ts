@@ -157,7 +157,7 @@ export async function ensureColumn(
       
       await client.query(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`);
       if (defaultVal !== undefined && defaultVal !== null) {
-        // تطبيق الـ default بـ UPDATE بدلاً من دمجه في DDL
+        // Apply default via UPDATE instead of combining in DDL
         await client.query(
           `ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DEFAULT ${defaultVal}`
         );
@@ -391,7 +391,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
-        const lockKey = Buffer.from(name).reduce((acc, c) => acc + c, 0); // رقم فريد لكل migration
+        const lockKey = Buffer.from(name).reduce((acc, c) => acc + c, 0); // Unique lock key for each migration
         await client.query(`SELECT pg_advisory_lock($1)`, [lockKey]);
         try {
           const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
@@ -731,7 +731,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
       await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS password_resets_pkey ON password_resets(id)`);
       
-      await tx.query(`
+      const sTarget = typeof securityClient !== 'undefined' ? (securityClient || client) : client;
+      await sTarget.query(`
         CREATE TABLE IF NOT EXISTS token_blacklist (
           id SERIAL PRIMARY KEY,
           token TEXT UNIQUE NOT NULL,
@@ -739,6 +740,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+    });
+
+    // MIGRATION: Fill Gap v12
+    await runVersioned('v12_dummy_migration', 'Placeholder to fix migration sequence gap', async (tx) => {
+      // Intentionally left blank to resolve sequence gap
     });
 
     // MIGRATION: Payment Gateways Settings Expansion v13

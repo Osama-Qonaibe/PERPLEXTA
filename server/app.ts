@@ -115,8 +115,6 @@ app.use((req: any, res: any, next: any) => {
     "https://*.googleapis.com"
   ];
 
-  scriptSrcDirectives.push("'unsafe-inline'", "'unsafe-eval'");
-
   helmet({
     contentSecurityPolicy: {
       directives: {
@@ -146,7 +144,7 @@ app.use(cors({
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    if (origin.endsWith('.run.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    if (origin.endsWith('.run.app')) {
       return callback(null, true);
     }
     callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
@@ -237,17 +235,25 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
     const ext = path.extname(filename).toLowerCase();
     const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.3gp', '.ogg', '.mp3', '.wav', '.m4a'];
-    if (publicExtensions.includes(ext)) return res.sendFile(resolvedPath);
 
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
+    if (!token && req.query.token) token = req.query.token as string;
     if (token) {
       token = token.trim();
       if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     }
+
     if (!token || token === 'null' || token === 'undefined') {
-      return res.status(401).json({ error: 'Unauthorized: Authentication is required to download this document.' });
+      const referer = req.headers.referer || '';
+      const isFromApp = referer.includes('.run.app') || referer.includes('localhost') || referer.includes('127.0.0.1');
+      if (publicExtensions.includes(ext) && isFromApp) {
+        return res.sendFile(resolvedPath);
+      }
+      return res.status(401).json({ error: 'Unauthorized: Authentication is required to access this file.' });
     }
+
+
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
