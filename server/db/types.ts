@@ -220,6 +220,21 @@ export interface SupportTicketReply {
   created_at: Date | string;
 }
 
+export interface RouteSeoSetting {
+  id: number;
+  route: string;
+  title_ar: string | null;
+  title_en: string | null;
+  description_ar: string | null;
+  description_en: string | null;
+  keywords_ar: string | null;
+  keywords_en: string | null;
+  og_image_url: string | null;
+  is_active: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
 export interface SystemSettings {
   id: number;
   site_name_en: string;
@@ -702,3 +717,125 @@ export interface MarketplacePurchase {
   download_token: string | null;
   created_at: Date | string;
 }
+
+// ============================================================
+// Community Bulletin Board Types (User Ads)
+// ============================================================
+
+export interface BulletinPage {
+  id: number;
+  user_id: number;
+  name: string;
+  slug?: string;
+  category: string;
+  city: string;
+  address?: string | null;
+  description: string;
+  avatar_url: string;
+  cover_url: string;
+  whatsapp_number?: string | null;
+  phone_number?: string | null;
+  website_url?: string | null;
+  is_verified: boolean;
+  followers_count: number;
+  ads_count: number;
+  user_is_following?: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface BulletinInquiry {
+  id: number;
+  page_id?: number | null;
+  ad_id?: number | null;
+  sender_id: number;
+  sender_name: string;
+  sender_phone?: string | null;
+  message: string;
+  status: 'unread' | 'read';
+  ad_title?: string;
+  page_name?: string;
+  created_at: Date | string;
+}
+
+export interface BulletinAd {
+  id: number;
+  user_id: number;
+  page_id?: number | null;
+  page_name?: string | null;
+  page_avatar?: string | null;
+  page_cover?: string | null;
+  page_is_verified?: boolean;
+  location_city?: string | null;
+  author_name?: string;
+  author_avatar?: string;
+  title: string;
+  description: string;
+  image_url: string;
+  whatsapp_number: string | null;
+  phone_number?: string | null;
+  video_url?: string | null;
+  target_url: string | null;
+  hashtags: string[];
+  category: string;
+  price_paid: number;
+  duration_days: number;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  rejection_reason?: string | null;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  clicks_count: number;
+  impressions_count: number;
+  user_has_liked?: boolean;
+  user_has_saved?: boolean;
+  is_ai_generated?: boolean;
+  feeling?: string | null;
+  tagged_users?: string[] | null;
+  audience?: 'public' | 'friends' | 'only_me' | string;
+  ad_format?: 'post' | 'reel' | 'story' | string;
+  quick_questions?: string[] | null;
+  is_boosted?: boolean;
+  boosted_until?: Date | string | null;
+  boost_tier?: string | null;
+  boost_price?: number;
+  starts_at?: Date | string | null;
+  expires_at?: Date | string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface BulletinAdComment {
+  id: number;
+  ad_id: number;
+  user_id: number;
+  author_name: string;
+  author_avatar: string | null;
+  content: string;
+  parent_id?: number | null;
+  created_at: Date | string;
+}
+
+
+export interface Advertisement {
+  id: number;
+  title_ar: string;
+  title_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  image_url: string;
+  target_url: string;
+  sponsor_name: string | null;
+  badge_text_ar: string | null;
+  badge_text_en: string | null;
+  position: string;
+  display_order: number;
+  is_active: boolean;
+  click_count: number;
+  impression_count: number;
+  start_date: Date | string | null;
+  end_date: Date | string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+

@@ -1,38 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, Plus, BookOpen, MessageSquare, Trash2, Send, ArrowLeft, Image, Edit, FileText, ChevronRight, Upload, ShoppingBag, Monitor, Check, X, Clock, Settings, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Plus, BookOpen, Trash2, Edit, ChevronRight, ShoppingBag, Monitor, ArrowLeft, FileText, Upload, Send } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MarketplaceManagementView } from '../components/MarketplaceManagementView';
 import { ActionConfirmationModal } from '../components/ActionConfirmationModal';
 import { toast } from 'sonner';
-
-interface Category {
-  id: number;
-  slug: string;
-  name_en: string;
-  name_ar: string;
-  description_en: string;
-  description_ar: string;
-  icon?: string;
-  color?: string;
-  max_posts_per_day?: number;
-  require_approval?: boolean;
-  post_count: number;
-}
-
-interface PendingPost {
-  id: number;
-  category_id: number;
-  user_id: number;
-  title: string;
-  content: string;
-  category_name_en: string;
-  category_name_ar: string;
-  author_name?: string;
-  author_avatar?: string | null;
-  created_at: string;
-  status: string;
-}
 
 interface Article {
   id: number;
@@ -49,10 +21,9 @@ interface Article {
 
 export const AdminCommunityPage: React.FC = () => {
   const { language, token, user, theme, t, isMobile } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'blog' | 'forum' | 'marketplace'>('blog');
+  const [activeTab, setActiveTab] = useState<'blog' | 'marketplace'>('blog');
   
   // Lists
-  const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -202,57 +173,12 @@ export const AdminCommunityPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // New Forum Category Form state
-  const [catNameEn, setCatNameEn] = useState('');
-  const [catNameAr, setCatNameAr] = useState('');
-  const [catDescEn, setCatDescEn] = useState('');
-  const [catDescAr, setCatDescAr] = useState('');
-  const [creatingCategory, setCreatingCategory] = useState(false);
-
-  const [catSlug, setCatSlug] = useState('');
-  const [catIcon, setCatIcon] = useState('MessageSquare');
-  const [catColor, setCatColor] = useState('emerald');
-  const [catMaxPosts, setCatMaxPosts] = useState<number>(0);
-  const [catRequireApproval, setCatRequireApproval] = useState<boolean>(false);
-  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
-
-  // Pending Posts state
-  const [pendingPosts, setPendingPosts] = useState<PendingPost[]>([]);
-  const [loadingPendingPosts, setLoadingPendingPosts] = useState(false);
-  const [submittingPendingId, setSubmittingPendingId] = useState<number | null>(null);
-
-  const fetchPendingPosts = async () => {
-    if (!token) return;
-    setLoadingPendingPosts(true);
-    try {
-      const res = await fetch('/api/forum/admin/pending-posts', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (res.ok) {
-        setPendingPosts(await res.json());
-      }
-    } catch (err) {
-      console.error('Failed to fetch pending posts:', err);
-    } finally {
-      setLoadingPendingPosts(false);
-    }
-  };
-
   // Fetch lists
   const refreshData = async () => {
     setLoading(true);
     try {
-      const [resCat, resArt] = await Promise.all([
-        fetch('/api/forum/categories'),
-        fetch('/api/blog/articles')
-      ]);
-      if (resCat.ok) setCategories(await resCat.json());
+      const resArt = await fetch('/api/blog/articles');
       if (resArt.ok) setArticles(await resArt.json());
-      if (token && activeTab === 'forum') {
-        fetchPendingPosts();
-      }
     } catch (err) {
       console.error('Failed to sync admin lists:', err);
     } finally {
@@ -313,123 +239,6 @@ export const AdminCommunityPage: React.FC = () => {
     }
   };
 
-  // Create or Update Category
-  const handleCreateOrUpdateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setCreatingCategory(true);
-
-    const isEditing = editingCategoryId !== null;
-    const url = isEditing ? `/api/forum/categories/${editingCategoryId}` : '/api/forum/categories';
-    const method = isEditing ? 'PUT' : 'POST';
-
-    // Auto slug derivation if empty
-    const derivedSlug = catSlug.trim() || catNameEn.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          slug: derivedSlug,
-          name_en: catNameEn.trim(),
-          name_ar: catNameAr.trim(),
-          description_en: catDescEn.trim(),
-          description_ar: catDescAr.trim(),
-          icon: catIcon,
-          color: catColor,
-          max_posts_per_day: Number(catMaxPosts),
-          require_approval: catRequireApproval
-        })
-      });
-      if (res.ok) {
-        toast.success(
-          language === 'ar' 
-            ? (isEditing ? 'تم تحديث قسم المناقشة بنجاح!' : 'تم إنشاء قسم المناقشة بنجاح!') 
-            : (isEditing ? 'Discussion zone updated successfully!' : 'Discussion zone created successfully!')
-        );
-        cancelEditCategory();
-        refreshData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || err.error || (language === 'ar' ? 'فشلت العملية' : 'Transaction failed'));
-      }
-    } catch (err) {
-      console.error('Failed to submit category:', err);
-      toast.error(language === 'ar' ? 'حدث خطأ غير متوقع بالاتصال بالخادم.' : 'Server connection error.');
-    } finally {
-      setCreatingCategory(false);
-    }
-  };
-
-  const startEditCategory = (cat: Category) => {
-    setEditingCategoryId(cat.id);
-    setCatSlug(cat.slug);
-    setCatNameEn(cat.name_en);
-    setCatNameAr(cat.name_ar);
-    setCatDescEn(cat.description_en || '');
-    setCatDescAr(cat.description_ar || '');
-    setCatIcon(cat.icon || 'MessageSquare');
-    setCatColor(cat.color || 'emerald');
-    setCatMaxPosts(cat.max_posts_per_day || 0);
-    setCatRequireApproval(!!cat.require_approval);
-
-    // Smooth scroll back to form
-    const formSec = document.getElementById('forum-category-form-section');
-    if (formSec) {
-      formSec.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const cancelEditCategory = () => {
-    setEditingCategoryId(null);
-    setCatSlug('');
-    setCatNameEn('');
-    setCatNameAr('');
-    setCatDescEn('');
-    setCatDescAr('');
-    setCatIcon('MessageSquare');
-    setCatColor('emerald');
-    setCatMaxPosts(0);
-    setCatRequireApproval(false);
-  };
-
-  // Moderate Post (Approve/Reject pending forum posts)
-  const handleModeratePost = async (id: number, status: 'approved' | 'rejected') => {
-    if (!token) return;
-    setSubmittingPendingId(id);
-    try {
-      const res = await fetch(`/api/forum/posts/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
-      if (res.ok) {
-        toast.success(
-          language === 'ar' 
-            ? (status === 'approved' ? 'تم الموافقة على المنشور ونشره بنجاح في المنتدى!' : 'تم رفض نشر المنشور وتنبيه الكاتب.')
-            : (status === 'approved' ? 'Post approved and fully published online!' : 'Post rejected and author notified.')
-        );
-        setPendingPosts(prev => prev.filter(p => p.id !== id));
-        refreshData();
-      } else {
-        const err = await res.json();
-        toast.error(err.error || 'Failed to moderate');
-      }
-    } catch (err) {
-      console.error('Moderation error:', err);
-      toast.error(language === 'ar' ? 'فشلت معالجة طلب الرقابة.' : 'Moderation control failed.');
-    } finally {
-      setSubmittingPendingId(null);
-    }
-  };
-
   // Delete Article (using Custom Confirmation Modal)
   const handleDeleteArticle = (id: number) => {
     openConfirm(
@@ -456,36 +265,6 @@ export const AdminCommunityPage: React.FC = () => {
           }
         } catch (err) {
           console.error('Failed to delete article:', err);
-          toast.error(language === 'ar' ? 'حدث خطأ أثناء الاتصال بالخادم.' : 'Server connection failed.');
-        }
-      },
-      'danger'
-    );
-  };
-
-  // Delete Category (using Custom Confirmation Modal)
-  const handleDeleteCategory = (id: number) => {
-    openConfirm(
-      'تأكيد حذف القسم', 'Confirm Category Deletion',
-      'هل تود الحذف بالتأكيد؟ سيؤدي ذلك أيضاً إلى إتلاف كافة مواضيع هذا القسم.', 'Are you sure? This will delete all posts contained in this category.',
-      async () => {
-        if (!token) return;
-        try {
-          const res = await fetch(`/api/forum/categories/${id}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          if (res.ok) {
-            toast.success(language === 'ar' ? 'تم حذف القسم بنجاح!' : 'Category deleted successfully!');
-            refreshData();
-          } else {
-            const err = await res.json();
-            toast.error(err.message || err.error || (language === 'ar' ? 'فشل الحذف' : 'Failed to delete'));
-          }
-        } catch (err) {
-          console.error('Failed to delete category:', err);
           toast.error(language === 'ar' ? 'حدث خطأ أثناء الاتصال بالخادم.' : 'Server connection failed.');
         }
       },
@@ -551,8 +330,8 @@ export const AdminCommunityPage: React.FC = () => {
             </h1>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 opacity-80">
               {isRtl 
-                ? 'المركز الأمني للمقالات، المنتدى التفاعلي، وبضائع الماركت بليس' 
-                : 'MODERATION CONSOLE FOR FORUM, BLOG, & MARKETPLACE'}
+                ? 'المركز الأمني للمقالات وبضائع الماركت بليس' 
+                : 'MODERATION CONSOLE FOR BLOG & MARKETPLACE'}
             </p>
           </div>
         </div>
@@ -575,17 +354,6 @@ export const AdminCommunityPage: React.FC = () => {
               {isRtl ? 'المقالات والأخبار' : 'Publish Articles'}
             </span>
             <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-emerald-500' : 'text-gray-400'}`} />
-          </button>
-
-          <button
-            onClick={() => setActiveTab('forum')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'forum' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
-          >
-            <span className="flex items-center gap-2">
-              <MessageSquare size={16} className={`transition-all duration-300 ${activeTab === 'forum' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
-              {isRtl ? 'أقسام المنتدى' : 'Forum Categories'}
-            </span>
-            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'forum' ? 'text-emerald-500' : 'text-gray-400'}`} />
           </button>
 
           <button
@@ -877,378 +645,6 @@ export const AdminCommunityPage: React.FC = () => {
                   <p className="text-xs text-gray-500 text-center select-none py-4 font-sans font-medium">{isRtl ? 'لا توجد مقالات منشورة بعد.' : 'No articles published yet.'}</p>
                 )}
               </div>
-            </div>
-          ) : activeTab === 'forum' ? (
-            <div className="space-y-10 font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
-              
-              {/* SECTION 1: POST APPROVAL MODERATION QUEUE */}
-              <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-6 sm:p-8 select-none">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100/5 pb-4 mb-6">
-                  <div>
-                    <h2 className="text-sm font-black text-[var(--test-primary)] flex items-center gap-2">
-                      <ShieldCheck className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={18} />
-                      {isRtl ? 'صندوق الرقابة والموافقة على المنشورات' : 'Security Moderation & Post Approvals'}
-                    </h2>
-                    <p className="text-[10px] text-gray-400 mt-1 font-bold">
-                      {isRtl 
-                        ? 'المنشورات المعلقة التي تتطلب مراجعة إدارية وتدقيقاً أمنياً قبل العرض العام' 
-                        : 'Review pending articles and community threads before they are published globally'}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-[4px] bg-amber-500/10 text-amber-500 border border-amber-500/15">
-                    {pendingPosts.length} {isRtl ? 'معلق' : 'PENDING'}
-                  </span>
-                </div>
-
-                {loadingPendingPosts ? (
-                  <div className="space-y-4">
-                    <div className="h-20 bg-[var(--bg-base)] rounded-lg animate-pulse" />
-                    <div className="h-20 bg-[var(--bg-base)] rounded-lg animate-pulse" />
-                  </div>
-                ) : pendingPosts.length > 0 ? (
-                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
-                    {pendingPosts.map(post => (
-                      <div key={post.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-lg hover:border-amber-500/20 transition-all duration-300">
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                          <div className="space-y-1 flex-1">
-                            <span className="inline-block text-[8px] font-mono font-bold uppercase px-2 py-0.5 rounded-[3px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
-                              {isRtl ? post.category_name_ar : post.category_name_en}
-                            </span>
-                            <h4 className="text-[13px] font-black text-[var(--text-primary)] mt-1.5 leading-tight">{post.title}</h4>
-                            <p className="text-[11px] text-gray-400 font-sans mt-2 line-clamp-2 leading-relaxed bg-[var(--bg-secondary)] p-2.5 rounded border border-gray-100/5 whitespace-pre-line" style={{ maxHeight: '100px', overflowY: 'auto' }}>
-                              {post.content}
-                            </p>
-                            <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-mono pt-1">
-                              <span className="text-gray-400 font-bold">{post.author_name || (isRtl ? 'مستخدم المنصة' : 'Platform User')}</span>
-                              <span>•</span>
-                              <span>ID: {post.id}</span>
-                              <span>•</span>
-                              <Clock size={10} className="text-gray-500 inline" />
-                              <span>{new Date(post.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex sm:flex-col gap-2 shrink-0 self-end sm:self-center w-full sm:w-auto">
-                            <button
-                              disabled={submittingPendingId === post.id}
-                              onClick={() => handleModeratePost(post.id, 'approved')}
-                              className="flex-1 sm:flex-none h-9 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-300"
-                              title={isRtl ? 'موافقة ونشر الآن' : 'Approve & Publish'}
-                            >
-                              <Check size={12} />
-                              <span>{isRtl ? 'موافقة ونشر' : 'Approve'}</span>
-                            </button>
-                            <button
-                              disabled={submittingPendingId === post.id}
-                              onClick={() => handleModeratePost(post.id, 'rejected')}
-                              className="flex-1 sm:flex-none h-9 px-4 rounded-[4px] bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.4)] transition-all duration-300"
-                              title={isRtl ? 'رفض الطلب وحذفه' : 'Reject & Delete'}
-                            >
-                              <X size={12} />
-                              <span>{isRtl ? 'رفض وحظر' : 'Reject'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-32 bg-[var(--bg-base)] border border-[var(--border-main)] border-dashed rounded-lg flex flex-col items-center justify-center text-center p-4">
-                    <ShieldCheck size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] mb-2" />
-                    <p className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">{isRtl ? 'صندوق الرقابة خالٍ بالكامل!' : 'Moderation Clear!'}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">{isRtl ? 'جميع المنشورات مراجعة وموافقة عليها بنجاح بموجب السياسات.' : 'All pending student and advisor community posts are approved.'}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* GRID CONFIGURATION: FORM ON LEFT/RIGHT, CURRENT ON OTHER */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                
-                {/* SECTION 2: CATEGORY FORM SECTION (SLUG, DAILY POST LIMIT, APPROVAL TOGGLE) */}
-                <div id="forum-category-form-section" className="xl:col-span-5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-6 sm:p-8 scroll-mt-6">
-                  <h2 className="text-sm font-black text-[var(--text-primary)] mb-6 flex items-center justify-between border-b border-gray-100/5 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Settings className="text-emerald-500" size={18} />
-                      {editingCategoryId !== null 
-                        ? (isRtl ? 'تعديل هيكلية قسم المنتدى' : 'Modify Discussion Category')
-                        : (isRtl ? 'إدراج قسم منتدى جديد' : 'Provision Discussion Category')
-                      }
-                    </div>
-                    {editingCategoryId !== null && (
-                      <span className="text-[8px] font-mono font-bold text-amber-500 bg-amber-500/10 border border-amber-500/15 px-2 py-0.5 rounded uppercase animate-pulse">
-                        {isRtl ? 'تعديل نشط' : 'EDIT ACTIVE'}
-                      </span>
-                    )}
-                  </h2>
-
-                  <form onSubmit={handleCreateOrUpdateCategory} className="space-y-4">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'الرابط الفرعي (Slug - فريد ومقفل)' : 'Category Slug (Unique URL Segment)'}</label>
-                        <input
-                          type="text"
-                          required
-                          value={catSlug}
-                          onChange={(e) => setCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                          placeholder="e.g. indicators-trading"
-                          className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-mono"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'الاسم بالإنجليزية' : 'Name (English)'}</label>
-                          <input
-                            type="text"
-                            required
-                            value={catNameEn}
-                            onChange={(e) => setCatNameEn(e.target.value)}
-                            placeholder="Indicators Desk"
-                            className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-sans font-medium"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'الاسم بالعربية' : 'Name (Arabic)'}</label>
-                          <input
-                            type="text"
-                            required
-                            value={catNameAr}
-                            onChange={(e) => setCatNameAr(e.target.value)}
-                            placeholder="قسم المؤشرات الفنية"
-                            className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-sans font-medium"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'أيقونة Lucide' : 'Lucide Icon Name'}</label>
-                          <input
-                            type="text"
-                            value={catIcon}
-                            onChange={(e) => setCatIcon(e.target.value)}
-                            placeholder="e.g. Activity, MessageSquare"
-                            className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'لون التصنيف السداسي' : 'Theme Color Class'}</label>
-                          <select
-                            value={catColor}
-                            onChange={(e) => setCatColor(e.target.value)}
-                            className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-sans"
-                          >
-                            <option value="emerald">Emerald Green</option>
-                            <option value="indigo">Indigo Blue</option>
-                            <option value="amber">Amber Gold</option>
-                            <option value="rose">Rose Red</option>
-                            <option value="purple">Royal Purple</option>
-                            <option value="cyan">Cyan Aqua</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'الوصف بالإنجليزية' : 'Description (English)'}</label>
-                        <textarea
-                          required
-                          rows={2}
-                          value={catDescEn}
-                          onChange={(e) => setCatDescEn(e.target.value)}
-                          placeholder="e.g. Focus area on high-value algorithmic scripts..."
-                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm p-3 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">{isRtl ? 'الوصف بالعربية' : 'Description (Arabic)'}</label>
-                        <textarea
-                          required
-                          rows={2}
-                          value={catDescAr}
-                          onChange={(e) => setCatDescAr(e.target.value)}
-                          placeholder="مثال: نقاشات مخصصة لبرامج وكميات التداول الكمي..."
-                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm p-3 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
-                        />
-                      </div>
-
-                      {/* ADVANCED ADMIN LIMIT CONSTRAINTS */}
-                      <div className="bg-[var(--bg-base)] border border-[var(--border-main)] rounded-lg p-4 space-y-4">
-                        <span className="block text-[10px] font-mono font-bold uppercase text-gray-400 border-b border-gray-100/5 pb-1.5">
-                          {isRtl ? 'القيود الرقابية وسياسة النشر العادل' : 'Moderation & Quota Controls'}
-                        </span>
-                        
-                        <div>
-                          <label className="block text-[10px] font-mono uppercase text-gray-450 mb-1.5">
-                            {isRtl ? 'أقصى حد نشر يومي بالقسم اليوم (0: مفتوح)' : 'Maximum Daily Posts Limit (0 for Unlimited)'}
-                          </label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="number"
-                              min={0}
-                              value={catMaxPosts}
-                              onChange={(e) => setCatMaxPosts(Math.max(0, parseInt(e.target.value) || 0))}
-                              className="w-24 h-9 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-gray-450 font-sans">
-                              {isRtl 
-                                ? 'يحظر إيداع أي مواضيع جديدة بالقسم بعد بلوغ هذا العدد يومياً.' 
-                                : 'Blocks any additional post once this category-wide threshold is met for the day.'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <label className="flex items-center gap-3 select-none cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={catRequireApproval}
-                            onChange={(e) => setCatRequireApproval(e.target.checked)}
-                            className="w-4 h-4 rounded-[4px] bg-[var(--bg-secondary)] border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500"
-                          />
-                          <div className="text-xs font-sans font-medium">
-                            <span className="block font-bold text-[var(--text-primary)]">{isRtl ? 'موافقة الإدارة إجبارية قبل النشر' : 'Requires explicit admin approval'}</span>
-                            <span className="block text-[9px] text-gray-450">{isRtl ? 'المنشورات الجديدة ستذهب فوراً لخانة الرقابة ولن تظهر للعامة إلا بموافقتك.' : 'Incoming stories flow to approval queue and stay hidden until validated by staff.'}</span>
-                          </div>
-                        </label>
-                      </div>
-
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      {editingCategoryId !== null && (
-                        <button
-                          type="button"
-                          onClick={cancelEditCategory}
-                          className="flex-1 h-10 px-4 border border-[var(--border-main)] rounded-sm text-gray-400 hover:text-[var(--text-primary)] font-bold text-xs cursor-pointer transition-colors duration-200"
-                        >
-                          {isRtl ? 'إلغاء' : 'Cancel'}
-                        </button>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={creatingCategory || !catNameEn.trim() || !catNameAr.trim()}
-                        className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-sm font-bold text-white text-xs cursor-pointer transition-all duration-300 ${
-                          editingCategoryId !== null 
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-[1.01] active:scale-[0.99] hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]' 
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-[1.01] active:scale-[0.99] hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                        }`}
-                      >
-                        {creatingCategory ? (
-                          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            {editingCategoryId !== null ? <Edit size={13} /> : <Plus size={13} />}
-                            <span>
-                              {editingCategoryId !== null 
-                                ? (isRtl ? 'تحديث وتأكيد وحفظ التعديلات' : 'Commit Changes')
-                                : (isRtl ? 'إنشاء وتجهيز قسم المناقشة' : 'Create Category')
-                              }
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* SECTION 3: CURRENT CATEGORIES LIST WITH ACTIONS (EDIT/DELETE) */}
-                <div className="xl:col-span-7 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-6 sm:p-8 select-none">
-                  <h3 className="text-xs font-black uppercase tracking-tight text-[var(--text-primary)] mb-5 font-mono">
-                    {isRtl ? 'إدارة أقسام المناقشة الحالية وقيودها' : 'Categories Directory & Controls'} ({categories.length})
-                  </h3>
-
-                  {loading ? (
-                    <div className="h-32 bg-[var(--bg-base)] rounded-lg animate-pulse" />
-                  ) : categories.length > 0 ? (
-                    <div className="space-y-3">
-                      {categories.map(cat => {
-                        const isCatEditing = editingCategoryId === cat.id;
-                        return (
-                          <div 
-                            key={cat.id} 
-                            className={`p-4 border rounded-sm transition-all duration-300 ${
-                              isCatEditing 
-                                ? 'bg-amber-500/5 border-amber-500/30' 
-                                : 'bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/20'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0 space-y-1">
-                                <h4 className="text-[13px] font-black text-[var(--text-primary)]">
-                                  {isRtl ? cat.name_ar : cat.name_en}
-                                </h4>
-                                <p className="text-[10px] text-gray-450 line-clamp-2 leading-relaxed">
-                                  {isRtl ? cat.description_ar : cat.description_en}
-                                </p>
-                                
-                                {/* Meta Pill elements detailing controls in bilingual presentation */}
-                                <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                                  <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-[var(--bg-secondary)] border border-gray-100/5 text-gray-400">
-                                    slug: {cat.slug}
-                                  </span>
-                                  <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/15">
-                                    {cat.post_count} {isRtl ? 'منشورات' : 'posts'}
-                                  </span>
-                                  {cat.max_posts_per_day && cat.max_posts_per_day > 0 ? (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-amber-500/10 text-amber-500 border border-amber-500/15" title={isRtl ? 'الحد اليومي المتاح' : 'Daily post quota constraint'}>
-                                      {isRtl ? 'الحد:' : 'Limit:'} {cat.max_posts_per_day}/{isRtl ? 'يوم' : 'day'}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-gray-500/10 text-gray-400 border border-gray-100/5">
-                                      {isRtl ? 'الحد: مفتوح' : 'Limit: Unlimited'}
-                                    </span>
-                                  )}
-                                  {cat.require_approval ? (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-rose-500/10 text-rose-500 border border-rose-500/15 animate-pulse" title={isRtl ? 'مراجعة معلقة إلزامية' : 'Approval required'}>
-                                      {isRtl ? 'تصفية إجبارية' : 'Moderated'}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
-                                      {isRtl ? 'نشر فوري' : 'Automated'}
-                                    </span>
-                                  )}
-                                  {isCatEditing && (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[3px] bg-amber-500/20 text-amber-500 uppercase">
-                                      {isRtl ? 'يتم تعديله حالياً' : 'Editing State'}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                {/* Edit Category Structure triggers setting data to form state and scrolling */}
-                                <button
-                                  onClick={() => startEditCategory(cat)}
-                                  className={`p-1.5 transition-all duration-300 rounded-[4px] cursor-pointer ${
-                                    isCatEditing 
-                                      ? 'text-amber-550 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
-                                      : 'text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                                  }`}
-                                  title={isRtl ? 'تعديل سياسة وهيكلية القسم' : 'Modify Zone Rules & Structure'}
-                                >
-                                  <Edit size={13} />
-                                </button>
-                                
-                                <button
-                                  onClick={() => handleDeleteCategory(cat.id)}
-                                  className="p-1.5 text-gray-400 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all duration-300 rounded-[4px] cursor-pointer"
-                                  title={isRtl ? 'حذف القسم ومواضيعه كاملاً' : 'Purge Category'}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500 text-center py-6 font-sans font-medium">{isRtl ? 'لا توجد أقسام متوفرة بموقع النقاش.' : 'No categories created yet.'}</p>
-                  )}
-                </div>
-
-              </div>
-
             </div>
           ) : (
             <div className="space-y-8">

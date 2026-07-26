@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
@@ -13,7 +13,7 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { About } from './pages/About';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { ForumPage } from './pages/ForumPage';
+import { BulletinBoardPage } from './pages/BulletinBoardPage';
 import { BlogPage } from './pages/BlogPage';
 import { AdminCommunityPage } from './pages/AdminCommunityPage';
 import { MarketplacePage } from './pages/MarketplacePage';
@@ -139,6 +139,16 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const { theme, isAuthReady, siteSettings, language } = useAppContext();
   const location = useLocation();
+  const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/seo-routes')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setDbRouteSeo(data);
+      })
+      .catch(err => console.warn('[SEO] Failed to fetch route SEO settings:', err));
+  }, [location.pathname]);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -200,11 +210,17 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const resolvedKeywords = (language === 'ar' ? siteSettings?.keywordsAr : siteSettings?.keywordsEn) || '';
       const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
 
+      // Dynamic database route lookup
+      const routeMatch = dbRouteSeo.find(r => r.route === currentPath && r.is_active !== false);
+
+      const dbTitle = routeMatch ? (language === 'ar' ? (routeMatch.title_ar || routeMatch.title_en) : (routeMatch.title_en || routeMatch.title_ar)) : '';
+      const dbDesc = routeMatch ? (language === 'ar' ? (routeMatch.description_ar || routeMatch.description_en) : (routeMatch.description_en || routeMatch.description_ar)) : '';
+      const dbKeywords = routeMatch ? (language === 'ar' ? (routeMatch.keywords_ar || routeMatch.keywords_en) : (routeMatch.keywords_en || routeMatch.keywords_ar)) : '';
+      const dbOgImage = routeMatch?.og_image_url || resolvedOGImage;
+
       let pageTitlePart = '';
       if (currentPath === '/subscription') {
         pageTitlePart = language === 'ar' ? 'خطط الاشتراك والترقيات النخبة' : 'Premium Elite Subscription Plans';
-      } else if (currentPath === '/forum') {
-        pageTitlePart = language === 'ar' ? 'منتدى النقاش العام والمشاركة المعرفية' : 'Public Forum & AI Knowledge Sharing';
       } else if (currentPath === '/marketplace') {
         pageTitlePart = language === 'ar' ? 'متجر الأكواد ونخب مطالبات الذكاء الاصطناعي' : 'Elite Prompts & Advanced Software Marketplace';
       } else if (currentPath === '/blog') {
@@ -217,7 +233,15 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         pageTitlePart = language === 'ar' ? 'سياسة الخصوصية وحقوق حماية البيانات' : 'Strict Privacy & Data Security Regulations';
       }
 
-      const finalTitle = pageTitlePart ? `${pageTitlePart} | ${resolvedSiteName}` : `${resolvedSiteName} - ${language === 'ar' ? 'منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Sovereign High-Performance AI Analysis Platform'}`;
+      const defaultTitle = pageTitlePart ? `${pageTitlePart} | ${resolvedSiteName}` : `${resolvedSiteName} - ${language === 'ar' ? 'منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Sovereign High-Performance AI Analysis Platform'}`;
+      
+      const finalTitle = dbTitle || defaultTitle;
+      const finalDesc = dbDesc || resolvedDesc;
+      const finalKeywords = dbKeywords || resolvedKeywords;
+      const rawOGImage = dbOgImage;
+      const finalOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
+      const currentUrl = window.location.href;
+
       document.title = finalTitle;
 
       let metaDescription = document.querySelector('meta[name="description"]');
@@ -226,7 +250,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         metaDescription.setAttribute('name', 'description');
         document.head.appendChild(metaDescription);
       }
-      metaDescription.setAttribute('content', resolvedDesc);
+      metaDescription.setAttribute('content', finalDesc);
 
       let ogTitle = document.querySelector('meta[property="og:title"]');
       if (!ogTitle) {
@@ -242,7 +266,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         ogDesc.setAttribute('property', 'og:description');
         document.head.appendChild(ogDesc);
       }
-      ogDesc.setAttribute('content', resolvedDesc);
+      ogDesc.setAttribute('content', finalDesc);
 
       let ogImage = document.querySelector('meta[property="og:image"]');
       if (!ogImage) {
@@ -250,7 +274,23 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         ogImage.setAttribute('property', 'og:image');
         document.head.appendChild(ogImage);
       }
-      ogImage.setAttribute('content', resolvedOGImage);
+      ogImage.setAttribute('content', finalOGImage);
+
+      let ogUrl = document.querySelector('meta[property="og:url"]');
+      if (!ogUrl) {
+        ogUrl = document.createElement('meta');
+        ogUrl.setAttribute('property', 'og:url');
+        document.head.appendChild(ogUrl);
+      }
+      ogUrl.setAttribute('content', currentUrl);
+
+      let ogSiteName = document.querySelector('meta[property="og:site_name"]');
+      if (!ogSiteName) {
+        ogSiteName = document.createElement('meta');
+        ogSiteName.setAttribute('property', 'og:site_name');
+        document.head.appendChild(ogSiteName);
+      }
+      ogSiteName.setAttribute('content', resolvedSiteName);
 
       let twitterTitle = document.querySelector('meta[name="twitter:title"]');
       if (!twitterTitle) {
@@ -266,7 +306,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         twitterDesc.setAttribute('name', 'twitter:description');
         document.head.appendChild(twitterDesc);
       }
-      twitterDesc.setAttribute('content', resolvedDesc);
+      twitterDesc.setAttribute('content', finalDesc);
 
       let twitterImage = document.querySelector('meta[name="twitter:image"]');
       if (!twitterImage) {
@@ -274,7 +314,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         twitterImage.setAttribute('name', 'twitter:image');
         document.head.appendChild(twitterImage);
       }
-      twitterImage.setAttribute('content', resolvedOGImage);
+      twitterImage.setAttribute('content', finalOGImage);
 
       let metaKeywords = document.querySelector('meta[name="keywords"]');
       if (!metaKeywords) {
@@ -282,9 +322,28 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         metaKeywords.setAttribute('name', 'keywords');
         document.head.appendChild(metaKeywords);
       }
-      metaKeywords.setAttribute('content', resolvedKeywords);
+      metaKeywords.setAttribute('content', finalKeywords);
+
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', currentUrl);
     }
-  }, [location.pathname, siteSettings, language]);
+  }, [location.pathname, siteSettings, language, dbRouteSeo]);
+
+  useEffect(() => {
+    if (isAuthReady) {
+      const loader = document.getElementById('initial-loader');
+      if (loader) {
+        loader.style.transition = 'opacity 0.4s ease-out';
+        loader.style.opacity = '0';
+        setTimeout(() => loader.remove(), 400);
+      }
+    }
+  }, [isAuthReady]);
 
   return (
     <Suspense fallback={null}>
@@ -334,7 +393,7 @@ export default function App() {
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
                 <Route path="subscription" element={<SubscriptionPage />} />
                 <Route path="chat/:id?" element={<ChatPage />} />
-                <Route path="forum/:id?" element={<ForumPage />} />
+                <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
                 <Route path="marketplace/:id?" element={<MarketplacePage />} />
                 <Route path="blog/:slug?" element={<BlogPage />} />
                 <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />

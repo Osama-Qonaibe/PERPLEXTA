@@ -1,3 +1,5 @@
+import { ensureAdsTable } from './routes/ads.js';
+import { ensureBulletinTables } from './routes/bulletin.js';
 import 'dotenv/config';
 import { createServer } from 'http';
 import app from './app.js';
@@ -87,6 +89,8 @@ async function startServer() {
     if (dbReady) {
       setIo(ioInstance);
       initCronJobs();
+      ensureAdsTable().catch(() => {});
+      ensureBulletinTables().catch(() => {});
       console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
     } else {
       console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');

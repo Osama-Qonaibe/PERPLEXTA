@@ -214,9 +214,13 @@ export const RewardsPage: React.FC = () => {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error accessing camera:", err);
-      toast.error(dir === 'rtl' ? 'تعذر الوصول إلى الكاميرا. يرجى التأكد من منح الإذن.' : 'Could not access camera. Please ensure permissions are granted.');
+      if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        toast.error(dir === 'rtl' ? 'لم يتم العثور على كاميرا في جهازك. يرجى استخدام جهاز يحتوي على كاميرا لإتمام عملية التحقق.' : 'No camera found on your device. Please use a device with a camera for verification.');
+      } else {
+        toast.error(dir === 'rtl' ? 'تعذر الوصول إلى الكاميرا. يرجى التأكد من منح الإذن.' : 'Could not access camera. Please ensure permissions are granted.');
+      }
       setIsCapturing(false);
     }
   };

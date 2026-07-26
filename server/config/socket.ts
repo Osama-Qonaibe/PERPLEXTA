@@ -71,6 +71,20 @@ export function initSocket(httpServer: HttpServer) {
       socket.to(`user_${user.id}`).emit("typing", data);
     });
 
+    socket.on("ad_typing", (data: { ad_id: number; recipient_id: number; is_typing: boolean }) => {
+      if (data && data.recipient_id) {
+        io.to(`user_${data.recipient_id}`).emit("ad_typing", {
+          ad_id: data.ad_id,
+          sender_id: user.id,
+          is_typing: data.is_typing
+        });
+      }
+    });
+
+    socket.on("join_ad_chat", (adId: number) => {
+      socket.join(`ad_chat_${adId}`);
+    });
+
     socket.on("disconnect", () => {
     });
   });

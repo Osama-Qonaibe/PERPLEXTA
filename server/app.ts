@@ -124,9 +124,9 @@ app.use((req: any, res: any, next: any) => {
         scriptSrc: scriptSrcDirectives,
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
-        connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio"]
+        connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
       }
     },
     crossOriginEmbedderPolicy: false,
@@ -157,14 +157,27 @@ app.use(cors({
 }));
 
 app.use(express.json({ 
-  limit: '10mb',
+  limit: '100mb',
   verify: (req: any, res, buf) => {
     if (req.originalUrl && (req.originalUrl.startsWith('/api/payments/webhook') || req.originalUrl.includes('webhook'))) {
       req.rawBody = buf;
     }
   }
 }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Express Body Parser Error Handler for Payload Too Large
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413 || err.name === 'PayloadTooLargeError')) {
+    console.warn(`[Payload Too Large] Request size limit exceeded for ${req.method} ${req.path}`);
+    return res.status(413).json({
+      error: 'حجم الطلب كبير جداً. الحد الأقصى المسموح به هو 100 ميجابايت.',
+      error_en: 'Payload too large. Maximum allowed request size is 100MB.',
+      type: 'PAYLOAD_TOO_LARGE'
+    });
+  }
+  next(err);
+});
 
 app.use((req, res, next) => {
   if (process.env.NODE_ENV !== 'production' && req.path.startsWith('/api/')) {
@@ -223,7 +236,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     }
 
     const ext = path.extname(filename).toLowerCase();
-    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav', '.m4a'];
+    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.3gp', '.ogg', '.mp3', '.wav', '.m4a'];
     if (publicExtensions.includes(ext)) return res.sendFile(resolvedPath);
 
     const authHeader = req.headers['authorization'];
@@ -438,11 +451,14 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import memoryRoutes from './routes/memory.js';
 import kycRoutes from './routes/kyc.js';
 import emailRoutes from './routes/email.js';
-import forumRoutes from './routes/forum.js';
 import blogRoutes from './routes/blog.js';
 import marketplaceRoutes from './routes/marketplace.js';
 import videoResourcesRoutes from './routes/videoResources.js';
 import shareRoutes from './routes/share.js';
+import adsRoutes from './routes/ads.js';
+import bulletinRoutes from './routes/bulletin.js';
+import giftsRoutes from './routes/gifts.js';
+import metricsRoutes from './routes/metrics.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -458,6 +474,18 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/share-snapshot', shareRoutes);
+app.use('/api/gifts', giftsRoutes);
+
+// Public route to fetch dynamic route SEO settings for client-side meta management
+app.get('/api/seo-routes', async (req, res) => {
+  try {
+    if (!pool) return res.json([]);
+    const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch public route SEO settings' });
+  }
+});
 
 // Backwards compatibility aliases for direct api endpoints
 app.use('/api/settings', (req, res, next) => {
@@ -472,11 +500,13 @@ app.use('/api/economy', (req, res, next) => {
 app.use('/api/memories', memoryRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/mail-services-v3', emailRoutes);
-app.use('/api/forum', forumRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/video-resources', videoResourcesRoutes);
 app.use('/api/tools', toolRoutes);
+app.use('/api/ads', adsRoutes);
+app.use('/api/bulletin', bulletinRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';
@@ -519,50 +549,79 @@ async function injectSEOTags(
   let currentDesc = defaultDesc;
   let currentKeywords = defaultKeywords;
   let currentSiteName = defaultSiteName;
-  let imageUrl = settings.seo_image_url || '/app-assets/og-image.png';
-  if (imageUrl && imageUrl.startsWith('/uploads/')) {
-    const localPath = path.join(process.cwd(), imageUrl);
-    if (!fs.existsSync(localPath)) {
-      imageUrl = '/app-assets/og-image.png';
+  
+  const DEFAULT_OG_IMAGE = '/app-assets/og-image.png';
+  let imageUrl = settings.seo_image_url || DEFAULT_OG_IMAGE;
+
+  /** Validates local image existence and returns a fallback if missing, handles external URLs */
+  const validateImageUrl = (url: string): string => {
+    if (!url) return DEFAULT_OG_IMAGE;
+
+    // 1. Handle local relative paths
+    if (url.startsWith('/')) {
+      if (url.startsWith('/uploads/')) {
+        const localPath = path.join(process.cwd(), url);
+        if (!fs.existsSync(localPath)) return DEFAULT_OG_IMAGE;
+      } else if (url.startsWith('/app-assets/') || url.startsWith('/images/')) {
+        const publicPath = path.join(process.cwd(), 'public', url);
+        if (!fs.existsSync(publicPath)) return DEFAULT_OG_IMAGE;
+      }
+      return url;
     }
-  }
+
+    // 2. Handle external absolute URLs
+    try {
+      const parsed = new URL(url);
+      const invalidHostnames = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+      if (invalidHostnames.includes(parsed.hostname)) return DEFAULT_OG_IMAGE;
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return DEFAULT_OG_IMAGE;
+      return url;
+    } catch (e) {
+      return DEFAULT_OG_IMAGE;
+    }
+  };
+
+  imageUrl = validateImageUrl(imageUrl);
 
   const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
+
+  let isRouteSeoActive = false;
+
+  // 1. Check for dynamic database route-based SEO overrides first
+  if (pool) {
+    try {
+      const routeDbRes = await pool.query(
+        'SELECT * FROM route_seo_settings WHERE route = $1 AND is_active = true LIMIT 1',
+        [normalizedPath]
+      );
+      if (routeDbRes.rows.length > 0) {
+        isRouteSeoActive = true;
+        const routeMeta = routeDbRes.rows[0];
+        const routeTitle = preferredLang === 'ar' 
+          ? (routeMeta.title_ar || routeMeta.title_en) 
+          : (routeMeta.title_en || routeMeta.title_ar);
+        const routeDesc = preferredLang === 'ar' 
+          ? (routeMeta.description_ar || routeMeta.description_en) 
+          : (routeMeta.description_en || routeMeta.description_ar);
+        const routeKw = preferredLang === 'ar' 
+          ? (routeMeta.keywords_ar || routeMeta.keywords_en) 
+          : (routeMeta.keywords_en || routeMeta.keywords_ar);
+
+        if (routeTitle) currentTitle = routeTitle;
+        if (routeDesc) currentDesc = routeDesc;
+        if (routeKw) currentKeywords = routeKw;
+        if (routeMeta.og_image_url) imageUrl = validateImageUrl(routeMeta.og_image_url);
+      }
+    } catch (routeErr) {
+      // Table or query error fallback
+    }
+  }
 
   const queryParam = (req.query.search || req.query.q || req.query.query || '').toString().trim();
 
   // Dynamic check and fetching for public subroutes
   if (queryParam) {
-    if (normalizedPath.startsWith('/forum')) {
-      try {
-        const searchRes = await pool.query(
-          'SELECT id, title, content, image_url FROM forum_posts WHERE title ILIKE $1 OR content ILIKE $1 ORDER BY id DESC LIMIT 1',
-          [`%${queryParam}%`]
-        );
-        if (searchRes.rows.length > 0) {
-          const post = searchRes.rows[0];
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث لـ "${queryParam}": ${post.title}` 
-            : `Search results for "${queryParam}": ${post.title}`;
-          let cleanContent = post.content || '';
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          if (post.image_url) {
-            imageUrl = post.image_url;
-          }
-        } else {
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
-            : `Search results for "${queryParam}" - Perplexta`;
-          currentDesc = preferredLang === 'ar' 
-            ? `استكشف نتائج البحث والاستشارات التقنية والتحليلات السيادية المتعلقة بـ "${queryParam}".` 
-            : `Explore search results, technical consultations, and sovereign analysis related to "${queryParam}".`;
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to search forum posts for SEO:', err);
-      }
-    } else if (normalizedPath.startsWith('/blog')) {
+    if (normalizedPath.startsWith('/blog')) {
       try {
         const searchRes = await pool.query(
           'SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
@@ -579,7 +638,7 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           if (article.image_url) {
-            imageUrl = article.image_url;
+            imageUrl = validateImageUrl(article.image_url);
           }
         } else {
           currentTitle = preferredLang === 'ar' 
@@ -609,7 +668,7 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           if (item.image_url) {
-            imageUrl = item.image_url;
+            imageUrl = validateImageUrl(item.image_url);
           }
         } else {
           currentTitle = preferredLang === 'ar' 
@@ -639,33 +698,15 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           if (article.image_url) {
-            imageUrl = article.image_url;
+            imageUrl = validateImageUrl(article.image_url);
           }
         } else {
-          const forumRes = await pool.query(
-            'SELECT title, content, image_url FROM forum_posts WHERE title ILIKE $1 OR content ILIKE $1 ORDER BY id DESC LIMIT 1',
-            [`%${queryParam}%`]
-          );
-          if (forumRes.rows.length > 0) {
-            const post = forumRes.rows[0];
-            currentTitle = preferredLang === 'ar' 
-              ? `نتائج البحث لـ "${queryParam}": ${post.title}` 
-              : `Search results for "${queryParam}": ${post.title}`;
-            let cleanContent = post.content || '';
-            cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-            currentDesc = cleanContent.slice(0, 160).trim();
-            if (cleanContent.length > 160) currentDesc += '...';
-            if (post.image_url) {
-              imageUrl = post.image_url;
-            }
-          } else {
-            currentTitle = preferredLang === 'ar' 
-              ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
-              : `Search results for "${queryParam}" - Perplexta`;
-            currentDesc = preferredLang === 'ar' 
-              ? `نتائج البحث والتحليلات التقنية لـ "${queryParam}".` 
-              : `Search results and proactive technical analysis for "${queryParam}".`;
-          }
+          currentTitle = preferredLang === 'ar' 
+            ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
+            : `Search results for "${queryParam}" - Perplexta`;
+          currentDesc = preferredLang === 'ar' 
+            ? `نتائج البحث والتحليلات التقنية لـ "${queryParam}".` 
+            : `Search results and proactive technical analysis for "${queryParam}".`;
         }
       } catch (err) {
         console.error('[SEO] Failed to search general records for SEO:', err);
@@ -701,32 +742,11 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           if (article.image_url) {
-            imageUrl = article.image_url;
+            imageUrl = validateImageUrl(article.image_url);
           }
         }
       } catch (err) {
         console.error('[SEO] Failed to fetch blog article details:', err);
-      }
-    }
-  } else if (normalizedPath.startsWith('/forum/')) {
-    const postIdStr = normalizedPath.split('/forum/')[1];
-    const postId = parseInt(postIdStr, 10);
-    if (!isNaN(postId)) {
-      try {
-        const forumRes = await pool.query('SELECT title, content, image_url FROM forum_posts WHERE id = $1', [postId]);
-        if (forumRes.rows.length > 0) {
-          const post = forumRes.rows[0];
-          currentTitle = post.title;
-          let cleanContent = post.content || '';
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          if (post.image_url) {
-            imageUrl = post.image_url;
-          }
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to fetch forum post details:', err);
       }
     }
   } else if (normalizedPath.startsWith('/marketplace/')) {
@@ -743,7 +763,7 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           if (item.image_url) {
-            imageUrl = item.image_url;
+            imageUrl = validateImageUrl(item.image_url);
           }
         }
       } catch (err) {
@@ -769,8 +789,26 @@ async function injectSEOTags(
       currentSiteName = settings[`seo_site_name_${langKey}`] || settings[`site_name_${langKey}`] || seoNameAr || seoNameEn || defaultSiteName;
     }
   }
+
+  // Final check for dynamic imageUrl
+  if (!imageUrl || imageUrl === '') {
+    imageUrl = DEFAULT_OG_IMAGE;
+  }
+
   if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
     imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
+  }
+
+  // Detect mime type for og:image:type
+  let imageType = 'image/png';
+  if (imageUrl.toLowerCase().endsWith('.jpg') || imageUrl.toLowerCase().endsWith('.jpeg')) {
+    imageType = 'image/jpeg';
+  } else if (imageUrl.toLowerCase().endsWith('.gif')) {
+    imageType = 'image/gif';
+  } else if (imageUrl.toLowerCase().endsWith('.webp')) {
+    imageType = 'image/webp';
+  } else if (imageUrl.toLowerCase().endsWith('.svg')) {
+    imageType = 'image/svg+xml';
   }
 
   let faviconUrl = settings.favicon_url || '/app-assets/icon.png';
@@ -791,13 +829,15 @@ async function injectSEOTags(
   const escFavicon  = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  const PUBLIC_WHITELIST = ['/', '/subscription', '/forum', '/marketplace', '/blog', '/terms', '/privacy', '/about'];
+  const PUBLIC_WHITELIST = ['/', '/subscription', '/marketplace', '/blog', '/bulletin', '/rewards', '/terms', '/privacy', '/about'];
   const isPublicRoute = 
+    isRouteSeoActive ||
     PUBLIC_WHITELIST.includes(normalizedPath) ||
     normalizedPath.startsWith('/share/') ||
     normalizedPath.startsWith('/blog/') ||
-    normalizedPath.startsWith('/forum/') ||
-    normalizedPath.startsWith('/marketplace/');
+    normalizedPath.startsWith('/marketplace/') ||
+    normalizedPath.startsWith('/bulletin') ||
+    normalizedPath.startsWith('/rewards');
 
   let metaBlock = '';
 
@@ -808,6 +848,10 @@ async function injectSEOTags(
     <meta property="og:title" content="${escTitle}" />
     <meta property="og:description" content="${escDesc}" />
     <meta property="og:image" content="${escImage}" />
+    <meta property="og:image:secure_url" content="${escImage}" />
+    <meta property="og:image:type" content="${imageType}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="${escUrl}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${escSiteName}" />
@@ -815,7 +859,9 @@ async function injectSEOTags(
     <meta name="twitter:title" content="${escTitle}" />
     <meta name="twitter:description" content="${escDesc}" />
     <meta name="twitter:image" content="${escImage}" />
+    <meta name="twitter:image:alt" content="${escTitle}" />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="${escCanonical}" />
     `;
 
     if (settings.google_site_verification) {
@@ -823,11 +869,11 @@ async function injectSEOTags(
     }
 
     const breadcrumbNames: Record<string, Record<string, string>> = {
-      ar: { '/': 'الرئيسية', '/subscription': 'الاشتراكات', '/forum': 'المنتدى', '/marketplace': 'المتجر', '/blog': 'المدونة', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
-      en: { '/': 'Home', '/subscription': 'Subscriptions', '/forum': 'Forum', '/marketplace': 'Marketplace', '/blog': 'Blog', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
-      fr: { '/': 'Accueil', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Boutique', '/blog': 'Blog', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
-      es: { '/': 'Inicio', '/subscription': 'Suscripciones', '/forum': 'Foro', '/marketplace': 'Mercado', '/blog': 'Blog', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
-      de: { '/': 'Startseite', '/subscription': 'Abonnements', '/forum': 'Forum', '/marketplace': 'Marktplatz', '/blog': 'Blog', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
+      ar: { '/': 'الرئيسية', '/subscription': 'الاشتراكات', '/marketplace': 'المتجر', '/blog': 'المدونة', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
+      en: { '/': 'Home', '/subscription': 'Subscriptions', '/marketplace': 'Marketplace', '/blog': 'Blog', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
+      fr: { '/': 'Accueil', '/subscription': 'Abonnements', '/marketplace': 'Boutique', '/blog': 'Blog', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
+      es: { '/': 'Inicio', '/subscription': 'Suscripciones', '/marketplace': 'Mercado', '/blog': 'Blog', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
+      de: { '/': 'Startseite', '/subscription': 'Abonnements', '/marketplace': 'Marktplatz', '/blog': 'Blog', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
     };
     const names = breadcrumbNames[preferredLang] ?? breadcrumbNames['ar'];
 
@@ -864,6 +910,8 @@ async function injectSEOTags(
   }
 
   processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
+  processedHtml = processedHtml.replace(/<meta\s+property="og:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
+  processedHtml = processedHtml.replace(/<meta\s+name="twitter:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
   processedHtml = processedHtml.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
 

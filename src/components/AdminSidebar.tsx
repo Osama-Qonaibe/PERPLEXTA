@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Activity, Key, Database, Cpu, Landmark, 
   CreditCard, Users, Settings, Mail, ArrowRight,
-  Send, Brain, ShoppingBag, ShieldAlert, UserPlus
+  Send, Brain, ShoppingBag, ShieldAlert, UserPlus, Megaphone, Shield
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -19,6 +19,8 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
   const navItems = [
     { icon: <Activity size={18} />, label: t('commandCenter'), path: '/admin/dashboard' },
     ...(!isSupport ? [
+      { icon: <Shield size={18} />, label: language === 'ar' ? 'رادار الأمان' : 'Security Radar', path: '/admin/radar' },
+      { icon: <Activity size={18} />, label: language === 'ar' ? 'مقاييس الأداء ورندر' : 'Render & Latency Metrics', path: '/admin/metrics' },
       { icon: <Key size={18} />, label: t('aiInfrastructure'), path: '/admin/keys' },
       { icon: <Database size={18} />, label: t('dbOrchestration'), path: '/admin/databases' },
       { icon: <Cpu size={18} />, label: t('toolOrchestrator'), path: '/admin/orchestrator' },
@@ -28,6 +30,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
     ] : []),
     { icon: <Users size={18} />, label: t('userManagement'), path: '/admin/users' },
     ...(!isSupport ? [
+      { icon: <Megaphone size={18} />, label: language === 'ar' ? 'إدارة الإعلانات' : 'Ads Management', path: '/admin/ads' },
       { icon: <Brain size={18} />, label: language === 'ar' ? 'مركز الذاكرة' : 'Memory Center', path: '/admin/memories' },
       { icon: <Mail size={18} />, label: t('smartEmailHub'), path: '/admin/emails' },
       { icon: <Send size={18} />, label: t('smartBroadcast'), path: '/admin/broadcast' },

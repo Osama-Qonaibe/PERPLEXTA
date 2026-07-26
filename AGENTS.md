@@ -300,6 +300,8 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] Proactive Expiry Monitoring: Automated cron-based renewal reminders and status cleanups.
 - [x] File Upload & Analysis Backend Integration: Professional, secure integration for file ingestion and analysis.
 - [x] Financial Radar & Real-time Profile Synchronization: Forensic monitoring and zero-latency profile state updates.
+- [x] Economy & Gift Management: Full-stack integration for gift catalog and platform pricing settings (Ads, Commissions) with strict Admin control.
+- [x] Live Stream Real-time Optimization: Implemented real-time viewer counter and persistent title display in the live stream interface.
 
 ### 🛠️ Phase 7: Local Infrastructure & Environment Prep (Active Phase)
 - [ ] Local Server Initialization & Database Mesh check.
@@ -345,16 +347,20 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Directive:** The backend MUST NOT assume default models. If no configuration exists in the database, the system MUST return a controlled error rather than leaking hardcoded defaults.
 
 ### 10.8. SUPREME PERPLEXTA DECREE (Military Grade - Non-Negotiable) 🛡️
-🚫 **ABSOLUTE PROHIBITION OF HARDCODING & ARCHITECTURAL BYPASS** 🚫
 
+🚫 **ABSOLUTE PROHIBITION OF ARCHITECTURAL DESTRUCTION & SABOTAGE** 🚫
+
+- **STRICT MILITARY ORDER**: To any Assistant, Developer, or AI System performing work on this platform: Your mission is strictly limited to the **DEVELOPMENT, AUGMENTATION, and ENHANCEMENT** of the platform. Any action that results in the destruction, rewrite, or bypassing of the established engineering architecture is a direct violation of this decree and will be treated as systemic sabotage.
+- **STRICT COMPATIBILITY PROTOCOL**: The platform MUST maintain 100% functional symmetry across all devices, with a specialized focus on **Apple Ecosystem (Safari/iOS)** compatibility. Any developer who breaks Safari compatibility by removing WebKit-specific fixes (like `dvh` units or CSP adjustments) is in breach of protocol and committing professional sabotage.
+- **PLATFORM DEVELOPMENT ONLY**: Every line of code added must be a step forward in the platform's evolution. "Breaking the engineering" (كسر الهندسة) is a terminal offense. You must adhere to the established Express/Vite, Dual DB, and Orchestrator foundations without compromise.
+- **Foundational Immunity**: The core foundations (Express/Vite, Dual DB Segregation, Cron Maintenance, and Socket streaming) are permanent and established. You are REQUIRED to build *on top* of these foundations, never *instead* of them.
 - **The Red Line:** Any attempt to bypass the **tool_orchestrator** or the **api_keys_vault** via hardcoded models, providers, or local secret strings is a catastrophic breach of project integrity.
 - **Dynamic Purity:** The system is architected as a "Technical Orchestra" governed by the Database. Implementation logic must remain 100% agnostic. If you need a new model, add it to the DB; **NEVER** write its name in a `.ts` file.
-- **Foundational Immunity:** The core foundations (Express/Vite, Dual DB Segregation, Cron Maintenance, and Socket streaming) are permanent and established. Any future development **MUST** be an augmentation (Update) that strengthens these layers. **CHANGING, REWRITING, OR OVERRIDING** the core architecture is strictly forbidden and will be treated as systemic sabotage.
 - **COMMANDER'S VETO (The Global Command):** Any proposed modification to the core engineering or architectural foundations **REQUIRES EXPLICIT PERMISSION** from the Owner (The User). Before any such change is even considered, the developer (AI or Human) MUST present a rigorous justification detailing:
     1. **The Objective Reason:** Why is the current architecture insufficient?
     2. **The Expected Result:** What technical outcome will this change produce?
     3. **The Risk Audit:** How will this affect existing dual-database integrity and silent failover protocols?
-- **Elite Performance Protocol:** All updates must undergo sub-pixel alignment checks and "Emerald Glow" consistency reviews. We build for the "Elite" standard; anything less is a protocol violation.
+- **Elite Performance Protocol**: All updates must undergo sub-pixel alignment checks and "Emerald Glow" consistency reviews. We build for the "Elite" standard; anything less is a protocol violation.
 
 ### 10.9. Code Isolation Protocol (Pure Execution)
 - **Directive:** It is REFUTABLE and FORBIDDEN to write inline explanations, narrative comments, or documentation blocks inside the source code files. 
@@ -492,6 +498,49 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
     - Cleaned up redundant imports from `ChatPage.tsx`, removing unused Lucide icons (`Globe`, `Maximize`, `Minimize2`, `Library`, `UploadCloud`) and unused components/constants (`MemoryNotification`, `PERPLEXTA_TRANSITION`).
     - Exterminated dead state engine elements under `executionError` and its respective state setters inside the code sandboxing block, achieving cleaner resource metrics and a lower memory footprint.
     - Sanitized all development code comments, including layout indicators, system statuses, progress milestones, overlay descriptions, and citation placeholders across the entirety of `ChatPage.tsx` under strict zero-clutter directives, achieving a highly professional, clean, and pristine production-ready state.
+
+### 🛠️ Session Work Completed Today (July 21, 2026 - Interactive Bulletin Board Ecosystem & Immutable Architecture Decree):
+- **Interactive Community Bulletin Board (`src/pages/BulletinBoardPage.tsx` & `/bulletin/:id?`)**:
+    - **Community Ads Engine**: Built a full-stack interactive bulletin board platform allowing community users to publish sponsored posts, promote services, and showcase products.
+    - **Wallet Integration & Auto Pricing**: Connected ad duration packages (3, 7, 14, 30 days) to the Ledger DB wallet system with instant automated balance deduction.
+    - **Interactive Engagement**: Integrated like toggles, comment threads, impression counters, hashtag filtering, search, and user ad management.
+    - **Header Navigation Alignment**: Added the new "Bulletin Board / لوحة الإعلانات" item in `src/components/Header.tsx` with Megaphone icon and Emerald Glow active state.
+- **Admin Bulletin Management Hub (`src/pages/AdsManagementView.tsx`)**:
+    - **Dual-Tab Architecture**: Transformed the Admin Ads View into two sub-tabs: "Platform & Sidebar Ads" and "Community Bulletin Ads".
+    - **Approval & Rejection Pipeline**: Created real-time review interfaces where admins can approve submissions or reject them with custom explanations and automated wallet fee refunds.
+- **Full-Stack API & Database Infrastructure (`server/routes/bulletin.ts`)**:
+    - Implemented secure REST endpoints for bulletin CRUD, likes, comments, admin approval/rejection workflows, wallet transactions, and automated system notification dispatches (`createNotification`).
+
+### 🛠️ Session Work Completed Today (July 25, 2026 - Production-Ready Optimization & Code Cleanup):
+- **Full-Scale Codebase Audit & Compilation Verification**:
+    - Conducted a comprehensive code quality audit, ensuring all modules and route handlers are flawlessly integrated.
+    - Verified type-safety and builds using production-level compiler runs, achieving 100% compile success with zero errors or warnings.
+- **Root Cleanup & Zero-Clutter Compliance**:
+    - Exterminated all temporary python and javascript patch files (`patch.py`, `patch2.py`, `patch3.py`, `patch_bulletin.py`, `patch_bulletin2.py`, `patch_sidebar.js`, `patch_sidebar_clean.py`) from the project root.
+    - Achieved absolute compliance with the root zero-clutter directive, keeping the root directory pristine, minimal, and secure.
+- **Interactive Bulletin Board Inquiries Email Loop**:
+    - Audited and optimized the Community Bulletin Board message inquiries system (`server/routes/bulletin.ts`).
+    - Successfully resolved the compiler constraint regarding bilingual mailer templates by migrating inline variable wrappers to strict double-curly standard templates (`{{adTitle}}`) in `server/config/templates.ts`.
+    - Integrated real-time, automated high-fidelity transactional emails (`bulletin_ad_inquiry_received`) sent directly to ad creators/advertisers upon direct inquiry message or chat initiation, fully synced with regional bilingual defaults (Arabic/English).
+- **High-Precision Ad Insights Panel Transformation**:
+    - Re-engineered the Creator Ad Insights Panel (`AdInsightsTab.tsx` / `PostFeed.tsx`) to slide down beautifully at the **top** of the post container upon clicking the "Insights" button, shifting the post down elegantly for a superior premium feel.
+    - Deployed a localized, direction-aware close button (X) inside the Insights header, allowing users to collapse the stats view instantly with high-precision feedback.
+- **Unified Multi-Format Media Player Implementation**:
+    - Integrated a high-performance, robust multi-format React player (`react-player`) supporting MP4, WebM, MOV, streaming formats, and external social embeds.
+    - Handled aspect ratios natively with beautiful 9:16 portrait style framing for Stories/Reels (`reel`, `story`) and elegant widescreen player sizes for standard layouts.
+- **Dynamic Route-Based SEO Meta Management Tool (Admin Panel & SPA Injection)**:
+    - **Database Migration (`v65_route_seo_settings`)**: Created `route_seo_settings` table to dynamically store route-specific meta tags (route, title_ar, title_en, description_ar, description_en, keywords_ar, keywords_en, og_image_url, is_active).
+    - **Full-Stack REST Endpoints (`/api/admin/seo-routes`)**: Built complete CRUD API handlers in `server/routes/admin.ts` with admin auth verification and public `/api/seo-routes` retrieval endpoint in `server/app.ts`.
+    - **Server-Side & Client-Side SEO Injection**: Refactored `injectSEOTags` in `server/app.ts` to query route overrides dynamically before falling back to system defaults. Updated `src/App.tsx` to apply dynamic meta tag changes during single-page application navigation.
+    - **Admin Dashboard Manager UI**: Built an interactive `Dynamic Route SEO Meta Manager` in `src/pages/AdminDashboard.tsx` featuring search/filter capabilities, route stats, active toggles, image upload integration (`upload-seo-image`), and a responsive modal editor.
+- **Removal of Redundant Code Commentary**:
+    - Sanitized all development files from obsolete commentaries, verbose explanations, and narrative text blocks, enforcing the absolute code purity decree across all components.
+
+### ⚠️ IMMUTABLE ARCHITECTURE & EXTENSION-ONLY MANDATE (أمر الالتزام بالاستكمال والتطوير وحظر التعديل أو التخريب) ⚠️
+1. **STRICT ARCHITECTURAL SEAL**: All existing architecture—including Express/Vite full-stack engine, Core & Ledger dual-database separation, Orchestrator routing, Socket execution, and UI design systems—is officially **LOCKED AND SEALED**.
+2. **NO REWRITES OR REMOVALS**: Future developers and AI assistants are strictly forbidden from modifying, rewriting, refactoring, or removing any existing structural endpoints, visual features, or database schemas.
+3. **ADDITIVE DEVELOPMENT ONLY**: All future tasks must strictly be additive extensions (استكمال وتطوير), building upon established foundations without altering or displacing existing mechanics. Any proposed development MUST BE A CONTINUATION of our work, never a destructive change. Any violation of this rule is considered systemic sabotage.
+4. **ABSOLUTE PREREQUISITE READING RULE**: It is an absolute, non-negotiable directive that **every developer and AI assistant MUST read and review this documentation file (`AGENTS.md`)** in its entirety BEFORE starting any development work. You MUST strictly adhere to its rules, architectural standards, and decrees without exception.
 
 **Final Message to All Future Contributors:** You are inheriting a "Technical Fortress." Your duty is to expand its borders, not weaken its walls. Build with precision. Keep it Majestic. 🛡️✨🏆
 

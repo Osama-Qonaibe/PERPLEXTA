@@ -1,3 +1,5 @@
+import { ensureAdsTable } from '../routes/ads.js';
+import { ensureBulletinTables } from '../routes/bulletin.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import type { Pool as PgPool, PoolClient as PgPoolClient } from 'pg';
@@ -190,6 +192,13 @@ export async function ensureColumn(
 }
 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
+  try {
+    await ensureAdsTable();
+    await ensureBulletinTables();
+  } catch (e: any) {
+    console.error('[Migrations] Error running ads/bulletin migrations:', e.message);
+  }
+
   if (!pool) return;
   const client = await pool.connect();
   let ledgerClient: PgPoolClient | null = null;
@@ -268,32 +277,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
-    // Dynamic schema checks for active target databases
-    const activeExternalClient = externalClient || client;
-    try {
-      const checkTable = await activeExternalClient.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_name = 'forum_categories'
-        )
-      `);
-      if (!checkTable.rows[0].exists) {
-        console.log('[Migrations] forum_categories table does not exist on active external database. Forcing re-run of forum/blog migrations...');
-        await client.query(`
-          DELETE FROM migration_history 
-          WHERE migration_name IN (
-            'v22_forum_and_blog_schema',
-            'v23_blog_ratings_and_sharing',
-            'v24_seed_blog_platform_data',
-            'v27_update_forum_categories_for_pioneers_and_developers',
-            'v28_refine_forum_categories_names',
-            'v30_forum_category_colors_differentiation'
-          )
-        `);
-      }
-    } catch (e: unknown) {
-      console.warn('[Migrations] Failed to inspect external database structure:', (e as Error).message);
-    }
+
 
     const activeSecurityClient = securityClient || client;
     try {
@@ -367,7 +351,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
       }
       if (externalClient) {
-        const externalTables = ['forum_categories', 'forum_posts', 'forum_comments', 'forum_post_ratings', 'blog_articles', 'blog_comments', 'blog_ratings'];
+        const externalTables = ['blog_articles', 'blog_comments', 'blog_ratings'];
         for (const t of externalTables) {
           await externalClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
         }
@@ -430,10 +414,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
               // External tables query check
               if (
-                isTableMatched('forum_categories') ||
-                isTableMatched('forum_posts') ||
-                isTableMatched('forum_comments') ||
-                isTableMatched('forum_post_ratings') ||
                 isTableMatched('blog_articles') ||
                 isTableMatched('blog_comments') ||
                 isTableMatched('blog_ratings')
@@ -1403,9 +1383,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       
       // 2. External DB targets (explicitly using externalClient || client)
       const extTarget = externalClient || client;
-      // forum
-      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_forum_posts_category_id ON forum_posts(category_id)`);
-      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_forum_comments_post_id ON forum_comments(post_id)`);
       // blog
       await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)`);
       
@@ -1574,6 +1551,182 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_shared_snapshots_user_id ON shared_snapshots(user_id)`);
+    });
+
+    await runVersioned('v57_permanently_drop_forum_tables', 'Permanently dropping forum_posts, forum_comments, forum_categories, and forum_post_ratings tables from external database', async (tx) => {
+      const extTarget = externalClient || tx;
+      await extTarget.query(`DROP TABLE IF EXISTS forum_post_ratings CASCADE;`);
+      await extTarget.query(`DROP TABLE IF EXISTS forum_comments CASCADE;`);
+      await extTarget.query(`DROP TABLE IF EXISTS forum_posts CASCADE;`);
+      await extTarget.query(`DROP TABLE IF EXISTS forum_categories CASCADE;`);
+    });
+
+    await runVersioned('v58_gifts_and_ads_pricing', 'Adding gift_catalog table and ad pricing columns to system_settings', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS gift_catalog (
+          id SERIAL PRIMARY KEY,
+          name_ar VARCHAR(255) NOT NULL,
+          name_en VARCHAR(255) NOT NULL,
+          icon TEXT NOT NULL,
+          points INTEGER NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await ensureColumn(tx, 'system_settings', 'bulletin_ad_daily_price', 'NUMERIC(10,2)', '5.00');
+      await ensureColumn(tx, 'system_settings', 'live_gift_commission_percent', 'INTEGER', '30');
+      await ensureColumn(tx, 'system_settings', 'sidebar_ad_impression_price', 'NUMERIC(10,4)', '0.0100');
+      await ensureColumn(tx, 'system_settings', 'sidebar_ad_click_price', 'NUMERIC(10,2)', '0.10');
+      
+      // Seed default gifts if empty
+      const giftsCount = await tx.query('SELECT COUNT(*) FROM gift_catalog');
+      if (parseInt(giftsCount.rows[0].count, 10) === 0) {
+        await tx.query(`
+          INSERT INTO gift_catalog (name_ar, name_en, icon, points) VALUES
+          ('وردة', 'Rose', '🌹', 10),
+          ('قهوة', 'Coffee', '☕', 50),
+          ('ألماسة', 'Diamond', '💎', 200),
+          ('تاج', 'Crown', '👑', 1000),
+          ('صاروخ', 'Rocket', '🚀', 5000),
+          ('احتفال', 'Party', '🎉', 100),
+          ('سيارة', 'Car', '🚗', 2000),
+          ('أسد', 'Lion', '🦁', 10000)
+        `);
+      }
+    });
+
+    await runVersioned('v59_admin_approval_queue', 'Adding admin_approval_queue table for sensitive actions', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS admin_approval_queue (
+          id SERIAL PRIMARY KEY,
+          requester_id INTEGER NOT NULL,
+          action_type VARCHAR(100) NOT NULL,
+          payload JSONB NOT NULL,
+          status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
+          verification_code VARCHAR(10),
+          approver_id INTEGER,
+          rejection_reason TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await ensureColumn(tx, 'system_settings', 'require_2fa_for_economy', 'BOOLEAN', 'false');
+    });
+
+    await runVersioned('v60_ad_pricing_audit', 'Adding ad_pricing_audit table for compliance reporting', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS ad_pricing_audit (
+          id SERIAL PRIMARY KEY,
+          admin_id INTEGER NOT NULL,
+          field_name VARCHAR(100) NOT NULL,
+          old_value NUMERIC(10,4),
+          new_value NUMERIC(10,4),
+          change_type VARCHAR(50) DEFAULT 'manual', -- 'manual', 'batch', 'bulk_approval'
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    });
+
+    await runVersioned('v61_ad_performance_stats', 'Adding ad_stats table for high-fidelity performance heatmap', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS ad_stats (
+          id SERIAL PRIMARY KEY,
+          ad_id INTEGER NOT NULL,
+          type VARCHAR(20) NOT NULL, -- 'impression', 'click'
+          user_id INTEGER,
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ad_stats_ad_id ON ad_stats(ad_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ad_stats_type ON ad_stats(type)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_ad_stats_created_at ON ad_stats(created_at)`);
+    });
+
+    await runVersioned('v62_bulletin_social_features', 'Adding social interaction fields to bulletin_ads table', async (tx) => {
+      await tx.query(`
+        ALTER TABLE bulletin_ads 
+        ADD COLUMN IF NOT EXISTS feeling VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS is_ai_generated BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS tagged_users JSONB DEFAULT '[]',
+        ADD COLUMN IF NOT EXISTS has_whatsapp_button BOOLEAN DEFAULT FALSE
+      `);
+    });
+
+    await runVersioned('v63_bulletin_ad_features', 'Adding ad_format to bulletin_ads and parent_id to bulletin_ad_comments', async (tx) => {
+      await ensureColumn(tx, 'bulletin_ads', 'ad_format', 'VARCHAR(50)', "'post'");
+      await ensureColumn(tx, 'bulletin_ad_comments', 'parent_id', 'INTEGER');
+    });
+
+    await runVersioned('v64_bulletin_quick_questions', 'Adding quick_questions to bulletin_ads table', async (tx) => {
+      await ensureColumn(tx, 'bulletin_ads', 'quick_questions', 'JSONB', "'[]'");
+    });
+
+    await runVersioned('v65_route_seo_settings', 'Creating route_seo_settings table for dynamic route-based SEO meta tags', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS route_seo_settings (
+          id SERIAL PRIMARY KEY,
+          route VARCHAR(255) NOT NULL UNIQUE,
+          title_ar TEXT,
+          title_en TEXT,
+          description_ar TEXT,
+          description_en TEXT,
+          keywords_ar TEXT,
+          keywords_en TEXT,
+          og_image_url TEXT,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      const existing = await tx.query('SELECT COUNT(*) as count FROM route_seo_settings');
+      if (parseInt(existing.rows[0].count, 10) === 0) {
+        await tx.query(`
+          INSERT INTO route_seo_settings (route, title_ar, title_en, description_ar, description_en, keywords_ar, keywords_en, is_active)
+          VALUES
+          ('/', 'منصة بيربليكستا - التحليل والاستشراف الفني المتقدم', 'Perplexta Platform - Proactive Technical Analysis', 'المنصة الرائدة في التحليل والاستشراف الفني واستثمار الذكاء الاصطناعي.', 'Leading platform for technical intelligence and proactive AI capabilities.', 'ذكاء اصطناعي, تحليل, استشراف, تحليلات', 'ai, analytics, intelligence, perplexta', true),
+          ('/subscription', 'خطط الاشتراكات - منصة بيربليكستا', 'Subscription Plans - Perplexta Platform', 'استكشف الباقات والاشتراكات والوصول الكامل لأدوات التحليل الذكي.', 'Explore subscription plans and full access to intelligence models.', 'اشتراكات, خطط, باقات', 'subscriptions, pricing, plans', true),
+          ('/marketplace', 'متجر الإضافات والنماذج - منصة بيربليكستا', 'AI Marketplace - Perplexta Platform', 'تصفح المتجر الرقمي للإضافات والأدوات الذكية المعتمدة.', 'Browse our digital marketplace for artificial intelligence add-ons.', 'متجر, نماذج, أدوات', 'marketplace, tools, plugins', true),
+          ('/blog', 'المدونة التقنية والأبحاث - بيربليكستا', 'Technical Blog & Research - Perplexta', 'قراءة أحدث المقالات التقنية والدراسات التحليلية.', 'Read the latest technical publications and deep research insights.', 'مقالات, مدونة, أبحاث', 'blog, articles, research', true),
+          ('/bulletin', 'لوحة الإعلانات والمنشورات - بيربليكستا', 'Bulletin Board & Ads - Perplexta', 'تصفح الإعلانات والمنشورات التفاعلية والعروض التجارية.', 'Browse commercial bulletin ads and interactive public posts.', 'إعلانات, منشورات, لوحة', 'bulletin, ads, posts', true),
+          ('/rewards', 'نظام المكافآت والأرباح - بيربليكستا', 'Rewards & Referral Program - Perplexta', 'احصل على مكافآت ونقاط عند مشاركة ودعوة الأصدقاء.', 'Earn rewards and commission by referring friends and partners.', 'مكافآت, إحالة, أرباح', 'rewards, referral, affiliate', true),
+          ('/about', 'عن منصة بيربليكستا والرؤية المستقبلية', 'About Perplexta - Vision & Mission', 'تعرف على رؤية فريق بيربليكستا وتاريخ تطوير المنصة.', 'Discover the history, tech vision, and team behind Perplexta.', 'عن المنصة, رؤية, فريق', 'about, vision, company', true),
+          ('/terms', 'شروط الخدمة والاستخدام - بيربليكستا', 'Terms of Service - Perplexta', 'اطّلع على شروط وأحكام استخدام منصة بيربليكستا.', 'Read our official terms and conditions governing platform usage.', 'شروط, أحكام, اتفاقية', 'terms, conditions, legal', true),
+          ('/privacy', 'سياسة الخصوصية وأمان البيانات - بيربليكستا', 'Privacy Policy - Perplexta', 'تعرّف على كيفية حماية وتشفير وتخزين بياناتك.', 'Learn how we protect, encrypt, and store user data safely.', 'خصوصية, أمان, بيانات', 'privacy, policy, security', true)
+        `);
+      }
+    });
+
+    await runVersioned('v66_asset_metadata_and_seo_integrity', 'Creating asset_metadata table and ensuring alt_text columns on route_seo_settings', async (tx) => {
+      await ensureColumn(tx, 'route_seo_settings', 'alt_text_ar', 'TEXT');
+      await ensureColumn(tx, 'route_seo_settings', 'alt_text_en', 'TEXT');
+
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS asset_metadata (
+          id SERIAL PRIMARY KEY,
+          file_url TEXT UNIQUE NOT NULL,
+          asset_name VARCHAR(255),
+          mime_type VARCHAR(100),
+          file_size BIGINT,
+          alt_text_ar TEXT,
+          alt_text_en TEXT,
+          og_title_ar TEXT,
+          og_title_en TEXT,
+          og_description_ar TEXT,
+          og_description_en TEXT,
+          keywords_ar TEXT,
+          keywords_en TEXT,
+          visual_summary TEXT,
+          ai_analysis_raw JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -2067,6 +2220,23 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         blocked_paths TEXT DEFAULT '',
         seo_site_name_en TEXT,
         seo_site_name_ar TEXT,
+        bulletin_ad_daily_price NUMERIC(10,2) DEFAULT 5.00,
+        live_gift_commission_percent INTEGER DEFAULT 30,
+        sidebar_ad_impression_price NUMERIC(10,4) DEFAULT 0.0100,
+        sidebar_ad_click_price NUMERIC(10,2) DEFAULT 0.10,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'gift_catalog',
+      query: `CREATE TABLE IF NOT EXISTS gift_catalog (
+        id SERIAL PRIMARY KEY,
+        name_ar VARCHAR(255) NOT NULL,
+        name_en VARCHAR(255) NOT NULL,
+        icon TEXT NOT NULL,
+        points INTEGER NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
@@ -2258,12 +2428,201 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         views_count INTEGER DEFAULT 0
       )`
+    },
+    {
+      name: 'advertisements',
+      query: `CREATE TABLE IF NOT EXISTS advertisements (
+        id SERIAL PRIMARY KEY,
+        title_ar VARCHAR(255) NOT NULL,
+        title_en VARCHAR(255) NOT NULL,
+        description_ar TEXT,
+        description_en TEXT,
+        image_url TEXT NOT NULL,
+        target_url TEXT NOT NULL,
+        sponsor_name VARCHAR(100),
+        badge_text_ar VARCHAR(50) DEFAULT 'مُموَّل',
+        badge_text_en VARCHAR(50) DEFAULT 'Sponsored',
+        position VARCHAR(50) DEFAULT 'sidebar',
+        display_order INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        click_count INTEGER DEFAULT 0,
+        impression_count INTEGER DEFAULT 0,
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_ads',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_ads (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        author_name VARCHAR(255),
+        author_avatar TEXT,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        whatsapp_number VARCHAR(50),
+        target_url TEXT,
+        hashtags TEXT DEFAULT '',
+        category VARCHAR(100) DEFAULT 'عام / General',
+        price_paid NUMERIC(10,2) DEFAULT 0,
+        duration_days INTEGER DEFAULT 7,
+        status VARCHAR(50) DEFAULT 'pending',
+        rejection_reason TEXT,
+        likes_count INTEGER DEFAULT 0,
+        comments_count INTEGER DEFAULT 0,
+        shares_count INTEGER DEFAULT 0,
+        clicks_count INTEGER DEFAULT 0,
+        impressions_count INTEGER DEFAULT 0,
+        starts_at TIMESTAMP,
+        expires_at TIMESTAMP,
+        page_id INTEGER,
+        location_city VARCHAR(100) DEFAULT 'فلسطين',
+        phone_number VARCHAR(50),
+        video_url TEXT,
+        is_boosted BOOLEAN DEFAULT FALSE,
+        boosted_until TIMESTAMP,
+        boost_tier VARCHAR(50),
+        boost_price NUMERIC(10,2) DEFAULT 0,
+        audience VARCHAR(50) DEFAULT 'public',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_saved_ads',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_saved_ads (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        ad_id INTEGER NOT NULL REFERENCES bulletin_ads(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, ad_id)
+      )`
+    },
+    {
+      name: 'bulletin_reports',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_reports (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        ad_id INTEGER NOT NULL REFERENCES bulletin_ads(id) ON DELETE CASCADE,
+        reason TEXT NOT NULL,
+        details TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_pages',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_pages (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255),
+        category VARCHAR(100) DEFAULT 'تجارة إلكترونية / E-Commerce',
+        city VARCHAR(100) DEFAULT 'غزة',
+        address TEXT,
+        description TEXT NOT NULL,
+        avatar_url TEXT NOT NULL,
+        cover_url TEXT NOT NULL,
+        whatsapp_number VARCHAR(50),
+        phone_number VARCHAR(50),
+        website_url TEXT,
+        is_verified BOOLEAN DEFAULT TRUE,
+        followers_count INTEGER DEFAULT 0,
+        ads_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'route_seo_settings',
+      query: `CREATE TABLE IF NOT EXISTS route_seo_settings (
+        id SERIAL PRIMARY KEY,
+        route VARCHAR(255) UNIQUE NOT NULL,
+        title_ar TEXT,
+        title_en TEXT,
+        description_ar TEXT,
+        description_en TEXT,
+        keywords_ar TEXT,
+        keywords_en TEXT,
+        og_image_url TEXT,
+        alt_text_ar TEXT,
+        alt_text_en TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'asset_metadata',
+      query: `CREATE TABLE IF NOT EXISTS asset_metadata (
+        id SERIAL PRIMARY KEY,
+        file_url TEXT UNIQUE NOT NULL,
+        asset_name VARCHAR(255),
+        mime_type VARCHAR(100),
+        file_size BIGINT,
+        alt_text_ar TEXT,
+        alt_text_en TEXT,
+        og_title_ar TEXT,
+        og_title_en TEXT,
+        og_description_ar TEXT,
+        og_description_en TEXT,
+        keywords_ar TEXT,
+        keywords_en TEXT,
+        visual_summary TEXT,
+        ai_analysis_raw JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
   for (const table of schema) {
     const p = table.pool || targetPool;
     await p.query(table.query);
+  }
+
+  try {
+    const adCheck = await targetPool.query('SELECT COUNT(*)::int as count FROM advertisements');
+    if (adCheck.rows[0].count === 0) {
+      await targetPool.query(`
+        INSERT INTO advertisements (title_ar, title_en, description_ar, description_en, image_url, target_url, sponsor_name, badge_text_ar, badge_text_en, position, display_order, is_active)
+        VALUES 
+        (
+          'حزمة الذكاء الاصطناعي السيادي الاحترافية',
+          'Sovereign AI Elite Infrastructure Suite',
+          'استمتع بقوة نماذج Anthropic وDeepSeek بدون حدود وبأعلى سرعة مع حماية تشفير كاملة.',
+          'Experience unlimited power with Anthropic and DeepSeek models with zero latency and full encryption.',
+          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+          '/subscription',
+          'Perplexta Enterprise',
+          'مُموَّل',
+          'Sponsored',
+          'sidebar',
+          1,
+          true
+        ),
+        (
+          'متجر الأدوات والمحركات المتقدمة',
+          'Elite Software & AI Marketplace',
+          'اكتشف خطط التحليل الفني، مطالبات الذكاء الاصطناعي، والحلول البرمجية الجاهزة للتداول والأنظمة.',
+          'Discover technical analysis workflows, AI prompts, and enterprise code bases ready for deployment.',
+          'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=600&q=80',
+          '/marketplace',
+          'Supercool Devs',
+          'مُموَّل',
+          'Sponsored',
+          'sidebar',
+          2,
+          true
+        )
+      `);
+      console.log('[Schema Integrity] 📢 Default sample advertisements seeded successfully.');
+    }
+  } catch (adErr: any) {
+    console.warn('[Schema Integrity] Ads seed check note:', adErr.message);
   }
 
   const indexes = [
@@ -2295,12 +2654,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS plans_name_en_key ON plans(name_en)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS plans_pkey ON plans(id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
-    { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_posts_title_fts ON forum_posts USING GIN(to_tsvector('english', title))` },
-    { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_posts_content_fts ON forum_posts USING GIN(to_tsvector('english', content))` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_articles_title_fts ON blog_articles USING GIN(to_tsvector('english', title_en))` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_articles_content_fts ON blog_articles USING GIN(to_tsvector('english', content_en))` },
-    { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_forum_posts_category_id ON forum_posts(category_id)` },
-    { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_forum_comments_post_id ON forum_comments(post_id)` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_blog_ratings_article_id ON blog_ratings(article_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS security_alerts_pkey ON security_alerts(id)` },
@@ -2703,6 +3058,61 @@ export async function verifySchemaIntegrity() {
           blocked_paths: "TEXT DEFAULT ''",
           seo_site_name_en: 'TEXT',
           seo_site_name_ar: 'TEXT'
+        }
+      },
+      bulletin_ads: {
+        columns: [
+          'id', 'user_id', 'author_name', 'author_avatar', 'title', 'description',
+          'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category',
+          'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count',
+          'comments_count', 'shares_count', 'clicks_count', 'impressions_count',
+          'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number',
+          'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price',
+          'created_at', 'updated_at'
+        ],
+        repairCols: {
+          page_id: 'INTEGER',
+          location_city: "VARCHAR(100) DEFAULT 'فلسطين'",
+          phone_number: 'VARCHAR(50)',
+          video_url: 'TEXT',
+          is_boosted: 'BOOLEAN DEFAULT FALSE',
+          boosted_until: 'TIMESTAMP',
+          boost_tier: 'VARCHAR(50)',
+          boost_price: 'NUMERIC(10,2) DEFAULT 0'
+        }
+      },
+      bulletin_pages: {
+        columns: [
+          'id', 'user_id', 'name', 'slug', 'category', 'city', 'address',
+          'description', 'avatar_url', 'cover_url', 'whatsapp_number', 'phone_number',
+          'website_url', 'is_verified', 'followers_count', 'ads_count', 'created_at', 'updated_at'
+        ],
+        repairCols: {
+          is_verified: 'BOOLEAN DEFAULT TRUE',
+          followers_count: 'INTEGER DEFAULT 0',
+          ads_count: 'INTEGER DEFAULT 0'
+        }
+      },
+      route_seo_settings: {
+        columns: [
+          'id', 'route', 'title_ar', 'title_en', 'description_ar', 'description_en',
+          'keywords_ar', 'keywords_en', 'og_image_url', 'alt_text_ar', 'alt_text_en', 'is_active', 'created_at', 'updated_at'
+        ],
+        repairCols: {
+          alt_text_ar: 'TEXT',
+          alt_text_en: 'TEXT',
+          is_active: 'BOOLEAN DEFAULT true'
+        }
+      },
+      asset_metadata: {
+        columns: [
+          'id', 'file_url', 'asset_name', 'mime_type', 'file_size', 'alt_text_ar', 'alt_text_en',
+          'og_title_ar', 'og_title_en', 'og_description_ar', 'og_description_en', 'keywords_ar', 'keywords_en',
+          'visual_summary', 'ai_analysis_raw', 'created_at', 'updated_at'
+        ],
+        repairCols: {
+          visual_summary: 'TEXT',
+          ai_analysis_raw: "JSONB DEFAULT '{}'"
         }
       }
     },

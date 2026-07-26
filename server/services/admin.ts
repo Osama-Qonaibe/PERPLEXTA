@@ -12,7 +12,7 @@ const CORE_TABLES = [
 ];
 
 const LEDGER_TABLES = ['wallets', 'ledger_transactions'];
-const EXTERNAL_TABLES = ['forum_categories', 'forum_posts', 'forum_comments', 'blog_articles', 'blog_comments', 'blog_ratings'];
+const EXTERNAL_TABLES = ['blog_articles', 'blog_comments', 'blog_ratings'];
 const SECURITY_TABLES = ['token_blacklist', 'security_alerts'];
 
 export async function getDatabaseRegistry() {

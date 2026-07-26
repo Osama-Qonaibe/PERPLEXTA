@@ -12,6 +12,7 @@ import {
   Briefcase, FileText, AlertCircle, RefreshCw, UserCheck2, ShieldCheck, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { HighlightText } from './HighlightText';
 
 interface GoogleContactsProps {
   dir: 'rtl' | 'ltr';
@@ -679,12 +680,12 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           )}
                           <div className="flex flex-col text-start min-w-0">
                             <span className={`text-xs font-bold truncate ${isSelected ? 'text-emerald-500 font-extrabold' : 'text-gray-200'}`}>
-                              {contact.name}
+                              <HighlightText text={contact.name} query={searchQuery} />
                             </span>
                             {contact.organization && (
                               <span className="text-[9.5px] text-gray-500 truncate mt-0.5 font-sans flex items-center gap-1">
                                 <Briefcase size={9} />
-                                {contact.organization} {contact.jobTitle ? `- ${contact.jobTitle}` : ''}
+                                <HighlightText text={contact.organization} query={searchQuery} /> {contact.jobTitle ? `- ` : ''} <HighlightText text={contact.jobTitle} query={searchQuery} />
                               </span>
                             )}
                           </div>

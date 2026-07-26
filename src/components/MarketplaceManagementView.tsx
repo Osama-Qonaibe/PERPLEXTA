@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
+import { HighlightText } from './HighlightText';
 
 interface MarketplaceItem {
   id: number;
@@ -599,10 +600,10 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       </div>
                       <div className="space-y-0.5">
                         <div className="font-bold text-[var(--text-primary)]">
-                          {language === 'ar' ? item.title_ar : item.title_en}
+                          <HighlightText text={language === 'ar' ? item.title_ar : item.title_en} query={searchTerm} />
                         </div>
                         <div className="text-[10px] text-gray-500 line-clamp-1 max-w-xs leading-normal">
-                          {language === 'ar' ? item.description_ar : item.description_en}
+                          <HighlightText text={language === 'ar' ? item.description_ar : item.description_en} query={searchTerm} />
                         </div>
                         <div className="text-[9px] text-gray-500/70 font-mono">
                           Listed at: {new Date(item.created_at).toLocaleDateString()}

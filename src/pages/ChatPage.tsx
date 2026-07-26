@@ -29,6 +29,7 @@ import { toPng } from 'html-to-image';
 import { TypewriterMotive } from '../components/TypewriterMotive';
 import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
+import { HighlightText } from '../components/HighlightText';
 
 const ASPECT_RATIO_CLASSES: { [key: string]: string } = {
   '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
@@ -2020,7 +2021,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
   );
 };
 
-const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 'ltr' | 'rtl' }) => {
+const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps'], dir: 'ltr' | 'rtl', query?: string }) => {
   if (!steps || steps.length === 0) return null;
 
   return (
@@ -2054,7 +2055,7 @@ const ThinkingSteps = ({ steps, dir }: { steps: Message['thinking_steps'], dir: 
               </div>
             )}
             <span className={`text-[10px] sm:text-[12px] font-medium ${step.status === 'completed' ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]/60'} transition-theme truncate`}>
-              {step.step}
+              <HighlightText text={step.step} query={query} />
             </span>
           </motion.div>
         ))}
@@ -2262,74 +2263,6 @@ const fetchLinkMetadata = (url: string): Promise<any> => {
 
   linkMetadataCache.set(url, promise);
   return promise;
-};
-
-const HighlightText = ({ text, query }: { text: string; query?: string }) => {
-  if (!query || !query.trim() || !text) {
-    return <>{text}</>;
-  }
-
-  const cleanTerm = query.trim();
-  if (!cleanTerm) return <>{text}</>;
-
-  const stopWords = new Set([
-    'the', 'and', 'a', 'an', 'or', 'to', 'for', 'in', 'of', 'on', 'with', 'is', 'at', 'by', 'from', 'this', 'that', 'these', 'those', 'it', 'its',
-    'من', 'إلى', 'عن', 'على', 'في', 'ب', 'ل', 'ك', 'و', 'أو', 'ثم', 'مع', 'هذا', 'هذه', 'ذلك', 'التي', 'الذي', 'فيما', 'حيث'
-  ]);
-
-  const keywords = cleanTerm
-    .split(/\s+/)
-    .map(word => word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim())
-    .filter(word => word.length >= 2 && !stopWords.has(word.toLowerCase()));
-
-  const searchTerms: string[] = [];
-  if (cleanTerm.split(/\s+/).length > 1) {
-    const cleanPhrase = cleanTerm.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim();
-    if (cleanPhrase.length > 2) {
-      searchTerms.push(cleanPhrase);
-    }
-  }
-  searchTerms.push(...keywords);
-
-  const uniqueTerms = Array.from(new Set(searchTerms)).filter(Boolean);
-
-  if (uniqueTerms.length === 0) {
-    return <>{text}</>;
-  }
-
-  const sortedTerms = uniqueTerms
-    .map(term => term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
-    .sort((a, b) => b.length - a.length);
-
-  try {
-    const pattern = `(${sortedTerms.join('|')})`;
-    const isAr = /[\u0600-\u06FF]/.test(cleanTerm);
-    const regex = new RegExp(pattern, isAr ? 'g' : 'gi');
-    const parts = text.split(regex);
-    const testRegex = new RegExp(`^(${sortedTerms.join('|')})$`, isAr ? '' : 'i');
-
-    return (
-      <>
-        {parts.map((part, i) => {
-          if (testRegex.test(part)) {
-            return (
-              <span 
-                key={i} 
-                className="bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-medium px-0.5 rounded-[2px] drop-shadow-[0_0_4px_rgba(16,185,129,0.4)]"
-                id={`highlight-text-match-${i}`}
-              >
-                {part}
-              </span>
-            );
-          }
-          return part;
-        })}
-      </>
-    );
-  } catch (e) {
-
-    return <>{text}</>;
-  }
 };
 
 const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite: any, idx: number, dir: 'ltr' | 'rtl', getCleanUrl: (url: string) => string, getFavicon: (url: string) => string, query?: string }) => {
@@ -6499,7 +6432,7 @@ export const ChatPage: React.FC = () => {
   const isToolActive = selectedTool !== 'chat';
 
   const renderInputArea = () => (
-    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto">
+    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto pb-safe">
 
       {renderVideoSettings()}
       {renderImageSettings()}
@@ -7495,6 +7428,7 @@ export const ChatPage: React.FC = () => {
                             <ThinkingSteps 
                               steps={msg.thinking_steps?.map(s => (!isGenerating || idx < messages.indexOf(msg)) ? { ...s, status: 'completed' as const } : s)} 
                               dir={dir} 
+                              query={messages.slice(0, idx).reverse().find(m => m.role === 'user')?.content || ''}
                             />
                             {(msg.tool === 'canvas') ? (
                               <ProductionSuite content={stripProtocolMarkers(msg.content)} dir={dir} theme={theme} />

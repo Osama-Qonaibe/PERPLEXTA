@@ -121,6 +121,11 @@ export async function updateSystemSettings(settings: any) {
   const google_site_verification = settings.google_site_verification !== undefined ? settings.google_site_verification : existing.google_site_verification;
   const blocked_paths = settings.blocked_paths !== undefined ? settings.blocked_paths : (existing.blocked_paths || '');
 
+  const bulletin_ad_daily_price = settings.bulletin_ad_daily_price !== undefined ? settings.bulletin_ad_daily_price : (existing.bulletin_ad_daily_price || 5.00);
+  const live_gift_commission_percent = settings.live_gift_commission_percent !== undefined ? settings.live_gift_commission_percent : (existing.live_gift_commission_percent || 30);
+  const sidebar_ad_impression_price = settings.sidebar_ad_impression_price !== undefined ? settings.sidebar_ad_impression_price : (existing.sidebar_ad_impression_price || 0.0100);
+  const sidebar_ad_click_price = settings.sidebar_ad_click_price !== undefined ? settings.sidebar_ad_click_price : (existing.sidebar_ad_click_price || 0.10);
+
   // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
     ? settings.logo_url 
@@ -140,12 +145,17 @@ export async function updateSystemSettings(settings: any) {
       site_name_en = $1, site_name_ar = $2, site_description_en = $3, site_description_ar = $4,
       seo_description_en = $5, seo_description_ar = $6, keywords_en = $7, keywords_ar = $8,
       google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14,
-      blocked_paths = $15, seo_site_name_en = $16, seo_site_name_ar = $17, updated_at = CURRENT_TIMESTAMP
+      blocked_paths = $15, seo_site_name_en = $16, seo_site_name_ar = $17, 
+      bulletin_ad_daily_price = $18, live_gift_commission_percent = $19, 
+      sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21,
+      updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
     google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-    blocked_paths, seo_site_name_en || '', seo_site_name_ar || ''
+    blocked_paths, seo_site_name_en || '', seo_site_name_ar || '',
+    bulletin_ad_daily_price, live_gift_commission_percent,
+    sidebar_ad_impression_price, sidebar_ad_click_price
   ]);
   
   await clearSettingsCache();

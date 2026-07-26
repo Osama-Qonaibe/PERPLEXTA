@@ -2877,26 +2877,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
+    const playNotificationChime = () => {
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.22);
+      } catch (e) {}
+    };
+
     const handleIncomingNotification = (notif: any) => {
+      if (!notif) return;
+      
       setNotifications(prev => {
         if (prev.some(n => n.id === notif.id)) return prev;
         return [notif, ...prev];
       });
 
+      playNotificationChime();
+
       try {
-        if (Notification.permission === 'granted') {
-          new Notification(language === 'ar' ? notif.title_ar : notif.title_en, {
-            body: language === 'ar' ? notif.message_ar : notif.message_en,
+        const title = language === 'ar' ? (notif.title_ar || notif.title_en) : (notif.title_en || notif.title_ar);
+        const msg = language === 'ar' ? (notif.message_ar || notif.message_en) : (notif.message_en || notif.message_ar);
+
+        if (title || msg) {
+          toast.info(title || (language === 'ar' ? 'تنبيه جديد' : 'New Alert'), {
+            description: msg,
+            duration: 4000
+          });
+        }
+
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(title || 'Alert', {
+            body: msg || '',
             icon: '/favicon.ico'
           });
         }
       } catch (err) {
-
+        // Safe fallback
       }
     };
 
     newSocket.on('new_notification', handleIncomingNotification);
     newSocket.on('notification', handleIncomingNotification);
+    newSocket.on('realtime_alert', handleIncomingNotification);
+    newSocket.on('security_alert', handleIncomingNotification);
+    newSocket.on('wallet_alert', handleIncomingNotification);
+    newSocket.on('ad_direct_message', (msg: any) => {
+      if (userRef.current?.id && msg && Number(msg.sender_id) !== Number(userRef.current.id)) {
+        const notif = {
+          id: Date.now(),
+          title_ar: 'رسالة جديدة في صندوق المحادثات',
+          title_en: 'New Message in Messenger',
+          message_ar: msg.message ? `تلقيت رسالة جديدة: "${msg.message.slice(0, 50)}..."` : 'تلقيت رسالة جديدة حول الإعلان',
+          message_en: msg.message ? `New message received: "${msg.message.slice(0, 50)}..."` : 'New message received regarding ad',
+          is_read: false,
+          created_at: new Date().toISOString()
+        };
+        handleIncomingNotification(notif);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('bulletin-inquiry-updated'));
+        }
+      }
+    });
 
     newSocket.on('quota_milestone', (data: any) => {
       setMilestoneData(data);

@@ -37,13 +37,56 @@
       })();
     </script>
     <link rel="icon" type="image/png" href="/app-assets/icon.png" />
+    <link rel="apple-touch-icon" href="/app-assets/icon.png" />
+    <link rel="apple-touch-startup-image" href="/app-assets/icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Perplexta" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Perplexta Platform - Professional Elite AI Platform</title>
     <meta name="description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations with dual-database ledgers." />
-    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://perplexta.com/" />
+    <meta property="og:title" content="Perplexta Platform - Professional Elite AI Platform" />
+    <meta property="og:description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations." />
+    <meta property="og:image" content="/app-assets/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://perplexta.com/" />
+    <meta property="twitter:title" content="Perplexta Platform - Professional Elite AI Platform" />
+    <meta property="twitter:description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations." />
+    <meta property="twitter:image" content="/app-assets/og-image.png" />
+
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    <style>
+      :root { --bg-initial: #fcfcfc; }
+      html.dark { --bg-initial: #080809; }
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-initial);
+        z-index: 9999;
+      }
+      .loader-gradient {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 40%);
+      }
+    </style>
   </head>
   <body style="background-color: inherit; color: inherit;">
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loader">
+        <div class="loader-gradient"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
     // WebMCP - Expose site tools to AI agents via browser

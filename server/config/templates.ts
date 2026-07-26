@@ -515,5 +515,138 @@ export const systemTemplates = [
       </div>
       <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">رمز الإحالة المعتمد: <code>{{referralCode}}</code></p>
     `, 'ar')
+  },
+  {
+    name: 'bulletin_ad_approved',
+    subject_en: 'Logistics: Bulletin Advertisement Approved & Published - Perplexta',
+    subject_ar: 'تحديث لوجستي: تم اعتماد ونشر إعلانك بنجاح - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Advertisement Published</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Identity profile verified. Your advertisement <strong>"{{adTitle}}"</strong> has been successfully approved and published on the Perplexta Bulletin Board.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #10b981; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Duration Terms:</strong> <span style="color: #0f172a;">{{durationDays}} Days</span></div>
+        <div style="font-size: 13px; color: #64748b;"><strong>Expiration Date:</strong> <span style="color: #0f172a;">{{expiresAt}}</span></div>
+      </div>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 30px;">Your campaign is now actively serving impressions and clicks within the community feed.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">View Live Ad</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد ونشر الإعلان</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم التحقق من الامتثال. تمت الموافقة على نشر إعلانك الموسوم بـ <strong>"{{adTitle}}"</strong> ونشره بنجاح في ساحة إعلانات بيربليكستا.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #10b981; border-radius: 2px; margin: 25px 0;">
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>مدة العرض النشط:</strong> <span style="color: #0f172a;">{{durationDays}} يوم</span></div>
+        <div style="font-size: 14px; color: #64748b;"><strong>تاريخ انتهاء الصلاحية:</strong> <span style="color: #0f172a;">{{expiresAt}}</span></div>
+      </div>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">حملتك الإعلانية نشطة الآن وتقوم بحصد الانطباعات والزيارات في التغذية الإخبارية للمجتمع.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">مشاهدة الإعلان مباشرة</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'bulletin_ad_rejected',
+    subject_en: 'Compliance Alert: Bulletin Advertisement Rejected - Perplexta',
+    subject_ar: 'تنبيه الامتثال: تم رفض نشر إعلانك - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #ef4444; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Ad Submission Rejection</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Your submission <strong>"{{adTitle}}"</strong> did not meet our editorial and safety guidelines.</p>
+      <div style="background-color: #fef2f2; padding: 25px; border: 1px solid #fee2e2; border-radius: 2px; margin: 25px 0; color: #991b1b;">
+        <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">Rejection Audit Reason:</div>
+        <div style="font-size: 14px; font-family: sans-serif; line-height: 1.6;">{{rejectionReason}}</div>
+      </div>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 30px;">If applicable, registration costs and boost funds have been automatically refunded back to your terminal wallet ledger balance.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #ef4444; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Revise & Resubmit</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #ef4444; font-size: 24px; font-weight: 700; margin-bottom: 25px;">رفض نشر الإعلان في الساحة</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">لم يستوفِ طلب النشر الخاص بكم لإعلان <strong>"{{adTitle}}"</strong> معايير النشر والأمان الخاصة بساحة الإعلانات.</p>
+      <div style="background-color: #fef2f2; padding: 25px; border: 1px solid #fee2e2; border-radius: 2px; margin: 25px 0; color: #991b1b;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">سبب رفض طلب النشر:</div>
+        <div style="font-size: 15px; font-family: sans-serif; line-height: 1.6;">{{rejectionReason}}</div>
+      </div>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">إذا كانت هناك رسوم مدفوعة أو تكاليف للترويج، فقد تم إرجاعها بالكامل وتغذيتها في محفظتكم الرقمية فوراً.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #ef4444; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">تعديل وإعادة التقديم</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'bulletin_ad_expired',
+    subject_en: 'Terminal Notice: Advertisement Duration Expired - Perplexta',
+    subject_ar: 'إشعار المنصة: انتهاء الفترة المخصصة لإعلانك - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Advertisement Expired</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">This is an automated resource notice that your campaign <strong>"{{adTitle}}"</strong> has completed its scheduled duration terms and has expired.</p>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">To renew visibility, resume impressions, or boost analytics, please navigate to your dashboard and initiate a renewal campaign protocol.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Renew Campaign</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">انتهاء صلاحية الإعلان</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">هذا إشعار تلقائي من الموارد يفيد بأن حملتك الإعلانية الموسومة بـ <strong>"{{adTitle}}"</strong> قد استكملت فترة عرضها وجدولها الزمني وتوقفت عن الظهور تلقائياً.</p>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">لتجديد ظهور الإعلان، استئناف الانطباعات، أو ترويج الإحصائيات، يرجى الدخول إلى لوحة التحكم الخاصة بك وتفعيل حملة جديدة.</p>
+      <div style="text-align: center; margin: 40px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block;">تجديد ونشر الحملة</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'bulletin_ad_inquiry_received',
+    subject_en: 'Lead Update: New Customer Inquiry Received - Perplexta',
+    subject_ar: 'تحديث المعاملات: وصلك استفسار زبون جديد - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">New Customer Inquiry</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">A potential customer <strong>{{senderName}}</strong> has initiated an inquiry regarding your advertisement: <strong>"{{adTitle}}"</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #10b981; font-size: 14px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
+        <div style="font-weight: 700; color: #0f172a; margin-bottom: 8px;">Customer Inquiry Message:</div>
+        "{{messageSnippet}}"
+      </div>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 30px;">To reply, view details, or schedule follow-ups, please log in to your Messenger Hub.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 15px 35px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">Reply via Messenger</a>
+      </div>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">استفسار زبون جديد</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">قام الزبون المحتمل <strong>{{senderName}}</strong> بإرسال استفسار مباشر بخصوص إعلانك الموسوم بـ: <strong>"{{adTitle}}"</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #10b981; font-size: 15px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
+        <div style="font-weight: 700; color: #0f172a; margin-bottom: 8px;">محتوى رسالة الزبون:</div>
+        "{{messageSnippet}}"
+      </div>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">للرد على الزبون، وتفقد تفاصيل الرسالة، يرجى تسجيل الدخول إلى مركز الرسائل والمسنجر الخاص بك.</p>
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="{{actionUrl}}" style="background-color: #0f172a; color: #ffffff; padding: 15px 35px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 14px; display: inline-block;">الرد عبر المسنجر</a>
+      </div>
+    `, 'ar')
+  },
+  {
+    name: 'bulletin_ad_boost_activated',
+    subject_en: 'Billing Update: Advertisement Boost Activated - Perplexta',
+    subject_ar: 'تحديث الحساب: تفعيل حزمة ترويج الإعلان المتقدمة - بيربليكستا',
+    body_en: wrapper(`
+      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Campaign Boost Activated</h2>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Operational adjustment. Your advertisement <strong>"{{adTitle}}"</strong> has been successfully boosted.</p>
+      <div style="background-color: #f0fdf4; padding: 25px; border: 1px solid #dcfce7; border-radius: 2px; margin: 25px 0; color: #166534;">
+        <div style="font-size: 13px; margin-bottom: 8px;"><strong>Boost Tier Class:</strong> <span style="font-weight: 700; color: #14532d;">{{boostTier}}</span></div>
+        <div style="font-size: 13px; margin-bottom: 8px;"><strong>Cost Deducted:</strong> <span style="font-weight: 700; color: #14532d;">{{boostPrice}} PTS</span></div>
+        <div style="font-size: 13px;"><strong>Active Duration Until:</strong> <span style="font-weight: 700; color: #14532d;">{{boostedUntil}}</span></div>
+      </div>
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">Your boosted campaign will now receive priority placement, highlighted visual borders, and increased feed exposure.</p>
+    `, 'en'),
+    body_ar: wrapper(`
+      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم تفعيل ترويج الحملة</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم تأكيد المعاملة المالية لوجستياً. تم بنجاح تفعيل خيار الترويج الفائق لإعلانك: <strong>"{{adTitle}}"</strong>.</p>
+      <div style="background-color: #f0fdf4; padding: 25px; border: 1px solid #dcfce7; border-radius: 2px; margin: 25px 0; color: #166534;">
+        <div style="font-size: 14px; margin-bottom: 8px;"><strong>فئة الترويج النشط:</strong> <span style="font-weight: 700; color: #14532d;">{{boostTier}}</span></div>
+        <div style="font-size: 14px; margin-bottom: 8px;"><strong>التكلفة المخصومة:</strong> <span style="font-weight: 700; color: #14532d;">{{boostPrice}} نقطة</span></div>
+        <div style="font-size: 14px;"><strong>تاريخ انتهاء الترويج الفائق:</strong> <span style="font-weight: 700; color: #14532d;">{{boostedUntil}}</span></div>
+      </div>
+      <p style="color: #475569; font-size: 16px; line-height: 1.8;">سيستمتع إعلانك المروج بظهور ذي أولوية متقدمة في واجهة التغذية الإخبارية وإطارات ملونة لزيادة التفاعل.</p>
+    `, 'ar')
   }
 ];

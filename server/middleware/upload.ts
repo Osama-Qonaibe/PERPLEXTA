@@ -35,7 +35,13 @@ const allowedMimeTypes: Record<string, string[]> = {
   '.jpeg': ['image/jpeg'],
   '.gif': ['image/gif'],
   '.webp': ['image/webp'],
-  '.mp4': ['video/mp4'],
+  '.mp4': ['video/mp4', 'video/x-m4v', 'video/m4v', 'application/octet-stream'],
+  '.mov': ['video/quicktime', 'video/x-quicktime', 'image/mov', 'application/octet-stream'],
+  '.webm': ['video/webm', 'audio/webm', 'application/octet-stream'],
+  '.mkv': ['video/x-matroska', 'video/mkv', 'application/octet-stream'],
+  '.avi': ['video/x-msvideo', 'video/avi', 'application/x-troff-msvideo', 'application/octet-stream'],
+  '.m4v': ['video/x-m4v', 'video/mp4', 'application/octet-stream'],
+  '.3gp': ['video/3gpp', 'audio/3gpp', 'application/octet-stream'],
   '.mp3': ['audio/mpeg', 'audio/mp3'],
   '.wav': ['audio/wav', 'audio/x-wav']
 };
@@ -66,8 +72,8 @@ export const handleMulterError = (err: any, req: any, res: any, next: any) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ 
-        error: 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 15 ميجابايت لضمان أداء مستقر.',
-        errorEn: 'File is too large. The maximum allowed size is 15MB to ensure stable performance.'
+        error: 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 100 ميجابايت لضمان أداء مستقر.',
+        errorEn: 'File is too large. The maximum allowed size is 100MB to ensure stable performance.'
       });
     }
     return res.status(400).json({ error: err.message });

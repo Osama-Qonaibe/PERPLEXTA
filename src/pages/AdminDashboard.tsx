@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { motion, AnimatePresence } from "motion/react";
 import { perplextaPageTransition } from "../constants/motions";
+import { HighlightText } from "../components/HighlightText";
 import {
   Music,
   Activity,
@@ -84,6 +85,9 @@ import {
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { validateToolRoutePricing } from "../utils/orchestratorValidator";
 import { ReferralDashboardView } from "./ReferralDashboardView";
+import { AdsManagementView } from "./AdsManagementView";
+import { AdminRateLimitMetricsView } from "./AdminRateLimitMetricsView";
+import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -1018,9 +1022,9 @@ const CommandCenterView = ({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] leading-snug truncate">
                         <span className="text-emerald-500 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/10">
-                          {log.user_name || t("systemUser")}
+                          <HighlightText text={log.user_name || t("systemUser")} query={search} />
                         </span>{" "}
-                        <span className="ml-1 opacity-90">{translateAction(log.action)}</span>
+                        <span className="ml-1 opacity-90"><HighlightText text={translateAction(log.action)} query={search} /></span>
                       </p>
                       <p className="text-[10px] text-[var(--text-muted)] mt-1.5 transition-theme flex items-center gap-2">
                         <span className="flex items-center gap-1">
@@ -1033,7 +1037,7 @@ const CommandCenterView = ({
                           ? (
                             <>
                               <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
-                              <span className="truncate max-w-[200px]">{translateDetail(log.detail)}</span>
+                              <span className="truncate max-w-[200px]"><HighlightText text={translateDetail(log.detail)} query={search} /></span>
                             </>
                           )
                           : ""}
@@ -8083,10 +8087,10 @@ const UserManagementView = ({
                         </div>
                         <div>
                           <div className="font-black text-sm text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme">
-                            {user.name}
+                            <HighlightText text={user.name} query={searchQuery} />
                           </div>
                           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
-                            {user.email}
+                            <HighlightText text={user.email} query={searchQuery} />
                           </div>
                         </div>
                       </div>
@@ -11333,6 +11337,133 @@ const SystemSettingsView = ({
     type: "success" | "error";
   } | null>(null);
 
+  // --- DYNAMIC ROUTE SEO MANAGEMENT STATE ---
+  const [routeSeoList, setRouteSeoList] = useState<any[]>([]);
+  const [loadingRouteSeo, setLoadingRouteSeo] = useState(false);
+  const [editingRouteItem, setEditingRouteItem] = useState<any | null>(null);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  const [routeSearchQuery, setRouteSearchQuery] = useState("");
+  const [routeUploadingImg, setRouteUploadingImg] = useState(false);
+
+  const fetchRouteSeoList = async () => {
+    setLoadingRouteSeo(true);
+    try {
+      const res = await fetch("/api/admin/seo-routes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRouteSeoList(data);
+      }
+    } catch (e) {
+      console.error("Failed to load route SEO list:", e);
+    } finally {
+      setLoadingRouteSeo(false);
+    }
+  };
+
+  const handleOpenAddRouteModal = () => {
+    setEditingRouteItem({
+      route: "",
+      title_ar: "",
+      title_en: "",
+      description_ar: "",
+      description_en: "",
+      keywords_ar: "",
+      keywords_en: "",
+      og_image_url: "",
+      is_active: true,
+    });
+    setIsRouteModalOpen(true);
+  };
+
+  const handleOpenEditRouteModal = (item: any) => {
+    setEditingRouteItem({ ...item });
+    setIsRouteModalOpen(true);
+  };
+
+  const handleSaveRouteSeo = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editingRouteItem?.route) {
+      showToast(dir === "rtl" ? "مسار الصفحة مطلوب (مثل /marketplace)" : "Route path is required (e.g. /marketplace)", "error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/seo-routes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editingRouteItem),
+      });
+      if (res.ok) {
+        showToast(
+          dir === "rtl" ? "تم حفظ إعدادات SEO للمسار بنجاح" : "Route SEO settings saved successfully",
+          "success"
+        );
+        setIsRouteModalOpen(false);
+        setEditingRouteItem(null);
+        fetchRouteSeoList();
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || "Failed to save route SEO", "error");
+      }
+    } catch (e: any) {
+      showToast(e.message || "Error saving route SEO", "error");
+    }
+  };
+
+  const handleDeleteRouteSeo = async (id: number) => {
+    if (!window.confirm(dir === "rtl" ? "هل أنت تأكد من حذف إعدادات هذا المسار؟" : "Are you sure you want to delete this route SEO setting?")) return;
+    try {
+      const res = await fetch(`/api/admin/seo-routes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        showToast(dir === "rtl" ? "تم حذف إعدادات المسار" : "Route SEO setting removed", "success");
+        fetchRouteSeoList();
+      } else {
+        showToast("Failed to delete", "error");
+      }
+    } catch (e: any) {
+      showToast(e.message || "Delete error", "error");
+    }
+  };
+
+  const handleRouteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast(dir === "rtl" ? "حجم الصورة يجب أن يكون أقل من 2 ميغابايت" : "Image size must be less than 2MB", "error");
+      return;
+    }
+    setRouteUploadingImg(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/settings/upload-seo-image", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          setEditingRouteItem((prev: any) => ({ ...prev, og_image_url: data.imageUrl }));
+          showToast(dir === "rtl" ? "تم رفع صورة المسار بنجاح" : "Route SEO image uploaded successfully", "success");
+        }
+      }
+    } catch (err) {
+      showToast("Failed to upload image", "error");
+    } finally {
+      setRouteUploadingImg(false);
+    }
+  };
+
+
+
   // --- SEO CRAWLABILITY AND ROUTE INDEXING AUDIT REPORT STATE ---
   const [crawlScanning, setCrawlScanning] = useState(false);
   const [crawlAuditScores, setCrawlAuditScores] = useState<{ total: number; protected: number; indexed: number } | null>(null);
@@ -11407,7 +11538,10 @@ const SystemSettingsView = ({
         console.error("Error fetching settings:", error);
       }
     };
-    if (token) fetchSettings();
+    if (token) {
+      fetchSettings();
+      fetchRouteSeoList();
+    }
   }, [token]);
 
   const handleImageUpload = async (
@@ -11655,7 +11789,6 @@ const SystemSettingsView = ({
     const base = [
       { path: "/", labelEn: "Home Gateway Redirect", labelAr: "بوابة التوجيه الرئيسية", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "بوابة توجيه عامة تقوم بتوجيه المستخدمين للواجهة الافتراضية." },
       { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "صفحة خطط الاشتراكات", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "صفحة عامة لعرض مزايا وتفاصيل العضوية والخطط السعرية." },
-      { path: "/forum", labelEn: "Community Discussion Forum", labelAr: "منتدى النقاش المجتمعي", type: "public", status: "index", descriptionEn: "Public discussion boards to index community engagement and topics.", descriptionAr: "لوحات نقاش عامة لتعزيز وأرشفة تفاعل المجتمع والمواضيع." },
       { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "متجر الإضافات والنماذج الذكية", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "معرض عام لعرض ملحقات الأنظمة المدمجة والقوالب الاحترافية." },
       { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "المدونة التقنية والتعليمية", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "مركز مقالات عام لنشر التحليلات الفنية والدروس التعليمية." },
       { path: "/terms", labelEn: "Terms of Service", labelAr: "شروط الخدمة والاستخدام", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "اتفاقية قانونية عامة تنظم الاستخدام وحقوق الملكية للمنصة." },
@@ -11780,7 +11913,7 @@ const SystemSettingsView = ({
       indexing_policy_applied: {
         strict_user_data_isolation: "enforced",
         allowed_public_routes_whitelist: [
-          "/", "/subscription", "/forum", "/marketplace", "/blog", "/terms", "/privacy", "/about"
+          "/", "/subscription", "/marketplace", "/blog", "/terms", "/privacy", "/about"
         ]
       },
       endpoints_analysis: routesSchema.map((r: any) => ({
@@ -12584,6 +12717,411 @@ const SystemSettingsView = ({
           </button>
         </div>
       </div>
+
+      {/* Dynamic Route-Based SEO Manager (Database SEO Meta Tags per Route) */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${
+          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <Globe size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">
+                {dir === "rtl" ? "أداة إدارة بيانات SEO للمسارات الديناميكية" : "Dynamic Route SEO Meta Manager"}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {dir === "rtl"
+                  ? "تخصيص وتحديث عناوين SEO والوصف والكلمات المفتاحية وصور Open Graph لكل مسار في قاعدة البيانات بشكل فوري ومباشر."
+                  : "Dynamically manage SEO title, description, keywords, and Open Graph share images for specific application routes in database."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={fetchRouteSeoList}
+              disabled={loadingRouteSeo}
+              className="p-2.5 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a1a1c] text-gray-600 dark:text-gray-300 transition-all duration-300"
+              title={dir === "rtl" ? "تحديث القائمة" : "Refresh List"}
+            >
+              <RefreshCw size={16} className={loadingRouteSeo ? "animate-spin" : ""} />
+            </button>
+            <button
+              onClick={handleOpenAddRouteModal}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md font-medium text-xs transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+            >
+              <Plus size={16} />
+              {dir === "rtl" ? "إضافة مسار جديد" : "Add Route SEO"}
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Counter Filter */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-gray-50 dark:bg-[#18181b] p-3 rounded-md border border-gray-100 dark:border-gray-800/80">
+          <div className="relative w-full sm:w-80">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={routeSearchQuery}
+              onChange={(e) => setRouteSearchQuery(e.target.value)}
+              placeholder={dir === "rtl" ? "بحث عن مسار أو عنوان..." : "Filter routes or titles..."}
+              className={`w-full text-xs pl-9 pr-3 py-2 rounded-md border ${
+                theme === "dark" ? "bg-[#111111] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-800"
+              } focus:outline-none focus:border-emerald-500`}
+            />
+          </div>
+          <div className="text-xs text-gray-500 font-mono flex items-center gap-2">
+            <span>{dir === "rtl" ? "إجمالي المسارات المسجلة:" : "Configured Routes:"}</span>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold">
+              {routeSeoList.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Routes List Table */}
+        {loadingRouteSeo && routeSeoList.length === 0 ? (
+          <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
+            <RefreshCw size={20} className="animate-spin text-emerald-500" />
+            <span>{dir === "rtl" ? "جاري تحميل إعدادات SEO للمسارات..." : "Loading route SEO configurations..."}</span>
+          </div>
+        ) : routeSeoList.length === 0 ? (
+          <div className="py-12 text-center border border-dashed rounded-md dark:border-gray-800 text-gray-400">
+            <Globe size={32} className="mx-auto mb-2 text-gray-500 opacity-60" />
+            <p className="text-sm font-medium">
+              {dir === "rtl" ? "لا توجد مسارات مخصصة مسجلة حالياً" : "No custom route SEO configurations found."}
+            </p>
+            <button
+              onClick={handleOpenAddRouteModal}
+              className="mt-3 text-xs text-emerald-500 underline hover:text-emerald-400"
+            >
+              {dir === "rtl" ? "+ إضافة أول مسار الآن" : "+ Create your first route SEO entry"}
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className={`text-[10px] uppercase font-mono border-b ${
+                theme === "dark" ? "border-gray-800 text-gray-400 bg-[#18181b]" : "border-gray-200 text-gray-500 bg-gray-50"
+              }`}>
+                <tr>
+                  <th className="p-3">{dir === "rtl" ? "المسار (Route)" : "Route Path"}</th>
+                  <th className="p-3">{dir === "rtl" ? "عنوان SEO (العربية / English)" : "SEO Title (Ar / En)"}</th>
+                  <th className="p-3">{dir === "rtl" ? "الوصف" : "Description"}</th>
+                  <th className="p-3">{dir === "rtl" ? "صورة OG" : "OG Image"}</th>
+                  <th className="p-3">{dir === "rtl" ? "الحالة" : "Status"}</th>
+                  <th className="p-3 text-right">{dir === "rtl" ? "الإجراءات" : "Actions"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                {routeSeoList
+                  .filter((item) => {
+                    if (!routeSearchQuery) return true;
+                    const q = routeSearchQuery.toLowerCase();
+                    return (
+                      item.route?.toLowerCase().includes(q) ||
+                      item.title_ar?.toLowerCase().includes(q) ||
+                      item.title_en?.toLowerCase().includes(q) ||
+                      item.description_ar?.toLowerCase().includes(q) ||
+                      item.description_en?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((item) => (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-gray-50/50 dark:hover:bg-[#18181b]/50 transition-colors ${
+                        !item.is_active ? "opacity-50" : ""
+                      }`}
+                    >
+                      <td className="p-3 font-mono font-bold text-emerald-500">
+                        {item.route}
+                      </td>
+                      <td className="p-3 max-w-[200px]">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {dir === "rtl" ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar)}
+                        </div>
+                        <div className="text-[10px] text-gray-400 truncate dir-ltr">
+                          {item.title_en}
+                        </div>
+                      </td>
+                      <td className="p-3 max-w-[260px]">
+                        <p className="line-clamp-2 text-gray-600 dark:text-gray-400 text-[11px] leading-relaxed">
+                          {dir === "rtl" ? (item.description_ar || item.description_en) : (item.description_en || item.description_ar)}
+                        </p>
+                      </td>
+                      <td className="p-3">
+                        {item.og_image_url ? (
+                          <img
+                            src={item.og_image_url}
+                            alt={item.route}
+                            className="w-12 h-7 object-cover rounded border border-gray-200 dark:border-gray-800"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic">Default</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                            item.is_active
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                          }`}
+                        >
+                          {item.is_active ? (dir === "rtl" ? "نشط" : "Active") : (dir === "rtl" ? "معطل" : "Disabled")}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditRouteModal(item)}
+                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+                            title={dir === "rtl" ? "تعديل" : "Edit"}
+                          >
+                            <Settings2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRouteSeo(item.id)}
+                            className="p-1.5 rounded hover:bg-rose-500/10 text-rose-500 transition-colors"
+                            title={dir === "rtl" ? "حذف" : "Delete"}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Route SEO Add/Edit Modal */}
+      <AnimatePresence>
+        {isRouteModalOpen && editingRouteItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border p-6 shadow-2xl ${
+                theme === "dark" ? "bg-[#141416] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
+              }`}
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-800 mb-5">
+                <div className="flex items-center gap-2 font-bold text-lg">
+                  <Globe className="text-emerald-500" size={20} />
+                  <span>
+                    {editingRouteItem.id
+                      ? (dir === "rtl" ? "تعديل إعدادات SEO للمسار" : "Edit Route SEO Setting")
+                      : (dir === "rtl" ? "إضافة مسار SEO جديد" : "Add New Route SEO Setting")}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsRouteModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveRouteSeo} className="space-y-4">
+                {/* Route path */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-emerald-500 mb-1">
+                    {dir === "rtl" ? "مسار الصفحة (Route Path)" : "Route Path (e.g. /marketplace)"} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingRouteItem.route || ""}
+                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, route: e.target.value })}
+                    placeholder="/marketplace"
+                    className={`w-full text-xs p-2.5 rounded-md border font-mono ${
+                      theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                    } focus:outline-none focus:border-emerald-500`}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {dir === "rtl" ? "المسار النسبي للصفحة، مثل: /blog أو /subscription أو /custom-page" : "Relative route path starting with /, e.g., /blog or /subscription"}
+                  </p>
+                </div>
+
+                {/* Title Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "عنوان SEO (بالعربية)" : "SEO Title (Arabic)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.title_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_ar: e.target.value })}
+                      placeholder="عنوان الصفحة بالعربية..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "عنوان SEO (بالإنجليزية)" : "SEO Title (English)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.title_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_en: e.target.value })}
+                      placeholder="Page title in English..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                </div>
+
+                {/* Description Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الوصف التعريفي (بالعربية)" : "SEO Description (Arabic)"}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editingRouteItem.description_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_ar: e.target.value })}
+                      placeholder="وصف مختصر ومحسّن لمحركات البحث..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الوصف التعريفي (بالإنجليزية)" : "SEO Description (English)"}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editingRouteItem.description_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_en: e.target.value })}
+                      placeholder="Search optimized page description..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                </div>
+
+                {/* Keywords Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الكلمات المفتاحية (بالعربية)" : "Keywords (Arabic)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.keywords_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_ar: e.target.value })}
+                      placeholder="كلمات, مفتاحية, مفصولة, بفاصلة"
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الكلمات المفتاحية (بالإنجليزية)" : "Keywords (English)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.keywords_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_en: e.target.value })}
+                      placeholder="keywords, separated, by, comma"
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                  </div>
+                </div>
+
+                {/* OG Image URL / Upload */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    {dir === "rtl" ? "صورة مشاركة التواصل الاجتماعي (Open Graph Image)" : "Open Graph Image (OG Image URL)"}
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={editingRouteItem.og_image_url || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, og_image_url: e.target.value })}
+                      placeholder="https://... or /uploads/..."
+                      className={`flex-1 text-xs p-2.5 rounded-md border font-mono ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-emerald-500`}
+                    />
+                    <label className="cursor-pointer flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700">
+                      <Upload size={14} />
+                      <span>{routeUploadingImg ? "..." : (dir === "rtl" ? "رفع" : "Upload")}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleRouteImageUpload}
+                        disabled={routeUploadingImg}
+                      />
+                    </label>
+                  </div>
+                  {editingRouteItem.og_image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={editingRouteItem.og_image_url}
+                        alt="Preview"
+                        className="h-20 rounded border object-cover border-gray-200 dark:border-gray-800"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Is Active Toggle */}
+                <div className="flex items-center gap-3 pt-2">
+                  <input
+                    type="checkbox"
+                    id="route_is_active"
+                    checked={editingRouteItem.is_active !== false}
+                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, is_active: e.target.checked })}
+                    className="w-4 h-4 text-emerald-500 accent-emerald-500 rounded border-gray-300 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="route_is_active" className="text-xs font-medium cursor-pointer">
+                    {dir === "rtl" ? "تفعيل إعدادات SEO لهذا المسار" : "Enable dynamic SEO meta tags for this route"}
+                  </label>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsRouteModalOpen(false)}
+                    className="px-4 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  >
+                    {dir === "rtl" ? "إلغاء" : "Cancel"}
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                  >
+                    <Save size={14} />
+                    {dir === "rtl" ? "حفظ التغييرات" : "Save Settings"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Search Engine Indexing & Route Security Verification (Crawlability Audit) */}
       <div
@@ -13464,6 +14002,8 @@ export const AdminDashboard: React.FC = () => {
     switch (path) {
       case "dashboard":
         return t("commandCenter");
+      case "radar":
+        return language === "ar" ? "رادار الأمان" : "Security Radar";
       case "keys":
         return t("aiInfrastructure");
       case "databases":
@@ -13488,6 +14028,8 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar" ? "التدقيق والامتثال" : "Compliance Audit Trail";
       case "referrals":
         return t("referralDashboard");
+      case "metrics":
+        return language === "ar" ? "مقاييس الأداء ورندر المكونات" : "Render & Latency Metrics";
       default:
         return t("commandCenter");
     }
@@ -13499,6 +14041,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "مراقبة وتقارير النظام الشاملة"
           : "SYSTEM-WIDE MONITORING & INTELLIGENCE";
+      case "radar":
+        return language === "ar"
+          ? "رادار مراقبة الهجمات المباشر"
+          : "LIVE SECURITY RADAR & THREAT INTELLIGENCE";
       case "keys":
         return language === "ar"
           ? "إدارة مفاتيح الوصول والبنية التحتية"
@@ -13547,6 +14093,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "مراقبة وإحصاءات برنامج الإحالات والتحويلات"
           : "REFERRAL PROGRAM STATISTICS & CONVERSION INTELLIGENCE";
+      case "metrics":
+        return language === "ar"
+          ? "مراقبة زمن الانتقال وتتبع أداء المكونات برمجياً"
+          : "COMPONENT RENDER TELEMETRY & LATENCY MONITORING";
       default:
         return "MANAGEMENT COMMAND CENTER";
     }
@@ -13557,6 +14107,10 @@ export const AdminDashboard: React.FC = () => {
       "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]";
     switch (path) {
       case "dashboard":
+        return <Activity size={28} className={iconClass} />;
+      case "radar":
+        return <Shield size={28} className={iconClass} />;
+      case "metrics":
         return <Activity size={28} className={iconClass} />;
       case "keys":
         return <Key size={28} className={iconClass} />;
@@ -13854,7 +14408,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics"].includes(
             path,
           )
             ? ""
@@ -13864,6 +14418,10 @@ export const AdminDashboard: React.FC = () => {
         <ErrorBoundary name="Admin Command Panels">
           {path === "dashboard" ? (
             <CommandCenterView theme={theme} t={t} />
+          ) : path === "radar" ? (
+            <AdminRateLimitMetricsView theme={theme} t={t} />
+          ) : path === "metrics" ? (
+            <AdminRenderMetricsView />
           ) : path === "keys" ? (
             <ApiKeysVaultView
               theme={theme}
@@ -13909,6 +14467,8 @@ export const AdminDashboard: React.FC = () => {
             <ComplianceAuditLogsView theme={theme} t={t} dir={dir} />
           ) : path === "referrals" ? (
             <ReferralDashboardView theme={theme} t={t} dir={dir} />
+          ) : path === "ads" ? (
+            <AdsManagementView theme={theme} t={t} dir={dir} language={language} />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <div className="mb-6 opacity-50">{getIcon()}</div>

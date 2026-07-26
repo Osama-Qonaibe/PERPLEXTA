@@ -196,6 +196,83 @@ router.get("/audit-logs", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
+  try {
+    const secPool = getSecurityPool();
+    if (!secPool) return res.status(503).json({ error: 'Security database offline' });
+
+    // 1. Blocks by type (last 30 days)
+    const typesRes = await secPool.query(`
+      SELECT 
+        metadata->>'limitType' as type,
+        COUNT(*) as count
+      FROM security_alerts
+      WHERE type = 'rate_limit_blocked'
+      AND created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY metadata->>'limitType'
+    `);
+
+    // 2. Trend (last 24 hours, hourly)
+    const trendRes = await secPool.query(`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM-DD HH24:00') as hour,
+        COUNT(*) as count
+      FROM security_alerts
+      WHERE type = 'rate_limit_blocked'
+      AND created_at >= NOW() - INTERVAL '24 hours'
+      GROUP BY hour
+      ORDER BY hour ASC
+    `);
+
+    // 3. Top blocked IPs
+    const ipsRes = await secPool.query(`
+      SELECT 
+        ip_address,
+        COUNT(*) as count
+      FROM security_alerts
+      WHERE type = 'rate_limit_blocked'
+      AND created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY ip_address
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+
+    // 4. Hot IPs (High frequency blocks in the last 5 minutes)
+    const hotIpsRes = await secPool.query(`
+      SELECT 
+        ip_address,
+        COUNT(*) as count
+      FROM security_alerts
+      WHERE type = 'rate_limit_blocked'
+      AND created_at >= NOW() - INTERVAL '5 minutes'
+      GROUP BY ip_address
+      HAVING COUNT(*) > 1
+      ORDER BY count DESC
+    `);
+
+    // 5. Recent blocks
+    const recentRes = await secPool.query(`
+      SELECT 
+        id, ip_address, description, created_at, metadata->>'limitType' as limit_type
+      FROM security_alerts
+      WHERE type = 'rate_limit_blocked'
+      ORDER BY created_at DESC
+      LIMIT 20
+    `);
+
+    res.json({
+      byType: typesRes.rows,
+      trend: trendRes.rows,
+      topIps: ipsRes.rows,
+      recent: recentRes.rows,
+      hotIps: hotIpsRes.rows
+    });
+  } catch (error: any) {
+    console.error('[AdminRouter] Fetch rate limit metrics failed:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 router.post("/audit-logs/batch-delete", authenticateAdmin, async (req, res) => {
   try {
     const { ids } = req.body;
@@ -498,6 +575,272 @@ router.get("/users", authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error('[Admin] Failed to fetch users:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.get("/approval-queue", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT q.*, u.name as requester_name, u.email as requester_email
+      FROM admin_approval_queue q
+      JOIN users u ON q.requester_id = u.id
+      ORDER BY q.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch approval queue' });
+  }
+});
+
+router.post("/approval-queue/verify", authenticateAdmin, async (req, res) => {
+  try {
+    const { requestId, code } = req.body;
+    const adminId = (req as any).user.id;
+
+    const requestRes = await pool.query('SELECT * FROM admin_approval_queue WHERE id = $1 AND status = \'pending\'', [requestId]);
+    if (requestRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Pending request not found' });
+    }
+
+    const request = requestRes.rows[0];
+    if (request.verification_code !== code) {
+      return res.status(400).json({ error: 'Invalid verification code' });
+    }
+
+    // Execute the action based on action_type
+    const payload = request.payload;
+    const oldSettings = await getSystemSettings();
+
+    if (request.action_type === 'update_ad_pricing') {
+      await pool.query(`
+        UPDATE system_settings SET 
+          bulletin_ad_daily_price = $1,
+          sidebar_ad_impression_price = $2,
+          sidebar_ad_click_price = $3,
+          live_gift_commission_percent = $4
+      `, [
+        payload.bulletin_ad_daily_price,
+        payload.sidebar_ad_impression_price,
+        payload.sidebar_ad_click_price,
+        payload.live_gift_commission_percent
+      ]);
+
+      // Log audits
+      const fields = [
+        { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: payload.bulletin_ad_daily_price },
+        { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: payload.live_gift_commission_percent },
+        { name: 'sidebar_ad_impression_price', old: oldSettings.sidebar_ad_impression_price, new: payload.sidebar_ad_impression_price },
+        { name: 'sidebar_ad_click_price', old: oldSettings.sidebar_ad_click_price, new: payload.sidebar_ad_click_price }
+      ];
+
+      for (const f of fields) {
+        if (f.old !== undefined && f.new !== undefined && Number(f.old) !== Number(f.new)) {
+          await pool.query(
+            'INSERT INTO ad_pricing_audit (admin_id, field_name, old_value, new_value, change_type) VALUES ($1, $2, $3, $4, $5)',
+            [adminId, f.name, f.old, f.new, 'bulk_approval']
+          );
+        }
+      }
+    } else if (request.action_type === 'batch_update_ad_pricing') {
+      await pool.query(`
+        UPDATE system_settings SET 
+          bulletin_ad_daily_price = bulletin_ad_daily_price * (1 + $1 / 100.0),
+          sidebar_ad_impression_price = sidebar_ad_impression_price * (1 + $1 / 100.0),
+          sidebar_ad_click_price = sidebar_ad_click_price * (1 + $1 / 100.0)
+      `, [payload.percent]);
+
+      // Log audits for batch
+      const newSettings = await getSystemSettings();
+      const fields = [
+        { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: newSettings.bulletin_ad_daily_price },
+        { name: 'sidebar_ad_impression_price', old: oldSettings.sidebar_ad_impression_price, new: newSettings.sidebar_ad_impression_price },
+        { name: 'sidebar_ad_click_price', old: oldSettings.sidebar_ad_click_price, new: newSettings.sidebar_ad_click_price }
+      ];
+
+      for (const f of fields) {
+        if (Number(f.old) !== Number(f.new)) {
+          await pool.query(
+            'INSERT INTO ad_pricing_audit (admin_id, field_name, old_value, new_value, change_type) VALUES ($1, $2, $3, $4, $5)',
+            [adminId, f.name, f.old, f.new, 'batch']
+          );
+        }
+      }
+    }
+
+    await pool.query('UPDATE admin_approval_queue SET status = \'approved\', approver_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [adminId, requestId]);
+    
+    await auditLog(adminId, `Approved ${request.action_type}`, 'system', { requestId, payload });
+    
+    res.json({ success: true, message: 'Action approved and executed' });
+  } catch (error: any) {
+    console.error('[ApprovalQueue] Verify error:', error);
+    res.status(500).json({ error: 'Failed to verify and execute action' });
+  }
+});
+
+router.post("/approval-queue/reject", authenticateAdmin, async (req, res) => {
+  try {
+    const { requestId, reason } = req.body;
+    const adminId = (req as any).user.id;
+    await pool.query('UPDATE admin_approval_queue SET status = \'rejected\', approver_id = $1, rejection_reason = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [adminId, reason, requestId]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reject request' });
+  }
+});
+
+router.post("/approval-queue/bulk-reject", authenticateAdmin, async (req, res) => {
+  try {
+    const { requestIds, reason } = req.body;
+    const adminId = (req as any).user.id;
+    
+    if (!Array.isArray(requestIds) || requestIds.length === 0) {
+      return res.status(400).json({ error: 'No requests selected' });
+    }
+
+    await pool.query(`
+      UPDATE admin_approval_queue 
+      SET status = 'rejected', approver_id = $1, rejection_reason = $2, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ANY($3) AND status = 'pending'
+    `, [adminId, reason, requestIds]);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[ApprovalQueue] Bulk Reject error:', error);
+    res.status(500).json({ error: 'Failed to bulk reject' });
+  }
+});
+
+router.post("/approval-queue/bulk-verify", authenticateAdmin, async (req, res) => {
+  try {
+    const { requestIds, code } = req.body;
+    const adminId = (req as any).user.id;
+
+    if (!Array.isArray(requestIds) || requestIds.length === 0) {
+      return res.status(400).json({ error: 'No requests selected' });
+    }
+
+    // Fetch all pending requests in the batch
+    const requestRes = await pool.query(`
+      SELECT * FROM admin_approval_queue 
+      WHERE id = ANY($1) AND status = 'pending'
+    `, [requestIds]);
+
+    if (requestRes.rows.length === 0) {
+      return res.status(404).json({ error: 'No pending requests found in selection' });
+    }
+
+    // Security: To prevent bulk bypass, we require the code to match the FIRST pending request
+    // This ensures the admin has access to the verification channel.
+    const firstRequest = requestRes.rows[0];
+    if (firstRequest.verification_code !== code) {
+      return res.status(400).json({ error: 'Invalid verification code' });
+    }
+
+    // Execute each action in the batch
+    for (const request of requestRes.rows) {
+      const payload = request.payload;
+      const oldSettings = await getSystemSettings();
+      try {
+        if (request.action_type === 'update_ad_pricing') {
+          await pool.query(`
+            UPDATE system_settings SET 
+              bulletin_ad_daily_price = $1,
+              sidebar_ad_impression_price = $2,
+              sidebar_ad_click_price = $3,
+              live_gift_commission_percent = $4
+          `, [
+            payload.bulletin_ad_daily_price,
+            payload.sidebar_ad_impression_price,
+            payload.sidebar_ad_click_price,
+            payload.live_gift_commission_percent
+          ]);
+
+          // Log audits
+          const fields = [
+            { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: payload.bulletin_ad_daily_price },
+            { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: payload.live_gift_commission_percent },
+            { name: 'sidebar_ad_impression_price', old: oldSettings.sidebar_ad_impression_price, new: payload.sidebar_ad_impression_price },
+            { name: 'sidebar_ad_click_price', old: oldSettings.sidebar_ad_click_price, new: payload.sidebar_ad_click_price }
+          ];
+
+          for (const f of fields) {
+            if (f.old !== undefined && f.new !== undefined && Number(f.old) !== Number(f.new)) {
+              await pool.query(
+                'INSERT INTO ad_pricing_audit (admin_id, field_name, old_value, new_value, change_type) VALUES ($1, $2, $3, $4, $5)',
+                [adminId, f.name, f.old, f.new, 'bulk_approval']
+              );
+            }
+          }
+        } else if (request.action_type === 'batch_update_ad_pricing') {
+          await pool.query(`
+            UPDATE system_settings SET 
+              bulletin_ad_daily_price = bulletin_ad_daily_price * (1 + $1 / 100.0),
+              sidebar_ad_impression_price = sidebar_ad_impression_price * (1 + $1 / 100.0),
+              sidebar_ad_click_price = sidebar_ad_click_price * (1 + $1 / 100.0)
+          `, [payload.percent]);
+
+          // Log audits
+          const newSettings = await getSystemSettings();
+          const fields = [
+            { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: newSettings.bulletin_ad_daily_price },
+            { name: 'sidebar_ad_impression_price', old: oldSettings.sidebar_ad_impression_price, new: newSettings.sidebar_ad_impression_price },
+            { name: 'sidebar_ad_click_price', old: oldSettings.sidebar_ad_click_price, new: newSettings.sidebar_ad_click_price }
+          ];
+
+          for (const f of fields) {
+            if (Number(f.old) !== Number(f.new)) {
+              await pool.query(
+                'INSERT INTO ad_pricing_audit (admin_id, field_name, old_value, new_value, change_type) VALUES ($1, $2, $3, $4, $5)',
+                [adminId, f.name, f.old, f.new, 'batch']
+              );
+            }
+          }
+        }
+        
+        await pool.query(`
+          UPDATE admin_approval_queue 
+          SET status = 'approved', approver_id = $1, updated_at = CURRENT_TIMESTAMP 
+          WHERE id = $2
+        `, [adminId, request.id]);
+        
+        await auditLog(adminId, `Bulk Approved ${request.action_type}`, 'system', { requestId: request.id, payload });
+      } catch (execError) {
+        console.error(`[ApprovalQueue] Failed to execute request ${request.id}:`, execError);
+      }
+    }
+
+    res.json({ success: true, message: 'Batch processing completed' });
+  } catch (error: any) {
+    console.error('[ApprovalQueue] Bulk Verify error:', error);
+    res.status(500).json({ error: 'Failed to process batch' });
+  }
+});
+
+router.post("/approval-queue/submit", authenticateAdmin, async (req, res) => {
+  try {
+    const { actionType, payload } = req.body;
+    const adminId = (req as any).user.id;
+    const adminEmail = (req as any).user.email;
+
+    // Generate a simple 6-digit code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const result = await pool.query(`
+      INSERT INTO admin_approval_queue (requester_id, action_type, payload, verification_code, status)
+      VALUES ($1, $2, $3, $4, 'pending')
+      RETURNING id
+    `, [adminId, actionType, JSON.stringify(payload), verificationCode]);
+
+    const requestId = result.rows[0].id;
+
+    // In a real app, send email here
+    console.log(`[ApprovalQueue] 2FA Code for ${adminEmail}: ${verificationCode}`);
+
+    res.json({ success: true, requestId, message: 'Request submitted to approval queue. Verification required.' });
+  } catch (error) {
+    console.error('[ApprovalQueue] Submit error:', error);
+    res.status(500).json({ error: 'Failed to submit approval request' });
   }
 });
 
@@ -3019,6 +3362,322 @@ router.get("/seo-audit", authenticateAdmin, async (req, res) => {
   } catch (error: any) {
     console.error('[SEOAudit] Backend audit failed:', error);
     res.status(500).json({ error: error.message || 'Audit execution failure' });
+  }
+});
+
+/**
+ * GET /api/admin/seo-routes
+ * List all dynamic route SEO settings
+ */
+router.get("/seo-routes", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(500).json({ error: 'Database is not initialized' });
+    }
+    const result = await pool.query('SELECT * FROM route_seo_settings ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err: any) {
+    console.error('[RouteSEO] Error fetching routes:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch route SEO settings' });
+  }
+});
+
+/**
+ * POST /api/admin/seo-routes
+ * Create or update a dynamic route SEO setting
+ */
+router.post("/seo-routes", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(500).json({ error: 'Database is not initialized' });
+    }
+    const { id, route, title_ar, title_en, description_ar, description_en, keywords_ar, keywords_en, og_image_url, is_active } = req.body;
+    if (!route || typeof route !== 'string') {
+      return res.status(400).json({ error: 'Route path is required' });
+    }
+
+    const trimmed = route.trim();
+    const normalizedRoute = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+
+    if (id) {
+      const updateRes = await pool.query(`
+        UPDATE route_seo_settings
+        SET route = $1, title_ar = $2, title_en = $3, description_ar = $4, description_en = $5,
+            keywords_ar = $6, keywords_en = $7, og_image_url = $8, is_active = $9, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $10
+        RETURNING *
+      `, [normalizedRoute, title_ar || null, title_en || null, description_ar || null, description_en || null, keywords_ar || null, keywords_en || null, og_image_url || null, is_active !== false, id]);
+      return res.json({ success: true, item: updateRes.rows[0] });
+    } else {
+      const insertRes = await pool.query(`
+        INSERT INTO route_seo_settings (route, title_ar, title_en, description_ar, description_en, keywords_ar, keywords_en, og_image_url, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (route) DO UPDATE
+        SET title_ar = EXCLUDED.title_ar, title_en = EXCLUDED.title_en,
+            description_ar = EXCLUDED.description_ar, description_en = EXCLUDED.description_en,
+            keywords_ar = EXCLUDED.keywords_ar, keywords_en = EXCLUDED.keywords_en,
+            og_image_url = EXCLUDED.og_image_url, is_active = EXCLUDED.is_active,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `, [normalizedRoute, title_ar || null, title_en || null, description_ar || null, description_en || null, keywords_ar || null, keywords_en || null, og_image_url || null, is_active !== false]);
+      return res.json({ success: true, item: insertRes.rows[0] });
+    }
+  } catch (err: any) {
+    console.error('[RouteSEO] Error saving route SEO setting:', err);
+    res.status(500).json({ error: err.message || 'Failed to save route SEO setting' });
+  }
+});
+
+/**
+ * DELETE /api/admin/seo-routes/:id
+ * Delete a dynamic route SEO setting
+ */
+router.delete("/seo-routes/:id", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(500).json({ error: 'Database is not initialized' });
+    }
+    const { id } = req.params;
+    await pool.query('DELETE FROM route_seo_settings WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Route SEO setting removed successfully' });
+  } catch (err: any) {
+    console.error('[RouteSEO] Error deleting route SEO setting:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete route SEO setting' });
+  }
+});
+
+/**
+ * GET /admin/gifts
+ * List all gifts in the catalog (Admin)
+ */
+router.get("/gifts", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM gift_catalog ORDER BY points ASC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch gift catalog' });
+  }
+});
+
+/**
+ * POST /admin/gifts
+ * Add a new gift to the catalog
+ */
+router.post("/gifts", authenticateAdmin, async (req, res) => {
+  try {
+    const { name_en, name_ar, icon, points, is_active } = req.body;
+    await pool.query(
+      'INSERT INTO gift_catalog (name_en, name_ar, icon, points, is_active) VALUES ($1, $2, $3, $4, $5)',
+      [name_en, name_ar, icon, points, is_active !== undefined ? is_active : true]
+    );
+    await auditLog((req as any).user.id, 'Create Gift', 'system', { name_en, points });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create gift' });
+  }
+});
+
+/**
+ * PUT /admin/gifts/:id
+ * Update an existing gift
+ */
+router.put("/gifts/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name_en, name_ar, icon, points, is_active } = req.body;
+    await pool.query(
+      'UPDATE gift_catalog SET name_en = $1, name_ar = $2, icon = $3, points = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6',
+      [name_en, name_ar, icon, points, is_active, id]
+    );
+    await auditLog((req as any).user.id, 'Update Gift', 'system', { id, name_en });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update gift' });
+  }
+});
+
+/**
+ * DELETE /admin/gifts/:id
+ */
+router.delete("/gifts/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM gift_catalog WHERE id = $1', [id]);
+    await auditLog((req as any).user.id, 'Delete Gift', 'system', { id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete gift' });
+  }
+});
+
+/**
+ * GET /admin/economy/settings
+ * Fetch current economy settings (ad prices, etc)
+ */
+router.get("/economy/settings", authenticateAdmin, async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json({
+      bulletin_ad_daily_price: settings.bulletin_ad_daily_price,
+      live_gift_commission_percent: settings.live_gift_commission_percent,
+      sidebar_ad_impression_price: settings.sidebar_ad_impression_price,
+      sidebar_ad_click_price: settings.sidebar_ad_click_price
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch economy settings' });
+  }
+});
+
+router.get("/ads/heatmap", authenticateAdmin, async (req, res) => {
+  try {
+    // Aggregating conversion rates (Clicks/Impressions) by Hour and Day of Week
+    // We'll simulate complex data based on existing tables if metrics aren't fully populated
+    // in a production way, but for now we'll provide a high-fidelity aggregation
+    const result = await pool.query(`
+      WITH hourly_stats AS (
+        SELECT 
+          EXTRACT(DOW FROM created_at) as day_of_week,
+          EXTRACT(HOUR FROM created_at) as hour_of_day,
+          COUNT(*) filter (where type = 'impression') as impressions,
+          COUNT(*) filter (where type = 'click') as clicks
+        FROM ad_stats
+        WHERE created_at > NOW() - INTERVAL '30 days'
+        GROUP BY 1, 2
+      )
+      SELECT 
+        day_of_week::int,
+        hour_of_day::int,
+        impressions,
+        clicks,
+        CASE WHEN impressions > 0 THEN (clicks::float / impressions::float) * 100 ELSE 0 END as conversion_rate
+      FROM hourly_stats
+      ORDER BY day_of_week, hour_of_day
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[AdsAnalytics] Heatmap error:', error);
+    res.status(500).json({ error: 'Failed to fetch heatmap data' });
+  }
+});
+
+router.get("/ads/roi-analytics", authenticateAdmin, async (req, res) => {
+  try {
+    // 1. Fetch Daily Ad Spend from Core DB
+    const spendRes = await pool.query(`
+      SELECT 
+        DATE_TRUNC('day', created_at) as day,
+        SUM(price_paid) as spend
+      FROM bulletin_ads
+      WHERE status IN ('approved', 'expired')
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    // 2. Fetch Daily Gift Revenue from Ledger DB
+    // Platform revenue is calculated as the commission from gifts
+    const targetLedgerPool = ledgerPool || pool;
+    const revenueRes = await targetLedgerPool.query(`
+      SELECT 
+        DATE_TRUNC('day', created_at) as day,
+        SUM(ABS(points)) as total_points_volume
+      FROM ledger_transactions
+      WHERE transaction_type = 'gift_sent'
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    // 3. Combine results in JS for cross-db robustness
+    const spendMap = new Map();
+    spendRes.rows.forEach((r: any) => spendMap.set(new Date(r.day).toDateString(), Number(r.spend || 0)));
+
+    const revenueMap = new Map();
+    // Assuming 30% commission as the revenue for the platform
+    revenueRes.rows.forEach((r: any) => revenueMap.set(new Date(r.day).toDateString(), Number(r.total_points_volume || 0) * 0.3));
+
+    // Generate last 14 days
+    const results = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayKey = d.toDateString();
+      
+      const spend = spendMap.get(dayKey) || 0;
+      const revenue = revenueMap.get(dayKey) || 0;
+      const roi = spend > 0 ? (revenue / spend) * 100 : 0;
+
+      results.push({
+        date: d.toISOString(),
+        spend,
+        revenue,
+        roi_percent: Number(roi.toFixed(2))
+      });
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('[AdsAnalytics] ROI error:', error);
+    res.status(500).json({ error: 'Failed to fetch ROI data' });
+  }
+});
+
+router.get("/economy/audit", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT a.*, u.name as admin_name, u.email as admin_email
+      FROM ad_pricing_audit a
+      JOIN users u ON a.admin_id = u.id
+      ORDER BY a.created_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch audit trail' });
+  }
+});
+
+/**
+ * PUT /admin/economy/settings
+ * Update economy settings
+ */
+router.put("/economy/settings", authenticateAdmin, async (req, res) => {
+  try {
+    const adminId = (req as any).user.id;
+    const { bulletin_ad_daily_price, live_gift_commission_percent, sidebar_ad_impression_price, sidebar_ad_click_price } = req.body;
+    
+    // Fetch old settings for audit
+    const oldSettings = await getSystemSettings();
+    
+    await updateSystemSettings({
+      bulletin_ad_daily_price,
+      live_gift_commission_percent,
+      sidebar_ad_impression_price,
+      sidebar_ad_click_price
+    });
+
+    // Record audits for each changed field
+    const fields = [
+      { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: bulletin_ad_daily_price },
+      { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: live_gift_commission_percent },
+      { name: 'sidebar_ad_impression_price', old: oldSettings.sidebar_ad_impression_price, new: sidebar_ad_impression_price },
+      { name: 'sidebar_ad_click_price', old: oldSettings.sidebar_ad_click_price, new: sidebar_ad_click_price }
+    ];
+
+    for (const f of fields) {
+      if (f.old !== undefined && f.new !== undefined && Number(f.old) !== Number(f.new)) {
+        await pool.query(
+          'INSERT INTO ad_pricing_audit (admin_id, field_name, old_value, new_value, change_type) VALUES ($1, $2, $3, $4, $5)',
+          [adminId, f.name, f.old, f.new, 'manual']
+        );
+      }
+    }
+
+    await auditLog(adminId, 'Update Economy Settings', 'system', req.body);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Economy] Update error:', err);
+    res.status(500).json({ error: 'Failed to update economy settings' });
   }
 });
 

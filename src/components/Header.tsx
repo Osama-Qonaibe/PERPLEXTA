@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
 import { motion, AnimatePresence } from 'motion/react';
@@ -77,7 +77,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const [tempTitle, setTempTitle] = useState('');
 
   const chatId = location.pathname.startsWith('/chat/') ? location.pathname.split('/chat/')[1] : null;
-  const isForumActive = location.pathname.startsWith('/forum');
+  const isBulletinActive = location.pathname.startsWith('/bulletin');
   const isMarketplaceActive = location.pathname.startsWith('/marketplace');
   const isBlogActive = location.pathname.startsWith('/blog');
 
@@ -199,7 +199,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       
       <div className="w-full flex justify-between items-center h-full">
         <div className="flex items-center h-full">
-          <div className={`flex items-center h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
+          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
               <NavLink 
                 to="/" 
                 onClick={handleNewChat} 
@@ -305,19 +305,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   </div>
                 ) : null}
               </NavLink>
+              
+              {shouldShowMenuButton && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
+                  className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
+                  title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
+                >
+                  <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-theme" />
+                </button>
+              )}
           </div>
-
-          {shouldShowMenuButton && (
-            <div className={`absolute bottom-0 ${dir === 'rtl' ? 'right-8 sm:right-4 md:right-6' : 'left-8 sm:left-4 md:left-6'} translate-y-1/2 z-[100] w-10 h-10 flex items-center justify-center`}>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
-                className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
-                title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
-              >
-                <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-theme" />
-              </button>
-            </div>
-          )}
         </div>
 
         <nav className="flex-1 flex items-center justify-center min-w-0 px-4 h-full relative">
@@ -398,36 +396,33 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
             <NavLink
-              to="/forum"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
-                isForumActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
-                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+              to="/bulletin"
+              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
+                isBulletinActive 
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500' 
+                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
-              title={language === 'ar' ? 'منتدى المجتمع' : 'Community Forum'}
+              title={language === 'ar' ? 'لوحة الإعلانات التفاعلية' : 'Interactive Bulletin Board'}
             >
-              <MessageSquare 
+              <Megaphone 
                 size={15} 
                 className={`transition-theme ${
-                  isForumActive 
+                  isBulletinActive 
                     ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
                     : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isForumActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'المنتدى' : 'Community'}</span>
-              <span className={`sm:hidden transition-theme ${
-                isForumActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'منتدى' : 'Forum'}</span>
+                isBulletinActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'لوحة الإعلانات' : 'Bulletin Board'}</span>
             </NavLink>
 
             <NavLink
               to="/marketplace"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
                 isMarketplaceActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
-                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
               title={language === 'ar' ? 'سوق بيربليكستا للمنتجات الرقمية' : 'Perplexta Digital Products Market'}
             >
@@ -449,10 +444,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
             <NavLink
               to="/blog"
-              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm border transition-theme active:scale-95 group shrink-0 ${
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
                 isBlogActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/25 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
-                  : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
               title={language === 'ar' ? 'مقالات التحليل واستخبارات السوق' : 'Market Intelligence Insights'}
             >
@@ -496,7 +491,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
            {!isStandalone && isInstallable && !isMobile && (
              <button
                onClick={installApp}
-               className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-emerald-500/20 hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.05)] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"
+               className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"
                title={language === 'ar' ? 'تثبيت التطبيق على جهازك' : 'Install app on your device'}
              >
                <Download size={15} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-theme animate-pulse" />
@@ -511,16 +506,15 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
             <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
             <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
-            <span className="sm:hidden uppercase text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'EN' : 'AR'}</span>
           </button>
 
            <button 
                 onClick={() => setTheme(isHeaderThemeDark ? 'light' : 'dark')}
-                className="flex items-center justify-center w-10 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+                className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
                 aria-label={isHeaderThemeDark ? 'Light Mode' : 'Dark Mode'}
               >
                 {isHeaderThemeDark ? (
@@ -531,16 +525,28 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               </button>
         
         {user && (
-          <div className="relative flex items-center h-full" ref={dropdownRef}>
-            <button 
-              onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-hover)] dark:hover:bg-[var(--bg-hover)] transition-theme relative active:scale-95 group shrink-0"
+          <div className="flex items-center gap-1.5 h-full">
+            <button
+              onClick={() => {
+                navigate('/bulletin');
+                window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
+              }}
+              className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
+              title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
             >
-              <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
-              {unreadCount > 0 && (
-                <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
-              )}
+              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
             </button>
+
+            <div className="relative flex items-center h-full" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className={`flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-emerald-500/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
+              >
+                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
+                {unreadCount > 0 && (
+                  <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
+                )}
+              </button>
 
             <AnimatePresence>
               {isNotifOpen && (
@@ -651,6 +657,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
           </div>
         )}
       </div>

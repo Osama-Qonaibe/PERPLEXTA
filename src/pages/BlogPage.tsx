@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { useRenderMetrics } from '../hooks/useRenderMetrics';
 
 interface Article {
   id: number;
@@ -38,6 +39,7 @@ interface ArticleComment {
 }
 
 export const BlogPage: React.FC = () => {
+  useRenderMetrics({ componentName: 'BlogPage' });
   const { language, token, user, t, theme } = useAppContext();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug?: string }>();
@@ -63,6 +65,18 @@ export const BlogPage: React.FC = () => {
   const [isCommentsOpenOnMobile, setIsCommentsOpenOnMobile] = useState(false);
   const [mobileCategoryPage, setMobileCategoryPage] = useState(0);
   const [showAdPopup, setShowAdPopup] = useState(false);
+  const [readingProgress, setReadingProgress] = useState<number>(0);
+
+  const handleScrollProgress = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrollTotal = target.scrollHeight - target.clientHeight;
+    if (scrollTotal > 0) {
+      const progress = (target.scrollTop / scrollTotal) * 100;
+      setReadingProgress(Math.min(100, Math.max(0, progress)));
+    } else {
+      setReadingProgress(0);
+    }
+  };
 
   useEffect(() => {
     const isAdDismissed = localStorage.getItem('hide_blog_ad');
@@ -212,6 +226,7 @@ export const BlogPage: React.FC = () => {
     if (slug) {
       setCommentsLoading(true);
       setUserRating(0);
+      setReadingProgress(0);
       fetch(`/api/blog/articles/${slug}`)
         .then(res => {
           if (res.ok) return res.json();
@@ -253,6 +268,7 @@ export const BlogPage: React.FC = () => {
     setSelectedArticle(article);
     setCommentsLoading(true);
     setUserRating(0); // Reset
+    setReadingProgress(0);
     try {
       const res = await fetch(`/api/blog/articles/${article.slug}`);
       if (res.ok) {
@@ -374,6 +390,7 @@ export const BlogPage: React.FC = () => {
   const handleBackToList = () => {
     setSelectedArticle(null);
     setComments([]);
+    setReadingProgress(0);
     navigate('/blog');
   };
 
@@ -1120,7 +1137,29 @@ export const BlogPage: React.FC = () => {
                 </div>
 
                 {/* Scrollable Container for paragraphs Content & Discussions */}
-                <div className="flex-1 overflow-y-auto scrollbar-none pr-1 pb-12 space-y-4">
+                <div 
+                  onScroll={handleScrollProgress}
+                  className="flex-1 overflow-y-auto scrollbar-none pr-1 pb-12 space-y-4"
+                >
+                  {/* Visual Reading Progress Indicator */}
+                  <div className={`p-4 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150/80'} shadow-sm`}>
+                    <div className="flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mb-2">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{isRtl ? 'مؤشر تقدم القراءة التحليلية' : 'Reading Progress Indicator'}</span>
+                      </span>
+                      <span className="bg-emerald-500/10 px-2 py-0.5 rounded text-emerald-500 font-bold">
+                        {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-all duration-150 rounded-full"
+                        style={{ width: `${readingProgress}%` }}
+                      />
+                    </div>
+                  </div>
+
                   {/* Content Panel */}
                   <div className={`p-6 rounded-xl border ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150/80'} shadow-md`}>
                     {/* Body Text */}
@@ -1259,7 +1298,11 @@ export const BlogPage: React.FC = () => {
           </div> {/* Close Desktop Immersive Reader Layout */}
 
             {/* Mobile-Only Immersive Reading View */}
-            <div className="md:hidden flex flex-col flex-1 overflow-y-auto pb-16 scrollbar-none" dir={isRtl ? 'rtl' : 'ltr'}>
+            <div 
+              onScroll={handleScrollProgress}
+              className="md:hidden flex flex-col flex-1 overflow-y-auto pb-16 scrollbar-none" 
+              dir={isRtl ? 'rtl' : 'ltr'}
+            >
               {/* Back button & Action Bar */}
               <div className={`p-4 flex items-center justify-between border-b ${
                 isThemeDark ? 'bg-zinc-950/80 border-white/5' : 'bg-white border-gray-150'
@@ -1333,6 +1376,25 @@ export const BlogPage: React.FC = () => {
                     <Star size={10} className="fill-[currentColor]" />
                     <span>{selectedArticle.avg_rating && Number(selectedArticle.avg_rating) > 0 ? Number(selectedArticle.avg_rating).toFixed(1) : '5.0'}</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Mobile Visual Reading Progress Indicator */}
+              <div className={`mx-4 mt-4 p-3.5 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150'} shadow-sm`}>
+                <div className="flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{isRtl ? 'مؤشر تقدم القراءة' : 'Reading Progress'}</span>
+                  </span>
+                  <span className="bg-emerald-500/10 px-2 py-0.5 rounded text-emerald-500 font-bold">
+                    {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
+                  <div 
+                    className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-all duration-150 rounded-full"
+                    style={{ width: `${readingProgress}%` }}
+                  />
                 </div>
               </div>
 

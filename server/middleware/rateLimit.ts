@@ -1,4 +1,5 @@
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
+import { logSecurityAlert } from '../services/notifications.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 const limitMultiplier = isProd ? 1 : 100;
@@ -20,13 +21,36 @@ const resolveClientKey = (req: any): string => {
   return ipKeyGenerator(req.ip || 'anonymous');
 };
 
+const createRateLimitHandler = (type: string) => {
+  return (req: any, res: any, next: any, options: any) => {
+    // Log to security database
+    logSecurityAlert(
+      req.user?.id || null,
+      'rate_limit_blocked',
+      'medium',
+      `Rate limit exceeded: ${type}`,
+      {
+        path: req.path,
+        method: req.method,
+        limit: options.max,
+        windowMs: options.windowMs,
+        limitType: type
+      },
+      req
+    ).catch(err => console.error('[RateLimit Log] Failed to record block:', err));
+
+    res.status(options.statusCode).send(options.message);
+  };
+};
+
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1500 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please slow down.' }
+  message: { error: 'Too many requests, please slow down.' },
+  handler: createRateLimitHandler('global')
 });
 
 // Login/Signup only — keep strict (30 attempts per 15 min)
@@ -36,7 +60,8 @@ export const authLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Security: Too many auth attempts. Please try again later.' }
+  message: { error: 'Security: Too many auth attempts. Please try again later.' },
+  handler: createRateLimitHandler('auth')
 });
 
 // Dedicated limiter for refresh-token endpoint — must NOT share with authLimiter
@@ -46,7 +71,8 @@ export const refreshLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many token refresh attempts. Please wait a moment.' }
+  message: { error: 'Too many token refresh attempts. Please wait a moment.' },
+  handler: createRateLimitHandler('refresh')
 });
 
 export const chatLimiter = rateLimit({
@@ -55,7 +81,8 @@ export const chatLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many messages. Please wait a moment.' }
+  message: { error: 'Too many messages. Please wait a moment.' },
+  handler: createRateLimitHandler('chat')
 });
 
 export const forgotPasswordLimiter = rateLimit({
@@ -64,7 +91,8 @@ export const forgotPasswordLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many password reset requests. Please try again in an hour.' }
+  message: { error: 'Too many password reset requests. Please try again in an hour.' },
+  handler: createRateLimitHandler('forgot_password')
 });
 
 export const tokenLimiter = rateLimit({
@@ -73,7 +101,8 @@ export const tokenLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Security alert: Too many token verification requests. Slow down.' }
+  message: { error: 'Security alert: Too many token verification requests. Slow down.' },
+  handler: createRateLimitHandler('token')
 });
 
 export const adminLimiter = rateLimit({
@@ -82,7 +111,8 @@ export const adminLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Security: Too many admin requests. Action throttled.' }
+  message: { error: 'Security: Too many admin requests. Action throttled.' },
+  handler: createRateLimitHandler('admin')
 });
 
 export const broadcastLimiter = rateLimit({
@@ -91,7 +121,8 @@ export const broadcastLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many broadcast attempts. Admin communications are limited.' }
+  message: { error: 'Too many broadcast attempts. Admin communications are limited.' },
+  handler: createRateLimitHandler('broadcast')
 });
 
 export const forumLimiter = rateLimit({
@@ -100,7 +131,8 @@ export const forumLimiter = rateLimit({
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many post or comment requests. Please wait a minute.' }
+  message: { error: 'Too many post or comment requests. Please wait a minute.' },
+  handler: createRateLimitHandler('forum')
 });
 
 import { pool } from '../db/index.js';
