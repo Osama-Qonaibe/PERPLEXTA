@@ -742,9 +742,22 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Fill Gap v12
-    await runVersioned('v12_dummy_migration', 'Placeholder to fix migration sequence gap', async (tx) => {
-      // Intentionally left blank to resolve sequence gap
+    // MIGRATION: Token Blacklist Security Hardening and Indexes v12
+    await runVersioned('v12_token_blacklist_security_hardening', 'Hardening token_blacklist security indexes and expiration TTL performance', async (tx) => {
+      const sTarget = typeof securityClient !== 'undefined' && securityClient ? securityClient : client;
+      
+      await sTarget.query(`
+        CREATE TABLE IF NOT EXISTS token_blacklist (
+          id SERIAL PRIMARY KEY,
+          token TEXT UNIQUE NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await sTarget.query(`CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)`);
+      await sTarget.query(`CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)`);
+      await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at)`);
     });
 
     // MIGRATION: Payment Gateways Settings Expansion v13
@@ -2684,9 +2697,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS system_logs_pkey ON system_logs(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS system_settings_pkey ON system_settings(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at) WHERE expires_at > CURRENT_TIMESTAMP` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)` },
+    { pool: targetSecurityPool, query: `CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at)` },
     { pool: targetSecurityPool, query: `CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_admin_id ON admin_audit_logs(admin_id)` },
     { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS admin_audit_logs_pkey ON admin_audit_logs(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS oauth_states_pkey ON oauth_states(id)` },
