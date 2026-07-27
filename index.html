@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark" style="background-color: #080809; color: #f8fafc;">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta id="theme-color-meta" name="theme-color" content="#080809" />
@@ -61,27 +61,9 @@
     <meta property="twitter:image" content="/app-assets/og-image.png" />
 
     <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
-    <style>
-      :root { --bg-initial: #fcfcfc; }
-      html.dark { --bg-initial: #080809; }
-      #initial-loader {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-initial);
-        z-index: 9999;
-      }
-      .loader-gradient {
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 40%),
-                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 40%);
-      }
-    </style>
+    <link rel="stylesheet" href="/app-assets/loader.css" />
   </head>
-  <body style="background-color: inherit; color: inherit;">
+  <body>
     <div id="root">
       <div id="initial-loader">
         <div class="loader-gradient"></div>

@@ -4448,6 +4448,7 @@ export const ChatPage: React.FC = () => {
   const [typingName, setTypingName] = useState<string>('');
   const typingTimeoutRef = useRef<any>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<any>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -4710,6 +4711,7 @@ export const ChatPage: React.FC = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
+      setInterimText('');
       return;
     }
 
@@ -4725,32 +4727,47 @@ export const ChatPage: React.FC = () => {
       recognition.interimResults = true;
 
       recognition.onresult = (event: any) => {
+        let interimTranscript = '';
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
           }
         }
-        if (finalTranscript) {
 
-          setQuery(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+        if (finalTranscript) {
+          setQuery(prev => {
+            const trimmed = prev.trim();
+            const suffix = finalTranscript.trim();
+            if (!suffix) return prev;
+            return trimmed + (trimmed ? ' ' : '') + suffix;
+          });
           if (textareaRef.current) {
              textareaRef.current.style.height = 'auto';
              textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
           }
         }
+
+        if (interimTranscript) {
+          setInterimText(interimTranscript);
+        } else {
+          setInterimText('');
+        }
       };
 
       recognition.onerror = (event: any) => {
-
         if (event.error === 'not-allowed') {
           toast.error(dir === 'rtl' ? 'يرجى السماح بالوصول إلى الميكروفون' : 'Please allow microphone access');
         }
         setIsRecording(false);
+        setInterimText('');
       };
 
       recognition.onend = () => {
         setIsRecording(false);
+        setInterimText('');
       };
 
       recognitionRef.current = recognition;
@@ -4760,9 +4777,10 @@ export const ChatPage: React.FC = () => {
       recognitionRef.current.lang = dir === 'rtl' ? 'ar-SA' : 'en-US';
       recognitionRef.current.start();
       setIsRecording(true);
+      setInterimText('');
     } catch (err) {
-
       setIsRecording(false);
+      setInterimText('');
     }
   };
 
@@ -6479,6 +6497,81 @@ export const ChatPage: React.FC = () => {
           }`}
         >
 
+        {isRecording && (
+          <div className="px-3.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border-b border-dashed border-red-500/20 flex flex-col gap-2.5 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+                <span className="text-xs font-black text-red-500 animate-pulse uppercase tracking-wider">
+                  {dir === 'rtl' ? 'جاري الاستماع وتدوين الصوت...' : 'LISTENING & TRANSCRIBING...'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* 5-bar custom animated sound wave visualizer */}
+                <div className="flex items-end gap-0.5 h-4 select-none pr-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="w-0.5 bg-red-500 rounded-full"
+                      animate={{
+                        height: ["4px", "16px", "4px"]
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        delay: i * 0.08,
+                        ease: "easeInOut"
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    recognitionRef.current?.stop();
+                    setIsRecording(false);
+                    setInterimText('');
+                  }}
+                  className="text-[10px] font-black uppercase text-red-400 hover:text-red-500 px-2 py-0.5 rounded border border-red-500/25 hover:bg-red-500/10 transition-all duration-200"
+                >
+                  {dir === 'rtl' ? 'إيقاف' : 'Stop'}
+                </button>
+              </div>
+            </div>
+            {/* Real-time speech-to-text text preview area */}
+            <div className="text-[14px] text-[var(--text-secondary)] italic min-h-[36px] bg-black/5 dark:bg-black/25 rounded px-3 py-2 flex items-center justify-between gap-3 border border-[var(--border-main)]/30">
+              <span className="truncate max-w-[80%]">
+                {interimText ? (
+                  <span className="text-[var(--text-primary)] font-bold not-italic">{interimText}</span>
+                ) : (
+                  <span className="text-[var(--text-muted)] opacity-60">
+                    {dir === 'rtl' ? 'تحدث الآن ليتم تدوين كلامك هنا في الوقت الفعلي...' : 'Speak now to see real-time transcription here...'}
+                  </span>
+                )}
+              </span>
+              {interimText && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery(prev => {
+                      const trimmed = prev.trim();
+                      return trimmed + (trimmed ? ' ' : '') + interimText.trim();
+                    });
+                    setInterimText('');
+                  }}
+                  className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-2 py-1 rounded transition-all duration-200 shrink-0"
+                >
+                  {dir === 'rtl' ? 'إدراج' : 'Insert'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
             <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)] flex-shrink-0`}>
@@ -6782,12 +6875,12 @@ export const ChatPage: React.FC = () => {
               onClick={toggleRecording}
               disabled={isInputDisabled}
               title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent transition-all duration-300 relative group ${
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-transparent border transition-all duration-300 relative group active:scale-95 ${
                 isInputDisabled 
-                  ? 'opacity-30 cursor-not-allowed' 
+                  ? 'opacity-30 cursor-not-allowed border-transparent rounded-[4px]' 
                   : isRecording
-                    ? 'bg-red-500/10 text-red-500 border-red-500/25 shadow-[0_0_15px_rgba(239,68,68,0.25)]' 
-                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 active:scale-95'
+                    ? 'rounded-[18px_18px_0px_18px] bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0)] hover:shadow-[0_0_12px_rgba(16,185,129,0.2)]'
               }`}
             >
               {isRecording ? (
@@ -7153,7 +7246,7 @@ export const ChatPage: React.FC = () => {
             className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative flex flex-col scroll-smooth"
           >
           <AnimatePresence mode="popLayout">
-            {isChatMessagesLoading && messages.length === 0 && !user ? (
+            {isChatMessagesLoading && messages.length === 0 ? (
               <motion.div
                 key="chat-messages-skeleton"
                 initial={{ opacity: 0 }}

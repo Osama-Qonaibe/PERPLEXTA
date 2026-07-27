@@ -292,7 +292,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         await client.query(`
           DELETE FROM migration_history 
           WHERE migration_name IN (
-            'v11_ensure_baseline_tables'
+            'v11_ensure_baseline_tables',
+            'v12_token_blacklist_security_hardening'
           )
         `);
         

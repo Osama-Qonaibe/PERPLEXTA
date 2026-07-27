@@ -115,12 +115,16 @@ app.use((req: any, res: any, next: any) => {
     "https://*.googleapis.com"
   ];
 
+  // CSP Optimization: styleSrc allows unsafe-inline due to dynamic Tailwind CSS v4 and framer-motion styles injection.
+  // We explicitly configure styleSrcElem and styleSrcAttr to restrict stylesheet sources precisely.
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: scriptSrcDirectives,
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrcAttr: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
         connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
@@ -246,9 +250,84 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
     if (!token || token === 'null' || token === 'undefined') {
       const referer = req.headers.referer || '';
-      const isFromApp = referer.includes('.run.app') || referer.includes('localhost') || referer.includes('127.0.0.1');
+      let isFromApp = false;
+      if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          const hostname = refUrl.hostname.toLowerCase();
+          const origin = refUrl.origin.toLowerCase();
+          
+          isFromApp = 
+            hostname === 'localhost' || 
+            hostname === '127.0.0.1' || 
+            hostname === '::1' || 
+            hostname.endsWith('.run.app') || 
+            allowedOrigins.some(allowed => allowed.toLowerCase() === origin);
+        } catch (_) {
+          isFromApp = false;
+        }
+      }
       if (publicExtensions.includes(ext) && isFromApp) {
-        return res.sendFile(resolvedPath);
+        // High-Security Refinement: Prevent referer spoofing for private assets.
+        // We ensure that any unauthenticated access to a file is allowed ONLY if the file is explicitly public.
+        const cacheKey = `public:${filename}`;
+        const now = Date.now();
+        if (filePermissionCache.has(cacheKey)) {
+          const cached = filePermissionCache.get(cacheKey)!;
+          if (now < cached.expiresAt) {
+            if (cached.authorized) {
+              return res.sendFile(resolvedPath);
+            } else {
+              return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+            }
+          }
+          filePermissionCache.delete(cacheKey);
+        }
+
+        try {
+          // Check if file is marked as public in metadata
+          const fileCheck = await pool.query("SELECT metadata FROM user_files WHERE file_url = $1", [filename]);
+          let isPublic = false;
+          if (fileCheck.rows.length > 0) {
+            const meta = fileCheck.rows[0].metadata || {};
+            if (meta.is_public === true || meta.isPublic === true) {
+              isPublic = true;
+            }
+          }
+
+          if (!isPublic) {
+            // Verify if the file is referenced in any public-facing database records
+            const blogCheck = await pool.query("SELECT 1 FROM blog_articles WHERE image_url LIKE $1", [`%${filename}%`]);
+            const bulletinCheck = await pool.query("SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
+            const marketplaceCheck = await pool.query("SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1", [`%${filename}%`, `%${filename}%`, `%${filename}%`]);
+            const userAvatarCheck = await pool.query("SELECT 1 FROM users WHERE avatar LIKE $1", [`%${filename}%`]);
+            const pageAvatarCheck = await pool.query("SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
+            const systemCheck = await pool.query("SELECT 1 FROM system_settings WHERE logo_light_url LIKE $1 OR logo_dark_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
+
+            if (
+              blogCheck.rows.length > 0 ||
+              bulletinCheck.rows.length > 0 ||
+              marketplaceCheck.rows.length > 0 ||
+              userAvatarCheck.rows.length > 0 ||
+              pageAvatarCheck.rows.length > 0 ||
+              systemCheck.rows.length > 0
+            ) {
+              isPublic = true;
+            }
+          }
+
+          filePermissionCache.set(cacheKey, { authorized: isPublic, expiresAt: now + FILE_CACHE_TTL_MS });
+
+          if (isPublic) {
+            return res.sendFile(resolvedPath);
+          } else {
+            console.warn(`[Upload Security Alert] Blocked non-authenticated access to private/unreferenced file: ${filename}`);
+            return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+          }
+        } catch (dbErr) {
+          console.error('[Upload Secure Handler] Public verify DB error:', dbErr);
+          return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+        }
       }
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to access this file.' });
     }

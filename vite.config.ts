@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api/],
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         },
         manifest: {
           name: 'Perplexta Platform',
@@ -114,7 +114,6 @@ export default defineConfig(({ mode }) => {
     ],
     define: {},
     build: {
-      chunkSizeWarningLimit: 2500,
     },
     resolve: {
       alias: {

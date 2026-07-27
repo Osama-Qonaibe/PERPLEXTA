@@ -1,0 +1,33 @@
+:root {
+  --bg-initial: #fcfcfc;
+  background-color: #fcfcfc;
+  color: #0f172a;
+}
+
+html.dark {
+  --bg-initial: #080809;
+  background-color: #080809;
+  color: #f8fafc;
+}
+
+body {
+  background-color: inherit;
+  color: inherit;
+}
+
+#initial-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-initial);
+  z-index: 9999;
+}
+
+.loader-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 40%),
+               radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 40%);
+}
