@@ -341,7 +341,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     if (type === 'scratch') {
       console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
-      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'message_reports', 'user_shortcuts', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states'];
+      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'message_reports', 'user_shortcuts', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states', 'admin_audit_logs'];
       for (const t of tables) {
         await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
       }
@@ -1822,6 +1822,22 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_shortcuts_user_id_fkey') THEN
                 ALTER TABLE user_shortcuts ADD CONSTRAINT user_shortcuts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+        END;
+        $$;
+      `);
+    });
+
+    await runVersioned('v70_add_forum_fks', 'Add foreign key constraints to forum_posts and forum_comments', async (tx) => {
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_posts_user_id') THEN
+                ALTER TABLE forum_posts ADD CONSTRAINT fk_forum_posts_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_comments_user_id') THEN
+                ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
             END IF;
         END;
         $$;
