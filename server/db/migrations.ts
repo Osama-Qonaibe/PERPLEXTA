@@ -401,6 +401,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
                 isTableMatched('blog_comments') ||
                 isTableMatched('blog_ratings')
               ) {
+                if (!externalClient) {
+                  console.warn('[Migrations] externalClient unavailable for blog tables — using core DB as fallback.');
+                }
                 return externalClient || client;
               }
               
@@ -1018,6 +1021,25 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_user_shortcuts_user_id ON user_shortcuts(user_id)`);
+    });
+
+    await runVersioned('v27_encrypt_sensitive_db_fields', 'Encrypting sensitive fields in email_settings and db_connections_registry', async (tx) => {
+      const { encrypt } = await import('../utils/crypto.js');
+      const encPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+
+      const emailRows = await tx.query('SELECT id, password FROM email_settings WHERE password IS NOT NULL AND password != \'\'');
+      for (const row of emailRows.rows) {
+        if (!encPattern.test(row.password)) {
+          await tx.query('UPDATE email_settings SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [encrypt(row.password), row.id]);
+        }
+      }
+
+      const regRows = await tx.query('SELECT id, password FROM db_connections_registry WHERE password IS NOT NULL AND password != \'\'');
+      for (const row of regRows.rows) {
+        if (!encPattern.test(row.password)) {
+          await tx.query('UPDATE db_connections_registry SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [encrypt(row.password), row.id]);
+        }
+      }
     });
 
   } finally {
