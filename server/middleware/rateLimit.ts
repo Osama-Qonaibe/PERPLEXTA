@@ -23,7 +23,6 @@ const resolveClientKey = (req: any): string => {
 
 const createRateLimitHandler = (type: string) => {
   return (req: any, res: any, next: any, options: any) => {
-    // Log to security database
     logSecurityAlert(
       req.user?.id || null,
       'rate_limit_blocked',
@@ -53,7 +52,6 @@ export const globalLimiter = rateLimit({
   handler: createRateLimitHandler('global')
 });
 
-// Login/Signup only — keep strict (30 attempts per 15 min)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30 * limitMultiplier,
@@ -64,10 +62,9 @@ export const authLimiter = rateLimit({
   handler: createRateLimitHandler('auth')
 });
 
-// Dedicated limiter for refresh-token endpoint — must NOT share with authLimiter
 export const refreshLimiter = rateLimit({
-  windowMs: 60 * 1000,       // 1 minute window
-  max: 40 * limitMultiplier,                    // 40 refreshes per minute per user — well above normal need
+  windowMs: 60 * 1000,
+  max: 40 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -139,7 +136,6 @@ import { pool } from '../db/index.js';
 import { checkUserQuota } from '../services/quota.js';
 import { checkUserAffordability } from '../services/billing.js';
 
-
 export const verifyConsumptionLimits = async (req: any, res: any, next: any) => {
   try {
     const userId = req.user?.id;
@@ -149,7 +145,6 @@ export const verifyConsumptionLimits = async (req: any, res: any, next: any) => 
 
     const toolId = req.body?.tool_id || req.body?.tool || 'chat';
 
-    // 1. Direct database check of core usage rules (guarantees zero-cached query execution)
     const quotaCheck = await checkUserQuota(userId, toolId);
 
     if (!quotaCheck.allowed) {
@@ -157,11 +152,9 @@ export const verifyConsumptionLimits = async (req: any, res: any, next: any) => 
         return res.status(503).json({ error: 'Database service is temporarily initializing.' });
       }
 
-      // Check user affordability using centralized billing service to eliminate scattered hardcoded cost checks
       const affordability = await checkUserAffordability(userId, toolId);
 
       if (!affordability.allowed) {
-        // Extract raw user preferences to construct responsive locale headers
         const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [userId]);
         const userLang = uRes.rows[0]?.language || 'en';
 
@@ -190,7 +183,6 @@ export const verifyConsumptionLimits = async (req: any, res: any, next: any) => 
     return next();
   } catch (error) {
     console.error('[Consumption Limiter Middleware] Quota enforcement failure:', error);
-    return next(); // Safe degraded bypass
+    return next();
   }
 };
-

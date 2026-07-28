@@ -92,8 +92,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
                 }
               }
             }
-          } catch (rsaErr) {
-            // Fall through to original error handling
+          } catch (rsaErr: any) {
+            console.warn('[Auth] Agent RSA verification failed:', rsaErr?.message);
           }
 
           if (err.name === 'TokenExpiredError') {
@@ -191,7 +191,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
   });
 };
-
 
 export const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   authenticateToken(req, res, () => {
