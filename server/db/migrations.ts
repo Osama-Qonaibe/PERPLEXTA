@@ -1834,8 +1834,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v71_add_fks', 'Add foreign key constraints to forum_posts, forum_comments and blog_articles', async (tx) => {
-      const extTarget = externalClient || tx;
-      await extTarget.query(`
+      // For forum tables (on core DB, tx)
+      await tx.query(`
         DO $$
         BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_posts_user_id') THEN
@@ -1844,6 +1844,15 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_comments_user_id') THEN
                 ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
             END IF;
+        END;
+        $$;
+      `);
+
+      // For blog tables (on external DB if available, extTarget)
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
+        DO $$
+        BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
                 ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
             END IF;
