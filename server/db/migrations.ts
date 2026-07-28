@@ -1791,6 +1791,31 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v68_ensure_chat_memories_and_shortcuts', 'Explicitly ensuring chat_memories and user_shortcuts tables exist', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS chat_memories (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+          fact TEXT NOT NULL,
+          source VARCHAR(20) DEFAULT 'ai',
+          category VARCHAR(50) DEFAULT 'general',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS user_shortcuts (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          title VARCHAR(255) NOT NULL,
+          query TEXT NOT NULL,
+          category VARCHAR(50) DEFAULT 'general',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1809,6 +1834,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
   const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
+  const targetExternalPool = externalPool === pool ? targetPool : (externalPool || targetPool);
 
   interface SchemaTable {
     name: string;
@@ -1841,6 +1867,49 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         provider VARCHAR(50) DEFAULT 'local',
         avatar TEXT
+      )`
+    },
+    {
+      name: 'blog_articles',
+      pool: targetExternalPool,
+      query: `CREATE TABLE IF NOT EXISTS blog_articles (
+        id SERIAL PRIMARY KEY,
+        author_id INTEGER NOT NULL,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        title_en VARCHAR(255) NOT NULL,
+        title_ar VARCHAR(255) NOT NULL,
+        content_en TEXT NOT NULL,
+        content_ar TEXT NOT NULL,
+        image_url TEXT,
+        category_en VARCHAR(100) NOT NULL,
+        category_ar VARCHAR(100) NOT NULL,
+        views INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'blog_comments',
+      pool: targetExternalPool,
+      query: `CREATE TABLE IF NOT EXISTS blog_comments (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'blog_ratings',
+      pool: targetExternalPool,
+      query: `CREATE TABLE IF NOT EXISTS blog_ratings (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (article_id, user_id)
       )`
     },
     {

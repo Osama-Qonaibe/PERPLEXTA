@@ -11,7 +11,7 @@ import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 const MAX_DB_ATTEMPTS = 3;
 const DB_RETRY_DELAY_MS = 4_000;
 
