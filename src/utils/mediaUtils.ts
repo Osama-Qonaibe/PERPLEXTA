@@ -170,3 +170,34 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
     video.load();
   });
 }
+
+/**
+ * Normalizes any image or video URL (handling relative filenames, uploads, http, blob, data, comma-separated lists)
+ */
+export function getMediaUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '';
+  let clean = url.trim();
+  if (!clean) return '';
+
+  // If comma-separated list of URLs (e.g. gallery images), extract the first URL
+  if (clean.includes(',')) {
+    clean = clean.split(',')[0].trim();
+  }
+
+  if (
+    clean.startsWith('http://') ||
+    clean.startsWith('https://') ||
+    clean.startsWith('blob:') ||
+    clean.startsWith('data:')
+  ) {
+    return clean;
+  }
+  if (clean.startsWith('/')) {
+    return clean;
+  }
+  if (clean.startsWith('uploads/')) {
+    return `/${clean}`;
+  }
+  return `/uploads/${clean}`;
+}
+

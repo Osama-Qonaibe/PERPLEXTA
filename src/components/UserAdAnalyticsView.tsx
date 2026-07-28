@@ -24,6 +24,7 @@ import {
   ThumbsUp,
   Share2
 } from 'lucide-react';
+import { getMediaUrl } from '../utils/mediaUtils';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -503,7 +504,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <img
-                          src={ad.image_url}
+                          src={getMediaUrl(ad.image_url)}
                           alt={ad.title}
                           className="w-12 h-12 rounded object-cover border border-[var(--border-main)] shrink-0"
                         />

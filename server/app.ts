@@ -224,6 +224,90 @@ import { getSystemSettings } from './services/system.js';
 const filePermissionCache = new Map<string, { authorized: boolean; expiresAt: number }>();
 const FILE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL Cache
 
+async function checkIsPublicFile(filename: string): Promise<boolean> {
+  const cacheKey = `public_ref:${filename}`;
+  const now = Date.now();
+  if (filePermissionCache.has(cacheKey)) {
+    const cached = filePermissionCache.get(cacheKey)!;
+    if (now < cached.expiresAt) return cached.authorized;
+    filePermissionCache.delete(cacheKey);
+  }
+
+  try {
+    const fileCheck = await pool.query(
+      "SELECT file_type, mime_type, metadata FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3",
+      [filename, `/uploads/${filename}`, `%${filename}%`]
+    );
+    let isPublic = false;
+    if (fileCheck.rows.length > 0) {
+      const row = fileCheck.rows[0];
+      const meta = row.metadata || {};
+      if (
+        meta.is_public === true ||
+        meta.isPublic === true ||
+        ['image', 'video', 'audio'].includes(row.file_type) ||
+        (row.mime_type && (row.mime_type.startsWith('image/') || row.mime_type.startsWith('video/') || row.mime_type.startsWith('audio/')))
+      ) {
+        isPublic = true;
+      }
+    }
+
+    if (!isPublic) {
+      const pattern = `%${filename}%`;
+      const blogCheck = await pool.query("SELECT 1 FROM blog_articles WHERE image_url LIKE $1", [pattern]);
+      const bulletinCheck = await pool.query("SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1", [pattern]);
+      const marketplaceCheck = await pool.query("SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1", [pattern]);
+      const adsCheck = await pool.query("SELECT 1 FROM advertisements WHERE image_url LIKE $1", [pattern]);
+      const forumCheck = await pool.query("SELECT 1 FROM forum_posts WHERE image_url LIKE $1", [pattern]);
+      const userAvatarCheck = await pool.query("SELECT 1 FROM users WHERE avatar LIKE $1", [pattern]);
+      const pageAvatarCheck = await pool.query("SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1", [pattern]);
+      const systemCheck = await pool.query("SELECT 1 FROM system_settings WHERE logo_url LIKE $1 OR logo_light_url LIKE $1 OR seo_image_url LIKE $1 OR favicon_url LIKE $1", [pattern]);
+
+      if (
+        blogCheck.rows.length > 0 ||
+        bulletinCheck.rows.length > 0 ||
+        marketplaceCheck.rows.length > 0 ||
+        adsCheck.rows.length > 0 ||
+        forumCheck.rows.length > 0 ||
+        userAvatarCheck.rows.length > 0 ||
+        pageAvatarCheck.rows.length > 0 ||
+        systemCheck.rows.length > 0
+      ) {
+        isPublic = true;
+      }
+    }
+
+    filePermissionCache.set(cacheKey, { authorized: isPublic, expiresAt: now + FILE_CACHE_TTL_MS });
+    return isPublic;
+  } catch (dbErr) {
+    console.error('[Upload Secure Handler] checkIsPublicFile error:', dbErr);
+    return false;
+  }
+}
+
+const mediaMimeTypes: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.bmp': 'image/bmp',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska',
+  '.avi': 'video/x-msvideo',
+  '.m4v': 'video/x-m4v',
+  '.3gp': 'video/3gpp',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4'
+};
+
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const filename = req.params.filename;
@@ -238,7 +322,19 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     }
 
     const ext = path.extname(filename).toLowerCase();
-    const publicExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.3gp', '.ogg', '.mp3', '.wav', '.m4a'];
+
+    // 1. All web media files (images, video, audio) are public assets for img/video rendering
+    if (mediaMimeTypes[ext]) {
+      res.setHeader('Content-Type', mediaMimeTypes[ext]);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.sendFile(resolvedPath);
+    }
+
+    // 2. Check public database reference for non-media files (e.g. public pdf/zip attachments)
+    const isPublic = await checkIsPublicFile(filename);
+    if (isPublic) {
+      return res.sendFile(resolvedPath);
+    }
 
     const authHeader = req.headers['authorization'];
     let token = authHeader && authHeader.split(' ')[1];
@@ -248,91 +344,10 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     }
 
+    // 3. Document or private attachments require token authentication
     if (!token || token === 'null' || token === 'undefined') {
-      const referer = req.headers.referer || '';
-      let isFromApp = false;
-      if (referer) {
-        try {
-          const refUrl = new URL(referer);
-          const hostname = refUrl.hostname.toLowerCase();
-          const origin = refUrl.origin.toLowerCase();
-          
-          isFromApp = 
-            hostname === 'localhost' || 
-            hostname === '127.0.0.1' || 
-            hostname === '::1' || 
-            hostname.endsWith('.run.app') || 
-            allowedOrigins.some(allowed => allowed.toLowerCase() === origin);
-        } catch (_) {
-          isFromApp = false;
-        }
-      }
-      if (publicExtensions.includes(ext) && isFromApp) {
-        // High-Security Refinement: Prevent referer spoofing for private assets.
-        // We ensure that any unauthenticated access to a file is allowed ONLY if the file is explicitly public.
-        const cacheKey = `public:${filename}`;
-        const now = Date.now();
-        if (filePermissionCache.has(cacheKey)) {
-          const cached = filePermissionCache.get(cacheKey)!;
-          if (now < cached.expiresAt) {
-            if (cached.authorized) {
-              return res.sendFile(resolvedPath);
-            } else {
-              return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
-            }
-          }
-          filePermissionCache.delete(cacheKey);
-        }
-
-        try {
-          // Check if file is marked as public in metadata
-          const fileCheck = await pool.query("SELECT metadata FROM user_files WHERE file_url = $1", [filename]);
-          let isPublic = false;
-          if (fileCheck.rows.length > 0) {
-            const meta = fileCheck.rows[0].metadata || {};
-            if (meta.is_public === true || meta.isPublic === true) {
-              isPublic = true;
-            }
-          }
-
-          if (!isPublic) {
-            // Verify if the file is referenced in any public-facing database records
-            const blogCheck = await pool.query("SELECT 1 FROM blog_articles WHERE image_url LIKE $1", [`%${filename}%`]);
-            const bulletinCheck = await pool.query("SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
-            const marketplaceCheck = await pool.query("SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1", [`%${filename}%`, `%${filename}%`, `%${filename}%`]);
-            const userAvatarCheck = await pool.query("SELECT 1 FROM users WHERE avatar LIKE $1", [`%${filename}%`]);
-            const pageAvatarCheck = await pool.query("SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
-            const systemCheck = await pool.query("SELECT 1 FROM system_settings WHERE logo_light_url LIKE $1 OR logo_dark_url LIKE $1", [`%${filename}%`, `%${filename}%`]);
-
-            if (
-              blogCheck.rows.length > 0 ||
-              bulletinCheck.rows.length > 0 ||
-              marketplaceCheck.rows.length > 0 ||
-              userAvatarCheck.rows.length > 0 ||
-              pageAvatarCheck.rows.length > 0 ||
-              systemCheck.rows.length > 0
-            ) {
-              isPublic = true;
-            }
-          }
-
-          filePermissionCache.set(cacheKey, { authorized: isPublic, expiresAt: now + FILE_CACHE_TTL_MS });
-
-          if (isPublic) {
-            return res.sendFile(resolvedPath);
-          } else {
-            console.warn(`[Upload Security Alert] Blocked non-authenticated access to private/unreferenced file: ${filename}`);
-            return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
-          }
-        } catch (dbErr) {
-          console.error('[Upload Secure Handler] Public verify DB error:', dbErr);
-          return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
-        }
-      }
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to access this file.' });
     }
-
-
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
@@ -360,8 +375,10 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       try {
         const filePromise = pool.query('SELECT id FROM user_files WHERE user_id = $1 AND file_url = $2', [user.id, filename]) as Promise<{ rows: { id: UserFile['id'] }[] }>;
         const proofPromise = (ledgerPool || pool).query('SELECT id FROM deposit_requests WHERE user_id = $1 AND proof_url LIKE $2', [user.id, `%${filename}%`]) as Promise<{ rows: { id: DepositRequest['id'] }[] }>;
-        const [isUserFileRes, isProofRes] = await Promise.all([filePromise, proofPromise]);
-        const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0;
+        const publicPromise = checkIsPublicFile(filename);
+        const [isUserFileRes, isProofRes, isPublic] = await Promise.all([filePromise, proofPromise, publicPromise]);
+        
+        const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0 || isPublic;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
         return authorized
           ? res.sendFile(resolvedPath)

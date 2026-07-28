@@ -106,6 +106,7 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
       }
     }
 
+    const isPublicMedia = mimetype.startsWith('image/') || mimetype.startsWith('video/') || mimetype.startsWith('audio/');
     const file = await saveFileMetadata(userId, {
       file_name: originalname,
       file_url: finalFilename,
@@ -113,6 +114,8 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
       mime_type: mimetype,
       file_type: fileType,
       metadata: { 
+        is_public: isPublicMedia,
+        isPublic: isPublicMedia,
         extractedText: extractedText.substring(0, 5000), 
         isProcessed: extractedText.length > 0,
         forensic,

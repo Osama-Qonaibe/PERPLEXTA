@@ -22,7 +22,7 @@ import { AdInsightsTab } from '../components/AdInsightsTab';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
-import { extractVideoThumbnail, getRecommendedDimensions } from '../utils/mediaUtils';
+import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl } from '../utils/mediaUtils';
 
 const DURATION_TIERS = [
   { days: 3, price: 3.00, labelAr: '3 أيام', labelEn: '3 Days', badgeAr: 'اقتصادي', badgeEn: 'Basic' },
@@ -1397,6 +1397,7 @@ export const BulletinBoardPage: React.FC = () => {
       return;
     }
 
+    setIsAdModalOpen(true);
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
 
@@ -1411,7 +1412,8 @@ export const BulletinBoardPage: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        const fileUrl = data.fileUrl || data.file?.url || data.url || data.path;
+        const rawUrl = data.fileUrl || data.file?.url || data.url || data.path;
+        const fileUrl = getMediaUrl(rawUrl);
         if (fileUrl) {
           setAdFormData(prev => ({ ...prev, image_url: fileUrl }));
           toast.dismiss(toastId);
@@ -1442,6 +1444,7 @@ export const BulletinBoardPage: React.FC = () => {
       return;
     }
 
+    setIsAdModalOpen(true);
     const localUrl = URL.createObjectURL(file);
     
     setVideoMetadataInfo({
@@ -1490,10 +1493,8 @@ export const BulletinBoardPage: React.FC = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const data = JSON.parse(xhr.responseText);
-          let fileUrl = data.fileUrl || data.file?.file_url || data.file?.url || data.url || data.path;
-          if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('blob:') && !fileUrl.startsWith('data:') && !fileUrl.startsWith('/')) {
-            fileUrl = `/uploads/${fileUrl}`;
-          }
+          const rawUrl = data.fileUrl || data.file?.file_url || data.file?.url || data.url || data.path;
+          const fileUrl = getMediaUrl(rawUrl);
           if (fileUrl) {
             setAdFormData(prev => ({
               ...prev,
@@ -3786,11 +3787,11 @@ export const BulletinBoardPage: React.FC = () => {
                       <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
                         <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-emerald-500 cursor-pointer transition-colors shrink-0" title={isRtl ? 'صور' : 'Photos'} onClick={(e) => e.stopPropagation()}>
                           <ImageIcon size={18} className="sm:w-5 sm:h-5" />
-                          <input type="file" accept="image/*" className="hidden" onChange={handleImageFileUpload} />
+                          <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" className="hidden" onChange={handleImageFileUpload} />
                         </label>
                         <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-blue-500 cursor-pointer transition-colors shrink-0" title={isRtl ? 'فيديو' : 'Video'} onClick={(e) => e.stopPropagation()}>
                           <Video size={18} className="sm:w-5 sm:h-5" />
-                          <input type="file" accept="video/*" className="hidden" onChange={handleVideoFileUpload} />
+                          <input type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.3gp,.m4v" className="hidden" onChange={handleVideoFileUpload} />
                         </label>
                         <button type="button" onClick={(e) => { e.stopPropagation(); setComposerView('emojis'); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-amber-500 shrink-0" title={isRtl ? 'رموز تعبيرية' : 'Emojis'}>
                           <Sparkles size={18} className="sm:w-5 sm:h-5" />
@@ -4760,7 +4761,7 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
 
               <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 flex items-center gap-2.5 border border-gray-100 dark:border-gray-800">
-                <img src={inquireAd.image_url} alt={inquireAd.title} className="w-12 h-12 rounded-lg object-cover" />
+                <img src={getMediaUrl(inquireAd.image_url)} alt={inquireAd.title} className="w-12 h-12 rounded-lg object-cover" />
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs font-bold truncate">{inquireAd.title}</h4>
                   <p className="text-[10px] text-gray-400">{inquireAd.author_name}</p>

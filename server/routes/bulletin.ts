@@ -516,8 +516,24 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     });
   }
 
-  const normImageUrl = image_url ? (image_url.startsWith('http') || image_url.startsWith('blob:') || image_url.startsWith('/') ? image_url.trim() : `/uploads/${image_url.trim()}`) : null;
-  const normVideoUrl = video_url ? (video_url.startsWith('http') || video_url.startsWith('blob:') || video_url.startsWith('/') ? video_url.trim() : `/uploads/${video_url.trim()}`) : null;
+  const normalizeUrl = (u?: string | null) => {
+    if (!u || typeof u !== 'string') return null;
+    const clean = u.trim();
+    if (!clean) return null;
+    if (
+      clean.startsWith('http://') ||
+      clean.startsWith('https://') ||
+      clean.startsWith('blob:') ||
+      clean.startsWith('data:') ||
+      clean.startsWith('/')
+    ) {
+      return clean;
+    }
+    return `/uploads/${clean}`;
+  };
+
+  const normImageUrl = normalizeUrl(image_url);
+  const normVideoUrl = normalizeUrl(video_url);
 
   try {
     // Get user details or page details for author info & category recognition
@@ -2922,8 +2938,24 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
       parsedHashtags = hashtags;
     }
 
-    const normEditImg = image_url ? (image_url.startsWith('http') || image_url.startsWith('blob:') || image_url.startsWith('/') ? image_url.trim() : `/uploads/${image_url.trim()}`) : null;
-    const normEditVid = video_url ? (video_url.startsWith('http') || video_url.startsWith('blob:') || video_url.startsWith('/') ? video_url.trim() : `/uploads/${video_url.trim()}`) : null;
+    const normalizeEditUrl = (u?: string | null) => {
+      if (!u || typeof u !== 'string') return null;
+      const clean = u.trim();
+      if (!clean) return null;
+      if (
+        clean.startsWith('http://') ||
+        clean.startsWith('https://') ||
+        clean.startsWith('blob:') ||
+        clean.startsWith('data:') ||
+        clean.startsWith('/')
+      ) {
+        return clean;
+      }
+      return `/uploads/${clean}`;
+    };
+
+    const normEditImg = normalizeEditUrl(image_url);
+    const normEditVid = normalizeEditUrl(video_url);
 
     const updateRes = await pool.query(`
       UPDATE bulletin_ads

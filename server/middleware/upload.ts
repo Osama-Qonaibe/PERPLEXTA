@@ -30,20 +30,24 @@ const allowedMimeTypes: Record<string, string[]> = {
   '.xls': ['application/vnd.ms-excel'],
   '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
   '.csv': ['text/csv', 'application/csv', 'application/vnd.ms-excel', 'text/comma-separated-values', 'text/plain'],
-  '.png': ['image/png'],
-  '.jpg': ['image/jpeg'],
-  '.jpeg': ['image/jpeg'],
-  '.gif': ['image/gif'],
-  '.webp': ['image/webp'],
-  '.mp4': ['video/mp4', 'video/x-m4v', 'video/m4v', 'application/octet-stream'],
-  '.mov': ['video/quicktime', 'video/x-quicktime', 'image/mov', 'application/octet-stream'],
+  '.png': ['image/png', 'image/x-png', 'application/octet-stream'],
+  '.jpg': ['image/jpeg', 'image/pjpeg', 'application/octet-stream'],
+  '.jpeg': ['image/jpeg', 'image/pjpeg', 'application/octet-stream'],
+  '.gif': ['image/gif', 'application/octet-stream'],
+  '.webp': ['image/webp', 'application/octet-stream'],
+  '.heic': ['image/heic', 'image/heic-sequence', 'application/octet-stream'],
+  '.heif': ['image/heif', 'image/heif-sequence', 'application/octet-stream'],
+  '.svg': ['image/svg+xml', 'text/xml', 'application/octet-stream'],
+  '.bmp': ['image/bmp', 'image/x-windows-bmp', 'application/octet-stream'],
+  '.mp4': ['video/mp4', 'video/x-m4v', 'video/m4v', 'application/octet-stream', 'video/quicktime'],
+  '.mov': ['video/quicktime', 'video/x-quicktime', 'image/mov', 'application/octet-stream', 'video/mp4'],
   '.webm': ['video/webm', 'audio/webm', 'application/octet-stream'],
   '.mkv': ['video/x-matroska', 'video/mkv', 'application/octet-stream'],
-  '.avi': ['video/x-msvideo', 'video/avi', 'application/x-troff-msvideo', 'application/octet-stream'],
+  '.avi': ['video/x-msvideo', 'video/avi', 'application/x-troff-msvideo', 'application/octet-stream', 'video/vnd.avi'],
   '.m4v': ['video/x-m4v', 'video/mp4', 'application/octet-stream'],
-  '.3gp': ['video/3gpp', 'audio/3gpp', 'application/octet-stream'],
-  '.mp3': ['audio/mpeg', 'audio/mp3'],
-  '.wav': ['audio/wav', 'audio/x-wav']
+  '.3gp': ['video/3gpp', 'audio/3gpp', 'video/3gpp2', 'application/octet-stream'],
+  '.mp3': ['audio/mpeg', 'audio/mp3', 'audio/x-mpeg', 'audio/mp4'],
+  '.wav': ['audio/wav', 'audio/x-wav', 'audio/wave']
 };
 
 export const upload = multer({ 
@@ -54,13 +58,26 @@ export const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
+    const mimeLower = file.mimetype ? file.mimetype.toLowerCase() : '';
+
+    // Permissive check for standard image/video/audio/document streams from desktop or mobile devices
+    if (
+      mimeLower.startsWith('image/') ||
+      mimeLower.startsWith('video/') ||
+      mimeLower.startsWith('audio/') ||
+      mimeLower.startsWith('text/') ||
+      mimeLower === 'application/pdf'
+    ) {
+      return cb(null, true);
+    }
+
     const mimetypesForExt = allowedMimeTypes[ext];
     
     if (!mimetypesForExt) {
       return cb(new Error('File type not allowed for security reasons. Please use standard document or media formats.'));
     }
 
-    if (!mimetypesForExt.includes(file.mimetype.toLowerCase())) {
+    if (!mimetypesForExt.includes(mimeLower) && mimeLower !== 'application/octet-stream') {
       return cb(new Error('Security check failed: File mimetype mismatch for the specified extension format. Upload blocked.'));
     }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ExternalLink, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 export interface Advertisement {
   id: number;
@@ -105,7 +106,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
             {/* Ad Image Container */}
             <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200/40 dark:border-gray-800/40">
               <img
-                src={ad.image_url}
+                src={getMediaUrl(ad.image_url)}
                 alt={title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"

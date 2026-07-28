@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BulletinAd } from '../../server/db/types';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface BoostPostModalProps {
   ad: BulletinAd | null;
@@ -232,7 +233,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
             <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-200/80 dark:border-gray-800 flex items-center gap-3">
               {ad.image_url ? (
                 <img
-                  src={ad.image_url}
+                  src={getMediaUrl(ad.image_url)}
                   alt={ad.title}
                   className="w-14 h-14 rounded-xl object-cover border border-emerald-500/30 shrink-0"
                 />

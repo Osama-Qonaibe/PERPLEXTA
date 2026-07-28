@@ -44,6 +44,7 @@ import { AdDirectChat } from './AdDirectChat';
 import { AdInsightsTab } from './AdInsightsTab';
 import { HighlightText } from './HighlightText';
 import { MediaFormatPlayer } from './MediaFormatPlayer';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 export interface PostFeedProps {
   ads: BulletinAd[];
@@ -584,7 +585,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             {/* Media Image: Aspect ratio based on format */}
             {ad.image_url && !ad.video_url && (
               <div
-                onClick={() => onOpenLightbox(ad.image_url)}
+                onClick={() => onOpenLightbox(getMediaUrl(ad.image_url))}
                 className={`relative w-full bg-gray-100 dark:bg-gray-900 cursor-pointer overflow-hidden group border-y border-gray-100 dark:border-gray-800/60 transition-all duration-500 ${
                   ad.ad_format === 'reel' || ad.ad_format === 'story' 
                     ? 'aspect-[9/16] max-h-[550px] mx-auto' 
@@ -596,7 +597,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 }`}
               >
                 <img
-                  src={ad.image_url}
+                  src={getMediaUrl(ad.image_url)}
                   alt={ad.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
@@ -624,9 +625,9 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 </div>
 
                 <MediaFormatPlayer
-                  url={ad.video_url}
+                  url={getMediaUrl(ad.video_url)}
                   adFormat={ad.ad_format || 'feed'}
-                  posterUrl={ad.image_url}
+                  posterUrl={getMediaUrl(ad.image_url)}
                   title={ad.title}
                   isRtl={isRtl}
                   className={ad.ad_format === 'reel' || ad.ad_format === 'story' ? 'max-h-[520px] mx-auto' : ''}

@@ -2882,7 +2882,14 @@ export async function monitorDatabases() {
     const registries = await pool.query('SELECT * FROM db_connections_registry');
     for (const reg of registries.rows) {
       let isAlive = false;
-      const connectionString = reg.connection_string ? decrypt(reg.connection_string) : '';
+      let connectionString = '';
+      if (reg.connection_string) {
+        try {
+          connectionString = decrypt(reg.connection_string);
+        } catch {
+          connectionString = reg.connection_string;
+        }
+      }
       if (!connectionString.startsWith('postgres')) continue;
 
       const TestPool = createInternalPool(connectionString);

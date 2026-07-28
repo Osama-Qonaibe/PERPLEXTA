@@ -233,7 +233,7 @@ export const MarketplacePortfolio: React.FC = () => {
                     {/* Media Block */}
                     <div className="relative h-40 bg-[#0c0c0e] flex items-center justify-center overflow-hidden">
                       <img 
-                        src={item.image_url || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&fit=crop'} 
+                        src={getMediaUrl(item.image_url) || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&fit=crop'} 
                         alt={item.title_en}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
                       />
@@ -408,7 +408,7 @@ export const MarketplacePortfolio: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <img 
-                          src={sale.image_url || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200&fit=crop'} 
+                          src={getMediaUrl(sale.image_url) || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200&fit=crop'} 
                           alt={sale.title_en}
                           className="w-10 h-10 object-cover rounded border border-[var(--border)]/60"
                         />

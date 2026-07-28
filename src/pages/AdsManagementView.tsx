@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 import {
   Megaphone,
   Plus,
@@ -2312,7 +2313,7 @@ export const AdsManagementView: React.FC<{
                       <td className="p-3">
                         <div className="flex items-center gap-3">
                           <img
-                            src={ad.image_url}
+                            src={getMediaUrl(ad.image_url)}
                             alt={ad.title}
                             className="w-14 h-14 rounded-md object-cover border border-[var(--border-main)] shrink-0"
                           />
@@ -2566,7 +2567,7 @@ export const AdsManagementView: React.FC<{
                         <td className="p-3">
                           <div className="flex items-center gap-3">
                             <img
-                              src={ad.image_url}
+                              src={getMediaUrl(ad.image_url)}
                               alt={ad.title_ar}
                               className="w-14 h-10 object-cover rounded border border-gray-200 dark:border-gray-800 shrink-0"
                             />
@@ -2780,7 +2781,7 @@ export const AdsManagementView: React.FC<{
                   <label className="px-3 py-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors flex items-center gap-1 shrink-0">
                     <Upload size={14} />
                     <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع صورة' : 'Upload')}</span>
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                    <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" onChange={handleFileUpload} className="hidden" />
                   </label>
                 </div>
               </div>
@@ -2802,7 +2803,7 @@ export const AdsManagementView: React.FC<{
                   <label className="px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold cursor-pointer hover:bg-blue-500/20 transition-colors flex items-center gap-1 shrink-0">
                     <Upload size={14} />
                     <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع فيديو' : 'Upload Video')}</span>
-                    <input type="file" accept="video/*" onChange={handleVideoFileUpload} className="hidden" />
+                    <input type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.3gp,.m4v" onChange={handleVideoFileUpload} className="hidden" />
                   </label>
                 </div>
               </div>
@@ -2816,16 +2817,16 @@ export const AdsManagementView: React.FC<{
                   
                   {formData.video_url ? (
                     <MediaFormatPlayer
-                      url={formData.video_url}
+                      url={getMediaUrl(formData.video_url)}
                       adFormat={formData.format}
-                      posterUrl={formData.image_url}
+                      posterUrl={getMediaUrl(formData.image_url)}
                       title={formData.title_ar || 'Ad Video Preview'}
                       isRtl={isRtl}
                       className={formData.format === 'story' || formData.format === 'reel' ? 'max-h-[320px] mx-auto' : ''}
                     />
                   ) : (
                     <div className="relative w-full h-32 rounded-lg border border-gray-700 overflow-hidden bg-black">
-                      <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={getMediaUrl(formData.image_url)} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   )}
                 </div>

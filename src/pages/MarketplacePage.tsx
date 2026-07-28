@@ -1988,7 +1988,7 @@ export const MarketplacePage: React.FC = () => {
                           {/* Bento Product Header Cover */}
                           <div className="h-40 relative overflow-hidden bg-black/45 shrink-0 select-none">
                             <img
-                              src={item.image_url ? item.image_url.split(',')[0].trim() : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
+                              src={getMediaUrl(item.image_url) || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
                               alt={language === 'ar' ? item.title_ar : item.title_en}
                               referrerPolicy="no-referrer"
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -2290,7 +2290,7 @@ export const MarketplacePage: React.FC = () => {
                 className="relative h-56 md:h-64 object-cover overflow-hidden bg-black/60 sticky top-0 z-[101] shrink-0 group cursor-pointer"
               >
                 <img
-                  src={selectedProduct.image_url ? selectedProduct.image_url.split(',')[0].trim() : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
+                  src={getMediaUrl(selectedProduct.image_url) || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   alt=""
                   referrerPolicy="no-referrer"
@@ -3355,7 +3355,7 @@ export const MarketplacePage: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2 p-2 rounded-lg border border-emerald-500/10 bg-emerald-500/[0.01] max-h-[140px] overflow-y-auto mb-1.5 animate-fade-in">
                           {itemImages.map((img, idx) => (
                             <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-gray-200/50 dark:border-white/10 group shadow-sm shrink-0">
-                              <img src={img} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                              <img src={getMediaUrl(img)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                               <span className="absolute bottom-0.5 right-1 bg-black/60 text-white text-[7px] font-bold px-0.5 rounded leading-none">
                                 #{idx + 1}
                               </span>
@@ -3598,7 +3598,7 @@ export const MarketplacePage: React.FC = () => {
                       {/* Product image */}
                       <div className="w-12 h-12 rounded-[4px] overflow-hidden shrink-0 bg-black/10 border border-white/5">
                         <img
-                          src={item.product.image_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe'}
+                          src={getMediaUrl(item.product.image_url) || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe'}
                           alt={item.product.title_en}
                           className="w-full h-full object-cover"
                         />

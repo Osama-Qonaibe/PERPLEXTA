@@ -596,7 +596,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-md overflow-hidden bg-black border border-[var(--border)] shrink-0">
-                        <img src={item.image_url ? item.image_url.split(',')[0].trim() : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={getMediaUrl(item.image_url) || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop'} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                       <div className="space-y-0.5">
                         <div className="font-bold text-[var(--text-primary)]">

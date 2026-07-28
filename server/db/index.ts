@@ -47,8 +47,8 @@ function redactUrl(url: string): string {
   }
 }
 
-function validateDatabaseUrl(url: string, name: string) {
-  if (!url) throw new Error(`[DB] ${name} environment variable is missing.`);
+function validateDatabaseUrl(url: any, name: string) {
+  if (!url || typeof url !== 'string') throw new Error(`[DB] ${name} environment variable is missing or not a string.`);
   if (!/^postgres(ql)?:\/\//.test(url)) throw new Error(`[DB] Invalid ${name} format. Expected a valid postgresql:// connection string.`);
   try {
     const u = new URL(url);
@@ -59,8 +59,9 @@ function validateDatabaseUrl(url: string, name: string) {
 }
 
 export function createInternalPool(connectionString: string, max = 1) {
+  const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
   return new Pool({
-    connectionString,
+    connectionString: safeConnStr,
     ssl: getSslConfig(),
     connectionTimeoutMillis: 5000,
     max,
@@ -299,19 +300,28 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const externalReg = result.rows.find((r: any) => r.id === 'external');
     const securityReg = result.rows.find((r: any) => r.id === 'security');
 
+    const safeDecrypt = (val: any): string => {
+      if (!val) return '';
+      try {
+        const res = decrypt(typeof val === 'string' ? val : String(val));
+        return typeof res === 'string' ? res : String(res || '');
+      } catch {
+        return typeof val === 'string' ? val : String(val || '');
+      }
+    };
+
     const getUrlFromReg = (reg: any, fallback: string): string => {
       if (!reg) return fallback;
       if (reg.connection_string) {
-        try {
-          const decrypted = decrypt(reg.connection_string);
-          if (decrypted && decrypted.trim() !== '') return decrypted;
-        } catch { console.error('[DB] Failed to decrypt connection string for', reg.id); }
+        const decrypted = safeDecrypt(reg.connection_string);
+        if (decrypted && decrypted.trim() !== '') return decrypted;
       }
       if (reg.host && reg.host !== 'base') {
         const u = encodeURIComponent(reg.username || '');
-        const p = reg.password ? encodeURIComponent(decrypt(reg.password)) : '';
+        const rawPass = safeDecrypt(reg.password);
+        const p = rawPass ? encodeURIComponent(rawPass) : '';
         const port = reg.port || '5432';
-        const connBase = `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
+        const connBase = `postgres://${u}${p ? `:${p}` : ''}@${reg.host}:${port}/${reg.db_name}`;
         return reg.ssl_mode && reg.ssl_mode !== 'disable' ? `${connBase}?sslmode=${reg.ssl_mode}` : connBase;
       }
       return fallback;
@@ -324,10 +334,31 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const envSizes        = getPoolSizesFromEnv();
 
     const coreUrl     = getUrlFromReg(coreReg,     defaultCore);
-    const ledgerUrl   = getUrlFromReg(ledgerReg,   defaultLedger);
-    const externalUrl = getUrlFromReg(externalReg, defaultExternal);
-    const securityUrl = getUrlFromReg(securityReg, defaultSecurity);
+    const ledgerRaw   = getUrlFromReg(ledgerReg,   defaultLedger);
+    const externalRaw = getUrlFromReg(externalReg, defaultExternal);
+    const securityRaw = getUrlFromReg(securityReg, defaultSecurity);
     if (!coreUrl) return;
+
+    // Test registry connections individually with safe fallbacks to core
+    const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
+      if (!url || url === coreUrl) return coreUrl;
+      try {
+        const p = createInternalPool(url);
+        await p.query('SELECT 1');
+        await p.end().catch(() => {});
+        return url;
+      } catch (e: any) {
+        console.warn(`[DB] Registry ${id} DB check failed: ${e.message}. Falling back to Core.`);
+        try {
+          await pool.query("UPDATE db_connections_registry SET is_active = false WHERE id = $1", [id]);
+        } catch {}
+        return defaultUrl;
+      }
+    };
+
+    const ledgerUrl   = await testAndResolveUrl('ledger', ledgerRaw, defaultLedger);
+    const externalUrl = await testAndResolveUrl('external', externalRaw, defaultExternal);
+    const securityUrl = await testAndResolveUrl('security', securityRaw, defaultSecurity);
 
     const coreMax     = Number(coreReg?.pool_size)     || envSizes.coreMax;
     const ledgerMax   = Number(ledgerReg?.pool_size)   || envSizes.ledgerMax;
@@ -344,28 +375,6 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       console.log('[DB] In-memory pools already match active registry configuration.');
       return;
     }
-
-    // Test registry connections with temporary single-connection pools before swapping
-    console.log('[DB] Verifying registry connection strings...');
-    const testPools = [
-      { p: createInternalPool(coreUrl),     name: 'Core' },
-      { p: createInternalPool(ledgerUrl),   name: 'Ledger' },
-      { p: createInternalPool(externalUrl), name: 'External' },
-      { p: createInternalPool(securityUrl), name: 'Security' },
-    ];
-
-    try {
-      await Promise.all(testPools.map(({ p, name }) =>
-        p.query('SELECT 1').catch((e: any) => { throw new Error(`Registry ${name} DB failed: ${e.message}`); })
-      ));
-    } catch (testErr: any) {
-      console.warn(`[DB] Registry verification failed: ${testErr.message}. Aborting synchronization.`);
-      await Promise.all(testPools.map(({ p }) => p.end().catch(() => {})));
-      return;
-    }
-
-    // Close test pools before swapping
-    await Promise.all(testPools.map(({ p }) => p.end().catch(() => {})));
 
     console.log('[DB] Registry connections verified. Swapping pools...');
     await initializePerplextaPools(coreUrl, ledgerUrl, externalUrl, securityUrl,

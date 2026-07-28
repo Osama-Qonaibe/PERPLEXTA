@@ -736,7 +736,7 @@ export const BlogPage: React.FC = () => {
                               <div className="h-40 relative overflow-hidden bg-black/45 shrink-0 select-none">
                                 {article.image_url ? (
                                   <img
-                                    src={article.image_url}
+                                    src={getMediaUrl(article.image_url)}
                                     alt={isRtl ? article.title_ar : article.title_en}
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                   />
@@ -830,7 +830,7 @@ export const BlogPage: React.FC = () => {
                               >
                                 <div className="h-36 sm:h-44 relative bg-black/40 shrink-0 select-none">
                                   {article.image_url ? (
-                                    <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+                                    <img src={getMediaUrl(article.image_url)} alt="" className="w-full h-full object-cover" />
                                   ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 to-teal-905 p-3">
                                       <BookOpen size={24} className="text-emerald-500/20" />
@@ -870,7 +870,7 @@ export const BlogPage: React.FC = () => {
                             >
                               <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-slate-900 border border-white/5 relative">
                                 {article.image_url ? (
-                                  <img src={article.image_url} alt="" className="w-full h-full object-cover" />
+                                  <img src={getMediaUrl(article.image_url)} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-500">
                                     <BookOpen size={16} />
@@ -985,7 +985,7 @@ export const BlogPage: React.FC = () => {
                 {selectedArticle.image_url ? (
                   <div className="h-44 md:h-48 w-full rounded-xl overflow-hidden border border-slate-100 dark:border-white/10 shadow-sm bg-[var(--bg-secondary)] group relative shrink-0">
                     <img 
-                      src={selectedArticle.image_url} 
+                      src={getMediaUrl(selectedArticle.image_url)} 
                       alt={isRtl ? selectedArticle.title_ar : selectedArticle.title_en} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                     />
@@ -1091,7 +1091,7 @@ export const BlogPage: React.FC = () => {
                           >
                             <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-white/5">
                               {item.image_url ? (
-                                <img src={item.image_url} className="w-full h-full object-cover group-hover/related:scale-105 transition-transform duration-500 animate-fade-in" alt="" />
+                                <img src={getMediaUrl(item.image_url)} className="w-full h-full object-cover group-hover/related:scale-105 transition-transform duration-500 animate-fade-in" alt="" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-500">
                                   <BookOpen size={10} />
@@ -1327,7 +1327,7 @@ export const BlogPage: React.FC = () => {
               {/* Cover Image & Primary Info Banner */}
               <div className="relative w-full h-52 shrink-0 bg-slate-900 select-none">
                 {selectedArticle.image_url ? (
-                  <img src={selectedArticle.image_url} alt="" className="w-full h-full object-cover animate-fade-in animate-duration-500" />
+                  <img src={getMediaUrl(selectedArticle.image_url)} alt="" className="w-full h-full object-cover animate-fade-in animate-duration-500" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-emerald-950 to-teal-900 flex flex-col items-center justify-center p-4">
                     <BookOpen size={36} className="text-emerald-500/30 mb-1" />
