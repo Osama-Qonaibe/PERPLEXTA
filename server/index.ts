@@ -52,6 +52,12 @@ async function startServer() {
   try {
     console.log('[Server] Initializing Perplexta Ecosystem...');
 
+    // Security validation
+    if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
+      console.error('[FATAL] ENCRYPTION_KEY must be defined and at least 32 characters long.');
+      process.exit(1);
+    }
+
     // 1. Vite dev middleware (development only)
     if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({

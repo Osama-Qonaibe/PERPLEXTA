@@ -987,11 +987,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
     // MIGRATION: Blog Ratings Engine v23
     await runVersioned('v23_blog_ratings_and_sharing', 'Creating blog ratings database structure', async (tx) => {
-      await tx.query(`
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_ratings (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           UNIQUE (article_id, user_id)
@@ -1838,11 +1839,16 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`
         DO $$
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_posts_user_id') THEN
-                ALTER TABLE forum_posts ADD CONSTRAINT fk_forum_posts_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'forum_posts') THEN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_posts_user_id') THEN
+                    ALTER TABLE forum_posts ADD CONSTRAINT fk_forum_posts_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+                END IF;
             END IF;
-            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_comments_user_id') THEN
-                ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'forum_comments') THEN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_comments_user_id') THEN
+                    ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+                END IF;
             END IF;
         END;
         $$;
@@ -1853,11 +1859,27 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await extTarget.query(`
         DO $$
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
-                ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_articles') THEN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
+                    ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
+                END IF;
             END IF;
         END;
         $$;
+      `);
+    });
+
+    // MIGRATION: Registered Agents Table v75
+    await runVersioned('v75_create_registered_agents', 'Creating registered_agents table for agent authentication', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS registered_agents (
+          id VARCHAR(100) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          api_key_hash VARCHAR(255) NOT NULL,
+          permissions JSONB DEFAULT '[]',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          is_active BOOLEAN DEFAULT true
+        )
       `);
     });
 
