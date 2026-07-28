@@ -259,6 +259,9 @@ export async function synchronizePerplextaPoolsFromRegistry() {
   console.log('[DB] Checking for active remote database overrides...');
 
   try {
+    // Auto-correct any corrupt registry entries where host is 'base'
+    await pool.query("UPDATE db_connections_registry SET is_active = false, host = NULL WHERE host = 'base'");
+
     const result = await pool.query(
       "SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core','ledger','external','security')"
     );
@@ -299,15 +302,17 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const getUrlFromReg = (reg: any, fallback: string): string => {
       if (!reg) return fallback;
       if (reg.connection_string) {
-        try { return decrypt(reg.connection_string); }
-        catch { console.error('[DB] Failed to decrypt connection string for', reg.id); return fallback; }
+        try {
+          const decrypted = decrypt(reg.connection_string);
+          if (decrypted && decrypted.trim() !== '') return decrypted;
+        } catch { console.error('[DB] Failed to decrypt connection string for', reg.id); }
       }
-      if (reg.host) {
+      if (reg.host && reg.host !== 'base') {
         const u = encodeURIComponent(reg.username || '');
         const p = reg.password ? encodeURIComponent(decrypt(reg.password)) : '';
         const port = reg.port || '5432';
-        const base = `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
-        return reg.ssl_mode && reg.ssl_mode !== 'disable' ? `${base}?sslmode=${reg.ssl_mode}` : base;
+        const connBase = `postgres://${u}:${p}@${reg.host}:${port}/${reg.db_name}`;
+        return reg.ssl_mode && reg.ssl_mode !== 'disable' ? `${connBase}?sslmode=${reg.ssl_mode}` : connBase;
       }
       return fallback;
     };
