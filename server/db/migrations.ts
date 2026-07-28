@@ -945,12 +945,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v24_seed_blog_platform_data', 'Seeding elite magazine articles to database', async (tx) => {
-      const articlesCount = await tx.query('SELECT COUNT(*) FROM blog_articles');
+      const extTarget = externalClient || tx;
+      const articlesCount = await extTarget.query('SELECT COUNT(*) FROM blog_articles');
       if (parseInt(articlesCount.rows[0].count, 10) === 0) {
         const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
         const authorId = adminRes.rows[0]?.id || 1;
 
-        await tx.query(`
+        await extTarget.query(`
           INSERT INTO blog_articles (author_id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, views) VALUES
           ($1, 'welcome-to-perplexta', 'Welcome to Perplexta', 'مرحباً بكم في بيربليكستا',
            'Perplexta is an advanced AI conversation platform that brings together the most powerful language models in a single unified experience.',
@@ -1024,6 +1025,68 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     if (ledgerClient) ledgerClient.release();
     if (externalClient) externalClient.release();
     if (securityClient) securityClient.release();
+  }
+}
+
+export async function verifySchemaIntegrity() {
+  if (!pool) {
+    console.warn('[Schema Integrity] Skipping validation: No core pool initialized.');
+    return;
+  }
+
+  const coreTables = [
+    'users', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator',
+    'plans', 'subscriptions', 'user_usage', 'notifications', 'email_templates',
+    'email_settings', 'message_reports', 'system_settings', 'system_broadcasts',
+    'user_files', 'security_alerts', 'system_logs', 'oauth_states',
+    'support_tickets', 'support_ticket_replies', 'password_resets',
+    'user_sessions', 'forum_categories', 'forum_posts', 'forum_comments',
+    'marketplace_items', 'chat_memories', 'user_shortcuts',
+    'migration_history', 'migration_security_audit', 'db_connections_registry'
+  ];
+
+  const ledgerTables = [
+    'wallets', 'ledger_transactions', 'referrals', 'referral_tree',
+    'kyc_requests', 'withdrawal_requests', 'payout_accounts',
+    'economy_settings', 'coupon_usages', 'deposit_requests', 'coupons', 'stripe_events'
+  ];
+
+  const externalTables = ['blog_articles', 'blog_comments', 'blog_ratings'];
+
+  const securityTables = ['token_blacklist', 'security_alerts', 'admin_audit_logs'];
+
+  const checkTables = async (targetPool: PgPool, tables: string[], label: string) => {
+    const client = await targetPool.connect();
+    try {
+      const res = await client.query(`
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = ANY($1)
+      `, [tables]);
+      const found = new Set(res.rows.map((r: { table_name: string }) => r.table_name));
+      const missing = tables.filter(t => !found.has(t));
+      if (missing.length > 0) {
+        console.warn(`[Schema Integrity] [${label}] Missing tables: ${missing.join(', ')}`);
+      } else {
+        console.log(`[Schema Integrity] [${label}] All ${tables.length} tables verified.`);
+      }
+    } finally {
+      client.release();
+    }
+  };
+
+  try {
+    await checkTables(pool, coreTables, 'core');
+
+    const ledgerPoolTarget = ledgerPool || pool;
+    await checkTables(ledgerPoolTarget, ledgerTables, 'ledger');
+
+    const extPoolTarget = externalPool || pool;
+    await checkTables(extPoolTarget, externalTables, 'external');
+
+    const secPoolTarget = securityPool || pool;
+    await checkTables(secPoolTarget, securityTables, 'security');
+  } catch (e: unknown) {
+    console.error('[Schema Integrity] Verification failed:', (e as Error).message);
   }
 }
 
