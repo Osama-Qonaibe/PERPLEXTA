@@ -5,6 +5,7 @@ const { Pool } = pkg;
 import type { Pool as PgPool, PoolClient as PgPoolClient } from 'pg';
 import { User, Wallet, Subscription, ApiKeyVault, UserFile, ToolOrchestrator, Notification } from './types.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
@@ -276,6 +277,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_migration_security_audit_created_at ON migration_security_audit(created_at)`);
 
 
 
@@ -824,8 +826,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           attempts++;
           const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
           code = '';
+          const randomBytes = crypto.randomBytes(6);
           for (let i = 0; i < 6; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
+            code += chars.charAt(randomBytes[i] % chars.length);
           }
           // Verify code doesn't exist already in DB (pre-migration set + user table)
           const dupRes = await tx.query('SELECT id FROM users WHERE referral_code = $1', [code]);
@@ -1019,7 +1022,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'تطوير النمذجة الرياضية الكمية وتوسيع خوارزميات التداول لعام ٢٠٢٦',
               'In the rapidly fragmenting global liquidity landscape of 2026, quantitative trading houses are shifting from classical statistical arbitrage toward post-classical quantum stochastic simulations. By leveraging cloud-routed qubits, automated execution layers can process multi-asset orders at sub-millisecond ranges, maximizing return thresholds while avoiding volatility spikes.\n\nThe integration of decentralized ledger structures ensures that transaction receipts are mathematically hardened against downstream latency, establishing a high-performance framework for professional asset managers globally.',
               'في ظل التفتت المتسارع لساحات السيولة العالمية لعام ٢٠٢٦، تشهد بيوت التداول الكمي تحولاً جذرياً من أساليب التحكيم الإحصائي التقليدية إلى محاكاة العمليات التصادفيه الكمية.\n\nإن الاعتماد على البنية السحابية الموزعة يتيح لخوارزميات التداول معالجة الأوامر المالية المتعددة في أجزاء من المليثانية، مما يسهم في تعظيم هوامش العائد الوقائي وتفادي جيوب التذبذب الحاد.\n\nتكامل هذه التقنية مع هياكل الدفاتر اللامركزية يضمن حماية البيانات المالية ضد تسريبات زمن الوصول، مما يمهد الطريق لتدشين جيل جديد من الخدمات الإدارية للعملاء المحترفين وصناديق التحوط النخبوية.',
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1080&h=1080&fit=crop',
+              '/static/blog1.jpg',
               'Quantitative Development',
               'التطوير الكمي',
               134
@@ -1031,7 +1034,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'تشفير الدفاتر اللامركزية: تقييم نواقل التهديد الكمي لشبكات الأصول الرقمية',
               'Modern blockchain networks rely heavily on elliptic curve signatures to safeguard ledger state. However, the rise of powerful quantum computing arrays threatens this cryptographic paradigm. This research paper evaluates post-quantum cryptography (PQC) integration, comparing lattice-based digital signatures with existing asymmetric schemas inside the dual ledger architecture.\n\nEnsuring absolute zero-knowledge verification while maintaining sub-second consensus remains the cornerstone of elite web3 financial platforms.',
               'تعتمد شبكات الدفاتر الموزعة المعاصرة على توقيعات المنحنى الإهليلجي لحماية سلامة الأرصدة والحسابات. ومع ذلك، فإن النضوج المتسارع للحوسبة الكمية يمثل تهديداً مباشراً لهذا النموذج الأمني العالمي.\n\nيستعرض هذا التقرير البحثي التحول نحو بروتوكول التشفير بعد الكمي (PQC)، مع مقارنة موثوقة للتوقيعات المستندة إلى الشبكات ضد أنظمة التشفير غير المتماثل الحالية.\n\nإن تشييد نظام خالي من المعرفة (Zero-Knowledge) مع الحفاظ على سرعة تسوية قياسية يمثل صمام الأمان لبوابات الخدمات الرقمية الفاخرة التي تسعى لحظر أي اختراقات مستقبلية.',
-              'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=1080&h=1080&fit=crop',
+              '/static/blog2.jpg',
               'Cryptographic Intelligence',
               'الذكاء التشفيري',
               98
@@ -1043,7 +1046,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'تصدعات السيولة الجيوسياسية: آليات التحوط الوقائي للمحافظ الاستثمارية المتعددة',
               'Sanction compliance registries, multi-currency pricing hubs, and shifting regional coalitions are introducing unprecedented friction inside global cross-border payments. To inoculate professional portfolios against capital controls, asset managers must design proactive multi-asset hedges.\n\nThis article outlines specific mathematical allocations between commodity futures, gold-linked digital reserves, and sovereign debt instruments to neutralize macroeconomic volatility.',
               'إن اتساع سلاسل العقوبات العالمية، وتباين تسعير العملات الإقليمية، وتغير التحالفات التجارية الكبرى قد فرض ضغوطاً غير مسبوقة على خطوط حركة المدفوعات والتمويل العابر للحدود.\n\nلحظر ركود السيولة ومقاومة الرقابة المفاجئة على رأس المال المالي، يتعين على مديري الثروات صياغة استراتيجيات تحوط متعددة الأصول ذات كفاءة رياضية عالية.\n\nتسلط هذه الصحيفة الضوء على حصص التخصيص المثلى بين عقود السلع الأساسية، والأصول المدعومة بالسبائك المادية كالملاذات التكنولوجية المتطورة، والسندات السيادية لتأمين الحد الضروري من استدامة النمو المالي.',
-              'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&h=1080&fit=crop',
+              '/static/blog3.jpg',
               'Macro Strategies',
               'الاستراتيجيات الكلية',
               245
@@ -1828,7 +1831,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    await runVersioned('v70_add_forum_fks', 'Add foreign key constraints to forum_posts and forum_comments', async (tx) => {
+    await runVersioned('v71_add_fks', 'Add foreign key constraints to forum_posts, forum_comments and blog_articles', async (tx) => {
       const extTarget = externalClient || tx;
       await extTarget.query(`
         DO $$
@@ -1838,6 +1841,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             END IF;
             IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_forum_comments_user_id') THEN
                 ALTER TABLE forum_comments ADD CONSTRAINT fk_forum_comments_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
+                ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
             END IF;
         END;
         $$;
