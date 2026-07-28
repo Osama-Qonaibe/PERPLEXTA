@@ -38,7 +38,8 @@ export async function runSystemMaintenance() {
 
       // 1. Cleanup expired tokens
       if (existingTables.has('token_blacklist')) {
-        await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
+        const securityPool = getSecurityPool() || pool;
+        await securityPool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
       }
       
       // 2. Cleanup expired password resets
@@ -914,7 +915,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS forum_posts (
           id SERIAL PRIMARY KEY,
           category_id INTEGER NOT NULL REFERENCES forum_categories(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           title VARCHAR(255) NOT NULL,
           content TEXT NOT NULL,
           is_pinned BOOLEAN DEFAULT false,
@@ -930,7 +931,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS forum_comments (
           id SERIAL PRIMARY KEY,
           post_id INTEGER NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           content TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -938,10 +939,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
 
       // 4. Create blog articles
-      await tx.query(`
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_articles (
           id SERIAL PRIMARY KEY,
-          author_id INTEGER NOT NULL,
+          author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           slug VARCHAR(255) UNIQUE NOT NULL,
           title_en VARCHAR(255) NOT NULL,
           title_ar VARCHAR(255) NOT NULL,
@@ -957,11 +959,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
 
       // 5. Create blog comments
-      await tx.query(`
+      await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_comments (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           content TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1850,7 +1852,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    await runVersioned('v73_encrypt_smtp_password_v2', 'Encrypting smtp_password in email_settings v2', async (tx) => {
+    await runVersioned('v74_encrypt_smtp_password', 'Encrypting smtp_password in email_settings', async (tx) => {
+      const { encrypt } = await import('../utils/crypto.js');
       const settingsRes = await tx.query('SELECT id, smtp_password FROM email_settings');
       
       const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
