@@ -18,6 +18,7 @@ import { PostFeed } from '../components/PostFeed';
 import { AdDirectChat } from '../components/AdDirectChat';
 import { AdMessengerHub } from '../components/AdMessengerHub';
 import { BoostPostModal } from '../components/BoostPostModal';
+import { RecommendationWidget } from '../components/RecommendationWidget';
 import { AdInsightsTab } from '../components/AdInsightsTab';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
@@ -719,6 +720,41 @@ export const BulletinBoardPage: React.FC = () => {
     }
   }, [token]);
 
+  // Target Ad Direct Deep-linking (e.g. from Recommendations Widget)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const adIdParam = urlParams.get('id') || urlParams.get('ad');
+    if (adIdParam) {
+      const targetId = Number(adIdParam);
+      if (!isNaN(targetId) && targetId > 0) {
+        const exists = ads.some(a => a.id === targetId);
+        if (exists) {
+          setExpandedAdId(targetId);
+          setTimeout(() => {
+            const el = document.getElementById(`bulletin-ad-${targetId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 350);
+        } else {
+          fetch(`/api/bulletin/ads/${targetId}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.ad) {
+                setAds(prev => [data.ad, ...prev.filter(a => a.id !== data.ad.id)]);
+                setExpandedAdId(targetId);
+                setTimeout(() => {
+                  const el = document.getElementById(`bulletin-ad-${targetId}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 350);
+              }
+            })
+            .catch(err => console.error('Failed to load deep-linked ad:', err));
+        }
+      }
+    }
+  }, [token]);
+
   // Pagination & Scroll State for Ads Feed
   const [adPage, setAdPage] = useState<number>(1);
   const [hasMoreAds, setHasMoreAds] = useState<boolean>(true);
@@ -752,26 +788,18 @@ export const BulletinBoardPage: React.FC = () => {
       if (data.success) {
         const fetchedAds: BulletinAd[] = data.ads || [];
         if (append) {
-          setAds(prev => {
-            const existingIds = new Set(prev.map(a => a.id));
-            const newUniqueAds = fetchedAds.filter(a => !existingIds.has(a.id));
-            if (newUniqueAds.length > 0) {
-              return [...prev, ...newUniqueAds];
-            } else if (prev.length > 0) {
-              // Endless stream mode: cycle ads with new unique IDs so the user can scroll indefinitely
-              const baseSeed = prev.length + Math.floor(Math.random() * 100000);
-              const cycledAds = prev.slice(0, 8).map((ad, idx) => ({
-                ...ad,
-                id: (ad.id * 100000) + baseSeed + idx + 1
-              }));
-              return [...prev, ...cycledAds];
-            }
-            return prev;
-          });
+          const existingIds = new Set(ads.map(a => a.id));
+          const newUniqueAds = fetchedAds.filter(a => !existingIds.has(a.id));
+          if (newUniqueAds.length > 0) {
+            setAds(prev => [...prev, ...newUniqueAds]);
+            setHasMoreAds(fetchedAds.length >= 8);
+          } else {
+            setHasMoreAds(false);
+          }
         } else {
           setAds(fetchedAds);
+          setHasMoreAds(fetchedAds.length >= 8);
         }
-        setHasMoreAds(true);
       }
     } catch (error) {
       console.error('Error fetching bulletin ads:', error);
@@ -1952,6 +1980,16 @@ export const BulletinBoardPage: React.FC = () => {
                       </select>
                     )}
                   </div>
+
+                  {/* Mobile Drawer Recommendations Card */}
+                  <RecommendationWidget 
+                    variant="bulletin"
+                    filterType="bulletin" 
+                    limit={3} 
+                    title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
+                    subtitle={isRtl ? 'مقترحات إعلانية وفقاً لاهتماماتك' : 'Tailored ad recommendations'}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
+                  />
                 </div>
               </motion.div>
             </div>
@@ -2312,6 +2350,16 @@ export const BulletinBoardPage: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Dedicated Bulletin Ads Recommendations Card */}
+            <RecommendationWidget 
+              variant="bulletin"
+              filterType="bulletin" 
+              limit={4} 
+              title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
+              subtitle={isRtl ? 'مقترحات مخصصة بناءً على سلوكك واهتماماتك' : 'Tailored ad suggestions'}
+              className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
+            />
 
             {/* Commercial Profile Settings Box */}
             {user && (

@@ -166,22 +166,22 @@ export async function initializePerplextaPools(
       pool = new Pool({
         connectionString: coreUrl,
         ssl, max: finalCoreMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 20000,
+        idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000,
       });
       ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
         connectionString: finalLedgerUrl,
         ssl, max: finalLedgerMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 20000,
+        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
       });
       externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
         connectionString: finalExternalUrl,
         ssl, max: finalExternalMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 20000,
+        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
       });
       securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
         connectionString: finalSecurityUrl,
         ssl, max: finalSecurityMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 20000,
+        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
       });
 
       pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e.message));
@@ -199,13 +199,30 @@ export async function initializePerplextaPools(
 
       const verify = async (p: any, name: string): Promise<boolean> => {
         return new Promise((resolve) => {
+          let settled = false;
           const timer = setTimeout(() => {
-            console.warn(`[DB] ${name} connectivity check timed out (12s). Dynamic fallback will apply.`);
-            resolve(false);
-          }, 12000);
+            if (!settled) {
+              settled = true;
+              console.warn(`[DB] ${name} connectivity check timed out (5s). Dynamic fallback will apply.`);
+              resolve(false);
+            }
+          }, 5000);
           p.query('SELECT 1')
-            .then(() => { clearTimeout(timer); resolve(true); })
-            .catch((e: any) => { clearTimeout(timer); console.warn(`[DB] ${name} check failed: ${e.message}`); resolve(false); });
+            .then(() => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                resolve(true);
+              }
+            })
+            .catch((e: any) => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                console.warn(`[DB] ${name} check failed: ${e.message}`);
+                resolve(false);
+              }
+            });
         });
       };
 

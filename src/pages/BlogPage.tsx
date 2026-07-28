@@ -5,6 +5,7 @@ import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, Use
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useRenderMetrics } from '../hooks/useRenderMetrics';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface Article {
   id: number;

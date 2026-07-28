@@ -456,6 +456,106 @@ router.get('/ads', async (req, res) => {
 });
 
 /**
+ * GET /api/bulletin/ads/:id
+ * Retrieve a single ad by ID
+ */
+router.get('/ads/:id', async (req: any, res: any, next: any) => {
+  const adId = Number(req.params.id);
+  if (isNaN(adId)) return next(); // Pass to /ads/my or other routes if non-numeric
+
+  try {
+    const authHeader = req.headers.authorization;
+    let currentUserId: number | null = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.default.decode(token) as any;
+        if (decoded && decoded.id) currentUserId = decoded.id;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const result = await pool.query(`
+      SELECT b.*,
+        (CASE WHEN b.is_boosted AND (b.boosted_until IS NULL OR b.boosted_until > NOW()) THEN TRUE ELSE FALSE END) as is_boosted_active,
+        u.name as u_name, u.avatar as u_avatar,
+        bp.name as page_name, bp.avatar_url as page_avatar, bp.cover_url as page_cover, bp.is_verified as page_is_verified
+      FROM bulletin_ads b
+      LEFT JOIN users u ON b.user_id = u.id
+      LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
+      WHERE b.id = $1
+    `, [adId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Ad not found' });
+    }
+
+    const row = result.rows[0];
+    let liked = false;
+    let saved = false;
+
+    if (currentUserId) {
+      const [lRes, sRes] = await Promise.all([
+        pool.query('SELECT 1 FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
+        pool.query('SELECT 1 FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] }))
+      ]);
+      liked = (lRes.rows.length > 0);
+      saved = (sRes.rows.length > 0);
+    }
+
+    const hashtagList = row.hashtags
+      ? row.hashtags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+      : [];
+
+    const formattedAd = {
+      id: row.id,
+      user_id: row.user_id,
+      page_id: row.page_id || null,
+      page_name: row.page_name || null,
+      page_avatar: row.page_avatar || null,
+      page_cover: row.page_cover || null,
+      page_is_verified: Boolean(row.page_is_verified),
+      location_city: row.location_city || 'فلسطين',
+      author_name: row.page_name || row.u_name || row.author_name || 'مستخدم بيربليكستا',
+      author_avatar: row.page_avatar || row.u_avatar || row.author_avatar || null,
+      title: row.title,
+      description: row.description,
+      image_url: row.image_url,
+      whatsapp_number: row.whatsapp_number,
+      phone_number: row.phone_number || null,
+      video_url: row.video_url || null,
+      target_url: row.target_url,
+      hashtags: hashtagList,
+      category: row.category,
+      price_paid: Number(row.price_paid),
+      duration_days: row.duration_days,
+      status: row.status,
+      likes_count: Number(row.likes_count || 0),
+      comments_count: Number(row.comments_count || 0),
+      shares_count: Number(row.shares_count || 0),
+      clicks_count: Number(row.clicks_count || 0),
+      impressions_count: Number(row.impressions_count || 0),
+      user_has_liked: liked,
+      user_has_saved: saved,
+      is_boosted: Boolean(row.is_boosted_active || row.is_boosted),
+      boosted_until: row.boosted_until || null,
+      boost_tier: row.boost_tier || null,
+      boost_price: Number(row.boost_price || 0),
+      starts_at: row.starts_at,
+      expires_at: row.expires_at,
+      created_at: row.created_at
+    };
+
+    return res.json({ success: true, ad: formattedAd });
+  } catch (error: any) {
+    console.error('[Bulletin API] Error fetching single ad:', error.message);
+    res.status(500).json({ error: 'Failed to retrieve advertisement' });
+  }
+});
+
+/**
  * GET /api/bulletin/ads/my
  * User's own ad campaign history
  */

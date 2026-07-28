@@ -561,6 +561,7 @@ import adsRoutes from './routes/ads.js';
 import bulletinRoutes from './routes/bulletin.js';
 import giftsRoutes from './routes/gifts.js';
 import metricsRoutes from './routes/metrics.js';
+import recommendationsRoutes from './routes/recommendations.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -609,6 +610,7 @@ app.use('/api/tools', toolRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
 
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';

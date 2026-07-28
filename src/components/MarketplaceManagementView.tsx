@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 import { HighlightText } from './HighlightText';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface MarketplaceItem {
   id: number;

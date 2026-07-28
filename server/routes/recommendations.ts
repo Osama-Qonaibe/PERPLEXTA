@@ -1,0 +1,462 @@
+import express from 'express';
+import { pool } from '../db/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import jwt from 'jsonwebtoken';
+
+const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
+
+// Optional Auth Middleware for recommendations
+const optionalAuth = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization'];
+  let token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+    } catch (e) {
+      // Invalid token, treat as guest
+    }
+  }
+  next();
+};
+
+/**
+ * Helper to compute recommendation scores for Marketplace, Bulletin, Tools & Articles
+ */
+async function generateRecommendationsForUser(userId?: number, options: { limit?: number; categoryFilter?: string; typeFilter?: string } = {}) {
+  const limit = options.limit || 12;
+
+  // 1. Fetch user interaction weights & top categories if logged in
+  let topCategories: Record<string, number> = {};
+  let interactedItemKeys = new Set<string>();
+  let dismissedItemKeys = new Set<string>();
+  let preferredCategories: string[] = [];
+  let preferredPriceMin = 0;
+  let preferredPriceMax = 10000;
+
+  if (userId) {
+    try {
+      // Get explicit preferences
+      const prefRes = await pool.query(
+        'SELECT preferred_categories, preferred_price_range, explicit_interests FROM user_recommendation_preferences WHERE user_id = $1',
+        [userId]
+      );
+      if (prefRes.rows.length > 0) {
+        const p = prefRes.rows[0];
+        preferredCategories = p.preferred_categories || [];
+        if (p.preferred_price_range) {
+          preferredPriceMin = p.preferred_price_range.min ?? 0;
+          preferredPriceMax = p.preferred_price_range.max ?? 10000;
+        }
+      }
+
+      // Get negative feedback (dismissed items)
+      const fbRes = await pool.query(
+        'SELECT item_type, item_id, item_key FROM recommendation_feedback WHERE user_id = $1 AND feedback_type IN (\'not_interested\', \'dismissed\')',
+        [userId]
+      );
+      fbRes.rows.forEach((row: any) => {
+        dismissedItemKeys.add(`${row.item_type}:${row.item_id || row.item_key}`);
+      });
+
+      // Get interactions from user_recommendation_interactions
+      const interRes = await pool.query(
+        `SELECT item_type, item_id, item_key, category, action_type, weight, created_at 
+         FROM user_recommendation_interactions 
+         WHERE user_id = $1 ORDER BY created_at DESC LIMIT 200`,
+        [userId]
+      );
+
+      interRes.rows.forEach((row: any) => {
+        const key = `${row.item_type}:${row.item_id || row.item_key}`;
+        interactedItemKeys.add(key);
+        if (row.category) {
+          const cat = row.category.toLowerCase().trim();
+          topCategories[cat] = (topCategories[cat] || 0) + Number(row.weight || 1);
+        }
+      });
+
+      // Include implicit interactions from Marketplace purchases & Bulletin saved ads
+      const purRes = await pool.query('SELECT m.category_en, m.category_ar FROM marketplace_purchases p JOIN marketplace_items m ON p.item_id = m.id WHERE p.user_id = $1', [userId]);
+      purRes.rows.forEach((r: any) => {
+        if (r.category_en) topCategories[r.category_en.toLowerCase().trim()] = (topCategories[r.category_en.toLowerCase().trim()] || 0) + 5.0;
+      });
+
+      const savedRes = await pool.query('SELECT category FROM bulletin_saved_ads s JOIN bulletin_ads a ON s.ad_id = a.id WHERE s.user_id = $1', [userId]);
+      savedRes.rows.forEach((r: any) => {
+        if (r.category) topCategories[r.category.toLowerCase().trim()] = (topCategories[r.category.toLowerCase().trim()] || 0) + 3.0;
+      });
+
+    } catch (err) {
+      console.error('[Recommendation Engine] Error fetching user vectors:', err);
+    }
+  }
+
+  // 2. Fetch Marketplace Items
+  const marketRes = await pool.query(
+    `SELECT m.*, 
+            COALESCE(u.name, 'Perplexta Creator') as seller_name,
+            COALESCE(u.avatar, '') as seller_avatar,
+            COALESCE((SELECT AVG(rating)::numeric(3,1) FROM marketplace_reviews WHERE item_id = m.id), 4.8) as avg_rating,
+            COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE item_id = m.id), 12) as reviews_count,
+            COALESCE((SELECT COUNT(*) FROM marketplace_purchases WHERE item_id = m.id), 24) as purchases_count
+     FROM marketplace_items m
+     LEFT JOIN users u ON m.user_id = u.id
+     WHERE m.status = 'approved' OR m.status IS NULL
+     ORDER BY m.id DESC LIMIT 100`
+  );
+
+  // 3. Fetch Bulletin Ads & Services
+  const bulletinRes = await pool.query(
+    `SELECT a.*,
+            COALESCE((SELECT COUNT(*) FROM ad_stats WHERE ad_id = a.id AND type = 'click'), 0) as stats_clicks,
+            COALESCE((SELECT COUNT(*) FROM bulletin_ad_likes WHERE ad_id = a.id), 0) as likes_count
+     FROM bulletin_ads a
+     WHERE a.status = 'approved' OR a.status IS NULL OR a.status = 'active'
+     ORDER BY COALESCE(a.is_boosted, false) DESC, a.created_at DESC LIMIT 100`
+  );
+
+  // 4. Fetch AI Tools from Orchestrator
+  const toolsRes = await pool.query(
+    `SELECT id, tool_id, task_description, task_description_ar, is_active
+     FROM tool_orchestrator
+     WHERE is_active = true
+     LIMIT 30`
+  );
+
+  // 5. Fetch Blog Articles
+  const blogRes = await pool.query(
+    `SELECT id, slug, title_en, title_ar, content_en, content_ar, category_en, category_ar, image_url, views, created_at
+     FROM blog_articles
+     ORDER BY views DESC, id DESC LIMIT 20`
+  );
+
+  const scoredItems: any[] = [];
+
+  // Helper score calculator
+  const calculateScoreAndReasons = (item: any, type: string) => {
+    let score = 50; // Baseline
+    const reasons_en: string[] = [];
+    const reasons_ar: string[] = [];
+    let matchPercentage = 75;
+
+    const key = `${type}:${item.id || item.tool_id || item.slug}`;
+    if (dismissedItemKeys.has(key)) return null; // Exclude dismissed
+
+    const cat = (item.category_en || item.category || item.category_ar || '').toString().toLowerCase().trim();
+    const price = Number(item.price || item.price_amount || 0);
+
+    // Category affinity
+    if (cat && topCategories[cat]) {
+      score += Math.min(30, topCategories[cat] * 5);
+      reasons_en.push(`Based on your interest in ${item.category_en || item.category || 'this topic'}`);
+      reasons_ar.push(`بناءً على اهتمامك بـ ${item.category_ar || item.category || 'هذا المجال'}`);
+    }
+
+    // Explicit preference match
+    if (preferredCategories.some(pc => pc.toLowerCase().trim() === cat)) {
+      score += 25;
+      reasons_en.push(`Matches your saved preference: ${item.category_en || item.category}`);
+      reasons_ar.push(`يتطابق مع تفضيلاتك المسجلة: ${item.category_ar || item.category}`);
+    }
+
+    // VIP Boost or Featured
+    if (item.is_boosted || item.highlight_tag || item.is_featured) {
+      score += 18;
+      reasons_en.push('🔥 Trending Featured Item');
+      reasons_ar.push('🔥 عنصر مميز وشائع');
+    }
+
+    // High rating or high views
+    if (Number(item.avg_rating) >= 4.7 || Number(item.views) > 100 || Number(item.likes_count) > 10) {
+      score += 15;
+      reasons_en.push('🌟 High User Satisfaction');
+      reasons_ar.push('🌟 حائز على تقييمات عالية');
+    }
+
+    // Price fit check
+    if (price >= preferredPriceMin && price <= preferredPriceMax) {
+      score += 8;
+    }
+
+    // Default reasons if empty
+    if (reasons_en.length === 0) {
+      if (type === 'marketplace') {
+        reasons_en.push('🛒 Popular in Marketplace');
+        reasons_ar.push('🛒 الأكثر طلبًا في السوق الرقمي');
+      } else if (type === 'bulletin') {
+        reasons_en.push('📌 Recommended Local Service');
+        reasons_ar.push('📌 خدمة موصى بها لك');
+      } else if (type === 'tool') {
+        reasons_en.push('⚡ Recommended AI Productivity Assistant');
+        reasons_ar.push('⚡ مساعد ذكاء اصطناعي مقترح لتسهيل عملك');
+      } else {
+        reasons_en.push('📖 Trending Platform Insight');
+        reasons_ar.push('📖 مقال شائع يتطابق مع اهتماماتك');
+      }
+    }
+
+    matchPercentage = Math.min(99, Math.max(70, Math.round(score)));
+
+    return {
+      recommendation_id: key,
+      item_type: type,
+      item_id: item.id || item.tool_id || item.slug,
+      score,
+      match_percentage: matchPercentage,
+      reasons_en,
+      reasons_ar,
+      data: item
+    };
+  };
+
+  // Score Marketplace Items
+  marketRes.rows.forEach((item: any) => {
+    const scored = calculateScoreAndReasons(item, 'marketplace');
+    if (scored) scoredItems.push(scored);
+  });
+
+  // Score Bulletin Ads
+  bulletinRes.rows.forEach((item: any) => {
+    const scored = calculateScoreAndReasons(item, 'bulletin');
+    if (scored) scoredItems.push(scored);
+  });
+
+  // Score Tools
+  toolsRes.rows.forEach((tool: any) => {
+    const formattedTool = {
+      ...tool,
+      title_en: tool.tool_id ? tool.tool_id.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'AI Tool',
+      title_ar: tool.task_description_ar || tool.tool_id || 'أداة ذكية',
+      description_en: tool.task_description || 'AI Tool Assistant',
+      description_ar: tool.task_description_ar || 'أداة ذكاء اصطناعي',
+      category_en: 'ai_tools',
+      category_ar: 'أدوات الذكاء الاصطناعي'
+    };
+    const scored = calculateScoreAndReasons(formattedTool, 'tool');
+    if (scored) scoredItems.push(scored);
+  });
+
+  // Score Articles
+  blogRes.rows.forEach((article: any) => {
+    const scored = calculateScoreAndReasons(article, 'blog');
+    if (scored) scoredItems.push(scored);
+  });
+
+  // Sort overall by score DESC
+  scoredItems.sort((a, b) => b.score - a.score);
+
+  return {
+    top_picks: scoredItems.slice(0, limit),
+    by_type: {
+      marketplace: scoredItems.filter(i => i.item_type === 'marketplace').slice(0, 8),
+      bulletin: scoredItems.filter(i => i.item_type === 'bulletin').slice(0, 8),
+      tools: scoredItems.filter(i => i.item_type === 'tool').slice(0, 6),
+      articles: scoredItems.filter(i => i.item_type === 'blog').slice(0, 4)
+    },
+    user_summary: {
+      top_inferred_categories: Object.entries(topCategories)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([cat]) => cat),
+      preferred_categories: preferredCategories
+    }
+  };
+}
+
+/**
+ * GET /api/recommendations
+ * Unified recommendation endpoint - strictly personalized for authenticated user
+ */
+router.get('/', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const limit = Number(req.query.limit) || 12;
+    const data = await generateRecommendationsForUser(userId, { limit });
+    res.json({
+      success: true,
+      recommendations: data.top_picks,
+      categorized: data.by_type,
+      user_summary: data.user_summary
+    });
+  } catch (error: any) {
+    console.error('[Recommendations API] GET Error:', error);
+    res.status(500).json({ error: 'Failed generating recommendations' });
+  }
+});
+
+/**
+ * GET /api/recommendations/marketplace
+ */
+router.get('/marketplace', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.marketplace
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed fetching marketplace recommendations' });
+  }
+});
+
+/**
+ * GET /api/recommendations/bulletin
+ */
+router.get('/bulletin', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.bulletin
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed fetching bulletin recommendations' });
+  }
+});
+
+/**
+ * POST /api/recommendations/track
+ * Track interaction event (views, clicks, saves, purchases, searches)
+ */
+router.post('/track', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const { item_type, item_id, item_key, action_type, category, weight } = req.body;
+
+    if (!item_type || !action_type) {
+      return res.status(400).json({ error: 'item_type and action_type are required' });
+    }
+
+    let defaultWeight = 1.0;
+    if (action_type === 'purchase') defaultWeight = 5.0;
+    else if (action_type === 'inquire' || action_type === 'save' || action_type === 'like') defaultWeight = 3.0;
+    else if (action_type === 'click') defaultWeight = 1.5;
+    else if (action_type === 'view') defaultWeight = 0.5;
+    else if (action_type === 'dismiss') defaultWeight = -2.0;
+
+    await pool.query(
+      `INSERT INTO user_recommendation_interactions 
+        (user_id, item_type, item_id, item_key, action_type, category, weight)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        userId,
+        item_type,
+        item_id || null,
+        item_key || null,
+        action_type,
+        category || null,
+        weight || defaultWeight
+      ]
+    );
+
+    res.json({ success: true, message: 'Interaction recorded' });
+  } catch (error: any) {
+    console.error('[Recommendations API] Track Error:', error);
+    res.status(500).json({ error: 'Failed recording recommendation interaction' });
+  }
+});
+
+/**
+ * POST /api/recommendations/feedback
+ * Negative/Positive explicit feedback (e.g., "Not Interested")
+ */
+router.post('/feedback', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const { item_type, item_id, item_key, feedback_type } = req.body;
+
+    if (!item_type || !feedback_type) {
+      return res.status(400).json({ error: 'item_type and feedback_type are required' });
+    }
+
+    await pool.query(
+      `INSERT INTO recommendation_feedback (user_id, item_type, item_id, item_key, feedback_type)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [userId, item_type, item_id || null, item_key || null, feedback_type]
+    );
+
+    // Also record as negative weight interaction if dismissed
+    if (feedback_type === 'not_interested' || feedback_type === 'dismissed') {
+      await pool.query(
+        `INSERT INTO user_recommendation_interactions (user_id, item_type, item_id, item_key, action_type, weight)
+         VALUES ($1, $2, $3, $4, 'dismiss', -3.0)`,
+        [userId, item_type, item_id || null, item_key || null]
+      );
+    }
+
+    res.json({ success: true, message: 'Feedback recorded successfully' });
+  } catch (error: any) {
+    console.error('[Recommendations API] Feedback Error:', error);
+    res.status(500).json({ error: 'Failed saving feedback' });
+  }
+});
+
+/**
+ * GET /api/recommendations/preferences
+ */
+router.get('/preferences', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const prefRes = await pool.query(
+      'SELECT preferred_categories, preferred_price_range, explicit_interests FROM user_recommendation_preferences WHERE user_id = $1',
+      [userId]
+    );
+
+    if (prefRes.rows.length === 0) {
+      return res.json({
+        success: true,
+        preferences: {
+          preferred_categories: [],
+          preferred_price_range: { min: 0, max: 10000 },
+          explicit_interests: []
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      preferences: prefRes.rows[0]
+    });
+  } catch (error: any) {
+    console.error('[Recommendations API] GET Preferences Error:', error);
+    res.status(500).json({ error: 'Failed retrieving user preferences' });
+  }
+});
+
+/**
+ * PUT /api/recommendations/preferences
+ */
+router.put('/preferences', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const { preferred_categories, preferred_price_range, explicit_interests } = req.body;
+
+    await pool.query(
+      `INSERT INTO user_recommendation_preferences (user_id, preferred_categories, preferred_price_range, explicit_interests, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id) DO UPDATE SET
+         preferred_categories = EXCLUDED.preferred_categories,
+         preferred_price_range = EXCLUDED.preferred_price_range,
+         explicit_interests = EXCLUDED.explicit_interests,
+         updated_at = CURRENT_TIMESTAMP`,
+      [
+        userId,
+        JSON.stringify(preferred_categories || []),
+        JSON.stringify(preferred_price_range || { min: 0, max: 10000 }),
+        JSON.stringify(explicit_interests || [])
+      ]
+    );
+
+    res.json({ success: true, message: 'Recommendation preferences updated successfully' });
+  } catch (error: any) {
+    console.error('[Recommendations API] PUT Preferences Error:', error);
+    res.status(500).json({ error: 'Failed updating user preferences' });
+  }
+});
+
+export default router;

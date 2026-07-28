@@ -196,16 +196,22 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   };
 
   // Intersection Observer for Infinite Scroll
+  const isRequestingRef = useRef(false);
+
   useEffect(() => {
     if (!onLoadMore || !hasMore || loading || loadingMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !isRequestingRef.current) {
+          isRequestingRef.current = true;
           onLoadMore();
+          setTimeout(() => {
+            isRequestingRef.current = false;
+          }, 1000);
         }
       },
-      { threshold: 0.01, rootMargin: '600px 0px 600px 0px' }
+      { threshold: 0.1, rootMargin: '200px' }
     );
 
     const currentSentinel = sentinelRef.current;
@@ -281,6 +287,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
         return (
           <motion.article
             key={ad.id}
+            id={`bulletin-ad-${ad.id}`}
             layout
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}

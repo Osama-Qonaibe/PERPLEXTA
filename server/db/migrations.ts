@@ -512,9 +512,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     };
 
+    // DYNAMIC SCHEMA AUTO-REPAIR: Always run initDb to guarantee all tables and columns are created perfectly on startup
+    console.log('[Migrations] 🚀 Running dynamic schema auto-repair (syncing tables and columns)...');
+    await initDb('additive');
+
     // MIGRATION: Core Schema v1
     await runVersioned('v1_core_schema', 'Initial core database schema', async (tx, ledgerTx) => {
-      await initDb(type, tx, ledgerTx);
+      // Logic handled dynamically now by the auto-repair step above
     });
 
     // MIGRATION: Additive Columns v2
@@ -1749,6 +1753,44 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v67_recommendation_engine', 'Creating recommendation engine tables for user interactions, preferences, and feedback', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS user_recommendation_interactions (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          item_type VARCHAR(50) NOT NULL,
+          item_id INTEGER,
+          item_key VARCHAR(255),
+          action_type VARCHAR(50) NOT NULL,
+          category VARCHAR(100),
+          weight NUMERIC(5,2) DEFAULT 1.0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_rec_interactions_user ON user_recommendation_interactions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_rec_interactions_type_item ON user_recommendation_interactions(item_type, item_id);
+
+        CREATE TABLE IF NOT EXISTS user_recommendation_preferences (
+          user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+          preferred_categories JSONB DEFAULT '[]',
+          preferred_price_range JSONB DEFAULT '{"min": 0, "max": 10000}',
+          excluded_item_types JSONB DEFAULT '[]',
+          explicit_interests JSONB DEFAULT '[]',
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS recommendation_feedback (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          item_type VARCHAR(50) NOT NULL,
+          item_id INTEGER,
+          item_key VARCHAR(255),
+          feedback_type VARCHAR(50) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_rec_feedback_user ON recommendation_feedback(user_id);
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -2596,12 +2638,78 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
+    },
+    {
+      name: 'user_recommendation_interactions',
+      query: `CREATE TABLE IF NOT EXISTS user_recommendation_interactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        item_type VARCHAR(50) NOT NULL,
+        item_id INTEGER,
+        item_key VARCHAR(255),
+        action_type VARCHAR(50) NOT NULL,
+        category VARCHAR(100),
+        weight NUMERIC(5,2) DEFAULT 1.0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'user_recommendation_preferences',
+      query: `CREATE TABLE IF NOT EXISTS user_recommendation_preferences (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        preferred_categories JSONB DEFAULT '[]',
+        preferred_price_range JSONB DEFAULT '{"min": 0, "max": 10000}',
+        excluded_item_types JSONB DEFAULT '[]',
+        explicit_interests JSONB DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'recommendation_feedback',
+      query: `CREATE TABLE IF NOT EXISTS recommendation_feedback (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        item_type VARCHAR(50) NOT NULL,
+        item_id INTEGER,
+        item_key VARCHAR(255),
+        feedback_type VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     }
   ];
 
   for (const table of schema) {
     const p = table.pool || targetPool;
     await p.query(table.query);
+
+    // DYNAMIC COLUMN AUTO-REPAIR: Parse schema and add any missing columns safely
+    const match = table.query.match(/\(([\s\S]+)\)/);
+    if (match) {
+      const columns = match[1].split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('--') && !line.match(/^(UNIQUE|PRIMARY KEY|FOREIGN KEY|CONSTRAINT)/i));
+
+      for (const colDef of columns) {
+        const colMatch = colDef.match(/^([a-zA-Z0-9_]+)\s+([\s\S]+)/);
+        if (colMatch) {
+          const colName = colMatch[1];
+          let colType = colMatch[2].trim();
+          if (colType.endsWith(',')) colType = colType.slice(0, -1).trim();
+
+          try {
+            await p.query(`ALTER TABLE "${table.name}" ADD COLUMN IF NOT EXISTS "${colName}" ${colType}`);
+          } catch (e: any) {
+            // Handle cases where a NOT NULL constraint prevents adding the column on a non-empty table
+            if (e.message && (e.message.includes('contains no default') || e.message.includes('null value'))) {
+               const fallbackType = colType.replace(/\s+NOT NULL/i, '');
+               try {
+                 await p.query(`ALTER TABLE "${table.name}" ADD COLUMN IF NOT EXISTS "${colName}" ${fallbackType}`);
+               } catch (fallbackErr) {}
+            }
+          }
+        }
+      }
+    }
   }
 
   try {

@@ -18,6 +18,7 @@ import { BlogPage } from './pages/BlogPage';
 import { AdminCommunityPage } from './pages/AdminCommunityPage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { SharedSnapshotPage } from './pages/SharedSnapshotPage';
+import { RecommendationsPage } from './pages/RecommendationsPage';
 import { IncentiveCard } from './components/IncentiveCard';
 import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
@@ -395,6 +396,7 @@ export default function App() {
                 <Route path="chat/:id?" element={<ChatPage />} />
                 <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
                 <Route path="marketplace/:id?" element={<MarketplacePage />} />
+                <Route path="discover" element={<RecommendationsPage />} />
                 <Route path="blog/:slug?" element={<BlogPage />} />
                 <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
                 <Route path="terms" element={<Terms />} />

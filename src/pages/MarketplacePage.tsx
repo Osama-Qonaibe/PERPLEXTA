@@ -10,6 +10,8 @@ import {
   Edit, ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RecommendationWidget } from '../components/RecommendationWidget';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface MarketplaceItem {
   id: number;
@@ -905,15 +907,19 @@ export const MarketplacePage: React.FC = () => {
   }, [user?.role, token]);
 
   useEffect(() => {
-    if (id && items.length > 0) {
-      const itemId = parseInt(id, 10);
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryId = urlParams.get('id') || urlParams.get('product') || urlParams.get('item');
+    const targetIdStr = id || queryId;
+
+    if (targetIdStr && items.length > 0) {
+      const itemId = parseInt(targetIdStr, 10);
       if (!isNaN(itemId)) {
         const found = items.find(item => item.id === itemId);
         if (found) {
           setSelectedProduct(found);
         }
       }
-    } else if (!id) {
+    } else if (!targetIdStr) {
       setSelectedProduct(null);
     }
   }, [id, items]);
@@ -1913,6 +1919,13 @@ export const MarketplacePage: React.FC = () => {
 
             {/* Main Product Catalog Grid */}
             <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+              
+              {/* Recommendation Widget Bar */}
+              <RecommendationWidget 
+                filterType="marketplace" 
+                limit={4} 
+                className="mb-8 p-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm" 
+              />
               
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">

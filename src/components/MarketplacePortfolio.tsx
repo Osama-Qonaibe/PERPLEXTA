@@ -7,6 +7,7 @@ import {
   Eye, Play
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface PurchasedItem {
   purchase_id: number;

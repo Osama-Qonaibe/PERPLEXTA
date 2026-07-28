@@ -13,6 +13,7 @@ export function useRenderMetrics({ componentName, enabled = import.meta.env.DEV 
   const renderCount = useRef(0);
   const mountTime = useRef<number>(typeof window !== 'undefined' && window.performance ? performance.now() : 0);
   const lastRenderTime = useRef<number>(typeof window !== 'undefined' && window.performance ? performance.now() : 0);
+  const lastReportTime = useRef<number>(0);
 
   renderCount.current += 1;
 
@@ -22,23 +23,25 @@ export function useRenderMetrics({ componentName, enabled = import.meta.env.DEV 
     const now = performance.now();
     const duration = now - lastRenderTime.current;
 
-    const payload = {
-      componentName,
-      renderCount: renderCount.current,
-      timeSinceMount: Math.round(now - mountTime.current),
-      renderDuration: Math.round(duration),
-      timestamp: new Date().toISOString(),
-    };
+    // Throttle reporting to at most once every 10 seconds to avoid hitting rate limits
+    if (now - lastReportTime.current > 10000) {
+      lastReportTime.current = now;
 
-    // Transmit to secure logging endpoint
-    fetch('/api/metrics/render', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Silently catch network failures in dev logging
-    });
+      const payload = {
+        componentName,
+        renderCount: renderCount.current,
+        timeSinceMount: Math.round(now - mountTime.current),
+        renderDuration: Math.round(duration),
+        timestamp: new Date().toISOString(),
+      };
+
+      fetch('/api/metrics/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
 
     lastRenderTime.current = performance.now();
-  });
+  }, [componentName, enabled]);
 }
