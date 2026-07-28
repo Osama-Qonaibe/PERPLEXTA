@@ -7,7 +7,7 @@ if (!ENCRYPTION_KEY) {
 const IV_LENGTH = 16;
 
 function getSecretBuffer(key: string) {
-  return Buffer.from(key.padEnd(32, '0').slice(0, 32));
+  return crypto.createHash('sha256').update(key).digest();
 }
 
 export function encrypt(text: string): string {
@@ -30,46 +30,27 @@ export function decrypt(text: string): string {
     return text.length > 5000 ? '' : text;
   }
   
-  const performDecryption = (cipherText: string, secretKey: string): string | null => {
-    try {
-      const textParts = cipherText.split(':');
-      const ivHex = textParts.shift();
-      const encryptedHex = textParts.join(':');
-      
-      if (!ivHex || !encryptedHex) return null;
+  try {
+    const textParts = text.split(':');
+    const ivHex = textParts.shift();
+    const encryptedHex = textParts.join(':');
+    
+    if (!ivHex || !encryptedHex) return text;
 
-      const iv = Buffer.from(ivHex, 'hex');
-      const encryptedText = Buffer.from(encryptedHex, 'hex');
-      
-      if (iv.length !== IV_LENGTH || encryptedText.length === 0) return null;
+    const iv = Buffer.from(ivHex, 'hex');
+    const encryptedText = Buffer.from(encryptedHex, 'hex');
+    
+    if (iv.length !== IV_LENGTH || encryptedText.length === 0) return text;
 
-      const decipher = crypto.createDecipheriv(
-        'aes-256-cbc', 
-        getSecretBuffer(secretKey), 
-        iv
-      );
-      let decrypted = decipher.update(encryptedText);
-      decrypted = Buffer.concat([decrypted, decipher.final()]);
-      return decrypted.toString();
-    } catch (err) {
-      return null;
-    }
-  };
-
-  const primaryResult = performDecryption(text, ENCRYPTION_KEY);
-  if (primaryResult !== null) return primaryResult;
-
-  const defaultBrowserKey = 'perplexta_secure_key_32_chars_!!';
-  if (ENCRYPTION_KEY !== defaultBrowserKey) {
-    const fallbackResult = performDecryption(text, defaultBrowserKey);
-    if (fallbackResult !== null) return fallbackResult;
+    const decipher = crypto.createDecipheriv(
+      'aes-256-cbc', 
+      getSecretBuffer(ENCRYPTION_KEY), 
+      iv
+    );
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (err) {
+    return text;
   }
-
-  const envPlaceholderKey = 'your_secure_32_chars_key_here_!';
-  if (ENCRYPTION_KEY !== envPlaceholderKey) {
-    const fallbackEnvResult = performDecryption(text, envPlaceholderKey);
-    if (fallbackEnvResult !== null) return fallbackEnvResult;
-  }
-
-  return text;
 }

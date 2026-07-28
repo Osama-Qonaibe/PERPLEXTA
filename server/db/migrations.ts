@@ -360,7 +360,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
       }
       if (securityClient) {
-        const securityTables = ['token_blacklist', 'security_alerts'];
+        const securityTables = ['token_blacklist', 'security_alerts', 'admin_audit_logs'];
         for (const t of securityTables) {
           await securityClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
         }
@@ -1850,6 +1850,19 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v72_encrypt_smtp_password', 'Encrypting smtp_password in email_settings', async (tx) => {
+      const { encrypt } = await import('../utils/crypto.js');
+      const settingsRes = await tx.query('SELECT id, smtp_password FROM email_settings');
+      
+      const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
+      
+      for (const row of settingsRes.rows) {
+        if (row.smtp_password && row.smtp_password.trim() !== '' && !encryptionPattern.test(row.smtp_password)) {
+          await tx.query('UPDATE email_settings SET smtp_password = $1 WHERE id = $2', [encrypt(row.smtp_password), row.id]);
+        }
+      }
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -1958,6 +1971,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     },
     {
       name: 'token_blacklist',
+      pool: targetSecurityPool,
       query: `CREATE TABLE IF NOT EXISTS token_blacklist (
         id SERIAL PRIMARY KEY,
         token TEXT UNIQUE NOT NULL,
