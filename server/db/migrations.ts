@@ -139,7 +139,7 @@ export async function ensureColumn(
       }
       if (defaultVal !== undefined && defaultVal !== null) {
         const defaultStr = String(defaultVal).trim();
-        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
+        if (!/^[a-zA-Z0-9_()\-:.'",\s\[\]{}]+$/i.test(defaultStr)) {
           throw new Error(`Invalid default value expression: ${defaultStr}`);
         }
       }
@@ -959,12 +959,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           ($1, 'welcome-to-perplexta', 'Welcome to Perplexta', 'مرحباً بكم في بيربليكستا',
            'Perplexta is an advanced AI conversation platform that brings together the most powerful language models in a single unified experience.',
            'بيربليكستا منصة محادثة ذكاء اصطناعي متقدمة تجمع أقوى نماذج اللغة في تجربة موحدة.',
-           'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800',
+           'https://picsum.photos/seed/perplexta-platform/800/450',
            'Platform', 'المنصة', 1200),
           ($1, 'ai-models-guide', 'Guide to AI Models on Perplexta', 'دليل نماذج الذكاء الاصطناعي في بيربليكستا',
            'Explore the range of AI models available on Perplexta, from GPT-4 to Claude and beyond.',
            'استكشف نماذج الذكاء الاصطناعي المتاحة في بيربليكستا، من GPT-4 إلى Claude وما هو أبعد.',
-           'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800',
+           'https://picsum.photos/seed/perplexta-ai-models/800/450',
            'AI', 'ذكاء اصطناعي', 850)
         `, [authorId]);
       }
