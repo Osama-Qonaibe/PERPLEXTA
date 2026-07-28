@@ -1850,8 +1850,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    await runVersioned('v72_encrypt_smtp_password', 'Encrypting smtp_password in email_settings', async (tx) => {
-      const { encrypt } = await import('../utils/crypto.js');
+    await runVersioned('v73_encrypt_smtp_password_v2', 'Encrypting smtp_password in email_settings v2', async (tx) => {
       const settingsRes = await tx.query('SELECT id, smtp_password FROM email_settings');
       
       const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
