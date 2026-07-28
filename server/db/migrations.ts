@@ -1807,12 +1807,24 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`
         CREATE TABLE IF NOT EXISTS user_shortcuts (
           id SERIAL PRIMARY KEY,
-          user_id INTEGER,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           title VARCHAR(255) NOT NULL,
           query TEXT NOT NULL,
           category VARCHAR(50) DEFAULT 'general',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+      `);
+    });
+
+    await runVersioned('v69_add_user_shortcuts_fk', 'Add foreign key to user_shortcuts', async (tx) => {
+      await tx.query(`
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_shortcuts_user_id_fkey') THEN
+                ALTER TABLE user_shortcuts ADD CONSTRAINT user_shortcuts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+        END;
+        $$;
       `);
     });
 
@@ -2298,7 +2310,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
       name: 'user_shortcuts',
       query: `CREATE TABLE IF NOT EXISTS user_shortcuts (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         title VARCHAR(255) NOT NULL,
         query TEXT NOT NULL,
         category VARCHAR(50) DEFAULT 'general',
