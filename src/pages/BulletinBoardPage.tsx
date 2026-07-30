@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import {
   Megaphone, Plus, Search, Heart, MessageSquare, Share2, Bookmark, Gift,
   ExternalLink, Phone, PhoneCall, Video, Film, Upload, CheckCircle2, AlertCircle, Clock, Eye, Sparkles,
   Send, X, Wallet, Tag, MessageCircle, Building2, MapPin, Globe, Type,
   UserCheck, UserPlus, Inbox, ArrowRight, ArrowLeft, ShieldCheck, Camera,
-  Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, Rocket,
+  Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
   Radio, Clapperboard, Bell, Menu, SlidersHorizontal, Trash2, Ban, Volume2, VolumeX,
   Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors
 } from 'lucide-react';
@@ -23,7 +23,7 @@ import { AdInsightsTab } from '../components/AdInsightsTab';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
-import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl } from '../utils/mediaUtils';
+import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 
 const DURATION_TIERS = [
   { days: 3, price: 3.00, labelAr: '3 أيام', labelEn: '3 Days', badgeAr: 'اقتصادي', badgeEn: 'Basic' },
@@ -141,6 +141,7 @@ const FEELINGS = [
 
 export const BulletinBoardPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, user, token, setIsAuthModalOpen } = useAppContext();
   const isRtl = language === 'ar';
 
@@ -361,49 +362,108 @@ export const BulletinBoardPage: React.FC = () => {
     };
   }, []);
 
-  // Pull to refresh State & Handlers
+  // Pull to refresh State & Handlers (Touch + Mouse Drag Support)
   const [pullDistance, setPullDistance] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const pullStartLocation = useRef<number | null>(null);
+  const pullDistanceRef = useRef<number>(0);
+  const isMouseDownRef = useRef<boolean>(false);
+  const hasTriggeredHapticRef = useRef<boolean>(false);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) {
-      pullStartLocation.current = e.touches[0].clientY;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (pullStartLocation.current !== null && window.scrollY <= 0) {
-      const touchY = e.touches[0].clientY;
-      const dist = touchY - pullStartLocation.current;
-      if (dist > 0 && dist < 120) {
-        setPullDistance(dist);
+  // Core refresh trigger (callable by pull gesture or manual click)
+  const triggerFeedRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    setPullDistance(0);
+    pullDistanceRef.current = 0;
+    try {
+      if (activeTab === 'board') {
+        await Promise.all([
+          fetchAds(1, false),
+          fetchPages()
+        ]);
+      } else if (activeTab === 'pages') {
+        await fetchPages();
+      } else if (activeTab === 'my_ads') {
+        await fetchMyAds();
       }
+    } catch (e) {
+      console.error('Pull to refresh error:', e);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const handleTouchEnd = async () => {
-    if (pullDistance > 60 && !isRefreshing) {
-      setIsRefreshing(true);
-      setPullDistance(0);
+  // Unified Pointer Event Handlers for professional touch & mouse pull-to-refresh
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, [role="button"], video, audio')) {
+      return;
+    }
+    const scrollElem = document.querySelector('main .overflow-y-auto') || document.documentElement;
+    const scrollTop = scrollElem ? scrollElem.scrollTop : window.scrollY;
+    if (scrollTop <= 0) {
+      pullStartLocation.current = e.clientY;
+      pullDistanceRef.current = 0;
+      hasTriggeredHapticRef.current = false;
       try {
-        if (activeTab === 'board') {
-          await fetchAds(1, false);
-          await fetchPages();
-        } else if (activeTab === 'pages') {
-          await fetchPages();
-        } else if (activeTab === 'my_ads') {
-          await fetchMyAds();
-        }
-      } catch (e) {
-        console.error('Refresh error:', e);
-      } finally {
-        setIsRefreshing(false);
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch (err) {}
+    } else {
+      pullStartLocation.current = null;
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (pullStartLocation.current === null) return;
+    const scrollElem = document.querySelector('main .overflow-y-auto') || document.documentElement;
+    const scrollTop = scrollElem ? scrollElem.scrollTop : window.scrollY;
+    if (scrollTop > 0) {
+      pullStartLocation.current = null;
+      if (pullDistanceRef.current !== 0) {
+        pullDistanceRef.current = 0;
+        setPullDistance(0);
       }
+      return;
+    }
+
+    const rawDist = e.clientY - pullStartLocation.current;
+    if (rawDist > 0) {
+      // Smooth resistance curve
+      const dampedDist = Math.min(rawDist * 0.45, 90);
+      if (Math.abs(dampedDist - pullDistanceRef.current) > 2) {
+        pullDistanceRef.current = dampedDist;
+        setPullDistance(dampedDist);
+
+        // Haptic feedback when crossing 55px threshold
+        if (dampedDist >= 55 && !hasTriggeredHapticRef.current) {
+          hasTriggeredHapticRef.current = true;
+          if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(12);
+          }
+        } else if (dampedDist < 55) {
+          hasTriggeredHapticRef.current = false;
+        }
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const currentDist = pullDistanceRef.current || pullDistance;
+    if (currentDist >= 55 && !isRefreshing) {
+      triggerFeedRefresh();
     } else {
       setPullDistance(0);
+      pullDistanceRef.current = 0;
     }
     pullStartLocation.current = null;
+    hasTriggeredHapticRef.current = false;
+    try {
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+    } catch (err) {}
   };
 
   // Wallet balance
@@ -722,7 +782,7 @@ export const BulletinBoardPage: React.FC = () => {
 
   // Target Ad Direct Deep-linking (e.g. from Recommendations Widget)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const adIdParam = urlParams.get('id') || urlParams.get('ad');
     if (adIdParam) {
       const targetId = Number(adIdParam);
@@ -753,7 +813,7 @@ export const BulletinBoardPage: React.FC = () => {
         }
       }
     }
-  }, [token]);
+  }, [token, location, ads]);
 
   // Pagination & Scroll State for Ads Feed
   const [adPage, setAdPage] = useState<number>(1);
@@ -792,13 +852,23 @@ export const BulletinBoardPage: React.FC = () => {
           const newUniqueAds = fetchedAds.filter(a => !existingIds.has(a.id));
           if (newUniqueAds.length > 0) {
             setAds(prev => [...prev, ...newUniqueAds]);
-            setHasMoreAds(fetchedAds.length >= 8);
+            setHasMoreAds(true);
           } else {
-            setHasMoreAds(false);
+            // Endless Infinite Scroll Renewal: Recycle available ads so feed keeps loading indefinitely
+            if (ads.length > 0) {
+              const recycled = ads.slice(0, 8).map((ad, idx) => ({
+                ...ad,
+                _virtualId: `${ad.id}_recycle_${pageNum}_${idx}_${Date.now()}`
+              }));
+              setAds(prev => [...prev, ...recycled as any]);
+              setHasMoreAds(true);
+            } else {
+              setHasMoreAds(false);
+            }
           }
         } else {
           setAds(fetchedAds);
-          setHasMoreAds(fetchedAds.length >= 8);
+          setHasMoreAds(true);
         }
       }
     } catch (error) {
@@ -1417,49 +1487,68 @@ export const BulletinBoardPage: React.FC = () => {
   };
 
   // Upload Local Image File Helper
-  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | File[] } }) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد الأقصى 15MB)' : 'Image file is too large (max 15MB)');
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد الأقصى 25MB)' : 'Image file is too large (max 25MB)');
       return;
     }
 
     setIsAdModalOpen(true);
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
+    const toastId = toast.loading(
+      isRtl ? 'جاري تقليص وتحسين أبعاد الصورة للإعلان...' : 'Optimizing and resizing ad image...'
+    );
 
-    const toastId = toast.loading(isRtl ? 'جاري رفع الصورة...' : 'Uploading image...');
     try {
+      // Auto-compress and resize image for optimal sidebar & bulletin layout compatibility (600x600 target)
+      const compressed = await compressAndResizeImage(file, {
+        format: (adFormData as any).format || 'sidebar',
+        quality: 0.88,
+        mimeType: 'image/webp'
+      });
+
+      const uploadFile = compressed.file;
+
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', uploadFile);
+
+      const authToken = token || localStorage.getItem('app_token') || '';
       const res = await fetch('/api/files/upload', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: formDataUpload
       });
+
       if (res.ok) {
         const data = await res.json();
-        const rawUrl = data.fileUrl || data.file?.url || data.url || data.path;
+        const rawUrl = data.fileUrl || data.file?.url || data.file?.file_url || data.url || data.path;
         const fileUrl = getMediaUrl(rawUrl);
         if (fileUrl) {
           setAdFormData(prev => ({ ...prev, image_url: fileUrl }));
           toast.dismiss(toastId);
-          toast.success(isRtl ? 'تم رفع الصورة بنجاح!' : 'Image uploaded successfully!');
+          
+          const origKb = (compressed.originalSize / 1024).toFixed(0);
+          const compKb = (compressed.compressedSize / 1024).toFixed(0);
+
+          if (compressed.compressedSize < compressed.originalSize) {
+            toast.success(
+              isRtl
+                ? `تم تقليص ورفع الصورة بنجاح! (${compKb}KB بدلاً من ${origKb}KB)`
+                : `Image optimized & uploaded! (${compKb}KB down from ${origKb}KB)`
+            );
+          } else {
+            toast.success(isRtl ? 'تم رفع الصورة بنجاح!' : 'Image uploaded successfully!');
+          }
           return;
         }
       }
       throw new Error('Upload endpoint failed');
-    } catch (err) {
+    } catch (err: any) {
       toast.dismiss(toastId);
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        if (evt.target?.result) {
-          setAdFormData(prev => ({ ...prev, image_url: evt.target!.result as string }));
-          toast.success(isRtl ? 'تم رفع صورة الإعلان محلياً بنجاح!' : 'Image loaded locally!');
-        }
-      };
-      reader.readAsDataURL(file);
+      toast.error(isRtl ? 'فشل رفع الصورة إلى الخادم، يرجى المحاولة لاحقاً' : 'Image upload failed, please try again.');
     }
   };
 
@@ -1502,9 +1591,10 @@ export const BulletinBoardPage: React.FC = () => {
       }).catch(() => {});
     };
 
+    const authToken = token || localStorage.getItem('app_token') || '';
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/files/upload', true);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -1988,7 +2078,7 @@ export const BulletinBoardPage: React.FC = () => {
                     limit={3} 
                     title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
                     subtitle={isRtl ? 'مقترحات إعلانية وفقاً لاهتماماتك' : 'Tailored ad recommendations'}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
+                    className="p-3 mt-5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
                   />
                 </div>
               </motion.div>
@@ -2355,10 +2445,10 @@ export const BulletinBoardPage: React.FC = () => {
             <RecommendationWidget 
               variant="bulletin"
               filterType="bulletin" 
-              limit={4} 
+              limit={3} 
               title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
               subtitle={isRtl ? 'مقترحات مخصصة بناءً على سلوكك واهتماماتك' : 'Tailored ad suggestions'}
-              className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
+              className="p-4 mt-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
             />
 
             {/* Commercial Profile Settings Box */}
@@ -2484,30 +2574,54 @@ export const BulletinBoardPage: React.FC = () => {
 
           {/* MAIN COLUMN: FEED OR FULL PAGE VIEW (8 COLS) */}
           <div 
-            className="col-span-12 lg:col-span-8 space-y-6 order-1 lg:order-2 relative max-w-2xl mx-auto w-full"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="col-span-12 lg:col-span-8 space-y-6 order-1 lg:order-2 relative max-w-2xl mx-auto w-full select-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              touchAction: 'pan-y',
+              transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance * 0.28, 26)}px)` : 'none',
+              transition: pullDistance === 0 ? 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' : 'none'
+            }}
           >
 
             {/* Pull to Refresh Indicator */}
             <AnimatePresence>
               {(pullDistance > 0 || isRefreshing) && (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: -25, scale: 0.85 }}
                   animate={{ 
                     opacity: 1, 
-                    y: isRefreshing ? 20 : pullDistance * 0.5,
-                    rotate: isRefreshing ? 360 : pullDistance * 2
+                    y: isRefreshing ? 12 : Math.min(pullDistance * 0.55, 42),
+                    scale: pullDistance >= 55 || isRefreshing ? 1.05 : 0.95
                   }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ 
-                    y: { type: 'spring', damping: 20, stiffness: 300 },
-                    rotate: isRefreshing ? { repeat: Infinity, duration: 1, ease: 'linear' } : { type: 'spring' }
-                  }}
-                  className="absolute top-0 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-lg text-emerald-500"
+                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                  transition={{ type: 'spring', damping: 22, stiffness: 350 }}
+                  className={`absolute -top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-xl backdrop-blur-md transition-all duration-200 pointer-events-none ${
+                    isRefreshing || pullDistance >= 55
+                      ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 text-emerald-500 shadow-emerald-500/10'
+                      : 'bg-white/90 dark:bg-[#1a1a1c]/90 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
                 >
-                  <Loader2 size={20} className={!isRefreshing ? "opacity-50" : ""} />
+                  {isRefreshing ? (
+                    <RefreshCw size={15} className="animate-spin text-emerald-500 shrink-0" />
+                  ) : pullDistance >= 55 ? (
+                    <ArrowUp size={15} className="text-emerald-500 shrink-0 transition-transform duration-200" />
+                  ) : (
+                    <ArrowDown 
+                      size={15} 
+                      className="text-gray-400 shrink-0 transition-transform duration-200" 
+                      style={{ transform: `rotate(${Math.min(pullDistance * 3, 180)}deg)` }}
+                    />
+                  )}
+                  <span className="text-[11px] font-extrabold tracking-tight">
+                    {isRefreshing 
+                      ? (isRtl ? 'جاري تحديث الخلاصة...' : 'Refreshing feed...') 
+                      : pullDistance >= 55 
+                        ? (isRtl ? 'اترك للتحديث الآن' : 'Release to refresh') 
+                        : (isRtl ? 'اسحب لأسفل لتحديث الإعلانات' : 'Pull down to refresh')}
+                  </span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -2669,8 +2783,19 @@ export const BulletinBoardPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full">
                           {selectedPageDetail.ads.map(ad => (
                             <div key={ad.id} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 space-y-2.5">
-                              <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightboxImage(ad.image_url)}>
-                                <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover" />
+                              <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}>
+                                <img
+                                  src={getMediaUrl(ad.image_url)}
+                                  alt={ad.title || 'Ad thumbnail'}
+                                  onError={(e) => {
+                                    const target = e.currentTarget;
+                                    if (!target.dataset.fallback) {
+                                      target.dataset.fallback = 'true';
+                                      target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
+                                    }
+                                  }}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
                               <h4 className="text-xs font-extrabold line-clamp-1">{ad.title}</h4>
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">{ad.description}</p>
@@ -2754,10 +2879,21 @@ export const BulletinBoardPage: React.FC = () => {
                         {selectedPageDetail.ads.map(ad => (
                           <div
                             key={ad.id}
-                            onClick={() => setLightboxImage(ad.image_url)}
+                            onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}
                             className="aspect-square rounded-2xl overflow-hidden cursor-pointer relative group bg-gray-100 dark:bg-gray-900"
                           >
-                            <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                            <img
+                              src={getMediaUrl(ad.image_url)}
+                              alt={ad.title || 'Ad gallery image'}
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                if (!target.dataset.fallback) {
+                                  target.dataset.fallback = 'true';
+                                  target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
+                                }
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-all"
+                            />
                             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all flex items-end p-2 text-white text-[10px] font-bold">
                               {ad.title}
                             </div>
@@ -2794,16 +2930,29 @@ export const BulletinBoardPage: React.FC = () => {
                           <ChevronDown size={11} className="text-gray-400 shrink-0" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={handleDetectGpsLocation}
-                          disabled={isDetectingGps}
-                          className="px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-bold flex items-center gap-1 border border-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 shrink-0"
-                          title={isRtl ? 'استخدام موقعي الحالي (GPS)' : 'GPS Location'}
-                        >
-                          {isDetectingGps ? <Loader2 size={12} className="animate-spin text-emerald-500" /> : <Compass size={12} />}
-                          <span className="text-[10px] font-extrabold">{isRtl ? 'موقعي' : 'GPS'}</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleDetectGpsLocation}
+                            disabled={isDetectingGps}
+                            className="px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-bold flex items-center gap-1 border border-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 shrink-0"
+                            title={isRtl ? 'استخدام موقعي الحالي (GPS)' : 'GPS Location'}
+                          >
+                            {isDetectingGps ? <Loader2 size={12} className="animate-spin text-emerald-500" /> : <Compass size={12} />}
+                            <span className="text-[10px] font-extrabold">{isRtl ? 'موقعي' : 'GPS'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={triggerFeedRefresh}
+                            disabled={isRefreshing}
+                            className="px-2.5 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 hover:text-emerald-500 text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 active:scale-95 transition-all disabled:opacity-50 shrink-0 shadow-2xs"
+                            title={isRtl ? 'تحديث خلاصة الإعلانات' : 'Refresh Feed'}
+                          >
+                            <RefreshCw size={12} className={isRefreshing ? "animate-spin text-emerald-500" : ""} />
+                            <span className="text-[10px] font-extrabold">{isRtl ? 'تحديث' : 'Refresh'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -3702,7 +3851,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <div className={`grid grid-cols-1 ${adFormData.image_url && (adFormData.video_url || videoMetadataInfo.localVideoUrl) ? 'sm:grid-cols-2' : ''} gap-3`}>
                             {adFormData.image_url && (
                               <div className={`relative rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 group ${adFormData.ad_format === 'reel' || adFormData.ad_format === 'story' ? 'aspect-[9/16] max-h-[360px] mx-auto' : ''}`}>
-                                <img src={adFormData.image_url} className="w-full h-full object-cover" />
+                                <img src={getMediaUrl(adFormData.image_url)} className="w-full h-full object-cover" />
                                 <button 
                                   type="button"
                                   onClick={() => setAdFormData({...adFormData, image_url: ''})}
@@ -4727,22 +4876,22 @@ export const BulletinBoardPage: React.FC = () => {
                   <div>
                     <label className="block text-xs font-bold mb-1">{isRtl ? 'صورة الشعار (Avatar):' : 'Avatar URL:'}</label>
                     <input
-                      type="url"
-                      required
+                      type="text"
                       value={pageFormData.avatar_url}
                       onChange={(e) => setPageFormData({ ...pageFormData, avatar_url: e.target.value })}
                       className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      placeholder="https://... or /uploads/..."
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold mb-1">{isRtl ? 'صورة الغلاف (Cover Banner):' : 'Cover Banner URL:'}</label>
                     <input
-                      type="url"
-                      required
+                      type="text"
                       value={pageFormData.cover_url}
                       onChange={(e) => setPageFormData({ ...pageFormData, cover_url: e.target.value })}
                       className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      placeholder="https://... or /uploads/..."
                     />
                   </div>
                 </div>
@@ -4899,7 +5048,7 @@ export const BulletinBoardPage: React.FC = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               className="relative max-w-2xl max-h-[90vh]"
             >
-              <img src={lightboxImage} alt="Ad detail" className="w-full h-full object-contain rounded-2xl shadow-2xl" />
+              <img src={getMediaUrl(lightboxImage)} alt="Ad detail" className="w-full h-full object-contain rounded-2xl shadow-2xl" />
               <button
                 onClick={() => setLightboxImage(null)}
                 className="absolute top-3 end-3 p-2 rounded-full bg-black/70 text-white hover:bg-black"

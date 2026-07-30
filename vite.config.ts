@@ -21,10 +21,34 @@ export default defineConfig(({ mode }) => {
         workbox: {
           skipWaiting: true,
           clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}'],
-          navigateFallback: '/index.html',
+          cleanupOutdatedCaches: true,
+          globPatterns: ['**/*.{js,css,ico,png,svg,webmanifest,json,woff,woff2}'],
+          globIgnores: ['**/index.html', '**/sw.js', '**/registerSW.js'],
+          navigateFallback: null,
           navigateFallbackDenylist: [/^\/api/],
           maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.destination === 'document',
+              handler: 'NetworkOnly',
+            },
+            {
+              urlPattern: ({ request, url }) =>
+                ['script', 'style', 'font', 'image'].includes(request.destination) ||
+                /\.(?:js|css|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|ico)$/i.test(url.pathname),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'core-static-assets',
+                expiration: {
+                  maxEntries: 120,
+                  maxAgeSeconds: 30 * 24 * 60 * 60,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+          ],
         },
         manifest: {
           name: 'Perplexta Platform',

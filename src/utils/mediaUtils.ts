@@ -172,16 +172,25 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
 }
 
 /**
- * Normalizes any image or video URL (handling relative filenames, uploads, http, blob, data, comma-separated lists)
+ * Normalizes any image or video URL (handling relative filenames, uploads, http, blob, data, double slashes, comma-separated lists)
  */
 export function getMediaUrl(url?: string | null): string {
   if (!url || typeof url !== 'string') return '';
   let clean = url.trim();
   if (!clean) return '';
 
+  // Strip hardcoded localhost / dev server origins so URLs resolve relatively on remote servers
+  clean = clean.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i, '');
+
   // If comma-separated list of URLs (e.g. gallery images), extract the first URL
   if (clean.includes(',')) {
     clean = clean.split(',')[0].trim();
+  }
+
+  // Handle absolute URLs pointing to uploads (e.g. /uploads/xyz.png)
+  const uploadsMatch = clean.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
+  if (uploadsMatch && uploadsMatch[1]) {
+    return `/uploads/${uploadsMatch[1].replace(/^\/+/, '')}`;
   }
 
   if (
@@ -192,12 +201,138 @@ export function getMediaUrl(url?: string | null): string {
   ) {
     return clean;
   }
-  if (clean.startsWith('/')) {
-    return clean;
-  }
+
   if (clean.startsWith('uploads/')) {
     return `/${clean}`;
   }
+
+  if (clean.startsWith('/')) {
+    return clean;
+  }
+
   return `/uploads/${clean}`;
 }
+
+export interface CompressOptions {
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+  mimeType?: string;
+  format?: 'sidebar' | 'feed' | 'story' | 'reel' | 'video' | string;
+}
+
+export interface CompressResult {
+  file: File;
+  width: number;
+  height: number;
+  originalSize: number;
+  compressedSize: number;
+}
+
+/**
+ * Automatically resizes and compresses image files from the user's device before upload.
+ * Optimizes high-res images down to display-compatible dimensions (e.g. 600x600 for sidebar)
+ * preserving crisp quality while dramatically reducing bandwidth and storage footprint.
+ */
+export async function compressAndResizeImage(
+  file: File,
+  options: CompressOptions = {}
+): Promise<CompressResult> {
+  // If not an image or SVG/GIF (which shouldn't be canvas-rasterized), return original
+  if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
+    return {
+      file,
+      width: 0,
+      height: 0,
+      originalSize: file.size,
+      compressedSize: file.size
+    };
+  }
+
+  // Determine target max dimensions based on ad format or options
+  let targetMaxWidth = options.maxWidth || 800;
+  let targetMaxHeight = options.maxHeight || 800;
+
+  if (options.format === 'sidebar') {
+    targetMaxWidth = 600;
+    targetMaxHeight = 600;
+  } else if (options.format === 'feed') {
+    targetMaxWidth = 1080;
+    targetMaxHeight = 1080;
+  } else if (options.format === 'story' || options.format === 'reel') {
+    targetMaxWidth = 1080;
+    targetMaxHeight = 1920;
+  }
+
+  const quality = options.quality ?? 0.88;
+  const targetMimeType = options.mimeType || 'image/webp';
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+
+        // Calculate aspect ratio scaling to fit targetMaxWidth / targetMaxHeight
+        if (width > targetMaxWidth || height > targetMaxHeight) {
+          const ratio = Math.min(targetMaxWidth / width, targetMaxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({ file, width: img.width, height: img.height, originalSize: file.size, compressedSize: file.size });
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve({ file, width: img.width, height: img.height, originalSize: file.size, compressedSize: file.size });
+              return;
+            }
+
+            const ext = targetMimeType === 'image/webp' ? '.webp' : '.jpg';
+            const cleanBaseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            const newFilename = `${cleanBaseName}_optimized${ext}`;
+
+            const optimizedFile = new File([blob], newFilename, {
+              type: targetMimeType,
+              lastModified: Date.now()
+            });
+
+            resolve({
+              file: optimizedFile,
+              width,
+              height,
+              originalSize: file.size,
+              compressedSize: optimizedFile.size
+            });
+          },
+          targetMimeType,
+          quality
+        );
+      };
+      img.onerror = () => {
+        resolve({ file, width: 0, height: 0, originalSize: file.size, compressedSize: file.size });
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve({ file, width: 0, height: 0, originalSize: file.size, compressedSize: file.size });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 

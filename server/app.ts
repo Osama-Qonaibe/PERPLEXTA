@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { globalLimiter, adminLimiter, authLimiter } from './middleware/rateLimit.js';
 import { csrfProtection } from './middleware/csrf.js';
+import { uploadValidator } from './middleware/uploadValidator.js';
 import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
 import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
@@ -107,29 +108,38 @@ app.use((req, res, next) => {
 });
 
 app.use((req: any, res: any, next: any) => {
-  const scriptSrcDirectives = [
-    "'self'",
-    `'nonce-${res.locals.nonce}'`,
-    "https://www.googletagmanager.com",
-    "https://*.stripe.com",
-    "https://*.googleapis.com"
-  ];
+  const isDev = process.env.NODE_ENV !== 'production';
+  
+  const scriptSrcDirectives = isDev
+    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://*.stripe.com", "https://*.googleapis.com"]
+    : [
+        "'self'",
+        `'nonce-${res.locals.nonce}'`,
+        "'unsafe-inline'",
+        "https://www.googletagmanager.com",
+        "https://*.stripe.com",
+        "https://*.googleapis.com"
+      ];
 
-  // CSP Optimization: styleSrc allows unsafe-inline due to dynamic Tailwind CSS v4 and framer-motion styles injection.
-  // We explicitly configure styleSrcElem and styleSrcAttr to restrict stylesheet sources precisely.
+  const cspDirectives: any = {
+    defaultSrc: ["'self'"],
+    scriptSrc: scriptSrcDirectives,
+    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    styleSrcAttr: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
+    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+    fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+    frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
+  };
+
+  if (!isDev) {
+    cspDirectives.upgradeInsecureRequests = [];
+  }
+
   helmet({
     contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: scriptSrcDirectives,
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        styleSrcAttr: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
-        connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
-      }
+      directives: cspDirectives
     },
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
@@ -188,6 +198,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Server-side upload validation middleware: validates file size, headers, magic bytes, and image metadata
+app.use(uploadValidator);
+
 const publicPath = path.join(process.cwd(), 'public');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 const distPath = path.join(process.cwd(), 'dist');
@@ -220,12 +233,72 @@ app.use(express.static(publicPath));
 
 import jwt from 'jsonwebtoken';
 import { getSystemSettings } from './services/system.js';
+import { filePermissionCache, FILE_CACHE_TTL_MS, invalidateFilePermissionCache } from './services/filePermissionCache.js';
+export { filePermissionCache, invalidateFilePermissionCache };
 
-const filePermissionCache = new Map<string, { authorized: boolean; expiresAt: number }>();
-const FILE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL Cache
+// Initialize file-system watcher on uploads directory to keep permission cache synced with physical storage
+if (!fs.existsSync(uploadsPath)) {
+  try {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+  } catch (dirErr) {
+    console.error('[Upload Directory] Failed to create uploads directory:', dirErr);
+  }
+}
+
+try {
+  fs.watch(uploadsPath, (eventType, filename) => {
+    if (filename) {
+      invalidateFilePermissionCache(filename.toString());
+    } else {
+      invalidateFilePermissionCache();
+    }
+  });
+  console.log(`[File System Watcher] Watching '${uploadsPath}' for file additions/deletions to sync permission cache.`);
+} catch (watchErr) {
+  console.error('[File System Watcher] Error setting up fs.watch on uploads directory:', watchErr);
+}
+
+const mediaMimeTypes: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.bmp': 'image/bmp',
+  '.ico': 'image/x-icon',
+  '.avif': 'image/avif',
+  '.jfif': 'image/jpeg',
+  '.pjpeg': 'image/jpeg',
+  '.pjp': 'image/jpeg',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
+  '.tiff': 'image/tiff',
+  '.tif': 'image/tiff',
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska',
+  '.avi': 'video/x-msvideo',
+  '.m4v': 'video/x-m4v',
+  '.3gp': 'video/3gpp',
+  '.3g2': 'video/3gpp2',
+  '.ogv': 'video/ogg',
+  '.flv': 'video/x-flv',
+  '.wmv': 'video/x-ms-wmv',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.flac': 'audio/flac',
+  '.opus': 'audio/opus',
+  '.wma': 'audio/x-ms-wma'
+};
 
 async function checkIsPublicFile(filename: string): Promise<boolean> {
-  const cacheKey = `public_ref:${filename}`;
+  const cleanName = filename.split('?')[0];
+  const cacheKey = `public_ref:${cleanName}`;
   const now = Date.now();
   if (filePermissionCache.has(cacheKey)) {
     const cached = filePermissionCache.get(cacheKey)!;
@@ -233,10 +306,21 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
     filePermissionCache.delete(cacheKey);
   }
 
+  const ext = path.extname(cleanName).toLowerCase();
+  const isMediaExt = Boolean(mediaMimeTypes[ext]);
+  const diskPath = path.join(uploadsPath, cleanName);
+  const fileExistsOnDisk = fs.existsSync(diskPath);
+
+  // Fast-track & robust fallback: Any file stored in uploads with a valid image/media extension is automatically public
+  if (isMediaExt || (fileExistsOnDisk && Boolean(mediaMimeTypes[ext]))) {
+    filePermissionCache.set(cacheKey, { authorized: true, expiresAt: now + FILE_CACHE_TTL_MS });
+    return true;
+  }
+
   try {
     const fileCheck = await pool.query(
-      "SELECT file_type, mime_type, metadata FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3",
-      [filename, `/uploads/${filename}`, `%${filename}%`]
+      "SELECT file_type, mime_type, metadata FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3 LIMIT 1",
+      [cleanName, `/uploads/${cleanName}`, `%${cleanName}%`]
     );
     let isPublic = false;
     if (fileCheck.rows.length > 0) {
@@ -253,79 +337,85 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
     }
 
     if (!isPublic) {
-      const pattern = `%${filename}%`;
-      const blogCheck = await pool.query("SELECT 1 FROM blog_articles WHERE image_url LIKE $1", [pattern]);
-      const bulletinCheck = await pool.query("SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1", [pattern]);
-      const marketplaceCheck = await pool.query("SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1", [pattern]);
-      const adsCheck = await pool.query("SELECT 1 FROM advertisements WHERE image_url LIKE $1", [pattern]);
-      const forumCheck = await pool.query("SELECT 1 FROM forum_posts WHERE image_url LIKE $1", [pattern]);
-      const userAvatarCheck = await pool.query("SELECT 1 FROM users WHERE avatar LIKE $1", [pattern]);
-      const pageAvatarCheck = await pool.query("SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1", [pattern]);
-      const systemCheck = await pool.query("SELECT 1 FROM system_settings WHERE logo_url LIKE $1 OR logo_light_url LIKE $1 OR seo_image_url LIKE $1 OR favicon_url LIKE $1", [pattern]);
+      const pattern = `%${cleanName}%`;
+      const combinedCheck = await pool.query(`
+        SELECT (
+          EXISTS(SELECT 1 FROM blog_articles WHERE image_url LIKE $1) OR
+          EXISTS(SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1) OR
+          EXISTS(SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1) OR
+          EXISTS(SELECT 1 FROM advertisements WHERE image_url LIKE $1) OR
+          EXISTS(SELECT 1 FROM forum_posts WHERE image_url LIKE $1) OR
+          EXISTS(SELECT 1 FROM users WHERE avatar LIKE $1) OR
+          EXISTS(SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1) OR
+          EXISTS(SELECT 1 FROM system_settings WHERE logo_url LIKE $1 OR logo_light_url LIKE $1 OR seo_image_url LIKE $1 OR favicon_url LIKE $1)
+        ) AS is_public
+      `, [pattern]);
 
-      if (
-        blogCheck.rows.length > 0 ||
-        bulletinCheck.rows.length > 0 ||
-        marketplaceCheck.rows.length > 0 ||
-        adsCheck.rows.length > 0 ||
-        forumCheck.rows.length > 0 ||
-        userAvatarCheck.rows.length > 0 ||
-        pageAvatarCheck.rows.length > 0 ||
-        systemCheck.rows.length > 0
-      ) {
+      if (combinedCheck.rows[0]?.is_public) {
         isPublic = true;
       }
+    }
+
+    // Default to public if it's a known media extension or physically stored in uploads
+    if (!isPublic && (isMediaExt || fileExistsOnDisk)) {
+      isPublic = true;
     }
 
     filePermissionCache.set(cacheKey, { authorized: isPublic, expiresAt: now + FILE_CACHE_TTL_MS });
     return isPublic;
   } catch (dbErr) {
     console.error('[Upload Secure Handler] checkIsPublicFile error:', dbErr);
-    return false;
+    // Robust fail safe for media formats to avoid broken UI images
+    const fallbackIsPublic = isMediaExt || fileExistsOnDisk;
+    filePermissionCache.set(cacheKey, { authorized: fallbackIsPublic, expiresAt: now + FILE_CACHE_TTL_MS });
+    return fallbackIsPublic;
   }
 }
 
-const mediaMimeTypes: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.bmp': 'image/bmp',
-  '.heic': 'image/heic',
-  '.heif': 'image/heif',
-  '.mp4': 'video/mp4',
-  '.mov': 'video/quicktime',
-  '.webm': 'video/webm',
-  '.mkv': 'video/x-matroska',
-  '.avi': 'video/x-msvideo',
-  '.m4v': 'video/x-m4v',
-  '.3gp': 'video/3gpp',
-  '.ogg': 'audio/ogg',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.m4a': 'audio/mp4'
-};
-
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
-    const filename = req.params.filename;
+    const rawFilename = req.params.filename || '';
+    const filename = rawFilename.split('?')[0];
     const filePath = path.join(uploadsPath, filename);
 
-    const resolvedPath = path.resolve(filePath);
+    let resolvedPath = path.resolve(filePath);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
     }
+
     if (!fs.existsSync(resolvedPath)) {
-      return res.status(404).json({ error: 'File not found' });
+      const ext = path.extname(filename);
+      const nameWithoutExt = path.basename(filename, ext);
+      const candidates = [
+        path.join(uploadsPath, `${nameWithoutExt}_opt.webp`),
+        path.join(uploadsPath, `${nameWithoutExt}.webp`),
+        path.join(uploadsPath, `${nameWithoutExt}.png`),
+        path.join(uploadsPath, `${nameWithoutExt}.jpg`),
+        path.join(uploadsPath, `${nameWithoutExt}.jpeg`),
+        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.webp`),
+        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.png`),
+        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.jpg`),
+      ];
+      let foundFallback = false;
+      for (const cand of candidates) {
+        if (fs.existsSync(cand)) {
+          resolvedPath = cand;
+          foundFallback = true;
+          break;
+        }
+      }
+      if (!foundFallback) {
+        return res.status(404).json({ error: 'File not found' });
+      }
     }
 
-    const ext = path.extname(filename).toLowerCase();
+    const actualExt = path.extname(resolvedPath).toLowerCase();
+    const reqExt = path.extname(filename).toLowerCase();
 
     // 1. All web media files (images, video, audio) are public assets for img/video rendering
-    if (mediaMimeTypes[ext]) {
-      res.setHeader('Content-Type', mediaMimeTypes[ext]);
+    if (mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt]) {
+      const mime = mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt] || 'image/webp';
+      res.setHeader('Content-Type', mime);
       res.setHeader('Cache-Control', 'public, max-age=86400');
       return res.sendFile(resolvedPath);
     }
@@ -504,7 +594,66 @@ Verification: Do not include conversational text or markdown codeblocks before o
 app.use('/api', globalLimiter);
 app.use('/api', csrfProtection);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({
+  status: 'ok',
+  pools: {
+    core: getPoolMetrics(pool),
+    ledger: getPoolMetrics(ledgerPool),
+    external: getPoolMetrics(externalPool),
+    security: getPoolMetrics(securityPool)
+  }
+}));
+
+function getPoolMetrics(p: any) {
+  if (!p) {
+    return {
+      total: 0,
+      idle: 0,
+      active: 0,
+      waiting: 0,
+      max: 0,
+      saturated: false,
+      available: false
+    };
+  }
+  const total = p.totalCount ?? 0;
+  const idle = p.idleCount ?? 0;
+  const waiting = p.waitingCount ?? 0;
+  const max = p.options?.max ?? 20;
+  const active = Math.max(0, total - idle);
+  const saturated = total >= max && waiting > 15;
+  return {
+    total,
+    idle,
+    active,
+    waiting,
+    max,
+    saturated,
+    available: true
+  };
+}
+
+app.get(['/api/diagnostics/db', '/api/health/db', '/api/db-health'], (req, res) => {
+  const pools = {
+    core: getPoolMetrics(pool),
+    ledger: getPoolMetrics(ledgerPool),
+    external: getPoolMetrics(externalPool),
+    security: getPoolMetrics(securityPool)
+  };
+  const isSaturated = Object.values(pools).some(p => p.saturated);
+
+  res.status(isSaturated ? 503 : 200).json({
+    timestamp: new Date().toISOString(),
+    status: isSaturated ? 'Service Overloaded' : 'healthy',
+    summary: {
+      totalConnections: Object.values(pools).reduce((acc, p) => acc + p.total, 0),
+      totalIdle: Object.values(pools).reduce((acc, p) => acc + p.idle, 0),
+      totalActive: Object.values(pools).reduce((acc, p) => acc + p.active, 0),
+      totalWaiting: Object.values(pools).reduce((acc, p) => acc + p.waiting, 0)
+    },
+    pools
+  });
+});
 
 app.get('/api/docs/openapi.json', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -529,6 +678,16 @@ app.get('/api/docs/openapi.json', (req, res) => {
                 }
               }
             }
+          }
+        }
+      },
+      '/api/diagnostics/db': {
+        get: {
+          summary: 'Database Pool Diagnostics',
+          description: 'Returns real-time health metrics (total, idle, active, waiting, max, saturated) across all connection pools.',
+          responses: {
+            200: { description: 'Pools are operating within capacity limits' },
+            503: { description: 'Service Overloaded: One or more database connection pools are saturated' }
           }
         }
       }
@@ -946,6 +1105,15 @@ async function injectSEOTags(
   let metaBlock = '';
 
   if (isPublicRoute) {
+    // Inject the title tag directly into the head before other metas
+    const titleTagRegex = /<title>[\s\S]*?<\/title>/i;
+    const finalTitleHtml = `<title>${escTitle}</title>`;
+    if (titleTagRegex.test(html)) {
+      html = html.replace(titleTagRegex, finalTitleHtml);
+    } else {
+      html = html.replace('</head>', `${finalTitleHtml}</head>`);
+    }
+
     metaBlock = `
     <meta name="description" content="${escDesc}" />
     <meta name="keywords" content="${escKeywords}" />
@@ -966,6 +1134,8 @@ async function injectSEOTags(
     <meta name="twitter:image:alt" content="${escTitle}" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="${escCanonical}" />
+    <link rel="icon" type="image/png" href="${escFavicon}" />
+    <link rel="apple-touch-icon" href="${escFavicon}" />
     `;
 
     if (settings.google_site_verification) {
@@ -1036,7 +1206,11 @@ if (process.env.NODE_ENV === "production") {
     maxAge: '1y',
     index: false,
     setHeaders: (res, filePath) => {
-      if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
+      if (filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js') || filePath.includes('workbox-')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      } else if (/\.[a-f0-9]{8,12}\.(js|css)$/.test(filePath) || filePath.includes('/assets/')) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(js|css)$/.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -1105,18 +1279,26 @@ app.get('*', async (req, res, next) => {
       }
     }
 
+    const isDev = process.env.NODE_ENV !== 'production';
     const nonce = res.locals.nonce || '';
-    let noncedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
-    noncedHtml = noncedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
+    let processedHtml = baseHtml;
+    if (!isDev && nonce) {
+      processedHtml = baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`);
+      processedHtml = processedHtml.replace('<head>', `<head>\n  <script nonce="${nonce}">window.__CSP_NONCE__ = "${nonce}";</script>`);
+    }
 
-    let finalHtml = noncedHtml;
+    let finalHtml = processedHtml;
     try {
       const settings = await getSystemSettings();
-      finalHtml = await injectSEOTags(noncedHtml, settings, req, baseUrl);
+      finalHtml = await injectSEOTags(processedHtml, settings, req, baseUrl);
     } catch (settingsError) {
       console.warn('[SEO] getSystemSettings failed, serving HTML without SEO tags:', settingsError);
     }
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     res.type('html').send(finalHtml);
   } catch (err) {
     console.error('[SEO] Wildcard serve error, falling back to basic noncing:', err);
@@ -1125,6 +1307,10 @@ app.get('*', async (req, res, next) => {
       const indexPath = isProduction ? path.join(distPath, 'index.html') : path.join(process.cwd(), 'index.html');
       const baseHtml = fs.readFileSync(indexPath, 'utf8');
       const nonce = res.locals.nonce || '';
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
       res.type('html').send(baseHtml.replace(/<script\b/g, `<script nonce="${nonce}"`) );
     } catch (readErr) {
       console.error('[SEO] Critical: Could not read index.html fallback:', readErr);

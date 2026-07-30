@@ -64,10 +64,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const uploadProofImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
+    const authToken = token || localStorage.getItem('app_token') || '';
     const res = await fetch('/api/files/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${authToken}`
       },
       body: formData
     });
@@ -75,7 +76,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       throw new Error('Screenshot upload failed');
     }
     const data = await res.json();
-    return data.file.file_url; // Returns exact static filename registered on backend
+    return data.file?.file_url || data.fileUrl || data.url || '';
   };
 
   // Credit Card fields

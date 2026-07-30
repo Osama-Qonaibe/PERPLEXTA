@@ -236,6 +236,12 @@ export const BlogPage: React.FC = () => {
         .then(data => {
           setSelectedArticle(data.article);
           setComments(data.comments);
+          
+          // SEO Update for internal navigation
+          if (data.article) {
+            const articleTitle = language === 'ar' ? data.article.title_ar : data.article.title_en;
+            document.title = `${articleTitle} | ${language === 'ar' ? 'بيربليكستا' : 'Perplexta'}`;
+          }
           // Sync back to list views and ratings counts
           setArticles(prev => prev.map(a => a.id === data.article.id ? { 
             ...a, 
@@ -276,6 +282,12 @@ export const BlogPage: React.FC = () => {
         const data = await res.json();
         setSelectedArticle(data.article);
         setComments(data.comments);
+
+        // SEO Update for internal navigation
+        if (data.article) {
+          const articleTitle = language === 'ar' ? data.article.title_ar : data.article.title_en;
+          document.title = `${articleTitle} | ${language === 'ar' ? 'بيربليكستا' : 'Perplexta'}`;
+        }
         // Sync back to list views and ratings counts
         setArticles(prev => prev.map(a => a.id === data.article.id ? { 
           ...a, 
@@ -1245,7 +1257,6 @@ export const BlogPage: React.FC = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            style={{ contentVisibility: 'auto' }}
                             className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-emerald-500/10 transition-all duration-300"
                           >
                             {comment.author_avatar ? (

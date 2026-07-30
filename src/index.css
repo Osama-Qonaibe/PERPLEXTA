@@ -225,6 +225,19 @@ body,
   color: var(--text-primary);
 }
 
+img, svg, video {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  touch-action: pan-y;
+}
+
+.touch-pan-y {
+  touch-action: pan-y !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -640,6 +653,7 @@ input,
 html, body {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 .touch-pan-y {

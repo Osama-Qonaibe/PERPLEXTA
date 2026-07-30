@@ -93,7 +93,7 @@ export const RecommendationsPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
-                {language === 'ar' ? 'محرك التوصيات والاستكشاف الذكي' : 'AI Discovery & Recommendation Hub'}
+                {language === 'ar' ? 'محرك الاكتشاف الذكي' : 'AI Discovery Hub'}
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                   v2.0 Elite Engine
                 </span>

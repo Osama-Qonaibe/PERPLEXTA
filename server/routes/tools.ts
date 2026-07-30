@@ -8,6 +8,7 @@ import { io } from '../config/socket.js';
 import { User, Subscription } from '../db/types.js';
 import { getUserWallet } from '../services/wallet.js';
 import { getProviderKey } from '../services/ai.js';
+import { getCachedOrchestratorConfig } from '../db/queries.js';
 import { saveGeneratedAudioToDisk } from '../services/files.js';
 
 const router = express.Router();
@@ -184,19 +185,39 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription or positive wallet balance is required to execute tools.' });
     }
 
-    // Obtain Gemini API key
-    const apiKey = await getProviderKey('gemini');
+    // Obtain API key via Orchestrator
+    const config = await getCachedOrchestratorConfig('perplexta_music');
+    if (!config) {
+      return res.status(400).json({
+        error: 'Tool perplexta_music is not configured in the Orchestrator.',
+        error_ar: 'الآداة perplexta_music غير مهيأة في نظام الأوركسترا.'
+      });
+    }
+    
+    let provider = config.primary_provider;
+    let modelName = config.primary_model;
+    let apiKey = await getProviderKey(provider);
+    
+    if (!apiKey && config.fallback_1_provider) {
+       provider = config.fallback_1_provider;
+       modelName = config.fallback_1_model;
+       apiKey = await getProviderKey(provider);
+    }
+
     if (!apiKey) {
       return res.status(400).json({ 
-        error: 'Google Gemini API key not configured or not found in system vault.',
-        error_ar: 'مفتاح Google Gemini API غير مهيأ أو غير متوفر في خزينة النظام.'
+        error: 'API key for music generation provider not configured or not found in system vault.',
+        error_ar: 'مفتاح مزود الخدمة لتوليد الموسيقى غير مهيأ أو غير متوفر في خزينة النظام.'
       });
     }
 
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey });
 
-    const modelName = model === 'lyria-3-pro-preview' ? 'lyria-3-pro-preview' : 'lyria-3-clip-preview';
+    // Client can still request clip vs pro
+    if (model === 'lyria-3-clip-preview') {
+       modelName = 'lyria-3-clip-preview';
+    }
 
     let fullPrompt = prompt;
     if (modelName === 'lyria-3-pro-preview' && userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {

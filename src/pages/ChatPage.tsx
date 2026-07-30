@@ -2644,7 +2644,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     const cleaned = (body || '').replace(/\[.*?\]/g, '').replace(/[#*`_]/g, '').trim();
     return cleaned || 'مقطوعة موسيقية ملحمية بطابع شرقي مميز';
   });
-  const [lyriaModel, setLyriaModel] = useState<'lyria-3-clip-preview' | 'lyria-3-pro-preview'>('lyria-3-clip-preview');
   const [lyriaLyrics, setLyriaLyrics] = useState('');
   const [lyriaLyricsResponse, setLyriaLyricsResponse] = useState('');
   const [isLyriaActive, setIsLyriaActive] = useState(false);
@@ -2672,7 +2671,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         },
         body: JSON.stringify({
           prompt: lyriaPrompt || 'Beautiful epic orchestral track',
-          model: lyriaModel,
           lyrics: lyriaLyrics
         })
       });
@@ -2694,7 +2692,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       setIsPlaying(false);
       setStatus('ready');
       setCurrentTime(0);
-      setDuration(lyriaModel === 'lyria-3-clip-preview' ? 30 : 90);
+      setDuration(60);
       setIsLyriaActive(true);
       setGeneratedAudioBase64(data.audioBase64);
       setGeneratedAudioMime(data.mimeType);
@@ -3586,39 +3584,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
         {isLyriaPanelExpanded && (
           <div className="flex flex-col gap-4 animate-fadeIn">
-            {/* Model Selector */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                {dir === 'rtl' ? 'نموذج التوليد المتاح' : 'AI MUSIC GENERATION MODEL'}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setLyriaModel('lyria-3-clip-preview')}
-                  className={`py-2 px-3 rounded-[4px] border text-[11px] font-bold transition-all flex flex-col items-center justify-center text-center gap-1 ${
-                    lyriaModel === 'lyria-3-clip-preview'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]'
-                      : 'border-gray-200 dark:border-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <span className="font-black uppercase">Lyria Clip</span>
-                  <span className="text-[9px] font-medium opacity-80">{dir === 'rtl' ? 'مقطع قصير (حتى ٣٠ ثانية)' : 'Short Clip (Up to 30s)'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLyriaModel('lyria-3-pro-preview')}
-                  className={`py-2 px-3 rounded-[4px] border text-[11px] font-bold transition-all flex flex-col items-center justify-center text-center gap-1 ${
-                    lyriaModel === 'lyria-3-pro-preview'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.2)]'
-                      : 'border-gray-200 dark:border-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <span className="font-black uppercase">Lyria Pro</span>
-                  <span className="text-[9px] font-medium opacity-80">{dir === 'rtl' ? 'مقطوعة كاملة واحترافية' : 'Full Professional Track'}</span>
-                </button>
-              </div>
-            </div>
-
             {/* Prompt input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
@@ -3632,8 +3597,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               />
             </div>
 
-            {/* Lyrics input (Pro only) */}
-            {lyriaModel === 'lyria-3-pro-preview' && (
+            {/* Lyrics input */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                   {dir === 'rtl' ? 'الكلمات المرافقة (اختياري)' : 'SONG LYRICS (OPTIONAL)'}
@@ -3645,7 +3609,6 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   className="w-full min-h-[50px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
                 />
               </div>
-            )}
 
             {/* Error display */}
             {lyriaError && (
@@ -5997,9 +5960,8 @@ export const ChatPage: React.FC = () => {
         tool_id: toolToUse,
         model_id: activeDropdown === 'model' ? selectedModel : undefined,
         chat_id: currentChatId,
-        data_p: encryptedQuery,
-        data_s: encryptedCustomInstructions,
-        mode: 'aes_v2',
+        content: currentQuery,
+        mode: 'standard',
         file_data: fileData,
         forensic_mode: forensicMode,
         video_settings: selectedTool === 'video' ? videoSettings : undefined,

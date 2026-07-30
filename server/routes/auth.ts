@@ -1255,7 +1255,11 @@ router.post('/token', async (req, res) => {
     }
 
     const agent = agentRes.rows[0];
-    const isSecretValid = await bcrypt.compare(clientSecret, agent.client_secret);
+    if (agent.is_active === false) {
+      return res.status(403).json({ error: 'invalid_client', message: 'Client is disabled or inactive.' });
+    }
+    const secretToCompare = agent.client_secret || agent.api_key_hash;
+    const isSecretValid = secretToCompare ? await bcrypt.compare(clientSecret, secretToCompare) : false;
     if (!isSecretValid) {
       return res.status(401).json({ error: 'invalid_client', message: 'Provided client_secret is invalid.' });
     }
@@ -1264,9 +1268,10 @@ router.post('/token', async (req, res) => {
     const baseUrl = getBaseUrl(req);
     if (!privateKeyPem) throw new Error('Asymmetric signing credentials could not be retrieved from active server keystore.');
 
+    const resolvedIdentityType = agent.identity_type || 'agent';
     const payload = {
       iss: baseUrl, sub: clientId, aud: baseUrl, client_id: clientId,
-      id_type: agent.identity_type, role: 'agent', scope: req.body.scope || 'read write'
+      identity_type: resolvedIdentityType, id_type: resolvedIdentityType, role: 'agent', isAgent: true, scope: req.body.scope || 'read write'
     };
 
     const token = jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: 'default-agent-key', expiresIn: '1h' });

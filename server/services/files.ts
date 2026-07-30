@@ -2,6 +2,7 @@ import { pool } from '../db/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { triggerFileCacheInvalidation } from './fileValidationService.js';
 
 export async function getUserFiles(userId: string) {
   if (!pool) throw new Error('Database initializing');
@@ -23,6 +24,7 @@ export async function saveFileMetadata(userId: string, data: {
      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
     [userId, data.file_name, data.file_url, data.file_size, data.mime_type, data.file_type, JSON.stringify(data.metadata)]
   );
+  triggerFileCacheInvalidation(data.file_url);
   return result.rows[0];
 }
 

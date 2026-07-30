@@ -75,15 +75,22 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             const { publicKeyPem } = getOrCreateSigningKeys();
             if (publicKeyPem) {
               const agentPayload = jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] }) as any;
-              if (agentPayload && agentPayload.client_id) {
-                const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [agentPayload.client_id]);
+              if (agentPayload && (agentPayload.client_id || agentPayload.sub)) {
+                const clientId = agentPayload.client_id || agentPayload.sub;
+                const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
                 if (agentCheck.rows.length > 0) {
                   const agent = agentCheck.rows[0];
+                  if (agent.is_active === false) {
+                    res.status(403).json({ error: 'Forbidden', message: 'Agent registration is inactive' });
+                    return;
+                  }
+                  const resolvedIdentityType = agent.identity_type || agentPayload.identity_type || agentPayload.id_type || 'agent';
                   (req as any).user = {
                     id: agent.id,
                     name: agent.client_name,
-                    id_type: agent.identity_type,
-                    role: 'agent',
+                    id_type: resolvedIdentityType,
+                    identity_type: resolvedIdentityType,
+                    role: agentPayload.role || 'agent',
                     isAgent: true,
                     client_id: agent.client_id
                   };
@@ -92,12 +99,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
                 }
               }
             }
-          } catch (rsaErr: any) {
-            console.warn('[Auth] Agent RSA verification failed:', rsaErr?.message);
+          } catch (rsaErr) {
+            // Fall through to original error handling
           }
 
           if (err.name === 'TokenExpiredError') {
-            console.warn(`[Auth] JWT Token Expired`);
             res.status(401).json({ error: 'TokenExpiredError', message: 'Token has expired' });
           } else {
             console.error(`[Auth] JWT Error: ${err.name}`);
@@ -149,6 +155,32 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
           return;
         }
 
+        if (userPayload.isAgent || userPayload.role === 'agent' || userPayload.client_id) {
+          const clientId = userPayload.client_id || userPayload.sub;
+          if (clientId) {
+            const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
+            if (agentCheck.rows.length > 0) {
+              const agent = agentCheck.rows[0];
+              if (agent.is_active === false) {
+                res.status(403).json({ error: 'Forbidden', message: 'Agent registration is inactive' });
+                return;
+              }
+              const resolvedIdentityType = agent.identity_type || userPayload.identity_type || userPayload.id_type || 'agent';
+              (req as any).user = {
+                id: agent.id,
+                name: agent.client_name,
+                id_type: resolvedIdentityType,
+                identity_type: resolvedIdentityType,
+                role: 'agent',
+                isAgent: true,
+                client_id: agent.client_id
+              };
+              (req as any).token = token;
+              return next();
+            }
+          }
+        }
+
         let userData: any = null;
         try {
           userData = await userLoader.load(userPayload.id);
@@ -191,6 +223,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
   });
 };
+
 
 export const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   authenticateToken(req, res, () => {

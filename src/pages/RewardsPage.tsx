@@ -435,10 +435,11 @@ export const RewardsPage: React.FC = () => {
       try {
         const formData = new FormData();
         formData.append('file', activationProofFile);
+        const authToken = token || localStorage.getItem('app_token') || '';
         const uploadRes = await fetch('/api/files/upload', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${authToken}`
           },
           body: formData
         });
@@ -446,7 +447,7 @@ export const RewardsPage: React.FC = () => {
           throw new Error('Screenshot upload failed');
         }
         const data = await uploadRes.json();
-        uploadedFileUrl = data.file.file_url;
+        uploadedFileUrl = data.file?.file_url || data.fileUrl || data.url || '';
       } catch (uploadErr) {
         toast.error(dir === 'rtl' ? 'فشل تحميل صورة إثبات المعاملة' : 'Failed to upload transaction proof image.');
         setIsActivating(false);

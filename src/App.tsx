@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
@@ -19,6 +19,7 @@ import { AdminCommunityPage } from './pages/AdminCommunityPage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { SharedSnapshotPage } from './pages/SharedSnapshotPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
+import { StudioPage } from './pages/StudioPage';
 import { IncentiveCard } from './components/IncentiveCard';
 import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
@@ -141,6 +142,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const { theme, isAuthReady, siteSettings, language } = useAppContext();
   const location = useLocation();
   const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
+  const isFirstMount = useRef(true);
 
   useEffect(() => {
     fetch('/api/seo-routes')
@@ -149,10 +151,27 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         if (Array.isArray(data)) setDbRouteSeo(data);
       })
       .catch(err => console.warn('[SEO] Failed to fetch route SEO settings:', err));
-  }, [location.pathname]);
+  }, []); // Only fetch once on mount
 
   useEffect(() => {
     const currentPath = location.pathname;
+
+    // Check if this route is server-handled for initial SEO injection
+    const isDynamicPublicRoute = currentPath.startsWith('/blog/') || 
+                                 currentPath.startsWith('/marketplace/') || 
+                                 currentPath.startsWith('/share/') ||
+                                 currentPath.startsWith('/bulletin/');
+    
+    const PUBLIC_WHITELIST = ['/', '/subscription', '/marketplace', '/blog', '/bulletin', '/rewards', '/terms', '/privacy', '/about'];
+    const isStaticPublicRoute = PUBLIC_WHITELIST.includes(currentPath);
+
+    // Skip first mount if it's a route the server likely already handled
+    // This prevents the "flash" of generic title on refresh
+    if (isFirstMount.current && (isDynamicPublicRoute || isStaticPublicRoute)) {
+      isFirstMount.current = false;
+      return;
+    }
+    isFirstMount.current = false;
 
     const dynamicBlockedList = siteSettings?.blocked_paths
       ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
@@ -232,6 +251,8 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         pageTitlePart = language === 'ar' ? 'شروط الخدمة والاتفاقية الرقمية' : 'Terms of Service';
       } else if (currentPath === '/privacy') {
         pageTitlePart = language === 'ar' ? 'سياسة الخصوصية وحقوق حماية البيانات' : 'Strict Privacy & Data Security Regulations';
+      } else if (currentPath === '/Studio') {
+        pageTitlePart = language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio';
       }
 
       const defaultTitle = pageTitlePart ? `${pageTitlePart} | ${resolvedSiteName}` : `${resolvedSiteName} - ${language === 'ar' ? 'منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Sovereign High-Performance AI Analysis Platform'}`;
@@ -243,95 +264,101 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const finalOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
       const currentUrl = window.location.href;
 
-      document.title = finalTitle;
+      // Only overwrite if we have a specific match or it's a static route we "own"
+      // This prevents generic overwrites for dynamic pages like Blog or Marketplace details
+      const shouldOverwrite = dbTitle || pageTitlePart || currentPath === '/';
+      
+      if (!isDynamicPublicRoute || shouldOverwrite) {
+        document.title = finalTitle;
 
-      let metaDescription = document.querySelector('meta[name="description"]');
-      if (!metaDescription) {
-        metaDescription = document.createElement('meta');
-        metaDescription.setAttribute('name', 'description');
-        document.head.appendChild(metaDescription);
-      }
-      metaDescription.setAttribute('content', finalDesc);
+        let metaDescription = document.querySelector('meta[name="description"]');
+        if (!metaDescription) {
+          metaDescription = document.createElement('meta');
+          metaDescription.setAttribute('name', 'description');
+          document.head.appendChild(metaDescription);
+        }
+        metaDescription.setAttribute('content', finalDesc);
 
-      let ogTitle = document.querySelector('meta[property="og:title"]');
-      if (!ogTitle) {
-        ogTitle = document.createElement('meta');
-        ogTitle.setAttribute('property', 'og:title');
-        document.head.appendChild(ogTitle);
-      }
-      ogTitle.setAttribute('content', finalTitle);
+        let ogTitle = document.querySelector('meta[property="og:title"]');
+        if (!ogTitle) {
+          ogTitle = document.createElement('meta');
+          ogTitle.setAttribute('property', 'og:title');
+          document.head.appendChild(ogTitle);
+        }
+        ogTitle.setAttribute('content', finalTitle);
 
-      let ogDesc = document.querySelector('meta[property="og:description"]');
-      if (!ogDesc) {
-        ogDesc = document.createElement('meta');
-        ogDesc.setAttribute('property', 'og:description');
-        document.head.appendChild(ogDesc);
-      }
-      ogDesc.setAttribute('content', finalDesc);
+        let ogDesc = document.querySelector('meta[property="og:description"]');
+        if (!ogDesc) {
+          ogDesc = document.createElement('meta');
+          ogDesc.setAttribute('property', 'og:description');
+          document.head.appendChild(ogDesc);
+        }
+        ogDesc.setAttribute('content', finalDesc);
 
-      let ogImage = document.querySelector('meta[property="og:image"]');
-      if (!ogImage) {
-        ogImage = document.createElement('meta');
-        ogImage.setAttribute('property', 'og:image');
-        document.head.appendChild(ogImage);
-      }
-      ogImage.setAttribute('content', finalOGImage);
+        let ogImage = document.querySelector('meta[property="og:image"]');
+        if (!ogImage) {
+          ogImage = document.createElement('meta');
+          ogImage.setAttribute('property', 'og:image');
+          document.head.appendChild(ogImage);
+        }
+        ogImage.setAttribute('content', finalOGImage);
 
-      let ogUrl = document.querySelector('meta[property="og:url"]');
-      if (!ogUrl) {
-        ogUrl = document.createElement('meta');
-        ogUrl.setAttribute('property', 'og:url');
-        document.head.appendChild(ogUrl);
-      }
-      ogUrl.setAttribute('content', currentUrl);
+        let ogUrl = document.querySelector('meta[property="og:url"]');
+        if (!ogUrl) {
+          ogUrl = document.createElement('meta');
+          ogUrl.setAttribute('property', 'og:url');
+          document.head.appendChild(ogUrl);
+        }
+        ogUrl.setAttribute('content', currentUrl);
 
-      let ogSiteName = document.querySelector('meta[property="og:site_name"]');
-      if (!ogSiteName) {
-        ogSiteName = document.createElement('meta');
-        ogSiteName.setAttribute('property', 'og:site_name');
-        document.head.appendChild(ogSiteName);
-      }
-      ogSiteName.setAttribute('content', resolvedSiteName);
+        let ogSiteName = document.querySelector('meta[property="og:site_name"]');
+        if (!ogSiteName) {
+          ogSiteName = document.createElement('meta');
+          ogSiteName.setAttribute('property', 'og:site_name');
+          document.head.appendChild(ogSiteName);
+        }
+        ogSiteName.setAttribute('content', resolvedSiteName);
 
-      let twitterTitle = document.querySelector('meta[name="twitter:title"]');
-      if (!twitterTitle) {
-        twitterTitle = document.createElement('meta');
-        twitterTitle.setAttribute('name', 'twitter:title');
-        document.head.appendChild(twitterTitle);
-      }
-      twitterTitle.setAttribute('content', finalTitle);
+        let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+        if (!twitterTitle) {
+          twitterTitle = document.createElement('meta');
+          twitterTitle.setAttribute('name', 'twitter:title');
+          document.head.appendChild(twitterTitle);
+        }
+        twitterTitle.setAttribute('content', finalTitle);
 
-      let twitterDesc = document.querySelector('meta[name="twitter:description"]');
-      if (!twitterDesc) {
-        twitterDesc = document.createElement('meta');
-        twitterDesc.setAttribute('name', 'twitter:description');
-        document.head.appendChild(twitterDesc);
-      }
-      twitterDesc.setAttribute('content', finalDesc);
+        let twitterDesc = document.querySelector('meta[name="twitter:description"]');
+        if (!twitterDesc) {
+          twitterDesc = document.createElement('meta');
+          twitterDesc.setAttribute('name', 'twitter:description');
+          document.head.appendChild(twitterDesc);
+        }
+        twitterDesc.setAttribute('content', finalDesc);
 
-      let twitterImage = document.querySelector('meta[name="twitter:image"]');
-      if (!twitterImage) {
-        twitterImage = document.createElement('meta');
-        twitterImage.setAttribute('name', 'twitter:image');
-        document.head.appendChild(twitterImage);
-      }
-      twitterImage.setAttribute('content', finalOGImage);
+        let twitterImage = document.querySelector('meta[name="twitter:image"]');
+        if (!twitterImage) {
+          twitterImage = document.createElement('meta');
+          twitterImage.setAttribute('name', 'twitter:image');
+          document.head.appendChild(twitterImage);
+        }
+        twitterImage.setAttribute('content', finalOGImage);
 
-      let metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (!metaKeywords) {
-        metaKeywords = document.createElement('meta');
-        metaKeywords.setAttribute('name', 'keywords');
-        document.head.appendChild(metaKeywords);
-      }
-      metaKeywords.setAttribute('content', finalKeywords);
+        let metaKeywords = document.querySelector('meta[name="keywords"]');
+        if (!metaKeywords) {
+          metaKeywords = document.createElement('meta');
+          metaKeywords.setAttribute('name', 'keywords');
+          document.head.appendChild(metaKeywords);
+        }
+        metaKeywords.setAttribute('content', finalKeywords);
 
-      let canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (!canonicalLink) {
-        canonicalLink = document.createElement('link');
-        canonicalLink.setAttribute('rel', 'canonical');
-        document.head.appendChild(canonicalLink);
+        let canonicalLink = document.querySelector('link[rel="canonical"]');
+        if (!canonicalLink) {
+          canonicalLink = document.createElement('link');
+          canonicalLink.setAttribute('rel', 'canonical');
+          document.head.appendChild(canonicalLink);
+        }
+        canonicalLink.setAttribute('href', currentUrl);
       }
-      canonicalLink.setAttribute('href', currentUrl);
     }
   }, [location.pathname, siteSettings, language, dbRouteSeo]);
 
@@ -397,6 +424,7 @@ export default function App() {
                 <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
                 <Route path="marketplace/:id?" element={<MarketplacePage />} />
                 <Route path="discover" element={<RecommendationsPage />} />
+                <Route path="Studio" element={<StudioPage />} />
                 <Route path="blog/:slug?" element={<BlogPage />} />
                 <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
                 <Route path="terms" element={<Terms />} />

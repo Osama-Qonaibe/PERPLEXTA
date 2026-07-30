@@ -155,6 +155,21 @@ export async function ensureBulletinTables() {
       try { await pool.query(q); } catch (e) {}
     }
 
+    // Self-healing: Repair any legacy double /uploads/uploads/ URLs in existing database records
+    try {
+      await pool.query(`
+        UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%';
+        UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%';
+        UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%';
+        UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%';
+        UPDATE forum_posts SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%';
+        UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%';
+        UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%';
+      `);
+    } catch (cleanErr: any) {
+      console.warn('[Bulletin Clean] Double uploads path cleanup note:', cleanErr.message);
+    }
+
     // Check if initial sample merchant pages exist
     const checkPages = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_pages');
     if (checkPages.rows[0].count === 0) {
@@ -618,15 +633,21 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
 
   const normalizeUrl = (u?: string | null) => {
     if (!u || typeof u !== 'string') return null;
-    const clean = u.trim();
+    let clean = u.trim();
     if (!clean) return null;
+    clean = clean.replace(/^(\/)?(uploads\/)+/i, 'uploads/');
     if (
       clean.startsWith('http://') ||
       clean.startsWith('https://') ||
       clean.startsWith('blob:') ||
-      clean.startsWith('data:') ||
-      clean.startsWith('/')
+      clean.startsWith('data:')
     ) {
+      return clean;
+    }
+    if (clean.startsWith('uploads/')) {
+      return `/${clean}`;
+    }
+    if (clean.startsWith('/')) {
       return clean;
     }
     return `/uploads/${clean}`;
@@ -3040,15 +3061,21 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
 
     const normalizeEditUrl = (u?: string | null) => {
       if (!u || typeof u !== 'string') return null;
-      const clean = u.trim();
+      let clean = u.trim();
       if (!clean) return null;
+      clean = clean.replace(/^(\/)?(uploads\/)+/i, 'uploads/');
       if (
         clean.startsWith('http://') ||
         clean.startsWith('https://') ||
         clean.startsWith('blob:') ||
-        clean.startsWith('data:') ||
-        clean.startsWith('/')
+        clean.startsWith('data:')
       ) {
+        return clean;
+      }
+      if (clean.startsWith('uploads/')) {
+        return `/${clean}`;
+      }
+      if (clean.startsWith('/')) {
         return clean;
       }
       return `/uploads/${clean}`;

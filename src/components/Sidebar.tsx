@@ -211,17 +211,20 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   const navItems: { icon: React.ReactNode, label: string, path: string, className?: string }[] = [];
 
-  if (!isMobile) {
-    navItems.push({ icon: <CreditCard size={18} />, label: t('subscription'), path: '/subscription' });
-  }
-
   if (user) {
     navItems.push({
       icon: <Sparkles size={18} className="text-emerald-500" />,
-      label: language === 'ar' ? 'التوصيات والاستكشاف' : 'Discover & Recommendations',
+      label: language === 'ar' ? 'اكتشف' : 'Discover',
       path: '/discover'
     });
-    navItems.unshift({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
+  }
+
+  if (user) {
+    navItems.push({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
+  }
+
+  if (!isMobile) {
+    navItems.push({ icon: <CreditCard size={18} />, label: t('subscription'), path: '/subscription' });
   }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;

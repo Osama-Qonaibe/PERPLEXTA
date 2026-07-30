@@ -242,7 +242,8 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.file) {
-            setEditImage(`/uploads/${data.file.file_url}`);
+            const rawUrl = data.file.file_url || data.fileUrl || data.file.url;
+            setEditImage(getMediaUrl(rawUrl));
             setUploadError('');
           } else {
             setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');

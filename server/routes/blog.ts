@@ -48,10 +48,13 @@ function isSafeUrl(urlStr: string): boolean {
   const urls = urlStr.split(',').map(u => u.trim()).filter(Boolean);
   for (const singleUrl of urls) {
     try {
-      if (singleUrl.startsWith('/')) {
+      if (singleUrl.startsWith('/') || singleUrl.startsWith('uploads/') || !singleUrl.includes('/')) {
         if (singleUrl.includes('..') || singleUrl.includes('\\')) {
           return false;
         }
+        continue;
+      }
+      if (singleUrl.startsWith('mailto:') || singleUrl.startsWith('tel:')) {
         continue;
       }
       if (!singleUrl.startsWith('http://') && !singleUrl.startsWith('https://')) {

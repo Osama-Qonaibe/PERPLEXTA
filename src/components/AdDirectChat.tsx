@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 export interface AdDirectMessage {
   id: number;
@@ -182,20 +183,43 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
   };
 
   // Image upload handling
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error(isRtl ? 'حجم الصورة كبير جداً (الأقصى 8 ميجابايت)' : 'Image size too large (max 8MB)');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(isRtl ? 'حجم الصورة كبير جداً (الأقصى 10 ميجابايت)' : 'Image size too large (max 10MB)');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    const toastId = toast.loading(isRtl ? 'جاري رفع الصورة...' : 'Uploading image...');
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+
+    try {
+      const authToken = token || localStorage.getItem('app_token') || '';
+      const res = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: formDataUpload
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawUrl = data.fileUrl || data.file?.url || data.file?.file_url || data.url;
+        const fileUrl = getMediaUrl(rawUrl);
+        if (fileUrl) {
+          setAttachedImage(fileUrl);
+          toast.dismiss(toastId);
+          toast.success(isRtl ? 'تم رفع المرفق بنجاح' : 'Attachment uploaded successfully');
+          return;
+        }
+      }
+      throw new Error('Upload failed');
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error(isRtl ? 'فشل رفع مرفق الصورة، يرجى إعادة المحاولة' : 'Failed to upload image attachment');
+    }
   };
 
   // Send Message Handler
@@ -365,7 +389,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
                   {msg.media_url && (
                     <div className="mb-2 rounded-xl overflow-hidden max-h-48 border border-black/10">
                       <img
-                        src={msg.media_url}
+                        src={getMediaUrl(msg.media_url)}
                         alt="Attached media"
                         className="w-full h-full object-cover"
                       />
@@ -437,7 +461,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
       {attachedImage && (
         <div className="p-2 bg-gray-100 dark:bg-[#1c1c20] border-t border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <img src={attachedImage} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />
+            <img src={getMediaUrl(attachedImage)} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />
             <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
               {isRtl ? 'صورة مرفقة جاهزة للإرسال' : 'Image attached'}
             </span>

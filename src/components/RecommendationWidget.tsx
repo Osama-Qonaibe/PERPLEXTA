@@ -165,11 +165,38 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
     }
   };
 
+  const [rotationOffset, setRotationOffset] = useState<number>(0);
+
   // Filter items based on active tab and dismissed items
-  const visibleItems = items
+  const filteredItems = items
     .filter(i => !dismissedKeys.has(i.recommendation_id))
-    .filter(i => (filterType && filterType !== 'all') ? i.item_type === filterType : (activeCategory === 'all' ? true : i.item_type === activeCategory))
-    .slice(0, limit);
+    .filter(i => (filterType && filterType !== 'all') ? i.item_type === filterType : (activeCategory === 'all' ? true : i.item_type === activeCategory));
+
+  // Rotate ads every 30 seconds for sidebar bulletin view (3 ads rotating professionally)
+  useEffect(() => {
+    if (!isBulletinOnly && variant !== 'compact') return;
+    if (filteredItems.length <= 3) return;
+
+    const timer = setInterval(() => {
+      setRotationOffset(prev => (prev + 1) % filteredItems.length);
+    }, 30000); // 30 seconds rotation
+
+    return () => clearInterval(timer);
+  }, [filteredItems.length, isBulletinOnly, variant]);
+
+  const visibleItems = React.useMemo(() => {
+    if (!isBulletinOnly && variant !== 'compact') {
+      return filteredItems.slice(0, limit);
+    }
+    if (filteredItems.length === 0) return [];
+    const sliceCount = Math.min(3, filteredItems.length);
+    const result = [];
+    for (let i = 0; i < sliceCount; i++) {
+      const idx = (rotationOffset + i) % filteredItems.length;
+      result.push(filteredItems[idx]);
+    }
+    return result;
+  }, [filteredItems, rotationOffset, limit, isBulletinOnly, variant]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {

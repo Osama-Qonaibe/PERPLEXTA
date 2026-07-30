@@ -286,12 +286,10 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
         return (
           <motion.article
-            key={ad.id}
+            key={(ad as any)._virtualId || ad.id}
             id={`bulletin-ad-${ad.id}`}
-            layout
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 450px' }}
             className="w-full rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden touch-pan-y"
           >
             {/* Creator Ad Insights Drawer Panel (Moved to top) */}
@@ -320,10 +318,17 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 <div className="relative shrink-0">
                   <img
                     src={
-                      ad.author_avatar ||
+                      getMediaUrl(ad.author_avatar) ||
                       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
                     }
                     alt={ad.author_name}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.dataset.fallback) {
+                        target.dataset.fallback = 'true';
+                        target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+                      }
+                    }}
                     className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
                   />
                   {ad.page_id && (
@@ -593,7 +598,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             {ad.image_url && !ad.video_url && (
               <div
                 onClick={() => onOpenLightbox(getMediaUrl(ad.image_url))}
-                className={`relative w-full bg-gray-100 dark:bg-gray-900 cursor-pointer overflow-hidden group border-y border-gray-100 dark:border-gray-800/60 transition-all duration-500 ${
+                className={`relative w-full bg-gray-100 dark:bg-gray-900 cursor-pointer overflow-hidden group border-y border-gray-100 dark:border-gray-800/60 transition-all duration-500 touch-pan-y ${
                   ad.ad_format === 'reel' || ad.ad_format === 'story' 
                     ? 'aspect-[9/16] max-h-[550px] mx-auto' 
                     : ad.ad_format === 'video' || ad.ad_format === 'instream'
@@ -605,11 +610,18 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               >
                 <img
                   src={getMediaUrl(ad.image_url)}
-                  alt={ad.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  alt={ad.title || 'Advertisement image'}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.fallback) {
+                      target.dataset.fallback = 'true';
+                      target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
+                    }
+                  }}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-auto touch-pan-y"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                   <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 text-xs font-bold shadow-lg text-gray-800 dark:text-white flex items-center gap-1.5 backdrop-blur-md">
                     <Sparkles size={13} className="text-emerald-500" />
                     <span>{isRtl ? 'عرض بصورة مكبرة' : 'Expand Image'}</span>

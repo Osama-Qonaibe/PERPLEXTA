@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone, Cpu } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
 import { motion, AnimatePresence } from 'motion/react';
@@ -440,6 +440,28 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               <span className={`sm:hidden transition-theme ${
                 isMarketplaceActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
               }`}>{language === 'ar' ? 'السوق' : 'Market'}</span>
+            </NavLink>
+
+            <NavLink
+              to="/Studio"
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
+                location.pathname === '/Studio' 
+                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+              }`}
+              title={language === 'ar' ? 'استوديو بيربليكستا للمطورين' : 'Perplexta Developer Studio'}
+            >
+              <Cpu 
+                size={15} 
+                className={`transition-theme ${
+                  location.pathname === '/Studio' 
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                }`} 
+              />
+              <span className={`hidden sm:inline text-[13px] transition-theme ${
+                location.pathname === '/Studio' ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+              }`}>{language === 'ar' ? 'الاستوديو' : 'Studio'}</span>
             </NavLink>
 
             <NavLink

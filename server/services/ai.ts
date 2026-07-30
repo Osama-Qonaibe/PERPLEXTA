@@ -64,16 +64,27 @@ function cleanOllamaUrl(rawUrl: string): string {
 }
 
 export async function syncProviderModelsInternal(providerId: string, apiKey: string, urlKey?: string) {
+  let keyToUse = apiKey ? apiKey.trim() : '';
+
+  // Ensure we strip the custom URL from the key if it was pre-pended during vault storage
+  if (urlKey && keyToUse.startsWith(urlKey)) {
+    keyToUse = keyToUse.substring(urlKey.length);
+    if (keyToUse.startsWith(':')) {
+      keyToUse = keyToUse.substring(1);
+    }
+  }
+
+  const cleanApiKey = keyToUse.trim();
+  const provider = providerId.toLowerCase();
   let models: any[] = [];
   let count = 0;
-  const provider = providerId.toLowerCase();
 
   const { signal: timeoutSignal, clear: clearTimeoutTimer } = createTimeoutSignal(45000);
 
   try {
     if (provider === 'openai') {
       const response = await fetch('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'OpenAI');
@@ -82,7 +93,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
     } else if (provider === 'anthropic') {
       const response = await fetch('https://api.anthropic.com/v1/models', {
         headers: { 
-          'x-api-key': apiKey, 
+          'x-api-key': cleanApiKey, 
           'anthropic-version': '2023-06-01',
           'Accept': 'application/json'
         },
@@ -93,7 +104,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       models = (data.data || []).map((m: any) => ({ ...m, name: m.id }));
     } else if (provider === 'deepseek') {
       const response = await fetch('https://api.deepseek.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'DeepSeek');
@@ -103,7 +114,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
         headers: { 
           'Accept': 'application/json',
-          'x-goog-api-key': apiKey
+          'x-goog-api-key': cleanApiKey
         },
         signal: timeoutSignal
       });
@@ -117,7 +128,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       }));
     } else if (provider === 'together') {
       const response = await fetch('https://api.together.xyz/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'Together AI');
@@ -125,7 +136,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       models = (data || []).map((m: any) => ({ id: m.id, name: m.display_name || m.id }));
     } else if (provider === 'openrouter') {
       const response = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'OpenRouter');
@@ -133,7 +144,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.name || m.id }));
     } else if (provider === 'xai' || provider === 'grok') {
       const response = await fetch('https://api.x.ai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'xAI');
@@ -141,7 +152,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
       models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'groq') {
       const response = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
         signal: timeoutSignal
       });
       await handleApiError(response, 'Groq');
@@ -150,8 +161,8 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
     } else if (provider.includes('ollama')) {
         const cleanUrl = cleanOllamaUrl(urlKey || '');
         const targetHeaders: any = { 'Accept': 'application/json' };
-        if (apiKey && apiKey.trim() !== '') {
-            targetHeaders['Authorization'] = `Bearer ${apiKey}`;
+        if (cleanApiKey && cleanApiKey.trim() !== '') {
+            targetHeaders['Authorization'] = `Bearer ${cleanApiKey}`;
         }
         const response = await fetch(`${cleanUrl}/api/tags`, {
             headers: targetHeaders,
@@ -162,7 +173,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         models = (data.models || []).map((m: any) => ({ id: m.name, name: m.name }));
     } else if (provider === 'mistral') {
        const response = await fetch('https://api.mistral.ai/v1/models', {
-         headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+         headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
          signal: timeoutSignal
        });
        await handleApiError(response, 'Mistral AI');
@@ -170,7 +181,7 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
        models = (data.data || []).map((m: any) => ({ id: m.id, name: m.id }));
     } else if (provider === 'elevenlabs') {
        const response = await fetch('https://api.elevenlabs.io/v1/models', {
-         headers: { 'xi-api-key': apiKey, 'Accept': 'application/json' },
+         headers: { 'xi-api-key': cleanApiKey, 'Accept': 'application/json' },
          signal: timeoutSignal
        });
        await handleApiError(response, 'ElevenLabs');
@@ -194,13 +205,13 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
             
             try {
                 let response = await fetch(`${cleanUrl}/models`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
                     signal: timeoutSignal
                 });
                 
                 if (!response.ok && response.status === 404 && !cleanUrl.endsWith('/v1')) {
                     response = await fetch(`${cleanUrl}/v1/models`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+                        headers: { 'Authorization': `Bearer ${cleanApiKey}`, 'Accept': 'application/json' },
                         signal: timeoutSignal
                     });
                 }
@@ -286,7 +297,7 @@ export async function getProviderKey(provider: string): Promise<string | null> {
     }
   } catch (_) {}
 
-  if (decryptedKey) {
+  if (decryptedKey !== null) {
     if (normProvider === 'google' || normProvider === 'gemini') {
       const startsWithAIza = decryptedKey.startsWith('AIzaSy');
       const envKey = process.env.GEMINI_API_KEY;
@@ -406,7 +417,11 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
             if (!res.ok) status.message = `Groq: ${res.statusText}`;
         } else if (normProvider.includes('ollama')) {
             const cleanUrl = cleanOllamaUrl(urlKey || '');
-            const targetHeaders: any = { 'Accept': 'application/json' };
+            const targetHeaders: any = { 
+                'Accept': 'application/json',
+                'ngrok-skip-browser-warning': '69420',
+                'Bypass-Tunnel-Reminder': 'true'
+            };
             let keyToUse = apiKey || '';
             if (urlKey && keyToUse.startsWith(urlKey)) {
                 keyToUse = keyToUse.substring(urlKey.length);
@@ -415,7 +430,12 @@ export async function checkProviderStatus(provider: string, apiKey: string, urlK
                 }
             }
             if (keyToUse && keyToUse.trim() !== '' && !keyToUse.includes('http')) {
-                targetHeaders['Authorization'] = `Bearer ${keyToUse}`;
+                const trimmedKey = keyToUse.trim();
+                if (trimmedKey.startsWith('Bearer ') || trimmedKey.startsWith('Basic ')) {
+                    targetHeaders['Authorization'] = trimmedKey;
+                } else {
+                    targetHeaders['Authorization'] = `Bearer ${trimmedKey}`;
+                }
             }
             try {
                 let res = await fetch(`${cleanUrl}/api/tags`, { headers: targetHeaders, signal: timeoutSignal });
@@ -666,10 +686,29 @@ export async function callAIProvider(
   preloadedUrlKey?: string
 ) {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
-  const cleanApiKey = apiKey ? apiKey.trim() : '';
+  let keyToUse = apiKey ? apiKey.trim() : '';
+
+  // Ensure we strip the custom URL from the key if it was pre-pended during vault storage
+  if (preloadedUrlKey && keyToUse.startsWith(preloadedUrlKey)) {
+    keyToUse = keyToUse.substring(preloadedUrlKey.length);
+    if (keyToUse.startsWith(':')) {
+      keyToUse = keyToUse.substring(1);
+    }
+  }
+
+  const cleanApiKey = keyToUse.trim();
   if (!cleanApiKey) throw new Error(`No valid API key provided for ${provider}`);
 
+  // Resolve model aliases or typos (e.g., 'compound' placeholder)
   let cleanModel = model;
+  if (cleanModel.toLowerCase() === 'compound') {
+    if (normProvider === 'groq') cleanModel = 'llama-3.1-70b-versatile';
+    else if (normProvider === 'openai') cleanModel = 'gpt-4o-mini';
+    else if (normProvider === 'anthropic') cleanModel = 'claude-3-haiku-20240307';
+    else if (normProvider === 'together') cleanModel = 'meta-llama/Llama-3-70b-chat-hf';
+    else if (normProvider.includes('google') || normProvider.includes('gemini')) cleanModel = 'gemini-1.5-flash';
+  }
+
   if (cleanModel.includes('/') && !cleanModel.startsWith('models/')) {
     const parts = cleanModel.split('/');
     if (parts[0].toLowerCase() === normProvider || parts[0].toLowerCase() === 'google' || parts[0].toLowerCase() === 'openai') {
@@ -842,8 +881,15 @@ export async function callAIProvider(
     const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
     const cleanUrl = cleanOllamaUrl(resolvedUrl);
     url = `${cleanUrl}/api/chat`;
+    headers['ngrok-skip-browser-warning'] = '69420';
+    headers['Bypass-Tunnel-Reminder'] = 'true';
     if (cleanApiKey && cleanApiKey.trim() !== '' && !cleanApiKey.includes('http')) {
-      headers['Authorization'] = `Bearer ${cleanApiKey}`;
+      const trimmedKey = cleanApiKey.trim();
+      if (trimmedKey.startsWith('Bearer ') || trimmedKey.startsWith('Basic ')) {
+        headers['Authorization'] = trimmedKey;
+      } else {
+        headers['Authorization'] = `Bearer ${trimmedKey}`;
+      }
     }
     const mappedMessages = transformMessagesForOllama(messages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
@@ -949,32 +995,8 @@ export async function callAIProvider(
             return handleResponse(retryRes);
           }
         }
-
-        const alternativeModels = [
-          'gemini-1.5-flash-latest',
-          'gemini-1.5-flash',
-          'gemini-2.0-flash',
-          'gemini-2.5-flash',
-          'gemini-1.5-pro-latest',
-          'gemini-1.5-pro'
-        ];
-
-        for (const altModel of alternativeModels) {
-          if (altModel.toLowerCase() === cleanModel.toLowerCase().replace('models/', '')) continue;
-          
-          const altPath = altModel.startsWith('models/') ? altModel : `models/${altModel}`;
-          const versions = ['v1', 'v1beta'];
-          const altMethod = isStreaming ? 'streamGenerateContent' : 'generateContent';
-          for (const version of versions) {
-            const altUrl = `https://generativelanguage.googleapis.com/${version}/${altPath}:${altMethod}${isStreaming ? '?alt=sse' : ''}`;
-            console.warn(`[AI Service] Retrying with alternative: ${altModel} on version ${version} at ${altUrl}`);
-            const altRes = await fetch(altUrl, { method: 'POST', headers, body: JSON.stringify(body) });
-            if (altRes.ok) {
-              console.log(`[AI Service] Self-healed successfully using alternative model: ${altModel} (${version}).`);
-              return handleResponse(altRes);
-            }
-          }
-        }
+        
+        // Removed hardcoded alternative models fallback; the Orchestrator will handle failover.
       }
       
       const isMultiturnDisabled = errorDetail.includes('Multiturn chat is not enabled for this model') || 

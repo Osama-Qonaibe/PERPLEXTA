@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
-import { executeTaskLogic } from './orchestrator.js';
+import { executeTaskLogic, cleanAIOutput } from './orchestrator.js';
 import { io } from '../config/socket.js';
 import { callAIProvider } from './ai.js';
 import { decrypt } from '../utils/crypto.js';
@@ -85,7 +85,6 @@ export async function handleChatMessage(socket: any, data: any) {
     } catch (e) {
       const err = e as any;
       if (err.name === 'TokenExpiredError') {
-        console.warn('[ChatService] Token Expired');
         return socket.emit('chat_error', { message: JSON.stringify({ error: 'TokenExpiredError', type: 'TOKEN_EXPIRED' }) });
       }
       console.error('[ChatService] Token verification failed:', e);
@@ -161,9 +160,12 @@ export async function handleChatMessage(socket: any, data: any) {
 
     const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
 
+    // Final response sanitization to remove internal reasoning tags and technical markers
+    const sanitizedResult = cleanAIOutput(result.result);
+
     await pool.query(
       'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
-      [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
+      [sanitizedResult, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
     );
 
     // Link video generation output to assistant message ID 
@@ -182,7 +184,7 @@ export async function handleChatMessage(socket: any, data: any) {
 
     socket.emit('chat_chunk', { chunk: '', chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
-      result: result.result, 
+      result: sanitizedResult, 
       chatId: finalChatId, 
       message_id: assistantMessageId,
       tool: finalToolId,

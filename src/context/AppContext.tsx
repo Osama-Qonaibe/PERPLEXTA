@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
+import { performSilentTokenRefresh } from '../lib/axios';
 
 type Language = 'ar' | 'en';
 type Theme = 'dark' | 'light' | 'system';
@@ -2133,6 +2134,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
 
+  useEffect(() => {
+    const handleTokenRefreshed = (e: Event) => {
+      const customEvent = e as CustomEvent<{ token: string; refreshToken?: string }>;
+      if (customEvent.detail?.token) {
+        setToken(customEvent.detail.token);
+      }
+      if (customEvent.detail?.refreshToken) {
+        setRefreshTokenState(customEvent.detail.refreshToken);
+      }
+    };
+
+    const handleSessionExpired = () => {
+      logout(false);
+    };
+
+    window.addEventListener('app_token_refreshed', handleTokenRefreshed);
+    window.addEventListener('app_session_expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('app_token_refreshed', handleTokenRefreshed);
+      window.removeEventListener('app_session_expired', handleSessionExpired);
+    };
+  }, []);
+
   const silentRefreshToken = async (): Promise<string | null> => {
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
@@ -2140,44 +2164,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const currentRefreshToken = localStorage.getItem('app_refresh_token');
     if (!currentRefreshToken) {
-
       return null;
     }
 
     const performRefresh = async (): Promise<string | null> => {
       try {
-        const res = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: currentRefreshToken })
-        });
-
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-
-            logout(false);
+        const newToken = await performSilentTokenRefresh();
+        if (newToken) {
+          setToken(newToken);
+          const freshRefreshToken = localStorage.getItem('app_refresh_token');
+          if (freshRefreshToken) {
+            setRefreshTokenState(freshRefreshToken);
           }
-          return null;
-        }
-
-        const data = await res.json();
-        if (data.token) {
-          const newAccessToken = data.token;
-          const newRefreshToken = data.refreshToken;
-
-          localStorage.setItem('app_token', newAccessToken);
-          setToken(newAccessToken);
-
-          if (newRefreshToken) {
-            localStorage.setItem('app_refresh_token', newRefreshToken);
-            setRefreshTokenState(newRefreshToken);
-          }
-
-          return newAccessToken;
+          return newToken;
         }
         return null;
       } catch (err) {
-
         return null;
       } finally {
         refreshPromiseRef.current = null;

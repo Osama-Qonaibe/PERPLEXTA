@@ -15,6 +15,11 @@ const PORT = 3000;
 const MAX_DB_ATTEMPTS = 3;
 const DB_RETRY_DELAY_MS = 4_000;
 
+/**
+ * Attempts to initialise all DB pools, run migrations, and warm caches.
+ * Returns true on success; on exhaustion logs a warning and returns false
+ * so the server can continue in Degraded Mode instead of crashing.
+ */
 async function initDatabase(): Promise<boolean> {
   for (let attempt = 1; attempt <= MAX_DB_ATTEMPTS; attempt++) {
     try {
@@ -47,11 +52,13 @@ async function startServer() {
   try {
     console.log('[Server] Initializing Perplexta Ecosystem...');
 
+    // Security validation
     if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
       console.error('[FATAL] ENCRYPTION_KEY must be defined and at least 32 characters long.');
       process.exit(1);
     }
 
+    // 1. Vite dev middleware (development only)
     if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({
         server: { middlewareMode: true },
@@ -62,6 +69,7 @@ async function startServer() {
       console.log('[Server] Vite Middleware integrated (Dev Mode)');
     }
 
+    // 2. Open HTTP port immediately so health probes succeed
     const httpServer = createServer(app);
     const ioInstance = initSocket(httpServer);
 
@@ -69,17 +77,20 @@ async function startServer() {
       console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT} [INITIALIZING...]`);
     });
 
+    // 3. Graceful shutdown
     const shutdown = (signal: string) => {
       console.log(`[Server] ${signal} received — shutting down gracefully...`);
       httpServer.close(() => {
         console.log('[Server] HTTP server closed.');
         process.exit(0);
       });
+      // Force-exit if connections linger beyond 10 s
       setTimeout(() => process.exit(1), 10_000).unref();
     };
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT',  () => shutdown('SIGINT'));
 
+    // 4. DB init + background jobs
     const dbReady = await initDatabase();
     if (dbReady) {
       setIo(ioInstance);

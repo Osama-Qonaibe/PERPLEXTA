@@ -20,6 +20,12 @@ import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCa
 
 const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
+const SEARCH_TAG_REGEX = /<search_query>([\s\S]*?)<\/search_query>/gi;
+const WIKI_TAG_REGEX = /<wiki_search>([\s\S]*?)<\/wiki_search>/gi;
+const MAPS_TAG_REGEX = /<maps_search>([\s\S]*?)<\/maps_search>/gi;
+const CONSOLIDATE_TAG_REGEX = /<consolidate_memory>([\s\S]*?)<\/consolidate_memory>/gi;
+const TASK_TAG_REGEX = /<task_dispatch>([\s\S]*?)<\/task_dispatch>/gi;
+const AUTH_TAG_REGEX = /<auth_token>([\s\S]*?)<\/auth_token>/gi;
 
 const UPDATE_SUMMARY_LIMIT = 20;
 const UPDATE_SUMMARY_TIMEOUT_MS = 30000;
@@ -60,12 +66,31 @@ function getDynamicHistoryLimit(totalMessages: number, maxDepth: number = 16): n
   return maxDepth;
 }
 
-function cleanAIOutput(text: string): string {
-  return text
-    .replace(THINK_TAG_REGEX, '')
+export function cleanAIOutput(text: string): string {
+  if (!text) return '';
+  
+  // Advanced regex to strip all variations of thinking/reasoning tags
+  const THINK_PATTERNS = [
+    /<think>[\s\S]*?<\/think>/gi,
+    /:think>[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi,
+    /【[\s\S]*?】/g, 
+    /\[Reasoning\][\s\S]*?\[\/Reasoning\]/gi
+  ];
+
+  let cleaned = text;
+  THINK_PATTERNS.forEach(pattern => {
+    cleaned = cleaned.replace(pattern, '');
+  });
+
+  return cleaned
     .replace(MEMORY_TAG_REGEX, '')
+    .replace(SEARCH_TAG_REGEX, '')
+    .replace(WIKI_TAG_REGEX, '')
+    .replace(MAPS_TAG_REGEX, '')
+    .replace(CONSOLIDATE_TAG_REGEX, '')
+    .replace(TASK_TAG_REGEX, '')
+    .replace(AUTH_TAG_REGEX, '')
     .replace(/```(?:json)?/gi, '')
-    .replace(/[{}]/g, '')
     .trim();
 }
 
@@ -302,9 +327,10 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   if (toolIdStr === 'tts') {
     try {
-      const voiceId = reqBody.voice_id || route.primary_model || '21m00Tcm4TlvDq8ikWAM';
+      const voiceId = reqBody.voice_id || '21m00Tcm4TlvDq8ikWAM';
+      const modelId = route.primary_model;
       const audioBuffer = await withTimeout(
-        perplextaTTS(cleanUserPrompt, voiceId),
+        perplextaTTS(cleanUserPrompt, voiceId, modelId),
         TTS_TIMEOUT_MS,
         'tts'
       );
@@ -356,7 +382,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const formData = new FormData();
       const audioBlob = new Blob([audioBuffer], { type: file_data.type || 'audio/webm' });
       formData.append('file', audioBlob, file_data.name || 'audio.webm');
-      formData.append('model', route.primary_model || 'whisper-1');
+      formData.append('model', route.primary_model);
       if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
 
       const customUrl = await getProviderUrlKey(providerId);
@@ -574,8 +600,15 @@ ${refinedSystemPromptSegment}`.trim();
   let outerAccumulatedOutput = '';
 
   for (const target of modelsToTry) {
+    const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
+
+    // Sanitize model name to remove redundant provider prefixes if stored in DB incorrectly
+    let displayModel = target.model;
+    if (displayModel.toLowerCase().startsWith(`${providerId}/`)) {
+      displayModel = displayModel.substring(providerId.length + 1);
+    }
+
     try {
-        const providerId = target.provider.toLowerCase().replace(/\s+/g, '');
         const cachedRow = vaultMap.get(providerId);
 
         let isProviderActive = true;
@@ -622,7 +655,7 @@ ${refinedSystemPromptSegment}`.trim();
         generatedText = await withTimeout(
           callAIProvider(target.provider, target.model, apiKey, finalPrompt, finalSystemPrompt, wrappedOnChunk, history, { fileData: file_data }, urlKey ?? undefined),
           AI_CALL_TIMEOUT_MS,
-          `${target.provider}/${target.model}`
+          `${target.provider}/${displayModel}`
         );
         successfulModel = target;
 
@@ -692,10 +725,10 @@ ${refinedSystemPromptSegment}`.trim();
         if (innerErr.message === 'OUT_OF_POINTS_BUDGET_HALT') {
           throw innerErr; // rethrow directly to trigger external abort
         }
-        console.error(`[Orchestrator] Failure on ${target.provider}/${target.model}:`, innerErr);
+        console.error(`[Orchestrator] Failure on ${target.provider}/${displayModel}:`, innerErr);
 
         const errMessage = innerErr.message || '';
-        const isTemporaryRateLimit = errMessage.includes('429') || errMessage.toLowerCase().includes('rate limit') || errMessage.toLowerCase().includes('too many requests');
+        const isTemporaryRateLimit = errMessage.includes('429') || errMessage.toLowerCase().includes('rate limit') || errMessage.toLowerCase().includes('too many requests') || errMessage.toLowerCase().includes('resource_exhausted') || errMessage.toLowerCase().includes('quota') || errMessage.toLowerCase().includes('generativelanguage');
 
         if (isTemporaryRateLimit) {
           console.warn(`[Orchestrator] Temporary 429 rate limit hit on provider "${target.provider}" / model "${target.model}". Proceeding to fallback if available.`);

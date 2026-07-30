@@ -55,7 +55,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
-import { extractVideoThumbnail, getRecommendedDimensions } from '../utils/mediaUtils';
+import { extractVideoThumbnail, getRecommendedDimensions, compressAndResizeImage } from '../utils/mediaUtils';
 
 export interface AdItem {
   id: number;
@@ -749,15 +749,29 @@ export const AdsManagementView: React.FC<{
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | File[] } }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
-
     setIsUploading(true);
+    const toastId = toast.loading(
+      isRtl ? 'جاري تقليص وتحسين الصورة لتناسب الشريط الجانبي...' : 'Optimizing and resizing image for sidebar display...'
+    );
+
     try {
+      // Step 1: Client-side resize and compression optimized for selected ad format (default 600x600 for sidebar)
+      const compressed = await compressAndResizeImage(file, {
+        format: formData.format || 'sidebar',
+        quality: 0.88,
+        mimeType: 'image/webp'
+      });
+
+      const uploadFile = compressed.file;
+
+      // Step 2: Upload optimized file to server
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', uploadFile);
+
       const res = await fetch('/api/files/upload', {
         method: 'POST',
         headers: {
@@ -771,12 +785,27 @@ export const AdsManagementView: React.FC<{
         const fileUrl = data.fileUrl || data.url || data.path;
         if (fileUrl) {
           setFormData((prev) => ({ ...prev, image_url: fileUrl }));
-          toast.success(isRtl ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully');
+          toast.dismiss(toastId);
+
+          const origKb = (compressed.originalSize / 1024).toFixed(0);
+          const compKb = (compressed.compressedSize / 1024).toFixed(0);
+
+          if (compressed.compressedSize < compressed.originalSize) {
+            toast.success(
+              isRtl
+                ? `تم تقليص ورفع الصورة بنجاح! (${compKb}KB بدلاً من ${origKb}KB)`
+                : `Image optimized & uploaded! (${compKb}KB down from ${origKb}KB)`
+            );
+          } else {
+            toast.success(isRtl ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully');
+          }
+          return;
         }
-      } else {
-        toast.error(isRtl ? 'فشل رفع الصورة' : 'Image upload failed');
       }
+      toast.dismiss(toastId);
+      toast.error(isRtl ? 'فشل رفع الصورة' : 'Image upload failed');
     } catch (err) {
+      toast.dismiss(toastId);
       console.error('Image upload error:', err);
       toast.error(isRtl ? 'خطأ أثناء رفع الصورة' : 'Error during image upload');
     } finally {
@@ -786,10 +815,17 @@ export const AdsManagementView: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title_ar.trim() || !formData.title_en.trim() || !formData.image_url.trim() || !formData.target_url.trim()) {
-      toast.error(isRtl ? 'يرجى ملء جميع الحقول الإلزامية (العنوان والصورة والرابط)' : 'Please fill all required fields (Titles, Image, Target URL)');
+    const hasMedia = Boolean(formData.image_url.trim() || formData.video_url?.trim());
+
+    if (!formData.title_ar.trim() || !formData.title_en.trim() || !hasMedia || !formData.target_url.trim()) {
+      toast.error(isRtl ? 'يرجى ملء جميع الحقول الإلزامية (العنوان والصورة أو الفيديو والرابط)' : 'Please fill all required fields (Titles, Image/Video, Target URL)');
       return;
     }
+
+    const payload = {
+      ...formData,
+      image_url: formData.image_url.trim() || (formData.video_url?.trim() ? '/uploads/default_video_poster.jpg' : '')
+    };
 
     setIsSubmitting(true);
     try {
@@ -802,7 +838,7 @@ export const AdsManagementView: React.FC<{
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -2771,19 +2807,33 @@ export const AdsManagementView: React.FC<{
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="url"
-                    required
+                    type="text"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://images.unsplash.com/... or /uploads/..."
                   />
                   <label className="px-3 py-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors flex items-center gap-1 shrink-0">
                     <Upload size={14} />
-                    <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع صورة' : 'Upload')}</span>
+                    <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع صورة من الجهاز' : 'Upload File')}</span>
                     <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" onChange={handleFileUpload} className="hidden" />
                   </label>
                 </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-emerald-500 font-medium">
+                    ✨ {getRecommendedDimensions(formData.format, isRtl)}
+                  </span>
+                </div>
+                {formData.image_url && (
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400 font-medium">
+                    <CheckCircle2 size={12} className="shrink-0" />
+                    <span>
+                      {formData.image_url.startsWith('/uploads/')
+                        ? (isRtl ? 'تم الرفع واعتماد الصورة من جهازك المحلي بنجاح' : 'Uploaded & verified from your local desktop')
+                        : (isRtl ? 'تم ربط رابط الصورة بنجاح' : 'Image URL linked successfully')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Video URL & Video File Upload */}
@@ -2794,7 +2844,7 @@ export const AdsManagementView: React.FC<{
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="url"
+                    type="text"
                     value={formData.video_url || ''}
                     onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
                     className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
@@ -2806,6 +2856,16 @@ export const AdsManagementView: React.FC<{
                     <input type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.3gp,.m4v" onChange={handleVideoFileUpload} className="hidden" />
                   </label>
                 </div>
+                {formData.video_url && (
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-blue-400 font-medium">
+                    <CheckCircle2 size={12} className="shrink-0" />
+                    <span>
+                      {formData.video_url.startsWith('/uploads/')
+                        ? (isRtl ? 'تم رفع الفيديو واعتماده من جهازك المحلي' : 'Uploaded & verified video from desktop')
+                        : (isRtl ? 'تم ربط رابط الفيديو بنجاح' : 'Video URL linked successfully')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Media Live Player Preview inside Modal */}

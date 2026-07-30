@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { MarketplaceManagementView } from '../components/MarketplaceManagementView';
 import { ActionConfirmationModal } from '../components/ActionConfirmationModal';
 import { toast } from 'sonner';
+import { getMediaUrl } from '../utils/mediaUtils';
 
 interface Article {
   id: number;
@@ -147,7 +148,8 @@ export const AdminCommunityPage: React.FC = () => {
               if (res.ok) {
                 const data = await res.json();
                 if (data.success && data.file) {
-                  setBlogImageUrl(`/uploads/${data.file.file_url}`);
+                  const rawUrl = data.file.file_url || data.fileUrl || data.file.url;
+                  setBlogImageUrl(getMediaUrl(rawUrl));
                 } else {
                   setUploadError(language === 'ar' ? 'حدث خطأ في تحميل الملف.' : 'File upload failed.');
                 }

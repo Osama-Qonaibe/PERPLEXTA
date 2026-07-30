@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RecommendationWidget } from '../components/RecommendationWidget';
-import { getMediaUrl } from '../utils/mediaUtils';
+import { getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 
 interface MarketplaceItem {
   id: number;
@@ -661,6 +661,7 @@ export const DEFAULT_ITEMS: MarketplaceItem[] = [
 export const MarketplacePage: React.FC = () => {
   const { language, token, user, theme, balanceUSD, refreshUser } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id?: string }>();
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -907,7 +908,7 @@ export const MarketplacePage: React.FC = () => {
   }, [user?.role, token]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const queryId = urlParams.get('id') || urlParams.get('product') || urlParams.get('item');
     const targetIdStr = id || queryId;
 
@@ -917,12 +918,15 @@ export const MarketplacePage: React.FC = () => {
         const found = items.find(item => item.id === itemId);
         if (found) {
           setSelectedProduct(found);
+          // SEO Update for internal navigation
+          const productTitle = language === 'ar' ? found.title_ar : found.title_en;
+          document.title = `${productTitle} | ${language === 'ar' ? 'سوق بيربليكستا' : 'Perplexta Marketplace'}`;
         }
       }
     } else if (!targetIdStr) {
       setSelectedProduct(null);
     }
-  }, [id, items]);
+  }, [id, items, location]);
 
   const getSubcategoryKey = (item: MarketplaceItem): string => {
     const cat = item.category_en.toLowerCase();
@@ -1020,105 +1024,58 @@ export const MarketplacePage: React.FC = () => {
     return '-';
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadingImage(true);
     setUploadError('');
+    const toastId = toast.loading(
+      language === 'ar' ? 'جاري تحسين وتقليص صور المنتج...' : 'Optimizing and resizing product images...'
+    );
 
-    const uploadRawFile = async (rawFile: File) => {
-      const formData = new FormData();
-      formData.append('file', rawFile);
-      try {
-        const res = await fetch('/api/files/upload', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
+    try {
+      const filesArray = Array.from(files);
+      for (const f of filesArray) {
+        try {
+          const compressed = await compressAndResizeImage(f, {
+            format: 'feed',
+            quality: 0.88,
+            mimeType: 'image/webp'
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.file) {
-            const newUrl = `/uploads/${data.file.file_url}`;
-            setItemImages(prev => [...prev, newUrl]);
-            setUploadError('');
-          } else {
-            setUploadError(language === 'ar' ? 'فشل إدراج الصورة.' : 'Upload failed.');
-          }
-        } else {
-          try {
-            const errData = await res.json();
-            const serverMsg = language === 'ar' 
-              ? (errData.message_ar || errData.error || 'فشل في رفع الصورة') 
-              : (errData.message_en || errData.details || errData.error || 'Failed uploading image');
-            setUploadError(serverMsg);
-          } catch {
-            setUploadError(language === 'ar' ? 'فشل في رفع الصورة' : 'Failed uploading image');
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        setUploadError(language === 'ar' ? 'خطأ في الاتصال بالخادم.' : 'Server network error.');
-      }
-    };
+          const formData = new FormData();
+          formData.append('file', compressed.file);
 
-    const filesArray = Array.from(files);
-    Promise.all(filesArray.map(f => {
-      return new Promise<void>((resolve) => {
-        const reader = new FileReader();
-        reader.onerror = () => {
-          uploadRawFile(f).finally(() => resolve());
-        };
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onerror = () => {
-            uploadRawFile(f).finally(() => resolve());
-          };
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = 1080;
-              canvas.height = 1080;
-              const ctx = canvas.getContext('2d');
+          const res = await fetch('/api/files/upload', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
 
-              if (ctx) {
-                const srcWidth = img.width;
-                const srcHeight = img.height;
-                const minSide = Math.min(srcWidth, srcHeight);
-
-                const sx = (srcWidth - minSide) / 2;
-                const sy = (srcHeight - minSide) / 2;
-
-                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 1080, 1080);
-
-                canvas.toBlob(async (blob) => {
-                  if (!blob) {
-                    uploadRawFile(f).finally(() => resolve());
-                    return;
-                  }
-
-                  const baseName = f.name.replace(/\.[^/.]+$/, "");
-                  const croppedFile = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
-                  uploadRawFile(croppedFile).finally(() => resolve());
-                }, 'image/jpeg', 0.9);
-              } else {
-                uploadRawFile(f).finally(() => resolve());
-              }
-            } catch (err) {
-              console.error('[Crop Fail]', err);
-              uploadRawFile(f).finally(() => resolve());
+          if (res.ok) {
+            const data = await res.json();
+            const rawUrl = data.file?.file_url || data.fileUrl || data.file?.url || data.url;
+            if (rawUrl) {
+              const newUrl = getMediaUrl(rawUrl);
+              setItemImages(prev => [...prev, newUrl]);
             }
-          };
-          img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(f);
-      });
-    })).finally(() => {
+          }
+        } catch (singleErr) {
+          console.error('Error processing image:', singleErr);
+        }
+      }
+      toast.dismiss(toastId);
+      toast.success(language === 'ar' ? 'تم رفع صور المنتج بنجاح!' : 'Product images uploaded successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.dismiss(toastId);
+      setUploadError(language === 'ar' ? 'خطأ في رفع الصور.' : 'Error uploading images.');
+    } finally {
       setUploadingImage(false);
-    });
+    }
   };
 
   const handleCreateProduct = async (e: React.FormEvent) => {

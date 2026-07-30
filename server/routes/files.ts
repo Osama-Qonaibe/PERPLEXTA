@@ -1,17 +1,20 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { uploadValidator } from '../middleware/uploadValidator.js';
 import { extractTextFromFile, forensicScanPDF } from '../services/extractor.js';
 import { logSystemActivity } from '../services/notifications.js';
 import { getUserFiles, saveFileMetadata, getUserStorageUsage } from '../services/files.js';
+import { auditFilePipeline, resolveMediaAbsolutePath } from '../services/fileValidationService.js';
 import { processUploadedVideo } from '../services/videoProcessor.js';
+import { optimizeUploadedImage } from '../services/mediaOptimizationService.js';
 import { pool } from '../db/index.js';
 import fs from 'fs/promises';
 import path from 'path';
 
 const router = express.Router();
 
-router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
 
@@ -67,9 +70,26 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
 
     let finalFilename = filename;
     let videoMetadata: any = {};
+    let imageMetadata: any = {};
     let processedFileSize = size;
 
-    if (mimetype.startsWith('video/')) {
+    if (mimetype.startsWith('image/')) {
+      try {
+        console.log(`[File Router] Optimizing uploaded image with sharp: ${originalname}`);
+        const optResult = await optimizeUploadedImage(filePath, originalname);
+        finalFilename = optResult.filename;
+        processedFileSize = optResult.size;
+        imageMetadata = {
+          width: optResult.width,
+          height: optResult.height,
+          format: optResult.format,
+          isStandardized: true
+        };
+        console.log(`[File Router] Image optimized successfully. Resolution: ${optResult.width}x${optResult.height}, Size: ${optResult.size} bytes`);
+      } catch (imgErr: any) {
+        console.error('[File Router] Sharp image optimization error:', imgErr.message);
+      }
+    } else if (mimetype.startsWith('video/')) {
       try {
         console.log(`[File Router] Processing uploaded video with FFmpeg: ${originalname}`);
         const result = await processUploadedVideo(filePath, path.dirname(filePath), 'pvid');
@@ -119,7 +139,8 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
         extractedText: extractedText.substring(0, 5000), 
         isProcessed: extractedText.length > 0,
         forensic,
-        ...videoMetadata
+        ...videoMetadata,
+        ...imageMetadata
       }
     });
 
@@ -150,7 +171,7 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
   }
 });
 
-router.post("/analyze-forensic", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+router.post("/analyze-forensic", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No document attached for diagnostic audit.' });
@@ -170,6 +191,25 @@ router.post("/analyze-forensic", authenticateToken, upload.single('file'), handl
     res.json({ success: true, forensic: forensicReport });
   } catch (error: any) {
     res.status(500).json({ error: 'Forensic diagnostic mapping failed.', details: error.message });
+  }
+});
+
+router.get("/audit", authenticateToken, async (req: any, res: any) => {
+  try {
+    const report = await auditFilePipeline();
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: 'File pipeline audit failed', details: error.message });
+  }
+});
+
+router.post("/resolve-path", authenticateToken, async (req: any, res: any) => {
+  try {
+    const { url } = req.body;
+    const resolved = await resolveMediaAbsolutePath(url);
+    res.json(resolved);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Path resolution failed', details: error.message });
   }
 });
 

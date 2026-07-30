@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
-import { getProviderKey } from './ai.js';
+import { getProviderKey, callAIProvider } from './ai.js';
+import { getCachedOrchestratorConfig } from '../db/queries.js';
 import * as _pdfFunc from 'pdf-parse';
 import mammoth from 'mammoth';
 import ExcelJS from 'exceljs';
@@ -188,35 +189,39 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
 };
 
 export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
-  let apiKey = await getProviderKey('google');
-  if (!apiKey) {
-    apiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const config = await getCachedOrchestratorConfig('perplexta_analysis') || await getCachedOrchestratorConfig('chat_fast');
+  if (!config) return 'Multimodal extraction unavailable: No orchestrator configuration found.';
+
+  let provider = config.primary_provider;
+  let model = config.primary_model;
+  let apiKey = await getProviderKey(provider);
+
+  if (!apiKey && config.fallback_1_provider) {
+    provider = config.fallback_1_provider;
+    model = config.fallback_1_model;
+    apiKey = await getProviderKey(provider);
   }
-  if (!apiKey) return 'API Key missing for multimodal sense.';
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
-  const base64Data = dataBuffer.toString('base64');
+  if (!apiKey) return 'API Key missing for multimodal sense orchestrator provider.';
 
-  const body = {
-    contents: [{
-      parts: [
-        { text: `Forensic analysis of ${mimeType} file "${fileName}". Extract all relevant data.` },
-        { inline_data: { mime_type: mimeType, data: base64Data } }
-      ]
-    }]
+  const fileData = {
+    type: mimeType,
+    data: dataBuffer.toString('base64'),
+    name: fileName
   };
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
-      },
-      body: JSON.stringify(body)
-    });
-    const data: any = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No extraction result.';
+    const responseText = await callAIProvider(
+      provider,
+      model,
+      apiKey,
+      `Forensic analysis of ${mimeType} file "${fileName}". Extract all relevant data and metadata text clearly.`,
+      '', // system prompt
+      undefined, // onChunk
+      [], // history
+      { fileData }
+    );
+    return (responseText as string) || 'No extraction result.';
   } catch (e: any) {
     return `Extraction failed: ${e.message}`;
   }

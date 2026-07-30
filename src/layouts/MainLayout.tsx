@@ -29,8 +29,7 @@ export const MainLayout: React.FC = () => {
   };
 
   return (
-    <motion.div 
-      onPanEnd={onPanEnd}
+    <div 
       className="flex h-[100dvh] w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme"
     >
       <Header activeLanguage={language} />
@@ -58,7 +57,7 @@ export const MainLayout: React.FC = () => {
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
         <main className="flex-1 overflow-hidden relative pt-[72px] bg-[var(--bg-base)] transition-theme flex">
-          <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0">
+          <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0 touch-pan-y overscroll-y-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Outlet />
           </div>
           <SponsoredSidebar />
@@ -66,6 +65,6 @@ export const MainLayout: React.FC = () => {
       </motion.div>
 
       <AuthModal />
-    </motion.div>
+    </div>
   );
 };

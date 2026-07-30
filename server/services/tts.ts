@@ -1,6 +1,6 @@
 import { getProviderKey } from './ai.js';
 
-export async function perplextaTTS(text: string, voiceId: string = 'standard') {
+export async function perplextaTTS(text: string, voiceId: string = 'standard', modelId: string = 'eleven_multilingual_v2') {
   let apiKey = await getProviderKey('elevenlabs');
   if (!apiKey) {
     apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
@@ -18,7 +18,7 @@ export async function perplextaTTS(text: string, voiceId: string = 'standard') {
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_monolingual_v1',
+        model_id: modelId,
         voice_settings: { stability: 0.5, similarity_boost: 0.5 }
       })
     });

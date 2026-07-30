@@ -61,6 +61,12 @@ export const SharedSnapshotPage: React.FC = () => {
 
         const data = await response.json();
         setSnapshot(data);
+        
+        // SEO Update for internal navigation
+        if (data) {
+          const snapshotTitle = data.title || (isAr ? 'لقطة تحليل استراتيجي' : 'Strategic Insight Snapshot');
+          document.title = `${snapshotTitle} | ${isAr ? 'بيربليكستا' : 'Perplexta'}`;
+        }
       } catch (err: any) {
         console.error('[SharedSnapshotPage] error:', err);
         setError(err.message || (isAr ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred'));
