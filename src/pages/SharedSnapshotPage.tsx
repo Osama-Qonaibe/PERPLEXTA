@@ -64,8 +64,7 @@ export const SharedSnapshotPage: React.FC = () => {
         
         // SEO Update for internal navigation
         if (data) {
-          const snapshotTitle = data.title || (isAr ? 'لقطة تحليل استراتيجي' : 'Strategic Insight Snapshot');
-          document.title = `${snapshotTitle} | ${isAr ? 'بيربليكستا' : 'Perplexta'}`;
+          // Handled centrally in App.tsx
         }
       } catch (err: any) {
         console.error('[SharedSnapshotPage] error:', err);
@@ -140,9 +139,9 @@ export const SharedSnapshotPage: React.FC = () => {
       <header className="w-full max-w-5xl mx-auto px-4 py-6 flex items-center justify-between border-b border-[var(--border)] relative z-10">
         <div 
           onClick={() => navigate('/')} 
-          className="flex items-center gap-3 cursor-pointer group transition-all duration-300"
+          className="flex items-center gap-3 cursor-pointer group transition-theme"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-emerald-500/20 flex items-center justify-center shadow-md shadow-emerald-500/5 group-hover:border-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-300">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-emerald-500/20 flex items-center justify-center shadow-md shadow-emerald-500/5 group-hover:border-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-theme">
             {siteSettings?.logoBase64 ? (
               <img src={siteSettings.logoBase64} alt="Logo" className="w-7 h-7 object-cover rounded-sm" />
             ) : (
@@ -161,7 +160,7 @@ export const SharedSnapshotPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/')}
-          className="px-4 py-2 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 text-xs font-semibold flex items-center gap-2 text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-300"
+          className="px-4 py-2 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 text-xs font-semibold flex items-center gap-2 text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme"
         >
           <ArrowLeft size={14} className={isAr ? 'rotate-180' : ''} />
           {isAr ? 'الذهاب للمنصة' : 'Go to Platform'}
@@ -194,7 +193,7 @@ export const SharedSnapshotPage: React.FC = () => {
             </p>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-2.5 rounded-[4px] bg-emerald-500 text-black font-extrabold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-all duration-300 shadow-lg shadow-emerald-500/20"
+              className="px-6 py-2.5 rounded-[4px] bg-emerald-500 text-black font-extrabold text-sm uppercase tracking-wider hover:bg-emerald-400 transition-theme shadow-lg shadow-emerald-500/20"
             >
               {isAr ? 'العودة للرئيسية' : 'Return to Home'}
             </button>
@@ -260,7 +259,7 @@ export const SharedSnapshotPage: React.FC = () => {
                 <button
                   onClick={handleCopyLink}
                   title={isAr ? 'نسخ الرابط' : 'Copy Link'}
-                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                 >
                   {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                 </button>
@@ -269,7 +268,7 @@ export const SharedSnapshotPage: React.FC = () => {
                 <button
                   onClick={() => shareToSocial('twitter')}
                   title={isAr ? 'انشر على إكس' : 'Share on X / Twitter'}
-                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                 >
                   <Twitter size={16} />
                 </button>
@@ -278,7 +277,7 @@ export const SharedSnapshotPage: React.FC = () => {
                 <button
                   onClick={() => shareToSocial('linkedin')}
                   title={isAr ? 'انشر على لينكد إن' : 'Share on LinkedIn'}
-                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                 >
                   <Linkedin size={16} />
                 </button>
@@ -287,7 +286,7 @@ export const SharedSnapshotPage: React.FC = () => {
                 <button
                   onClick={() => shareToSocial('telegram')}
                   title={isAr ? 'شارك على تيليجرام' : 'Share on Telegram'}
-                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                 >
                   <Send size={16} />
                 </button>
@@ -296,7 +295,7 @@ export const SharedSnapshotPage: React.FC = () => {
                 <button
                   onClick={() => shareToSocial('whatsapp')}
                   title={isAr ? 'شارك على واتساب' : 'Share on WhatsApp'}
-                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                  className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                 >
                   <MessageSquare size={16} />
                 </button>
@@ -321,7 +320,7 @@ export const SharedSnapshotPage: React.FC = () => {
 
               <button
                 onClick={() => navigate('/')}
-                className="px-8 py-3 rounded-[4px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-black font-extrabold text-xs uppercase tracking-widest transition-all duration-300 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 border border-emerald-400/20"
+                className="px-8 py-3 rounded-[4px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-black font-extrabold text-xs uppercase tracking-widest transition-theme shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/25 border border-emerald-400/20"
               >
                 {isAr ? 'ابدأ التحليل الاستراتيجي الآن' : 'Start Free Technical Analysis'}
               </button>

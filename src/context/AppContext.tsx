@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
@@ -1681,7 +1681,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const remaining = force ? 0 : Math.max(0, activeMinBootTime - elapsed);
     setTimeout(() => {
       setIsAuthReady(true);
-      localStorage.removeItem('app_loader_type');
     }, remaining);
   };
   const [balance, setBalance] = useState<number>(0);
@@ -1765,11 +1764,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const handleThemeChange = (newTheme: Theme) => {
+  const handleThemeChange = async (newTheme: Theme) => {
     setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (token) {
+      try {
+        await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ theme: newTheme })
+        });
+      } catch (e) {}
+    }
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const saved = localStorage.getItem('perplexta_sidebar_open');
+      if (saved !== null) return saved === 'true';
+    } catch (e) {}
+    return false;
+  });
+
+  const setIsSidebarOpen = useCallback((isOpen: boolean | ((prev: boolean) => boolean)) => {
+    setIsSidebarOpenState((prev) => {
+      const next = typeof isOpen === 'function' ? isOpen(prev) : isOpen;
+      try {
+        localStorage.setItem('perplexta_sidebar_open', String(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
 
   const [isStandalone, setIsStandalone] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -1831,15 +1857,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const installApp = async () => {
     if (typeof window === 'undefined') return;
 
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOSDevice) {
-      setIsInstallationRunning(true);
-      setInstallSuccess(true);
-      return;
-    }
-
     if (isInstallable && deferredPrompt) {
       try {
         deferredPrompt.prompt();
@@ -1848,128 +1865,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (outcome === 'accepted') {
           setDeferredPrompt(null);
           setIsInstallable(false);
-
-          setIsInstallationRunning(true);
-          setIsInstalling(true);
-          setInstallProgress(0);
-          setInstallSuccess(false);
-
-          const logsAr = [
-            'بدء تهيئة الملفات وتخصيص مساحات التشغيل المحمية لبيربليكستا...',
-            'إعداد خدمات المزامنة الخلفية وقواعد البيانات المصغرة المحلية...',
-            'تنزيل وحفظ واجهات التشغيل التفاعلية فائقة الأداء...',
-            'تفعيل بروتوكول الأمان الدستوري وحقن مفاتيح الهوية السيادية الموثقة...',
-            'اكتملت جميع العمليات؛ جاري تسجيل التطبيق في بيئة تشغيل جهازك...'
-          ];
-
-          const logsEn = [
-            'Initializing system directories and localized sovereign memory volumes...',
-            'Registering background service assets and caching core DB pipelines...',
-            'Compiling visual layouts and responsive high-fidelity interfaces...',
-            'Applying multi-stage verification and military-grade encryption...',
-            'System fully integrated. Finalizing application registration...'
-          ];
-
-          const targetLogs = language === 'ar' ? logsAr : logsEn;
-          setInstallLogs([targetLogs[0]]);
-
-          if ('vibrate' in navigator) {
-            navigator.vibrate([15, 30, 45]);
-          }
-
-          const interval = setInterval(() => {
-            setInstallProgress((prev) => {
-              const increment = Math.floor(Math.random() * 12) + 6;
-              const next = prev + increment;
-
-              if (next >= 100) {
-                clearInterval(interval);
-                setInstallLogs((old) => [...old, language === 'ar' ? 'تمت إضافة جميع حزم بيربليكستا السيادية وتثبيتها بنجاح!' : 'All Perplexta packets deployed and secured successfully!']);
-                setInstallSuccess(true);
-                setIsStandalone(true);
-
-                if ('vibrate' in navigator) {
-                  navigator.vibrate([100, 50, 100]);
-                }
-
-                setTimeout(() => {
-                  try {
-                    window.close();
-                  } catch (e) {
-
-                  }
-                  window.location.href = "/?standalone=true";
-                }, 2500);
-
-                return 100;
-              }
-
-              const stepIndex = Math.min(Math.floor(next / 25), 4);
-              const currentLog = targetLogs[stepIndex];
-              setInstallLogs((oldLogs) => {
-                if (oldLogs[oldLogs.length - 1] !== currentLog && currentLog) {
-                  return [...oldLogs, currentLog];
-                }
-                return oldLogs;
-              });
-
-              return next;
-            });
-          }, 150);
-        } else {
-          setIsInstallationRunning(false);
-          setIsInstalling(false);
+          toast.success(
+            language === 'ar' 
+              ? 'تم تثبيت التطبيق بنجاح' 
+              : 'Application installed successfully'
+          );
         }
       } catch (err) {
-
-        setIsInstallationRunning(true);
-        setIsInstalling(true);
-        setInstallProgress(0);
-        setInstallSuccess(false);
-
-        const interval = setInterval(() => {
-          setInstallProgress((prev) => {
-            const next = prev + 10;
-            if (next >= 100) {
-              clearInterval(interval);
-              setInstallSuccess(true);
-              setIsStandalone(true);
-              setTimeout(() => {
-                try {
-                  window.close();
-                } catch (e) {}
-                window.location.href = "/?standalone=true";
-              }, 2500);
-              return 100;
-            }
-            return next;
-          });
-        }, 100);
+        console.error('PWA install prompt error:', err);
       }
-    } else {
-      setIsInstallationRunning(true);
-      setIsInstalling(true);
-      setInstallProgress(0);
-      setInstallSuccess(false);
-
-      const interval = setInterval(() => {
-        setInstallProgress((prev) => {
-          const next = prev + 10;
-          if (next >= 100) {
-            clearInterval(interval);
-            setInstallSuccess(true);
-            setIsStandalone(true);
-            setTimeout(() => {
-              try {
-                window.close();
-              } catch (e) {}
-              window.location.href = "/?standalone=true";
-            }, 2500);
-            return 100;
-          }
-          return next;
-        });
-      }, 100);
     }
   };
 
@@ -2029,7 +1933,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
       } else {
         localStorage.setItem('app_logged_in_toast', '1');
-        localStorage.setItem('app_loader_type', 'login');
         localStorage.setItem('app_force_refresh', '1');
         window.location.href = targetRef || '/';
       }
@@ -2352,6 +2255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBalance(Number(userProfile.points || 0));
         setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
+        if (userProfile.theme) setTheme(userProfile.theme as Theme);
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
@@ -2610,7 +2514,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (forceRedirect) {
       localStorage.setItem('app_logged_out_toast', '1');
-      localStorage.setItem('app_loader_type', 'logout');
     }
 
     localStorage.removeItem('app_token');
@@ -2756,8 +2659,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     return {
-      siteName: '',
-      siteNameAr: '',
+      siteName: 'Perplexta Platform',
+      siteNameAr: 'بيربليكستا',
       seoSiteNameEn: '',
       seoSiteNameAr: '',
       siteDescription: '',
@@ -2779,12 +2682,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('site_settings', JSON.stringify(siteSettings));
   }, [siteSettings]);
 
-  useEffect(() => {
-    const appName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
-    const nameToUse = appName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
 
-    document.title = nameToUse;
-  }, [siteSettings, language]);
 
   const [plans, setPlans] = useState<any[]>([]);
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
@@ -3334,8 +3232,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentSiteName = language === 'ar' ? (siteSettings.seoSiteNameAr || siteSettings.siteNameAr || siteSettings.siteName) : (siteSettings.seoSiteNameEn || siteSettings.siteName);
     const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
     const resolvedDesc = (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc;
-
-    document.title = currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
 
     let metaDescription = document.querySelector('meta[name="description"]');
     if (!metaDescription) {

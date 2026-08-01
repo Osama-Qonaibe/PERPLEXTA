@@ -2,12 +2,24 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta id="theme-color-meta" name="theme-color" content="#080809" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Perplexta" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <title>Perplexta Platform - Professional Elite AI Platform</title>
+    <meta name="description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations with dual-database ledgers." />
+
     <script>
       (function() {
         try {
+          var savedLang = localStorage.getItem('language') || 'en';
+          document.documentElement.setAttribute('lang', savedLang);
+          document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
+          document.title = savedLang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Perplexta Platform - Professional Elite AI Platform';
+
           var savedTheme = localStorage.getItem('theme');
           var isDark = false;
           if (savedTheme === 'dark') {
@@ -38,13 +50,6 @@
     </script>
     <link rel="icon" type="image/png" href="/app-assets/icon.png" />
     <link rel="apple-touch-icon" href="/app-assets/icon.png" />
-    <link rel="apple-touch-startup-image" href="/app-assets/icon.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Perplexta" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Perplexta Platform - Professional Elite AI Platform</title>
-    <meta name="description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations with dual-database ledgers." />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -60,15 +65,10 @@
     <meta property="twitter:description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations." />
     <meta property="twitter:image" content="/app-assets/og-image.png" />
 
-    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
-    <link rel="stylesheet" href="/app-assets/loader.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
-    <div id="root">
-      <div id="initial-loader">
-        <div class="loader-gradient"></div>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
     // WebMCP - Expose site tools to AI agents via browser

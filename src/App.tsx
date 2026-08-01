@@ -22,108 +22,16 @@ import { SharedSnapshotPage } from './pages/SharedSnapshotPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { StudioPage } from './pages/StudioPage';
 import { IncentiveCard } from './components/IncentiveCard';
-import { PWACinematicModal } from './components/PWACinematicModal';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck } from 'lucide-react';
-import { DefaultLogo } from './components/DefaultLogo';
+import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { InactivityWarningModal } from './components/InactivityWarningModal';
 
-const CenteredLoader = () => {
-  const { siteSettings, language, theme } = useAppContext();
-  const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
-
-  const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
-  let loaderText = '';
-  if (language === 'ar') {
-    if (loaderType === 'login') {
-      loaderText = 'جاري تفعيل بيربليكستا';
-    } else if (loaderType === 'logout') {
-      loaderText = 'جاري مسح سجلات بيربليكستا';
-    } else {
-      loaderText = 'جاري مزامنة المنصة...';
-    }
-  } else {
-    if (loaderType === 'login') {
-      loaderText = 'ACTIVATING PERPLEXTA';
-    } else if (loaderType === 'logout') {
-      loaderText = 'CLEARING PERPLEXTA LOGS';
-    } else {
-      loaderText = 'INITIALIZING SYSTEM NETWORK...';
-    }
-  }
-
-  const currentTheme = theme || localStorage.getItem('theme') || 'dark';
-  const activeLogo = (currentTheme === 'light' && siteSettings.logoLightBase64) 
-    ? siteSettings.logoLightBase64 
-    : siteSettings.logoBase64;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[var(--bg-primary)]"
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
-
-      <div className="relative flex flex-col items-center gap-10">
-        <div className="relative">
-          <motion.div
-            animate={{ opacity: [0.15, 0.35, 0.15] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-            className="absolute inset-0 bg-emerald-500 rounded-full blur-[50px]"
-          />
-          <div className="relative w-24 h-24 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-[var(--border-main)]/80 flex items-center justify-center shadow-2xl overflow-hidden">
-            {activeLogo ? (
-              <img src={activeLogo} alt="Logo" className="w-[84px] h-[84px] object-cover block rounded-sm" />
-            ) : (
-              <DefaultLogo className="w-16 h-16" iconClassName="w-10 h-10" />
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em]">
-              {siteName || (language === 'ar' ? 'بيربليكستا' : 'PERPLEXTA')}
-            </h2>
-            <div className="flex items-center justify-center gap-3">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-800" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em] translate-y-0.5">
-                {loaderText}
-              </span>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-800" />
-            </div>
-          </div>
-
-          <div className="w-48 h-[2px] bg-gray-900/50 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ x: [-192, 192] }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "linear" }}
-              className="w-full h-full bg-gradient-to-r from-transparent via-emerald-500 to-transparent"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-10 flex items-center gap-2 px-4 py-2 rounded-md bg-gray-900/30 border border-white/[0.03] backdrop-blur-md">
-        <ShieldCheck size={14} className="text-emerald-500" />
-        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
-          {language === 'ar' ? 'نظام مشفر ومستقر' : 'STABLE ENCRYPTED PROTOCOL'}
-        </span>
-      </div>
-    </motion.div>
-  );
-};
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
-  if (!isAuthReady) return <CenteredLoader />;
+  if (!isAuthReady) return null;
   if (!user) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
@@ -131,7 +39,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-  if (!isAuthReady) return <CenteredLoader />;
+  if (!isAuthReady) return null;
   const isAdmin = user && (['admin'].includes(user.role || '') || (adminEmail && user.email === adminEmail));
   const isSupport = user && ['support'].includes(user.role || '');
   if (!isAdmin && !isSupport) return <Navigate to="/" replace />;
@@ -142,7 +50,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const { theme, isAuthReady, siteSettings, language } = useAppContext();
   const location = useLocation();
   const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
-  const isFirstMount = useRef(true);
 
   useEffect(() => {
     fetch('/api/seo-routes')
@@ -160,15 +67,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
                                  currentPath.startsWith('/marketplace/') || 
                                  currentPath.startsWith('/share/') ||
                                  currentPath.startsWith('/bulletin/');
-    
-    const PUBLIC_WHITELIST = ['/', '/subscription', '/marketplace', '/blog', '/bulletin', '/rewards', '/terms', '/privacy', '/about'];
-    const isStaticPublicRoute = PUBLIC_WHITELIST.includes(currentPath);
-
-    if (isFirstMount.current && (isDynamicPublicRoute || isStaticPublicRoute)) {
-      isFirstMount.current = false;
-      return;
-    }
-    isFirstMount.current = false;
 
     const dynamicBlockedList = siteSettings?.blocked_paths
       ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
@@ -266,43 +164,28 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const rawOGImage = dbOgImage;
       const routeOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
 
-      const shouldOverwrite = dbTitle || pageTitlePart || currentPath === '/';
-      
-      if (!isDynamicPublicRoute || shouldOverwrite) {
-        document.title = finalTitle;
-        updateMetaTag('name', 'description', finalDesc);
-        updateMetaTag('property', 'og:title', finalTitle);
-        updateMetaTag('property', 'og:description', finalDesc);
-        updateMetaTag('property', 'og:image', routeOGImage);
-        updateMetaTag('property', 'og:url', currentUrl);
-        updateMetaTag('property', 'og:site_name', resolvedSiteName);
-        updateMetaTag('name', 'twitter:title', finalTitle);
-        updateMetaTag('name', 'twitter:description', finalDesc);
-        updateMetaTag('name', 'twitter:image', routeOGImage);
-        updateMetaTag('name', 'twitter:image:alt', finalTitle);
-        updateMetaTag('name', 'keywords', finalKeywords);
+      document.title = finalTitle;
+      updateMetaTag('name', 'description', finalDesc);
+      updateMetaTag('property', 'og:title', finalTitle);
+      updateMetaTag('property', 'og:description', finalDesc);
+      updateMetaTag('property', 'og:image', routeOGImage);
+      updateMetaTag('property', 'og:url', currentUrl);
+      updateMetaTag('property', 'og:site_name', resolvedSiteName);
+      updateMetaTag('name', 'twitter:title', finalTitle);
+      updateMetaTag('name', 'twitter:description', finalDesc);
+      updateMetaTag('name', 'twitter:image', routeOGImage);
+      updateMetaTag('name', 'twitter:image:alt', finalTitle);
+      updateMetaTag('name', 'keywords', finalKeywords);
 
-        let canonicalLink = document.querySelector('link[rel="canonical"]');
-        if (!canonicalLink) {
-          canonicalLink = document.createElement('link');
-          canonicalLink.setAttribute('rel', 'canonical');
-          document.head.appendChild(canonicalLink);
-        }
-        canonicalLink.setAttribute('href', currentUrl);
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
       }
+      canonicalLink.setAttribute('href', currentUrl);
     }
   }, [location.pathname, siteSettings, language, dbRouteSeo]);
-
-  useEffect(() => {
-    if (isAuthReady) {
-      const loader = document.getElementById('initial-loader');
-      if (loader) {
-        loader.style.transition = 'opacity 0.4s ease-out';
-        loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 400);
-      }
-    }
-  }, [isAuthReady]);
 
   return (
     <Suspense fallback={null}>
@@ -315,20 +198,13 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         expand={false}
       />
       <IncentiveCard />
-      <PWACinematicModal />
       <UpgradePromptModal />
       <InactivityWarningModal />
 
-      {!isAuthReady && (
-        <AnimatePresence mode="wait">
-          <CenteredLoader key="global-loader" />
-        </AnimatePresence>
-      )}
-
       <motion.div
-        animate={{ opacity: isAuthReady ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className={!isAuthReady ? 'hidden' : 'block h-full w-full'}
+        animate={{ opacity: isAuthReady ? 1 : 0.6 }}
+        transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        className="block h-full w-full"
       >
         {children}
       </motion.div>

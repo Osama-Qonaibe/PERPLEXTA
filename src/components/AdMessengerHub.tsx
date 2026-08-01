@@ -248,7 +248,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={isRtl ? 'بحث في المحادثات...' : 'Search messenger inbox...'}
-              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-white dark:bg-[#1a1a1e] border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-all dark:text-white`}
+              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-white dark:bg-[#1a1a1e] border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-theme dark:text-white`}
             />
             <Search size={14} className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`} />
           </div>
@@ -268,7 +268,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 <div
                   key={inq.id}
                   onClick={() => setSelectedThread(inq)}
-                  className={`p-3.5 flex items-start gap-3 cursor-pointer transition-all relative ${
+                  className={`p-3.5 flex items-start gap-3 cursor-pointer transition-theme relative ${
                     isSelected
                       ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-e-4 border-emerald-500'
                       : 'hover:bg-gray-100/70 dark:hover:bg-[#1a1a1e]/60'
@@ -435,7 +435,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(q)}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 whitespace-nowrap transition-all border border-gray-200 dark:border-gray-700"
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200 dark:border-gray-700"
                 >
                   {q}
                 </button>
@@ -476,12 +476,12 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                   }
                 }}
                 placeholder={isRtl ? 'اكتب رسالتك المشفرة هنا...' : 'Type encrypted message...'}
-                className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-4 py-3 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-all"
+                className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-4 py-3 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
               />
               <button
                 onClick={() => handleSendMessage()}
                 disabled={(!inputMessage.trim() && !attachedImage) || sending}
-                className="p-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
+                className="p-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>

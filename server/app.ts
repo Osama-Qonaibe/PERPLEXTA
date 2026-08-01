@@ -141,9 +141,13 @@ app.use((req: any, res: any, next: any) => {
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
-    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-    frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
+    frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"],
+    frameSrc: ["'self'", "https://*.stripe.com", "https://*.google.com", "https://apis.google.com", "https://accounts.google.com"],
+    workerSrc: ["'self'", "blob:"],
+    childSrc: ["'self'", "blob:"],
+    manifestSrc: ["'self'"]
   };
 
   if (!isDev) {
@@ -218,6 +222,12 @@ const distPath = path.join(process.cwd(), 'dist');
 
 const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
+    if (fileName.endsWith('.webmanifest') || fileName.endsWith('.json')) {
+      res.type('application/manifest+json');
+    } else if (fileName.endsWith('.js')) {
+      res.type('application/javascript');
+      res.setHeader('Service-Worker-Allowed', '/');
+    }
     const distFile = path.join(distPath, fileName);
     const publicFile = path.join(publicPath, fileName);
     if (fs.existsSync(distFile)) return res.sendFile(distFile);

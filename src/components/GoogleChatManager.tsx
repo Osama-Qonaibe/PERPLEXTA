@@ -306,7 +306,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
               <button
                 onClick={handleSignIn}
                 disabled={isConnecting}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-all shadow-lg shadow-emerald-900/40 disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-theme shadow-lg shadow-emerald-900/40 disabled:opacity-50"
               >
                 {isConnecting ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
                 <span>{isAr ? 'ربط حساب Google Chat' : 'Connect Google Chat'}</span>
@@ -327,7 +327,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-medium transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-medium transition-theme"
                   title={isAr ? 'قطع الاتصال' : 'Disconnect'}
                 >
                   <LogOut size={14} />
@@ -367,14 +367,14 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => cachedChatToken && fetchSpaces(cachedChatToken)}
-                  className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all"
+                  className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-theme"
                   title={isAr ? 'تحديث' : 'Refresh'}
                 >
                   <RefreshCw size={14} className={isLoadingSpaces ? 'animate-spin' : ''} />
                 </button>
                 <button
                   onClick={() => setShowCreateSpaceModal(true)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-theme"
                 >
                   <Plus size={14} />
                   <span>{isAr ? 'مساحة جديدة' : 'New Space'}</span>
@@ -401,7 +401,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                         setSelectedSpace(space);
                         fetchMessages(space.name);
                       }}
-                      className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 ${
+                      className={`w-full text-left p-3 rounded-xl border transition-theme flex items-center gap-3 ${
                         isSelected 
                           ? 'bg-emerald-500/10 border-emerald-500/40 text-white' 
                           : 'bg-gray-900/40 border-gray-800/80 hover:bg-gray-800/60 text-gray-300'
@@ -446,7 +446,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                   </div>
                   <button
                     onClick={() => fetchMessages(selectedSpace.name)}
-                    className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-all"
+                    className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-theme"
                   >
                     <RefreshCw size={16} className={isLoadingMessages ? 'animate-spin' : ''} />
                   </button>
@@ -496,7 +496,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                   <button
                     type="submit"
                     disabled={!messageText.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-900/20"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-theme disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-900/20"
                   >
                     <Send size={16} />
                     <span className="hidden sm:inline">{isAr ? 'إرسال' : 'Send'}</span>
@@ -549,7 +549,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
               <button
                 type="button"
                 onClick={() => setShowSendModal(false)}
-                className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs transition-all"
+                className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs transition-theme"
               >
                 {isAr ? 'إلغاء' : 'Cancel'}
               </button>
@@ -557,7 +557,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                 type="button"
                 onClick={executeSendMessage}
                 disabled={isSending}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all shadow-lg shadow-emerald-900/40 disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-theme shadow-lg shadow-emerald-900/40 disabled:opacity-50"
               >
                 {isSending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                 <span>{isAr ? 'تأكيد الإرسال' : 'Confirm & Send'}</span>
@@ -604,14 +604,14 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                 <button
                   type="button"
                   onClick={() => setShowCreateSpaceModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs transition-theme"
                 >
                   {isAr ? 'إلغاء' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
                   disabled={!newSpaceName.trim() || isCreatingSpace}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all shadow-lg shadow-emerald-900/40 disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-theme shadow-lg shadow-emerald-900/40 disabled:opacity-50"
                 >
                   {isCreatingSpace ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                   <span>{isAr ? 'إنشاء المساحة' : 'Create Space'}</span>

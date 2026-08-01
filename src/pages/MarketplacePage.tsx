@@ -918,9 +918,6 @@ export const MarketplacePage: React.FC = () => {
         const found = items.find(item => item.id === itemId);
         if (found) {
           setSelectedProduct(found);
-          // SEO Update for internal navigation
-          const productTitle = language === 'ar' ? found.title_ar : found.title_en;
-          document.title = `${productTitle} | ${language === 'ar' ? 'سوق بيربليكستا' : 'Perplexta Marketplace'}`;
         }
       }
     } else if (!targetIdStr) {
@@ -1626,7 +1623,7 @@ export const MarketplacePage: React.FC = () => {
                   <>
                     <button
                       onClick={() => navigate('/settings?tab=marketplace_purchases')}
-                      className="h-10 px-4 rounded-[4px] bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] cursor-pointer"
+                      className="h-10 px-4 rounded-[4px] bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] cursor-pointer"
                     >
                       <ShoppingBag size={14} />
                       <span>{language === 'ar' ? 'حقيبة تنزيلاتي ومشترياتي' : 'My Purchases & Downloads'}</span>
@@ -1638,7 +1635,7 @@ export const MarketplacePage: React.FC = () => {
                           resetForm();
                           setIsCreateOpen(true);
                         }}
-                        className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-all duration-300 active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
+                        className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
                       >
                         <Plus size={14} />
                         <span>{t.listNewAsset}</span>
@@ -1647,7 +1644,7 @@ export const MarketplacePage: React.FC = () => {
 
                     <button
                       onClick={() => setIsCartOpen(true)}
-                      className="w-10 h-10 rounded-[4px] border border-emerald-500/25 bg-emerald-500/5 text-emerald-500 flex items-center justify-center relative active:scale-95 cursor-pointer transition-all duration-300 hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="w-10 h-10 rounded-[4px] border border-emerald-500/25 bg-emerald-500/5 text-emerald-500 flex items-center justify-center relative active:scale-95 cursor-pointer transition-theme hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                       title={language === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
                     >
                       <ShoppingCart size={16} />
@@ -1694,7 +1691,7 @@ export const MarketplacePage: React.FC = () => {
                     <button
                       key={p.id}
                       onClick={() => fCat(p.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                         isParentActive
                           ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] font-black'
                           : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-800')
@@ -1710,7 +1707,7 @@ export const MarketplacePage: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
-                <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-64 md:w-72 transition-all ${
+                <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-64 md:w-72 transition-theme ${
                   isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
                 }`}>
                   <Search size={14} className="text-gray-400 shrink-0" />
@@ -1729,7 +1726,7 @@ export const MarketplacePage: React.FC = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className={`h-8 px-2 border rounded-lg text-[11px] font-bold outline-none cursor-pointer transition-all ${
+                    className={`h-8 px-2 border rounded-lg text-[11px] font-bold outline-none cursor-pointer transition-theme ${
                       isThemeDark ? 'bg-black/45 border-white/10 focus:border-emerald-500/40 text-gray-200' : 'bg-white border-gray-250 focus:border-emerald-500/40 text-gray-750'
                     }`}
                   >
@@ -1810,7 +1807,7 @@ export const MarketplacePage: React.FC = () => {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               className="pl-4 space-y-0.5 mt-0.5 overflow-hidden"
                             >
                               {categoryChildrenList.map(c => {
@@ -1947,9 +1944,9 @@ export const MarketplacePage: React.FC = () => {
                           }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           whileHover={{ y: -6, transition: { duration: 0.25, ease: "easeOut" } }}
-                          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                           onClick={() => navigate(`/marketplace/${item.id}`)}
-                          className={`rounded-xl border overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer relative group ${
+                          className={`rounded-xl border overflow-hidden transition-theme flex flex-col h-full cursor-pointer relative group ${
                             isThemeDark
                               ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
                               : 'bg-white border-gray-150 hover:border-emerald-500/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
@@ -2018,7 +2015,7 @@ export const MarketplacePage: React.FC = () => {
                                     return (
                                       <span
                                         key={tag}
-                                        className={`px-1.5 py-0.5 rounded-[4px] border text-[8.5px] font-black flex items-center gap-0.5 transition-all duration-300 transform hover:scale-105 shrink-0 ${details.colorClass}`}
+                                        className={`px-1.5 py-0.5 rounded-[4px] border text-[8.5px] font-black flex items-center gap-0.5 transition-theme transform hover:scale-105 shrink-0 ${details.colorClass}`}
                                       >
                                         {details.icon}
                                         <span>{language === 'ar' ? details.labelAr : details.labelEn}</span>
@@ -2028,7 +2025,7 @@ export const MarketplacePage: React.FC = () => {
                                 </div>
                               </div>
                               
-                              <button className={`px-2 py-1 text-[10px] font-black rounded-[4px] transition-all duration-300 flex items-center gap-1 border shrink-0 ${
+                              <button className={`px-2 py-1 text-[10px] font-black rounded-[4px] transition-theme flex items-center gap-1 border shrink-0 ${
                                 isThemeDark
                                   ? 'bg-[#10b981]/5 border-[#10b981]/15 text-emerald-400 hover:bg-[#10b981]/15 hover:border-[#10b981]/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                                   : 'bg-emerald-500/5 border-emerald-500/15 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
@@ -2089,7 +2086,7 @@ export const MarketplacePage: React.FC = () => {
               initial={{ x: dir === 'rtl' ? '100%' : '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: dir === 'rtl' ? '100%' : '-100%' }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
               className={`relative w-[280px] flex flex-col p-5 space-y-6 max-h-screen overflow-y-auto ${
                 isThemeDark ? 'bg-[#080808] text-white border-l border-white/10' : 'bg-white text-gray-900 border-r border-gray-200'
               }`}
@@ -2158,7 +2155,7 @@ export const MarketplacePage: React.FC = () => {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               className="pl-4 mt-0.5 space-y-0.5 border-l border-white/5 overflow-hidden"
                             >
                               {categoryChildrenList.map(c => {
@@ -2245,7 +2242,7 @@ export const MarketplacePage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               className={`relative w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl border flex flex-col scrollbar-none shadow-2xl ${
                 isThemeDark ? 'bg-[#090a0c] border-white/10 text-white shadow-black/90' : 'bg-white border-gray-200 text-gray-900 shadow-gray-300/40'
               }`}
@@ -2268,7 +2265,7 @@ export const MarketplacePage: React.FC = () => {
                 
                 {/* Glowing Overlay indicating "Click to view screenshots/documents" */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
-                  <div className="flex flex-col items-center gap-1.5 px-4 py-2 bg-black/75 rounded-lg border border-emerald-500/30 backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                  <div className="flex flex-col items-center gap-1.5 px-4 py-2 bg-black/75 rounded-lg border border-emerald-500/30 backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-theme">
                     <Eye size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                     <span className="text-[10px] font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">
                       {language === 'ar' ? 'انقر للمعاينة والتكبير التفاعلي بملء الشاشة' : 'Click for Interactive Fullscreen Zoom & Preview'}
@@ -2285,7 +2282,7 @@ export const MarketplacePage: React.FC = () => {
                     setBuyingProgress('idle');
                     navigate('/marketplace');
                   }}
-                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-all hover:bg-black/80 hover:text-emerald-500 text-white cursor-pointer z-20"
+                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-theme hover:bg-black/80 hover:text-emerald-500 text-white cursor-pointer z-20"
                 >
                   <X size={15} />
                 </button>
@@ -2319,7 +2316,7 @@ export const MarketplacePage: React.FC = () => {
                           href={selectedProduct.preview_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
+                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider ${
                             isThemeDark
                               ? 'border-emerald-500/35 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                               : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -2336,7 +2333,7 @@ export const MarketplacePage: React.FC = () => {
                           href={selectedProduct.video_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-all duration-300 text-[10px] font-black uppercase tracking-wider ${
+                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider ${
                             isThemeDark
                               ? 'border-blue-500/35 bg-blue-500/5 text-blue-400 hover:bg-blue-500/15'
                               : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
@@ -2358,7 +2355,7 @@ export const MarketplacePage: React.FC = () => {
                         onClick={() => {
                           startEditing(selectedProduct);
                         }}
-                        className="h-8 px-4 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                        className="h-8 px-4 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                       >
                         <Edit size={12} />
                         <span>{language === 'ar' ? 'تعديل المعروض' : 'Edit Listing'}</span>
@@ -2388,7 +2385,7 @@ export const MarketplacePage: React.FC = () => {
                               console.error(e);
                             }
                           }}
-                          className="h-8 px-4 rounded-[4px] bg-amber-500/15 hover:bg-amber-500/20 border border-amber-500/30 text-amber-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                          className="h-8 px-4 rounded-[4px] bg-amber-500/15 hover:bg-amber-500/20 border border-amber-500/30 text-amber-500 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                         >
                           <span>{language === 'ar' ? 'تعليم كمباع' : 'Mark as Sold'}</span>
                         </button>
@@ -2418,7 +2415,7 @@ export const MarketplacePage: React.FC = () => {
                               console.error(e);
                             }
                           }}
-                          className="h-8 px-4 rounded-[4px] bg-emerald-500/15 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 font-extrabold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[10px]"
+                          className="h-8 px-4 rounded-[4px] bg-emerald-500/15 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                         >
                           <span>{language === 'ar' ? 'إعادة عرض المنتج' : 'Re-List Item'}</span>
                         </button>
@@ -2469,7 +2466,7 @@ export const MarketplacePage: React.FC = () => {
                           setLightboxScale(1);
                           setLightboxRotation(0);
                         }}
-                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer select-none transition-all hover:underline"
+                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer select-none transition-theme hover:underline"
                       >
                         <Eye size={10} className="text-emerald-500" />
                         {language === 'ar' ? 'تصفح بملء الشاشة' : 'Browse Screen Lightbox'}
@@ -2490,7 +2487,7 @@ export const MarketplacePage: React.FC = () => {
                               setLightboxScale(1);
                               setLightboxRotation(0);
                             }}
-                            className={`relative h-14 sm:h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-emerald-500/50 group transition-all duration-300 ${
+                            className={`relative h-14 sm:h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-emerald-500/50 group transition-theme ${
                               isThemeDark ? 'bg-black/40 border-white/5' : 'bg-gray-100 border-gray-200'
                             }`}
                           >
@@ -2577,7 +2574,7 @@ export const MarketplacePage: React.FC = () => {
                       const licKey = selectedProduct.license_type || 'commercial_standard';
                       const details = getLicenseDetails(licKey);
                       return (
-                        <div className={`p-4 rounded-xl border transition-all duration-300 ${
+                        <div className={`p-4 rounded-xl border transition-theme ${
                           isThemeDark
                             ? 'bg-emerald-400/5 border-emerald-500/15'
                             : 'bg-emerald-500/5 border-emerald-500/15'
@@ -2687,7 +2684,7 @@ export const MarketplacePage: React.FC = () => {
                               href={selectedProduct.download_url || selectedProduct.preview_url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
+                              className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
                             >
                               <ExternalLink size={12} strokeWidth={2.5} />
                               <span>{language === 'ar' ? 'تحميل مجاني / زيارة الرابط' : 'Get / Free Download'}</span>
@@ -2696,7 +2693,7 @@ export const MarketplacePage: React.FC = () => {
                             <>
                               <button
                                 onClick={() => handleAddToCart(selectedProduct, selectedLicenseType)}
-                                className="w-full h-9 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/35 text-emerald-500 transition-all font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                className="w-full h-9 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/35 text-emerald-500 transition-theme font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                               >
                                 <ShoppingCart size={12} />
                                 <span>{language === 'ar' ? 'إضافة إلى السلة' : 'Add to Shopping Cart'}</span>
@@ -2704,7 +2701,7 @@ export const MarketplacePage: React.FC = () => {
 
                               <button
                                 onClick={handleBuyWithWallet}
-                                className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
+                                className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
                               >
                                 <Wallet size={12} />
                                 <span>{t.buyWithBalance}</span>
@@ -2712,7 +2709,7 @@ export const MarketplacePage: React.FC = () => {
 
                               <button
                                 onClick={handleBuyWithStripe}
-                                className={`w-full h-9 rounded-lg border transition-all font-bold text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
+                                className={`w-full h-9 rounded-lg border transition-theme font-bold text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
                                   isThemeDark
                                     ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
                                     : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
@@ -2736,7 +2733,7 @@ export const MarketplacePage: React.FC = () => {
                                       : 'Product referral link copied! Earn 20% commission on any purchase made through this link.'
                                   );
                                 }}
-                                className={`w-full h-9 rounded-lg border transition-all font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
+                                className={`w-full h-9 rounded-lg border transition-theme font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                                   isThemeDark
                                     ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15'
                                     : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -2778,7 +2775,7 @@ export const MarketplacePage: React.FC = () => {
                         resetForm();
                         setIsCreateOpen(true);
                       }}
-                      className="flex-shrink-0 relative z-10 text-[9px] font-black bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg transition-all active:scale-95 flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
+                      className="flex-shrink-0 relative z-10 text-[9px] font-black bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg transition-theme active:scale-95 flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
                     >
                       <Plus size={10} />
                       <span>{t.ctaBtn}</span>
@@ -2824,14 +2821,14 @@ export const MarketplacePage: React.FC = () => {
                   <>
                     <button
                       onClick={() => setLightboxScale(prev => Math.min(prev + 0.25, 3))}
-                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                       title={language === 'ar' ? 'تكبير' : 'Zoom In'}
                     >
                       <Plus size={16} />
                     </button>
                     <button
                       onClick={() => setLightboxScale(prev => Math.max(prev - 0.25, 0.5))}
-                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                       title={language === 'ar' ? 'تصغير' : 'Zoom Out'}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2840,7 +2837,7 @@ export const MarketplacePage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setLightboxRotation(prev => (prev + 90) % 360)}
-                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                       title={language === 'ar' ? 'تدوير' : 'Rotate'}
                     >
                       <RefreshCw size={14} className="hover:animate-spin" />
@@ -2850,7 +2847,7 @@ export const MarketplacePage: React.FC = () => {
                         setLightboxScale(1);
                         setLightboxRotation(0);
                       }}
-                      className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                       title={language === 'ar' ? 'إعادة ضبط' : 'Reset View'}
                     >
                       <SlidersHorizontal size={14} />
@@ -2862,7 +2859,7 @@ export const MarketplacePage: React.FC = () => {
 
                 <button
                   onClick={() => setIsLightboxOpen(false)}
-                  className="bg-transparent border border-transparent transition-all duration-300 hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                  className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                 >
                   <X size={18} />
                 </button>
@@ -2880,7 +2877,7 @@ export const MarketplacePage: React.FC = () => {
                   setLightboxScale(1);
                   setLightboxRotation(0);
                 }}
-                className="absolute left-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-all duration-300 rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+                className="absolute left-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
               >
                 <ArrowLeft size={18} />
               </button>
@@ -2893,7 +2890,7 @@ export const MarketplacePage: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.15 }}
                     className="w-full h-full flex items-center justify-center"
                   >
                     {(() => {
@@ -2997,7 +2994,7 @@ export const MarketplacePage: React.FC = () => {
                   setLightboxScale(1);
                   setLightboxRotation(0);
                 }}
-                className="absolute right-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-all duration-300 rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+                className="absolute right-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
               >
                 <ArrowRight size={18} />
               </button>
@@ -3018,7 +3015,7 @@ export const MarketplacePage: React.FC = () => {
                       setLightboxScale(1);
                       setLightboxRotation(0);
                     }}
-                    className={`relative h-14 w-20 rounded-lg overflow-hidden border cursor-pointer transition-all duration-300 flex-shrink-0 flex items-center justify-center ${
+                    className={`relative h-14 w-20 rounded-lg overflow-hidden border cursor-pointer transition-theme flex-shrink-0 flex items-center justify-center ${
                       isActive 
                         ? 'border-emerald-500 bg-emerald-500/10 scale-105 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
                         : 'border-white/5 opacity-50 hover:opacity-100'
@@ -3333,7 +3330,7 @@ export const MarketplacePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setItemImages(prev => prev.filter((_, i) => i !== idx))}
-                                  className="w-5 h-5 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center transition-all cursor-pointer shadow"
+                                  className="w-5 h-5 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center transition-theme cursor-pointer shadow"
                                   title={language === 'ar' ? 'حذف الصورة' : 'Delete photo'}
                                 >
                                   <X size={10} />
@@ -3470,7 +3467,7 @@ export const MarketplacePage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={submitting || uploadingImage}
-                      className="px-5 h-10 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-extrabold text-xs rounded-[4px] shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+                      className="px-5 h-10 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                     >
                       {submitting ? (
                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -3533,7 +3530,7 @@ export const MarketplacePage: React.FC = () => {
 
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className={`w-9 h-9 rounded-[4px] border border-transparent hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center transition-all ${
+                  className={`w-9 h-9 rounded-[4px] border border-transparent hover:bg-gray-100 dark:hover:bg-white/5 flex items-center justify-center transition-theme ${
                     isThemeDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
@@ -3658,7 +3655,7 @@ export const MarketplacePage: React.FC = () => {
                     <div className="space-y-2">
                       <button
                         onClick={handleCartCheckoutWithWallet}
-                        className="w-full h-10 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10 transition-all duration-300"
+                        className="w-full h-10 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10 transition-theme"
                       >
                         <Wallet size={14} />
                         <span>{language === 'ar' ? 'شراء كافة المنتجات بالرصيد المحفظة' : 'Buy Cart with Wallet Balance'}</span>
@@ -3666,7 +3663,7 @@ export const MarketplacePage: React.FC = () => {
 
                       <button
                         onClick={handleCartCheckoutWithStripe}
-                        className={`w-full h-10 rounded-[4px] border transition-all font-bold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
+                        className={`w-full h-10 rounded-[4px] border transition-theme font-bold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                           isThemeDark
                             ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
                             : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
@@ -3697,7 +3694,7 @@ export const MarketplacePage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-lg w-full max-w-md p-6 shadow-2xl relative"
             >
               <button
@@ -3705,7 +3702,7 @@ export const MarketplacePage: React.FC = () => {
                   setShowAdPopup(false);
                   localStorage.setItem('hide_marketplace_ad', 'true');
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-all duration-300"
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
               >
                 <X size={16} />
               </button>
@@ -3741,7 +3738,7 @@ export const MarketplacePage: React.FC = () => {
                       setShowAdPopup(false);
                       localStorage.setItem('hide_marketplace_ad', 'true');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all duration-300 border border-[var(--border)]"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-theme border border-[var(--border)]"
                   >
                     {language === 'ar' ? 'تخطي العرض' : 'Dismiss'}
                   </button>
@@ -3751,7 +3748,7 @@ export const MarketplacePage: React.FC = () => {
                       localStorage.setItem('hide_marketplace_ad', 'true');
                       navigate('/subscription');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-all duration-300 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
                   >
                     <span>{language === 'ar' ? 'استفد من الخصم' : 'Claim Offer'}</span>
                     <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />

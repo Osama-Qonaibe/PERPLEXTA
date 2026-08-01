@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: false,
+        injectRegister: 'script',
         workbox: {
           skipWaiting: true,
           clientsClaim: true,
@@ -59,52 +59,55 @@ export default defineConfig(({ mode }) => {
           display: 'standalone',
           display_override: ['standalone', 'minimal-ui'],
           start_url: '/',
+          scope: '/',
+          id: '/',
+          orientation: 'any',
           categories: ['productivity', 'finance', 'business', 'utilities'],
           icons: [
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '72x72',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '96x96',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '128x128',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '144x144',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '256x256',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'app-assets/icon.png',
+              src: '/app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
@@ -116,21 +119,21 @@ export default defineConfig(({ mode }) => {
               short_name: 'New Chat',
               description: 'Start a fresh AI orchestration session',
               url: '/',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Rewards Center',
               short_name: 'Rewards',
               description: 'Manage points, loyalty bonuses and verification statuses',
               url: '/rewards',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Workspace Settings',
               short_name: 'Settings',
               description: 'Customize your AI models and theme settings',
               url: '/settings',
-              icons: [{ src: 'app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             }
           ]
         }

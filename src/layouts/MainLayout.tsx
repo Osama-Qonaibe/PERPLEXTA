@@ -53,7 +53,7 @@ export const MainLayout: React.FC = () => {
         animate={{ paddingInlineStart: sidebarWidth }}
         transition={SIDEBAR_TRANSITION}
         className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden pb-safe"
-        style={{ willChange: 'padding-inline-start' }}
+        style={{ paddingInlineStart: sidebarWidth, willChange: 'padding-inline-start' }}
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
         <main className="flex-1 overflow-hidden relative pt-[72px] bg-[var(--bg-base)] transition-theme flex">

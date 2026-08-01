@@ -268,7 +268,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
               if (onOpenPreferences) onOpenPreferences();
               else setIsPrefModalOpen(true);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all shadow-2xs cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-theme shadow-2xs cursor-pointer"
             title={language === 'ar' ? 'تعديل تفضيلات التوصيات' : 'Customize preferences'}
           >
             <Sliders size={12} className="text-emerald-500 shrink-0" />
@@ -278,7 +278,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
           <button
             onClick={fetchRecommendations}
             disabled={isLoading}
-            className="p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/40 transition-all cursor-pointer"
+            className="p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/40 transition-theme cursor-pointer"
             title={language === 'ar' ? 'تحديث التوصيات' : 'Refresh'}
           >
             <RefreshCw size={12} className={isLoading ? 'animate-spin text-emerald-500' : ''} />
@@ -299,7 +299,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveCategory(tab.id as any)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl whitespace-nowrap transition-all duration-200 border text-xs ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl whitespace-nowrap transition-theme border text-xs ${
                 activeCategory === tab.id
                   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold shadow-2xs'
                   : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)]'
@@ -342,7 +342,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
           </p>
           <button
             onClick={() => setIsPrefModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all shadow-xs cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-theme shadow-xs cursor-pointer"
           >
             {language === 'ar' ? 'تخصيص تفضيلاتي الآن' : 'Set My Preferences'}
           </button>
@@ -372,7 +372,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   onClick={() => handleItemClick(item)}
-                  className="group relative p-2.5 sm:p-3 rounded-xl bg-gray-50/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-[#222225] border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/50 transition-all duration-300 flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md overflow-hidden"
+                  className="group relative p-2.5 sm:p-3 rounded-xl bg-gray-50/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-[#222225] border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/50 transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md overflow-hidden"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {mediaUrl ? (
@@ -384,7 +384,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           handleItemClick(item);
                         }}
                         title={language === 'ar' ? 'عرض تفاصيل التوصية' : 'View recommendation details'}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-theme"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none';
@@ -396,7 +396,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-all"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-theme"
                       >
                         <Megaphone size={18} />
                       </div>
@@ -454,7 +454,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                         handleItemClick(item);
                       }}
                       title={language === 'ar' ? 'التفاصيل' : 'Details'}
-                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
+                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-theme cursor-pointer"
                     >
                       <ChevronRight size={14} className={dir === 'rtl' ? 'rotate-180' : ''} />
                     </button>
@@ -471,7 +471,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 onClick={() => handleItemClick(item)}
-                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/5 p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
+                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/40 transition-theme hover:shadow-lg hover:shadow-emerald-500/5 p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -511,7 +511,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           handleItemClick(item);
                         }}
                         title={language === 'ar' ? 'عرض تفاصيل التوصية' : 'View details'}
-                        className="w-12 h-12 rounded-xl object-cover border border-[var(--border)] shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                        className="w-12 h-12 rounded-xl object-cover border border-[var(--border)] shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-theme"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none';
@@ -523,7 +523,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-all"
+                        className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-theme"
                       >
                         {getTypeIcon(item.item_type)}
                       </div>
@@ -557,7 +557,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     e.stopPropagation();
                     handleItemClick(item);
                   }}
-                  className="w-full mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-emerald-500 font-bold hover:text-emerald-400 group-hover:translate-x-0.5 transition-all text-start cursor-pointer"
+                  className="w-full mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-emerald-500 font-bold hover:text-emerald-400 group-hover:translate-x-0.5 transition-theme text-start cursor-pointer"
                 >
                   <span className="text-[11px]">
                     {language === 'ar' ? 'التفاصيل واستكشاف المحتوى' : 'View Details & Explore'}
