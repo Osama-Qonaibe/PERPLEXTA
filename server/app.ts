@@ -21,7 +21,16 @@ import { getCachedRouteSeo, getCachedAllActiveRouteSeo } from './db/queries.js';
 
 const app = express();
 
-app.use(compression());
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
 
 app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) {
@@ -230,7 +239,11 @@ app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 app.use(wellKnownRouter);
 
-app.use(express.static(publicPath));
+app.use(express.static(publicPath, {
+  etag: true,
+  lastModified: true,
+  maxAge: '1d'
+}));
 
 import jwt from 'jsonwebtoken';
 import { getSystemSettings } from './services/system.js';
