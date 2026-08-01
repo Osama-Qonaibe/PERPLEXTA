@@ -361,15 +361,15 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const securityRaw = getUrlFromReg(securityReg, defaultSecurity);
     
     if (!coreUrl) {
-      console.warn('[DB] Registry synchronization skipped: Core URL is missing.');
       return;
     }
 
-    try {
-      validateDatabaseUrl(coreUrl, 'REGISTRY_CORE_URL');
-    } catch (err: any) {
-      console.error(`[DB] Registry synchronization skipped: ${err.message}`);
-      return;
+    if (coreUrl !== defaultCore) {
+      try {
+        validateDatabaseUrl(coreUrl, 'REGISTRY_CORE_URL');
+      } catch (err: any) {
+        return;
+      }
     }
 
     const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
