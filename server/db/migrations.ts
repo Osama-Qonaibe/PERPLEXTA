@@ -1769,17 +1769,23 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
 
       const extTarget = externalClient || tx;
-      await extTarget.query(`
-        DO $$
-        BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_articles') THEN
-                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
-                    ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
-                END IF;
-            END IF;
-        END;
-        $$;
-      `);
+      try {
+        await extTarget.query(`
+          DO $$
+          BEGIN
+              IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_articles') THEN
+                  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+                      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
+                          ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
+                      END IF;
+                  END IF;
+              END IF;
+          END;
+          $$;
+        `);
+      } catch (e: any) {
+        console.warn(`[Migrations] Skipping blog_articles foreign key constraint (cross-db or users missing): ${e.message}`);
+      }
     });
 
     await runVersioned('v75_create_registered_agents', 'Creating registered_agents table for agent authentication', async (tx) => {
