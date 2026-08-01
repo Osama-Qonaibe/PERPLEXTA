@@ -26,7 +26,6 @@ async function cleanupOrphanedPhysicalFiles() {
   try {
     const uploadDir = path.join(process.cwd(), 'uploads');
     
-    // Safety check: ensure uploading directory exists
     try {
       await fs.access(uploadDir);
     } catch {
@@ -40,13 +39,11 @@ async function cleanupOrphanedPhysicalFiles() {
       return;
     }
 
-    // Retrieve references from the database
     const dbFilesRes = await pool.query('SELECT file_url FROM user_files');
     const validFilenames = new Set(dbFilesRes.rows.map((row: any) => row.file_url));
 
     let purgedCount = 0;
     for (const filename of filesOnDisk) {
-      // Keep hidden configuration files, .gitkeep, or lockfiles intact
       if (filename.startsWith('.')) continue;
 
       if (!validFilenames.has(filename)) {
@@ -71,7 +68,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
   try {
     const uploadDir = path.join(process.cwd(), 'uploads');
     
-    // Safety check: ensure uploading directory exists
     try {
       await fs.access(uploadDir);
     } catch {
@@ -79,7 +75,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
       return;
     }
 
-    // 1. Get all file database entries older than 24 hours
     const result = await pool.query(
       `SELECT id, file_url FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
     );
@@ -96,7 +91,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
       const fileUrl = row.file_url;
       if (!fileUrl) continue;
 
-      // Extract filename from file_url (e.g. if it is '/uploads/...' or raw filename)
       let filename = fileUrl;
       if (filename.startsWith('/uploads/')) {
         filename = filename.replace('/uploads/', '');
@@ -105,7 +99,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
       const filePath = path.join(uploadDir, filename);
 
       try {
-        // Physical erasure
         await fs.unlink(filePath).catch(() => {});
         purgedCount++;
       } catch (err: any) {
@@ -113,7 +106,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
       }
     }
 
-    // 2. Delete the DB references from user_files and video_resources to maintain transactional integrity
     const deleteFilesCount = await pool.query(
       `DELETE FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
     );
@@ -129,7 +121,6 @@ async function purgeGeneratedFilesOlderThan24Hours() {
 }
 
 export function initCronJobs() {
-  // 1. Daily maintenance, API keys reset, and orphaned physical files purge at 3:00 AM
   cron.schedule('0 3 * * *', async () => {
     console.log('[Cron] 🕒 Running daily system maintenance...');
     cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'running', error: null };
@@ -138,10 +129,8 @@ export function initCronJobs() {
       await pool.query('UPDATE api_keys_vault SET used_today = 0, last_reset_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP');
       console.log('[Cron] API keys usage reset completed.');
       
-      // Perform automated cleanup of files older than 24 hours to prevent disk inflation
       await purgeGeneratedFilesOlderThan24Hours();
 
-      // Perform structural disk file audit to preserve Zero-Clutter goals
       await cleanupOrphanedPhysicalFiles();
       cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'success', error: null };
     } catch (err: any) {
@@ -150,7 +139,6 @@ export function initCronJobs() {
     }
   });
 
-  // 2. Database heartbeat check every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Cron] 💓 Running database heartbeat check...');
@@ -164,7 +152,6 @@ export function initCronJobs() {
     }
   });
 
-  // 3. Background micro-cleanups for blacklisted tokens and resets every 6 hours
   cron.schedule('0 */6 * * *', async () => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Cron] 🧹 Running background micro-cleanup for expired tokens and resets...');
@@ -182,7 +169,6 @@ export function initCronJobs() {
     }
   });
 
-  // 4. Checking for subscriptions that expire soon and notify them at 3:05 AM
   cron.schedule('5 3 * * *', async () => {
     console.log('[Cron] 🔍 Checking for expiring subscriptions...');
     cronTracker.subscriptionAudit = { lastRun: new Date().toISOString(), status: 'running', error: null };
@@ -211,7 +197,6 @@ export function initCronJobs() {
     }
   });
 
-  // 5. Monthly Memory Distillation & Coherence Compaction on the 1st of every month at 4:30 AM
   cron.schedule('30 4 1 * *', async () => {
     console.log('[Cron] 🧠 Running monthly memory distillation (coherence compaction)...');
     cronTracker.memoryCompaction = { lastRun: new Date().toISOString(), status: 'running', error: null };
@@ -225,7 +210,6 @@ export function initCronJobs() {
     }
   });
 
-  // 6. Monthly Ledger Transaction Purge (Older than 30 days) on the 1st of every month at 5:00 AM
   cron.schedule('0 5 1 * *', async () => {
     console.log('[Cron] 💸 Running monthly ledger transaction purge...');
     cronTracker.monthlyLedgerCleanup = { lastRun: new Date().toISOString(), status: 'running', error: null };
@@ -239,6 +223,24 @@ export function initCronJobs() {
     } catch (err: any) {
       console.error('[Cron] Monthly ledger purge failed:', err.message);
       cronTracker.monthlyLedgerCleanup = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
+    }
+  });
+
+  cron.schedule('*/30 * * * *', async () => {
+    console.log('[Cron] 🌐 Checking for newly inserted items to ping search engine sitemaps...');
+    try {
+      if (pool) {
+        const newBlogs = await pool.query("SELECT id FROM blog_articles WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
+        const newMarketplace = await pool.query("SELECT id FROM marketplace_items WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
+
+        if ((newBlogs.rowCount && newBlogs.rowCount > 0) || (newMarketplace.rowCount && newMarketplace.rowCount > 0)) {
+          console.log('[Cron] Found newly inserted articles/items. Triggering sitemap ping...');
+          const { pingSearchEngines } = await import('../services/sitemapPinger.js');
+          await pingSearchEngines();
+        }
+      }
+    } catch (err: any) {
+      console.error('[Cron] Sitemap pinger failed:', err.message);
     }
   });
 }

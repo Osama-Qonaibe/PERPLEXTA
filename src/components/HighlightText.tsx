@@ -12,7 +12,7 @@ export const HighlightText: React.FC<HighlightTextProps> = ({
   text,
   query,
   className = '',
-  highlightClassName = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1 py-0.5 rounded-[3px] border border-emerald-500/20 drop-shadow-[0_0_6px_rgba(16,185,129,0.35)] transition-all inline-block',
+  highlightClassName = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1 py-0.5 rounded-[3px] border border-emerald-500/20 transition-all inline-block',
   idPrefix = 'hl',
 }) => {
   if (!text) return null;
@@ -36,13 +36,11 @@ export const HighlightText: React.FC<HighlightTextProps> = ({
   const searchTerms: string[] = [];
 
   queryTerms.forEach(rawTerm => {
-    // Clean phrase
     const cleanPhrase = rawTerm.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, ' ').replace(/\s+/g, ' ').trim();
     if (cleanPhrase.length >= 2) {
       searchTerms.push(cleanPhrase);
     }
 
-    // Individual keywords
     const keywords = cleanPhrase
       .split(/\s+/)
       .map(w => w.trim())
@@ -57,7 +55,6 @@ export const HighlightText: React.FC<HighlightTextProps> = ({
     return <span className={className}>{text}</span>;
   }
 
-  // Sort by length descending to match longer phrases first
   const sortedTerms = uniqueTerms
     .map(term => term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
     .sort((a, b) => b.length - a.length);

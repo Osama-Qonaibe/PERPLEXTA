@@ -292,10 +292,6 @@ export const AdsManagementView: React.FC<{
   };
 
   const handleBulkVerifyOpen = () => {
-    // If multiple selected, we'll use a special bulk verify flow
-    // For simplicity, we'll allow bulk verify if the user provides the code for the FIRST one
-    // or we can implement a specific bulk verify endpoint that doesn't check individual codes if admin is super
-    // But let's stick to the prompt's request for "single batch-action step"
     setVerificationModal({
       isOpen: true,
       requestId: -1, // -1 indicates bulk
@@ -727,7 +723,6 @@ export const AdsManagementView: React.FC<{
           setFormData((prev) => ({ ...prev, video_url: fileUrl }));
           toast.success(isRtl ? 'تم رفع مقطع الفيديو بنجاح!' : 'Video uploaded successfully!');
 
-          // Extract thumbnail frame automatically
           try {
             const thumb = await extractVideoThumbnail(file);
             if (thumb) {
@@ -735,7 +730,7 @@ export const AdsManagementView: React.FC<{
               toast.info(isRtl ? 'تم التقاط صورة الغلاف تلقائياً من إطار الفيديو' : 'Cover image extracted automatically from video');
             }
           } catch (tErr) {
-            console.warn('Auto thumb error:', tErr);
+            // Auto thumb extraction silent handling
           }
         }
       } else {
@@ -759,7 +754,6 @@ export const AdsManagementView: React.FC<{
     );
 
     try {
-      // Step 1: Client-side resize and compression optimized for selected ad format (default 600x600 for sidebar)
       const compressed = await compressAndResizeImage(file, {
         format: formData.format || 'sidebar',
         quality: 0.88,
@@ -768,7 +762,6 @@ export const AdsManagementView: React.FC<{
 
       const uploadFile = compressed.file;
 
-      // Step 2: Upload optimized file to server
       const formDataUpload = new FormData();
       formDataUpload.append('file', uploadFile);
 
@@ -912,7 +905,6 @@ export const AdsManagementView: React.FC<{
     );
   });
 
-  // Calculate Metrics
   const totalActive = ads.filter((a) => a.is_active).length;
   const totalImpressions = ads.reduce((acc, a) => acc + (a.impression_count || 0), 0);
   const totalClicks = ads.reduce((acc, a) => acc + (a.click_count || 0), 0);
@@ -1465,7 +1457,6 @@ export const AdsManagementView: React.FC<{
                             const cell = heatmapData.find(item => item.day_of_week === dIdx && item.hour_of_day === hour);
                             const cr = cell ? Number(cell.conversion_rate) : 0;
                             
-                            // Color Logic
                             let bgColor = 'bg-gray-800/20';
                             let opacity = 'opacity-20';
                             let glow = '';

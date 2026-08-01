@@ -54,7 +54,7 @@ export const PWACinematicModal: React.FC = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   className="w-16 h-16 mx-auto bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mb-6 relative shadow-[0_0_20px_rgba(16,185,129,0.2)]"
                 >
-                  <Share size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                  <Share size={24} className="text-emerald-500 animate-pulse" />
                 </motion.div>
 
                 <h2 className="text-lg md:text-xl font-bold text-white mb-3">
@@ -99,7 +99,7 @@ export const PWACinematicModal: React.FC = () => {
                   transition={{ type: "spring", stiffness: 200, damping: 15 }}
                   className="w-16 h-16 mx-auto bg-emerald-500/10 border border-emerald-500/40 rounded-full flex items-center justify-center mb-6 relative shadow-[0_0_20px_rgba(16,185,129,0.2)]"
                 >
-                  <ShieldCheck size={32} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  <ShieldCheck size={32} className="text-emerald-500" />
                   <span className="absolute inset-0 rounded-full border border-emerald-500/30 animate-ping opacity-60 pointer-events-none" />
                 </motion.div>
 
@@ -122,7 +122,7 @@ export const PWACinematicModal: React.FC = () => {
               </div>
             ) : (
               <div className="py-2">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] mb-5 mx-auto">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-5 mx-auto">
                   <Sparkles size={24} className="animate-pulse" />
                 </div>
 
@@ -136,7 +136,7 @@ export const PWACinematicModal: React.FC = () => {
                 </p>
 
                 <div className="text-center my-4 relative">
-                  <span className="text-4xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                  <span className="text-4xl font-extrabold text-white tracking-tighter">
                     {installProgress}%
                   </span>
                 </div>

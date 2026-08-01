@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { getUserProfile, updateUserProfile, getUserUsage } from '../services/users.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { walletLoader } from '../db/queries.js';
 
 const router = express.Router();
 
@@ -42,13 +43,7 @@ router.get("/profile", authenticateToken, async (req: any, res) => {
 router.get("/me", authenticateToken, async (req: any, res) => {
    try {
      if (req.query.skip_profile === '1') {
-       const { pool, ledgerPool } = await import('../db/index.js');
-       if (!pool) throw new Error('Database initializing');
-       const walletRes = await (ledgerPool || pool).query(
-         'SELECT balance, points FROM wallets WHERE user_id = $1',
-         [req.user.id]
-       );
-       const wallet = walletRes.rows[0] || { balance: 0.0, points: 0 };
+       const wallet = await walletLoader.load(req.user.id) || { balance: 0.0, points: 0 };
        return res.json({
          balance: Number(wallet.balance || 0),
          points: parseInt(wallet.points || 0)

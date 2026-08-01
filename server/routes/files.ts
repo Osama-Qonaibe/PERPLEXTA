@@ -41,7 +41,6 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     
     let limitMb = typeof storageLimit === 'object' ? (storageLimit.monthly || storageLimit.daily) : storageLimit;
     
-    // Admins get unlimited storage, non-admins without subscription get a 20MB free storage tier
     if (row.role === 'admin') {
       limitMb = 'unlimited';
     } else if (!hasActiveSub) {
@@ -185,7 +184,6 @@ router.post("/analyze-forensic", authenticateToken, upload.single('file'), handl
     const fileBuffer = await fs.readFile(filePath);
     const forensicReport = forensicScanPDF(fileBuffer);
 
-    // Clean up temporary file immediately to satisfy Zero-Clutter and security rules
     await fs.unlink(filePath).catch(() => {});
 
     res.json({ success: true, forensic: forensicReport });

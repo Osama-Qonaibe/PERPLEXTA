@@ -1,10 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
-
-// Initialize Firebase using the applet configuration
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+import { auth } from './firebase';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 
 // Configure Google Auth Provider with requested Google Contacts (People API) scopes
 export const googleProvider = new GoogleAuthProvider();
@@ -69,6 +64,14 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
     console.error('[GoogleAuth] Sign-in failed:', error);
+    
+    const isInIframe = window.self !== window.top;
+    if (error.code === 'auth/internal-error' || error.code === 'auth/popup-blocked') {
+      if (isInIframe) {
+        error.message = 'Sign-in failed due to iframe restrictions. Please try opening the app in a new tab.';
+      }
+    }
+    
     throw error;
   } finally {
     isSigningIn = false;

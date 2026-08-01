@@ -367,6 +367,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       }
 
       const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
+      const cachedRow = activeKeys.find(k => k.provider.toLowerCase().replace(/\s+/g, '') === providerId);
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
@@ -385,7 +386,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       formData.append('model', route.primary_model);
       if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
 
-      const customUrl = await getProviderUrlKey(providerId);
+      const customUrl = cachedRow ? cachedRow.url_key : (await getProviderUrlKey(providerId));
       const sttEndpoint = customUrl || 'https://api.openai.com/v1/audio/transcriptions';
 
       const res = await withTimeout(
@@ -580,18 +581,11 @@ ${refinedSystemPromptSegment}`.trim();
   ].filter(m => m.provider && m.model);
 
   const vaultMap = new Map<string, any>();
-  if (modelsToTry.length > 0) {
-    try {
-      const providerNames = modelsToTry.map(m => m.provider.toLowerCase().replace(/\s+/g, ''));
-      const result = await pool.query(
-        'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
-        [providerNames]
-      );
-      for (const row of result.rows) {
-        vaultMap.set(row.provider, row);
+  if (activeKeys && activeKeys.length > 0) {
+    for (const key of activeKeys) {
+      if (key && key.provider) {
+        vaultMap.set(key.provider.toLowerCase().replace(/\s+/g, ''), key);
       }
-    } catch (err: any) {
-      console.warn('[Orchestrator Pre-fetch] Failed to pre-load configuration keys:', err.message);
     }
   }
 
@@ -610,7 +604,6 @@ ${refinedSystemPromptSegment}`.trim();
 
     try {
         const cachedRow = vaultMap.get(providerId);
-
         let isProviderActive = true;
         let dailyBudget = 0;
         let usedToday = 0;
@@ -621,26 +614,14 @@ ${refinedSystemPromptSegment}`.trim();
           dailyBudget = parseFloat(cachedRow.daily_budget || '0');
           usedToday = parseFloat(cachedRow.used_today || '0');
           urlKey = cachedRow.url_key;
+        } else {
+          isProviderActive = false;
         }
 
         if (!isProviderActive) continue;
 
         const apiKey = await getProviderKey(providerId);
         if (!apiKey) continue;
-
-        if (!cachedRow) {
-          const [fallbackUrlKey, budgetRes] = await Promise.all([
-            getProviderUrlKey(providerId),
-            pool.query('SELECT daily_budget, used_today, is_active FROM api_keys_vault WHERE provider = $1', [providerId])
-          ]);
-          urlKey = fallbackUrlKey;
-          if (budgetRes.rows.length > 0) {
-            isProviderActive = budgetRes.rows[0].is_active;
-            dailyBudget = parseFloat(budgetRes.rows[0].daily_budget || '0');
-            usedToday = parseFloat(budgetRes.rows[0].used_today || '0');
-          }
-          if (!isProviderActive) continue;
-        }
 
         if (dailyBudget > 0 && usedToday >= dailyBudget) {
           await logSecurityAlert(userId, 'BUDGET_EXCEEDED', 'medium', `Vault Budget Hit: Provider "${target.provider}" reached its daily budget limit (${usedToday}/${dailyBudget}). Attempting fallback.`, { provider: target.provider, dailyBudget, usedToday });
@@ -707,8 +688,7 @@ ${refinedSystemPromptSegment}`.trim();
             await Promise.all(insertPromises);
 
             if (io) {
-              const checkNewCount = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
-              const newCount = parseInt(checkNewCount.rows[0].count);
+              const newCount = currentCount + extractedFacts.length;
               if (newCount >= memoryLimit) {
                 io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
               }
@@ -861,6 +841,12 @@ Produce the minimum number of consolidated facts needed to preserve all key info
 
 async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
+    const msgCountRes = await pool.query('SELECT count(*) FROM messages WHERE chat_id = $1', [chatIdNum]);
+    const msgCount = parseInt(msgCountRes.rows[0].count, 10);
+    
+    // Only update summary every 5 messages to save tokens and prevent rate limits
+    if (msgCount < 4 || msgCount % 5 !== 0) return;
+
     const recentMessages = await pool.query(
       `SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT ${UPDATE_SUMMARY_LIMIT}`,
       [chatIdNum]

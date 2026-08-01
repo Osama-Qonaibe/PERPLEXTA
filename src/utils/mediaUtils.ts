@@ -22,7 +22,6 @@ export function parseVideoUrl(url: string): VideoInfo {
     cleanUrl = `/uploads/${cleanUrl}`;
   }
 
-  // YouTube check
   const ytMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
   if (ytMatch && ytMatch[1]) {
     return {
@@ -32,7 +31,6 @@ export function parseVideoUrl(url: string): VideoInfo {
     };
   }
 
-  // Vimeo check
   const vimeoMatch = cleanUrl.match(/(?:vimeo\.com\/)(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)/);
   if (vimeoMatch && vimeoMatch[3]) {
     return {
@@ -42,7 +40,6 @@ export function parseVideoUrl(url: string): VideoInfo {
     };
   }
 
-  // TikTok check
   if (cleanUrl.includes('tiktok.com')) {
     const ttMatch = cleanUrl.match(/video\/(\d+)/);
     if (ttMatch && ttMatch[1]) {
@@ -54,7 +51,6 @@ export function parseVideoUrl(url: string): VideoInfo {
     }
   }
 
-  // Direct video or Data URL
   return {
     type: 'direct',
     directUrl: cleanUrl,
@@ -137,7 +133,6 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
     }
 
     video.addEventListener('loadedmetadata', () => {
-      // Seek to either specified time or 20% of duration
       video.currentTime = Math.min(seekTimeSeconds, video.duration / 2 || 0.5);
     });
 
@@ -156,7 +151,7 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
           return;
         }
       } catch (err) {
-        console.warn('Canvas thumbnail capture failed:', err);
+        // Canvas thumbnail capture failed silent handling
       }
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       resolve('');
@@ -179,15 +174,12 @@ export function getMediaUrl(url?: string | null): string {
   let clean = url.trim();
   if (!clean) return '';
 
-  // Strip hardcoded localhost / dev server origins so URLs resolve relatively on remote servers
   clean = clean.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i, '');
 
-  // If comma-separated list of URLs (e.g. gallery images), extract the first URL
   if (clean.includes(',')) {
     clean = clean.split(',')[0].trim();
   }
 
-  // Handle absolute URLs pointing to uploads (e.g. /uploads/xyz.png)
   const uploadsMatch = clean.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
   if (uploadsMatch && uploadsMatch[1]) {
     return `/uploads/${uploadsMatch[1].replace(/^\/+/, '')}`;
@@ -238,7 +230,6 @@ export async function compressAndResizeImage(
   file: File,
   options: CompressOptions = {}
 ): Promise<CompressResult> {
-  // If not an image or SVG/GIF (which shouldn't be canvas-rasterized), return original
   if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
     return {
       file,
@@ -249,7 +240,6 @@ export async function compressAndResizeImage(
     };
   }
 
-  // Determine target max dimensions based on ad format or options
   let targetMaxWidth = options.maxWidth || 800;
   let targetMaxHeight = options.maxHeight || 800;
 
@@ -274,7 +264,6 @@ export async function compressAndResizeImage(
       img.onload = () => {
         let { width, height } = img;
 
-        // Calculate aspect ratio scaling to fit targetMaxWidth / targetMaxHeight
         if (width > targetMaxWidth || height > targetMaxHeight) {
           const ratio = Math.min(targetMaxWidth / width, targetMaxHeight / height);
           width = Math.round(width * ratio);

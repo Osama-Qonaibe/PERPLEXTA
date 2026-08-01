@@ -10,7 +10,6 @@ import { useAppContext } from '../context/AppContext';
 export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { t, user, theme, language: globalLang } = useAppContext();
 
-  // Use locked language for stable transitions
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
@@ -65,8 +64,8 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
                 <>
                   <div className={`transition-all duration-[var(--theme-transition-duration)] ${
                     isActive 
-                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                      : 'text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      ? 'text-emerald-500' 
+                      : 'text-[var(--text-muted)] group-hover:text-emerald-500'
                   }`}>
                     {item.icon}
                   </div>
@@ -86,12 +85,12 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
             className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-all duration-[var(--theme-transition-duration)] border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-emerald-500/30 shadow-sm hover:shadow-md"
           >
             <div className="flex items-center gap-3">
-              <div className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-[var(--theme-transition-duration)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+              <div className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all duration-[var(--theme-transition-duration)]">
                 <ArrowRight size={18} className={dir === 'rtl' ? 'rotate-180' : ''} />
               </div>
               <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]">{t('home')}</span>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-[var(--theme-transition-duration)] shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-[var(--theme-transition-duration)]"></div>
           </NavLink>
         </div>
       </aside>

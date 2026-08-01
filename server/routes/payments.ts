@@ -8,11 +8,8 @@ import { createNotification } from '../services/notifications.js';
 
 const router = express.Router();
 
-// Resolved once at module load — all handlers reference this single constant.
-// ledgerPool is preferred for all financial writes; falls back to pool if not configured.
 const ledgerTarget = () => ledgerPool || pool;
 
-// ─── PayPal ──────────────────────────────────────────────────────────────────
 
 router.post("/paypal-deposit", authenticateToken, async (req: any, res) => {
   try {
@@ -82,7 +79,6 @@ router.post("/paypal-capture", authenticateToken, async (req: any, res) => {
   }
 });
 
-// ─── Stripe Checkout ──────────────────────────────────────────────────────────
 
 router.post("/stripe-deposit", authenticateToken, async (req: any, res) => {
   try {
@@ -246,7 +242,6 @@ router.post("/stripe-checkout", authenticateToken, async (req: any, res) => {
   }
 });
 
-// ─── Stripe Webhook ───────────────────────────────────────────────────────────
 
 router.post("/webhook", async (req: any, res) => {
   const stripe = await getStripe();
@@ -336,7 +331,6 @@ router.post("/webhook", async (req: any, res) => {
         const stripeSubscriptionId = invoice.subscription;
         if (!stripeSubscriptionId) break;
 
-        // Resolve userId / planId from metadata, then DB, then Stripe API
         let userId       = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId;
         let planId       = invoice.subscription_details?.metadata?.planId  || invoice.metadata?.planId;
         let billingCycle = invoice.subscription_details?.metadata?.billingCycle || invoice.metadata?.billingCycle || 'monthly';
@@ -367,7 +361,6 @@ router.post("/webhook", async (req: any, res) => {
           break;
         }
 
-        // Guard: user must exist before any wallet operation
         if (!await assertUserExists(userId)) break;
 
         const planRes  = await pool.query('SELECT * FROM plans WHERE id = $1', [planId]);
@@ -395,7 +388,6 @@ router.post("/webhook", async (req: any, res) => {
             updated_at             = CURRENT_TIMESTAMP
         `, [userId, planId, billingCycle, periodEnd, periodStart, invoice.customer, stripeSubscriptionId]);
 
-        // Atomic ledger entry: BEGIN → getUserWallet(FOR UPDATE) → INSERT → COMMIT
         const amountUSD = (invoice.amount_paid || 0) / 100;
         const lTarget   = ledgerTarget();
         if (lTarget && amountUSD > 0) {

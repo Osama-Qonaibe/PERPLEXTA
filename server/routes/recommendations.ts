@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 
-// Optional Auth Middleware for recommendations
 const optionalAuth = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1];
@@ -16,7 +15,6 @@ const optionalAuth = (req: any, res: any, next: any) => {
       const decoded: any = jwt.verify(token, JWT_SECRET);
       req.user = decoded;
     } catch (e) {
-      // Invalid token, treat as guest
     }
   }
   next();
@@ -28,7 +26,6 @@ const optionalAuth = (req: any, res: any, next: any) => {
 async function generateRecommendationsForUser(userId?: number, options: { limit?: number; categoryFilter?: string; typeFilter?: string } = {}) {
   const limit = options.limit || 12;
 
-  // 1. Fetch user interaction weights & top categories if logged in
   let topCategories: Record<string, number> = {};
   let interactedItemKeys = new Set<string>();
   let dismissedItemKeys = new Set<string>();
@@ -38,7 +35,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
 
   if (userId) {
     try {
-      // Get explicit preferences
       const prefRes = await pool.query(
         'SELECT preferred_categories, preferred_price_range, explicit_interests FROM user_recommendation_preferences WHERE user_id = $1',
         [userId]
@@ -52,7 +48,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
         }
       }
 
-      // Get negative feedback (dismissed items)
       const fbRes = await pool.query(
         'SELECT item_type, item_id, item_key FROM recommendation_feedback WHERE user_id = $1 AND feedback_type IN (\'not_interested\', \'dismissed\')',
         [userId]
@@ -61,7 +56,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
         dismissedItemKeys.add(`${row.item_type}:${row.item_id || row.item_key}`);
       });
 
-      // Get interactions from user_recommendation_interactions
       const interRes = await pool.query(
         `SELECT item_type, item_id, item_key, category, action_type, weight, created_at 
          FROM user_recommendation_interactions 
@@ -78,7 +72,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
         }
       });
 
-      // Include implicit interactions from Marketplace purchases & Bulletin saved ads
       const purRes = await pool.query('SELECT m.category_en, m.category_ar FROM marketplace_purchases p JOIN marketplace_items m ON p.item_id = m.id WHERE p.user_id = $1', [userId]);
       purRes.rows.forEach((r: any) => {
         if (r.category_en) topCategories[r.category_en.toLowerCase().trim()] = (topCategories[r.category_en.toLowerCase().trim()] || 0) + 5.0;
@@ -94,7 +87,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     }
   }
 
-  // 2. Fetch Marketplace Items
   const marketRes = await pool.query(
     `SELECT m.*, 
             COALESCE(u.name, 'Perplexta Creator') as seller_name,
@@ -108,7 +100,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
      ORDER BY m.id DESC LIMIT 100`
   );
 
-  // 3. Fetch Bulletin Ads & Services
   const bulletinRes = await pool.query(
     `SELECT a.*,
             COALESCE((SELECT COUNT(*) FROM ad_stats WHERE ad_id = a.id AND type = 'click'), 0) as stats_clicks,
@@ -118,7 +109,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
      ORDER BY COALESCE(a.is_boosted, false) DESC, a.created_at DESC LIMIT 100`
   );
 
-  // 4. Fetch AI Tools from Orchestrator
   const toolsRes = await pool.query(
     `SELECT id, tool_id, task_description, task_description_ar, is_active
      FROM tool_orchestrator
@@ -126,7 +116,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
      LIMIT 30`
   );
 
-  // 5. Fetch Blog Articles
   const blogRes = await pool.query(
     `SELECT id, slug, title_en, title_ar, content_en, content_ar, category_en, category_ar, image_url, views, created_at
      FROM blog_articles
@@ -135,7 +124,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
 
   const scoredItems: any[] = [];
 
-  // Helper score calculator
   const calculateScoreAndReasons = (item: any, type: string) => {
     let score = 50; // Baseline
     const reasons_en: string[] = [];
@@ -148,40 +136,34 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     const cat = (item.category_en || item.category || item.category_ar || '').toString().toLowerCase().trim();
     const price = Number(item.price || item.price_amount || 0);
 
-    // Category affinity
     if (cat && topCategories[cat]) {
       score += Math.min(30, topCategories[cat] * 5);
       reasons_en.push(`Based on your interest in ${item.category_en || item.category || 'this topic'}`);
       reasons_ar.push(`بناءً على اهتمامك بـ ${item.category_ar || item.category || 'هذا المجال'}`);
     }
 
-    // Explicit preference match
     if (preferredCategories.some(pc => pc.toLowerCase().trim() === cat)) {
       score += 25;
       reasons_en.push(`Matches your saved preference: ${item.category_en || item.category}`);
       reasons_ar.push(`يتطابق مع تفضيلاتك المسجلة: ${item.category_ar || item.category}`);
     }
 
-    // VIP Boost or Featured
     if (item.is_boosted || item.highlight_tag || item.is_featured) {
       score += 18;
       reasons_en.push('🔥 Trending Featured Item');
       reasons_ar.push('🔥 عنصر مميز وشائع');
     }
 
-    // High rating or high views
     if (Number(item.avg_rating) >= 4.7 || Number(item.views) > 100 || Number(item.likes_count) > 10) {
       score += 15;
       reasons_en.push('🌟 High User Satisfaction');
       reasons_ar.push('🌟 حائز على تقييمات عالية');
     }
 
-    // Price fit check
     if (price >= preferredPriceMin && price <= preferredPriceMax) {
       score += 8;
     }
 
-    // Default reasons if empty
     if (reasons_en.length === 0) {
       if (type === 'marketplace') {
         reasons_en.push('🛒 Popular in Marketplace');
@@ -212,19 +194,16 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     };
   };
 
-  // Score Marketplace Items
   marketRes.rows.forEach((item: any) => {
     const scored = calculateScoreAndReasons(item, 'marketplace');
     if (scored) scoredItems.push(scored);
   });
 
-  // Score Bulletin Ads
   bulletinRes.rows.forEach((item: any) => {
     const scored = calculateScoreAndReasons(item, 'bulletin');
     if (scored) scoredItems.push(scored);
   });
 
-  // Score Tools
   toolsRes.rows.forEach((tool: any) => {
     const formattedTool = {
       ...tool,
@@ -239,13 +218,11 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     if (scored) scoredItems.push(scored);
   });
 
-  // Score Articles
   blogRes.rows.forEach((article: any) => {
     const scored = calculateScoreAndReasons(article, 'blog');
     if (scored) scoredItems.push(scored);
   });
 
-  // Sort overall by score DESC
   scoredItems.sort((a, b) => b.score - a.score);
 
   return {
@@ -380,7 +357,6 @@ router.post('/feedback', authenticateToken, async (req: any, res: any) => {
       [userId, item_type, item_id || null, item_key || null, feedback_type]
     );
 
-    // Also record as negative weight interaction if dismissed
     if (feedback_type === 'not_interested' || feedback_type === 'dismissed') {
       await pool.query(
         `INSERT INTO user_recommendation_interactions (user_id, item_type, item_id, item_key, action_type, weight)

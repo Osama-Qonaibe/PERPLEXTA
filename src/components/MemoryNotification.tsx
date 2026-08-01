@@ -77,7 +77,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
       exit={{ opacity: 0, y: -20 }}
       className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/[0.03] border border-emerald-500/20 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.05)]"
     >
-      <BrainCircuit className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" size={14} />
+      <BrainCircuit className="text-emerald-500" size={14} />
       <span className="text-[11px] font-black text-emerald-500/90 tracking-tight uppercase whitespace-nowrap">
         {displayDesc}
       </span>

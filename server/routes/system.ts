@@ -33,7 +33,6 @@ router.get("/settings", async (req, res) => {
   try {
     const settings = { ...await getSystemSettings() };
 
-    // Dynamically check activation based on configuration/cred availability
     const stripeObj = await getStripe().catch(() => null);
     const paypalObj = await getPayPalCredentials().catch(() => null);
 
@@ -73,7 +72,6 @@ router.get("/economy", async (req, res) => {
   }
 });
 
-// Dynamic SEO Link Metadata Scraper & Router with Cache
 const urlMetadataCache = new Map<string, any>();
 
 router.get("/link-metadata", async (req, res) => {
@@ -188,7 +186,6 @@ router.get("/link-metadata", async (req, res) => {
   }
 });
 
-// User Shortcuts Endpoints
 router.post("/shortcuts", authenticateToken, async (req: any, res) => {
   try {
     const { title, query } = req.body;
@@ -227,7 +224,6 @@ router.get("/shortcuts", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Message Report Endpoint
 router.post("/reports", authenticateToken, async (req: any, res) => {
   try {
     const { messageId, reason } = req.body;
@@ -269,10 +265,6 @@ router.post("/admin/settings", authenticateAdmin, async (req, res) => {
   }
 });
 
-// ─── Client-Side Error Reporting (ErrorBoundary) ─────────────────────────────
-// Receives crash reports from the browser ErrorBoundary component.
-// Public endpoint (no auth) — payload is harmless metadata, not user data.
-// Rate-limited by the global limiter already applied in app.ts.
 router.post("/client-error", (req, res) => {
   try {
     const { boundary, message, stack, componentStack, url, ts } = req.body || {};

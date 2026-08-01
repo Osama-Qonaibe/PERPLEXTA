@@ -157,7 +157,7 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         setTimeout(poll, delay);
       } catch (err: any) {
-        console.warn(`[VideoResourceProvider] Connection error when polling for message ${messageId}:`, err);
+        // Connection error silent fallback
         attempts++;
         if (attempts >= maxAttempts) {
           setResources(prev => ({

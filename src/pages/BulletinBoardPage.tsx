@@ -8,7 +8,7 @@ import {
   UserCheck, UserPlus, Inbox, ArrowRight, ArrowLeft, ShieldCheck, Camera,
   Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
   Radio, Clapperboard, Bell, Menu, SlidersHorizontal, Trash2, Ban, Volume2, VolumeX,
-  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors
+  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, ShoppingBag, Edit2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -142,18 +142,15 @@ const FEELINGS = [
 export const BulletinBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language, user, token, setIsAuthModalOpen } = useAppContext();
+  const { language, user, token, setIsAuthModalOpen, theme } = useAppContext();
   const isRtl = language === 'ar';
 
-  // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'board' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>('board');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
-  // Messaging & Insights Ad State
   const [messagingAdId, setMessagingAdId] = useState<number | null>(null);
   const [insightsAdId, setInsightsAdId] = useState<number | null>(null);
 
-  // Main Feed Data
   const [ads, setAds] = useState<BulletinAd[]>([]);
   const [myAds, setMyAds] = useState<BulletinAd[]>([]);
   const [savedAds, setSavedAds] = useState<BulletinAd[]>([]);
@@ -177,7 +174,9 @@ export const BulletinBoardPage: React.FC = () => {
   const [isDetectingGps, setIsDetectingGps] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
 
-  // Real-time global location autocomplete effect (OpenStreetMap Nominatim API)
+  const [mousePos, setMousePos] = useState<{ x: number; y: number; isInside: boolean }>({ x: 0, y: 0, isInside: false });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({ x: 0, y: 0, isOpen: false });
+
   useEffect(() => {
     if (!locationSearchQuery || locationSearchQuery.trim().length < 2) {
       setAutocompleteResults([]);
@@ -247,7 +246,6 @@ export const BulletinBoardPage: React.FC = () => {
     );
   };
 
-  // Helper to dynamically derive cities list based on selectedCountry and locationSearchQuery
   const getAvailableCities = () => {
     let list: string[] = [];
     if (selectedCountry === 'all') {
@@ -270,7 +268,6 @@ export const BulletinBoardPage: React.FC = () => {
     return uniqueCities;
   };
 
-  // Location Selector Handlers (Facebook Marketplace Style)
   const handleSelectCity = (city: string, radius = selectedRadius) => {
     setSelectedCity(city);
     setSelectedRadius(radius);
@@ -315,16 +312,13 @@ export const BulletinBoardPage: React.FC = () => {
     );
   };
 
-  // Merchant Pages Data
   const [pagesList, setPagesList] = useState<BulletinPage[]>([]);
   const [myPagesList, setMyPagesList] = useState<BulletinPage[]>([]);
   const [pagesLoading, setPagesLoading] = useState<boolean>(false);
   
-  // Selected Full Page View State (Replaces Ad Board in place when active)
   const [selectedPageDetail, setSelectedPageDetail] = useState<{ page: BulletinPage; ads: BulletinAd[] } | null>(null);
   const [pageDetailTab, setPageDetailTab] = useState<'ads' | 'about' | 'media'>('ads');
 
-  // Merchant Customer Inquiries Inbox Data
   const [inquiriesList, setInquiriesList] = useState<any[]>([]);
   const [inquiriesSearchTerm, setInquiriesSearchTerm] = useState<string>('');
   const [inquiriesLoading, setInquiriesLoading] = useState<boolean>(false);
@@ -362,7 +356,6 @@ export const BulletinBoardPage: React.FC = () => {
     };
   }, []);
 
-  // Pull to refresh State & Handlers (Touch + Mouse Drag Support)
   const [pullDistance, setPullDistance] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const pullStartLocation = useRef<number | null>(null);
@@ -370,7 +363,6 @@ export const BulletinBoardPage: React.FC = () => {
   const isMouseDownRef = useRef<boolean>(false);
   const hasTriggeredHapticRef = useRef<boolean>(false);
 
-  // Core refresh trigger (callable by pull gesture or manual click)
   const triggerFeedRefresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -394,7 +386,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Unified Pointer Event Handlers for professional touch & mouse pull-to-refresh
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const target = e.target as HTMLElement;
@@ -430,13 +421,11 @@ export const BulletinBoardPage: React.FC = () => {
 
     const rawDist = e.clientY - pullStartLocation.current;
     if (rawDist > 0) {
-      // Smooth resistance curve
       const dampedDist = Math.min(rawDist * 0.45, 90);
       if (Math.abs(dampedDist - pullDistanceRef.current) > 2) {
         pullDistanceRef.current = dampedDist;
         setPullDistance(dampedDist);
 
-        // Haptic feedback when crossing 55px threshold
         if (dampedDist >= 55 && !hasTriggeredHapticRef.current) {
           hasTriggeredHapticRef.current = true;
           if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
@@ -466,10 +455,8 @@ export const BulletinBoardPage: React.FC = () => {
     } catch (err) {}
   };
 
-  // Wallet balance
   const [walletBalance, setWalletBalance] = useState<number>(0);
 
-  // Live Stream State
   const [isLiveStreamOpen, setIsLiveStreamOpen] = useState<boolean>(false);
   const [isStreamSetupOpen, setIsStreamSetupOpen] = useState<boolean>(false);
   const [streamTitleInput, setStreamTitleInput] = useState<string>('');
@@ -483,7 +470,6 @@ export const BulletinBoardPage: React.FC = () => {
   const [giftsCatalog, setGiftsCatalog] = useState<any[]>([]);
   const [showLikeAnimation, setShowLikeAnimation] = useState<boolean>(false);
 
-  // Mock Feed Data
   const streamFeed = [
     { id: 'live-1', type: 'live', host: 'Ahmed Khalil', hostId: 101, title: isRtl ? 'تحليل السوق العقاري' : 'Real Estate Market Analysis', viewers: 1240 },
     { id: 'reel-1', type: 'reel', host: 'Sara Tech', hostId: 102, title: isRtl ? 'مراجعة آيفون 16 برو' : 'iPhone 16 Pro Review', viewers: 850 },
@@ -561,18 +547,15 @@ export const BulletinBoardPage: React.FC = () => {
 
   const startLiveStream = async () => {
     try {
-      // First try to get both video and audio
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       } catch (e: any) {
-        // If it fails because of missing devices, try to get at least video
         if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
           try {
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
             toast.info(isRtl ? 'تم تفعيل الكاميرا فقط (الميكروفون غير موجود).' : 'Camera only activated (microphone not found).');
           } catch (e2: any) {
-            // If even video fails, try audio only
             if (e2.name === 'NotFoundError' || e2.name === 'DevicesNotFoundError') {
               stream = await navigator.mediaDevices.getUserMedia({ audio: true });
               toast.info(isRtl ? 'تم تفعيل الميكروفون فقط (الكاميرا غير موجودة).' : 'Microphone only activated (camera not found).');
@@ -607,12 +590,10 @@ export const BulletinBoardPage: React.FC = () => {
     if (isLiveStreamOpen) {
       startLiveStream();
       fetchGiftsCatalog();
-      // Initial high-fidelity viewers
       setLiveViewers(Math.floor(Math.random() * 1200) + 1500);
       setLiveLikes(Math.floor(Math.random() * 800));
       setLiveComments([]);
       
-      // Real-time viewer fluctuation engine
       interval = setInterval(() => {
         setLiveViewers(prev => {
           const drift = Math.floor(Math.random() * 51) - 25; // -25 to +25
@@ -625,8 +606,6 @@ export const BulletinBoardPage: React.FC = () => {
     } else {
       stopLiveStream();
       setIsGiftModalOpen(false);
-      // We don't reset streamTitleInput immediately to allow exit animation to see it if needed, 
-      // but usually it's fine.
     }
     return () => {
       stopLiveStream();
@@ -634,7 +613,6 @@ export const BulletinBoardPage: React.FC = () => {
     };
   }, [isLiveStreamOpen]);
 
-  // New Ad Campaign Modal State
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
   const [isAdModalOpen, setIsAdModalOpen] = useState<boolean>(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -704,7 +682,6 @@ export const BulletinBoardPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [customLocationSearch]);
 
-  // New Merchant Page Modal State
   const [isPageModalOpen, setIsPageModalOpen] = useState<boolean>(false);
   const [isSubmittingPage, setIsSubmittingPage] = useState<boolean>(false);
   const [pageFormData, setPageFormData] = useState({
@@ -720,24 +697,20 @@ export const BulletinBoardPage: React.FC = () => {
     website_url: ''
   });
 
-  // Direct Inquiry Popup Modal State
   const [inquireAd, setInquireAd] = useState<BulletinAd | null>(null);
   const [inquiryText, setInquiryText] = useState<string>('');
   const [inquiryPhone, setInquiryPhone] = useState<string>('');
   const [isSendingInquiry, setIsSendingInquiry] = useState<boolean>(false);
 
-  // Comments State for Expanded Ad
   const [expandedAdId, setExpandedAdId] = useState<number | null>(null);
   const [commentsMap, setCommentsMap] = useState<Record<number, BulletinAdComment[]>>({});
   const [loadingCommentsAdId, setLoadingCommentsAdId] = useState<number | null>(null);
   const [newCommentText, setNewCommentText] = useState<string>('');
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
 
-  // Lightbox Modal
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isAddToPostModalOpen, setIsAddToPostModalOpen] = useState<boolean>(false);
 
-  // Boost Post Modal State
   const [boostingAd, setBoostingAd] = useState<BulletinAd | null>(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState<boolean>(false);
 
@@ -780,7 +753,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   }, [token]);
 
-  // Target Ad Direct Deep-linking (e.g. from Recommendations Widget)
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const adIdParam = urlParams.get('id') || urlParams.get('ad');
@@ -815,14 +787,12 @@ export const BulletinBoardPage: React.FC = () => {
     }
   }, [token, location, ads]);
 
-  // Pagination & Scroll State for Ads Feed
   const [adPage, setAdPage] = useState<number>(1);
   const [hasMoreAds, setHasMoreAds] = useState<boolean>(true);
   const [loadingMoreAds, setLoadingMoreAds] = useState<boolean>(false);
   const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
 
 
-  // Fetch Public Ads Feed (with Pagination)
   const fetchAds = async (pageNum = 1, append = false) => {
     if (append) {
       setLoadingMoreAds(true);
@@ -854,7 +824,6 @@ export const BulletinBoardPage: React.FC = () => {
             setAds(prev => [...prev, ...newUniqueAds]);
             setHasMoreAds(true);
           } else {
-            // Endless Infinite Scroll Renewal: Recycle available ads so feed keeps loading indefinitely
             if (ads.length > 0) {
               const recycled = ads.slice(0, 8).map((ad, idx) => ({
                 ...ad,
@@ -880,7 +849,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Load Next Page for Infinite Scroll
   const handleLoadMoreAds = () => {
     if (loading || loadingMoreAds) return;
     const nextPage = adPage + 1;
@@ -888,7 +856,6 @@ export const BulletinBoardPage: React.FC = () => {
     fetchAds(nextPage, true);
   };
 
-  // Fetch Merchant Pages
   const fetchPages = async () => {
     setPagesLoading(true);
     try {
@@ -910,7 +877,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Fetch User Owned Pages
   const fetchMyPages = async () => {
     if (!token) return;
     try {
@@ -924,7 +890,6 @@ export const BulletinBoardPage: React.FC = () => {
     } catch (e) {}
   };
 
-  // Fetch User Ads
   const fetchMyAds = async () => {
     if (!token) return;
     try {
@@ -938,7 +903,6 @@ export const BulletinBoardPage: React.FC = () => {
     } catch (e) {}
   };
 
-  // Fetch Inquiries & Direct Messages
   const fetchInquiries = async () => {
     if (!token) return;
     setInquiriesLoading(true);
@@ -976,7 +940,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Fetch Wallet Balance
   const fetchWallet = async () => {
     if (!token) return;
     try {
@@ -996,7 +959,6 @@ export const BulletinBoardPage: React.FC = () => {
     fetchPages();
   }, [selectedCategory, selectedCity, sortBy, selectedAudienceFilter]);
 
-  // Scroll Listener for Position Persistence & Back To Top Floating Button
   useEffect(() => {
     const getScrollContainer = (): HTMLElement | Window => {
       const el = document.querySelector('main > div.overflow-y-auto') || document.querySelector('.overflow-y-auto');
@@ -1029,7 +991,6 @@ export const BulletinBoardPage: React.FC = () => {
     };
   }, [activeTab]);
 
-  // Restore Feed Scroll Position
   useEffect(() => {
     if (activeTab === 'board' && !loading && ads.length > 0) {
       const savedScrollY = sessionStorage.getItem('perplexta_bulletin_scroll_y');
@@ -1055,7 +1016,6 @@ export const BulletinBoardPage: React.FC = () => {
     if (activeTab === 'pages') fetchPages();
   };
 
-  // Toggle Like on Ad
   const handleToggleLike = async (adId: number) => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول للتفاعل مع الإعلان' : 'Please log in to like ads');
@@ -1086,14 +1046,12 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Toggle Follow on Page
   const handleToggleFollowPage = async (pageId: number) => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول لمتابعة الصفحة' : 'Please log in to follow page');
       return;
     }
 
-    // Optimistic update
     setPagesList(prev => prev.map(p => {
       if (p.id === pageId) {
         const following = p.user_is_following;
@@ -1131,7 +1089,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Fetch Page Details + Page Ads (Opens Full Page directly in place of Ad Feed)
   const handleOpenPageDetail = async (pageId: number) => {
     try {
       const res = await fetch(`/api/bulletin/pages/${pageId}`, {
@@ -1150,12 +1107,10 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Close Page Detail & Back to Main Feed
   const handleBackToBoard = () => {
     setSelectedPageDetail(null);
   };
 
-  // Toggle Comments Thread
   const toggleComments = async (adId: number) => {
     if (expandedAdId === adId) {
       setExpandedAdId(null);
@@ -1179,7 +1134,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Add Comment
   const handleAddComment = async (adId: number, parentId?: number) => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول للتعليق' : 'Please log in to comment');
@@ -1214,7 +1168,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Submit Direct Inquiry
   const handleSendInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
@@ -1252,7 +1205,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Open Direct Private Chat Session with Ad Owner in Internal Messenger Hub
   const handleMessageAdvertiser = async (ad: BulletinAd, customMessage?: string) => {
     if (!token || !user) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً لمراسلة المعلن' : 'Please log in to message the advertiser');
@@ -1292,7 +1244,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Submit New Campaign Ad
   const fetchSavedAds = async () => {
     if (!token) return;
     setLoadingSaved(true);
@@ -1486,7 +1437,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Upload Local Image File Helper
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | File[] } }) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1501,7 +1451,6 @@ export const BulletinBoardPage: React.FC = () => {
     );
 
     try {
-      // Auto-compress and resize image for optimal sidebar & bulletin layout compatibility (600x600 target)
       const compressed = await compressAndResizeImage(file, {
         format: (adFormData as any).format || 'sidebar',
         quality: 0.88,
@@ -1552,7 +1501,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Upload Local Video File Helper
   const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1631,7 +1579,6 @@ export const BulletinBoardPage: React.FC = () => {
             
             toast.success(isRtl ? 'تم رفع وتشغيل مقطع الفيديو بنجاح!' : 'Video uploaded & ready!');
 
-            // Extract thumbnail if no image uploaded yet
             try {
               const thumb = await extractVideoThumbnail(file);
               if (thumb) {
@@ -1641,7 +1588,7 @@ export const BulletinBoardPage: React.FC = () => {
                 }));
               }
             } catch (thumbErr) {
-              console.warn('Auto video thumbnail extraction error:', thumbErr);
+              // Auto video thumbnail extraction silent handling
             }
           } else {
              handleUploadFallback(file, localUrl);
@@ -1665,7 +1612,6 @@ export const BulletinBoardPage: React.FC = () => {
     xhr.send(formDataUpload);
   };
 
-  // Submit New Merchant Page
   const handleCreatePage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
@@ -1711,7 +1657,6 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  // Share click
   const handleShareAd = async (ad: BulletinAd) => {
     const shareUrl = `${window.location.origin}/bulletin?ad=${ad.id}`;
     const text = `${ad.title}\n${ad.description}\n${shareUrl}`;
@@ -1736,7 +1681,6 @@ export const BulletinBoardPage: React.FC = () => {
     toast.success(isRtl ? 'تم نسخ رابط ونص الترويج!' : 'Link copied to clipboard!');
   };
 
-  // WhatsApp Click
   const handleWhatsAppClick = (ad: BulletinAd, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!ad.whatsapp_number) return;
@@ -1957,6 +1901,23 @@ export const BulletinBoardPage: React.FC = () => {
                     >
                       <Megaphone size={16} className={`transition-all duration-300 ${activeTab === 'board' && !selectedPageDetail ? 'text-emerald-500 scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
                       <span>{isRtl ? 'الرئيسية والإعلانات العامة' : 'Global Feed'}</span>
+                    </button>
+
+                    {/* Added Marketplace and Blog links directly in Bulletin Board sidebar per user request */}
+                    <button
+                      onClick={() => { navigate('/marketplace'); setIsMobileSidebarOpen(false); }}
+                      className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all duration-300 bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
+                    >
+                      <ShoppingBag size={16} className="text-gray-400 group-hover:text-emerald-400" />
+                      <span>{isRtl ? 'السوق (Marketplace)' : 'Marketplace'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => { navigate('/blog'); setIsMobileSidebarOpen(false); }}
+                      className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all duration-300 bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
+                    >
+                      <Edit2 size={16} className="text-gray-400 group-hover:text-emerald-400" />
+                      <span>{isRtl ? 'المقالات والمدونة' : 'Insights & Blog'}</span>
                     </button>
 
                     <button
@@ -2345,6 +2306,23 @@ export const BulletinBoardPage: React.FC = () => {
                   </span>
                 </button>
 
+                {/* Added Marketplace and Blog links directly in Bulletin Board sidebar per user request */}
+                <button
+                  onClick={() => navigate('/marketplace')}
+                  className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-all"
+                >
+                  <ShoppingBag size={16} className="text-emerald-500" />
+                  <span>{isRtl ? 'السوق والتسوق' : 'Marketplace'}</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/blog')}
+                  className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-all"
+                >
+                  <Edit2 size={16} className="text-emerald-500" />
+                  <span>{isRtl ? 'المقالات والرؤى' : 'Insights & Blog'}</span>
+                </button>
+
                 <button
                   onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
                   className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all ${
@@ -2574,17 +2552,113 @@ export const BulletinBoardPage: React.FC = () => {
 
           {/* MAIN COLUMN: FEED OR FULL PAGE VIEW (8 COLS) */}
           <div 
-            className="col-span-12 lg:col-span-8 space-y-6 order-1 lg:order-2 relative max-w-2xl mx-auto w-full select-none"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+            className="col-span-12 lg:col-span-8 space-y-6 order-1 lg:order-2 relative max-w-2xl mx-auto w-full overflow-hidden"
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setMousePos({
+                x: Math.round(e.clientX - rect.left),
+                y: Math.round(e.clientY - rect.top),
+                isInside: true
+              });
+            }}
+            onMouseEnter={() => setMousePos(prev => ({ ...prev, isInside: true }))}
+            onMouseLeave={() => setMousePos(prev => ({ ...prev, isInside: false }))}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setContextMenu({
+                x: Math.max(10, Math.min(e.clientX - rect.left, rect.width - 200)),
+                y: Math.max(10, Math.min(e.clientY - rect.top, rect.height - 150)),
+                isOpen: true
+              });
+            }}
+            onClick={() => {
+              if (contextMenu.isOpen) setContextMenu(prev => ({ ...prev, isOpen: false }));
+            }}
             style={{
-              touchAction: 'pan-y',
               transform: pullDistance > 0 ? `translateY(${Math.min(pullDistance * 0.28, 26)}px)` : 'none',
               transition: pullDistance === 0 ? 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' : 'none'
             }}
           >
+            {/* Custom Aesthetic Right-Click Context Menu */}
+            <AnimatePresence>
+              {contextMenu.isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  className={`absolute z-50 w-52 rounded-xl shadow-2xl border p-1.5 backdrop-blur-xl select-none ${
+                    theme === 'dark' 
+                      ? 'bg-[#18181b]/95 border-gray-800 text-gray-200' 
+                      : 'bg-white/95 border-gray-200 text-gray-800'
+                  }`}
+                  style={{
+                    left: `${contextMenu.x}px`,
+                    top: `${contextMenu.y}px`,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-3 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-500/10 mb-1">
+                    {isRtl ? 'إجراءات سريعة' : 'Quick Actions'}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      setContextMenu(prev => ({ ...prev, isOpen: false }));
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-start"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    {isRtl ? 'نسخ رابط الصفحة' : 'Copy Page Link'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      triggerFeedRefresh();
+                      setContextMenu(prev => ({ ...prev, isOpen: false }));
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-start"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {isRtl ? 'تحديث المحتوى' : 'Refresh Feed'}
+                  </button>
+                  <div className="my-1 border-t border-gray-500/10" />
+                  <button
+                    onClick={() => {
+                      localStorage.clear();
+                      window.location.reload();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors text-start"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    {isRtl ? 'إعادة ضبط الجلسة' : 'Clear Session'}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {/* Subtle Motion-Blurred Pointer Trail Indicator */}
+            {mousePos.isInside && (
+              <div 
+                className="absolute pointer-events-none z-30 transition-all duration-75 ease-out rounded-full bg-emerald-500/20 blur-[2px]"
+                style={{
+                  left: `${mousePos.x}px`,
+                  top: `${mousePos.y}px`,
+                  width: '28px',
+                  height: '28px',
+                  transform: 'translate(-50%, -50%)',
+                  boxShadow: '0 0 16px rgba(16,185,129,0.4)',
+                }}
+              >
+                <div className="absolute inset-1 rounded-full bg-emerald-500/40 animate-ping opacity-75" />
+                <div className="absolute inset-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
+              </div>
+            )}
 
             {/* Pull to Refresh Indicator */}
             <AnimatePresence>
@@ -3839,7 +3913,6 @@ export const BulletinBoardPage: React.FC = () => {
                             className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-400"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Close this zone? No, just a placeholder for now
                             }}
                           >
                             <X size={14} />

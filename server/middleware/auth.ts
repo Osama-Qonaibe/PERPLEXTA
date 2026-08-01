@@ -100,7 +100,6 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
               }
             }
           } catch (rsaErr) {
-            // Fall through to original error handling
           }
 
           if (err.name === 'TokenExpiredError') {

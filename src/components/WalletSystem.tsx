@@ -45,19 +45,16 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
 
-  // High-precision verifying states
   const [isVerifying, setIsVerifying] = useState(false);
   const [depositSuccessAmount, setDepositSuccessAmount] = useState<number | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const verificationStarted = React.useRef(false);
 
-  // Deposit Form States
   const [depositAmount, setDepositAmount] = useState<string>('150');
   const [depositMethod, setDepositMethod] = useState<'card' | 'crypto' | 'bank' | 'paypal'>('card');
   const [isSubmittingDeposit, setIsSubmittingDeposit] = useState(false);
   const [depositProgressStep, setDepositProgressStep] = useState<number>(0);
 
-  // Manual Deposit Form States
   const [manualRefId, setManualRefId] = useState('');
   const [manualProofFile, setManualProofFile] = useState<File | null>(null);
 
@@ -79,13 +76,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     return data.file?.file_url || data.fileUrl || data.url || '';
   };
 
-  // Credit Card fields
   const [ccNumber, setCcNumber] = useState('');
   const [ccExpiry, setCcExpiry] = useState('');
   const [ccCvv, setCcCvv] = useState('');
   const [ccName, setCcName] = useState('');
 
-  // Withdrawal Form States
   const [withdrawAmount, setWithdrawAmount] = useState<string>('50');
   const [withdrawMethod, setWithdrawMethod] = useState<'paypal' | 'bank' | 'crypto'>('paypal');
   const [withdrawDetails, setWithdrawDetails] = useState('');
@@ -98,7 +93,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   useEffect(() => {
     fetchWallet();
 
-    // Check query params for Stripe or PayPal checkout redirect results
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
     const amount = params.get('amount');
@@ -111,7 +105,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       const verifyStripeSession = async () => {
         setIsVerifying(true);
         try {
-          // Dynamic pre-flight delay for visual confirmation of secure connection
           await new Promise((resolve) => setTimeout(resolve, 1500));
           const res = await fetch(`/api/payments/verify-stripe-session?session_id=${sessionId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -120,7 +113,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             const data = await res.json();
             setDepositSuccessAmount(data.amount);
             
-            // Re-fetch and synchronize wallet parameters
             await fetchWallet();
             if (typeof refreshUser === 'function') {
               await refreshUser();
@@ -184,7 +176,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               const capData = await captureRes.json();
               setDepositSuccessAmount(capData.amount);
               
-              // Re-fetch and synchronize wallet parameters
               await fetchWallet();
               if (typeof refreshUser === 'function') {
                 await refreshUser();
@@ -228,7 +219,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   useEffect(() => {
     let timer: any;
     if (depositSuccessAmount !== null) {
-      // Instantly initialize countdown sequence to 5 whenever success occurs
       setRedirectCountdown(5);
       
       timer = setInterval(() => {
@@ -287,7 +277,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       });
       if (res.ok) {
         const data = await res.json();
-        // Extract transactions if returned wrapped in an object or array
         const list = Array.isArray(data) ? data : (data.transactions || []);
         setTransactions(list);
       }
@@ -369,7 +358,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }
   };
 
-  // Deposit Handler with Multi-Step Premium Simulators and Manual Request Routing
   const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountVal = parseFloat(depositAmount);
@@ -398,7 +386,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
     setIsSubmittingDeposit(true);
 
-    // MANUAL FLOW: Crypto, Bank & PayPal methods
     if (depositMethod === 'crypto' || depositMethod === 'bank' || depositMethod === 'paypal') {
       if (!manualRefId || manualRefId.trim().length === 0) {
         toast.error(
@@ -470,7 +457,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       return;
     }
 
-    // AUTOMATED GATEWAYS: Card
     if (depositMethod === 'card') {
       setDepositProgressStep(1); // Connecting to secure Stripe gateway
       try {
@@ -495,7 +481,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
           }
         }
       } catch (err) {
-        console.warn('Stripe checkout session failed to load', err);
+        // Stripe checkout session failed to load silent handling
       }
     }
 
@@ -503,7 +489,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     setDepositProgressStep(0);
   };
 
-  // Withdraw Handler
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountVal = parseFloat(withdrawAmount);
@@ -574,7 +559,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }
   };
 
-  // Predefined deposit selectors handler
   const selectPredefinedAmount = (val: string) => {
     setDepositAmount(val);
   };
@@ -585,10 +569,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       return;
     }
     
-    // Replace any non-numeric/non-decimal characters
     const sanitizedVal = val.replace(/[^0-9.]/g, '');
     
-    // Guard against multiple dots
     const parts = sanitizedVal.split('.');
     if (parts.length > 2) return;
 
@@ -630,7 +612,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }
   };
 
-  // Card formatting helpers
   const handleCcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let clean = e.target.value.replace(/\D/g, '');
     if (clean.length > 16) clean = clean.slice(0, 16);

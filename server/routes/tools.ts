@@ -157,7 +157,6 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
       return res.status(400).json({ error: 'A valid text prompt is required for music generation.' });
     }
 
-    // Subscription & user verification
     const subRes = (await pool.query(`
       SELECT s.status, u.role
       FROM users u 
@@ -185,7 +184,6 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
       return res.status(403).json({ error: 'subscription_required', message: 'An active subscription or positive wallet balance is required to execute tools.' });
     }
 
-    // Obtain API key via Orchestrator
     const config = await getCachedOrchestratorConfig('perplexta_music');
     if (!config) {
       return res.status(400).json({
@@ -214,7 +212,6 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey });
 
-    // Client can still request clip vs pro
     if (model === 'lyria-3-clip-preview') {
        modelName = 'lyria-3-clip-preview';
     }
@@ -223,8 +220,6 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
     if (modelName === 'lyria-3-pro-preview' && userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {
       fullPrompt = `${prompt}\n\nLyrics:\n${userLyrics}`;
     }
-
-    console.log(`[Music Generation] Invoking model "${modelName}" for user: ${userId} with prompt: "${prompt.substring(0, 100)}..."`);
 
     const response = await ai.models.generateContentStream({
       model: modelName,

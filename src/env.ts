@@ -6,4 +6,3 @@ if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.production'), override: true });
 }
 
-console.log(`[Env] Environment loaded.`);

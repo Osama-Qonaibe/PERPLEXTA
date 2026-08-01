@@ -146,7 +146,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                 onClick={handleSave}
                 className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-[var(--radius)] transition-all hover:scale-110 active:scale-95"
               >
-                <Check size={20} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                <Check size={20} />
               </button>
               <button 
                 onClick={() => setEditingField(null)}
@@ -275,7 +275,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('kycStatus')}</p>
                   <p className={`font-black text-sm tracking-widest uppercase flex items-center gap-2 ${user.kyc_status === 'verified' ? 'text-emerald-500' : 'text-slate-800 dark:text-slate-100'}`}>
                     {kycStatus}
-                    {user.kyc_status === 'verified' && <Check size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
+                    {user.kyc_status === 'verified' && <Check size={14} />}
                   </p>
                 </div>
               </div>

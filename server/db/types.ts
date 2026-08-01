@@ -1,6 +1,3 @@
-// ============================================================
-// Core DB Types
-// ============================================================
 
 export interface User {
   id: number;
@@ -439,9 +436,6 @@ export interface UserUsage {
   updated_at: Date | string;
 }
 
-// ============================================================
-// Ledger DB Types
-// ============================================================
 
 export interface Wallet {
   id: number;
@@ -589,9 +583,6 @@ export interface StripeEvent {
   updated_at: Date | string;
 }
 
-// ============================================================
-// External DB Types
-// ============================================================
 
 export interface ForumCategory {
   id: number;
@@ -660,9 +651,6 @@ export interface BlogRating {
   created_at: Date | string;
 }
 
-// ============================================================
-// Security DB Types
-// ============================================================
 
 export interface AdminAuditLog {
   id: number;
@@ -676,9 +664,6 @@ export interface AdminAuditLog {
   created_at: Date | string;
 }
 
-// ============================================================
-// Marketplace Types (Core DB)
-// ============================================================
 
 export interface MarketplaceItem {
   id: number;
@@ -718,9 +703,6 @@ export interface MarketplacePurchase {
   created_at: Date | string;
 }
 
-// ============================================================
-// Community Bulletin Board Types (User Ads)
-// ============================================================
 
 export interface BulletinPage {
   id: number;

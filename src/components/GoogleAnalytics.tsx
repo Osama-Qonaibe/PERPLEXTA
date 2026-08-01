@@ -15,7 +15,6 @@ export const trackGAEvent = (action: string, category: string, label?: string, v
       event_label: label,
       value: value,
     });
-    console.log(`[Google Analytics Event] ${category} > ${action} (${label || ''})`);
   }
 };
 
@@ -28,7 +27,6 @@ export const GoogleAnalytics = () => {
     if (gaId) {
       const nonce = getCSPNonce();
 
-      // Load gtag script if not already present
       let script1 = document.getElementById('ga-gtag-script') as HTMLScriptElement;
       if (!script1) {
         script1 = document.createElement('script');
@@ -39,7 +37,6 @@ export const GoogleAnalytics = () => {
         document.head.appendChild(script1);
       }
 
-      // Initialize gtag config in window
       let script2 = document.getElementById('ga-init-script') as HTMLScriptElement;
       if (!script2) {
         script2 = document.createElement('script');
@@ -57,14 +54,12 @@ export const GoogleAnalytics = () => {
     }
   }, [gaId]);
 
-  // Track dynamic path navigation for complete SPA metrics
   useEffect(() => {
     if (gaId && (window as any).gtag) {
       (window as any).gtag('config', gaId, {
         page_path: location.pathname + location.search,
         page_title: document.title,
       });
-      console.log(`[Google Analytics Pageview] Path: ${location.pathname}${location.search}`);
     }
   }, [location, gaId]);
 

@@ -618,7 +618,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                       target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
                     }
                   }}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-auto touch-pan-y"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none touch-pan-y"
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">

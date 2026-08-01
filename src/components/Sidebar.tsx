@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag, MoreHorizontal, Sparkles, Megaphone, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -213,10 +213,18 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   if (user) {
     navItems.push({
+      icon: <LayoutGrid size={18} />,
+      label: language === 'ar' ? 'قوقل' : 'Google Hub',
+      path: '/google-hub'
+    });
+
+    navItems.push({
       icon: <Sparkles size={18} className="text-emerald-500" />,
       label: language === 'ar' ? 'اكتشف' : 'Discover',
       path: '/discover'
     });
+    
+    // Moved from Header for cleaner UI (Facebook style)
   }
 
   if (user) {

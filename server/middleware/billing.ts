@@ -19,11 +19,9 @@ export const verifyBillingFunds = async (req: Request & { user?: any }, res: Res
 
     const toolId = req.body?.tool_id || req.body?.tool || 'chat';
     
-    // Retrieve the prompt dynamically to determine estimated input token sizes
     const prompt = req.body?.prompt || req.body?.message || req.body?.content || '';
     const estimatedInputTokens = Math.ceil(prompt.length / 4);
 
-    // 1. Direct validation of available complimentary quota limits
     const quotaCheck = await checkUserQuota(userId, toolId);
 
     if (!quotaCheck.allowed) {
@@ -31,11 +29,9 @@ export const verifyBillingFunds = async (req: Request & { user?: any }, res: Res
         return res.status(503).json({ error: 'Database service is temporarily initializing.' });
       }
 
-      // 2. Validate Ledger funds based on the precise estimated prompt length to avoid starting dry executions
       const affordability = await checkUserAffordability(userId, toolId, estimatedInputTokens);
 
       if (!affordability.allowed) {
-        // Enforce strict enforcement barrier
         const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [userId]);
         const userLang = uRes.rows[0]?.language || 'en';
 

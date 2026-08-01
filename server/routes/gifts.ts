@@ -42,20 +42,17 @@ router.post('/send', authenticateToken, async (req: any, res) => {
 
   const client = await (ledgerPool || pool).connect();
   try {
-    // 1. Fetch gift details
     const giftRes = await pool.query('SELECT * FROM gift_catalog WHERE id = $1 AND is_active = true', [giftId]);
     if (giftRes.rows.length === 0) {
       return res.status(404).json({ error: 'Gift not found or inactive' });
     }
     const gift = giftRes.rows[0];
 
-    // 2. Fetch system settings for commission
     const settings = await getSystemSettings();
     const commissionPercent = parseInt(settings.live_gift_commission_percent || '30', 10);
     
     await client.query('BEGIN');
 
-    // 3. Lock sender wallet
     const senderWallet = await getUserWallet(senderId, client);
     if (Number(senderWallet.points) < gift.points) {
       await client.query('ROLLBACK');
@@ -65,24 +62,19 @@ router.post('/send', authenticateToken, async (req: any, res) => {
       });
     }
 
-    // 4. Deduct points from sender
     await client.query(
       'UPDATE wallets SET points = points - $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
       [gift.points, senderId]
     );
 
-    // 5. Calculate recipient share
     const recipientPoints = Math.floor(gift.points * (1 - (commissionPercent / 100)));
     
-    // 6. Lock and credit recipient
     const recipientWallet = await getUserWallet(recipientId, client);
     await client.query(
       'UPDATE wallets SET points = points + $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
       [recipientPoints, recipientId]
     );
 
-    // 7. Record transactions
-    // Sender Transaction
     await client.query(`
       INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
       VALUES ($1, $2, 0, $3, 'gift_sent', 'success', $4)
@@ -93,7 +85,6 @@ router.post('/send', authenticateToken, async (req: any, res) => {
       `إرسال هدية (${gift.name_ar}) إلى مستخدم آخر / Sent gift (${gift.name_en})`
     ]);
 
-    // Recipient Transaction
     await client.query(`
       INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
       VALUES ($1, $2, 0, $3, 'gift_received', 'success', $4)
@@ -106,7 +97,6 @@ router.post('/send', authenticateToken, async (req: any, res) => {
 
     await client.query('COMMIT');
 
-    // 8. Notifications
     await createNotification(
       recipientId,
       'gift',
@@ -117,7 +107,6 @@ router.post('/send', authenticateToken, async (req: any, res) => {
       { gift_id: gift.id, sender_id: senderId }
     ).catch(e => console.error('Gift notification error:', e));
 
-    // 9. Real-time broadcast
     if (io) {
       io.emit('gift_sent', {
         gift,

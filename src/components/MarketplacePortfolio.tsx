@@ -65,7 +65,6 @@ export const MarketplacePortfolio: React.FC = () => {
       if (!token || token === 'null') return;
       setLoading(true);
       try {
-        // Fetch purchased items
         const resPortList = await fetch('/api/marketplace/portfolio', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -74,7 +73,6 @@ export const MarketplacePortfolio: React.FC = () => {
           setPurchased(portfolioData);
         }
 
-        // Fetch affiliate reports
         const resAffStats = await fetch('/api/marketplace/affiliate/stats', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -100,7 +98,6 @@ export const MarketplacePortfolio: React.FC = () => {
       const sessionId = params.get('session_id');
 
       if (status === 'stripe_success' && sessionId) {
-        // Clear query parameters so it does not keep triggering on refresh
         const cleanUrl = window.location.pathname + (window.location.hash || '');
         window.history.replaceState({}, document.title, cleanUrl);
 
@@ -117,7 +114,6 @@ export const MarketplacePortfolio: React.FC = () => {
                 : 'Congratulations! Your premium asset downloads have been unlocked successfully.',
               { id: 'stripe-verify' }
             );
-            // Refresh portfolio list
             const resPortList = await fetch('/api/marketplace/portfolio', {
               headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -277,7 +273,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.download_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-lg shadow-emerald-500/10 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                              className="flex-1 h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-sm"
                             >
                               <Download size={13} />
                               <span>{isRtl ? 'تحميل الملف' : 'Download Package'}</span>

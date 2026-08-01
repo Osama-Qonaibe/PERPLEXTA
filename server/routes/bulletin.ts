@@ -155,7 +155,6 @@ export async function ensureBulletinTables() {
       try { await pool.query(q); } catch (e) {}
     }
 
-    // Self-healing: Repair any legacy double /uploads/uploads/ URLs in existing database records
     try {
       await pool.query(`
         UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%';
@@ -170,7 +169,6 @@ export async function ensureBulletinTables() {
       console.warn('[Bulletin Clean] Double uploads path cleanup note:', cleanErr.message);
     }
 
-    // Check if initial sample merchant pages exist
     const checkPages = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_pages');
     if (checkPages.rows[0].count === 0) {
       await pool.query(`
@@ -229,7 +227,6 @@ export async function ensureBulletinTables() {
       console.log('[Bulletin API] 🏪 Initial merchant pages inserted.');
     }
 
-    // Check if initial sample bulletin ad exists
     const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_ads');
     if (checkRes.rows[0].count === 0) {
       await pool.query(`
@@ -262,8 +259,6 @@ export async function ensureBulletinTables() {
   }
 }
 
-// Ensure tables run on router loading
-// ensureBulletinTables().catch(() => {});
 
 /**
  * Price calculation map (Duration in Days -> Price in USD)
@@ -275,9 +270,6 @@ const PRICING_TIERS: Record<number, number> = {
   30: 18.00
 };
 
-// ============================================================
-// Public / User Bulletin Routes
-// ============================================================
 
 /**
  * GET /api/bulletin/ads
@@ -302,7 +294,6 @@ router.get('/ads', async (req, res) => {
           currentUserId = decoded.id;
         }
       } catch (e) {
-        // ignore token decode errors for public route
       }
     }
 
@@ -341,7 +332,6 @@ router.get('/ads', async (req, res) => {
       query += ` AND b.hashtags ILIKE $${params.length}`;
     }
 
-    // Audience Visibility & Filter Logic
     if (audience && ['public', 'friends', 'only_me'].includes(audience as string)) {
       params.push(audience);
       const aIdx = params.length;
@@ -354,7 +344,6 @@ router.get('/ads', async (req, res) => {
         query += ` AND (b.audience = 'public' OR b.audience IS NULL OR b.audience = '')`;
       }
     } else {
-      // General Feed: Show public posts, friends posts (if authenticated), and user's own 'only_me' posts
       if (currentUserId) {
         params.push(currentUserId);
         query += ` AND (b.audience = 'public' OR b.audience IS NULL OR b.audience = '' OR b.audience = 'friends' OR (b.audience = 'only_me' AND b.user_id = $${params.length}))`;
@@ -393,7 +382,6 @@ router.get('/ads', async (req, res) => {
       }
     }
 
-    // Attach user_has_liked & user_has_saved if user is authenticated
     let likedAdIds = new Set<number>();
     let savedAdIds = new Set<number>();
     if (currentUserId && result.rows.length > 0) {
@@ -488,7 +476,6 @@ router.get('/ads/:id', async (req: any, res: any, next: any) => {
         const decoded = jwt.default.decode(token) as any;
         if (decoded && decoded.id) currentUserId = decoded.id;
       } catch (e) {
-        // ignore
       }
     }
 
@@ -657,7 +644,6 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
   const normVideoUrl = normalizeUrl(video_url);
 
   try {
-    // Get user details or page details for author info & category recognition
     let authorName = req.user.name || 'مستخدم المنصة';
     let authorAvatar = null;
     let validPageId: number | null = null;
@@ -680,7 +666,6 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       authorAvatar = userRes.rows[0]?.avatar || null;
     }
 
-    // Process hashtags array or string
     let parsedHashtags = '';
     if (Array.isArray(hashtags)) {
       parsedHashtags = hashtags.map(h => h.trim()).filter(Boolean).join(',');
@@ -688,7 +673,6 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       parsedHashtags = hashtags;
     }
 
-    // Insert into bulletin_ads as approved/active instantly (free publication, boostable later via BoostPostModal)
     const insertRes = await pool.query(`
       INSERT INTO bulletin_ads (
         user_id, page_id, location_city, author_name, author_avatar, title, description, image_url,
@@ -722,7 +706,6 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
 
     const createdAd = insertRes.rows[0];
 
-    // Create system notification
     try {
       await createNotification(
         userId,
@@ -761,7 +744,6 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'ID إعلان غير صالح' });
     }
 
-    // Check if liked
     const existing = await pool.query(
       'SELECT id FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2',
       [adId, userId]
@@ -769,12 +751,10 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
 
     let isLiked = false;
     if (existing.rows.length > 0) {
-      // Unlike
       await pool.query('DELETE FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2', [adId, userId]);
       await pool.query('UPDATE bulletin_ads SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1', [adId]);
       isLiked = false;
     } else {
-      // Like
       await pool.query('INSERT INTO bulletin_ad_likes (ad_id, user_id) VALUES ($1, $2)', [adId, userId]);
       await pool.query('UPDATE bulletin_ads SET likes_count = likes_count + 1 WHERE id = $1', [adId]);
       isLiked = true;
@@ -876,7 +856,6 @@ router.post('/ads/:id/impression', async (req, res) => {
     const adId = parseInt(req.params.id);
     await pool.query('UPDATE bulletin_ads SET impressions_count = impressions_count + 1 WHERE id = $1', [adId]);
     
-    // Log for heatmap analytics
     try {
       const ip = req.ip || req.headers['x-forwarded-for'] || '';
       const userAgent = req.headers['user-agent'] || '';
@@ -919,7 +898,6 @@ router.get('/ads/:id/insights', async (req, res) => {
 
     const ad = adRes.rows[0];
 
-    // Fetch inquiries and direct messages count for this ad
     let totalInquiries = 0;
     try {
       const inqRes = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_page_inquiries WHERE ad_id = $1', [adId]);
@@ -940,12 +918,10 @@ router.get('/ads/:id/insights', async (req, res) => {
     const costPerClick = clicks > 0 ? Number((pricePaid / clicks).toFixed(2)) : 0;
     const cpm = impressions > 0 ? Number(((pricePaid / impressions) * 1000).toFixed(2)) : 0;
 
-    // Reach stats
     const estimatedUniqueReach = Math.round(impressions * 0.84);
     const daysActive = Math.max(1, ad.duration_days || 7);
     const dailyAvgViews = Math.round(impressions / daysActive);
 
-    // 7-day time series data for charts
     const timeSeries = [];
     const now = new Date();
     for (let i = 6; i >= 0; i--) {
@@ -968,7 +944,6 @@ router.get('/ads/:id/insights', async (req, res) => {
       });
     }
 
-    // Demographics and Locations
     const locations = [
       { city: 'رام الله والبيرة', cityEn: 'Ramallah & Al-Bireh', percentage: 35, count: Math.round(impressions * 0.35) },
       { city: 'نابلس', cityEn: 'Nablus', percentage: 25, count: Math.round(impressions * 0.25) },
@@ -983,7 +958,6 @@ router.get('/ads/:id/insights', async (req, res) => {
       { device: 'أخرى / Tablet & Other', percentage: 4, color: '#f59e0b' }
     ];
 
-    // Creator Recommendations
     const recommendations = [];
     if (ad.is_boosted) {
       recommendations.push({
@@ -1090,7 +1064,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
 
     await client.query('BEGIN');
 
-    // Verify ad existence
     const adRes = await pool.query('SELECT * FROM bulletin_ads WHERE id = $1', [adId]);
     if (adRes.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -1099,7 +1072,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
     }
     const ad = adRes.rows[0];
 
-    // Check wallet balance
     let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1', [userId]);
     if (walletRes.rows.length === 0) {
       const newWallet = await client.query(
@@ -1120,13 +1092,11 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
       });
     }
 
-    // Deduct cost from wallet balance
     await client.query(
       'UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
       [cost, userId]
     );
 
-    // Record ledger transaction
     await client.query(`
       INSERT INTO ledger_transactions (wallet_id, user_id, amount, points, transaction_type, status, description)
       VALUES ($1, $2, $3, 0, 'bulletin_ad_boost', 'success', $4)
@@ -1140,7 +1110,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
     await client.query('COMMIT');
     client.release();
 
-    // Update bulletin_ads table
     const updateRes = await pool.query(`
       UPDATE bulletin_ads
       SET is_boosted = TRUE,
@@ -1154,7 +1123,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
 
     const updatedAd = updateRes.rows[0];
 
-    // Create system notification
     try {
       await createNotification(
         userId,
@@ -1167,7 +1135,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
       );
     } catch (e) {}
 
-    // Send email notification for boosted ad
     try {
       const userRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [userId]);
       if (userRes.rows.length > 0) {
@@ -1192,7 +1159,6 @@ router.post('/ads/:id/boost-wallet', authenticateToken, async (req: any, res) =>
       console.error('[Bulletin Boost API] Email send error:', emailErr);
     }
 
-    // Socket notification
     if (io) {
       io.emit('bulletin_ad_boosted', { ad_id: adId, is_boosted: true });
       io.to(`user_${userId}`).emit('wallet_updated', { balance_usd: true });
@@ -1314,7 +1280,6 @@ router.get('/verify-boost-session', authenticateToken, async (req: any, res) => 
           [session.id, 'bulletin_ad_boost_paid', 'processed', JSON.stringify(session.metadata || {})]
         );
 
-        // Update ad
         const updateAdRes = await pool.query(`
           UPDATE bulletin_ads
           SET is_boosted = TRUE,
@@ -1328,11 +1293,9 @@ router.get('/verify-boost-session', authenticateToken, async (req: any, res) => 
 
         const updatedAd = updateAdRes.rows[0];
 
-        // Fetch original ad title
         const origAdRes = await pool.query('SELECT title FROM bulletin_ads WHERE id = $1', [parsedAdId]);
         const origAdTitle = origAdRes.rows[0]?.title || 'إعلانك الخاص';
 
-        // Notification
         await createNotification(
           req.user.id,
           'bulletin_ad_boost',
@@ -1343,7 +1306,6 @@ router.get('/verify-boost-session', authenticateToken, async (req: any, res) => 
           { ad_id: parsedAdId }
         );
 
-        // Send email notification for boosted ad
         try {
           const userRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [req.user.id]);
           if (userRes.rows.length > 0) {
@@ -1401,7 +1363,6 @@ router.post('/ads/:id/boost-x402', authenticateToken, async (req: any, res) => {
     }
     const ad = adRes.rows[0];
 
-    // Record ledger transaction
     const target = ledgerPool || pool;
     const walletRes = await target.query('SELECT id FROM wallets WHERE user_id = $1', [userId]);
     const walletId = walletRes.rows[0]?.id || null;
@@ -1418,7 +1379,6 @@ router.post('/ads/:id/boost-x402', authenticateToken, async (req: any, res) => {
       ]);
     }
 
-    // Update bulletin_ads
     const updateRes = await pool.query(`
       UPDATE bulletin_ads
       SET is_boosted = TRUE,
@@ -1444,7 +1404,6 @@ router.post('/ads/:id/boost-x402', authenticateToken, async (req: any, res) => {
       );
     } catch (e) {}
 
-    // Send email notification for boosted ad
     try {
       const userRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [userId]);
       if (userRes.rows.length > 0) {
@@ -1489,9 +1448,6 @@ router.post('/ads/:id/boost-x402', authenticateToken, async (req: any, res) => {
   }
 });
 
-// ============================================================
-// Merchant Pages & Direct Customer Inquiry Routes
-// ============================================================
 
 /**
  * GET /api/bulletin/pages
@@ -1627,7 +1583,6 @@ router.get('/pages/:id', async (req, res) => {
 
     const page = pageRes.rows[0];
 
-    // Check if user is following
     let userIsFollowing = false;
     if (currentUserId) {
       const followRes = await pool.query(
@@ -1637,7 +1592,6 @@ router.get('/pages/:id', async (req, res) => {
       userIsFollowing = followRes.rows.length > 0;
     }
 
-    // Get page ads
     const adsRes = await pool.query(
       `SELECT b.*,
          bp.name as page_name, bp.avatar_url as page_avatar, bp.cover_url as page_cover, bp.is_verified as page_is_verified
@@ -1747,7 +1701,6 @@ router.post('/pages', authenticateToken, async (req: any, res) => {
 
     const createdPage = insertRes.rows[0];
 
-    // System notification
     try {
       await createNotification(
         userId,
@@ -1783,12 +1736,10 @@ router.post('/pages/:id/follow', authenticateToken, async (req: any, res) => {
 
     let isFollowing = false;
     if (checkRes.rows.length > 0) {
-      // Unfollow
       await pool.query('DELETE FROM bulletin_page_followers WHERE page_id = $1 AND user_id = $2', [pageId, userId]);
       await pool.query('UPDATE bulletin_pages SET followers_count = GREATEST(0, followers_count - 1) WHERE id = $1', [pageId]);
       isFollowing = false;
     } else {
-      // Follow
       await pool.query(
         'INSERT INTO bulletin_page_followers (page_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [pageId, userId]
@@ -1835,11 +1786,9 @@ router.post('/ads/:id/inquire', authenticateToken, async (req: any, res) => {
     const ad = adRes.rows[0];
     const merchantUserId = ad.page_owner_id || ad.user_id;
 
-    // Sender details
     const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [senderId]);
     const senderName = userRes.rows[0]?.name || req.user.name || 'مشتري / زبون';
 
-    // Insert inquiry
     const insertRes = await pool.query(`
       INSERT INTO bulletin_page_inquiries (
         page_id, ad_id, sender_id, sender_name, sender_phone, message
@@ -1854,7 +1803,6 @@ router.post('/ads/:id/inquire', authenticateToken, async (req: any, res) => {
       message.trim()
     ]);
 
-    // Send real-time notification to merchant
     try {
       await createNotification(
         merchantUserId,
@@ -1867,7 +1815,6 @@ router.post('/ads/:id/inquire', authenticateToken, async (req: any, res) => {
       );
     } catch (e) {}
 
-    // Send email to merchant
     try {
       const uRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [merchantUserId]);
       if (uRes.rows.length > 0) {
@@ -1931,7 +1878,6 @@ router.post('/ads/:id/message-advertiser', authenticateToken, async (req: any, r
       return res.status(400).json({ error: 'لا يمكنك مراسلة نفسك - هذا إعلانك الخاص / You cannot message yourself on your own advertisement' });
     }
 
-    // Sender details
     const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [senderId]);
     const senderName = userRes.rows[0]?.name || req.user.name || 'زبون / Customer';
 
@@ -1944,7 +1890,6 @@ router.post('/ads/:id/message-advertiser', authenticateToken, async (req: any, r
 
     await addChatMessage(chat.id, 'user', initialText, 'bulletin_ad');
 
-    // Also record inquiry entry for merchant records
     try {
       await pool.query(`
         INSERT INTO bulletin_page_inquiries (
@@ -1960,7 +1905,6 @@ router.post('/ads/:id/message-advertiser', authenticateToken, async (req: any, r
       ]);
     } catch (e) {}
 
-    // Send real-time notification to advertiser
     try {
       await createNotification(
         merchantUserId,
@@ -1973,7 +1917,6 @@ router.post('/ads/:id/message-advertiser', authenticateToken, async (req: any, r
       );
     } catch (e) {}
 
-    // Send email to advertiser
     try {
       const uRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [merchantUserId]);
       if (uRes.rows.length > 0) {
@@ -2039,7 +1982,6 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
     if (participant_id && parseInt(participant_id as string)) {
       otherUserId = parseInt(participant_id as string);
     } else if (userId === adOwnerId) {
-      // If ad owner doesn't specify participant_id, fetch the most recent sender
       const recentRes = await pool.query(`
         SELECT CASE WHEN sender_id = $1 THEN recipient_id ELSE sender_id END as other_id
         FROM bulletin_ad_messages
@@ -2076,7 +2018,6 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
       }
       messages = msgRes.rows;
 
-      // Mark unread incoming messages as read
       try {
         await pool.query(`
           UPDATE bulletin_ad_messages
@@ -2086,7 +2027,6 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
       } catch (e) {}
     }
 
-    // Get other participant details
     let otherParticipant = null;
     if (otherUserId) {
       const otherUserRes = await pool.query('SELECT id, name, avatar FROM users WHERE id = $1', [otherUserId]);
@@ -2158,7 +2098,6 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
     const senderName = senderRes.rows[0]?.name || req.user.name || 'مستخدم';
     const senderAvatar = senderRes.rows[0]?.avatar || req.user.avatar || '';
 
-    // Generate E2E encryption hash string
     const encryptionHash = `AES256-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
     let insertRes;
@@ -2205,7 +2144,6 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
 
     const createdMsg = insertRes.rows[0];
 
-    // Real-time Socket Emission to recipient and sender rooms
     try {
       if (io) {
         const socketPayload = {
@@ -2220,7 +2158,6 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
       console.warn('[Bulletin Direct Messages] Socket emit warning:', sErr);
     }
 
-    // Send push notification
     try {
       await createNotification(
         recipientId,
@@ -2310,14 +2247,12 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
 
-    // Fetch user's ads
     const adsRes = await pool.query(`
       SELECT * FROM bulletin_ads WHERE user_id = $1 ORDER BY created_at DESC
     `, [userId]);
 
     const ads = adsRes.rows;
 
-    // Fetch inquiries count for user's ads
     const inqRes = await pool.query(`
       SELECT COUNT(*)::int as count FROM bulletin_page_inquiries i
       JOIN bulletin_ads b ON i.ad_id = b.id
@@ -2326,7 +2261,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
 
     const totalInquiries = inqRes.rows[0]?.count || 0;
 
-    // Compute Totals
     const totalAds = ads.length;
     const activeAds = ads.filter((a: any) => a.status === 'approved').length;
     const totalImpressions = ads.reduce((s: number, a: any) => s + Number(a.impressions_count || 0), 0);
@@ -2336,7 +2270,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
     const totalShares = ads.reduce((s: number, a: any) => s + Number(a.shares_count || 0), 0);
     const ctr = totalImpressions > 0 ? Number(((totalClicks / totalImpressions) * 100).toFixed(2)) : 0;
 
-    // Daily time-series breakdown (14 days)
     const timeSeries = [];
     const now = new Date();
     for (let i = 13; i >= 0; i--) {
@@ -2358,7 +2291,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
       });
     }
 
-    // Demographics: Age Groups & Gender
     const ageGroups = [
       { group: '18-24', percentage: 28, count: Math.round(totalImpressions * 0.28) },
       { group: '25-34', percentage: 44, count: Math.round(totalImpressions * 0.44) },
@@ -2373,7 +2305,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
       { name: 'غير محدد / Other', percentage: 3, color: '#9ca3af' }
     ];
 
-    // Audience Type & Device Breakdown
     const devices = [
       { device: 'الهاتف المحمول / Mobile', percentage: 74, color: '#10b981' },
       { device: 'الكمبيوتر / Desktop', percentage: 21, color: '#6366f1' },
@@ -2386,7 +2317,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
       { segment: 'شركاء وتجار (B2B Trade)', percentage: 18, count: Math.round(totalClicks * 0.18) }
     ];
 
-    // Geographic Location Breakdown (Palestine & Region)
     const locations = [
       { city: 'رام الله والبيرة', city_en: 'Ramallah & Al-Bireh', percentage: 34, clicks: Math.round(totalClicks * 0.34) },
       { city: 'نابلس', city_en: 'Nablus', percentage: 24, clicks: Math.round(totalClicks * 0.24) },
@@ -2396,7 +2326,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
       { city: 'جنين وطولكرم والمدن الأخرى', city_en: 'Jenin & Others', percentage: 6, clicks: Math.round(totalClicks * 0.06) }
     ];
 
-    // Smart Recommendations & Insights
     const insights = [];
     if (ctr >= 3.0) {
       insights.push({
@@ -2432,7 +2361,6 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
       message_en: '74% of your viewers browse via mobile phones. Keep text concise and visually striking for mobile screens.'
     });
 
-    // Enriched ad list with calculated CTR
     const formattedAds = ads.map((a: any) => {
       const imp = Number(a.impressions_count || 0);
       const clk = Number(a.clicks_count || 0);
@@ -2507,7 +2435,6 @@ router.post('/ads/:id/click', async (req, res) => {
     const adId = parseInt(req.params.id);
     await pool.query('UPDATE bulletin_ads SET clicks_count = clicks_count + 1 WHERE id = $1', [adId]);
     
-    // Log for heatmap analytics
     try {
       const ip = req.ip || req.headers['x-forwarded-for'] || '';
       const userAgent = req.headers['user-agent'] || '';
@@ -2547,21 +2474,18 @@ router.post('/ads/:id/save', authenticateToken, async (req: any, res) => {
     const adId = parseInt(req.params.id);
     const userId = req.user.id;
 
-    // Check if already saved
     const checkRes = await pool.query(
       'SELECT id FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2',
       [userId, adId]
     );
 
     if (checkRes.rows.length > 0) {
-      // Unsave
       await pool.query(
         'DELETE FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2',
         [userId, adId]
       );
       return res.json({ success: true, saved: false, message: 'تمت إزالة المنشور من المحفوظات' });
     } else {
-      // Save
       await pool.query(
         'INSERT INTO bulletin_saved_ads (user_id, ad_id) VALUES ($1, $2)',
         [userId, adId]
@@ -2628,9 +2552,6 @@ router.get('/saved', authenticateToken, async (req: any, res) => {
   }
 });
 
-// ============================================================
-// Admin Management Routes for Bulletin Ads
-// ============================================================
 
 /**
  * GET /api/bulletin/admin/export-schedule
@@ -2659,12 +2580,9 @@ router.get('/admin/export-schedule', authenticateAdmin, async (req, res) => {
 
     const ads = result.rows;
 
-    // Header
     let csv = 'ID,Title,Status,Advertiser,Email,City,Price Paid,Starts At,Expires At,Impressions,Clicks,Projected ROI%\n';
 
     ads.forEach((ad: any) => {
-      // Projected ROI logic: For simplicity in this CSV, we use a factor of click-through value
-      // In a real scenario, this would correlate with actual conversion tracking data.
       const revenueProxy = Number(ad.clicks_count || 0) * 0.45; // Assuming $0.45 value per click
       const cost = Number(ad.price_paid || 1);
       const roi = ((revenueProxy / cost) * 100).toFixed(2);
@@ -2688,7 +2606,6 @@ router.get('/admin/export-schedule', authenticateAdmin, async (req, res) => {
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=ad_export_schedule.csv');
-    // Add UTF-8 BOM for Excel compatibility
     res.status(200).send('\uFEFF' + csv);
   } catch (error: any) {
     console.error('[Admin Bulletin Export] Error:', error.message);
@@ -2770,7 +2687,6 @@ router.post('/admin/:id/approve', authenticateAdmin, async (req, res) => {
       RETURNING *
     `, [durationDays, adId]);
 
-    // Send notification to ad creator
     try {
       await createNotification(
         ad.user_id,
@@ -2785,7 +2701,6 @@ router.post('/admin/:id/approve', authenticateAdmin, async (req, res) => {
       console.error('[Admin Bulletin API] Notification error:', nErr);
     }
 
-    // Send email to ad creator
     try {
       const userRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [ad.user_id]);
       if (userRes.rows.length > 0) {
@@ -2845,7 +2760,6 @@ router.post('/admin/:id/reject', authenticateAdmin, async (req, res) => {
       WHERE id = $2
     `, [reason || 'لا يتوافق مع شروط النشر', adId]);
 
-    // If refund is requested and price > 0, return money to user wallet
     if (refund && cost > 0) {
       const client = await ledgerPool.connect();
       try {
@@ -2872,7 +2786,6 @@ router.post('/admin/:id/reject', authenticateAdmin, async (req, res) => {
       }
     }
 
-    // Send notification to user
     try {
       await createNotification(
         ad.user_id,
@@ -2887,7 +2800,6 @@ router.post('/admin/:id/reject', authenticateAdmin, async (req, res) => {
       console.error('[Admin Bulletin API] Notification error:', nErr);
     }
 
-    // Send email to ad creator
     try {
       const userRes = await pool.query('SELECT email, language, name FROM users WHERE id = $1', [ad.user_id]);
       if (userRes.rows.length > 0) {
@@ -2973,7 +2885,6 @@ router.post('/admin/:id/stop', authenticateAdmin, async (req, res) => {
 
     const ad = adRes.rows[0];
 
-    // Update ad status to stopped/expired
     await pool.query(`
       UPDATE bulletin_ads
       SET status = 'expired',
@@ -2984,7 +2895,6 @@ router.post('/admin/:id/stop', authenticateAdmin, async (req, res) => {
 
     const stopReason = reason || 'Violation of platform terms or administrative decision';
 
-    // 1. Send platform notification
     try {
       await createNotification(
         ad.user_id,
@@ -2999,7 +2909,6 @@ router.post('/admin/:id/stop', authenticateAdmin, async (req, res) => {
       console.error('[Admin Bulletin API] Stop notification error:', nErr);
     }
 
-    // 2. Send email notification
     try {
       if (ad.u_email) {
         const { sendEmail } = await import('../services/email.js');
@@ -3019,7 +2928,7 @@ router.post('/admin/:id/stop', authenticateAdmin, async (req, res) => {
           </div>
         `;
         await sendEmail(ad.u_email, subject, html);
-        console.log(`[Email Sent] Successfully notified user ${ad.u_email} of ad stoppage.`);
+        // Email sent successfully
       }
     } catch (mailErr) {
       console.error('[Admin Bulletin API] Stop email error:', mailErr);
@@ -3042,7 +2951,6 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
     const userId = req.user.id;
     const { title, description, image_url, whatsapp_number, phone_number, video_url, target_url, hashtags, location_city, audience, ad_format, quick_questions } = req.body;
 
-    // Check ownership
     const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
     if (adRes.rows.length === 0) {
       return res.status(404).json({ error: 'الإعلان غير موجود' });
@@ -3133,7 +3041,6 @@ router.delete('/ads/:id', authenticateToken, async (req: any, res) => {
     const adId = parseInt(req.params.id);
     const userId = req.user.id;
 
-    // Check ownership
     const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
     if (adRes.rows.length === 0) {
       return res.status(404).json({ error: 'الإعلان غير موجود' });

@@ -20,7 +20,6 @@ function verifyMagicBytes(buffer: Buffer, ext: string, mimetype: string): { matc
 
   switch (ext) {
     case '.png':
-      // PNG magic number: 89 50 4e 47 0d 0a 1a 0a
       if (hex.startsWith('89504e470d0a1a0a') || hex.startsWith('89504e47')) {
         return { matches: true };
       }
@@ -28,42 +27,36 @@ function verifyMagicBytes(buffer: Buffer, ext: string, mimetype: string): { matc
 
     case '.jpg':
     case '.jpeg':
-      // JPEG magic number: ff d8 ff
       if (hex.startsWith('ffd8ff')) {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid JPEG/JPG header signature.' };
 
     case '.gif':
-      // GIF magic number: 47 49 46 38 ("GIF87a" or "GIF89a")
       if (hex.startsWith('47494638')) {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid GIF header signature.' };
 
     case '.webp':
-      // WEBP starts with "RIFF" (52 49 46 46) and "WEBP" at offset 8..11 (57 45 42 50)
       if (hex.startsWith('52494646') && buffer.subarray(8, 12).toString('ascii') === 'WEBP') {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid WEBP header signature.' };
 
     case '.bmp':
-      // BMP magic number: 42 4d ("BM")
       if (hex.startsWith('424d')) {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid BMP header signature.' };
 
     case '.pdf':
-      // PDF magic number: %PDF- (25 50 44 46 2d)
       if (hex.startsWith('255044462d') || buffer.toString('ascii', 0, 10).includes('%PDF-')) {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid PDF header signature.' };
 
     case '.svg':
-      // SVG: XML or SVG tag in initial text slice
       const textHead = buffer.toString('utf8', 0, Math.min(buffer.length, 512)).toLowerCase();
       if ((textHead.includes('<svg') || textHead.includes('<?xml')) && !textHead.includes('<script')) {
         return { matches: true };
@@ -73,7 +66,6 @@ function verifyMagicBytes(buffer: Buffer, ext: string, mimetype: string): { matc
     case '.mp4':
     case '.mov':
     case '.m4v':
-      // MP4 / MOV container: 'ftyp' at offset 4..8
       const ftypBox = buffer.subarray(4, 8).toString('ascii');
       if (ftypBox === 'ftyp' || ftypBox === 'moov' || ftypBox === 'mdat' || ftypBox === 'wide') {
         return { matches: true };
@@ -82,14 +74,12 @@ function verifyMagicBytes(buffer: Buffer, ext: string, mimetype: string): { matc
 
     case '.webm':
     case '.mkv':
-      // EBML header for WebM/MKV: 1a 45 df a3
       if (hex.startsWith('1a45dfa3')) {
         return { matches: true };
       }
       return { matches: false, detail: 'Invalid WebM/MKV container structure.' };
 
     default:
-      // For other types, allow if buffer exists and is non-empty
       return { matches: true };
   }
 }
@@ -106,7 +96,6 @@ export async function validateFileIntegrity(file: Express.Multer.File): Promise<
     };
   }
 
-  // 1. Check if file exists on disk
   let stats: fs.Stats;
   try {
     stats = await fsPromises.stat(file.path);
@@ -118,7 +107,6 @@ export async function validateFileIntegrity(file: Express.Multer.File): Promise<
     };
   }
 
-  // 2. File Size Checks
   if (stats.size === 0) {
     return {
       isValid: false,
@@ -138,7 +126,6 @@ export async function validateFileIntegrity(file: Express.Multer.File): Promise<
   const ext = path.extname(file.originalname || file.filename || '').toLowerCase();
   const mimetype = (file.mimetype || '').toLowerCase();
 
-  // 3. Header / Magic Byte Check
   let fileBuffer: Buffer;
   try {
     const handle = await fsPromises.open(file.path, 'r');
@@ -163,7 +150,6 @@ export async function validateFileIntegrity(file: Express.Multer.File): Promise<
     };
   }
 
-  // 4. Image Pixel Integrity Check with Sharp (if it's an image format)
   const isRasterImage = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif', '.tiff'].includes(ext) || mimetype.startsWith('image/');
   if (isRasterImage && ext !== '.svg') {
     try {
@@ -220,7 +206,6 @@ export async function uploadValidator(req: Request, res: Response, next: NextFun
     if (!result.isValid) {
       console.warn(`[Upload Validator] Corrupt or invalid file rejected: ${file.originalname || file.filename}. Reason: ${result.reason}`);
 
-      // Immediately purge all files attached to this request to maintain clean disk state
       for (const cleanupFile of filesToValidate) {
         if (cleanupFile.path && fs.existsSync(cleanupFile.path)) {
           await fsPromises.unlink(cleanupFile.path).catch((unlinkErr) => {

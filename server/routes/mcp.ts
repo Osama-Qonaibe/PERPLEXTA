@@ -6,7 +6,6 @@ import { executeTaskLogic } from '../services/orchestrator.js';
 
 const router = express.Router();
 
-// SSE Session storage
 interface SseSession {
   id: string;
   res: express.Response;
@@ -39,13 +38,10 @@ router.get('/sse', (req, res) => {
     created: Date.now()
   });
 
-  // Client must POST JSON-RPC payloads to this message url
   const messageUrl = `${baseUrl}/api/mcp/message?id=${sessionId}`;
   
-  // Write initial protocol headers
   res.write(`event: endpoint\ndata: ${messageUrl}\n\n`);
 
-  // Heartbeat to maintain open tunnel
   const heartbeatInterval = setInterval(() => {
     if (res.writableEnded) {
       clearInterval(heartbeatInterval);
@@ -60,7 +56,6 @@ router.get('/sse', (req, res) => {
     }
   }, 15000);
 
-  // Add timeout to cleanup stale sessions after 30 minutes
   const sessionTimeout = setTimeout(() => {
     sessions.delete(sessionId);
     clearInterval(heartbeatInterval);
@@ -106,7 +101,6 @@ router.post('/message', async (req, res) => {
     });
   }
 
-  // Resolve User ID via JWT authorization header if present
   let userId = 1; // Default integration/sandbox user ID
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1];
@@ -151,7 +145,6 @@ router.post('/message', async (req, res) => {
       }
 
       case 'tools/list': {
-        // Query of active platform tools mapped in system
         let registeredTools: any[] = [];
         try {
           const dbTools = await pool.query('SELECT tool_id, task_description, task_description_ar FROM tool_orchestrator WHERE is_active = true');
@@ -160,7 +153,6 @@ router.post('/message', async (req, res) => {
           console.error('[MCP Server] Error querying tools from DB:', dbErr);
         }
 
-        // Fallback default list if database is empty or connection fails
         if (registeredTools.length === 0) {
           registeredTools = [
             { tool_id: 'chat', task_description: 'Elite strategic assistant for professional discourse and general logic.' },
@@ -215,13 +207,11 @@ router.post('/message', async (req, res) => {
           });
         }
 
-        // Let sse connection know the execution is underway if session is registered
         const activeSession = sessionId ? sessions.get(sessionId) : null;
         if (activeSession) {
           activeSession.res.write(`event: log\ndata: ${JSON.stringify({ message: `Executing tool ${toolName} for query.` })}\n\n`);
         }
 
-        // Run tool invocation via the global Perplexta Orchestrator
         let buffer = '';
         const onChunk = (chunk: string) => {
           buffer += chunk;
@@ -235,7 +225,6 @@ router.post('/message', async (req, res) => {
           prompt: runPrompt
         }, userId, req, onChunk);
 
-        // Extract response body or aggregated buffer
         const resultAsAny = executionResult as any;
         const summaryText = resultAsAny?.response || resultAsAny?.summary || resultAsAny?.result || buffer || resultAsAny?.text || JSON.stringify(executionResult);
 

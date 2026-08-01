@@ -98,6 +98,7 @@ interface AppContextType {
   milestoneData: any;
   setMilestoneData: (data: any) => void;
   isMobile: boolean;
+  isIOS: boolean;
   isInstallable: boolean;
   isInstalling: boolean;
   isStandalone: boolean;
@@ -1687,6 +1688,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [balanceUSD, setBalanceUSD] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isIOS] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -1785,6 +1791,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
+      if (isIOS) return;
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
@@ -2369,22 +2376,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const fetchBalance = async () => {
-    if (!token) return;
-    try {
-      const data = await fetchWithRetry(`/api/user/me?skip_profile=1&t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (data.points !== undefined) setBalance(Number(data.points));
-      if (data.balance !== undefined) setBalanceUSD(Number(data.balance));
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-
-      if (errMsg.includes('401') || errMsg.includes('403')) {
-        logout(false);
-      }
-    }
-  };
 
   const profileFetched = useRef(false);
   useEffect(() => {
@@ -2418,14 +2409,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!profileFetched.current || forceRefresh) {
       profileFetched.current = true;
       localStorage.removeItem('app_force_refresh');
-
-      fetch(`/api/system/economy`)
-        .then(res => res.json())
-        .then(data => data && data.points_per_dollar && setEconomySettings(data))
-        .catch(() => {});
-
       fetchUserProfile();
-      fetchBalance();
     }
 
     if (socket && !socket.connected) {
@@ -2926,7 +2910,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
       } catch (err) {
-        // Safe fallback
       }
     };
 
@@ -3318,7 +3301,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
 
-      // Execute concurrently
       await Promise.allSettled([fetchSettings(), fetchEconomy(), fetchPlans()]);
     };
     fetchSettingsAndPlans();
@@ -3495,6 +3477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       milestoneData,
       setMilestoneData,
       isMobile,
+      isIOS,
       isInstallable,
       isInstalling,
       isStandalone,

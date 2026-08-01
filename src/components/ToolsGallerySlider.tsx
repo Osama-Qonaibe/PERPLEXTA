@@ -76,7 +76,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#100d14] to-[#17141f] flex flex-col items-center justify-center overflow-hidden">
             <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
-            <svg className="w-10 h-10 text-emerald-500/80 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-10 h-10 text-emerald-500/80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="15" width="70" height="70" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <line x1="25" y1="50" x2="25" y2="50" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
               <line x1="33" y1="38" x2="33" y2="62" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
@@ -93,7 +93,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c1315] to-[#12191c] flex flex-col items-center justify-center overflow-hidden">
             <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
-            <svg className="w-10 h-10 text-emerald-500/80 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-10 h-10 text-emerald-500/80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="15" width="70" height="70" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <circle cx="45" cy="45" r="14" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 1" />
               <line x1="55" y1="55" x2="75" y2="75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -176,10 +176,8 @@ export const ToolsGallerySlider: React.FC = () => {
     }
   ], [isAr]);
 
-  // Current visible window start index
   const [startIndex, setStartIndex] = useState(0);
 
-  // Auto-play interval
   useEffect(() => {
     const timer = setInterval(() => {
       setStartIndex((prev) => (prev + 1) % tools.length);
@@ -195,7 +193,6 @@ export const ToolsGallerySlider: React.FC = () => {
     setStartIndex((prev) => (prev + 1) % tools.length);
   };
 
-  // Helper to get 3 items sequentially with wrapping
   const visibleTools = useMemo(() => {
     const list: ToolItem[] = [];
     for (let i = 0; i < 3; i++) {
@@ -209,7 +206,7 @@ export const ToolsGallerySlider: React.FC = () => {
     <div className="hidden sm:flex w-full max-w-4xl mx-auto mt-6 px-1 select-none flex-col items-center">
       {/* Header title */}
       <div className="flex items-center gap-1.5 mb-5 opacity-90 justify-center">
-        <Sparkles size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+        <Sparkles size={14} className="text-emerald-500" />
         <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-emerald-500 font-sans">
           {isAr ? "قدرات المنصة والأدوات الاحترافية المتاحة" : "Available Intelligent Platform Capabilities"}
         </span>
@@ -222,7 +219,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handlePrev}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronRight size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />
@@ -236,10 +233,6 @@ export const ToolsGallerySlider: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 h-full items-center">
             <AnimatePresence mode="popLayout" initial={false}>
               {visibleTools.map((tool, index) => {
-                // Determine responsive classes
-                // We show card 0 always.
-                // Card 1 hidden on mobile (only sm:block)
-                // Card 2 hidden on mobile/tablet (only md:block)
                 let responsiveClass = "w-full h-full";
                 if (index === 1) responsiveClass += " hidden sm:block";
                 if (index === 2) responsiveClass += " hidden md:block";
@@ -257,7 +250,7 @@ export const ToolsGallerySlider: React.FC = () => {
                     <div className="flex flex-col gap-2 sm:gap-3 h-full">
                       {/* Tool Header Icon + Title */}
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group-hover:bg-emerald-500/25 transition-all duration-300">
+                        <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/25 transition-all duration-300">
                           {tool.icon}
                         </div>
                         <h4 className="text-xs sm:text-sm font-black text-gray-850 dark:text-gray-100 group-hover:text-emerald-500 transition-colors duration-300 line-clamp-1 font-sans">
@@ -291,7 +284,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handleNext}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.55)] group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronLeft size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />

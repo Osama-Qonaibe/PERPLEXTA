@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone, Cpu } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone, Cpu, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isStandalone, isInstallable, installApp, isMobile } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isStandalone, isInstallable, installApp, isMobile, isIOS } = useAppContext();
   
   const [isDismissed, setIsDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -39,7 +39,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     };
   }, []);
 
-  const showMobileBanner = !isStandalone && isMobile && !isDismissed && isInstallable;
+  const showMobileBanner = !isStandalone && isMobile && !isDismissed && isInstallable && !isIOS;
   
   const [isStreaming, setIsStreaming] = useState(false);
 
@@ -56,7 +56,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     };
   }, []);
   
-  // Use the locked language from props if available (for stable transitions)
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
@@ -208,15 +207,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64) ? (
                     <motion.div 
-                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
-                        scale: [1, 1.05, 1],
-                        borderColor: ["var(--border-main)", "rgba(16,185,129,0.8)", "var(--border-main)"],
-                        boxShadow: [
-                          "0 0 15px rgba(0,0,0,0.1)",
-                          "0 0 25px rgba(16,185,129,0.45)",
-                          "0 0 15px rgba(0,0,0,0.1)"
-                        ]
+                        scale: [1, 1.03, 1],
+                        borderColor: ["var(--border-main)", "rgba(16,185,129,0.4)", "var(--border-main)"]
                       } : {}}
                       transition={isStreaming ? {
                         duration: 1.8,
@@ -234,12 +228,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     <motion.div
                       className="w-10 h-10 flex items-center justify-center relative z-10 transition-theme"
                       animate={isStreaming ? {
-                        scale: [1, 1.08, 1],
-                        filter: [
-                          "drop-shadow(0 0 0px rgba(16,185,129,0))",
-                          "drop-shadow(0 0 10px rgba(16,185,129,0.65))",
-                          "drop-shadow(0 0 0px rgba(16,185,129,0))"
-                        ]
+                        scale: [1, 1.05, 1]
                       } : {}}
                       transition={isStreaming ? {
                         duration: 1.8,
@@ -250,56 +239,23 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
                     </motion.div>
                   )}
-                  <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-theme rounded-full blur-2xl -z-10" />
                 </div>
                  {!isMobileView ? (
                   <div className="flex items-center select-none px-1">
                     {/[\u0600-\u06FF]/.test(String(t('appName') || "Perplexta")) ? (
                       <motion.span
-                        className="text-[17px] font-bold tracking-tight font-sans text-transparent bg-clip-text bg-[length:200%_auto] transition-theme"
-                        style={{
-                          backgroundImage: `linear-gradient(${dir === 'rtl' ? '90deg' : '90deg'}, var(--text-primary) 30%, rgb(16,185,129) 50%, var(--text-primary) 70%)`
-                        }}
-                        animate={isStreaming ? {
-                          backgroundPosition: dir === 'rtl' ? ["-100% 0", "100% 0"] : ["200% 0", "-200% 0"],
-                          filter: [
-                            "drop-shadow(0 0 1px rgba(16,185,129,0.1))",
-                            "drop-shadow(0 0 12px rgba(16,185,129,0.65))",
-                            "drop-shadow(0 0 1px rgba(16,185,129,0.1))"
-                          ]
-                        } : {
-                          backgroundPosition: "0 0"
-                        }}
-                        transition={isStreaming ? {
-                          duration: 2.0,
-                          repeat: Infinity,
-                          ease: "linear"
-                        } : {}}
+                        className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme"
                       >
                         {t('appName')}
                       </motion.span>
                     ) : (
                       String(t('appName') || "Perplexta").split("").map((char, index) => (
-                        <motion.span 
+                        <span 
                           key={index}
                           className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme"
-                          animate={isStreaming ? {
-                            color: ["var(--text-primary)", "rgb(16,185,129)", "var(--text-primary)"],
-                            textShadow: [
-                              "0 0 0px rgba(16,185,129,0)",
-                              "0 0 14px rgba(16,185,129,0.85)",
-                              "0 0 0px rgba(16,185,129,0)"
-                            ]
-                          } : {}}
-                          transition={isStreaming ? {
-                            duration: 1.6,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: index * 0.1,
-                          } : {}}
                         >
                           {char === " " ? "\u00A0" : char}
-                        </motion.span>
+                        </span>
                       ))
                     )}
                   </div>
@@ -312,7 +268,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
                   title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
                 >
-                  <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-theme" />
+                  <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
                 </button>
               )}
           </div>
@@ -354,7 +310,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all duration-300"
                           title={language === 'ar' ? 'حفظ' : 'Save'}
                         >
-                           <Check size={13} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                           <Check size={13} />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
@@ -370,7 +326,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
                         {chatTitle}
                       </h2>
-                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 flex-shrink-0" />
+                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 flex-shrink-0" />
                     </div>
                   )}
                 </motion.div>
@@ -408,39 +364,16 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   isBulletinActive 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                    ? 'text-emerald-500' 
+                    : 'text-gray-400 group-hover:text-emerald-500'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isBulletinActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+                isBulletinActive ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-emerald-500'
               }`}>{language === 'ar' ? 'لوحة الإعلانات' : 'Bulletin Board'}</span>
             </NavLink>
 
-            <NavLink
-              to="/marketplace"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
-                isMarketplaceActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
-                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
-              }`}
-              title={language === 'ar' ? 'سوق بيربليكستا للمنتجات الرقمية' : 'Perplexta Digital Products Market'}
-            >
-              <ShoppingBag 
-                size={15} 
-                className={`transition-theme ${
-                  isMarketplaceActive 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                }`} 
-              />
-              <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isMarketplaceActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'السوق' : 'Marketplace'}</span>
-              <span className={`sm:hidden transition-theme ${
-                isMarketplaceActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'السوق' : 'Market'}</span>
-            </NavLink>
+
 
             <NavLink
               to="/Studio"
@@ -455,38 +388,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   location.pathname === '/Studio' 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                    ? 'text-emerald-500' 
+                    : 'text-gray-400 group-hover:text-emerald-500'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                location.pathname === '/Studio' ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
+                location.pathname === '/Studio' ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-emerald-500'
               }`}>{language === 'ar' ? 'الاستوديو' : 'Studio'}</span>
-            </NavLink>
-
-            <NavLink
-              to="/blog"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
-                isBlogActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
-                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
-              }`}
-              title={language === 'ar' ? 'مقالات التحليل واستخبارات السوق' : 'Market Intelligence Insights'}
-            >
-              <Edit2 
-                size={15} 
-                className={`transition-theme ${
-                  isBlogActive 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.65)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
-                }`} 
-              />
-              <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isBlogActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'المقالات' : 'Insights'}</span>
-              <span className={`sm:hidden transition-theme ${
-                isBlogActive ? 'text-emerald-500 font-bold drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] font-sans' : 'group-hover:text-emerald-500'
-              }`}>{language === 'ar' ? 'مقال' : 'Blog'}</span>
             </NavLink>
           <AnimatePresence>
             {isOffline && (
@@ -502,7 +410,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                 </span>
-                <WifiOff size={14} className="text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                <WifiOff size={14} className="text-amber-500" />
                 <span className="hidden sm:inline text-[11px] text-amber-500 font-bold tracking-tight uppercase">
                   {language === 'ar' ? 'دون اتصال' : 'Offline'}
                 </span>
@@ -510,13 +418,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
             )}
           </AnimatePresence>
 
-           {!isStandalone && isInstallable && !isMobile && (
+           {!isStandalone && isInstallable && !isMobile && !isIOS && (
              <button
                onClick={installApp}
-               className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] cursor-pointer"
+               className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-theme active:scale-95 group shrink-0 shadow-sm cursor-pointer"
                title={language === 'ar' ? 'تثبيت التطبيق على جهازك' : 'Install app on your device'}
              >
-               <Download size={15} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-theme animate-pulse" />
+               <Download size={15} className="text-emerald-500 group-hover:scale-110 transition-theme animate-pulse" />
                <span className="hidden sm:inline text-[13px] text-emerald-500 font-bold transition-theme font-sans">
                  {language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}
                </span>
@@ -530,7 +438,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 onClick={toggleLanguage}
                 className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
-            <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+            <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
             <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
           </button>
 
@@ -540,9 +448,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 aria-label={isHeaderThemeDark ? 'Light Mode' : 'Dark Mode'}
               >
                 {isHeaderThemeDark ? (
-                  <Sun size={18} className="text-gray-400 group-hover:text-amber-500 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-theme" />
+                  <Sun size={18} className="text-gray-400 group-hover:text-amber-500 transition-theme" />
                 ) : (
-                  <Moon size={18} className="text-gray-400 group-hover:text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.6)] transition-theme" />
+                  <Moon size={18} className="text-gray-400 group-hover:text-blue-500 transition-theme" />
                 )}
               </button>
         
@@ -556,7 +464,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
               title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
             >
-              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
             </button>
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
@@ -564,7 +472,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
                 className={`flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-emerald-500/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
               >
-                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
+                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500" : "text-gray-400 group-hover:text-emerald-500"}`} />
                 {unreadCount > 0 && (
                   <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
                 )}
@@ -586,7 +494,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         disabled={unreadCount === 0}
                         className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
                           unreadCount > 0 
-                            ? 'text-emerald-500 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer' 
+                            ? 'text-emerald-500 hover:text-emerald-400 cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
                         }`}
                       >
@@ -598,7 +506,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         disabled={notifications.length === 0}
                         className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
                           notifications.length > 0 
-                            ? 'text-rose-500 hover:text-rose-400 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer' 
+                            ? 'text-rose-500 hover:text-rose-400 cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
                         }`}
                       >
@@ -645,7 +553,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                                 {!notif.is_read && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.8)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                                     title={language === 'ar' ? 'تحديد كمقروء' : 'Mark as read'}
                                   >
                                     <Check size={11} className="stroke-[3px]" />
@@ -653,7 +561,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                                 )}
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                                  className="p-0.5 sm:p-1 text-rose-500/60 hover:text-rose-500 hover:drop-shadow-[0_0_6px_rgba(239,68,68,0.8)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                  className="p-0.5 sm:p-1 text-rose-500/60 hover:text-rose-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                                   title={language === 'ar' ? 'حذف الإشعار' : 'Delete notification'}
                                 >
                                   <Trash2 size={11} />
@@ -699,7 +607,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           }`}
         >
           <div className="flex items-center gap-2 max-w-[80%] text-right" dir={dir}>
-            <Smartphone size={16} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
+            <Smartphone size={16} className="text-emerald-500 shrink-0 animate-pulse" />
             <p className="font-medium truncate text-[11px] sm:text-xs leading-normal">
               {language === 'ar' 
                 ? 'ثبّت بيربليكستا السيادية كتطبيق هاتف ذكي للوصول المباشر والتشغيل التلقائي.' 

@@ -36,7 +36,6 @@ export async function ensureAdsTable() {
       );
     `);
 
-    // Migration for existing tables: add format & video_url if missing
     try {
       await pool.query("ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'sidebar'");
       await pool.query("ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS video_url TEXT");
@@ -88,12 +87,7 @@ export async function ensureAdsTable() {
   }
 }
 
-// Ensure table on router initialization
-// ensureAdsTable().catch(() => {});
 
-// ============================================================
-// Public Advertisement Routes
-// ============================================================
 
 /**
  * GET /api/ads
@@ -114,7 +108,6 @@ router.get('/', async (req, res) => {
         [position]
       );
     } catch (dbErr: any) {
-      // If table or column missing, try to heal once
       const isMissingSchema = 
         dbErr.message.includes('relation "advertisements" does not exist') || 
         dbErr.message.includes('column "format" does not exist') ||
@@ -178,9 +171,6 @@ router.post('/:id/click', async (req, res) => {
   }
 });
 
-// ============================================================
-// Admin Advertisement Management Routes
-// ============================================================
 
 /**
  * GET /api/ads/admin/analytics
@@ -188,7 +178,6 @@ router.post('/:id/click', async (req, res) => {
  */
 router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
   try {
-    // 1. Fetch platform ads
     let platformAds: any[] = [];
     try {
       const pRes = await pool.query('SELECT * FROM advertisements ORDER BY id DESC');
@@ -197,7 +186,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       await ensureAdsTable();
     }
 
-    // 2. Fetch bulletin ads
     let bulletinAds: any[] = [];
     try {
       const bRes = await pool.query(`
@@ -209,12 +197,10 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       bulletinAds = bRes.rows;
     } catch (e) {}
 
-    // Calculate Platform Totals
     const platformImpressions = platformAds.reduce((sum, a) => sum + (Number(a.impression_count) || 0), 0);
     const platformClicks = platformAds.reduce((sum, a) => sum + (Number(a.click_count) || 0), 0);
     const platformEstRevenue = platformAds.length * 15.0; // $15 per platform banner setup
 
-    // Calculate Bulletin Totals
     const bulletinImpressions = bulletinAds.reduce((sum, a) => sum + (Number(a.impressions_count) || 0), 0);
     const bulletinClicks = bulletinAds.reduce((sum, a) => sum + (Number(a.clicks_count) || 0), 0);
     const bulletinRevenue = bulletinAds.reduce((sum, a) => sum + (Number(a.price_paid) || 0), 0);
@@ -224,7 +210,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
     const totalRevenue = platformEstRevenue + bulletinRevenue;
     const overallCTR = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : '0.00';
 
-    // Group performance per advertiser
     const advertiserMap: Record<string, {
       sponsor_name: string;
       user_email: string;
@@ -236,7 +221,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       top_ad_title: string;
     }> = {};
 
-    // Group platform ads
     platformAds.forEach(a => {
       const key = a.sponsor_name || 'System Admin';
       if (!advertiserMap[key]) {
@@ -257,7 +241,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       advertiserMap[key].clicks += Number(a.click_count || 0);
     });
 
-    // Group bulletin ads
     bulletinAds.forEach(b => {
       const key = b.author_name || b.user_name || `Advertiser #${b.user_id}`;
       if (!advertiserMap[key]) {
@@ -286,7 +269,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       };
     }).sort((a, b) => b.total_revenue - a.total_revenue);
 
-    // Generate 14-day Time-Series Trend Data
     const days = 14;
     const timeSeriesData = [];
     const now = new Date();
@@ -295,7 +277,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      // Calculate smooth trend curve
       const factor = 1 + Math.sin(i * 0.5) * 0.3;
       const baseImp = Math.round((totalImpressions / (days * 1.2)) * factor) + Math.floor(Math.random() * 20);
       const baseClick = Math.round(baseImp * (parseFloat(overallCTR) / 100 || 0.035)) + Math.floor(Math.random() * 5);
@@ -311,7 +292,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Category distribution
     const categoryMap: Record<string, { name: string; revenue: number; impressions: number; clicks: number }> = {};
     bulletinAds.forEach(b => {
       const cat = b.category || 'عام / General';
@@ -325,7 +305,6 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
 
     const categoryData = Object.values(categoryMap);
 
-    // Placement breakdown
     const placementData = [
       { name: 'إعلانات لوحة المجتمع (Bulletin)', value: bulletinAds.length, revenue: bulletinRevenue, impressions: bulletinImpressions },
       { name: 'الشريط الجانبي للمنصة (Sidebar)', value: platformAds.length, revenue: platformEstRevenue, impressions: platformImpressions }

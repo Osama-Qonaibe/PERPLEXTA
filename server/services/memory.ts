@@ -1,5 +1,6 @@
 import { pool } from '../db/index.js';
 import { callAIProvider, getProviderKey } from './ai.js';
+import { getCachedOrchestratorConfig } from '../db/queries.js';
 
 export interface ConsolidationReportItem {
   userId: number;
@@ -103,24 +104,18 @@ export async function consolidateAllUserMemories(options?: {
   const threshold = options?.threshold ?? 10;
   const targetUserId = options?.targetUserId ? (typeof options.targetUserId === 'string' ? parseInt(options.targetUserId, 10) : options.targetUserId) : undefined;
   
-  // 1. Determine active provider & model from tool_orchestrator
-  // Prioritize sovereign_memory first, then chat, then fallback to anything active. No hardcoded default parameters are allowed under Orchestrator Absolutism.
   let provider = '';
   let model = '';
   try {
-    const orchestratorRes = await pool.query(
-      "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE tool_id = 'sovereign_memory' AND is_active = true"
-    );
-    if (orchestratorRes.rows.length > 0 && orchestratorRes.rows[0].primary_provider) {
-      provider = orchestratorRes.rows[0].primary_provider;
-      model = orchestratorRes.rows[0].primary_model;
+    const memoryConfig = await getCachedOrchestratorConfig('sovereign_memory');
+    if (memoryConfig && memoryConfig.primary_provider) {
+      provider = memoryConfig.primary_provider;
+      model = memoryConfig.primary_model;
     } else {
-      const chatOrchestratorRes = await pool.query(
-        "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE tool_id = 'chat' AND is_active = true"
-      );
-      if (chatOrchestratorRes.rows.length > 0 && chatOrchestratorRes.rows[0].primary_provider) {
-        provider = chatOrchestratorRes.rows[0].primary_provider;
-        model = chatOrchestratorRes.rows[0].primary_model;
+      const chatConfig = await getCachedOrchestratorConfig('chat');
+      if (chatConfig && chatConfig.primary_provider) {
+        provider = chatConfig.primary_provider;
+        model = chatConfig.primary_model;
       } else {
         const generalRes = await pool.query(
           "SELECT primary_provider, primary_model FROM tool_orchestrator WHERE is_active = true AND primary_provider IS NOT NULL LIMIT 1"
@@ -139,13 +134,11 @@ export async function consolidateAllUserMemories(options?: {
     throw new Error('Memory Service: Could not resolve a valid active AI provider/model from configuration database. Action aborted to ensure Orchestrator Absolutism.');
   }
 
-  // Get active API Key
   const apiKey = await getProviderKey(provider);
   if (!apiKey) {
     throw new Error(`No active API key configured for provider: ${provider}. Action aborted.`);
   }
 
-  // 2. Query target users
   let targetUsersQuery = '';
   const queryParams: any[] = [];
   
@@ -192,7 +185,6 @@ export async function consolidateAllUserMemories(options?: {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      // Get the 10 oldest memories for user including chat_id for lineage mapping
       const oldestRes = await client.query(
         'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 10',
         [userId]
@@ -203,7 +195,6 @@ export async function consolidateAllUserMemories(options?: {
         const archivedFacts = oldestRes.rows.map((r: any) => `[${r.category}] ${r.fact}`);
         reportItem.archivedFacts = archivedFacts;
 
-        // Count frequencies of chat_ids among the memories to find the most relevant one
         const chatIdCounts: Record<number, number> = {};
         for (const m of oldestRes.rows) {
           if (m.chat_id) {
@@ -218,7 +209,6 @@ export async function consolidateAllUserMemories(options?: {
             associatedChatId = parseInt(cidStr, 10);
           }
         }
-        // Fallback to the chat_id from the most recent message to persist context
         if (!associatedChatId) {
           const latestMessageChatRes = await client.query(
             `SELECT c.id FROM chats c 
@@ -231,7 +221,6 @@ export async function consolidateAllUserMemories(options?: {
           if (latestMessageChatRes.rows.length > 0) {
             associatedChatId = latestMessageChatRes.rows[0].id;
           } else {
-            // Ultimate fallback to user's most recently active chat
             const latestChatRes = await client.query(
               "SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1",
               [userId]
@@ -269,29 +258,22 @@ ${factsToCondense}`;
           }
         }
 
-        // Clean distilledFact from any accidental tags leak, reasoning structures (<think>), and markdown code fences
         if (distilledFact) {
-          // Remove deep reasoning think tags block
           distilledFact = distilledFact.replace(/<think>[\s\S]*?<\/think>/gi, '');
-          // Remove memory extraction tags
           distilledFact = distilledFact.replace(/<extracted_memory(?:\s+category\s*=\s*["']?([^"' >]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi, '');
-          // Strip any JSON markdown formatting or accidental json tags
           distilledFact = distilledFact.replace(/```(?:json)?/gi, '');
           distilledFact = distilledFact.replace(/[{}]/g, '');
           distilledFact = distilledFact.trim();
         }
 
         if (distilledFact) {
-          // Delete selected oldest records
           await client.query('DELETE FROM chat_memories WHERE id = ANY($1::int[])', [oldestIds]);
 
-          // Insert high-density consolidated fact with complete lineage context
           await client.query(
             "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, 'general', 'ai')",
             [userId, associatedChatId, distilledFact]
           );
 
-          // Get final count
           const finalCountRes = await client.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
           
           reportItem.distilledFact = distilledFact;

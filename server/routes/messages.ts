@@ -4,7 +4,6 @@ import { pool } from '../db/index.js';
 
 const router = express.Router();
 
-// Helper to check message ownership and handle unauthorized/not found errors
 async function checkMessageOwnership(messageId: string | number, userId: string | number): Promise<{ success: boolean; status?: number; error?: string }> {
   if (!pool) throw new Error('Database initializing');
   
@@ -27,7 +26,6 @@ async function checkMessageOwnership(messageId: string | number, userId: string 
   return { success: true };
 }
 
-// Toggle Pin Message
 router.patch("/:messageId/pin", authenticateToken, async (req: any, res) => {
   try {
     const { messageId } = req.params;
@@ -46,7 +44,6 @@ router.patch("/:messageId/pin", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Update Feedback
 router.post("/:messageId/feedback", authenticateToken, async (req: any, res) => {
   try {
     const { messageId } = req.params;
@@ -65,7 +62,6 @@ router.post("/:messageId/feedback", authenticateToken, async (req: any, res) => 
   }
 });
 
-// Delete Message
 router.delete("/:messageId", authenticateToken, async (req: any, res) => {
   try {
     const { messageId } = req.params;
@@ -83,7 +79,6 @@ router.delete("/:messageId", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Delete Branch (delete all messages after a message index in a thread)
 router.delete("/branch/:chatId/:messageId", authenticateToken, async (req: any, res) => {
   try {
     const { chatId, messageId } = req.params;
@@ -91,7 +86,6 @@ router.delete("/branch/:chatId/:messageId", authenticateToken, async (req: any, 
 
     if (!pool) throw new Error('Database initializing');
 
-    // Check ownership of chat
     const chatCheck = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
     if (chatCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Chat not found' });
@@ -102,7 +96,6 @@ router.delete("/branch/:chatId/:messageId", authenticateToken, async (req: any, 
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    // Delete messages in this chat created after or at the specified message
     await pool.query(`
       DELETE FROM messages 
       WHERE chat_id = $1 

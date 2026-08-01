@@ -1,7 +1,6 @@
 import { pool, ledgerPool } from './index.js';
 import { decrypt } from '../utils/crypto.js';
 
-// ─── Custom DataLoader implementation ─────────────────────────────────────────
 
 type BatchLoadFn<K, V> = (keys: readonly K[]) => Promise<readonly V[]>;
 
@@ -90,7 +89,6 @@ export class DataLoader<K, V> {
   }
 }
 
-// ─── Batch Loaders (Durable Pool Optimization) ──────────────────────────────
 
 /**
  * Batched user loading to handle multiple parallel requests
@@ -166,7 +164,6 @@ export const subscriptionLoader = new DataLoader<number | string, any>(async (us
   }
 }, { ttl: 20000 }); // 20-second cache for subscription status
 
-// ─── High-Performance TTL Cached Services ────────────────────────────────────
 
 interface CacheEntry<T> {
   data: T;
@@ -212,7 +209,6 @@ export async function getCachedSystemSettings(): Promise<any> {
 
   let settings = result.rows[0];
   if (!settings) {
-    // Seed default if table is empty
     await pool.query(`
       INSERT INTO system_settings (site_name_en, site_name_ar, logo_url, logo_light_url, favicon_url)
       VALUES ('Premium AI', 'منصة النخبة', null, null, null)
@@ -372,4 +368,43 @@ export async function getCachedApiKeysVault(): Promise<any[]> {
 
 export function invalidateApiKeysVaultCache() {
   apiKeysVaultCache.delete('global');
+}
+
+const routeSeoCache = new Map<string, CacheEntry<any>>();
+const TTL_ROUTE_SEO = 120000; // 2 minutes
+
+/** Get cached SEO settings for a specific route */
+export async function getCachedRouteSeo(route: string): Promise<any> {
+  const now = Date.now();
+  const cached = routeSeoCache.get(route);
+  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
+    return cached.data;
+  }
+
+  const result = await pool.query(
+    'SELECT * FROM route_seo_settings WHERE route = $1 AND is_active = true LIMIT 1',
+    [route]
+  );
+  const data = result.rows[0] || null;
+  routeSeoCache.set(route, { data, timestamp: now });
+  return data;
+}
+
+/** Get cached list of all active route SEO settings */
+export async function getCachedAllActiveRouteSeo(): Promise<any[]> {
+  const now = Date.now();
+  const cached = routeSeoCache.get('all_active');
+  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
+    return cached.data;
+  }
+
+  const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
+  const data = result.rows;
+  routeSeoCache.set('all_active', { data, timestamp: now });
+  return data;
+}
+
+/** Invalidate entire route SEO cache */
+export function invalidateRouteSeoCache() {
+  routeSeoCache.clear();
 }

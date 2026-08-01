@@ -22,10 +22,16 @@ function resolveImageDimensions(aspectRatio: string): { width: number; height: n
     return { width: 1344, height: 768 };
   } else if (aspectRatio === '9:16') {
     return { width: 768, height: 1344 };
+  } else if (aspectRatio === '21:9') {
+    return { width: 1536, height: 640 };
   } else if (aspectRatio === '4:3') {
     return { width: 1152, height: 864 };
+  } else if (aspectRatio === '3:4') {
+    return { width: 864, height: 1152 };
   } else if (aspectRatio === '3:2') {
     return { width: 1152, height: 768 };
+  } else if (aspectRatio === '2:3') {
+    return { width: 768, height: 1152 };
   }
   return { width: 1024, height: 1024 };
 }
@@ -199,13 +205,14 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
   const vaultMap = new Map<string, any>();
   try {
-    const providerNames = targets.map(t => t.provider.toLowerCase().replace(/\s+/g, ''));
-    const result = await pool.query(
-      'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
-      [providerNames]
-    );
-    for (const row of result.rows) {
-      vaultMap.set(row.provider, row);
+    const { getCachedApiKeysVault } = await import('../../db/queries.js');
+    const activeKeys = await getCachedApiKeysVault();
+    if (activeKeys && activeKeys.length > 0) {
+      for (const key of activeKeys) {
+        if (key && key.provider) {
+          vaultMap.set(key.provider.toLowerCase().replace(/\s+/g, ''), key);
+        }
+      }
     }
   } catch (err: any) {
     console.warn('[Image Task Pre-fetch] Failed to pre-load configuration keys:', err.message);
@@ -437,7 +444,9 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
       } else if (providerId === 'google' || providerId === 'gemini') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
-        let cleanModel = modelToUse;
+        let cleanModel = modelToUse && modelToUse !== 'default' && !modelToUse.includes('flash-lite') 
+          ? modelToUse 
+          : (imageSettings.quality === 'Ultra' || imageSettings.quality === 'HD' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image-preview');
         
         if (cleanModel.startsWith('models/')) {
           cleanModel = cleanModel.substring(7);

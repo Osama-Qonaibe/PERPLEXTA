@@ -2,6 +2,7 @@ import express from 'express';
 import { pool as corePool, getExternalPool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { io } from '../config/socket.js';
+import { pingSearchEngines } from '../services/sitemapPinger.js';
 
 const router = express.Router();
 
@@ -42,7 +43,6 @@ async function hydrateAuthors(items: any[], userIdKey = 'user_id') {
   return items;
 }
 
-// Helper to validate URLs (protects from SSRF / Phishing)
 function isSafeUrl(urlStr: string): boolean {
   if (!urlStr) return true;
   const urls = urlStr.split(',').map(u => u.trim()).filter(Boolean);
@@ -98,7 +98,6 @@ function isSafeUrl(urlStr: string): boolean {
   return true;
 }
 
-// Helper to slugify
 function slugify(text: string) {
   return text
     .toString()
@@ -110,7 +109,6 @@ function slugify(text: string) {
     .replace(/-+$/, '');            // Trim - from end
 }
 
-// 1. Get all articles
 router.get('/articles', async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -141,11 +139,9 @@ router.get('/articles', async (req, res) => {
   }
 });
 
-// 2. Get specific article by slug
 router.get('/articles/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
-    // Increment view count
     await pool.query('UPDATE blog_articles SET views = views + 1 WHERE slug = $1', [slug]);
 
     const articleRes = await pool.query(`
@@ -185,7 +181,6 @@ router.get('/articles/:slug', async (req, res) => {
   }
 });
 
-// 3. Admin: Create blog article
 router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, res) => {
   const { title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, slug } = req.body;
   
@@ -193,12 +188,10 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
     return res.status(400).json({ error: 'Titles, contents, and categories are required in English and Arabic' });
   }
 
-  // SSRF Protection: Validate image_url
   if (image_url && !isSafeUrl(image_url)) {
     return res.status(400).json({ error: 'Insecure or invalid image URL' });
   }
 
-  // Generate or use provided slug
   const finalSlug = slug ? slugify(slug) : slugify(title_en) + '-' + Date.now();
 
   try {
@@ -210,7 +203,6 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
 
     const liveArticle = result.rows[0];
 
-    // Bulk creation of notifications for ALL active users (run asynchronously in background to unblock response)
     setImmediate(async () => {
       try {
         await corePool.query(`
@@ -226,7 +218,6 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
           JSON.stringify({ slug: finalSlug, article_id: liveArticle.id })
         ]);
 
-        // Emit global WebSocket event to trigger live toast
         if (io) {
           io.emit('new_blog_article', {
             id: liveArticle.id,
@@ -235,6 +226,8 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
             title_ar
           });
         }
+
+        await pingSearchEngines(req);
       } catch (notifErr) {
         console.error('[Blog Notification Dispatch] Failed to send global notifications in background:', notifErr);
       }
@@ -247,7 +240,6 @@ router.post('/articles', authenticateToken, authenticateAdmin, async (req: any, 
   }
 });
 
-// 4. Admin: Update blog article
 router.put('/articles/:id', authenticateToken, authenticateAdmin, async (req: any, res) => {
   const { id } = req.params;
   const { title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, slug } = req.body;
@@ -256,7 +248,6 @@ router.put('/articles/:id', authenticateToken, authenticateAdmin, async (req: an
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  // SSRF Protection: Validate image_url
   if (image_url && !isSafeUrl(image_url)) {
     return res.status(400).json({ error: 'Insecure or invalid image URL' });
   }
@@ -283,7 +274,6 @@ router.put('/articles/:id', authenticateToken, authenticateAdmin, async (req: an
   }
 });
 
-// 5. Admin: Delete blog article
 router.delete('/articles/:id', authenticateToken, authenticateAdmin, async (req: any, res) => {
   const { id } = req.params;
   try {
@@ -298,7 +288,6 @@ router.delete('/articles/:id', authenticateToken, authenticateAdmin, async (req:
   }
 });
 
-// 6. User: Add comment onto a blog article
 router.post('/articles/:id/comments', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { content } = req.body;
@@ -324,7 +313,6 @@ router.post('/articles/:id/comments', authenticateToken, async (req: any, res) =
   }
 });
 
-// 7. Delete blog comment (owner or administrator)
 router.delete('/comments/:id', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   try {
@@ -348,7 +336,6 @@ router.delete('/comments/:id', authenticateToken, async (req: any, res) => {
   }
 });
 
-// 8. Rate a blog article
 router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { rating } = req.body;
@@ -358,7 +345,6 @@ router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
   }
 
   try {
-    // Upsert rating
     await pool.query(`
       INSERT INTO blog_ratings (article_id, user_id, rating)
       VALUES ($1, $2, $3)
@@ -366,7 +352,6 @@ router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
       DO UPDATE SET rating = EXCLUDED.rating
     `, [id, req.user.id, rating]);
 
-    // Calculate new average and count
     const statsRes = await pool.query(`
       SELECT COALESCE(ROUND(AVG(rating), 1)::float, 0.0) as avg_rating, COUNT(*)::int as ratings_count
       FROM blog_ratings
@@ -384,7 +369,6 @@ router.post('/articles/:id/rate', authenticateToken, async (req: any, res) => {
   }
 });
 
-// 9. Get logged in user's rating for an article
 router.get('/articles/:id/user-rating', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   try {

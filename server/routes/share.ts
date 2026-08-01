@@ -5,7 +5,6 @@ import { pool } from '../db/index.js';
 
 const router = express.Router();
 
-// Generate a public snapshot (authenticated)
 router.post('/', authenticateToken, async (req: any, res) => {
   try {
     const { content, title, model_name } = req.body;
@@ -13,7 +12,6 @@ router.post('/', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'Content is required to generate a snapshot' });
     }
 
-    // Generate a secure 16-character hex token as unique id
     const id = crypto.randomBytes(8).toString('hex');
     const userId = req.user.id;
 
@@ -30,12 +28,10 @@ router.post('/', authenticateToken, async (req: any, res) => {
   }
 });
 
-// Retrieve a public snapshot (unauthenticated/public)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Fetch snapshot
     const snapRes = await pool.query(
       `SELECT id, title, content, model_name, created_at, views_count 
        FROM shared_snapshots 
@@ -49,7 +45,6 @@ router.get('/:id', async (req, res) => {
 
     const snapshot = snapRes.rows[0];
 
-    // Background increment of views
     pool.query(
       `UPDATE shared_snapshots SET views_count = views_count + 1 WHERE id = $1`,
       [id]

@@ -30,8 +30,6 @@ router.get("/", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Insecure instant deposit route removed to prevent resource leaks/bypassing admin verification.
-// All manual deposits must go through the secure /deposit-manual request pipeline for administrator approval.
 
 router.post("/deposit-manual", authenticateToken, async (req: any, res) => {
   try {
@@ -214,20 +212,17 @@ router.post("/activate-referral-balance", authenticateToken, async (req: any, re
     try {
       await client.query('BEGIN');
       
-      // Lock wallet
       const lockRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
       const currentBalance = Number(lockRes.rows[0].balance);
       if (currentBalance < minDeposit) {
         throw new Error('Insufficient balance during execution.');
       }
       
-      // Deduct balance and activate referral
       await client.query(
         'UPDATE wallets SET balance = balance - $1, referral_activated = true, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
         [minDeposit, userId]
       );
       
-      // Record transaction
       await client.query(`
         INSERT INTO ledger_transactions (wallet_id, user_id, amount, points, transaction_type, status, description)
         VALUES ($1, $2, $3, 0, 'activation_fee', 'success', $4)
@@ -240,7 +235,6 @@ router.post("/activate-referral-balance", authenticateToken, async (req: any, re
       
       await client.query('COMMIT');
       
-      // Send notification
       try {
         await createNotification(
           userId,
@@ -254,7 +248,6 @@ router.post("/activate-referral-balance", authenticateToken, async (req: any, re
         console.error('Failed to create notification:', notifErr);
       }
       
-      // Push via Socket
       if (io) {
         io.to(`user_${userId}`).emit('balance_update', {
           points: Number(wallet.points),
@@ -286,7 +279,6 @@ router.get("/referred-friends-detailed", authenticateToken, async (req: any, res
 
     const referrerId = req.user.id;
 
-    // Fetch referral records and join with latest deposit status if any
     const ledgerQuery = `
       SELECT
         r.id as referral_id,
@@ -316,10 +308,8 @@ router.get("/referred-friends-detailed", authenticateToken, async (req: any, res
       return res.json([]);
     }
 
-    // Extract referred user IDs
     const referredIds = referrals.map((r: any) => r.referred_id);
 
-    // Query core users database safely
     const placeholders = referredIds.map((_: any, i: number) => `$${i + 1}`).join(', ');
     const coreQuery = `
       SELECT id, name, email, avatar, created_at as user_joined_at
@@ -333,7 +323,6 @@ router.get("/referred-friends-detailed", authenticateToken, async (req: any, res
       usersMap.set(u.id, u);
     });
 
-    // Combine
     const detailedReferrals = referrals.map((r: any) => {
       const userDetails = usersMap.get(r.referred_id) || {
         name: 'Perplexta Member',
@@ -366,7 +355,6 @@ router.get("/referred-friends-detailed", authenticateToken, async (req: any, res
   }
 });
 
-// GET sent referral invitations
 router.get("/referral-invitations", authenticateToken, async (req: any, res) => {
   try {
     const { pool } = await import('../db/index.js');
@@ -385,7 +373,6 @@ router.get("/referral-invitations", authenticateToken, async (req: any, res) => 
   }
 });
 
-// POST to send a localized email invitation
 router.post("/invite-email", authenticateToken, async (req: any, res) => {
   try {
     const { email } = req.body;
@@ -403,7 +390,6 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
 
     const referrerId = req.user.id;
 
-    // Fetch referrer details
     const referrerRes = await pool.query(
       'SELECT name, email, referral_code FROM users WHERE id = $1',
       [referrerId]
@@ -413,7 +399,6 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
     }
     const referrer = referrerRes.rows[0];
 
-    // Self invite guard
     if (email.toLowerCase().trim() === referrer.email.toLowerCase().trim()) {
       return res.status(400).json({ 
         error: 'You cannot invite your own email address.',
@@ -421,7 +406,6 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
       });
     }
 
-    // Check if user is already registered in core DB
     const userCheck = await pool.query(
       'SELECT id, name, referred_by FROM users WHERE LOWER(email) = LOWER($1)',
       [email.trim()]
@@ -447,17 +431,14 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
       }
     }
 
-    // Load helpers
     const { getBaseUrl } = await import('../utils/request.js');
     const { sendSmartEmail } = await import('../services/email.js');
 
     const baseUrl = getBaseUrl(req);
     const invitationLink = `${baseUrl}/signup?ref=${referrer.referral_code}`;
 
-    // Language locale detection
     const lang = req.user.language === 'ar' ? 'ar' : 'en';
 
-    // Send the smart email template
     const emailSent = await sendSmartEmail(referrerId, email.trim(), 'referral_invitation', {
       referrerName: referrer.name || 'A Peer Analyst',
       referralCode: referrer.referral_code || '',
@@ -472,7 +453,6 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
       });
     }
 
-    // Save or update referral invitation history log
     const inviteCheck = await pool.query(
       'SELECT id FROM referral_invitations WHERE referrer_id = $1 AND LOWER(email) = LOWER($2)',
       [referrerId, email.trim().toLowerCase()]
@@ -510,7 +490,6 @@ router.post("/invite-email", authenticateToken, async (req: any, res) => {
   }
 });
 
-// POST to send a localized reminder email
 router.post("/remind-email", authenticateToken, async (req: any, res) => {
   try {
     const { email } = req.body;
@@ -528,7 +507,6 @@ router.post("/remind-email", authenticateToken, async (req: any, res) => {
 
     const referrerId = req.user.id;
 
-    // Fetch referrer details
     const referrerRes = await pool.query(
       'SELECT name, email, referral_code FROM users WHERE id = $1',
       [referrerId]
@@ -538,7 +516,6 @@ router.post("/remind-email", authenticateToken, async (req: any, res) => {
     }
     const referrer = referrerRes.rows[0];
 
-    // Check if user is either a registered referred user or has been invited
     const userCheck = await pool.query(
       'SELECT id, name, email FROM users WHERE LOWER(email) = LOWER($1) AND referred_by = $2',
       [email.trim(), referrerId]
@@ -556,17 +533,14 @@ router.post("/remind-email", authenticateToken, async (req: any, res) => {
       });
     }
 
-    // Load helpers
     const { getBaseUrl } = await import('../utils/request.js');
     const { sendSmartEmail } = await import('../services/email.js');
 
     const baseUrl = getBaseUrl(req);
     const invitationLink = `${baseUrl}/signup?ref=${referrer.referral_code}`;
 
-    // Language locale detection
     const lang = req.user.language === 'ar' ? 'ar' : 'en';
 
-    // Send the smart email reminder template
     const emailSent = await sendSmartEmail(referrerId, email.trim(), 'referral_reminder', {
       referrerName: referrer.name || 'A Peer Analyst',
       referralCode: referrer.referral_code || '',
@@ -581,14 +555,12 @@ router.post("/remind-email", authenticateToken, async (req: any, res) => {
       });
     }
 
-    // Log update in our referral_invitations list if it exists
     if (inviteCheck.rows.length > 0) {
       await pool.query(
         'UPDATE referral_invitations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         ['reminded', inviteCheck.rows[0].id]
       );
     } else {
-      // Create invitation log with 'reminded' status
       await pool.query(
         'INSERT INTO referral_invitations (referrer_id, email, referred_email, invite_code, status, subject, body) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [

@@ -39,24 +39,20 @@ interface Contact {
 export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) => {
   const isAr = dir === 'rtl';
 
-  // Authentication & Connection State
   const [isConnected, setIsConnected] = useState(false);
   const [googleUser, setGoogleUser] = useState<any>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Contacts Lists & Loading
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSource, setActiveSource] = useState<'connections' | 'directory'>('connections');
 
-  // Selected Contact & Form State
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Form Fields
   const [formFirstName, setFormFirstName] = useState('');
   const [formLastName, setFormLastName] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -65,7 +61,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
   const [formTitle, setFormTitle] = useState('');
   const [formNotes, setFormNotes] = useState('');
 
-  // Confirmation Modals State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -73,7 +68,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize Google Auth Connection
   useEffect(() => {
     const unsubscribe = initGoogleAuth(
       (user, token) => {
@@ -90,7 +84,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     return () => unsubscribe();
   }, []);
 
-  // Filter contacts locally on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredContacts(contacts);
@@ -152,7 +145,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     }
   };
 
-  // Fetch Connections (Personal Contacts)
   const fetchContacts = async (accessToken?: string) => {
     const token = accessToken || getGoogleAccessToken();
     if (!token) return;
@@ -163,7 +155,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     setIsCreating(false);
 
     try {
-      // Fetch user's connections
       const response = await fetch(
         'https://people.googleapis.com/v1/people/me/connections' +
         '?personFields=names,emailAddresses,phoneNumbers,photos,organizations,birthdays,addresses,biographies' +
@@ -178,7 +169,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token expired, clear token and request re-auth
           setGoogleAccessToken(null);
           setIsConnected(false);
           return;
@@ -230,7 +220,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     }
   };
 
-  // Search Workspace Directory (Enterprise Contacts)
   const searchDirectory = async () => {
     const token = getGoogleAccessToken();
     if (!token) return;
@@ -312,7 +301,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     }
   };
 
-  // Form Initializations
   const handleStartCreate = () => {
     setIsCreating(true);
     setIsEditing(false);
@@ -343,7 +331,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     setIsCreating(false);
   };
 
-  // Trigger Confirmation Modal for Contact Mutations
   const handleSaveTrigger = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formFirstName.trim()) {
@@ -353,7 +340,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     setShowSaveModal(true);
   };
 
-  // Execute Contact Creation / Editing
   const handleSaveConfirm = async () => {
     const token = getGoogleAccessToken();
     if (!token) return;
@@ -369,7 +355,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
       };
 
       if (isCreating) {
-        // CREATE CONTACT
         const res = await fetch('https://people.googleapis.com/v1/people:createContact', {
           method: 'POST',
           headers: {
@@ -383,10 +368,8 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
         
         toast.success(isAr ? 'تم إنشاء جهة الاتصال بنجاح!' : 'Contact created successfully!');
       } else if (isEditing && selectedContact) {
-        // UPDATE CONTACT
         payload.etag = selectedContact.etag;
         
-        // Specify the fields to update
         const updateFields = 'names,emailAddresses,phoneNumbers,organizations,biographies';
         
         const res = await fetch(
@@ -409,7 +392,6 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
       setShowSaveModal(false);
       setIsCreating(false);
       setIsEditing(false);
-      // Refresh list
       await fetchContacts(token);
     } catch (err: any) {
       console.error('[GoogleContacts] Save failed:', err);
@@ -419,13 +401,11 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
     }
   };
 
-  // Trigger Confirmation Modal for Deletion
   const handleDeleteTrigger = (contact: Contact) => {
     setContactToDelete(contact);
     setShowDeleteModal(true);
   };
 
-  // Execute Contact Deletion
   const handleDeleteConfirm = async () => {
     const token = getGoogleAccessToken();
     if (!token || !contactToDelete) return;
@@ -533,7 +513,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                 </div>
               )}
               <div className="flex flex-col text-start">
-                <span className="text-xs font-bold text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] flex items-center gap-1.5">
+                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
                   <UserCheck2 size={12} />
                   {isAr ? 'حساب متصل بنجاح' : 'Google Account Sync Active'}
                 </span>

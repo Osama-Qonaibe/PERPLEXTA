@@ -19,7 +19,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// Explicit Mapping between extensions and safe verified mimetypes to prevent PHP rename bypasses
 const allowedMimeTypes: Record<string, string[]> = {
   '.pdf': ['application/pdf'],
   '.doc': ['application/msword'],
@@ -53,14 +52,12 @@ const allowedMimeTypes: Record<string, string[]> = {
 export const upload = multer({ 
   storage,
   limits: {
-    // Hardening: Restrict max upload size to 100MB to prevent memory-exhaustion or storage-exhaustion DoS attacks
     fileSize: 100 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const mimeLower = file.mimetype ? file.mimetype.toLowerCase() : '';
 
-    // Permissive check for standard image/video/audio/document streams from desktop or mobile devices
     if (
       mimeLower.startsWith('image/') ||
       mimeLower.startsWith('video/') ||

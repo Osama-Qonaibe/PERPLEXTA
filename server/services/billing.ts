@@ -3,7 +3,6 @@ import { getEconomySettings, getUserWallet, enforceTransactionLimit } from './wa
 import { io } from '../config/socket.js';
 import { logSecurityAlert } from './notifications.js';
 
-// ─── Token Estimation ─────────────────────────────────────────────────────────
 
 /**
  * Language-aware token estimator.
@@ -13,13 +12,11 @@ import { logSecurityAlert } from './notifications.js';
  */
 export function estimateTokens(text: string): number {
   if (!text) return 0;
-  // Unicode ranges: Arabic (0600–06FF), Hebrew (0590–05FF), CJK (4E00–9FFF + ext)
   const multibyteChars = (text.match(/[\u0590-\u06FF\u4E00-\u9FFF\u3400-\u4DBF]/g) || []).length;
   const asciiChars = text.length - multibyteChars;
   return Math.ceil(multibyteChars * 1.5 + asciiChars * 0.25);
 }
 
-// ─── Core Billing ─────────────────────────────────────────────────────────────
 
 /**
  * Calculates dynamic token usage points cost for a specific tool and token counts.
@@ -45,10 +42,6 @@ export async function calculateTokenPointsCost(toolId: string, inputTokens: numb
     const outputCost = (outputTokens / 1000) * costOutput;
     const total      = Math.ceil(baseCost + inputCost + outputCost);
 
-    console.log(
-      `[Billing] [Tool: ${toolId}] In: ${inputTokens}t @ ${costInput}/1k | Out: ${outputTokens}t @ ${costOutput}/1k` +
-      ` | Base: ${baseCost} | Total: ${total} pts`
-    );
     return total;
   } catch (err) {
     console.error('[Billing] calculateTokenPointsCost failed:', err);
@@ -86,7 +79,6 @@ export async function checkUserAffordability(userId: string | number, toolId: st
   };
 }
 
-// ─── Hold / Reconcile / Refund ────────────────────────────────────────────────
 
 /** Deducts points upfront to secure execution authorization (hold). */
 export async function applyUpfrontHold(userId: string | number, toolId: string, prompt: string) {
@@ -254,7 +246,6 @@ export async function refundExecutionHold(userId: string | number, toolId: strin
   }
 }
 
-// ─── Billing Middleware ───────────────────────────────────────────────────────
 
 /**
  * Wraps a tool call with full billing lifecycle:
@@ -275,7 +266,6 @@ export async function executeWithBillingMiddleware(
   let holdPointsResult: { heldPoints: number; totalPointsAvailable: number } | null = null;
   let outerAccumulatedOutput = '';
 
-  // Pre-fetch tool costs for synchronous streaming budget checks (no async in hot path)
   let baseCost = 0, costInput = 0, costOutput = 0;
   try {
     const { rows } = await pool.query(
@@ -291,7 +281,6 @@ export async function executeWithBillingMiddleware(
     console.error('[Billing Middleware] Failed to pre-fetch tool costs:', err);
   }
 
-  // 1. Quota exceeded → apply upfront hold
   if (!quotaCheck.allowed) {
     try {
       holdPointsResult = await applyUpfrontHold(userIdNum, toolId, initialPrompt);
@@ -315,7 +304,6 @@ export async function executeWithBillingMiddleware(
     }
   }
 
-  // 2. Real-time budget check on each streaming chunk (synchronous — no DB calls)
   const inputTokens = estimateTokens(initialPrompt);
   const updateCostProgress = (chunkText: string) => {
     outerAccumulatedOutput += chunkText;
@@ -336,7 +324,6 @@ export async function executeWithBillingMiddleware(
     ? { charged: 'points' as const, amount: holdPointsResult.heldPoints }
     : false;
 
-  // 3. Execute
   try {
     let finalGeneratedText = '';
     const result = await executeBlock(
@@ -345,7 +332,6 @@ export async function executeWithBillingMiddleware(
       walletCharged
     );
 
-    // 4. Success reconciliation
     if (holdPointsResult) {
       try {
         await reconcileHold(userIdNum, toolId, holdPointsResult.heldPoints,
@@ -356,7 +342,6 @@ export async function executeWithBillingMiddleware(
     return result;
 
   } catch (err: any) {
-    // 5. Failure / budget-halt reconciliation
     if (holdPointsResult) {
       try {
         await reconcileHold(userIdNum, toolId, holdPointsResult.heldPoints,

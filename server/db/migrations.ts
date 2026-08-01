@@ -23,7 +23,6 @@ export interface WrappedClient {
 export async function runSystemMaintenance() {
   try {
     if (pool) {
-      // Safety check: only run if tables exist to prevent startup migration race conditions
       const tableCheck = await pool.query(`
         SELECT table_name 
         FROM information_schema.tables 
@@ -36,18 +35,15 @@ export async function runSystemMaintenance() {
       `);
       const existingTables = new Set(tableCheck.rows.map((r: { table_name: string }) => r.table_name));
 
-      // 1. Cleanup expired tokens
       if (existingTables.has('token_blacklist')) {
         const securityPool = getSecurityPool() || pool;
         await securityPool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
       }
       
-      // 2. Cleanup expired password resets
       if (existingTables.has('password_resets')) {
         await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
       }
       
-      // 3. Update expired subscriptions
       if (existingTables.has('subscriptions')) {
         await pool.query(`
           UPDATE subscriptions 
@@ -57,12 +53,10 @@ export async function runSystemMaintenance() {
         `);
       }
 
-      // 4. Cleanup expired OAuth states
       if (existingTables.has('oauth_states')) {
         await pool.query("DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP");
       }
 
-      // 5. Cleanup read notifications older than 30 days or any notifications older than 90 days
       if (existingTables.has('notifications')) {
         await pool.query(`
           DELETE FROM notifications 
@@ -71,27 +65,22 @@ export async function runSystemMaintenance() {
         `);
       }
 
-      // 6. Cleanup old system logs (keep 30 days)
       if (existingTables.has('system_logs')) {
         await pool.query("DELETE FROM system_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
       }
 
-      // 10. Cleanup processed Stripe webhooks events (keep 90 days for audit trail)
       if (existingTables.has('stripe_events')) {
         await pool.query("DELETE FROM stripe_events WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'");
       }
 
-      // 11. Cleanup harmless security alerts (keep 90 days for tracking)
       if (existingTables.has('security_alerts')) {
         await pool.query("DELETE FROM security_alerts WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'");
       }
 
-      // 12. Cleanup legacy user usage limits metrics older than 90 days (retains database indexing speed)
       if (existingTables.has('user_usage')) {
         await pool.query("DELETE FROM user_usage WHERE usage_date < CURRENT_DATE - INTERVAL '90 days'");
       }
 
-      // 13. Cleanup legacy admin audit logs older than 180 days (retains security database indexing speed)
       try {
         const secPool = getSecurityPool();
         if (secPool) {
@@ -145,13 +134,11 @@ export async function ensureColumn(
         throw new Error(`Invalid identifier: ${tableName}.${columnName}`);
       }
       
-      // Strict parameter whitelist checks to eliminate dynamic query evaluation security flags (SEC-02)
-      if (!/^[a-zA-Z0-9_(),\s]+$/i.test(type)) {
+      if (!/^[a-zA-Z0-9_(),\s'\[\].{}]+$/i.test(type)) {
         throw new Error(`Invalid SQL type identifier: ${type}`);
       }
       if (defaultVal !== undefined && defaultVal !== null) {
         const defaultStr = String(defaultVal).trim();
-        // Allow ONLY alphanumeric, standard SQL constants, quotes with clean contents, brackets/braces
         if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
           throw new Error(`Invalid default value expression: ${defaultStr}`);
         }
@@ -159,7 +146,6 @@ export async function ensureColumn(
       
       await client.query(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${type}`);
       if (defaultVal !== undefined && defaultVal !== null) {
-        // Apply default via UPDATE instead of combining in DDL
         await client.query(
           `ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DEFAULT ${defaultVal}`
         );
@@ -185,7 +171,6 @@ export async function ensureColumn(
         ]);
       }
     } catch (auditErr) {
-      // Ignore if table does not exist yet during initial boot
     }
     throw e;
   } finally {
@@ -257,7 +242,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   }
   
   try {
-    // 1. Migration History Table (Initialize if not exists)
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
         id SERIAL PRIMARY KEY,
@@ -266,7 +250,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
-    // Dedicated security audit table for tracking failed migration attempts and schema conflicts
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_security_audit (
         id SERIAL PRIMARY KEY,
@@ -369,7 +352,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await client.query('DELETE FROM migration_history');
     }
 
-    // 2. Base Registry Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS db_connections_registry (
         id VARCHAR(50) PRIMARY KEY,
@@ -391,7 +373,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
 
-    // Helper to run a versioned migration
     const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
@@ -416,7 +397,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
                 return false;
               };
 
-              // External tables query check
               if (
                 isTableMatched('blog_articles') ||
                 isTableMatched('blog_comments') ||
@@ -425,7 +405,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
                 return externalClient || client;
               }
               
-              // Security tables query check
               if (
                 isTableMatched('token_blacklist') ||
                 isTableMatched('security_alerts') ||
@@ -434,7 +413,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
                 return securityClient || client;
               }
               
-              // Ledger tables check
               const ledgerTables = [
                 'wallets', 'ledger_transactions', 'referrals', 'referral_tree', 
                 'kyc_requests', 'withdrawal_requests', 'payout_accounts', 
@@ -515,16 +493,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     };
 
-    // DYNAMIC SCHEMA AUTO-REPAIR: Always run initDb to guarantee all tables and columns are created perfectly on startup
     console.log('[Migrations] 🚀 Running dynamic schema auto-repair (syncing tables and columns)...');
     await initDb('additive');
 
-    // MIGRATION: Core Schema v1
     await runVersioned('v1_core_schema', 'Initial core database schema', async (tx, ledgerTx) => {
-      // Logic handled dynamically now by the auto-repair step above
     });
 
-    // MIGRATION: Additive Columns v2
     await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async (tx) => {
       await ensureColumn(tx, 'users', 'last_active_at', 'TIMESTAMP');
       await ensureColumn(tx, 'users', 'theme', 'VARCHAR(10)', `'dark'`);
@@ -592,7 +566,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`SELECT 1`); // Placeholder
     });
 
-    // MIGRATION: Ledger Schema v3 (Isolated Transaction)
     await runVersioned('v3_ledger_schema_v1', 'Initial Ledger DB schema and hardened transactions', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       
@@ -606,7 +579,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'ip_address', 'VARCHAR(45)');
     });
 
-    // MIGRATION: Database Registry Seed
     await runVersioned('v4_registry_seed', 'Seeding database connections', async (tx) => {
       const coreUrl = process.env.DATABASE_URL;
       const ledgerUrl = process.env.LEDGER_DATABASE_URL;
@@ -627,7 +599,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Cleanup Duplicate Columns
     await runVersioned('v5_orchestrator_cleanup', 'Cleaning up legacy orchestrator columns', async (tx) => {
       const dropColumns = [
         'fallback1_provider', 'fallback1_model',
@@ -644,7 +615,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Coupon System Expansion v6
     await runVersioned('v6_coupon_system_expansion', 'Adding detailed coupon tracking', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       await ensureColumn(ledgerTarget, 'coupons', 'usage_limit', 'INTEGER', '0');
@@ -652,7 +622,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(ledgerTarget, 'coupons', 'is_active', 'BOOLEAN', 'true');
     });
 
-    // MIGRATION: Finance & History Expansion v7
     await runVersioned('v7_finance_expansion', 'Adding deposit requests', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       await ledgerTarget.query(`
@@ -672,7 +641,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Security Hardening (Stripe Key Encryption) v8
     await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async (tx) => {
       const { encrypt } = await import('../utils/crypto.js');
       const settingsRes = await tx.query('SELECT id, stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings');
@@ -704,12 +672,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Sequential Reconciliation v9
     await runVersioned('v9_filler_reconciliation', 'Reconciling migration index sequence to ensure consistent numbering', async (tx) => {
       await tx.query(`SELECT 1`);
     });
 
-    // MIGRATION: Economy settings refactor v10
     await runVersioned('v10_economy_refactor', 'Removing redundant economy columns from system_settings and ensuring Ledger DB as source of truth', async (tx, ledgerTx) => {
       const dropCols = [
         'points_per_dollar', 'min_payout_usd', 'min_deposit_usd', 
@@ -726,7 +692,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       console.log('[Migrations] Economy refactor: Removed redundant columns from Core DB and ensured Ledger DB schema.');
     });
 
-    // MIGRATION: Ensure Baseline Tables v11
     await runVersioned('v11_ensure_baseline_tables', 'Ensuring critical tables like password_resets exist', async (tx) => {
       await tx.query(`
         CREATE TABLE IF NOT EXISTS password_resets (
@@ -750,7 +715,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Token Blacklist Security Hardening and Indexes v12
     await runVersioned('v12_token_blacklist_security_hardening', 'Hardening token_blacklist security indexes and expiration TTL performance', async (tx) => {
       const sTarget = typeof securityClient !== 'undefined' && securityClient ? securityClient : client;
       
@@ -768,7 +732,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at)`);
     });
 
-    // MIGRATION: Payment Gateways Settings Expansion v13
     await runVersioned('v13_payment_gateways_expansion', 'Adding crypto deposit address, bank details, and PayPal address to economy_settings', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
 
@@ -798,7 +761,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `, [encAddress, encBankName, encBankRecipient, encBankIBAN, encBankSwift, encPaypalEmail]);
     });
 
-    // MIGRATION: PayPal Credentials to system_settings v14
     await runVersioned('v14_paypal_settings', 'Adding PayPal credential columns to system_settings table', async (tx) => {
       await ensureColumn(tx, 'system_settings', 'paypal_client_id', 'TEXT');
       await ensureColumn(tx, 'system_settings', 'paypal_client_secret', 'TEXT');
@@ -807,17 +769,14 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'paypal_last_verified_at', 'TIMESTAMP');
     });
 
-    // MIGRATION: Hide column for transaction records v15
     await runVersioned('v15_transaction_hide_column', 'Adding is_hidden column to ledger_transactions for user level clear/archive mechanics', async (tx, ledgerTx) => {
       const ledgerTarget = ledgerTx || tx;
       await ensureColumn(ledgerTarget, 'ledger_transactions', 'is_hidden', 'BOOLEAN', 'false');
     });
 
-    // MIGRATION: Referral Code v16
     await runVersioned('v16_user_referral_code', 'Adding unique 6-character alphanumeric referral_code to users table and populating existing users', async (tx) => {
       await ensureColumn(tx, 'users', 'referral_code', 'VARCHAR(6)');
       
-      // Fetch all users currently lacking a referral_code
       const usersRes = await tx.query('SELECT id FROM users WHERE referral_code IS NULL OR referral_code = \'\'');
       for (const row of usersRes.rows) {
         let code = '';
@@ -831,7 +790,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           for (let i = 0; i < 6; i++) {
             code += chars.charAt(randomBytes[i] % chars.length);
           }
-          // Verify code doesn't exist already in DB (pre-migration set + user table)
           const dupRes = await tx.query('SELECT id FROM users WHERE referral_code = $1', [code]);
           if (dupRes.rows.length === 0) {
             isUnique = true;
@@ -840,11 +798,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         await tx.query('UPDATE users SET referral_code = $1 WHERE id = $2', [code, row.id]);
       }
       
-      // Create a unique index to strictly prevent duplication at database level
       await tx.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)');
     });
 
-    // MIGRATION: Messages Schema Update v17
     await runVersioned('v17_messages_schema_update', 'Ensuring tracking and generation metadata columns exist in messages table', async (tx) => {
       await ensureColumn(tx, 'messages', 'thinking_steps', 'JSONB', `'[]'`);
       await ensureColumn(tx, 'messages', 'citations', 'JSONB', `'[]'`);
@@ -854,7 +810,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'messages', 'is_pinned', 'BOOLEAN', 'false');
     });
 
-    // MIGRATION: User Sessions Schema v18
     await runVersioned('v18_user_sessions_schema', 'Greatly hardening session persistence, tracking active logins, IP, and platform preferences', async (tx) => {
       await tx.query(`
         CREATE TABLE IF NOT EXISTS user_sessions (
@@ -873,7 +828,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`);
     });
 
-    // MIGRATION: SEO Upgrade and Robustness v19
     await runVersioned('v19_seo_upgrade', 'Ensuring system_settings has robust SEO descriptions and keywords column extensions', async (tx) => {
       await ensureColumn(tx, 'system_settings', 'seo_description_en', 'TEXT');
       await ensureColumn(tx, 'system_settings', 'seo_description_ar', 'TEXT');
@@ -883,19 +837,15 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'site_description_ar', 'TEXT');
     });
 
-    // MIGRATION: SEO Preview Image Support v20
     await runVersioned('v20_seo_image', 'Adding seo_image_url column extension to support high-efficiency open graph representations', async (tx) => {
       await ensureColumn(tx, 'system_settings', 'seo_image_url', 'TEXT');
     });
 
-    // MIGRATION: Google Site Verification Support v21
     await runVersioned('v21_google_site_verification', 'Adding google_site_verification column extension to support dynamic search console verification', async (tx) => {
       await ensureColumn(tx, 'system_settings', 'google_site_verification', 'VARCHAR(255)');
     });
 
-    // MIGRATION: Forum and Blog Engine v22
     await runVersioned('v22_forum_and_blog_schema', 'Created Forum and Blog core tables with initial categories', async (tx) => {
-      // 1. Create forum categories
       await tx.query(`
         CREATE TABLE IF NOT EXISTS forum_categories (
           id SERIAL PRIMARY KEY,
@@ -910,7 +860,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      // 2. Create forum posts
       await tx.query(`
         CREATE TABLE IF NOT EXISTS forum_posts (
           id SERIAL PRIMARY KEY,
@@ -926,7 +875,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      // 3. Create forum comments
       await tx.query(`
         CREATE TABLE IF NOT EXISTS forum_comments (
           id SERIAL PRIMARY KEY,
@@ -938,7 +886,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      // 4. Create blog articles
       const extTarget = externalClient || tx;
       await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_articles (
@@ -958,7 +905,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      // 5. Create blog comments
       await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_comments (
           id SERIAL PRIMARY KEY,
@@ -970,7 +916,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      // Seed categories if database is clean
       const checkCata = await tx.query('SELECT COUNT(*) FROM forum_categories');
       if (parseInt(checkCata.rows[0].count, 10) === 0) {
         await tx.query(`
@@ -985,7 +930,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Blog Ratings Engine v23
     await runVersioned('v23_blog_ratings_and_sharing', 'Creating blog ratings database structure', async (tx) => {
       const extTarget = externalClient || tx;
       await extTarget.query(`
@@ -1000,11 +944,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Seeding professional placeholder blog articles v24
     await runVersioned('v24_seed_blog_platform_data', 'Seeding elite magazine articles to database', async (tx) => {
       const articlesCount = await tx.query('SELECT COUNT(*) FROM blog_articles');
       if (parseInt(articlesCount.rows[0].count, 10) === 0) {
-        // Find best author
         const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
         let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
         if (!authorId) {
@@ -1059,7 +1001,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Marketplace Core Schema v25
     await runVersioned('v25_marketplace_schema', 'Created Marketplace core tables and basic seed structure', async (tx) => {
       await tx.query(`
         CREATE TABLE IF NOT EXISTS marketplace_items (
@@ -1127,7 +1068,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Marketplace Seed Extension v26
     await runVersioned('v26_marketplace_seed_extension_v2', 'Added third default premium marketplace item for layout completeness', async (tx) => {
       const itemsCount = await tx.query('SELECT COUNT(*) FROM marketplace_items');
       if (parseInt(itemsCount.rows[0].count, 10) === 2) {
@@ -1162,9 +1102,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Update Forum Categories v27
     await runVersioned('v27_update_forum_categories_for_pioneers_and_developers', 'Upgrading forum categories and re-mapping legacy post associations safely', async (tx) => {
-      // 1. Ensure new categories exist
       await tx.query(`
         INSERT INTO forum_categories (slug, name_en, name_ar, description_en, description_ar, icon, color) VALUES
         ('pioneers-devs-designers', 'Pioneers, Developers & Designers', 'رواد المنصة، المطورين ومصممي الجرافيك', 'A dedicated realm for developers, graphic designers, and platform pioneers to deliberate architecture and visual arts.', 'مساحة تجمع المطورين، المصممين ورواد الأعمال لمناقشة المشاريع وتطوير الواجهات والحلول الرقمية.', 'Laptop', 'emerald'),
@@ -1182,7 +1120,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           color = EXCLUDED.color
       `);
 
-      // 2. Fetch ID mappings
       const categoriesRes = await tx.query('SELECT id, slug FROM forum_categories');
       const catMap: { [key: string]: number } = {};
       categoriesRes.rows.forEach((row: { id: number; slug: string }) => {
@@ -1194,7 +1131,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       const expertiseId = catMap['expertise-sharing'];
 
       if (targetId) {
-        // Remap general and announcements
         const generalId = catMap['general'];
         const announcementsId = catMap['announcements'];
         if (generalId) {
@@ -1219,11 +1155,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
       }
 
-      // 3. Purge legacy categories
       await tx.query("DELETE FROM forum_categories WHERE slug IN ('general', 'analysis', 'technical-support', 'announcements')");
     });
 
-    // MIGRATION: Refine Forum Categories Names v28
     await runVersioned('v28_refine_forum_categories_names', 'Shortening and refining forum categories translation and names', async (tx) => {
       await tx.query(`
         UPDATE forum_categories 
@@ -1245,7 +1179,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: External and Security Databases Seeding v29
     await runVersioned('v29_external_and_security_db_seeds', 'Seeding External and Security databases in db_connections_registry', async (tx) => {
       const coreUrl = process.env.DATABASE_URL;
       const externalUrl = process.env.EXTERNAL_DATABASE_URL || coreUrl;
@@ -1267,7 +1200,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
     });
 
-    // MIGRATION: Forum Category Colors Differentiation v30
     await runVersioned('v30_forum_category_colors_differentiation', 'Applying distinctive colors to forum categories to align with market and professional visuals', async (tx) => {
       await tx.query(`
         UPDATE forum_categories SET color = 'indigo' WHERE slug = 'pioneers-devs-designers';
@@ -1279,16 +1211,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Marketplace Portfolio & Product Referrals v31
     await runVersioned('v31_marketplace_purchases_and_referrals', 'Enabling real transactional purchases, secure file downloads, and affiliate product referral chains', async (tx) => {
-      // 1. Extend marketplace_items with functional download structures
       await ensureColumn(tx, 'marketplace_items', 'download_url', 'TEXT');
       await ensureColumn(tx, 'marketplace_items', 'preview_url', 'TEXT');
       await ensureColumn(tx, 'marketplace_items', 'video_url', 'TEXT');
       await ensureColumn(tx, 'marketplace_items', 'features', 'TEXT');
       await ensureColumn(tx, 'marketplace_items', 'technologies', 'TEXT');
 
-      // 2. Create marketplace_purchases table to record secure ownership & affiliate commissions
       await tx.query(`
         CREATE TABLE IF NOT EXISTS marketplace_purchases (
           id SERIAL PRIMARY KEY,
@@ -1303,18 +1232,15 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         );
       `);
 
-      // 3. Make sure indexes exist for fast retrieval
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(user_id);`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_item ON marketplace_purchases(item_id);`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_referrer ON marketplace_purchases(referrer_id);`);
     });
 
-    // MIGRATION: Marketplace Product Customized Referral Percentages v32
     await runVersioned('v32_marketplace_referral_percent', 'Enabling product creators to define custom product affiliate/referral commission percentages', async (tx) => {
       await ensureColumn(tx, 'marketplace_items', 'referral_percent', 'NUMERIC(5, 2)');
     });
 
-    // MIGRATION: Marketplace Product Highlights & Licenses v33
     await runVersioned('v33_marketplace_highlights_and_licenses', 'Adding highlight_tag and license_type columns to marketplace_items for advanced item attributes', async (tx) => {
       await ensureColumn(tx, 'marketplace_items', 'highlight_tag', 'VARCHAR(50)');
       await ensureColumn(tx, 'marketplace_items', 'license_type', 'VARCHAR(50)');
@@ -1394,34 +1320,25 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v41_hash_existing_tokens', 'Rehashing existing plaintext tokens in blacklist to SHA-256', async (tx) => {
-      // Clear expired tokens first
       await tx.query(`DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP`);
-      // Since we cannot retrieve plaintext tokens to rehash, clear remaining active blacklisted tokens
       await tx.query(`DELETE FROM token_blacklist`);
       console.log('[Migrations] token_blacklist cleared for SHA-256 migration. Users will re-authenticate once.');
     });
 
     await runVersioned('v42_missing_indexes', 'Adding critical performance and integrity indexes', async (tx) => {
-      // 1. Core DB targets (using tx)
-      // password_resets
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email)`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)`);
       
-      // marketplace
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_status ON marketplace_items(status)`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_user_id ON marketplace_items(user_id)`);
       
-      // 2. External DB targets (explicitly using externalClient || client)
       const extTarget = externalClient || client;
-      // blog
       await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)`);
       
-      // 3. Ledger DB targets (explicitly using ledgerClient || client)
       const lTarget = ledgerClient || client;
       await lTarget.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_user_id ON ledger_transactions(user_id)`);
       await lTarget.query(`CREATE INDEX IF NOT EXISTS idx_ledger_tx_status ON ledger_transactions(status)`);
       
-      // 4. Security DB targets (explicitly using securityClient || client)
       const sTarget = securityClient || client;
       await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)`);
       await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_security_alerts_resolved ON security_alerts(is_resolved)`);
@@ -1504,7 +1421,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS max_posts_per_day INTEGER DEFAULT 0;`);
       await tx.query(`ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS require_approval BOOLEAN DEFAULT FALSE;`);
       await tx.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'approved';`);
-      // Update all past posts to approved so they are immediately visible
       await tx.query(`UPDATE forum_posts SET status = 'approved' WHERE status IS NULL;`);
     });
 
@@ -1610,7 +1526,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await ensureColumn(tx, 'system_settings', 'sidebar_ad_impression_price', 'NUMERIC(10,4)', '0.0100');
       await ensureColumn(tx, 'system_settings', 'sidebar_ad_click_price', 'NUMERIC(10,2)', '0.10');
       
-      // Seed default gifts if empty
       const giftsCount = await tx.query('SELECT COUNT(*) FROM gift_catalog');
       if (parseInt(giftsCount.rows[0].count, 10) === 0) {
         await tx.query(`
@@ -1835,7 +1750,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v71_add_fks', 'Add foreign key constraints to forum_posts, forum_comments and blog_articles', async (tx) => {
-      // For forum tables (on core DB, tx)
       await tx.query(`
         DO $$
         BEGIN
@@ -1854,7 +1768,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         $$;
       `);
 
-      // For blog tables (on external DB if available, extTarget)
       const extTarget = externalClient || tx;
       await extTarget.query(`
         DO $$
@@ -1869,12 +1782,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
-    // MIGRATION: Registered Agents Table v75 (Deprecated/Broken)
     await runVersioned('v75_create_registered_agents', 'Creating registered_agents table for agent authentication', async (tx) => {
-      // This was applied incorrectly, v76 fixes it.
     });
 
-    // MIGRATION: Fix Registered Agents Table v76
     await runVersioned('v76_fix_registered_agents', 'Fixing registered_agents table for agent authentication', async (tx) => {
       await tx.query(`
         CREATE TABLE IF NOT EXISTS registered_agents (
@@ -1932,42 +1842,55 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         }
       };
 
-      // 1. user_files (Core DB)
       await safeIndex(tx, 'user_files', 'file_url', 'idx_user_files_file_url');
 
-      // 2. asset_metadata (Core DB)
       await safeIndex(tx, 'asset_metadata', 'file_url', 'idx_asset_metadata_file_url');
 
-      // 3. blog_articles (External DB if available, extTarget)
       const extTarget = externalClient || tx;
       await safeIndex(extTarget, 'blog_articles', 'image_url', 'idx_blog_articles_image_url');
 
-      // 4. bulletin_ads (Core DB)
       await safeIndex(tx, 'bulletin_ads', 'image_url', 'idx_bulletin_ads_image_url');
       await safeIndex(tx, 'bulletin_ads', 'video_url', 'idx_bulletin_ads_video_url');
       await safeIndex(tx, 'bulletin_ads', 'author_avatar', 'idx_bulletin_ads_author_avatar');
 
-      // 5. marketplace_items (Core DB)
       await safeIndex(tx, 'marketplace_items', 'image_url', 'idx_marketplace_items_image_url');
       await safeIndex(tx, 'marketplace_items', 'preview_url', 'idx_marketplace_items_preview_url');
       await safeIndex(tx, 'marketplace_items', 'video_url', 'idx_marketplace_items_video_url');
       await safeIndex(tx, 'marketplace_items', 'download_url', 'idx_marketplace_items_download_url');
 
-      // 6. advertisements (Core DB)
       await safeIndex(tx, 'advertisements', 'image_url', 'idx_advertisements_image_url');
 
-      // 7. users (Core DB)
       await safeIndex(tx, 'users', 'avatar', 'idx_users_avatar');
 
-      // 8. bulletin_pages (Core DB)
       await safeIndex(tx, 'bulletin_pages', 'avatar_url', 'idx_bulletin_pages_avatar_url');
       await safeIndex(tx, 'bulletin_pages', 'cover_url', 'idx_bulletin_pages_cover_url');
 
-      // 9. system_settings (Core DB)
       await safeIndex(tx, 'system_settings', 'logo_url', 'idx_system_settings_logo_url');
       await safeIndex(tx, 'system_settings', 'logo_light_url', 'idx_system_settings_logo_light_url');
       await safeIndex(tx, 'system_settings', 'seo_image_url', 'idx_system_settings_seo_image_url');
       await safeIndex(tx, 'system_settings', 'favicon_url', 'idx_system_settings_favicon_url');
+    });
+
+    await runVersioned('v78_google_tool_connections', 'Creating google_tool_connections table for granular Google Workspace integration management', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS google_tool_connections (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          tool_id VARCHAR(100) NOT NULL,
+          is_connected BOOLEAN DEFAULT false,
+          config JSONB DEFAULT '{}',
+          access_token TEXT,
+          refresh_token TEXT,
+          expires_at TIMESTAMP,
+          scopes TEXT[],
+          last_connected_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, tool_id)
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_google_tool_connections_user_id ON google_tool_connections(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_google_tool_connections_tool_id ON google_tool_connections(tool_id)`);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -2158,6 +2081,24 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         cost_per_usage INTEGER DEFAULT 10,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         protocol_config JSONB DEFAULT '{}'
+      )`
+    },
+    {
+      name: 'google_tool_connections',
+      query: `CREATE TABLE IF NOT EXISTS google_tool_connections (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        tool_id VARCHAR(100) NOT NULL,
+        is_connected BOOLEAN DEFAULT false,
+        config JSONB DEFAULT '{}',
+        access_token TEXT,
+        refresh_token TEXT,
+        expires_at TIMESTAMP,
+        scopes TEXT[],
+        last_connected_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, tool_id)
       )`
     },
     {
@@ -2906,7 +2847,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     const p = table.pool || targetPool;
     await p.query(table.query);
 
-    // DYNAMIC COLUMN AUTO-REPAIR: Parse schema and add any missing columns safely
     const match = table.query.match(/\(([\s\S]+)\)/);
     if (match) {
       const columns = match[1].split('\n')
@@ -2923,7 +2863,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
           try {
             await p.query(`ALTER TABLE "${table.name}" ADD COLUMN IF NOT EXISTS "${colName}" ${colType}`);
           } catch (e: any) {
-            // Handle cases where a NOT NULL constraint prevents adding the column on a non-empty table
             if (e.message && (e.message.includes('contains no default') || e.message.includes('null value'))) {
                const fallbackType = colType.replace(/\s+NOT NULL/i, '');
                try {
@@ -3061,7 +3000,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     await idx.pool.query(idx.query);
   }
 
-  // Relations & FKs
   const relations = [
     { pool: targetPool, query: `ALTER TABLE chats DROP CONSTRAINT IF EXISTS chats_user_id_fkey` },
     { pool: targetPool, query: `ALTER TABLE chats ADD CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE` },
@@ -3099,7 +3037,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     );
   }
 
-  // Seed economy_settings in Ledger DB if empty
   try {
     const ecoCheck = await targetLedgerPool.query('SELECT count(*) FROM economy_settings');
     if (parseInt(ecoCheck.rows[0].count) === 0) {
@@ -3271,7 +3208,6 @@ export async function verifySchemaIntegrity() {
     errors: [],
   };
 
-  // Safe client helper
   const queryColumns = async (p: any, schemaName = 'public'): Promise<Record<string, Set<string>>> => {
     try {
       const res = await p.query(`
@@ -3293,7 +3229,6 @@ export async function verifySchemaIntegrity() {
     }
   };
 
-  // Expected Schema Map: dbName -> tableName -> columnNames[]
   const expectedSchema: Record<string, Record<string, { columns: string[]; ddl?: string; repairCols?: Record<string, string> }>> = {
     core: {
       users: {
@@ -3474,6 +3409,26 @@ export async function verifySchemaIntegrity() {
           visual_summary: 'TEXT',
           ai_analysis_raw: "JSONB DEFAULT '{}'"
         }
+      },
+      registered_agents: {
+        columns: [
+          'id', 'client_id', 'client_secret', 'api_key_hash', 'client_name',
+          'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri',
+          'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at'
+        ],
+        repairCols: {
+          client_secret: 'VARCHAR(255)',
+          api_key_hash: 'VARCHAR(255)',
+          identity_type: "VARCHAR(50) DEFAULT 'agent'",
+          credential_type: "VARCHAR(50) DEFAULT 'client_credentials'",
+          redirect_uris: 'TEXT[]',
+          jwks_uri: 'VARCHAR(500)',
+          user_agent: 'VARCHAR(500)',
+          signature_keys: 'JSONB',
+          permissions: "JSONB DEFAULT '[]'",
+          is_active: 'BOOLEAN DEFAULT true',
+          user_id: 'INTEGER'
+        }
       }
     },
     ledger: {
@@ -3533,7 +3488,6 @@ export async function verifySchemaIntegrity() {
           report.missingTables.push({ db: groupName, table: tableName });
           console.warn(`[Schema Integrity] ❌ Missing table: ${tableName} in database group ${groupName}`);
           
-          // Attempt auto-recovery/re-run initDb
           try {
             console.log(`[Schema Integrity] 🔧 Attempting table reconstruction for ${tableName}...`);
             await initDb('additive', pool, ledgerPool);
@@ -3557,7 +3511,6 @@ export async function verifySchemaIntegrity() {
             });
             console.warn(`[Schema Integrity] ❌ Missing column: ${tableName}.${colName} in database group ${groupName}`);
 
-            // Attempt column auto-repair
             if (spec.repairCols?.[colName]) {
               try {
                 console.log(`[Schema Integrity] 🔧 Attempting dynamic column addition: ${tableName}.${colName}...`);
@@ -3578,13 +3531,10 @@ export async function verifySchemaIntegrity() {
     }
   };
 
-  // Run audit on Core Pool
   await verifyDbGroup('core', pool);
 
-  // Run audit on Ledger Pool
   await verifyDbGroup('ledger', ledgerPool || pool);
 
-  // Log results and write audit report to the database
   if (report.passed) {
     console.log('[Schema Integrity] 🛡️ All expected tables and columns verified successfully across all active pools!');
   } else {
@@ -3596,7 +3546,6 @@ export async function verifySchemaIntegrity() {
     });
   }
 
-  // Persist Audit Record in Core DB for operational transparency
   try {
     await pool.query(`
       INSERT INTO migration_security_audit (migration_name, status, error_message, details)

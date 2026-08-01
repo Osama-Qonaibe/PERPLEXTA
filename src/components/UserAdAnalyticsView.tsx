@@ -112,7 +112,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] text-xs font-black uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-emerald-500 text-xs font-black uppercase tracking-wider mb-1">
               <Sparkles size={16} />
               <span>{isRtl ? 'محلل نتائج الحملات والجمهور المستهدف' : 'Ad Performance & Demographic Intelligence'}</span>
             </div>

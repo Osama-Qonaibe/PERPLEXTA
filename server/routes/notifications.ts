@@ -14,7 +14,6 @@ router.get("/", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Mark all as read (supports both PATCH and POST for high resiliency)
 const handleReadAll = async (req: any, res: any) => {
   try {
     const result = await markNotificationsAsRead(req.user.id);
@@ -26,7 +25,6 @@ const handleReadAll = async (req: any, res: any) => {
 router.post("/read-all", authenticateToken, handleReadAll);
 router.patch("/read-all", authenticateToken, handleReadAll);
 
-// Mark single notification as read
 router.patch("/:id/read", authenticateToken, async (req: any, res) => {
   try {
     const { id } = req.params;
@@ -41,7 +39,6 @@ router.patch("/:id/read", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Delete all notifications for current user
 router.delete("/all", authenticateToken, async (req: any, res) => {
   try {
     await pool.query(
@@ -55,7 +52,6 @@ router.delete("/all", authenticateToken, async (req: any, res) => {
   }
 });
 
-// Delete a single notification
 router.delete("/:id", authenticateToken, async (req: any, res) => {
   try {
     const { id } = req.params;

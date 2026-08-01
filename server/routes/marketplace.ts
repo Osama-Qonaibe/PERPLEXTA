@@ -5,10 +5,10 @@ import { pool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { deductFromWallet, adjustWalletBalance, refundToWallet, getEconomySettings } from '../services/wallet.js';
 import { getStripe } from '../services/payments.js';
+import { pingSearchEngines } from '../services/sitemapPinger.js';
 
 const router = express.Router();
 
-// Helper to validate URLs (protects from SSRF / Phishing)
 function isSafeUrl(urlStr: string): boolean {
   if (!urlStr) return true;
   const urls = urlStr.split(',').map(u => u.trim()).filter(Boolean);
@@ -64,7 +64,6 @@ function isSafeUrl(urlStr: string): boolean {
   return true;
 }
 
-// Helper to calculate pricing based on license
 function getLicensePriceMultiplier(license: string): number {
   switch (license) {
     case 'extended': return 2.5;
@@ -74,7 +73,6 @@ function getLicensePriceMultiplier(license: string): number {
   }
 }
 
-// Get approved marketplace items (Explicit select - OMIT SECURE download_url)
 router.get('/items', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -92,7 +90,6 @@ router.get('/items', async (req, res) => {
           loggedInUserId = Number(decoded.id);
         }
       } catch (e) {
-        // Ignored, token invalid but let user browse public approved items
       }
     }
 
@@ -126,7 +123,6 @@ router.get('/items', async (req, res) => {
   }
 });
 
-// Admin ONLY: Get all items with full fields
 router.get('/admin/items', authenticateToken, authenticateAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -142,7 +138,6 @@ router.get('/admin/items', authenticateToken, authenticateAdmin, async (req, res
   }
 });
 
-// Get single item detail (Omit secure download_url)
 router.get('/items/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -173,7 +168,6 @@ router.get('/items/:id', async (req, res) => {
   }
 });
 
-// Create marketplace item with full download and media specifications
 router.post('/items', authenticateToken, async (req: any, res) => {
   const { 
     title_en, title_ar, description_en, description_ar, price, 
@@ -196,7 +190,6 @@ router.post('/items', authenticateToken, async (req: any, res) => {
     return res.status(400).json({ error: 'Price must be a valid positive number' });
   }
 
-  // Safe checks
   if (image_url && !isSafeUrl(image_url)) return res.status(400).json({ error: 'Insecure or invalid image URL' });
   if (contact_link && !isSafeUrl(contact_link)) return res.status(400).json({ error: 'Insecure or invalid contact link' });
   if (download_url && !isSafeUrl(download_url)) return res.status(400).json({ error: 'Insecure or invalid download URL' });
@@ -212,7 +205,6 @@ router.post('/items', authenticateToken, async (req: any, res) => {
   }
 
   try {
-    // Check space limits for the user (only for non-admin users)
     if (!isUserAdmin) {
       const subRes = await pool.query(`
         SELECT p.limits 
@@ -265,14 +257,23 @@ router.post('/items', authenticateToken, async (req: any, res) => {
       parsedReferralPercent, highlight_tag || null, license_type || null
     ]);
 
-    res.status(201).json({ success: true, item: result.rows[0] });
+    const newItem = result.rows[0];
+
+    setImmediate(async () => {
+      try {
+        await pingSearchEngines(req);
+      } catch (err) {
+        console.error('[Marketplace Sitemap Ping] Failed:', err);
+      }
+    });
+
+    res.status(201).json({ success: true, item: newItem });
   } catch (error: any) {
     console.error('Failed to create item:', error);
     res.status(500).json({ error: 'Failed to create item' });
   }
 });
 
-// Edit marketplace item
 router.patch('/items/:id', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { 
@@ -381,7 +382,6 @@ router.patch('/items/:id', authenticateToken, async (req: any, res) => {
   }
 });
 
-// Admin ONLY: Set status of marketplace item
 router.patch('/admin/items/:id/status', authenticateToken, authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -414,7 +414,6 @@ router.patch('/admin/items/:id/status', authenticateToken, authenticateAdmin, as
   }
 });
 
-// Delete marketplace item
 router.delete('/items/:id', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const userId = req.user.id;
@@ -439,7 +438,6 @@ router.delete('/items/:id', authenticateToken, async (req: any, res) => {
   }
 });
 
-// SECURE ACQUISITION: Purchase an item with exact balances debiting & affiliate reward credits
 router.post('/buy', authenticateToken, async (req: any, res) => {
   const { itemId, licenseType, referralCode } = req.body;
   const userId = req.user.id;
@@ -451,7 +449,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
   const lic = licenseType || 'standard';
 
   try {
-    // 1. Fetch item detail
     const itemRes = await pool.query('SELECT * FROM marketplace_items WHERE id = $1', [itemId]);
     if (itemRes.rows.length === 0) {
       return res.status(404).json({ error: 'Item not found' });
@@ -462,7 +459,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'This item is currently unavailable for acquisition.' });
     }
 
-    // Prevents duplicate transactions
     const dupCheck = await pool.query(
       'SELECT id FROM marketplace_purchases WHERE user_id = $1 AND item_id = $2 AND license_type = $3',
       [userId, itemId, lic]
@@ -471,16 +467,12 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'You already acquired this product/license.' });
     }
 
-    // 2. Derive price multiplier
     const multiplier = getLicensePriceMultiplier(lic);
     const finalPrice = Math.round(Number(item.price) * multiplier * 100) / 100;
 
-    // 3. Deduct securely from wallet (throws error if insufficient funds)
     const transactionDesc = `Acquisition of ${item.title_en} (${lic.toUpperCase()})`;
-    // Note: deductFromWallet handles the transaction internally on the ledger pool.
     await deductFromWallet(userId, finalPrice, 'marketplace_purchase', transactionDesc);
 
-    // 4. Check & Credit product affiliate channel
     let referrerId: number | null = null;
     let commissionPaid = 0.00;
 
@@ -492,7 +484,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       if (referrerRes.rows.length > 0) {
         referrerId = referrerRes.rows[0].id;
 
-        // Fetch commission percentage: check product custom option first, fallback to economy settings (default to 20%)
         let commPercentage = 20;
         if (item.referral_percent !== null && item.referral_percent !== undefined) {
           commPercentage = Number(item.referral_percent);
@@ -516,7 +507,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       }
     }
 
-    // 5. Log the secure purchase details
     const secureToken = crypto.randomBytes(32).toString('hex');
     const purchaseRes = await pool.query(`
       INSERT INTO marketplace_purchases (
@@ -525,7 +515,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
       RETURNING *
     `, [userId, itemId, finalPrice, lic, referrerId, commissionPaid, secureToken]);
 
-    // 5.5. Credit the publisher/seller of the item (if they are not the buyer)
     if (item.user_id && Number(item.user_id) !== Number(userId)) {
       const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
       if (sellerProceeds > 0) {
@@ -548,7 +537,6 @@ router.post('/buy', authenticateToken, async (req: any, res) => {
   }
 });
 
-// GET USER ACQUIRED ITEMS PORTFOLIO (Returns downloads)
 router.get('/portfolio', authenticateToken, async (req: any, res) => {
   const userId = req.user.id;
   try {
@@ -571,11 +559,9 @@ router.get('/portfolio', authenticateToken, async (req: any, res) => {
   }
 });
 
-// GET USER PRODUCT AFFILIATE STATS
 router.get('/affiliate/stats', authenticateToken, async (req: any, res) => {
   const userId = req.user.id;
   try {
-    // Total commissions & sales
     const statRes = await pool.query(`
       SELECT COALESCE(SUM(commission_paid), 0) as total_earned,
              COUNT(*) as total_referral_sales
@@ -583,7 +569,6 @@ router.get('/affiliate/stats', authenticateToken, async (req: any, res) => {
       WHERE referrer_id = $1
     `, [userId]);
 
-    // Detail lines
     const referralList = await pool.query(`
       SELECT p.id as purchase_id, p.price_paid, p.license_type, p.commission_paid, p.created_at as sold_at,
              m.title_en, m.title_ar, m.category_en, m.category_ar, m.image_url
@@ -603,12 +588,10 @@ router.get('/affiliate/stats', authenticateToken, async (req: any, res) => {
   }
 });
 
-// Unified helper function to notify a seller of a successful sale on the marketplace
 async function notifySellerOfSale(item: any, lic: string, finalPrice: number, commissionPaid: number, buyerId: number | string) {
   if (item.user_id && Number(item.user_id) !== Number(buyerId)) {
     const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
     if (sellerProceeds > 0) {
-      // 1. Create native in-app notification
       try {
         const { createNotification } = await import('../services/notifications.js');
         await createNotification(
@@ -623,7 +606,6 @@ async function notifySellerOfSale(item: any, lic: string, finalPrice: number, co
         console.warn('Failed to notify seller in notifySellerOfSale:', nErr);
       }
 
-      // 2. Send beautiful sales email alert to the seller
       try {
         const sellerUserRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [item.user_id]);
         if (sellerUserRes.rows.length > 0) {
@@ -655,7 +637,6 @@ async function notifySellerOfSale(item: any, lic: string, finalPrice: number, co
   }
 }
 
-// Helper function to fulfill a marketplace purchase after successful payment
 export async function fulfillMarketplacePurchase(
   userId: number | string,
   itemId: number | string,
@@ -665,7 +646,6 @@ export async function fulfillMarketplacePurchase(
 ) {
   const lic = licenseType || 'standard';
 
-  // Check if purchase already exists
   const dupCheck = await pool.query(
     'SELECT id FROM marketplace_purchases WHERE user_id = $1 AND item_id = $2 AND license_type = $3',
     [userId, itemId, lic]
@@ -674,14 +654,12 @@ export async function fulfillMarketplacePurchase(
     return dupCheck.rows[0];
   }
 
-  // 1. Fetch item detail
   const itemRes = await pool.query('SELECT * FROM marketplace_items WHERE id = $1', [itemId]);
   if (itemRes.rows.length === 0) {
     throw new Error('Item not found');
   }
   const item = itemRes.rows[0];
 
-  // 2. Check & Credit product affiliate channel
   let referrerId: number | null = null;
   let commissionPaid = 0.00;
 
@@ -693,7 +671,6 @@ export async function fulfillMarketplacePurchase(
     if (referrerRes.rows.length > 0) {
       referrerId = referrerRes.rows[0].id;
 
-      // Fetch commission percentage: check product custom option first, fallback to economy settings (default to 20%)
       let commPercentage = 20;
       if (item.referral_percent !== null && item.referral_percent !== undefined) {
         commPercentage = Number(item.referral_percent);
@@ -717,7 +694,6 @@ export async function fulfillMarketplacePurchase(
     }
   }
 
-  // 3. Log the secure purchase details
   const secureToken = crypto.randomBytes(32).toString('hex');
   const purchaseRes = await pool.query(`
     INSERT INTO marketplace_purchases (
@@ -726,7 +702,6 @@ export async function fulfillMarketplacePurchase(
     RETURNING *
   `, [userId, itemId, pricePaid, lic, referrerId, commissionPaid, secureToken]);
 
-  // 3.5. Credit the publisher/seller of the item (if they are not the buyer)
   if (item.user_id && Number(item.user_id) !== Number(userId)) {
     const sellerProceeds = Math.max(0, Math.round((pricePaid - commissionPaid) * 100) / 100);
     if (sellerProceeds > 0) {
@@ -736,7 +711,6 @@ export async function fulfillMarketplacePurchase(
     }
   }
 
-  // Create notifications as well
   try {
     const { createNotification } = await import('../services/notifications.js');
     await createNotification(
@@ -765,7 +739,6 @@ export async function fulfillMarketplacePurchase(
   return purchaseRes.rows[0];
 }
 
-// Create a Stripe checkout session specifically for buying a marketplace product/license
 router.post('/create-stripe-session', authenticateToken, async (req: any, res) => {
   const { itemId, licenseType, referralCode } = req.body;
   const userId = req.user.id;
@@ -782,7 +755,6 @@ router.post('/create-stripe-session', authenticateToken, async (req: any, res) =
       return res.status(400).json({ error: 'Stripe Payment Gateway is not configured on this platform.' });
     }
 
-    // 1. Fetch item detail
     const itemRes = await pool.query('SELECT * FROM marketplace_items WHERE id = $1', [itemId]);
     if (itemRes.rows.length === 0) {
       return res.status(404).json({ error: 'Item not found' });
@@ -793,7 +765,6 @@ router.post('/create-stripe-session', authenticateToken, async (req: any, res) =
       return res.status(400).json({ error: 'This item is currently unavailable for acquisition.' });
     }
 
-    // Prevents duplicate transactions
     const dupCheck = await pool.query(
       'SELECT id FROM marketplace_purchases WHERE user_id = $1 AND item_id = $2 AND license_type = $3',
       [userId, itemId, lic]
@@ -802,16 +773,13 @@ router.post('/create-stripe-session', authenticateToken, async (req: any, res) =
       return res.status(400).json({ error: 'You already acquired this product/license.' });
     }
 
-    // 2. Derive price multiplier
     const multiplier = getLicensePriceMultiplier(lic);
     const finalPrice = Math.round(Number(item.price) * multiplier * 100) / 100;
 
-    // Minimum stripe charge is $0.50 USD
     if (finalPrice < 0.50) {
       return res.status(400).json({ error: 'Minimum payment amount is $0.50 USD. Please use the balance option for lower prices.' });
     }
 
-    // 3. Create Stripe Checkout session
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -847,7 +815,6 @@ router.post('/create-stripe-session', authenticateToken, async (req: any, res) =
   }
 });
 
-// SECURE ACQUISITION: Purchase multiple items from cart with exact balances debiting
 router.post('/cart/buy', authenticateToken, async (req: any, res) => {
   const { items, referralCode } = req.body;
   const userId = req.user.id;
@@ -942,14 +909,12 @@ router.post('/cart/buy', authenticateToken, async (req: any, res) => {
 
       purchases.push(purchaseRes.rows[0]);
 
-      // 5.5. Credit the publisher/seller of the item (if they are not the buyer)
       if (item.user_id && Number(item.user_id) !== Number(userId)) {
         const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
         if (sellerProceeds > 0) {
           const desc = `Sale proceeds of ${item.title_en} (${lic.toUpperCase()}) (Cart Purchase)`;
           await refundToWallet(item.user_id, sellerProceeds, 'marketplace_sale', desc);
 
-          // Notify the seller/publisher
           try {
             const { createNotification } = await import('../services/notifications.js');
             await createNotification(
@@ -1004,7 +969,6 @@ router.post('/cart/buy', authenticateToken, async (req: any, res) => {
   }
 });
 
-// CREATE CARTS PAYMENT SESSION: Create a checkout session on stripe representing the fully selected list
 router.post('/cart/create-stripe-session', authenticateToken, async (req: any, res) => {
   const { items, referralCode } = req.body;
   const userId = req.user.id;
@@ -1097,7 +1061,6 @@ router.post('/cart/create-stripe-session', authenticateToken, async (req: any, r
   }
 });
 
-// Verify a Stripe checkout session for a marketplace purchase
 router.get('/verify-checkout-session', authenticateToken, async (req: any, res) => {
   const { session_id } = req.query;
   if (!session_id) {
@@ -1167,11 +1130,7 @@ router.get('/verify-checkout-session', authenticateToken, async (req: any, res) 
   }
 });
 
-// ------------------------------------
-// MARKETPLACE REVIEWS & RATINGS SYSTEM
-// ------------------------------------
 
-// Submit/upsert a review (1-5 stars & comment)
 router.post('/items/:id/reviews', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const userId = req.user.id;
@@ -1183,13 +1142,11 @@ router.post('/items/:id/reviews', authenticateToken, async (req: any, res) => {
   }
 
   try {
-    // Check if item exists
     const itemCheck = await pool.query('SELECT id FROM marketplace_items WHERE id = $1', [id]);
     if (itemCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Marketplace item not found.' });
     }
 
-    // Upsert review
     const query = `
       INSERT INTO marketplace_reviews (user_id, item_id, rating, comment, updated_at)
       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
@@ -1205,7 +1162,6 @@ router.post('/items/:id/reviews', authenticateToken, async (req: any, res) => {
   }
 });
 
-// Get reviews with user details and average rating stats
 router.get('/items/:id/reviews', async (req, res) => {
   const { id } = req.params;
   try {
@@ -1235,11 +1191,7 @@ router.get('/items/:id/reviews', async (req, res) => {
   }
 });
 
-// ---------------------------------
-// SELLER DASHBOARD & ANALYTICS APIs
-// ---------------------------------
 
-// Retrieve seller public details & their active items
 router.get('/seller/:sellerId', async (req, res) => {
   const { sellerId } = req.params;
   try {
@@ -1259,7 +1211,6 @@ router.get('/seller/:sellerId', async (req, res) => {
       ORDER BY m.created_at DESC
     `, [sellerId]);
 
-    // Aggregate rating for this seller based on all their reviews
     const ratingRes = await pool.query(`
       SELECT COALESCE(ROUND(AVG(r.rating), 1)::float, 0.0) as avg_rating,
              COUNT(r.id)::int as total_reviews
@@ -1279,11 +1230,9 @@ router.get('/seller/:sellerId', async (req, res) => {
   }
 });
 
-// Retrieve seller's private sales history & analytics
 router.get('/seller-dashboard/stats', authenticateToken, async (req: any, res) => {
   const sellerId = req.user.id;
   try {
-    // 1. Total revenue & sales count
     const salesStatRes = await pool.query(`
       SELECT COUNT(*)::int as total_sales_count,
              COALESCE(SUM(price_paid * 0.8), 0.0)::float as total_estimated_revenue
@@ -1292,7 +1241,6 @@ router.get('/seller-dashboard/stats', authenticateToken, async (req: any, res) =
       WHERE m.user_id = $1
     `, [sellerId]);
 
-    // 2. Individual sales transactions
     const salesRes = await pool.query(`
       SELECT p.id as purchase_id, p.price_paid, p.license_type, p.created_at as sold_at,
              m.title_en, m.title_ar, m.price as base_price,
@@ -1314,9 +1262,6 @@ router.get('/seller-dashboard/stats', authenticateToken, async (req: any, res) =
   }
 });
 
-// --------------------------------------------
-// AUTOMATED SEEDING FOR 8 DEFAULT MARKETPLACE PRODUCTS
-// --------------------------------------------
 
 async function seedDefaultItems() {
   try {
@@ -1444,7 +1389,6 @@ async function seedDefaultItems() {
   }
 }
 
-// Trigger lazy background seeding
 setTimeout(seedDefaultItems, 1500);
 
 export default router;

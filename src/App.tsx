@@ -17,6 +17,7 @@ import { BulletinBoardPage } from './pages/BulletinBoardPage';
 import { BlogPage } from './pages/BlogPage';
 import { AdminCommunityPage } from './pages/AdminCommunityPage';
 import { MarketplacePage } from './pages/MarketplacePage';
+import GoogleHubPage from './pages/GoogleHubPage';
 import { SharedSnapshotPage } from './pages/SharedSnapshotPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { StudioPage } from './pages/StudioPage';
@@ -150,13 +151,12 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       .then(data => {
         if (Array.isArray(data)) setDbRouteSeo(data);
       })
-      .catch(err => console.warn('[SEO] Failed to fetch route SEO settings:', err));
+      .catch(() => {});
   }, []); // Only fetch once on mount
 
   useEffect(() => {
     const currentPath = location.pathname;
 
-    // Check if this route is server-handled for initial SEO injection
     const isDynamicPublicRoute = currentPath.startsWith('/blog/') || 
                                  currentPath.startsWith('/marketplace/') || 
                                  currentPath.startsWith('/share/') ||
@@ -165,8 +165,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     const PUBLIC_WHITELIST = ['/', '/subscription', '/marketplace', '/blog', '/bulletin', '/rewards', '/terms', '/privacy', '/about'];
     const isStaticPublicRoute = PUBLIC_WHITELIST.includes(currentPath);
 
-    // Skip first mount if it's a route the server likely already handled
-    // This prevents the "flash" of generic title on refresh
     if (isFirstMount.current && (isDynamicPublicRoute || isStaticPublicRoute)) {
       isFirstMount.current = false;
       return;
@@ -193,44 +191,50 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       return currentPath === cleanPath || currentPath.startsWith(cleanPath + '/');
     });
 
-    let robotsMeta = document.querySelector('meta[name="robots"]');
-    if (!robotsMeta) {
-      robotsMeta = document.createElement('meta');
-      robotsMeta.setAttribute('name', 'robots');
-      document.head.appendChild(robotsMeta);
-    }
+    const updateMetaTag = (attrType: string, attrValue: string, content: string) => {
+      let meta = document.querySelector(`meta[${attrType}="${attrValue}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute(attrType, attrValue);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
 
-    let googlebotMeta = document.querySelector('meta[name="googlebot"]');
-    if (!googlebotMeta) {
-      googlebotMeta = document.createElement('meta');
-      googlebotMeta.setAttribute('name', 'googlebot');
-      document.head.appendChild(googlebotMeta);
-    }
+    const siteName = language === 'ar' ? (siteSettings?.siteNameAr || siteSettings?.siteName) : siteSettings?.siteName;
+    const resolvedSiteName = siteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
+    const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
+    const finalOGImage = resolvedOGImage.startsWith('/') ? `${window.location.origin}${resolvedOGImage}` : resolvedOGImage;
+    const currentUrl = window.location.href;
 
     if (isSensitive) {
-      robotsMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none');
-      googlebotMeta.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
+      updateMetaTag('name', 'robots', 'noindex, nofollow, noarchive, nosnippet, max-image-preview:none');
+      updateMetaTag('name', 'googlebot', 'noindex, nofollow, noarchive, nosnippet');
       
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', language === 'ar' ? 'بيربليكستا - مساحة عمل محصنة' : 'Perplexta - Secure Workspace');
+      const sensitiveTitle = language === 'ar' ? 'بيربليكستا - مساحة عمل محصنة' : 'Perplexta - Secure Workspace';
+      const sensitiveDesc = language === 'ar' ? 'صفحة آمنة ومحمية من قبل الخوارزميات السيادية لمنصة بيربليكستا.' : 'Secure node with zero crawling, protected under deep local sovereign protocols.';
       
-      const ogDesc = document.querySelector('meta[property="og:description"]');
-      if (ogDesc) ogDesc.setAttribute('content', language === 'ar' ? 'صفحة آمنة ومحمية من قبل الخوارزميات السيادية لمنصة بيربليكستا.' : 'Secure node with zero crawling, protected under deep local sovereign protocols.');
+      document.title = sensitiveTitle;
+      updateMetaTag('name', 'description', sensitiveDesc);
+      updateMetaTag('property', 'og:title', sensitiveTitle);
+      updateMetaTag('property', 'og:description', sensitiveDesc);
+      updateMetaTag('property', 'og:image', finalOGImage);
+      updateMetaTag('property', 'og:url', currentUrl);
+      updateMetaTag('property', 'og:site_name', resolvedSiteName);
+      updateMetaTag('name', 'twitter:title', sensitiveTitle);
+      updateMetaTag('name', 'twitter:description', sensitiveDesc);
+      updateMetaTag('name', 'twitter:image', finalOGImage);
+      updateMetaTag('name', 'twitter:image:alt', sensitiveTitle);
       
     } else {
-      robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
-      googlebotMeta.setAttribute('content', 'index, follow');
+      updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+      updateMetaTag('name', 'googlebot', 'index, follow');
 
-      const siteName = language === 'ar' ? (siteSettings?.siteNameAr || siteSettings?.siteName) : siteSettings?.siteName;
-      const resolvedSiteName = siteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
-      
       const siteDesc = language === 'ar' ? (siteSettings?.siteDescriptionAr || siteSettings?.siteDescription) : siteSettings?.siteDescription;
       const resolvedDesc = (language === 'ar' ? siteSettings?.seoDescriptionAr : siteSettings?.seoDescriptionEn) || siteDesc || '';
       
       const resolvedKeywords = (language === 'ar' ? siteSettings?.keywordsAr : siteSettings?.keywordsEn) || '';
-      const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
 
-      // Dynamic database route lookup
       const routeMatch = dbRouteSeo.find(r => r.route === currentPath && r.is_active !== false);
 
       const dbTitle = routeMatch ? (language === 'ar' ? (routeMatch.title_ar || routeMatch.title_en) : (routeMatch.title_en || routeMatch.title_ar)) : '';
@@ -261,95 +265,23 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       const finalDesc = dbDesc || resolvedDesc;
       const finalKeywords = dbKeywords || resolvedKeywords;
       const rawOGImage = dbOgImage;
-      const finalOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
-      const currentUrl = window.location.href;
+      const routeOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
 
-      // Only overwrite if we have a specific match or it's a static route we "own"
-      // This prevents generic overwrites for dynamic pages like Blog or Marketplace details
       const shouldOverwrite = dbTitle || pageTitlePart || currentPath === '/';
       
       if (!isDynamicPublicRoute || shouldOverwrite) {
         document.title = finalTitle;
-
-        let metaDescription = document.querySelector('meta[name="description"]');
-        if (!metaDescription) {
-          metaDescription = document.createElement('meta');
-          metaDescription.setAttribute('name', 'description');
-          document.head.appendChild(metaDescription);
-        }
-        metaDescription.setAttribute('content', finalDesc);
-
-        let ogTitle = document.querySelector('meta[property="og:title"]');
-        if (!ogTitle) {
-          ogTitle = document.createElement('meta');
-          ogTitle.setAttribute('property', 'og:title');
-          document.head.appendChild(ogTitle);
-        }
-        ogTitle.setAttribute('content', finalTitle);
-
-        let ogDesc = document.querySelector('meta[property="og:description"]');
-        if (!ogDesc) {
-          ogDesc = document.createElement('meta');
-          ogDesc.setAttribute('property', 'og:description');
-          document.head.appendChild(ogDesc);
-        }
-        ogDesc.setAttribute('content', finalDesc);
-
-        let ogImage = document.querySelector('meta[property="og:image"]');
-        if (!ogImage) {
-          ogImage = document.createElement('meta');
-          ogImage.setAttribute('property', 'og:image');
-          document.head.appendChild(ogImage);
-        }
-        ogImage.setAttribute('content', finalOGImage);
-
-        let ogUrl = document.querySelector('meta[property="og:url"]');
-        if (!ogUrl) {
-          ogUrl = document.createElement('meta');
-          ogUrl.setAttribute('property', 'og:url');
-          document.head.appendChild(ogUrl);
-        }
-        ogUrl.setAttribute('content', currentUrl);
-
-        let ogSiteName = document.querySelector('meta[property="og:site_name"]');
-        if (!ogSiteName) {
-          ogSiteName = document.createElement('meta');
-          ogSiteName.setAttribute('property', 'og:site_name');
-          document.head.appendChild(ogSiteName);
-        }
-        ogSiteName.setAttribute('content', resolvedSiteName);
-
-        let twitterTitle = document.querySelector('meta[name="twitter:title"]');
-        if (!twitterTitle) {
-          twitterTitle = document.createElement('meta');
-          twitterTitle.setAttribute('name', 'twitter:title');
-          document.head.appendChild(twitterTitle);
-        }
-        twitterTitle.setAttribute('content', finalTitle);
-
-        let twitterDesc = document.querySelector('meta[name="twitter:description"]');
-        if (!twitterDesc) {
-          twitterDesc = document.createElement('meta');
-          twitterDesc.setAttribute('name', 'twitter:description');
-          document.head.appendChild(twitterDesc);
-        }
-        twitterDesc.setAttribute('content', finalDesc);
-
-        let twitterImage = document.querySelector('meta[name="twitter:image"]');
-        if (!twitterImage) {
-          twitterImage = document.createElement('meta');
-          twitterImage.setAttribute('name', 'twitter:image');
-          document.head.appendChild(twitterImage);
-        }
-        twitterImage.setAttribute('content', finalOGImage);
-
-        let metaKeywords = document.querySelector('meta[name="keywords"]');
-        if (!metaKeywords) {
-          metaKeywords = document.createElement('meta');
-          metaKeywords.setAttribute('name', 'keywords');
-          document.head.appendChild(metaKeywords);
-        }
-        metaKeywords.setAttribute('content', finalKeywords);
+        updateMetaTag('name', 'description', finalDesc);
+        updateMetaTag('property', 'og:title', finalTitle);
+        updateMetaTag('property', 'og:description', finalDesc);
+        updateMetaTag('property', 'og:image', routeOGImage);
+        updateMetaTag('property', 'og:url', currentUrl);
+        updateMetaTag('property', 'og:site_name', resolvedSiteName);
+        updateMetaTag('name', 'twitter:title', finalTitle);
+        updateMetaTag('name', 'twitter:description', finalDesc);
+        updateMetaTag('name', 'twitter:image', routeOGImage);
+        updateMetaTag('name', 'twitter:image:alt', finalTitle);
+        updateMetaTag('name', 'keywords', finalKeywords);
 
         let canonicalLink = document.querySelector('link[rel="canonical"]');
         if (!canonicalLink) {
@@ -388,14 +320,11 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <UpgradePromptModal />
       <InactivityWarningModal />
 
-      {!isAuthReady && (() => {
-        const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
-        return loaderType !== 'refresh' ? (
-          <AnimatePresence mode="wait">
-            <CenteredLoader key="global-loader" />
-          </AnimatePresence>
-        ) : null;
-      })()}
+      {!isAuthReady && (
+        <AnimatePresence mode="wait">
+          <CenteredLoader key="global-loader" />
+        </AnimatePresence>
+      )}
 
       <motion.div
         animate={{ opacity: isAuthReady ? 1 : 0 }}
@@ -423,6 +352,7 @@ export default function App() {
                 <Route path="chat/:id?" element={<ChatPage />} />
                 <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
                 <Route path="marketplace/:id?" element={<MarketplacePage />} />
+                <Route path="google-hub" element={<GoogleHubPage />} />
                 <Route path="discover" element={<RecommendationsPage />} />
                 <Route path="Studio" element={<StudioPage />} />
                 <Route path="blog/:slug?" element={<BlogPage />} />

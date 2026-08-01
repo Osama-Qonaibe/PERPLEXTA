@@ -167,13 +167,13 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
     >
       <div className="flex items-center justify-between border-b border-gray-800 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+          <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             <BarChart2 size={16} />
           </div>
           <div>
             <h4 className="text-xs font-black text-white flex items-center gap-1.5">
               <span>{isRtl ? 'لوحة تحليلات ورؤى الإعلان' : 'Creator Ad Insights Panel'}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-black font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-black font-extrabold">
                 Live Analytics
               </span>
             </h4>

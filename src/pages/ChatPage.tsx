@@ -5712,11 +5712,12 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleSendOrStop = async (overrideQuery?: string, overrideMessages?: Message[]) => {
-    if (isGenerating) {
+    if (isGeneratingRef.current || isGenerating) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
       setIsGenerating(false);
+      isGeneratingRef.current = false;
     } else {
       if (!user) {
         setIsAuthModalOpen(true);
@@ -6085,7 +6086,7 @@ export const ChatPage: React.FC = () => {
   const renderImageSettings = () => {
     if (selectedTool !== 'image' || !showImageSettings) return null;
 
-    const ratios = ['1:1', '4:3', '3:2', '16:9', '9:16'];
+    const ratios = ['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
     const qualities = ['Standard', 'HD', 'Ultra'];
     const styles = ['Cinematic', 'Realistic', 'Anime', 'Digital Art'];
 
@@ -7024,7 +7025,7 @@ export const ChatPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: -8 }}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                    className="sticky top-0 z-30 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-main)]"
+                    className="sticky top-0 z-30 bg-[var(--bg-base)] border-b border-[var(--border-main)]"
                   >
 
                     {isChatMessagesLoading && (
@@ -7256,21 +7257,17 @@ export const ChatPage: React.FC = () => {
 
                 <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
 
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/[0.04] border border-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] mb-6 transition-all duration-300 hover:scale-110">
-                    <Sparkles size={24} className="animate-pulse" />
-                  </div>
-
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
                     {dir === 'rtl' 
-                      ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'} 👋`
-                      : `Welcome back, ${user?.name || 'Perplexta Elite Member'} 👋`
+                      ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'}`
+                      : `Welcome back, ${user?.name || 'Perplexta Elite Member'}`
                     }
                   </h1>
 
                   <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
                     {dir === 'rtl'
-                      ? 'كيف يمكنني مساندة رؤيتك الاستثمارية والتحليلية اليوم؟'
-                      : 'How can I support your investment and analytical vision today?'
+                      ? 'ما الذي تود تحليله أو استكشافه اليوم؟'
+                      : 'What would you like to analyze or explore today?'
                     }
                   </p>
 
@@ -7289,12 +7286,12 @@ export const ChatPage: React.FC = () => {
               {messages.map((msg, idx) => {
                 return (
                   <motion.div 
-                    layout="position"
                     key={msg.client_id || msg.id || idx} 
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
+                    layout="position"
                   >
-                    <div className={`w-full ${msg.role === 'user' ? 'bg-transparent' : 'bg-transparent'} px-0`}>
+                    <div className={`w-full min-h-[44px] ${msg.role === 'user' ? 'bg-transparent' : 'bg-transparent'} px-0`}>
                       {msg.role === 'user' ? (
                         <div className={`flex flex-col gap-2 w-full ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
                               {msg.file && (
@@ -7403,9 +7400,8 @@ export const ChatPage: React.FC = () => {
                         </div>
                       ) : (
                       <motion.div 
-                        layout
                         initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                         className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
                       >

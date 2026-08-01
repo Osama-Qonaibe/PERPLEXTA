@@ -250,13 +250,14 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
   const vaultMap = new Map<string, any>();
   if (targets.length > 0) {
     try {
-      const providerNames = targets.map(t => t.provider.toLowerCase().replace(/\s+/g, ''));
-      const result = await pool.query(
-        'SELECT provider, is_active, daily_budget, used_today, url_key, protocol_config FROM api_keys_vault WHERE provider = ANY($1)',
-        [providerNames]
-      );
-      for (const row of result.rows) {
-        vaultMap.set(row.provider, row);
+      const { getCachedApiKeysVault } = await import('../../db/queries.js');
+      const activeKeys = await getCachedApiKeysVault();
+      if (activeKeys && activeKeys.length > 0) {
+        for (const key of activeKeys) {
+          if (key && key.provider) {
+            vaultMap.set(key.provider.toLowerCase().replace(/\s+/g, ''), key);
+          }
+        }
       }
     } catch (err: any) {
       console.warn('[Video Task Pre-fetch] Failed to pre-load configuration keys:', err.message);

@@ -2,6 +2,7 @@ import { pool, ledgerPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
 import bcrypt from 'bcryptjs';
+import { walletLoader } from '../db/queries.js';
 
 const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: string, desc_ar: string }> = {
   'chat': {
@@ -120,7 +121,6 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
   }
 };
 
-// Tools measured as absolute totals — NOT daily/monthly counters
 const ABSOLUTE_TOOLS = new Set(['storage_mb', 'marketplace_listings']);
 
 export async function getUserUsage(userId: string | number) {
@@ -220,7 +220,6 @@ export async function getUserUsage(userId: string | number) {
     const info = TOOL_INFO[toolId];
     const isAbsolute = ABSOLUTE_TOOLS.has(toolId);
 
-    // Admins are never bound by plan limits unless they have an active subscription for sandbox testing
     if (isAdmin && !hasActiveSub) {
       let currentUsage = 0;
       if (toolId === 'storage_mb') currentUsage = storageUsageMB;
@@ -249,12 +248,10 @@ export async function getUserUsage(userId: string | number) {
     let totalLimit: number | null = null;
 
     if (!hasActiveSub) {
-      // No subscription — hard zero on everything
       dailyLimit = 0;
       monthlyLimit = 0;
       totalLimit = isAbsolute ? 0 : null;
     } else if (rawLimits === 'unlimited') {
-      // null means unlimited in API response
       dailyLimit = null;
       monthlyLimit = null;
     } else if (typeof rawLimits === 'object' && rawLimits !== null) {
@@ -262,20 +259,17 @@ export async function getUserUsage(userId: string | number) {
       monthlyLimit = rawLimits.monthly !== undefined ? parseInt(rawLimits.monthly) : null;
       totalLimit   = rawLimits.total   !== undefined ? parseInt(rawLimits.total)   : null;
     } else if (rawLimits !== null && rawLimits !== undefined) {
-      // Plain number — applies as BOTH daily AND monthly limit
       const parsed = parseInt(rawLimits);
       if (!isNaN(parsed)) {
         dailyLimit = parsed;
         monthlyLimit = parsed;
       }
     } else {
-      // Unspecified tool defaults to 0 (blocked) instead of fallback to null (unlimited)
       dailyLimit = 0;
       monthlyLimit = 0;
       totalLimit = isAbsolute ? 0 : null;
     }
 
-    // Absolute tools (storage, marketplace) use total/current, not daily/monthly counters
     let dailyUsage: number;
     let monthlyUsage: number;
 
@@ -306,7 +300,6 @@ export async function getUserUsage(userId: string | number) {
       }
     };
 
-    // For absolute tools expose total/totalLimit explicitly
     if (isAbsolute) {
       result.usage.total = dailyUsage;
       result.limits.total = totalLimit ?? dailyLimit; // fallback to dailyLimit if no explicit total
@@ -348,8 +341,7 @@ export async function getUserProfile(userId: string) {
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
   
-  const walletRes = await (ledgerPool || pool).query('SELECT balance, points, referral_activated FROM wallets WHERE user_id = $1', [userId]);
-  const wallet = walletRes.rows[0] || { balance: 0.0, points: 0, referral_activated: false };
+  const wallet = await walletLoader.load(userId) || { balance: 0.0, points: 0, referral_activated: false };
   
   let subscription = null;
 

@@ -16,14 +16,13 @@ export const InactivityWarningModal: React.FC = () => {
 
   if (!showInactivityWarning) return null;
 
-  // Render a bilingual descriptive text containing seconds
   const getWarningDescription = () => {
     const isAr = dir === 'rtl';
     if (isAr) {
       return (
         <span className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed block">
           لقد كنت غير نشط لفترة من الوقت. لحماية حسابك وأمان بياناتك الرقمية، سيتم تسجيل خروجك تلقائياً خلال{' '}
-          <strong className="text-emerald-500 font-extrabold text-base tracking-wider drop-shadow-[0_0_6px_rgba(16,185,129,0.6)]">
+          <strong className="text-emerald-500 font-extrabold text-base tracking-wider">
             {inactivityCountdown}
           </strong>{' '}
           ثانية.
@@ -33,7 +32,7 @@ export const InactivityWarningModal: React.FC = () => {
     return (
       <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed block">
         We noticed you have been inactive. For your system security and privacy protection, you will be automatically logged out in{' '}
-        <strong className="text-emerald-500 font-extrabold text-base tracking-wider drop-shadow-[0_0_6px_rgba(16,185,129,0.6)]">
+        <strong className="text-emerald-500 font-extrabold text-base tracking-wider">
           {inactivityCountdown}
         </strong>{' '}
         seconds.
@@ -71,7 +70,7 @@ export const InactivityWarningModal: React.FC = () => {
               <div className="absolute inset-0 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 animate-ping duration-2000" />
               {/* Inner container */}
               <div className="relative w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
-                <ShieldAlert className="w-7 h-7 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                <ShieldAlert className="w-7 h-7 text-emerald-500" />
               </div>
             </div>
 
@@ -91,7 +90,7 @@ export const InactivityWarningModal: React.FC = () => {
                 initial={{ width: '100%' }}
                 animate={{ width: `${(inactivityCountdown / 60) * 100}%` }}
                 transition={{ duration: 1, ease: 'linear' }}
-                className="bg-emerald-500 h-full drop-shadow-[0_0_4px_rgba(16,185,129,0.8)]"
+                className="bg-emerald-500 h-full"
               />
             </div>
 
@@ -101,7 +100,7 @@ export const InactivityWarningModal: React.FC = () => {
               <button
                 type="button"
                 onClick={extendSession}
-                className="flex-1 order-1 sm:order-2 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-all duration-300 bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.35)]"
+                className="flex-1 order-1 sm:order-2 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-all duration-300 bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 shadow-sm"
               >
                 <Clock className="w-4 h-4" />
                 <span>{isAr ? 'البقاء متصلاً' : 'Stay Logged In'}</span>

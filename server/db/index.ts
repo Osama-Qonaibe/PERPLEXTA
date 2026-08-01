@@ -18,7 +18,6 @@ let currentSecurityMax = 0;
 let poolInitPromise: Promise<void> | null = null;
 let lastInitUrls = { core: '', ledger: '', external: '', security: '', coreMax: 0, ledgerMax: 0, externalMax: 0, securityMax: 0 };
 
-// ─── Helpers (module-scope, created once) ────────────────────────────────────
 
 export function getSslConfig() {
   return process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
@@ -71,7 +70,6 @@ export function createInternalPool(connectionString: string, max = 1) {
 export function getExternalPool() { return externalPool || pool; }
 export function getSecurityPool() { return securityPool || pool; }
 
-// ─── Pool Initialization ──────────────────────────────────────────────────────
 
 export async function initializePerplextaPools(
   coreUrl: string,
@@ -87,14 +85,12 @@ export async function initializePerplextaPools(
   const finalExternalUrl = externalUrl || coreUrl;
   const finalSecurityUrl = securityUrl || coreUrl;
 
-  // Resolve sizes: caller override → env → default 20
   const envSizes = getPoolSizesFromEnv();
   const finalCoreMax     = coreMaxOverride     || envSizes.coreMax;
   const finalLedgerMax   = ledgerMaxOverride   || envSizes.ledgerMax;
   const finalExternalMax = externalMaxOverride || envSizes.externalMax;
   const finalSecurityMax = securityMaxOverride || envSizes.securityMax;
 
-  // Guard 1: nothing changed — skip entirely
   if (
     pool &&
     currentCoreUrl     === coreUrl           &&
@@ -110,7 +106,6 @@ export async function initializePerplextaPools(
     return;
   }
 
-  // Guard 2: identical init already in flight — reuse promise
   if (
     poolInitPromise &&
     lastInitUrls.core        === coreUrl           &&
@@ -154,7 +149,6 @@ export async function initializePerplextaPools(
       return;
     }
 
-    // Close existing pools safely before replacing
     if (pool) pool.end().catch((e: any) => console.error('[DB] Error closing core pool:', e.message));
     if (ledgerPool   && ledgerPool   !== pool) ledgerPool.end().catch((e: any)   => console.error('[DB] Error closing ledger pool:', e.message));
     if (externalPool && externalPool !== pool) externalPool.end().catch((e: any) => console.error('[DB] Error closing external pool:', e.message));
@@ -189,7 +183,6 @@ export async function initializePerplextaPools(
       if (externalPool !== pool) externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e.message));
       if (securityPool !== pool) securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e.message));
 
-      // Persist resolved config so singleton guards work on next call
       currentCoreUrl = coreUrl; currentLedgerUrl = finalLedgerUrl;
       currentExternalUrl = finalExternalUrl; currentSecurityUrl = finalSecurityUrl;
       currentCoreMax = finalCoreMax; currentLedgerMax = finalLedgerMax;
@@ -270,21 +263,18 @@ export async function initializePerplextaPools(
   }
 }
 
-// ─── Registry Synchronization ─────────────────────────────────────────────────
 
 export async function synchronizePerplextaPoolsFromRegistry() {
   if (!pool) return;
   console.log('[DB] Checking for active remote database overrides...');
 
   try {
-    // Auto-correct any corrupt registry entries where host is 'base'
     await pool.query("UPDATE db_connections_registry SET is_active = false, host = NULL WHERE host = 'base'");
 
     const result = await pool.query(
       "SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core','ledger','external','security')"
     );
 
-    // No registry overrides — revert to ENV if we drifted
     if (result.rows.length === 0) {
       console.log('[DB] No active registry overrides found.');
       const env = getPoolSizesFromEnv();
@@ -367,7 +357,6 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       return;
     }
 
-    // Test registry connections individually with safe fallbacks to core
     const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
       if (!url || url === coreUrl) return coreUrl;
       try {
@@ -393,7 +382,6 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const externalMax = Number(externalReg?.pool_size) || envSizes.externalMax;
     const securityMax = Number(securityReg?.pool_size) || envSizes.securityMax;
 
-    // Nothing changed — skip pool recreation
     if (
       coreUrl     === currentCoreUrl     && ledgerUrl   === currentLedgerUrl   &&
       externalUrl === currentExternalUrl && securityUrl === currentSecurityUrl &&

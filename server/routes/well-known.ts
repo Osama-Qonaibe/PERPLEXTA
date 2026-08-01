@@ -12,16 +12,16 @@ import { getOrCreateSigningKeys } from '../utils/keys.js';
 
 const router = Router();
 
-// ─── Shared CORS middleware (replaces 8× duplicate setHeader blocks) ───────────
-router.use((req, res, next) => {
+// ─── Shared CORS helper ───────────────────────────────────────────────────────
+const setPublicCorsHeaders = (res: any) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
+};
 
 // ─── /auth.md ─────────────────────────────────────────────────────────────────
 router.get('/auth.md', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.setHeader('Vary', 'Accept, Accept-Language');
@@ -31,6 +31,7 @@ router.get('/auth.md', (req, res) => {
 
 // ─── /.well-known/oauth-protected-resource ────────────────────────────────────
 router.get('/.well-known/oauth-protected-resource', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     resource: baseUrl,
@@ -55,6 +56,7 @@ router.get('/.well-known/oauth-protected-resource', (req, res) => {
 
 // ─── /.well-known/openid-configuration ───────────────────────────────────────
 router.get('/.well-known/openid-configuration', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     issuer: baseUrl,
@@ -86,6 +88,7 @@ router.get('/.well-known/openid-configuration', (req, res) => {
 
 // ─── /.well-known/oauth-authorization-server ─────────────────────────────────
 router.get('/.well-known/oauth-authorization-server', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     issuer: baseUrl,
@@ -109,6 +112,7 @@ router.get('/.well-known/oauth-authorization-server', (req, res) => {
 
 // ─── /.well-known/agent-skills/index.json ────────────────────────────────────
 router.get('/.well-known/agent-skills/index.json', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     $schema: 'https://agentskills.io/schemas/v0.2.0/agent-skills-index.json',
@@ -143,6 +147,7 @@ router.get('/.well-known/agent-skills/index.json', (req, res) => {
 
 // ─── /.well-known/mcp/server-card.json ───────────────────────────────────────
 router.get('/.well-known/mcp/server-card.json', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     serverInfo: { name: 'Perplexta Platform MCP Server', version: '1.0.0' },
@@ -159,6 +164,7 @@ router.get('/.well-known/mcp/server-card.json', (req, res) => {
 
 // ─── /.well-known/api-catalog ─────────────────────────────────────────────────
 router.get('/.well-known/api-catalog', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.setHeader('Content-Type', 'application/linkset+json');
   res.json({
@@ -175,6 +181,7 @@ router.get('/.well-known/api-catalog', (req, res) => {
 
 // ─── /.well-known/acp.json ────────────────────────────────────────────────────
 router.get('/.well-known/acp.json', (req, res) => {
+  setPublicCorsHeaders(res);
   const baseUrl = getBaseUrl(req);
   res.json({
     protocol: { name: 'acp', version: '1.0' },
@@ -185,9 +192,8 @@ router.get('/.well-known/acp.json', (req, res) => {
 });
 
 // ─── /api/auth/jwks ───────────────────────────────────────────────────────────
-// Registered in app.ts via app.use(wellKnownRouter) before /api routes,
-// so the path here is the full path as seen by Express.
 router.get('/api/auth/jwks', (req, res) => {
+  setPublicCorsHeaders(res);
   const { jwk } = getOrCreateSigningKeys();
   res.json({ keys: [jwk] });
 });

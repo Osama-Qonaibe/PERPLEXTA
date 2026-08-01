@@ -16,10 +16,10 @@ import wellKnownRouter from './routes/well-known.js';
 
 import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
+import { getCachedRouteSeo, getCachedAllActiveRouteSeo } from './db/queries.js';
 
 const app = express();
 
-// Database connection queue backpressure & queue controller
 app.use((req, res, next) => {
   const isBackpressureSaturated = (p: any) => {
     if (!p) return false;
@@ -39,7 +39,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// x402 Payment Protocol Configuration for Programmatic AI Agents
 const x402Routes = {
   "/api/agent/exclusive-analysis": {
     accepts: [
@@ -67,7 +66,6 @@ const x402Middleware = paymentMiddlewareFromConfig(
   false // syncFacilitatorOnStart = false to avoid startup crashes
 );
 
-// Explicitly trust proxy headers (including X-Forwarded-For and X-Forwarded-Proto) to handle load balancers / reverse proxies correctly
 const trustProxyVal = process.env.TRUST_PROXIES || '1';
 if (trustProxyVal === 'true' || trustProxyVal === '1') {
   app.set('trust proxy', 1);
@@ -80,7 +78,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// RFC 8288 & RFC 9727 Agent Discovery Link headers for all non-static / non-API / homepage requests
 app.use((req, res, next) => {
   const isApiOrUploads = req.path.startsWith('/api/') || req.path.startsWith('/uploads/');
   const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
@@ -91,7 +88,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Markdown for Agents (Accept: text/markdown content negotiation)
 app.use((req, res, next) => {
   const accept = req.headers["accept"] || "";
   if (accept.includes("text/markdown") && (req.path === "/" || req.path === "/index.html")) {
@@ -111,14 +107,16 @@ app.use((req: any, res: any, next: any) => {
   const isDev = process.env.NODE_ENV !== 'production';
   
   const scriptSrcDirectives = isDev
-    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://*.stripe.com", "https://*.googleapis.com"]
+    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://*.stripe.com", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://apis.google.com"]
     : [
         "'self'",
         `'nonce-${res.locals.nonce}'`,
         "'unsafe-inline'",
         "https://www.googletagmanager.com",
         "https://*.stripe.com",
-        "https://*.googleapis.com"
+        "https://*.googleapis.com",
+        "https://*.firebaseapp.com",
+        "https://apis.google.com"
       ];
 
   const cspDirectives: any = {
@@ -128,7 +126,7 @@ app.use((req: any, res: any, next: any) => {
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
-    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
     frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
   };
@@ -154,12 +152,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, '*');
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
-      return callback(null, true);
+      return callback(null, origin);
     }
     if (origin.endsWith('.run.app')) {
-      return callback(null, true);
+      return callback(null, origin);
     }
     callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
   },
@@ -178,7 +176,6 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// Express Body Parser Error Handler for Payload Too Large
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err && (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413 || err.name === 'PayloadTooLargeError')) {
     console.warn(`[Payload Too Large] Request size limit exceeded for ${req.method} ${req.path}`);
@@ -198,7 +195,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Server-side upload validation middleware: validates file size, headers, magic bytes, and image metadata
 app.use(uploadValidator);
 
 const publicPath = path.join(process.cwd(), 'public');
@@ -226,7 +222,6 @@ app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'ma
 app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
-// ─── Public discovery & well-known routes (A-3) ──────────────────────────────
 app.use(wellKnownRouter);
 
 app.use(express.static(publicPath));
@@ -236,7 +231,6 @@ import { getSystemSettings } from './services/system.js';
 import { filePermissionCache, FILE_CACHE_TTL_MS, invalidateFilePermissionCache } from './services/filePermissionCache.js';
 export { filePermissionCache, invalidateFilePermissionCache };
 
-// Initialize file-system watcher on uploads directory to keep permission cache synced with physical storage
 if (!fs.existsSync(uploadsPath)) {
   try {
     fs.mkdirSync(uploadsPath, { recursive: true });
@@ -311,7 +305,6 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
   const diskPath = path.join(uploadsPath, cleanName);
   const fileExistsOnDisk = fs.existsSync(diskPath);
 
-  // Fast-track & robust fallback: Any file stored in uploads with a valid image/media extension is automatically public
   if (isMediaExt || (fileExistsOnDisk && Boolean(mediaMimeTypes[ext]))) {
     filePermissionCache.set(cacheKey, { authorized: true, expiresAt: now + FILE_CACHE_TTL_MS });
     return true;
@@ -356,7 +349,6 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
       }
     }
 
-    // Default to public if it's a known media extension or physically stored in uploads
     if (!isPublic && (isMediaExt || fileExistsOnDisk)) {
       isPublic = true;
     }
@@ -365,7 +357,6 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
     return isPublic;
   } catch (dbErr) {
     console.error('[Upload Secure Handler] checkIsPublicFile error:', dbErr);
-    // Robust fail safe for media formats to avoid broken UI images
     const fallbackIsPublic = isMediaExt || fileExistsOnDisk;
     filePermissionCache.set(cacheKey, { authorized: fallbackIsPublic, expiresAt: now + FILE_CACHE_TTL_MS });
     return fallbackIsPublic;
@@ -412,7 +403,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const actualExt = path.extname(resolvedPath).toLowerCase();
     const reqExt = path.extname(filename).toLowerCase();
 
-    // 1. All web media files (images, video, audio) are public assets for img/video rendering
     if (mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt]) {
       const mime = mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt] || 'image/webp';
       res.setHeader('Content-Type', mime);
@@ -420,7 +410,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       return res.sendFile(resolvedPath);
     }
 
-    // 2. Check public database reference for non-media files (e.g. public pdf/zip attachments)
     const isPublic = await checkIsPublicFile(filename);
     if (isPublic) {
       return res.sendFile(resolvedPath);
@@ -434,7 +423,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     }
 
-    // 3. Document or private attachments require token authentication
     if (!token || token === 'null' || token === 'undefined') {
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to access this file.' });
     }
@@ -483,7 +471,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
   }
 });
 
-// x402 payment-protected premium API route for programmatic agents
 app.all('/api/agent/exclusive-analysis', x402Middleware, async (req, res) => {
   const userQuery = String(req.body?.prompt || req.body?.query || req.body?.task || req.query?.query || "Evaluate latest structural liquidity arbitrage and system latency optimization paths.");
 
@@ -721,6 +708,8 @@ import bulletinRoutes from './routes/bulletin.js';
 import giftsRoutes from './routes/gifts.js';
 import metricsRoutes from './routes/metrics.js';
 import recommendationsRoutes from './routes/recommendations.js';
+import googleChatRoutes from './routes/google-chat.js';
+import googleIntegrationsRoutes from './routes/google-integrations.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -737,19 +726,109 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/share-snapshot', shareRoutes);
 app.use('/api/gifts', giftsRoutes);
+app.use('/api/google-integrations', googleIntegrationsRoutes);
 
-// Public route to fetch dynamic route SEO settings for client-side meta management
 app.get('/api/seo-routes', async (req, res) => {
   try {
     if (!pool) return res.json([]);
-    const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
-    res.json(result.rows);
+    const rows = await getCachedAllActiveRouteSeo();
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch public route SEO settings' });
   }
 });
 
-// Backwards compatibility aliases for direct api endpoints
+app.get('/robots.txt', (req, res) => {
+  const baseUrl = getBaseUrl(req);
+  const robots = `User-agent: *
+Allow: /
+Allow: /api/og
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth/
+
+Sitemap: ${baseUrl}/sitemap.xml
+`;
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send(robots);
+});
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const baseUrl = getBaseUrl(req);
+    const staticRoutes = [
+      { url: '/', changefreq: 'daily', priority: '1.0' },
+      { url: '/subscription', changefreq: 'weekly', priority: '0.9' },
+      { url: '/marketplace', changefreq: 'daily', priority: '0.9' },
+      { url: '/blog', changefreq: 'daily', priority: '0.8' },
+      { url: '/bulletin', changefreq: 'daily', priority: '0.8' },
+      { url: '/rewards', changefreq: 'weekly', priority: '0.7' },
+      { url: '/terms', changefreq: 'monthly', priority: '0.3' },
+      { url: '/privacy', changefreq: 'monthly', priority: '0.3' },
+      { url: '/about', changefreq: 'monthly', priority: '0.5' },
+    ];
+
+    let dynamicUrls: any[] = [];
+    if (pool) {
+      try {
+        const blogRes = await pool.query('SELECT slug, updated_at FROM blog_articles ORDER BY id DESC LIMIT 100');
+        blogRes.rows.forEach((b: any) => {
+          dynamicUrls.push({
+            url: `/blog/${b.slug}`,
+            lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : new Date().toISOString(),
+            changefreq: 'weekly',
+            priority: '0.8'
+          });
+        });
+
+        const marketRes = await pool.query('SELECT id, updated_at FROM marketplace_items ORDER BY id DESC LIMIT 100');
+        marketRes.rows.forEach((m: any) => {
+          dynamicUrls.push({
+            url: `/marketplace/${m.id}`,
+            lastmod: m.updated_at ? new Date(m.updated_at).toISOString() : new Date().toISOString(),
+            changefreq: 'weekly',
+            priority: '0.8'
+          });
+        });
+
+        const bulletinRes = await pool.query('SELECT id, updated_at FROM bulletin_ads WHERE status = $1 ORDER BY id DESC LIMIT 100', ['active']);
+        bulletinRes.rows.forEach((b: any) => {
+          dynamicUrls.push({
+            url: `/bulletin/${b.id}`,
+            lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : new Date().toISOString(),
+            changefreq: 'daily',
+            priority: '0.8'
+          });
+        });
+      } catch (dbErr) {
+        console.error('[Sitemap] Database dynamic urls fetch error:', dbErr);
+      }
+    }
+
+    const allUrls = [...staticRoutes, ...dynamicUrls];
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    for (const item of allUrls) {
+      xml += `  <url>\n`;
+      xml += `    <loc>${baseUrl}${item.url}</loc>\n`;
+      if (item.lastmod) {
+        xml += `    <lastmod>${item.lastmod}</lastmod>\n`;
+      }
+      xml += `    <changefreq>${item.changefreq || 'weekly'}</changefreq>\n`;
+      xml += `    <priority>${item.priority || '0.5'}</priority>\n`;
+      xml += `  </url>\n`;
+    }
+    xml += `</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
+  } catch (err) {
+    console.error('[Sitemap] Error generating sitemap:', err);
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
 app.use('/api/settings', (req, res, next) => {
   req.url = '/settings';
   systemRoutes(req, res, next);
@@ -770,6 +849,7 @@ app.use('/api/ads', adsRoutes);
 app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api/google-chat', googleChatRoutes);
 
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';
@@ -782,7 +862,6 @@ function escapeHtmlAttribute(str: string): string {
     .replace(/\//g, '&#x2F;');
 }
 
-// A-4: baseUrl is now passed in by the caller — no redundant getBaseUrl(req) inside.
 async function injectSEOTags(
   html: string,
   settings: any,
@@ -820,7 +899,6 @@ async function injectSEOTags(
   const validateImageUrl = (url: string): string => {
     if (!url) return DEFAULT_OG_IMAGE;
 
-    // 1. Handle local relative paths
     if (url.startsWith('/')) {
       if (url.startsWith('/uploads/')) {
         const localPath = path.join(process.cwd(), url);
@@ -832,7 +910,6 @@ async function injectSEOTags(
       return url;
     }
 
-    // 2. Handle external absolute URLs
     try {
       const parsed = new URL(url);
       const invalidHostnames = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
@@ -850,16 +927,11 @@ async function injectSEOTags(
 
   let isRouteSeoActive = false;
 
-  // 1. Check for dynamic database route-based SEO overrides first
   if (pool) {
     try {
-      const routeDbRes = await pool.query(
-        'SELECT * FROM route_seo_settings WHERE route = $1 AND is_active = true LIMIT 1',
-        [normalizedPath]
-      );
-      if (routeDbRes.rows.length > 0) {
+      const routeMeta = await getCachedRouteSeo(normalizedPath);
+      if (routeMeta) {
         isRouteSeoActive = true;
-        const routeMeta = routeDbRes.rows[0];
         const routeTitle = preferredLang === 'ar' 
           ? (routeMeta.title_ar || routeMeta.title_en) 
           : (routeMeta.title_en || routeMeta.title_ar);
@@ -876,13 +948,11 @@ async function injectSEOTags(
         if (routeMeta.og_image_url) imageUrl = validateImageUrl(routeMeta.og_image_url);
       }
     } catch (routeErr) {
-      // Table or query error fallback
     }
   }
 
   const queryParam = (req.query.search || req.query.q || req.query.query || '').toString().trim();
 
-  // Dynamic check and fetching for public subroutes
   if (queryParam) {
     if (normalizedPath.startsWith('/blog')) {
       try {
@@ -1053,7 +1123,6 @@ async function injectSEOTags(
     }
   }
 
-  // Final check for dynamic imageUrl
   if (!imageUrl || imageUrl === '') {
     imageUrl = DEFAULT_OG_IMAGE;
   }
@@ -1062,7 +1131,6 @@ async function injectSEOTags(
     imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
   }
 
-  // Detect mime type for og:image:type
   let imageType = 'image/png';
   if (imageUrl.toLowerCase().endsWith('.jpg') || imageUrl.toLowerCase().endsWith('.jpeg')) {
     imageType = 'image/jpeg';
@@ -1105,7 +1173,6 @@ async function injectSEOTags(
   let metaBlock = '';
 
   if (isPublicRoute) {
-    // Inject the title tag directly into the head before other metas
     const titleTagRegex = /<title>[\s\S]*?<\/title>/i;
     const finalTitleHtml = `<title>${escTitle}</title>`;
     if (titleTagRegex.test(html)) {
@@ -1132,7 +1199,7 @@ async function injectSEOTags(
     <meta name="twitter:description" content="${escDesc}" />
     <meta name="twitter:image" content="${escImage}" />
     <meta name="twitter:image:alt" content="${escTitle}" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="${escCanonical}" />
     <link rel="icon" type="image/png" href="${escFavicon}" />
     <link rel="apple-touch-icon" href="${escFavicon}" />
@@ -1157,15 +1224,31 @@ async function injectSEOTags(
       breadcrumbItems.push({ "@type": "ListItem", "position": 2, "name": pageName, "item": `${baseUrl}${normalizedPath}` });
     }
 
+    const websiteData: any = {
+      "@type": "WebSite", 
+      "@id": `${baseUrl}/#website`, 
+      "url": baseUrl, 
+      "name": currentSiteName, 
+      "description": currentDesc,
+      "publisher": { "@id": `${baseUrl}/#organization` }
+    };
+
+    if (normalizedPath === '/') {
+      websiteData.potentialAction = { 
+        "@type": "SearchAction", 
+        "target": { 
+          "@type": "EntryPoint", 
+          "urlTemplate": `${baseUrl}/?q={search_term_string}` 
+        }, 
+        "query-input": "required name=search_term_string" 
+      };
+    }
+
     const structuredData = {
       "@context": "https://schema.org",
       "@graph": [
         { "@type": "Organization", "@id": `${baseUrl}/#organization`, "name": currentSiteName, "url": baseUrl, "logo": faviconUrl, "description": currentDesc, "image": imageUrl },
-        {
-          "@type": "WebSite", "@id": `${baseUrl}/#website`, "url": baseUrl, "name": currentSiteName, "description": currentDesc,
-          "publisher": { "@id": `${baseUrl}/#organization` },
-          "potentialAction": { "@type": "SearchAction", "target": { "@type": "EntryPoint", "urlTemplate": `${baseUrl}/?q={search_term_string}` }, "query-input": "required name=search_term_string" }
-        },
+        websiteData,
         { "@type": "BreadcrumbList", "@id": `${baseUrl}${normalizedPath}/#breadcrumb`, "itemListElement": breadcrumbItems }
       ]
     };

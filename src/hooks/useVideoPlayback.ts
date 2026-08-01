@@ -34,7 +34,6 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
   const [duration, setDuration] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
-  // Preview video states
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isPreviewMuted, setIsPreviewMuted] = useState(true);
   const [previewProgress, setPreviewProgress] = useState(0);
@@ -103,14 +102,12 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
 
   const providerMeta = useMemo(() => validateProvider(cleanDisplayUrl), [validateProvider, cleanDisplayUrl]);
 
-  // Reset states on src change
   useEffect(() => {
     setIsVideoLoaded(false);
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime(0);
 
-    // Fallback timer for legacy loaders or slow connections
     const timer = setTimeout(() => {
       setIsVideoLoaded(true);
     }, 4000);
@@ -122,7 +119,6 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     setIsVideoLoaded(true);
   }, []);
 
-  // Synchronize playback between preview modal and primary video player
   useEffect(() => {
     if (!isPreviewOpen) {
       if (previewVideoRef.current) {
@@ -158,7 +154,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
       window.URL.revokeObjectURL(cleanObjectUrl);
     } catch (err) {
       clearTimeout(timeoutId);
-      console.warn("Video download failed or timed out, using fallback direct download method...", err);
+      // Video download failed or timed out silent fallback
       const link = document.createElement('a');
       link.href = resolvedUrl;
       link.download = `Perplexta_Gen_${Date.now()}.mp4`;
@@ -211,7 +207,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
       vid.pause();
       setIsPlaying(false);
     } else {
-      vid.play().catch(ev => console.warn(ev));
+      vid.play().catch(() => {});
       setIsPlaying(true);
     }
   }, [isPlaying]);
@@ -256,7 +252,7 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
       vid.pause();
       setIsPreviewPlaying(false);
     } else {
-      vid.play().catch(ev => console.warn(ev));
+      vid.play().catch(() => {});
       setIsPreviewPlaying(true);
     }
   }, [isPreviewPlaying]);
@@ -310,7 +306,6 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     setIsVideoLoaded,
     handleCanPlay,
     
-    // Preview states
     isPreviewPlaying,
     setIsPreviewPlaying,
     isPreviewMuted,
@@ -318,16 +313,13 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     previewTime,
     previewDur,
     
-    // Refs
     videoRef,
     previewVideoRef,
     
-    // Extracted layout metrics
     cleanDisplayUrl,
     vidAspect,
     providerMeta,
     
-    // Handlers
     handleDownload,
     handleShare,
     togglePlay,
@@ -336,14 +328,12 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     handleLoadedMetadata,
     handleSeek,
     
-    // Preview Handlers
     togglePreviewPlay,
     togglePreviewMute,
     handlePreviewSeek,
     handlePreviewTimeUpdate,
     handlePreviewLoadedMetadata,
 
-    // Integrated Lifecycle Status Outputs
     status,
     progressData,
     generationError,

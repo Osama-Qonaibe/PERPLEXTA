@@ -302,6 +302,7 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] Financial Radar & Real-time Profile Synchronization: Forensic monitoring and zero-latency profile state updates.
 - [x] Economy & Gift Management: Full-stack integration for gift catalog and platform pricing settings (Ads, Commissions) with strict Admin control.
 - [x] Live Stream Real-time Optimization: Implemented real-time viewer counter and persistent title display in the live stream interface.
+- [x] Google Chat Integration: Full-stack workspace integration for Google Chat spaces, message viewing, space creation, and secure messaging with mandatory confirmation dialogs.
 
 ### 🛠️ Phase 7: Local Infrastructure & Environment Prep (Active Phase)
 - [ ] Local Server Initialization & Database Mesh check.
@@ -370,7 +371,6 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - **Directive:** Every developer or AI agent MUST, as an absolute prerequisite to starting any work session, review the **Global Constitution**, the **Perplexta Laws (Section 10)**, and the **Current Project Status (Section 11)**.
 - **Protocol:** "Code first, read later" is a terminal violation. Understanding the mission and the architectural boundaries is the first step of every technical interaction.
 
-## 12. Daily Execution Plan (May 15, 2026) - Motion Harmony & Stability Audit
 
 Following the visual alignment phase, today was dedicated to achieving absolute motion harmony and interaction stability.
 
@@ -541,6 +541,164 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
     - Re-engineered `getUrlFromReg` in `server/db/index.ts` and `monitorDatabases` in `server/db/migrations.ts` with robust **safe decryption** (`safeDecrypt`).
     - Handled both encrypted AES-256 ciphertexts and plaintext connection strings/passwords gracefully, eradicating the `SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string` authentication error during pool synchronization.
 - **Environment Sanitation & Zero-Clutter Compliance**: Purged all temporary scripts from the project root and verified zero-error production compilation and linter validation.
+
+
+### 🛠️ Session Work Completed Today (July 30, 2026 - SEO Sitemap Automation & Search Engine Pinger):
+- **Dynamic XML Sitemap Enhancements**:
+    - Enhanced dynamic XML Sitemap generation (`/sitemap.xml`) to include `lastmod` attributes mapped directly from `updated_at` timestamps of blog articles, marketplace items, and active bulletin ads.
+- **Automated Search Engine Pinger Service**:
+    - Developed a dedicated SEO Pinger service (`server/services/sitemapPinger.ts`) to handle HTTP submission endpoints for Google and Bing search engines gracefully.
+    - Integrated immediate sitemap pings into the content publishing pipelines for Blog Articles (`server/routes/blog.ts`) and Marketplace Items (`server/routes/marketplace.ts`), ensuring zero-latency indexing notifications.
+- **Background Cron Automation**:
+    - Implemented a background Cron utility (`server/jobs/cron.ts`) that periodically audits the databases (every 30 minutes) and automatically dispatches XML sitemap pings if newly published content is detected.
+- **Architectural Preservation Decree Updates**: Appended an explicit decree ensuring developers and AI strictly follow the "Extension-Only" framework without rewriting or breaking established systems.
+
+
+### 🛠️ Session Work Completed Today (July 30, 2026 - SEO SiteSearch Refinement):
+- **Refined SiteSearch Structured Data**:
+    - Extracted the `SearchAction` markup (WebSite `potentialAction`) from the global injection loop and strictly constrained it to the homepage (`/`) according to Google's Search Engine guidelines. This ensures precise visibility in SERP search bars while removing redundant markup on deep pages.
+    - Verified compliance with the Zero-Clutter architecture and maintained 100% build health.
+
+
+### 🛠️ Session Work Completed Today (July 30, 2026 - SEO Crawling & Robots Directives):
+- **Refined SEO Robots Directives**:
+    - Upgraded the global `injectSEOTags` engine to output advanced crawler directives (`max-image-preview:large, max-snippet:-1, max-video-preview:-1`) within the `robots` meta tag. This ensures that search engines display large, high-quality image previews and optimal rich snippets in SERP results, driving higher click-through rates.
+    - Audited the SEO section to guarantee a single, efficient injection source without redundant queries or duplicated tags, complying fully with the Zero-Clutter architecture.
+    - Verified strict compliance with the Immutable Architecture protocol.
+
+
+### 🛠️ Session Work Completed Today (July 30, 2026 - PWAWrapper SEO Refactoring & Dynamic Sensitive Routes OG Sync):
+- **Refactored PWAWrapper Meta Tag Injection**:
+    - Purged repetitive, boilerplate DOM element creation (`document.createElement`) across `PWAWrapper` in `src/App.tsx` by implementing a streamlined, professional `updateMetaTag` utility function, vastly improving code clarity and structural efficiency.
+- **Dynamic Sensitive Routes OG Data Integration**:
+    - Engineered `PWAWrapper` to intelligently inject and sync rich Open Graph (OG) meta tags (`og:title`, `og:description`, `og:image`, `og:url`) even for secure, sensitive, or blocked non-public routes.
+    - Synchronized the system so that links shared from secure sections precisely map to the custom SEO image (`seoImageUrl`) defined by administrators, maintaining a unified visual identity and seamless external presentation without triggering crawlers on actual page content.
+- **Verified Zero-Clutter Compliance**: 
+    - Confirmed strict adherence to architectural standards, ensuring that this frontend SEO pipeline integrates cleanly without breaking or duplicating functionality established in the server-side tag injector.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 🛠️ Session Work Completed Today (July 31, 2026 - Security & Governance Orchestration):
+- **Launched Centralized Security Hub**:
+    - Engineered a high-precision **Security Management Panel** within `GoogleHubPage.tsx` for proactive token governance.
+    - Implemented a "Kill Switch" mechanism allowing users to revoke all Google access tokens with a single confirmed action.
+    - Integrated professional feedback loops using the platform's standard `sonner` toast system for real-time success notifications.
+- **Visual & Logic Alignment**:
+    - Synchronized the "Emerald Glow" design system across the security modal and its trigger points.
+    - Optimized state transitions for revocation lifecycle (Pending -> Revoking -> Success) with professional animations.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Full-Stack Workspace Integration):
+- **Launched Persistent Google Tool Connections**:
+    - Engineered a robust backend infrastructure with the `google_tool_connections` table for granular tool-level state persistence.
+    - Deployed a secure **Google Integrations API** (`/api/google-integrations`) to manage lifecycle events (Connect, Disconnect, Config Updates).
+    - Integrated real-time synchronization between the frontend `GoogleHubPage.tsx` and the PostgreSQL backend, ensuring a "Single Source of Truth" for workspace settings.
+- **Advanced Connection Management**:
+    - Developed a tactile **Manage Connection** card interface for every Google tool, allowing for instant activation, configuration tuning, and secure disconnection.
+    - Implemented high-precision state transitions (Connected vs. Setup Required) with professional feedback toasts via `sonner`.
+- **System Stability & Persistence**:
+    - Successfully registered the new integration schema within the platform's `verifySchemaIntegrity` engine, ensuring zero-configuration recovery on fresh deployments.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Intelligence & Guidance Architecture):
+- **Launched Interactive Guidance System**:
+    - Engineered a high-fidelity **Help/Guide** modal system within `GoogleHubPage.tsx` for all integrated services.
+    - Implemented step-by-step documentation for **Authentication**, **Usage**, and **Security** in both English and Arabic.
+    - Integrated professional iconography (`HelpCircle`, `Key`, `Zap`, `Lock`) with unified "Emerald Glow" hover logic.
+- **Structural Integrity**:
+    - Optimized the card component to support a tactile "Help" trigger alongside reordering handles and health badges.
+    - Verified full-stack responsiveness and fluid motion transitions across the guidance workflow.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Intelligence & Notification Orchestration):
+- **Launched Real-time Notification Engine**:
+    - Integrated a dynamic notification listener within `GoogleHubPage.tsx` that monitors incoming communication streams.
+    - Implemented high-visibility **Notification Badges** (unread counts) on the Google Chat and Gmail cards with professional "Emerald Glow" animations.
+    - Engineered a tactical "Pulse" effect for active notifications to ensure immediate user awareness.
+- **Architectural Refinement**:
+    - Optimized the health badge system to gracefully coexist with notification indicators, maintaining a clean and balanced visual hierarchy.
+    - Synchronized the internal state manager to track unread counts across session cycles.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Real-time Health Orchestration):
+- **Launched Real-time Health Indicators**:
+    - Engineered a high-precision status badge system for Google tools in the `GoogleHubPage.tsx`.
+    - Implemented visual states for **Connected**, **Syncing**, **Expired**, and **Offline** using professional pulse animations and color-coded "Emerald Glow" logic.
+    - Optimized the card layout to maintain perfect alignment when health badges are active.
+### 🛠️ Session Work Completed Today (July 31, 2026 - High-Precision Discovery):
+- **Launched Intelligent Search Engine**:
+    - Integrated a real-time search bar into the `GoogleHubPage.tsx` header with contextual filtering.
+    - Implemented a resilient UI that handles empty search states and gracefully transitions between filtered and reorderable modes.
+    - Optimized focus states with "Emerald Glow" effects for a unified visual language.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Interactive Workspace Orchestration):
+- **Implemented Drag-and-Drop Reordering**:
+    - Deployed Framer Motion's `Reorder` API within the `GoogleHubPage.tsx` to allow users to customize their tool layout.
+    - Added a subtle drag handle (`GripVertical`) and smooth spring physics for a tactile, professional feel.
+    - Integrated active drag states including scaling and enhanced shadows to provide clear user feedback during interaction.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Google Integration Ecosystem):
+- **Launched Google Workspace Hub**:
+    - Engineered a centralized `GoogleHubPage.tsx` to serve as the unified command center for all Google cloud integrations.
+    - Implemented high-fidelity interactive modules for **Google Chat** and **Google Contacts** with professional card-based UI.
+    - Integrated the new hub into the primary Header with a premium "Emerald Glow" hover interaction logic.
+- **Structural Optimization**:
+    - Successfully relocated legacy Google settings from the general Settings page to the specialized Hub, reducing cognitive load and improving workspace hierarchy.
+    - Synchronized navigation across Header and Sidebar for consistent access to the Google ecosystem.
+### 🛠️ Session Work Completed Today (July 31, 2026 - Header Navigation Optimization):
+- **Restored Bulletin Board to Header**:
+    - Relocated the **Bulletin Board** (لوحة الإعلانات) button from the Sidebar back to the Header per user request.
+    - Optimized the Header layout to maintain perfect alignment and spacing with the new navigation item.
+    - Maintained the contextual integration of Marketplace and Insights within the Bulletin Board sidebar for a cleaner primary workspace.
+- **System Stability & CORS Hardening**:
+    - Resolved a critical "Failed to fetch" error in the Ads system by refactoring the CORS handling in `well-known.ts`.
+    - Eliminated a header conflict where `Access-Control-Allow-Origin: *` was being set globally, preventing authenticated cross-origin requests. The system now correctly reflects the requesting origin with `credentials: true`.
+    - Verified the fix via high-precision `curl` testing and purged all debug interceptors from the production boot pipeline.
+- **Google Hub Architecture Phase**:
+    - Implemented the **Google Smart Integrations Hub**, providing a centralized command center for Workspace tools (Chat, Contacts, Drive, Gmail).
+    - Deployed a robust, database-backed connection management system using the `google_tool_connections` schema.
+    - Engineered interactive tool cards with dynamic status badges, drag-and-drop reordering (via `framer-motion`), and contextual Help/Guide modals for each service.
+    - Integrated a **Security Management Panel** allowing users to revoke all Google access tokens with a single, secure confirmation step.
+- **Optimized Navigation Ecosystem**:
+    - Relocated the **Marketplace** (السوق) and **Insights** (المقالات) modules from the global Header and Sidebar to a contextual integration within the **Bulletin Board** (لوحة الإعلانات).
+    - This "Facebook-style" architecture reduces visual clutter in the primary workspace while maintaining immediate accessibility within the social/commercial hub of the platform.
+- **Structural Integrity**:
+    - Eradicated duplicate navigation links across the Sidebar and Header.
+    - Verified all path mappings and icon definitions (`Megaphone`, `ShoppingBag`, `Edit2`) across the modified components.
+### 🛠️ Session Work Completed Today (July 30, 2026 - Database Schema Integrity & Regex Hardening):
+- **Hardened Database Schema Audit Engine**:
+    - Resolved a critical "Invalid SQL type identifier" error in the `ensureColumn` utility.
+    - Updated the security whitelist regex to safely permit square brackets (`[]`), single quotes (`'`), and dots (`.`), enabling automated repair of array-type columns and complex default value expressions.
+    - Verified the successful recovery of the `registered_agents` table schema, ensuring full stability for the Agent Authentication module.
+
+### 🛠️ Session Work Completed Today (July 30, 2026 - Database Schema Integrity & Regex Hardening):
+- **Hardened Database Schema Audit Engine**:
+    - Resolved a critical "Invalid SQL type identifier" error in the `ensureColumn` utility that prevented automated column repairs.
+    - Updated the security whitelist regex to safely permit square brackets (`[]`), single quotes (`'`), dots (`.`), and curly braces (`{}`), enabling automated repair of array-type columns and complex JSONB default expressions.
+    - Verified the successful recovery of the `registered_agents` table schema, ensuring full stability for the Agent Authentication module.
+### 🛠️ Session Work Completed Today (July 30, 2026 - Enterprise Google Chat Integration):
+- **Full-Stack Google Chat Integration**:
+    - Deployed a secure, server-side Google Chat proxy router (`/api/google-chat`) to handle space discovery and messaging, adhering to elite security protocols.
+    - Integrated the `GoogleChatManager` component into the `SettingsPage`, enabling users to manage their Google Workspace communications directly within the platform.
+    - Implemented mandatory user confirmation dialogs for all data mutation operations (sending messages, creating spaces) to ensure absolute transparency and user control.
+- **System Hardening & Quality Control**:
+    - Resolved critical TypeScript errors and missing dependency issues in the Google Chat module.
+    - Successfully verified the entire platform's integrity via comprehensive linting and production builds.
+### 🛠️ Session Work Completed Today (July 30, 2026 - Database Schema Resilience & Agent Auth Fix):
+- **Eradicated Agent Auth "Missing Column" Error**:
+    - Resolved a critical runtime failure where listing user agents failed due to a missing `credential_type` column in the `registered_agents` table.
+    - Integrated `registered_agents` into the `verifySchemaIntegrity` engine in `server/db/migrations.ts`. The system now automatically audits and repairs this table's schema during the boot sequence, ensuring high-availability for the Agent Authentication module.
+- **Hardened Schema Integrity Engine**:
+    - Expanded the comprehensive database audit report to include the `registered_agents` metadata, preventing future regression of missing columns in the authentication layer.
+### 🛠️ Session Work Completed Today (July 30, 2026 - Boot Pipeline Optimization & Black Screen Eradication):
+- **Eradicated Startup "Black Screen"**:
+    - Fixed a critical UI bug where the system rendered `null` and hid the application DOM entirely if the bootloader was engaged in `'refresh'` mode, resulting in a perceived "Black Screen of Death." The application now always renders the secure `SYSTEM INITIALIZATION` loader (in English and Arabic) during backend hydration, providing premium user feedback.
+- **Erased Duplicate Database Bottlenecks**:
+    - Performed a deep trace on the React `AppContext` boot sequence and identified a massive concurrency race condition. `fetchUserProfile`, `fetchBalance`, and `fetchEconomy` were all firing simultaneously (4+ redundant queries) on the same dataset.
+    - Optimized the boot pipeline to unify balance, economy, and profile hydration into strict, non-overlapping requests, significantly decreasing database pool exhaustion and accelerating time-to-interactive.
+- **Confirmed Full Zero-Clutter & Architecture Compliance**:
+    - The dual-database strict architecture and routing rules were fully preserved. No backend logic was removed or broken, strictly fulfilling the "Extension-Only" framework decree.
 
 ### ⚠️ IMMUTABLE ARCHITECTURE & EXTENSION-ONLY MANDATE (أمر الالتزام بالاستكمال والتطوير وحظر التعديل أو التخريب) ⚠️
 1. **STRICT ARCHITECTURAL SEAL**: All existing architecture—including Express/Vite full-stack engine, Core & Ledger dual-database separation, Orchestrator routing, Socket execution, and UI design systems—is officially **LOCKED AND SEALED**.

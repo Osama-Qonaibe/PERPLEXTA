@@ -23,23 +23,8 @@ if (!jwtSecret) {
 }
 
 const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {
-  console.log(`[GoogleAvatarDiagnostic] [${context}]`);
-  console.log(`  - Timestamp: ${new Date().toISOString()}`);
-  console.log(`  - User Email: ${googleUser?.email || 'N/A'}`);
-  console.log(`  - User Name: ${googleUser?.name || googleUser?.given_name || 'N/A'}`);
-  console.log(`  - Raw Picture URL: ${JSON.stringify(url)}`);
-  console.log(`  - Result of Validation: ${isValid}`);
-  if (url && typeof url === 'string') {
-    try {
-      const parsed = new URL(url);
-      console.log(`  - Parsed Hostname: ${parsed.hostname}`);
-      console.log(`  - Parsed Protocol: ${parsed.protocol}`);
-    } catch (e: any) {
-      console.log(`  - URL Parsing Failure: ${e.message}`);
-    }
-  }
   if (error) {
-    console.error(`  - Associated Error Details:`, error);
+    console.error(`[GoogleAvatarDiagnostic] [${context}] Associated Error Details:`, error);
   }
 };
 
@@ -52,22 +37,18 @@ const ALLOWED_GOOGLE_PICTURE_HOSTS = [
 
 const isValidGooglePicture = (url: any): boolean => {
   if (typeof url !== 'string') {
-    console.log(`[isValidGooglePicture] Failed: url is not a string (type is ${typeof url})`);
     return false;
   }
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:') {
-      console.log(`[isValidGooglePicture] Failed: protocol is "${parsed.protocol}", expected https:`);
       return false;
     }
     if (!ALLOWED_GOOGLE_PICTURE_HOSTS.includes(parsed.hostname)) {
-      console.log(`[isValidGooglePicture] Failed: hostname "${parsed.hostname}" is not an allowed Google hostname`);
       return false;
     }
     return true;
   } catch (err: any) {
-    console.log(`[isValidGooglePicture] Failed: url parsing error - ${err.message}`);
     return false;
   }
 };
@@ -322,7 +303,6 @@ router.post("/login", authLimiter, async (req, res) => {
   }
 });
 
-// Uses refreshLimiter (NOT authLimiter) to avoid blocking login after silent refreshes
 router.post("/refresh-token", refreshLimiter, async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -1098,9 +1078,6 @@ router.post("/reset-password", authLimiter, async (req, res) => {
   }
 });
 
-// -------------------------------------------------------------------------
-// WEB BOT & SOFTWARE AGENT AUTH REGISTER + EXECUTE (draft-meunier-webbotauth-registry)
-// -------------------------------------------------------------------------
 
 router.post('/register-agent', async (req, res) => {
   try {

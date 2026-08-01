@@ -25,11 +25,11 @@ import {
   getAdminStats,
   getServerHealth
 } from '../services/admin.js';
+import { invalidateRouteSeoCache } from '../db/queries.js';
 
 const router = express.Router();
 router.use(adminLimiter);
 
-// High-Integrity Compliance Interceptor Middleware for all administrative mutations
 router.use((req, res, next) => {
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     const originalSend = res.send;
@@ -86,13 +86,11 @@ router.use((req, res, next) => {
 
 async function auditLog(userId: any, action: string, type: string, details: object, req?: any) {
   try {
-    // 1. Log to current operational system_logs
     await pool.query(
       'INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)',
       [userId, action, type, JSON.stringify(details)]
     );
 
-    // 2. Log to isolated compliance security database
     const secPool = getSecurityPool();
     if (secPool) {
       let adminEmail = null;
@@ -133,7 +131,6 @@ async function auditLog(userId: any, action: string, type: string, details: obje
   }
 }
 
-// REST Compliance API Endpoint to read security audit logs
 router.get("/audit-logs", authenticateAdmin, async (req, res) => {
   try {
     const secPool = getSecurityPool();
@@ -201,7 +198,6 @@ router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
     const secPool = getSecurityPool();
     if (!secPool) return res.status(503).json({ error: 'Security database offline' });
 
-    // 1. Blocks by type (last 30 days)
     const typesRes = await secPool.query(`
       SELECT 
         metadata->>'limitType' as type,
@@ -212,7 +208,6 @@ router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
       GROUP BY metadata->>'limitType'
     `);
 
-    // 2. Trend (last 24 hours, hourly)
     const trendRes = await secPool.query(`
       SELECT 
         TO_CHAR(created_at, 'YYYY-MM-DD HH24:00') as hour,
@@ -224,7 +219,6 @@ router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
       ORDER BY hour ASC
     `);
 
-    // 3. Top blocked IPs
     const ipsRes = await secPool.query(`
       SELECT 
         ip_address,
@@ -237,7 +231,6 @@ router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
       LIMIT 10
     `);
 
-    // 4. Hot IPs (High frequency blocks in the last 5 minutes)
     const hotIpsRes = await secPool.query(`
       SELECT 
         ip_address,
@@ -250,7 +243,6 @@ router.get("/rate-limit-metrics", authenticateAdmin, async (req, res) => {
       ORDER BY count DESC
     `);
 
-    // 5. Recent blocks
     const recentRes = await secPool.query(`
       SELECT 
         id, ip_address, description, created_at, metadata->>'limitType' as limit_type
@@ -393,7 +385,6 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
     let connStr = config.connection_string || config.connectionString;
     const dbId = req.body.id || config.id;
 
-    // Retrieve saved configuration from database to satisfy pre-flight checks if omitted
     if (dbId && !host && !connStr) {
       try {
         const existing = await pool.query('SELECT host, connection_string FROM db_connections_registry WHERE id = $1', [dbId]);
@@ -607,7 +598,6 @@ router.post("/approval-queue/verify", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    // Execute the action based on action_type
     const payload = request.payload;
     const oldSettings = await getSystemSettings();
 
@@ -625,7 +615,6 @@ router.post("/approval-queue/verify", authenticateAdmin, async (req, res) => {
         payload.live_gift_commission_percent
       ]);
 
-      // Log audits
       const fields = [
         { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: payload.bulletin_ad_daily_price },
         { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: payload.live_gift_commission_percent },
@@ -649,7 +638,6 @@ router.post("/approval-queue/verify", authenticateAdmin, async (req, res) => {
           sidebar_ad_click_price = sidebar_ad_click_price * (1 + $1 / 100.0)
       `, [payload.percent]);
 
-      // Log audits for batch
       const newSettings = await getSystemSettings();
       const fields = [
         { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: newSettings.bulletin_ad_daily_price },
@@ -720,7 +708,6 @@ router.post("/approval-queue/bulk-verify", authenticateAdmin, async (req, res) =
       return res.status(400).json({ error: 'No requests selected' });
     }
 
-    // Fetch all pending requests in the batch
     const requestRes = await pool.query(`
       SELECT * FROM admin_approval_queue 
       WHERE id = ANY($1) AND status = 'pending'
@@ -730,14 +717,11 @@ router.post("/approval-queue/bulk-verify", authenticateAdmin, async (req, res) =
       return res.status(404).json({ error: 'No pending requests found in selection' });
     }
 
-    // Security: To prevent bulk bypass, we require the code to match the FIRST pending request
-    // This ensures the admin has access to the verification channel.
     const firstRequest = requestRes.rows[0];
     if (firstRequest.verification_code !== code) {
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    // Execute each action in the batch
     for (const request of requestRes.rows) {
       const payload = request.payload;
       const oldSettings = await getSystemSettings();
@@ -756,7 +740,6 @@ router.post("/approval-queue/bulk-verify", authenticateAdmin, async (req, res) =
             payload.live_gift_commission_percent
           ]);
 
-          // Log audits
           const fields = [
             { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: payload.bulletin_ad_daily_price },
             { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: payload.live_gift_commission_percent },
@@ -780,7 +763,6 @@ router.post("/approval-queue/bulk-verify", authenticateAdmin, async (req, res) =
               sidebar_ad_click_price = sidebar_ad_click_price * (1 + $1 / 100.0)
           `, [payload.percent]);
 
-          // Log audits
           const newSettings = await getSystemSettings();
           const fields = [
             { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: newSettings.bulletin_ad_daily_price },
@@ -823,7 +805,6 @@ router.post("/approval-queue/submit", authenticateAdmin, async (req, res) => {
     const adminId = (req as any).user.id;
     const adminEmail = (req as any).user.email;
 
-    // Generate a simple 6-digit code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const result = await pool.query(`
@@ -834,7 +815,6 @@ router.post("/approval-queue/submit", authenticateAdmin, async (req, res) => {
 
     const requestId = result.rows[0].id;
 
-    // In a real app, send email here
     console.log(`[ApprovalQueue] 2FA Code for ${adminEmail}: ${verificationCode}`);
 
     res.json({ success: true, requestId, message: 'Request submitted to approval queue. Verification required.' });
@@ -847,9 +827,7 @@ router.post("/approval-queue/submit", authenticateAdmin, async (req, res) => {
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const data = await memoryCache.getOrSet("admin:orchestrator:routes", async () => {
-      // Auto-heal/seed missing tools in DB
       const { tools } = await import('../config/constants.js');
-      // Find all existing tool_ids
       const dbTools = await pool.query('SELECT tool_id FROM tool_orchestrator');
       const dbToolIds = new Set(dbTools.rows.map((r: any) => r.tool_id));
       
@@ -879,7 +857,6 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
     const rawRoutes = req.body.routes || [req.body];
     
-    // Server-side validation for numerical, positive, and non-empty prices
     for (const route of rawRoutes) {
       const v = validateServerToolRoute(route);
       if (!v.isValid) {
@@ -985,7 +962,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
 
     const finalType = broadcast_type || type || 'both';
 
-    // 1. Fetch matching active users according to target criteria
     let queryStr = '';
     if (target_group === 'pro_only') {
       queryStr = `
@@ -1004,7 +980,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
         )
       `;
     } else {
-      // Default to 'all' active users
       queryStr = `
         SELECT u.id, u.email, u.name, u.language 
         FROM users u 
@@ -1018,7 +993,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
 
     const adminId = (req as any).user?.id || null;
 
-    // 2. Register initial system_broadcasts entry
     const result = await pool.query(`
       INSERT INTO system_broadcasts (
         admin_id, broadcast_type, target_group, title_en, title_ar, 
@@ -1039,7 +1013,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
     ]);
     const broadcastId = result.rows[0].id;
 
-    // 3. Background asynchronous delivery processing to prevent HTTP timeouts
     (async () => {
       let successCount = 0;
       let failCount = 0;
@@ -1050,7 +1023,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
             const subject = userLang === 'ar' ? (title_ar || title_en) : title_en;
             const body = userLang === 'ar' ? (content_ar || content_en) : content_en;
 
-            // Dispatch system notification
             if (finalType === 'notification' || finalType === 'both') {
               await pool.query(`
                 INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
@@ -1065,7 +1037,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
               ]).catch((e: any) => console.error('[Broadcast Background] Notification failed:', e));
             }
 
-            // Dispatch real SMTP email if needed
             if (finalType === 'email' || finalType === 'both') {
               const mailRes = await sendEmail(user.email, subject, body, adminId);
               if (mailRes.success) {
@@ -1082,13 +1053,11 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
           }
         }
 
-        // Update broadcast row state
         await pool.query(
           `UPDATE system_broadcasts SET status = 'completed', sent_count = $1 WHERE id = $2`,
           [successCount, broadcastId]
         ).catch((e: any) => console.error('[Broadcast Background] Final state update failed:', e));
 
-        // Record final campaign activity audit log
         await auditLog(adminId, 'Send Broadcast Completed', 'system', {
           broadcastId,
           finalType,
@@ -1111,7 +1080,6 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
       }
     })();
 
-    // Log broadcast initiation
     await auditLog(adminId, 'Send Broadcast', 'system', { title_en, target_group, sentCount });
     
     res.json({ 
@@ -1136,7 +1104,6 @@ router.get("/stats", authenticateAdmin, async (req, res) => {
 
 router.get("/referrals/stats", authenticateAdmin, async (req, res) => {
   try {
-    // 1. Summary Counts
     const totalResult = await pool.query('SELECT COUNT(*) as total FROM referral_invitations');
     const totalSent = parseInt(totalResult.rows[0]?.total || '0', 10);
 
@@ -1163,7 +1130,6 @@ router.get("/referrals/stats", authenticateAdmin, async (req, res) => {
     const uniqueReferrersRes = await pool.query('SELECT COUNT(DISTINCT referrer_id) as total_referrers FROM referral_invitations');
     const totalReferrers = parseInt(uniqueReferrersRes.rows[0]?.total_referrers || '0', 10);
 
-    // 2. Most Active Referrers
     const activeReferrersResult = await pool.query(`
       SELECT 
         u.id as referrer_id,
@@ -1189,7 +1155,6 @@ router.get("/referrals/stats", authenticateAdmin, async (req, res) => {
       conversion_rate: row.total_sent > 0 ? parseFloat(((row.total_accepted / row.total_sent) * 100).toFixed(2)) : 0
     }));
 
-    // 3. Recent Invitations list for the feed
     const recentInvitationsResult = await pool.query(`
       SELECT 
         r.id,
@@ -1204,7 +1169,6 @@ router.get("/referrals/stats", authenticateAdmin, async (req, res) => {
       LIMIT 15
     `);
 
-    // 4. Daily trend for the last 30 days
     const dailyTrendResult = await pool.query(`
       SELECT 
         TO_CHAR(created_at, 'YYYY-MM-DD') as invite_date, 
@@ -1362,7 +1326,6 @@ router.post("/referrals/remind", authenticateAdmin, async (req, res) => {
 
     const invite = inviteResult.rows[0];
 
-    // Check if invitation is pending (sent or reminded)
     if (invite.status === 'accepted') {
       return res.status(400).json({ error: 'This invitation has already been accepted', error_ar: 'تم قبول هذه الدعوة بالفعل' });
     }
@@ -1374,7 +1337,6 @@ router.post("/referrals/remind", authenticateAdmin, async (req, res) => {
     const invitationLink = `${baseUrl}/signup?ref=${invite.referral_code || ''}`;
     const lang = invite.referrer_language === 'ar' ? 'ar' : 'en';
 
-    // Send the smart email reminder template
     const emailSent = await sendSmartEmail(
       invite.referrer_id,
       invite.email.trim(),
@@ -1395,13 +1357,11 @@ router.post("/referrals/remind", authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Update status to 'reminded' and set updated_at
     await pool.query(
       "UPDATE referral_invitations SET status = 'reminded', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
       [invitationId]
     );
 
-    // Write system log
     try {
       await pool.query(
         "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
@@ -1461,7 +1421,6 @@ router.post("/referrals/remind-bulk", authenticateAdmin, async (req, res) => {
         const invitationLink = `${baseUrl}/signup?ref=${invite.referral_code || ''}`;
         const lang = invite.referrer_language === 'ar' ? 'ar' : 'en';
 
-        // Send the smart email reminder template
         const emailSent = await sendSmartEmail(
           invite.referrer_id,
           invite.email.trim(),
@@ -1485,13 +1444,11 @@ router.post("/referrals/remind-bulk", authenticateAdmin, async (req, res) => {
     }
 
     if (processedIds.length > 0) {
-      // Update status to 'reminded' and set updated_at
       await pool.query(
         "UPDATE referral_invitations SET status = 'reminded', updated_at = CURRENT_TIMESTAMP WHERE id = ANY($1)",
         [processedIds]
       );
 
-      // Write system log
       try {
         await pool.query(
           "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
@@ -1616,8 +1573,6 @@ router.delete("/users/:id", authenticateAdmin, async (req, res) => {
     try {
       await client.query('BEGIN');
       
-      // Cascade delete is handled by DB for chats, messages, user_files, etc.
-      // But wallets/ledger might be in another DB
       if (ledgerPool && ledgerPool !== pool) {
         await ledgerPool.query('DELETE FROM wallets WHERE user_id = $1', [id]);
         await ledgerPool.query('DELETE FROM referrals WHERE referrer_id = $1 OR referred_id = $1', [id]);
@@ -1826,7 +1781,6 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
     
     await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: userIdNum, amount: parsedAmount, type, unit, reason });
 
-    // Send notifications (Email & Socket)
     try {
       const userRes = await pool.query('SELECT name, email, language FROM users WHERE id = $1', [userIdNum]);
       if (userRes.rows.length > 0) {
@@ -1867,7 +1821,6 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
           }
         }
 
-        // 1. Send Real-time notification on platform
         const { createNotification } = await import('../services/notifications.js');
         await createNotification(userIdNum, 'finance', titleEn, titleAr, msgEn, msgAr, {
           amount: parsedAmount,
@@ -1877,7 +1830,6 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
           new_points: result.newPoints
         });
 
-        // 2. Send Styled Audit Confirmation Email
         const { sendEmail } = await import('../services/email.js');
         const subject = userLang === 'ar' 
           ? (isAdd ? 'تحديث مالي: تم إيداع رصيد جديد' : 'تحديث مالي: تم سحب رصيد من الحساب') 
@@ -2368,7 +2320,6 @@ router.post("/settings/stripe", authenticateAdmin, async (req, res) => {
   try {
     const { secretKey, publishableKey, webhookSecret, isLiveMode } = req.body;
     
-    // Build query dynamically to avoid overwriting existing keys if not provided
     let query = 'UPDATE system_settings SET updated_at = CURRENT_TIMESTAMP';
     const params: any[] = [];
     let paramCount = 1;
@@ -2526,7 +2477,6 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Key is required for this standard provider' });
     }
     
-    // Explicitly allow empty keys
     if (finalKey === undefined || finalKey === null) {
       finalKey = '';
     }
@@ -2648,7 +2598,6 @@ router.post("/api-keys/:id/test", authenticateAdmin, async (req, res) => {
         keyToTest = `${urlKey}:${keyToTest}`;
       }
     } else {
-      // Fallback to saved key
       const keyResult = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [cleanId]);
       if (keyResult.rows.length > 0) {
         keyToTest = decrypt(keyResult.rows[0].encrypted_key);
@@ -2675,7 +2624,6 @@ router.get("/financial-requests", authenticateAdmin, async (req, res) => {
     const depositRes = await ledgerPool.query('SELECT * FROM deposit_requests ORDER BY created_at DESC');
     const withdrawRes = await ledgerPool.query('SELECT * FROM withdrawal_requests ORDER BY created_at DESC');
     
-    // Fetch unique user ids to map them in memory
     const userIds = [
       ...depositRes.rows.map((r: any) => r.user_id),
       ...withdrawRes.rows.map((r: any) => r.user_id)
@@ -2724,7 +2672,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
   try {
     await client.query('BEGIN');
 
-    // 1. Fetch deposit request with FOR UPDATE lock
     const depRes = await client.query('SELECT * FROM deposit_requests WHERE id = $1 FOR UPDATE', [id]);
     if (depRes.rows.length === 0) {
       throw new Error('Deposit request not found');
@@ -2738,7 +2685,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
     const adminId = req.user.id;
 
     if (action === 'approve') {
-      // 2. Load and lock user wallet
       let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [request.user_id]);
       let walletId;
       
@@ -2752,13 +2698,11 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
         walletId = walletRes.rows[0].id;
       }
 
-      // 3. Update wallet balance
       await client.query(
         'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [request.amount, walletId]
       );
 
-      // 4. Create ledger_transaction
       let refText = 'None';
       try {
         const payload = JSON.parse(request.proof_url);
@@ -2780,7 +2724,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
         `Approved manual deposit of $${request.amount} via ${request.method} (Ref: ${refText})`
       ]);
 
-      // 5. Update deposit request
       await client.query(
         'UPDATE deposit_requests SET status = $1, admin_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
         ['approved', adminId, id]
@@ -2788,7 +2731,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
 
       await client.query('COMMIT');
 
-      // 5.5 Check and trigger referral activation if applicable
       try {
         const { checkReferralActivation } = await import('../services/wallet.js');
         await checkReferralActivation(request.user_id);
@@ -2796,7 +2738,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
         console.error('[Admin] Failed to check and activate referral for user:', request.user_id, refErr);
       }
 
-      // 6. Dispatch Notification & Real-Time Broadcast
       const { createNotification } = await import('../services/notifications.js');
       await createNotification(
         request.user_id,
@@ -2808,7 +2749,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
       );
 
     } else {
-      // Reject action
       await client.query(
         'UPDATE deposit_requests SET status = $1, rejection_reason = $2, admin_id = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
         ['rejected', rejectionReason || 'Information does not match chain ledger records', adminId, id]
@@ -2816,7 +2756,6 @@ router.post("/deposit-requests/:id/action", authenticateAdmin, async (req: any, 
 
       await client.query('COMMIT');
 
-      // Dispatch Notification
       const { createNotification } = await import('../services/notifications.js');
       await createNotification(
         request.user_id,
@@ -2849,7 +2788,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
   try {
     await client.query('BEGIN');
 
-    // 1. Lock withdrawal request
     const witRes = await client.query('SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE', [id]);
     if (witRes.rows.length === 0) {
       throw new Error('Withdrawal request not found');
@@ -2864,13 +2802,11 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
     const amountUSD = Number(request.amount_cents) / 100;
 
     if (action === 'approve') {
-      // 2. Mark withdrawal as approved
       await client.query(
         'UPDATE withdrawal_requests SET status = $1, processed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         ['approved', id]
       );
 
-      // 3. Mark matching ledger transaction as success
       await client.query(
         "UPDATE ledger_transactions SET status = 'success', updated_at = CURRENT_TIMESTAMP WHERE reference_id = $1 AND transaction_type = 'withdrawal'",
         [id.toString()]
@@ -2878,7 +2814,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
 
       await client.query('COMMIT');
 
-      // Dispatch Notification
       const { createNotification } = await import('../services/notifications.js');
       await createNotification(
         request.user_id,
@@ -2890,20 +2825,17 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
       );
 
     } else {
-      // Rejection action: Refund user wallet balance!
       let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [request.user_id]);
       if (walletRes.rows.length === 0) {
         throw new Error('Wallet not found for user');
       }
       const wallet = walletRes.rows[0];
 
-      // Add balance back
       await client.query(
         'UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [amountUSD, wallet.id]
       );
 
-      // Update matching ledger_transaction to failed/refunded with descriptive text
       await client.query(`
         UPDATE ledger_transactions 
         SET status = 'failed', 
@@ -2913,7 +2845,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
         AND transaction_type = 'withdrawal'
       `, [rejectionReason || 'Details invalid', id.toString()]);
 
-      // Record a companion ledger transaction showing credit refund for ledger parity!
       await client.query(`
         INSERT INTO ledger_transactions (wallet_id, user_id, amount, transaction_type, status, reference_id, description)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -2927,7 +2858,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
         `Refunded $${amountUSD.toFixed(2)} to wallet for rejected withdrawal request id #${id}`
       ]);
 
-      // Mark request as rejected
       await client.query(
         'UPDATE withdrawal_requests SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
         ['rejected', rejectionReason || 'Payment parameters or credentials invalid', id]
@@ -2935,7 +2865,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
 
       await client.query('COMMIT');
 
-      // Dispatch Notification
       const { createNotification } = await import('../services/notifications.js');
       await createNotification(
         request.user_id,
@@ -2957,7 +2886,6 @@ router.post("/withdrawal-requests/:id/action", authenticateAdmin, async (req: an
   }
 });
 
-// Delete deposit requests (Only non-pending records)
 router.delete("/deposit-requests/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -2977,7 +2905,6 @@ router.delete("/deposit-requests/:id", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Delete withdrawal requests (Only non-pending records)
 router.delete("/withdrawal-requests/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -2997,7 +2924,6 @@ router.delete("/withdrawal-requests/:id", authenticateAdmin, async (req, res) =>
   }
 });
 
-// Fetch Memory System Metrics
 router.get("/memories/stats", authenticateAdmin, async (req, res) => {
   try {
     const totalRes = await pool.query('SELECT count(*) FROM chat_memories');
@@ -3018,7 +2944,6 @@ router.get("/memories/stats", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Trigger Manual Memory Consolidation
 router.post("/memories/consolidate", authenticateAdmin, async (req, res) => {
   try {
     const { targetUserId, threshold } = req.body;
@@ -3042,14 +2967,12 @@ router.post("/memories/consolidate", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Safely identify (GET) and prune (POST) orphaned database records
 router.get("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
   try {
     if (!pool || !ledgerPool) {
       return res.status(503).json({ error: 'Database connections are initializing or unavailable.' });
     }
 
-    // 1. Audit user_files with missing physical owner or missing users
     const orphanedFilesRes = await pool.query(`
       SELECT id, user_id, chat_id, file_name, file_url, file_size, created_at 
       FROM user_files 
@@ -3057,7 +2980,6 @@ router.get("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       ORDER BY created_at DESC
     `);
     
-    // 2. Audit user_files with deleted/missing chats
     const misalignedChatFilesRes = await pool.query(`
       SELECT id, user_id, chat_id, file_name, file_url, file_size, created_at 
       FROM user_files 
@@ -3065,7 +2987,6 @@ router.get("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       ORDER BY created_at DESC
     `);
 
-    // 3. Audit deposit_requests that reference non-existent users
     const reqUsersRes = await ledgerPool.query('SELECT DISTINCT user_id FROM deposit_requests');
     const distinctRequestUserIds = reqUsersRes.rows.map((row: any) => row.user_id);
 
@@ -3126,7 +3047,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
 
     const dryRun = req.body.dryRun === true;
 
-    // Standard Identify Queries
     const orphanedFilesRes = await pool.query(`
       SELECT id, user_id, chat_id, file_name, file_url, file_size 
       FROM user_files 
@@ -3139,7 +3059,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       WHERE chat_id IS NOT NULL AND chat_id NOT IN (SELECT id FROM chats)
     `);
 
-    // Fetch deposit request user IDs
     const reqUsersRes = await ledgerPool.query('SELECT DISTINCT user_id FROM deposit_requests');
     const distinctRequestUserIds = reqUsersRes.rows.map((row: any) => row.user_id);
 
@@ -3185,27 +3104,22 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Execution Mode (No dryrun) - Prune/Fix Records!
 
-    // 1. Delete user_files with missing owners
     let physicalFilesDeleted = 0;
     const deletedUserFileIds: number[] = [];
     
     if (orphanedFilesRes.rows.length > 0) {
       const idsToDelete = orphanedFilesRes.rows.map((row: any) => row.id);
       
-      // Perform database deletion
       await pool.query(
         'DELETE FROM user_files WHERE id = ANY($1::int[])',
         [idsToDelete]
       );
 
-      // Clean up uploads directory off physical disk
       const uploadDir = path.join(process.cwd(), 'uploads');
       for (const fileRow of orphanedFilesRes.rows) {
         if (fileRow.file_url) {
           try {
-            // Check if file_url is a relative path name (not an external http/https URL)
             if (!fileRow.file_url.startsWith('http://') && !fileRow.file_url.startsWith('https://')) {
               const filePath = path.join(uploadDir, fileRow.file_url);
               await fs.unlink(filePath).catch(() => {});
@@ -3219,7 +3133,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       }
     }
 
-    // 2. Align chat references (Set chat_id = NULL on orphaned chats)
     let chatReferencesAlignedCount = 0;
     if (misalignedChatFilesRes.rows.length > 0) {
       const idsToAlign = misalignedChatFilesRes.rows.map((row: any) => row.id);
@@ -3230,7 +3143,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       chatReferencesAlignedCount = updateRes.rowCount || idsToAlign.length;
     }
 
-    // 3. Delete orphaned deposit_requests
     let prunedDepositRequestsCount = 0;
     if (orphanedUserIds.length > 0) {
       const pruneRes = await ledgerPool.query(
@@ -3240,7 +3152,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       prunedDepositRequestsCount = pruneRes.rowCount || orphanedUserIds.length;
     }
 
-    // Audit logs entry
     await auditLog(
       (req as any).user?.id,
       'Executed Database Maintenance Routine Cleanup',
@@ -3278,7 +3189,6 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Dedicated endpoint to upload SEO Open Graph Images
 router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file'), handleMulterError, async (req: any, res: any) => {
   try {
     if (!req.file) {
@@ -3302,12 +3212,10 @@ router.get("/seo-audit", authenticateAdmin, async (req, res) => {
     const settings = await getSystemSettings();
     const isAr = req.query.lang === 'ar';
 
-    // 1. Perform a real DB check
     const dbCheckStart = Date.now();
     const dbPulse = await pool.query('SELECT 1 as node');
     const dbLatencyMs = Date.now() - dbCheckStart;
 
-    // 2. Perform a real table schema integrity check (Audit counts dynamically)
     const ledgerIntegrity = await pool.query(`
       SELECT COUNT(*) as trans_count FROM ledger_transactions
     `).catch(() => ({ rows: [{ trans_count: '0' }] }));
@@ -3316,19 +3224,16 @@ router.get("/seo-audit", authenticateAdmin, async (req, res) => {
       ? settings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean).length
       : 0;
 
-    // 3. Environment analysis (Non-sensitive checks)
     const jwtSafe = !!process.env.JWT_SECRET;
     const encryptionSafe = !!process.env.ENCRYPTION_KEY;
     const stripeConfigured = !!process.env.STRIPE_SECRET_KEY;
     const paypalConfigured = !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 
-    // 4. Strict response compliance scores
     let complianceScore = 100;
     if (!jwtSafe) complianceScore -= 20;
     if (!encryptionSafe) complianceScore -= 30;
     if (dbPulse.rows.length === 0) complianceScore -= 55;
 
-    // 5. Build dynamic trace logs based on real server settings and state details!
     const traceLogs = isAr ? [
       `🔎 [CRAWLER-LOGS] بدء الفحص الهيكلي الشامل للمنصة وتحليل جدار الحماية الرقمي...`,
       `🗄️ [CRAWLER-LOGS] نبض قاعدة البيانات مستقر (${dbLatencyMs}ms). تم التحقق من سلامة البنية الأساسية وعزل قاعدة بيانات Ledger (الحسابات والأرصدة الموثقة: ${ledgerIntegrity.rows[0].trans_count} حركة).`,
@@ -3407,6 +3312,7 @@ router.post("/seo-routes", authenticateAdmin, async (req, res) => {
         WHERE id = $10
         RETURNING *
       `, [normalizedRoute, title_ar || null, title_en || null, description_ar || null, description_en || null, keywords_ar || null, keywords_en || null, og_image_url || null, is_active !== false, id]);
+      invalidateRouteSeoCache();
       return res.json({ success: true, item: updateRes.rows[0] });
     } else {
       const insertRes = await pool.query(`
@@ -3420,6 +3326,7 @@ router.post("/seo-routes", authenticateAdmin, async (req, res) => {
             updated_at = CURRENT_TIMESTAMP
         RETURNING *
       `, [normalizedRoute, title_ar || null, title_en || null, description_ar || null, description_en || null, keywords_ar || null, keywords_en || null, og_image_url || null, is_active !== false]);
+      invalidateRouteSeoCache();
       return res.json({ success: true, item: insertRes.rows[0] });
     }
   } catch (err: any) {
@@ -3439,6 +3346,7 @@ router.delete("/seo-routes/:id", authenticateAdmin, async (req, res) => {
     }
     const { id } = req.params;
     await pool.query('DELETE FROM route_seo_settings WHERE id = $1', [id]);
+    invalidateRouteSeoCache();
     res.json({ success: true, message: 'Route SEO setting removed successfully' });
   } catch (err: any) {
     console.error('[RouteSEO] Error deleting route SEO setting:', err);
@@ -3530,9 +3438,6 @@ router.get("/economy/settings", authenticateAdmin, async (req, res) => {
 
 router.get("/ads/heatmap", authenticateAdmin, async (req, res) => {
   try {
-    // Aggregating conversion rates (Clicks/Impressions) by Hour and Day of Week
-    // We'll simulate complex data based on existing tables if metrics aren't fully populated
-    // in a production way, but for now we'll provide a high-fidelity aggregation
     const result = await pool.query(`
       WITH hourly_stats AS (
         SELECT 
@@ -3563,7 +3468,6 @@ router.get("/ads/heatmap", authenticateAdmin, async (req, res) => {
 
 router.get("/ads/roi-analytics", authenticateAdmin, async (req, res) => {
   try {
-    // 1. Fetch Daily Ad Spend from Core DB
     const spendRes = await pool.query(`
       SELECT 
         DATE_TRUNC('day', created_at) as day,
@@ -3574,8 +3478,6 @@ router.get("/ads/roi-analytics", authenticateAdmin, async (req, res) => {
       ORDER BY 1 ASC
     `);
 
-    // 2. Fetch Daily Gift Revenue from Ledger DB
-    // Platform revenue is calculated as the commission from gifts
     const targetLedgerPool = ledgerPool || pool;
     const revenueRes = await targetLedgerPool.query(`
       SELECT 
@@ -3587,15 +3489,12 @@ router.get("/ads/roi-analytics", authenticateAdmin, async (req, res) => {
       ORDER BY 1 ASC
     `);
 
-    // 3. Combine results in JS for cross-db robustness
     const spendMap = new Map();
     spendRes.rows.forEach((r: any) => spendMap.set(new Date(r.day).toDateString(), Number(r.spend || 0)));
 
     const revenueMap = new Map();
-    // Assuming 30% commission as the revenue for the platform
     revenueRes.rows.forEach((r: any) => revenueMap.set(new Date(r.day).toDateString(), Number(r.total_points_volume || 0) * 0.3));
 
-    // Generate last 14 days
     const results = [];
     const now = new Date();
     for (let i = 13; i >= 0; i--) {
@@ -3646,7 +3545,6 @@ router.put("/economy/settings", authenticateAdmin, async (req, res) => {
     const adminId = (req as any).user.id;
     const { bulletin_ad_daily_price, live_gift_commission_percent, sidebar_ad_impression_price, sidebar_ad_click_price } = req.body;
     
-    // Fetch old settings for audit
     const oldSettings = await getSystemSettings();
     
     await updateSystemSettings({
@@ -3656,7 +3554,6 @@ router.put("/economy/settings", authenticateAdmin, async (req, res) => {
       sidebar_ad_click_price
     });
 
-    // Record audits for each changed field
     const fields = [
       { name: 'bulletin_ad_daily_price', old: oldSettings.bulletin_ad_daily_price, new: bulletin_ad_daily_price },
       { name: 'live_gift_commission_percent', old: oldSettings.live_gift_commission_percent, new: live_gift_commission_percent },
