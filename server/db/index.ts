@@ -57,13 +57,20 @@ function validateDatabaseUrl(url: any, name: string) {
   }
 }
 
-export function createInternalPool(connectionString: string, max = 1) {
+export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) {
+  return {
+    ssl: getSslConfig(),
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis,
+    max,
+  };
+}
+
+export function createInternalPool(connectionString: string, max = 1, connectionTimeoutMillis = 5000) {
   const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
   return new Pool({
     connectionString: safeConnStr,
-    ssl: getSslConfig(),
-    connectionTimeoutMillis: 5000,
-    max,
+    ...getBasePoolConfig(max, connectionTimeoutMillis),
   });
 }
 
@@ -159,23 +166,19 @@ export async function initializePerplextaPools(
     try {
       pool = new Pool({
         connectionString: coreUrl,
-        ssl, max: finalCoreMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000,
+        ...getBasePoolConfig(finalCoreMax, 10000),
       });
       ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
         connectionString: finalLedgerUrl,
-        ssl, max: finalLedgerMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
+        ...getBasePoolConfig(finalLedgerMax, 5000),
       });
       externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
         connectionString: finalExternalUrl,
-        ssl, max: finalExternalMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
+        ...getBasePoolConfig(finalExternalMax, 5000),
       });
       securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
         connectionString: finalSecurityUrl,
-        ssl, max: finalSecurityMax,
-        idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
+        ...getBasePoolConfig(finalSecurityMax, 5000),
       });
 
       pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e.message));
@@ -191,32 +194,44 @@ export async function initializePerplextaPools(
       console.log('[DB] Pools created. Verifying connectivity...');
 
       const verify = async (p: any, name: string): Promise<boolean> => {
-        return new Promise((resolve) => {
-          let settled = false;
-          const timer = setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              console.warn(`[DB] ${name} connectivity check timed out (5s). Dynamic fallback will apply.`);
-              resolve(false);
-            }
-          }, 5000);
-          p.query('SELECT 1')
-            .then(() => {
+        let delay = 1000;
+        const retries = 3;
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          const success = await new Promise<boolean>((resolve) => {
+            let settled = false;
+            const timer = setTimeout(() => {
               if (!settled) {
                 settled = true;
-                clearTimeout(timer);
-                resolve(true);
-              }
-            })
-            .catch((e: any) => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timer);
-                console.warn(`[DB] ${name} check failed: ${e.message}`);
                 resolve(false);
               }
-            });
-        });
+            }, 5000);
+            p.query('SELECT 1')
+              .then(() => {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  resolve(true);
+                }
+              })
+              .catch((e: any) => {
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timer);
+                  resolve(false);
+                }
+              });
+          });
+
+          if (success) return true;
+
+          if (attempt < retries) {
+            console.warn(`[DB] ${name} connectivity check failed on attempt ${attempt}/${retries}. Retrying in ${delay}ms (exponential backoff)...`);
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+          }
+        }
+        console.warn(`[DB] ${name} connectivity check failed after ${retries} attempts.`);
+        return false;
       };
 
       const coreOk = await verify(pool, 'Core DB');
@@ -359,18 +374,32 @@ export async function synchronizePerplextaPoolsFromRegistry() {
 
     const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
       if (!url || url === coreUrl) return coreUrl;
-      try {
-        const p = createInternalPool(url);
-        await p.query('SELECT 1');
-        await p.end().catch(() => {});
-        return url;
-      } catch (e: any) {
-        console.warn(`[DB] Registry ${id} DB check failed: ${e.message}. Falling back to Core.`);
+      let delay = 1000;
+      const retries = 3;
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        let p: any = null;
         try {
-          await pool.query("UPDATE db_connections_registry SET is_active = false WHERE id = $1", [id]);
-        } catch {}
-        return defaultUrl;
+          p = createInternalPool(url);
+          await p.query('SELECT 1');
+          await p.end().catch(() => {});
+          return url;
+        } catch (e: any) {
+          if (p) {
+            await p.end().catch(() => {});
+          }
+          if (attempt === retries) {
+            console.warn(`[DB] Registry ${id} DB check failed after ${retries} attempts: ${e.message}. Falling back to Core.`);
+            try {
+              await pool.query("UPDATE db_connections_registry SET is_active = false WHERE id = $1", [id]);
+            } catch {}
+            return defaultUrl;
+          }
+          console.warn(`[DB] Registry ${id} DB check failed on attempt ${attempt}/${retries}: ${e.message}. Retrying in ${delay}ms (exponential backoff)...`);
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
       }
+      return defaultUrl;
     };
 
     const ledgerUrl   = await testAndResolveUrl('ledger', ledgerRaw, defaultLedger);
