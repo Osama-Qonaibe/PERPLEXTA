@@ -113,6 +113,22 @@ export default defineConfig(({ mode }) => {
               purpose: 'maskable'
             }
           ],
+          screenshots: [
+            {
+              src: '/app-assets/og-image.png',
+              sizes: '1280x640',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Perplexta Platform - Desktop'
+            },
+            {
+              src: '/app-assets/og-image.png',
+              sizes: '640x1280',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Perplexta Platform - Mobile'
+            }
+          ],
           shortcuts: [
             {
               name: 'New Chat',
