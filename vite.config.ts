@@ -66,48 +66,18 @@ export default defineConfig(({ mode }) => {
           icons: [
             {
               src: '/app-assets/icon.png',
-              sizes: '72x72',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-assets/icon.png',
-              sizes: '96x96',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-assets/icon.png',
-              sizes: '128x128',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-assets/icon.png',
-              sizes: '144x144',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-assets/icon.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/app-assets/icon.png',
-              sizes: '256x256',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/app-assets/icon.png',
+              src: '/app-assets/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/app-assets/icon.png',
+              src: '/app-assets/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
@@ -116,17 +86,10 @@ export default defineConfig(({ mode }) => {
           screenshots: [
             {
               src: '/app-assets/og-image.png',
-              sizes: '1280x640',
+              sizes: '1200x630',
               type: 'image/png',
               form_factor: 'wide',
               label: 'Perplexta Platform - Desktop'
-            },
-            {
-              src: '/app-assets/og-image.png',
-              sizes: '640x1280',
-              type: 'image/png',
-              form_factor: 'narrow',
-              label: 'Perplexta Platform - Mobile'
             }
           ],
           shortcuts: [
@@ -135,21 +98,21 @@ export default defineConfig(({ mode }) => {
               short_name: 'New Chat',
               description: 'Start a fresh AI orchestration session',
               url: '/',
-              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
             },
             {
               name: 'Rewards Center',
               short_name: 'Rewards',
               description: 'Manage points, loyalty bonuses and verification statuses',
               url: '/rewards',
-              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
             },
             {
               name: 'Workspace Settings',
               short_name: 'Settings',
               description: 'Customize your AI models and theme settings',
               url: '/settings',
-              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
+              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
             }
           ]
         }
