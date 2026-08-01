@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
@@ -20,7 +21,12 @@ import { getCachedRouteSeo, getCachedAllActiveRouteSeo } from './db/queries.js';
 
 const app = express();
 
+app.use(compression());
+
 app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) {
+    return next();
+  }
   const isBackpressureSaturated = (p: any) => {
     if (!p) return false;
     const maxPool = p.options?.max || 20;
