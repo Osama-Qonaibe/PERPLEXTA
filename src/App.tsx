@@ -37,7 +37,6 @@ const CenteredLoader = () => {
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
 
   const loaderType = localStorage.getItem('app_loader_type') || 'refresh';
-  if (loaderType === 'refresh') return null;
   let loaderText = '';
   if (language === 'ar') {
     if (loaderType === 'login') {
@@ -45,7 +44,7 @@ const CenteredLoader = () => {
     } else if (loaderType === 'logout') {
       loaderText = 'جاري مسح سجلات بيربليكستا';
     } else {
-      loaderText = 'جاري تحديث النظام';
+      loaderText = 'جاري مزامنة المنصة...';
     }
   } else {
     if (loaderType === 'login') {
@@ -53,7 +52,7 @@ const CenteredLoader = () => {
     } else if (loaderType === 'logout') {
       loaderText = 'CLEARING PERPLEXTA LOGS';
     } else {
-      loaderText = 'SYSTEM UPDATE IN PROGRESS';
+      loaderText = 'INITIALIZING SYSTEM NETWORK...';
     }
   }
 
