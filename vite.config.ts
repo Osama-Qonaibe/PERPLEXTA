@@ -71,13 +71,13 @@ export default defineConfig(({ mode }) => {
               purpose: 'any'
             },
             {
-              src: '/app-assets/icon-512.png',
+              src: '/app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/app-assets/icon-512.png',
+              src: '/app-assets/icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
@@ -98,21 +98,21 @@ export default defineConfig(({ mode }) => {
               short_name: 'New Chat',
               description: 'Start a fresh AI orchestration session',
               url: '/',
-              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Rewards Center',
               short_name: 'Rewards',
               description: 'Manage points, loyalty bonuses and verification statuses',
               url: '/rewards',
-              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             },
             {
               name: 'Workspace Settings',
               short_name: 'Settings',
               description: 'Customize your AI models and theme settings',
               url: '/settings',
-              icons: [{ src: '/app-assets/icon-512.png', sizes: '512x512' }]
+              icons: [{ src: '/app-assets/icon.png', sizes: '192x192' }]
             }
           ]
         }
