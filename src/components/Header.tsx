@@ -52,7 +52,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const titleEditRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const [windowWidth, setWindowWidth] = useState(1200);
+  const [windowWidth, setWindowWidth] = useState<number>(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
 
   const isHeaderThemeDark = theme === 'dark';
 
@@ -132,6 +134,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -176,6 +179,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     window.dispatchEvent(new Event('clear-chat'));
   };
 
+  const logoSrc = (theme === 'light' && siteSettings.logoLightBase64)
+    ? siteSettings.logoLightBase64
+    : siteSettings.logoBase64;
+
   return (
     <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)] transition-theme`} />
@@ -189,7 +196,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
-                  {((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64) ? (
+                  {logoSrc ? (
                     <motion.div 
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
@@ -203,7 +210,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       } : {}}
                     >
                       <img 
-                        src={(theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64!} 
+                        src={logoSrc} 
                         alt="Logo" 
                         className="w-full h-full object-cover block" 
                       />
@@ -572,7 +579,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       </div>
     </div>
 
-    {/* Sovereign Top Progress Loader Line */}
     <AnimatePresence>
       {(isStreaming || isOperationPending) && (
         <motion.div
