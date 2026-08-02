@@ -79,14 +79,14 @@ export const UsageRadar: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-10 animate-pulse transition-all duration-[var(--theme-transition-duration)]">
+      <div className="space-y-10 animate-pulse transition-theme duration-[var(--theme-transition-duration)]">
         {/* Skeleton Header - Precision matched to 412px loaded state */}
-        <div className="h-[412px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-[var(--theme-transition-duration)]" />
+        <div className="h-[412px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
         
         {/* Skeleton Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-[var(--theme-transition-duration)]" />
+            <div key={i} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
           ))}
         </div>
       </div>
@@ -117,9 +117,9 @@ export const UsageRadar: React.FC = () => {
   const startDate = data.plan.subscription_start ? new Date(data.plan.subscription_start).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="space-y-10 transition-all duration-[var(--theme-transition-duration)]">
+    <div className="space-y-10 transition-theme duration-[var(--theme-transition-duration)]">
       {/* Usage Radar Header - Elite Design (Perplexta Static) */}
-      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
+      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-theme duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
         
         {/* Fixed Header Row */}
         <div className="flex justify-between items-start mb-12">
@@ -148,7 +148,7 @@ export const UsageRadar: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-60">
                   {t('activeSubscription') || 'Active Subscription'}
                 </span>
-                <h3 className="text-5xl md:text-8xl font-black transition-all duration-300 leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
+                <h3 className="text-5xl md:text-8xl font-black transition-theme leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
                   {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
                 </h3>
               </div>
@@ -191,7 +191,7 @@ export const UsageRadar: React.FC = () => {
           const isExpanded = expanded === item.id;
 
           return (
-            <div className={`rounded-[var(--radius)] min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-all duration-[var(--theme-transition-duration)] overflow-hidden shadow-sm`}
+            <div className={`rounded-[var(--radius)] min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-theme duration-[var(--theme-transition-duration)] overflow-hidden shadow-sm`}
               key={item.id}
               style={{ borderColor: isExpanded ? `${planColor}40` : undefined, boxShadow: isExpanded ? `0 0 20px ${planColor}05` : 'none' }}
             >
@@ -207,7 +207,7 @@ export const UsageRadar: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setExpanded(isExpanded ? null : item.id)}
-                    className="p-2 rounded-[var(--radius)] transition-all hover:bg-white/5"
+                    className="p-2 rounded-[var(--radius)] transition-theme hover:bg-white/5"
                   >
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
@@ -230,7 +230,7 @@ export const UsageRadar: React.FC = () => {
                             backgroundColor: dailyPercent > 90 ? '#ef4444' : planColor, 
                             boxShadow: `0 0 12px ${dailyPercent > 90 ? '#ef4444' : planColor}80` 
                           }}
-                          className="h-full rounded-full transition-all duration-300 ease-out"
+                          className="h-full rounded-full transition-theme ease-out"
                         />
                       </div>
                     </div>
@@ -260,7 +260,7 @@ export const UsageRadar: React.FC = () => {
                                   opacity: 0.8, 
                                   boxShadow: `0 0 15px ${monthlyPercent > 90 ? '#ef4444' : planColor}40` 
                                 }}
-                                className="h-full rounded-full transition-all duration-300 ease-out"
+                                className="h-full rounded-full transition-theme ease-out"
                               />
                             </div>
                           </div>
@@ -289,7 +289,7 @@ export const UsageRadar: React.FC = () => {
       </div>
 
       {/* Info Section */}
-      <div className="p-8 rounded-[var(--radius)] border transition-all duration-300 bg-[var(--bg-secondary)]/10" style={{ borderColor: `${planColor}20` }}>
+      <div className="p-8 rounded-[var(--radius)] border transition-theme bg-[var(--bg-secondary)]/10" style={{ borderColor: `${planColor}20` }}>
         <div className="flex gap-4 items-start">
           <div className="w-10 h-10 shrink-0 rounded-[var(--radius)] flex items-center justify-center" style={{ backgroundColor: `${planColor}20`, color: planColor }}>
             <AlertCircle size={20} />

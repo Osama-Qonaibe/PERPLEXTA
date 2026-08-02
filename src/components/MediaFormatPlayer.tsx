@@ -147,7 +147,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
     return (
       <div
         ref={containerRef}
-        className={`relative w-full rounded-xl overflow-hidden bg-black shadow-lg border border-gray-800 transition-all duration-300 ${ratioClass} ${className}`}
+        className={`relative w-full rounded-xl overflow-hidden bg-black shadow-lg border border-gray-800 transition-theme ${ratioClass} ${className}`}
       >
         <iframe
           src={videoInfo.embedUrl}
@@ -171,7 +171,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       ref={containerRef}
       onMouseEnter={() => setShowOverlayControls(true)}
       onMouseLeave={() => setShowOverlayControls(false)}
-      className={`relative w-full rounded-xl overflow-hidden bg-black shadow-2xl group transition-all duration-300 ${ratioClass} ${className}`}
+      className={`relative w-full rounded-xl overflow-hidden bg-black shadow-2xl group transition-theme ${ratioClass} ${className}`}
     >
       {/* Backdrop blur effect when fitMode === 'contain' */}
       {fitMode === 'contain' && (
@@ -192,7 +192,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
         playsInline
         muted={isMuted}
         autoPlay={autoPlay}
-        className={`w-full h-full relative z-10 transition-all duration-300 ${
+        className={`w-full h-full relative z-10 transition-theme ${
           fitMode === 'cover'
             ? 'object-cover'
             : fitMode === 'contain'
@@ -264,7 +264,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
               if (videoRef.current) videoRef.current.currentTime = val;
               setCurrentTime(val);
             }}
-            className="w-full h-1 bg-white/20 hover:h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-500 transition-all"
+            className="w-full h-1 bg-white/20 hover:h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-500 transition-theme"
           />
 
           <div className="flex items-center justify-between text-white text-xs font-mono">

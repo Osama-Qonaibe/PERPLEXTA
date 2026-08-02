@@ -141,9 +141,13 @@ app.use((req: any, res: any, next: any) => {
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
-    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-    frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"]
+    frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"],
+    frameSrc: ["'self'", "https://*.stripe.com", "https://*.google.com", "https://apis.google.com", "https://accounts.google.com"],
+    workerSrc: ["'self'", "blob:"],
+    childSrc: ["'self'", "blob:"],
+    manifestSrc: ["'self'"]
   };
 
   if (!isDev) {
@@ -735,6 +739,13 @@ import metricsRoutes from './routes/metrics.js';
 import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`[API Request] ${req.method} ${req.path}`);
+  }
+  next();
+});
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);

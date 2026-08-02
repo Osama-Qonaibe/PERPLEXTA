@@ -113,7 +113,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   return (
     <div className="space-y-4 md:space-y-6 relative">
       <div 
-        className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
+        className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-theme bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
         style={{ top: stickyOffset }}
       >
         <div className="flex flex-row items-center justify-between gap-4 mb-4">
@@ -127,7 +127,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-all duration-300 font-bold text-xs md:text-sm shadow-xl shadow-emerald-500/20 group w-full sm:w-auto ml-auto"
+            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-emerald-500/20 group w-full sm:w-auto ml-auto"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
             {t('addFact')}
@@ -140,7 +140,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 border ${
+              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-theme border ${
                 filterCategory === cat.id
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                   : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-emerald-500/30'
@@ -152,7 +152,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
         </div>
 
         {/* Memory Capacity Indicator */}
-        <div className={`p-4 md:p-6 rounded-[var(--radius)] border transition-all duration-300 ${
+        <div className={`p-4 md:p-6 rounded-[var(--radius)] border transition-theme ${
           isLimitReached 
             ? 'bg-amber-500/5 border-amber-500/30'
             : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm'
@@ -176,7 +176,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               <button 
                 onClick={handlePrune}
                 disabled={isPruning}
-                className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-[var(--radius)] transition-all text-[10px] md:text-xs font-bold border border-amber-500/20"
+                className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-[var(--radius)] transition-theme text-[10px] md:text-xs font-bold border border-amber-500/20"
               >
                 {isPruning ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 {t('prune')}
@@ -186,7 +186,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
 
           <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all duration-300 ease-out rounded-full ${
+              className={`h-full transition-theme ease-out rounded-full ${
                 isLimitReached ? 'bg-amber-500' : 'bg-emerald-500'
               }`}
               style={{ width: `${usagePercentage}%` }}
@@ -227,7 +227,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
               >
                 {categories.filter(c => c.id !== 'all').map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -239,7 +239,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder={dir === 'rtl' ? 'ما الذي يجب أن يتذكره المساعد؟' : 'What should the assistant remember?'}
-            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
+            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
             autoFocus
           />
           <div className="flex justify-end gap-3">
@@ -252,7 +252,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button 
               onClick={handleSaveNew}
               disabled={!newValue.trim()}
-              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50"
             >
               {t('save')}
             </button>
@@ -282,7 +282,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           {filteredMemories.map((memory) => (
             <div 
               key={memory.id} 
-              className={`group p-6 rounded-[var(--radius)] border transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-emerald-500/5`}
+              className={`group p-6 rounded-[var(--radius)] border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-emerald-500/5`}
             >
               {editingId === memory.id ? (
                 <div className="space-y-4">
@@ -291,7 +291,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
-                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                       >
                         {categories.filter(c => c.id !== 'all').map(cat => (
                           <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -302,13 +302,13 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-all bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
+                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
                     autoFocus
                   />
                   <div className="flex justify-end gap-3 pt-2">
                     <button 
                       onClick={() => setEditingId(null)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] text-xs font-bold transition-all duration-300 text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] text-xs font-bold transition-theme text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]`}
                     >
                       <X size={14} />
                       {t('cancel')}
@@ -316,7 +316,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                     <button 
                       onClick={() => handleSaveEdit(memory.id)}
                       disabled={!editValue.trim()}
-                      className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-all duration-300 text-xs font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-theme text-xs font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                     >
                       <Save size={14} />
                       {t('save')}
@@ -367,7 +367,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                           <span className="mx-1 text-gray-300 dark:text-gray-700">•</span>
                           <a 
                             href={`/chat/${memory.chat_id}`}
-                            className="inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 font-bold transition-all duration-300 hover:underline"
+                            className="inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 font-bold transition-theme hover:underline"
                             title={dir === 'rtl' ? 'انتقال إلى المحادثة المصدر' : 'Go to source thread'}
                           >
                             <MessageSquare size={10} className="text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
@@ -380,21 +380,21 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       )}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-theme translate-x-2 group-hover:translate-x-0">
                     <button 
                       onClick={() => {
                         setEditingId(memory.id);
                         setEditValue(memory.fact);
                         setEditCategory(memory.category);
                       }}
-                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/10 transition-theme"
                       title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                     >
                       <Edit2 size={18} />
                     </button>
                     <button 
                       onClick={() => setDeletingMemory(memory)}
-                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all font-sans"
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-theme font-sans"
                       title={dir === 'rtl' ? 'حذف' : 'Delete'}
                     >
                       <Trash2 size={18} />

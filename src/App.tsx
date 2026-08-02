@@ -203,7 +203,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
       <motion.div
         animate={{ opacity: isAuthReady ? 1 : 0.6 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
         className="block h-full w-full"
       >
         {children}

@@ -288,7 +288,7 @@ export const AdminRateLimitMetricsView = ({
               return (
                 <div 
                   key={idx} 
-                  className={`flex items-center justify-between p-3 rounded-md bg-[var(--bg-primary)] border transition-all duration-500 ${
+                  className={`flex items-center justify-between p-3 rounded-md bg-[var(--bg-primary)] border transition-theme ${
                     isHot ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse" : "border-[var(--border-main)]"
                   }`}
                 >
@@ -323,7 +323,7 @@ export const AdminRateLimitMetricsView = ({
             </div>
             <button 
               onClick={fetchMetrics}
-              className="p-2 rounded-md hover:bg-[var(--bg-primary)] text-emerald-500 transition-all duration-300 active:scale-95"
+              className="p-2 rounded-md hover:bg-[var(--bg-primary)] text-emerald-500 transition-theme active:scale-95"
             >
               <RefreshCw size={18} />
             </button>

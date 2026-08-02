@@ -304,7 +304,7 @@ export const ReferralDashboardView = ({
         </p>
         <button
           onClick={fetchStats}
-          className="flex items-center gap-2 px-4 py-2 border border-red-500/30 rounded-sm hover:border-red-500 text-red-500 text-xs font-bold transition-all duration-300"
+          className="flex items-center gap-2 px-4 py-2 border border-red-500/30 rounded-sm hover:border-red-500 text-red-500 text-xs font-bold transition-theme"
         >
           <RefreshCw size={12} />
           {isRtl ? "إعادة المحاولة" : "RETRY CONNECTION"}
@@ -375,7 +375,7 @@ export const ReferralDashboardView = ({
 
       {/* View Header with Action Button */}
       <div 
-        className={`p-5 rounded-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${
+        className={`p-5 rounded-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-theme ${
           theme === "dark" 
             ? "bg-[#1a1a1c] border-gray-800/60" 
             : "bg-white border-gray-200 shadow-sm"
@@ -396,7 +396,7 @@ export const ReferralDashboardView = ({
           <button
             disabled={downloading}
             onClick={handleDownloadCSV}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-all duration-300 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.05)]`}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-theme cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.05)]`}
           >
             <Download size={14} className={downloading ? "animate-pulse" : ""} />
             <span>
@@ -412,7 +412,7 @@ export const ReferralDashboardView = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Sent */}
         <div
-          className={`p-4 rounded-sm border transition-all duration-300 ${
+          className={`p-4 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -438,7 +438,7 @@ export const ReferralDashboardView = ({
 
         {/* Total Accepted */}
         <div
-          className={`p-4 rounded-sm border transition-all duration-300 ${
+          className={`p-4 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -464,7 +464,7 @@ export const ReferralDashboardView = ({
 
         {/* Conversion Rate */}
         <div
-          className={`p-4 rounded-sm border transition-all duration-300 ${
+          className={`p-4 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -485,7 +485,7 @@ export const ReferralDashboardView = ({
           </div>
           <div className="mt-1 w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1">
             <div 
-              className="bg-purple-500 h-1 rounded-full transition-all duration-1000" 
+              className="bg-purple-500 h-1 rounded-full transition-theme" 
               style={{ width: `${Math.min(summary.conversionRate, 100)}%` }}
             />
           </div>
@@ -493,7 +493,7 @@ export const ReferralDashboardView = ({
 
         {/* Pending / Reminded */}
         <div
-          className={`p-4 rounded-sm border transition-all duration-300 ${
+          className={`p-4 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -521,7 +521,7 @@ export const ReferralDashboardView = ({
 
         {/* Total Active Referrers */}
         <div
-          className={`p-4 rounded-sm border transition-all duration-300 ${
+          className={`p-4 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -548,7 +548,7 @@ export const ReferralDashboardView = ({
 
       {/* 2. 30-Day Daily Trend Chart */}
       <div
-        className={`p-5 rounded-sm border transition-all duration-300 ${
+        className={`p-5 rounded-sm border transition-theme ${
           theme === "dark" 
             ? "bg-[#1a1a1c] border-gray-800/60" 
             : "bg-white border-gray-200 shadow-sm"
@@ -648,7 +648,7 @@ export const ReferralDashboardView = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Most Active Referrers & Top Performers */}
         <div
-          className={`lg:col-span-2 p-5 rounded-sm border transition-all duration-300 ${
+          className={`lg:col-span-2 p-5 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -659,7 +659,7 @@ export const ReferralDashboardView = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setRankingTab("active")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-[4px] cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-theme rounded-[4px] cursor-pointer ${
                   rankingTab === "active"
                     ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] bg-emerald-500/5 border border-emerald-500/10"
                     : "text-gray-400 hover:text-[var(--text-primary)] border border-transparent bg-transparent"
@@ -673,7 +673,7 @@ export const ReferralDashboardView = ({
 
               <button
                 onClick={() => setRankingTab("top_conversions")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-[4px] cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-theme rounded-[4px] cursor-pointer ${
                   rankingTab === "top_conversions"
                     ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] bg-emerald-500/5 border border-emerald-500/10"
                     : "text-gray-400 hover:text-[var(--text-primary)] border border-transparent bg-transparent"
@@ -758,7 +758,7 @@ export const ReferralDashboardView = ({
                     return (
                       <tr 
                         key={ref.referrer_id} 
-                        className="group hover:bg-gray-50/5 transition-all duration-150 text-xs font-medium text-[var(--text-secondary)]"
+                        className="group hover:bg-gray-50/5 transition-theme text-xs font-medium text-[var(--text-secondary)]"
                       >
                         <td className="py-3 px-3 text-center font-black animate-fade-in">
                           <span className={`${glowClass}`}>
@@ -804,7 +804,7 @@ export const ReferralDashboardView = ({
                             </span>
                             <div className="w-20 bg-gray-200 dark:bg-gray-800 rounded-full h-1 mt-1 overflow-hidden">
                               <div 
-                                className="bg-emerald-500 h-1 rounded-full transition-all duration-300" 
+                                className="bg-emerald-500 h-1 rounded-full transition-theme" 
                                 style={{ width: `${Math.min(ref.conversion_rate, 100)}%` }}
                               />
                             </div>
@@ -821,7 +821,7 @@ export const ReferralDashboardView = ({
 
         {/* Right: Recent Invitations stream */}
         <div
-          className={`p-5 rounded-sm border transition-all duration-300 ${
+          className={`p-5 rounded-sm border transition-theme ${
             theme === "dark" 
               ? "bg-[#1a1a1c] border-gray-800/60" 
               : "bg-white border-gray-200 shadow-sm"
@@ -882,7 +882,7 @@ export const ReferralDashboardView = ({
                 <button
                   disabled={sendingBulkReminder}
                   onClick={handleSendBulkReminder}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/30 transition-all duration-300 cursor-pointer animate-fade-in"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/30 transition-theme cursor-pointer animate-fade-in"
                 >
                   <Send size={10} className={sendingBulkReminder ? "animate-spin text-emerald-500" : "text-emerald-500"} />
                   <span>
@@ -932,7 +932,7 @@ export const ReferralDashboardView = ({
                 return (
                   <div 
                     key={invite.id}
-                    className={`p-3 rounded-sm bg-gray-50/5 border transition-all duration-150 flex flex-col gap-2 animate-fade-in ${
+                    className={`p-3 rounded-sm bg-gray-50/5 border transition-theme flex flex-col gap-2 animate-fade-in ${
                       selectedIds[invite.id] 
                         ? "border-emerald-500/50 bg-emerald-500/[0.01]" 
                         : "border-[var(--border)] hover:border-emerald-500/30"
@@ -982,7 +982,7 @@ export const ReferralDashboardView = ({
                         <button
                           disabled={sendingReminder[invite.id]}
                           onClick={() => handleSendReminder(invite.id)}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-all duration-300 cursor-pointer"
+                          className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-theme cursor-pointer"
                         >
                           <Send size={10} className={sendingReminder[invite.id] ? "animate-spin text-emerald-500" : "text-emerald-500"} />
                           <span>

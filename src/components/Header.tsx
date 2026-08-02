@@ -268,7 +268,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-300 max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
+                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-theme max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
                   onClick={() => {
                     if (!isEditingTitle) {
                       setIsEditingTitle(true);
@@ -292,14 +292,14 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <div className="flex items-center gap-0.5">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleRename(); }}
-                          className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all duration-300"
+                          className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-theme"
                           title={language === 'ar' ? 'حفظ' : 'Save'}
                         >
                            <Check size={13} />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
-                          className="p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-all duration-300"
+                          className="p-1 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-theme"
                           title={language === 'ar' ? 'إلغاء' : 'Cancel'}
                         >
                            <X size={13} />
@@ -311,7 +311,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
                         {chatTitle}
                       </h2>
-                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 transition-all duration-300 flex-shrink-0" />
+                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 transition-theme flex-shrink-0" />
                     </div>
                   )}
                 </motion.div>
@@ -387,7 +387,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.15 }}
                 className="flex items-center gap-1.5 px-2 py-1.5 rounded-[4px] bg-amber-500/10 border border-amber-500/20 shrink-0 select-none font-sans"
                 title={language === 'ar' ? 'أنت تعمل دون اتصال بالإنترنت' : 'You are working offline'}
               >
@@ -461,7 +461,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <button 
                         onClick={unreadCount > 0 ? markAllAsRead : undefined}
                         disabled={unreadCount === 0}
-                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-theme ${
                           unreadCount > 0 
                             ? 'text-emerald-500 hover:text-emerald-400 cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
@@ -473,7 +473,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <button 
                         onClick={notifications.length > 0 ? clearAllNotifications : undefined}
                         disabled={notifications.length === 0}
-                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-all duration-300 ${
+                        className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-theme ${
                           notifications.length > 0 
                             ? 'text-rose-500 hover:text-rose-400 cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
@@ -491,7 +491,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         <div
                           key={notif.id}
                           onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
-                          className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-all duration-300 border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
+                          className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-theme border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
                             !notif.is_read ? 'bg-emerald-500/[0.03] border-r-2 border-r-emerald-500' : ''
                           }`}
                           dir={dir}
@@ -522,7 +522,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                                 {!notif.is_read && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-theme cursor-pointer"
                                     title={language === 'ar' ? 'تحديد كمقروء' : 'Mark as read'}
                                   >
                                     <Check size={11} className="stroke-[3px]" />
@@ -530,7 +530,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                                 )}
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
-                                  className="p-0.5 sm:p-1 text-rose-500/60 hover:text-rose-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+                                  className="p-0.5 sm:p-1 text-rose-500/60 hover:text-rose-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-theme cursor-pointer"
                                   title={language === 'ar' ? 'حذف الإشعار' : 'Delete notification'}
                                 >
                                   <Trash2 size={11} />
@@ -569,7 +569,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
           exit={{ opacity: 0, scaleX: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.15 }}
           className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent z-[90] origin-left overflow-hidden pointer-events-none"
         >
           <motion.div

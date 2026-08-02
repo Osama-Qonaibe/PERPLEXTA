@@ -106,7 +106,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
 
   return (
     <div
-      className={`hidden xl:flex flex-col h-full w-72 p-4 pt-16 space-y-4 shrink-0 overflow-y-auto scrollbar-none transition-all duration-300 ${className}`}
+      className={`hidden xl:flex flex-col h-full w-72 p-4 pt-16 space-y-4 shrink-0 overflow-y-auto scrollbar-none transition-theme ${className}`}
     >
       <div className="flex items-center justify-between px-1 mb-1">
         <span className="text-[11px] font-extrabold tracking-wider text-gray-400 uppercase">
@@ -128,15 +128,15 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => handleAdClick(ad, e)}
-              className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all duration-300 flex flex-col gap-2.5"
+              className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-theme flex flex-col gap-2.5"
             >
               {/* Dismiss X button */}
               <button
                 onClick={(e) => handleDismissAd(ad.id, e)}
                 title={isRtl ? 'إخفاء الإعلان' : 'Hide Ad'}
-                className="absolute top-2 end-2 z-10 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-80 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
+                className="absolute top-2 end-2 z-10 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-80 group-hover:opacity-100 transition-theme backdrop-blur-sm"
               >
                 <X size={12} />
               </button>

@@ -272,7 +272,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
   };
 
   return (
-    <div className={`flex flex-col bg-white dark:bg-[#151518] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl overflow-hidden ${isCompact ? 'h-[440px]' : 'h-[520px]'} transition-all`}>
+    <div className={`flex flex-col bg-white dark:bg-[#151518] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl overflow-hidden ${isCompact ? 'h-[440px]' : 'h-[520px]'} transition-theme`}>
       {/* Encryption & Participant Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:from-[#1a1a1e] dark:via-[#222228] dark:to-[#1a1a1e] border-b border-gray-200 dark:border-gray-800/80 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -362,7 +362,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(q)}
-                    className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1c1c20] hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition-all text-start shadow-xs"
+                    className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1c1c20] hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition-theme text-start shadow-xs"
                   >
                     {q}
                   </button>
@@ -379,7 +379,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}
               >
                 <div
-                  className={`max-w-[85%] sm:max-w-[78%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed shadow-xs relative group transition-all ${
+                  className={`max-w-[85%] sm:max-w-[78%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed shadow-xs relative group transition-theme ${
                     isMe
                       ? 'bg-emerald-500 text-white rounded-br-xs font-medium'
                       : 'bg-white dark:bg-[#1e1e22] text-gray-800 dark:text-gray-100 rounded-bl-xs border border-gray-200/80 dark:border-gray-800'
@@ -449,7 +449,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
             <button
               key={idx}
               onClick={() => handleSendMessage(q)}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500/10 hover:text-emerald-500 dark:hover:bg-emerald-500/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-all border border-gray-200/60 dark:border-gray-700/60"
+              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500/10 hover:text-emerald-500 dark:hover:bg-emerald-500/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
             >
               {q}
             </button>
@@ -506,13 +506,13 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
           placeholder={
             isRtl ? 'اكتب استفسارك المباشر هنا (مشفر بالكامل)...' : 'Type your encrypted inquiry...'
           }
-          className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-all"
+          className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
         />
 
         <button
           onClick={() => handleSendMessage()}
           disabled={(!inputMessage.trim() && !attachedImage) || sending}
-          className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
+          className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
           title={isRtl ? 'إرسال الرسالة المشفرة' : 'Send message'}
         >
           {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

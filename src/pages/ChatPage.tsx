@@ -105,7 +105,7 @@ const ImageGenerationPlaceholder = ({
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-4 w-full my-4 items-start">
         <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
         >
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
 
@@ -165,7 +165,7 @@ const ImageGenerationPlaceholder = ({
               {onRetry && (
                 <button 
                   onClick={onRetry}
-                  className="group relative flex items-center gap-1.5 px-4.5 py-1.5 text-[10px] md:text-xs font-semibold text-slate-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-400/55 rounded-[4px] transition-all duration-300 shadow-[0_0_15px_rgba(244,63,94,0.1)] focus:outline-none cursor-pointer pointer-events-auto active:scale-95"
+                  className="group relative flex items-center gap-1.5 px-4.5 py-1.5 text-[10px] md:text-xs font-semibold text-slate-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-400/55 rounded-[4px] transition-theme shadow-[0_0_15px_rgba(244,63,94,0.1)] focus:outline-none cursor-pointer pointer-events-auto active:scale-95"
                 >
                   <RefreshCw size={12} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
                   <span>{dir === 'rtl' ? 'إعادة محاولة التوليد' : 'Retry Image Generation'}</span>
@@ -339,8 +339,8 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-all duration-500 ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass}`}
+          transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass}`}
         >
           <img 
             src={srcVal}
@@ -358,14 +358,14 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsPreviewOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'معاينة' : 'Preview'}
               >
                 <Maximize2 size={13} />
               </button>
               <button 
                 onClick={handleShare}
-                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md active:scale-95 ${
+                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-theme shadow-md active:scale-95 ${
                   shareStatus === 'copied' 
                     ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
                     : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
@@ -376,7 +376,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
               </button>
               <button 
                 onClick={handleDownload}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'تنزيل' : 'Download'}
               >
                 <Download size={13} />
@@ -411,21 +411,21 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownload}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                   >
                     <Download size={15} />
                   </button>
                   <button
                     onClick={handleShare}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'مشاركة' : 'Share'}
                   >
                     <Share2 size={15} />
                   </button>
                   <button
                     onClick={() => setIsPreviewOpen(false)}
-                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'إغلاق' : 'Close'}
                   >
                     <X size={15} />
@@ -598,7 +598,7 @@ const VideoGenerationPlaceholder = ({
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-3.5 w-full my-4 items-start">
         <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-all duration-500 flex flex-col justify-between`}
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
         >
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
 
@@ -652,7 +652,7 @@ const VideoGenerationPlaceholder = ({
                   className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${progressValue}%` }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
                 />
               </div>
             </div>
@@ -666,7 +666,7 @@ const VideoGenerationPlaceholder = ({
                   <button 
                     onClick={onRetry}
                     aria-label={dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}
-                    className="group flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold text-slate-100 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400/50 rounded-[4px] transition-all duration-300 shadow-[0_0_10px_rgba(244,63,94,0.1)] cursor-pointer"
+                    className="group flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold text-slate-100 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400/50 rounded-[4px] transition-theme shadow-[0_0_10px_rgba(244,63,94,0.1)] cursor-pointer"
                   >
                     <RefreshCw size={10} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
                     <span>{dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}</span>
@@ -815,11 +815,11 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-all duration-500 ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass} bg-black/40`}
+          transition={{ duration: 0.15 }}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass} bg-black/40`}
         >
           {providerMeta.isValid && (
-            <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-emerald-500/10 text-[8px] font-mono text-emerald-400 z-10 transition-all duration-500 hover:border-emerald-500/30 flex items-center gap-1`}>
+            <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-emerald-500/10 text-[8px] font-mono text-emerald-400 z-10 transition-theme hover:border-emerald-500/30 flex items-center gap-1`}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -864,14 +864,14 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             onClick={togglePlay}
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto cursor-pointer"
           >
-            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-emerald-500/40 flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-emerald-500/40 flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:scale-110 active:scale-95 transition-theme shadow-[0_0_20px_rgba(0,0,0,0.6)]">
               {isPlaying ? <Pause size={18} className="fill-emerald-400/20" /> : <Play size={18} className="fill-emerald-400/20 ml-0.5" />}
             </div>
           </div>
 
           <div className="absolute bottom-0 inset-x-0 h-1 bg-zinc-900/40 backdrop-blur-xs z-10 overflow-hidden pointer-events-none">
             <div 
-              className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-100" 
+              className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -892,21 +892,21 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             <div className="flex items-center gap-2">
               <button 
                 onClick={toggleMute}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={isMuted ? (dir === 'rtl' ? 'إلغاء الكتم' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
               >
                 {isMuted ? <VolumeX size={13} className="text-gray-400" /> : <Volume2 size={13} />}
               </button>
               <button 
                 onClick={() => setIsPreviewOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'ملء الشاشة' : 'Fullscreen'}
               >
                 <Maximize2 size={13} />
               </button>
               <button 
                 onClick={handleShare}
-                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md active:scale-95 ${
+                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-theme shadow-md active:scale-95 ${
                   shareStatus === 'copied' 
                     ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
                     : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
@@ -917,7 +917,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
               </button>
               <button 
                 onClick={handleDownload}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'تنزيل' : 'Download'}
               >
                 <Download size={13} />
@@ -952,21 +952,21 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownload}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                   >
                     <Download size={15} />
                   </button>
                   <button
                     onClick={handleShare}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'مشاركة' : 'Share'}
                   >
                     <Share2 size={15} />
                   </button>
                   <button
                     onClick={() => setIsPreviewOpen(false)}
-                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-all duration-300 flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'إغلاق' : 'Close'}
                   >
                     <X size={15} />
@@ -1018,7 +1018,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 <div className="flex items-center gap-2">
                   <button
                     onClick={togglePreviewPlay}
-                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-all duration-200"
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-theme"
                     title={isPreviewPlaying ? (dir === 'rtl' ? 'إيقاف' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
                   >
                     {isPreviewPlaying ? <Pause size={13} className="fill-emerald-400/10" /> : <Play size={13} className="fill-emerald-400/10 ml-0.5" />}
@@ -1026,7 +1026,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
 
                   <button
                     onClick={togglePreviewMute}
-                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-all duration-200"
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-theme"
                     title={isPreviewMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
                   >
                     {isPreviewMuted ? <VolumeX size={13} className="text-zinc-500" /> : <Volume2 size={13} />}
@@ -1038,7 +1038,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                   className="flex-1 h-1.5 bg-zinc-950/80 rounded-full cursor-pointer relative overflow-hidden"
                 >
                   <div 
-                    className="h-full bg-emerald-500 transition-all duration-100 shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
+                    className="h-full bg-emerald-500 transition-theme shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
                     style={{ width: `${previewProgress}%` }}
                   />
                 </div>
@@ -1091,18 +1091,18 @@ const BlockquoteWithActions = ({ children, dir }: any) => {
   };
 
   return (
-    <div className="relative group/bq transition-all duration-300 my-4 p-4 rounded-[4px] border border-emerald-500/15 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01]">
+    <div className="relative group/bq transition-theme my-4 p-4 rounded-[4px] border border-emerald-500/15 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01]">
       <div className={`absolute top-2 ${dir === 'rtl' ? 'left-2' : 'right-2'} opacity-100 sm:opacity-0 sm:group-hover/bq:opacity-100 transition-opacity duration-300 flex items-center gap-1 z-10 pointer-events-auto`}>
         <button
           onClick={handleCopy}
-          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
           title={dir === 'rtl' ? 'نسخ النص' : 'Copy Text'}
         >
           {copied ? <Check size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" /> : <Copy size={14} />}
         </button>
         <button
           onClick={handleApply}
-          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
           title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
         >
           <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
@@ -1441,7 +1441,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   if (inline) return <code className={className} {...props}>{children}</code>;
 
   return (
-    <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-all duration-300">
+    <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-theme">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-[#1a1a1c]/40 border-b border-gray-100 dark:border-gray-800/40 rounded-t-md">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -1453,13 +1453,13 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
               <button
                 onClick={() => { setSandboxMode(false); handleStop(); }}
-                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-all duration-300 ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 {dir === 'rtl' ? 'مصدر الكود' : 'Source Code'}
               </button>
               <button
                 onClick={() => { setSandboxMode(true); }}
-                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-all duration-300 ${sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 {dir === 'rtl' ? 'بيئة الاختبار' : 'Interactive Sandbox'}
               </button>
@@ -1475,7 +1475,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               <>
                 <button 
                   onClick={copyToClipboard} 
-                  className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 hover:bg-[var(--bg-overlay)] active:scale-95" 
+                  className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" 
                   title={copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied!') : (dir === 'rtl' ? 'نسخ الكود' : 'Copy code')}
                 >
                   <AnimatePresence mode="wait">
@@ -1510,7 +1510,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 </button>
                 <button 
                   onClick={() => window.dispatchEvent(new CustomEvent('insert_to_prompt', { detail: editableCode }))}
-                  className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 hover:bg-[var(--bg-overlay)] active:scale-95 cursor-pointer"
+                  className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95 cursor-pointer"
                   title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
                 >
                   <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
@@ -1528,7 +1528,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-b-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
@@ -1600,7 +1600,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   <button
                     onClick={handleRun}
                     disabled={isRunning}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme disabled:opacity-50"
                   >
                     {isRunning ? (
                       <Loader2 size={13} className="animate-spin text-emerald-500" />
@@ -1612,7 +1612,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
                   <button
                     onClick={handleReset}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all duration-300 border border-transparent"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-theme border border-transparent"
                   >
                     <RefreshCw size={12} />
                     <span>{dir === 'rtl' ? 'إعادة التعيين' : 'Reset'}</span>
@@ -1621,7 +1621,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   {isPlaying && (
                     <button
                       onClick={handleStop}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-red-500/10 text-red-500 hover:text-red-600 transition-all duration-300 border border-transparent"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] hover:bg-red-500/10 text-red-500 hover:text-red-600 transition-theme border border-transparent"
                     >
                       <Square size={12} className="fill-red-500/10" />
                       <span>{dir === 'rtl' ? 'إخفاء النتائج' : 'Clear View'}</span>
@@ -1641,7 +1641,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                             setTimeout(() => URL.revokeObjectURL(url), 1000);
                           }
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 border border-transparent"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-theme border border-transparent"
                       >
                         <ExternalLink size={12} />
                         <span>{dir === 'rtl' ? 'فتح في المتصفح' : 'Open in Browser'}</span>
@@ -1660,7 +1660,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
                     className="border-t border-gray-100 dark:border-gray-800/40 overflow-hidden"
                   >
                     {['html', 'css'].includes(lang.toLowerCase()) ? (
@@ -1961,7 +1961,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
 
   return (
     <div className={`flex items-center gap-2.5 mb-5 w-fit select-none bg-gray-50/50 dark:bg-[#1a1a1c]/20 border border-gray-100/60 dark:border-gray-800/20 px-3 py-1.5 rounded-[4px] shadow-sm backdrop-blur-[2px] flex-row`}>
-      <div className={`relative flex items-center justify-center w-6.5 h-6.5 rounded-[4px] border border-transparent transition-all duration-300 ${details.bgClass}`}>
+      <div className={`relative flex items-center justify-center w-6.5 h-6.5 rounded-[4px] border border-transparent transition-theme ${details.bgClass}`}>
         {isGenerating ? (
           <>
             <motion.div 
@@ -2389,7 +2389,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
         rel="noopener noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02] border border-emerald-500/15 hover:border-emerald-500/35 hover:bg-emerald-500/[0.08] transition-all duration-200 text-emerald-500 font-semibold no-underline text-[12px] align-middle shadow-sm hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02] border border-emerald-500/15 hover:border-emerald-500/35 hover:bg-emerald-500/[0.08] transition-theme text-emerald-500 font-semibold no-underline text-[12px] align-middle shadow-sm hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-pointer"
       >
         <span className="shrink-0 flex items-center justify-center" style={{ color: brand ? brand.color : 'inherit' }}>
           {brand ? (
@@ -2408,7 +2408,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
       </a>
 
       {showTooltip && (meta?.title || meta?.description) && (
-        <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-all duration-300">
+        <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-theme">
           <div className="flex items-start gap-2 min-w-0">
             <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-emerald-500">
               {brand ? brand.icon("w-3.5 h-3.5") : <img src={favicon} className="w-3.5 h-3.5 object-contain" alt="" />}
@@ -2471,10 +2471,10 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
         rel="noopener noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-all duration-350 transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-emerald-500/20"
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-theme transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-emerald-500/20"
       >
         <span 
-          className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-gray-400 group-hover/cite:text-emerald-500 group-hover/cite:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300"
+          className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-gray-400 group-hover/cite:text-emerald-500 group-hover/cite:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
           style={{ color: brand ? brand.color : 'inherit' }}
         >
           {brand ? brand.icon("w-3.5 h-3.5 rounded-full") : <img src={favicon} className="w-3.5 h-3.5 object-contain rounded-full bg-white dark:bg-zinc-805" alt="" />}
@@ -2482,7 +2482,7 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
       </a>
 
       {showTooltip && (displayTitle || displayDesc) && (
-        <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-all duration-300">
+        <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-theme">
           <div className="flex items-start gap-2 min-w-0">
             <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-emerald-500">
               {brand ? brand.icon("w-3.5 h-3.5") : <img src={favicon} className="w-3.5 h-3.5 object-contain" alt="" />}
@@ -2566,7 +2566,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
             initial={{ height: 0, opacity: 0, y: -5 }}
             animate={{ height: 'auto', opacity: 1, y: 0 }}
             exit={{ height: 0, opacity: 0, y: -5 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
             <div className="pt-3 max-w-full flex flex-col gap-1">
@@ -3201,7 +3201,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <div className="flex flex-col items-center gap-4">
               <button 
                 onClick={handlePlayPause}
-                className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border-2 border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/30 text-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-all duration-300"
+                className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border-2 border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/30 text-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
                 title={isPlaying ? (dir === 'rtl' ? 'إيقاف مؤقت' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
               >
                 {isPlaying ? (
@@ -3236,7 +3236,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-emerald-500/70 rounded-full transition-all duration-100 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  className="w-1 bg-emerald-500/70 rounded-full transition-theme shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                 />
               );
             } else if (status === 'rendering' || status === 'idle') {
@@ -3263,7 +3263,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-emerald-500/40 rounded-full transition-all duration-100 shadow-[0_0_4px_rgba(16,185,129,0.1)]"
+                  className="w-1 bg-emerald-500/40 rounded-full transition-theme shadow-[0_0_4px_rgba(16,185,129,0.1)]"
                 />
               );
             }
@@ -3310,7 +3310,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           <div className="flex items-center gap-2">
             <button 
               onClick={toggleMute}
-              className="w-10 h-10 rounded-[4px] bg-transparent border border-transparent transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              className="w-10 h-10 rounded-[4px] bg-transparent border border-transparent transition-theme hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
               title={isMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
             >
               <Volume2 size={16} className={isMuted ? 'text-gray-500 line-through' : 'text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'} />
@@ -3342,7 +3342,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <a 
               href={audioUrl}
               download={`perplexta_song_${styleName.toLowerCase()}_${durationVal}s.wav`}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all duration-300 group/down shadow-md"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase text-emerald-400 hover:bg-emerald-500 hover:text-white transition-theme group/down shadow-md"
               title={dir === 'rtl' ? 'تنزيل الأغنية بصيغة WAV' : 'Download fully-mastered WAV track'}
             >
               <Download size={12} className="group-hover/down:translate-y-0.5 transition-transform duration-300" />
@@ -3361,7 +3361,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       </div>
 
       {}
-      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-all duration-300 ${
+      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-theme ${
         theme === 'dark' 
           ? 'bg-[#151518]/95 border-gray-800/40 shadow-xl' 
           : 'bg-white border-gray-200/65 shadow-sm'
@@ -3412,7 +3412,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     if (file) handleFileUpload(file);
                   }}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
+                  className={`border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-theme ${
                     uploadedFile 
                       ? 'border-emerald-500/30 bg-emerald-500/[0.02]' 
                       : isDragging 
@@ -3443,7 +3443,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                           e.stopPropagation();
                           removeUploadedFile();
                         }}
-                        className="mt-1.5 px-2 py-1 rounded-[3px] bg-red-500/10 border border-red-500/20 text-[9px] font-black text-red-400 hover:bg-red-500 hover:text-white transition-all uppercase"
+                        className="mt-1.5 px-2 py-1 rounded-[3px] bg-red-500/10 border border-red-500/20 text-[9px] font-black text-red-400 hover:bg-red-500 hover:text-white transition-theme uppercase"
                       >
                         {dir === 'rtl' ? 'إزالة الملف' : 'REMOVE TRACK'}
                       </button>
@@ -3550,7 +3550,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
       </div>
 
       {/* Google Lyria AI Music Generator Panel */}
-      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-all duration-300 ${
+      <div className={`w-full px-5 py-4 rounded-md border flex flex-col gap-4 transition-theme ${
         theme === 'dark' 
           ? 'bg-[#151518]/95 border-gray-800/40 shadow-xl' 
           : 'bg-white border-gray-200/65 shadow-sm'
@@ -3625,7 +3625,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   type="button"
                   onClick={handleSaveTrackToLibrary}
                   disabled={isSavingTrack || isTrackSaved}
-                  className={`py-2.5 px-4 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`py-2.5 px-4 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-theme hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isSavingTrack ? (
                     <>
@@ -3649,7 +3649,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 type="button"
                 onClick={handleGenerateLyria}
                 disabled={isLyriaGenerating || !lyriaPrompt.trim()}
-                className={`py-2.5 px-5 rounded-[4px] bg-emerald-500 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
+                className={`py-2.5 px-5 rounded-[4px] bg-emerald-500 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-theme hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
                   isLyriaGenerating ? 'animate-pulse' : ''
                 }`}
               >
@@ -3943,7 +3943,7 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
   <motion.div 
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
     className={`mt-4 p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
   >
     <div className="absolute top-0 right-0 p-4 opacity-5">
@@ -4079,7 +4079,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
           <button
             type="button"
             onClick={() => navigate('/rewards')}
-            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all duration-300"
+            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-theme"
           >
             {dir === 'rtl' ? `إيداع $${minDeposit} وتفعيل الأرباح` : `Deposit $${minDeposit} to Activate`}
           </button>
@@ -4209,7 +4209,7 @@ export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: 
           <button
             type="button"
             onClick={() => navigate('/rewards')}
-            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all duration-300"
+            className="px-3.5 py-2 whitespace-nowrap rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-theme"
           >
             {dir === 'rtl' ? `إيداع $${minDeposit} وتفعيل الأرباح` : `Deposit $${minDeposit} to Activate`}
           </button>
@@ -6131,7 +6131,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => setImageSettings(prev => ({ ...prev, style: s }))}
-                  className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-all duration-300 whitespace-nowrap pointer-events-auto cursor-pointer ${
+                  className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-theme whitespace-nowrap pointer-events-auto cursor-pointer ${
                     imageSettings.style === s 
                       ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] scale-110 font-bold underline underline-offset-4 decoration-2' 
                       : 'text-gray-400 hover:text-gray-200'
@@ -6307,7 +6307,7 @@ export const ChatPage: React.FC = () => {
               <button
                 key={st}
                 onClick={() => setVideoSettings(prev => ({ ...prev, style: st }))}
-                className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-all duration-300 pointer-events-auto cursor-pointer ${
+                className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.style === st
                     ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-105'
                     : 'text-gray-400/40 border-transparent hover:text-gray-200'
@@ -6452,7 +6452,7 @@ export const ChatPage: React.FC = () => {
         >
 
         {isRecording && (
-          <div className="px-3.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border-b border-dashed border-red-500/20 flex flex-col gap-2.5 transition-all duration-300">
+          <div className="px-3.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border-b border-dashed border-red-500/20 flex flex-col gap-2.5 transition-theme">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2.5 w-2.5">
@@ -6490,7 +6490,7 @@ export const ChatPage: React.FC = () => {
                     setIsRecording(false);
                     setInterimText('');
                   }}
-                  className="text-[10px] font-black uppercase text-red-400 hover:text-red-500 px-2 py-0.5 rounded border border-red-500/25 hover:bg-red-500/10 transition-all duration-200"
+                  className="text-[10px] font-black uppercase text-red-400 hover:text-red-500 px-2 py-0.5 rounded border border-red-500/25 hover:bg-red-500/10 transition-theme"
                 >
                   {dir === 'rtl' ? 'إيقاف' : 'Stop'}
                 </button>
@@ -6517,7 +6517,7 @@ export const ChatPage: React.FC = () => {
                     });
                     setInterimText('');
                   }}
-                  className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-2 py-1 rounded transition-all duration-200 shrink-0"
+                  className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-2 py-1 rounded transition-theme shrink-0"
                 >
                   {dir === 'rtl' ? 'إدراج' : 'Insert'}
                 </button>
@@ -6569,7 +6569,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={triggerForensicDiagnostic}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-transparent hover:border-emerald-500/30 hover:bg-emerald-500/5 text-xs font-semibold text-emerald-500 transition-all duration-300 shadow-none bg-transparent"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-transparent hover:border-emerald-500/30 hover:bg-emerald-500/5 text-xs font-semibold text-emerald-500 transition-theme shadow-none bg-transparent"
                 >
                   <Sparkles size={13} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
                   <span>{dir === 'rtl' ? 'فحص جنائي مباشر' : 'Run Forensic Scan'}</span>
@@ -6673,7 +6673,7 @@ export const ChatPage: React.FC = () => {
               style={{ minHeight: '32px', maxHeight: '200px', height: '32px' }}
             />
             {query.length > 500 && (
-              <span className={`absolute bottom-[-14px] ${dir === 'rtl' ? 'left-1' : 'right-1'} text-[10px] font-mono select-none pointer-events-none transition-all duration-300 ${query.length > 15000 ? 'text-red-500 font-bold drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-gray-400'}`}>
+              <span className={`absolute bottom-[-14px] ${dir === 'rtl' ? 'left-1' : 'right-1'} text-[10px] font-mono select-none pointer-events-none transition-theme ${query.length > 15000 ? 'text-red-500 font-bold drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-gray-400'}`}>
                 {query.length.toLocaleString()} / 16,000
               </span>
             )}
@@ -6829,7 +6829,7 @@ export const ChatPage: React.FC = () => {
               onClick={toggleRecording}
               disabled={isInputDisabled}
               title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-transparent border transition-all duration-300 relative group active:scale-95 ${
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-transparent border transition-theme relative group active:scale-95 ${
                 isInputDisabled 
                   ? 'opacity-30 cursor-not-allowed border-transparent rounded-[4px]' 
                   : isRecording
@@ -6848,7 +6848,7 @@ export const ChatPage: React.FC = () => {
               ) : (
                 <Mic 
                   size={18} 
-                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300" 
+                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
                 />
               )}
             </button>
@@ -7015,7 +7015,7 @@ export const ChatPage: React.FC = () => {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: -8 }}
-                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     className="sticky top-0 z-30 bg-[var(--bg-base)] border-b border-[var(--border-main)]"
                   >
 
@@ -7034,10 +7034,10 @@ export const ChatPage: React.FC = () => {
                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setShowPinnedModal(true)}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-all duration-300 text-gray-400 hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] relative"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme text-gray-400 hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] relative"
                     title={dir === 'rtl' ? 'الرسائل المثبتة' : 'Pinned Messages'}
                   >
-                    <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "transition-all duration-300"} />
+                    <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "transition-theme"} />
                     {messages.filter(m => m.is_pinned).length > 0 && (
                       <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(16,185,129,0.6)]">
                         {messages.filter(m => m.is_pinned).length}
@@ -7206,7 +7206,7 @@ export const ChatPage: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.15 }}
                 className="flex-1 max-w-4xl mx-auto w-full px-8 md:px-6 py-12 flex flex-col gap-8 min-h-full"
               >
                 {[...Array(3)].map((_, i) => (
@@ -7240,7 +7240,7 @@ export const ChatPage: React.FC = () => {
                 initial={{ opacity: 0, scale: 1, filter: "blur(4px)" }}
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
               >
 
@@ -7271,7 +7271,7 @@ export const ChatPage: React.FC = () => {
                 initial={{ opacity: 0, filter: "blur(3px)" }}
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(3px)" }}
-                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col gap-4 md:gap-6 max-w-4xl mx-auto w-full px-8 md:px-6 pt-4"
               >
               {messages.map((msg, idx) => {
@@ -7393,7 +7393,7 @@ export const ChatPage: React.FC = () => {
                       <motion.div 
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                         className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
                       >
                         {!msg.is_quota_error && !msg.is_system_inactive && msg.tool !== 'video' && (
@@ -7563,7 +7563,7 @@ export const ChatPage: React.FC = () => {
                                 initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
                                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                                 exit={{ opacity: -3, filter: "blur(2px)" }}
-                                transition={{ duration: 0.35, ease: "easeOut" }}
+                                transition={{ duration: 0.15, ease: "easeOut" }}
                               >
                                 <FollowUps followUps={msg.follow_ups || []} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
                               </motion.div>
@@ -7667,7 +7667,7 @@ export const ChatPage: React.FC = () => {
                             id={`fork-btn-${msg.id}`}
                             onClick={() => handleForkThread(msg.id!)}
                             title={dir === 'rtl' ? 'تفريع المحادثة' : 'Fork Thread'}
-                            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
+                            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
                           >
                             <GitFork size={13} />
                           </motion.button>
@@ -7844,10 +7844,10 @@ export const ChatPage: React.FC = () => {
               initial={{ opacity: 0, y: 10, x: "-50%", scale: 0.8 }}
               animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
               exit={{ opacity: 10, x: "-50%", scale: 0.8 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={() => scrollToBottom('smooth')}
               style={{ left: '50%' }}
-              className="absolute bottom-full mb-3 z-40 flex items-center justify-center p-2 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all duration-300 cursor-pointer active:scale-95 bg-transparent border-0"
+              className="absolute bottom-full mb-3 z-40 flex items-center justify-center p-2 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme cursor-pointer active:scale-95 bg-transparent border-0"
               title={dir === 'rtl' ? 'الرجوع للأسفل' : 'Scroll to Bottom'}
             >
               <ArrowDown size={22} className="animate-[bounce_2s_infinite]" />
@@ -7917,7 +7917,7 @@ export const ChatPage: React.FC = () => {
                          </span>
                          <button
                            onClick={() => handlePinMessage(msg.id!, false)}
-                           className="text-gray-400 hover:text-emerald-500 transition-all duration-300 p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
+                           className="text-gray-400 hover:text-emerald-500 transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
                            title={dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin'}
                          >
                            <PinOff size={12} />
@@ -8156,7 +8156,7 @@ export const ChatPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
                 theme === 'dark' 
                   ? 'bg-[#161618] border-zinc-800 text-gray-100' 
                   : 'bg-white border-gray-150 text-gray-900'
@@ -8176,7 +8176,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                     theme === 'dark' 
                       ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
                       : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
@@ -8188,7 +8188,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleThreadDeleteConfirm}
-                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(219,107,122,0.25)]"
                 >
                   {dir === 'rtl' ? 'تأكيد الحذف' : 'Confirm Delete'}
                 </button>
@@ -8211,7 +8211,7 @@ export const ChatPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className={`relative max-w-md w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+              className={`relative max-w-md w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
                 theme === 'dark' 
                   ? 'bg-[#161618] border-zinc-800 text-gray-100' 
                   : 'bg-white border-gray-150 text-gray-900'
@@ -8253,7 +8253,7 @@ export const ChatPage: React.FC = () => {
                       type="button"
                       disabled={isGeneratingShare}
                       onClick={() => setIsShareModalOpen(false)}
-                      className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                      className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                         theme === 'dark' 
                           ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
                           : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
@@ -8291,7 +8291,7 @@ export const ChatPage: React.FC = () => {
                           setIsGeneratingShare(false);
                         }
                       }}
-                      className="px-4 py-2 text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-black rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
+                      className="px-4 py-2 text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-black rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
                     >
                       {isGeneratingShare ? (
                         <>
@@ -8350,7 +8350,7 @@ export const ChatPage: React.FC = () => {
                         const tweetText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                       title="Share on X"
                     >
                       <Twitter size={16} />
@@ -8362,7 +8362,7 @@ export const ChatPage: React.FC = () => {
                         const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
                         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                       title="Share on LinkedIn"
                     >
                       <Linkedin size={16} />
@@ -8375,7 +8375,7 @@ export const ChatPage: React.FC = () => {
                         const tText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://t.me/share/url?url=${encodeURIComponent(targetUrl)}&text=${encodeURIComponent(tText)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                       title="Share on Telegram"
                     >
                       <Send size={16} />
@@ -8388,7 +8388,7 @@ export const ChatPage: React.FC = () => {
                         const waText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText + ' ' + targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                       title="Share on WhatsApp"
                     >
                       <MessageSquare size={16} />
@@ -8399,7 +8399,7 @@ export const ChatPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsShareModalOpen(false)}
-                      className="px-5 py-2 text-xs font-bold bg-zinc-800 hover:bg-zinc-750 text-white rounded-[4px] font-sans transition-all duration-300 border border-zinc-700/60"
+                      className="px-5 py-2 text-xs font-bold bg-zinc-800 hover:bg-zinc-750 text-white rounded-[4px] font-sans transition-theme border border-zinc-700/60"
                     >
                       {dir === 'rtl' ? 'إغلاق' : 'Close'}
                     </button>
