@@ -184,7 +184,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
               style={{
                 filter: VIDEO_FILTERS.find(f => f.id === selectedFilter)?.filter || 'none'
               }}
-              className={`w-full h-full object-contain ${getAspectRatioClass(aspectRatio, adFormat)} transition-all duration-300`}
+              className={`w-full h-full object-contain ${getAspectRatioClass(aspectRatio, adFormat)} transition-theme`}
               onClick={togglePlay}
             />
 
@@ -307,7 +307,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                       if (fmt.id === 'reel' || fmt.id === 'story') setAspectRatio('9:16');
                       else setAspectRatio('1:1');
                     }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-theme border ${
                       adFormat === fmt.id
                         ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/20'
                         : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800'
@@ -329,7 +329,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     key={ratio}
                     type="button"
                     onClick={() => setAspectRatio(ratio as any)}
-                    className={`py-2 px-1 rounded-xl text-xs font-mono font-bold transition-all border ${
+                    className={`py-2 px-1 rounded-xl text-xs font-mono font-bold transition-theme border ${
                       aspectRatio === ratio
                         ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/20'
                         : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800'
@@ -356,7 +356,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                   key={flt.id}
                   type="button"
                   onClick={() => setSelectedFilter(flt.id)}
-                  className={`py-2 px-2 rounded-xl text-xs font-medium transition-all border flex flex-col items-center gap-1.5 ${
+                  className={`py-2 px-2 rounded-xl text-xs font-medium transition-theme border flex flex-col items-center gap-1.5 ${
                     selectedFilter === flt.id
                       ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30'
                       : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800 hover:border-gray-700'
@@ -389,7 +389,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             type="button"
             disabled={isProcessing}
             onClick={handleApplyTrim}
-            className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-theme disabled:opacity-50"
           >
             <Check size={16} />
             <span>{isRtl ? 'تطبيق وقص ونشر' : 'Apply & Publish'}</span>

@@ -28,6 +28,7 @@ import { Toaster } from 'sonner';
 import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { InactivityWarningModal } from './components/InactivityWarningModal';
+import { InstallAppBanner } from './components/InstallAppBanner';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
@@ -200,6 +201,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <IncentiveCard />
       <UpgradePromptModal />
       <InactivityWarningModal />
+      <InstallAppBanner />
 
       <motion.div
         animate={{ opacity: isAuthReady ? 1 : 0.6 }}

@@ -186,7 +186,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={fetchInsights}
-            className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] flex items-center gap-1 transition-all"
+            className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] flex items-center gap-1 transition-theme"
             title={isRtl ? 'تحديث' : 'Refresh'}
           >
             <RefreshCw size={12} />
@@ -194,7 +194,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] flex items-center gap-1 transition-all"
+              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] flex items-center gap-1 transition-theme"
               title={isRtl ? 'إغلاق' : 'Close'}
             >
               <X size={14} />
@@ -370,7 +370,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
                 </div>
                 <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-theme"
                     style={{ width: `${loc.percentage}%` }}
                   />
                 </div>
@@ -432,7 +432,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
               {onBoostClick && !data.is_boosted && (
                 <button
                   onClick={onBoostClick}
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-black text-[10px] flex items-center gap-1 shrink-0 shadow-sm transition-all"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-black text-[10px] flex items-center gap-1 shrink-0 shadow-sm transition-theme"
                 >
                   <Rocket size={11} />
                   <span>{isRtl ? 'ترقية التمويل' : 'Boost Now'}</span>

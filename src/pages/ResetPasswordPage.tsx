@@ -142,7 +142,7 @@ export const ResetPasswordPage: React.FC = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -159,7 +159,7 @@ export const ResetPasswordPage: React.FC = () => {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-all outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -183,7 +183,7 @@ export const ResetPasswordPage: React.FC = () => {
                 <button 
                   type="submit" 
                   disabled={isLoading} 
-                  className="w-full h-12 bg-emerald-500 text-black rounded-sm font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
+                  className="w-full h-12 bg-emerald-500 text-black rounded-sm font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-theme shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

@@ -123,7 +123,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
   const isProcessing = processingStage !== 'done' && processingStage !== 'idle';
 
   return (
-    <div className="relative group bg-gradient-to-br from-[#141416]/90 to-[#1e1e24]/90 border border-emerald-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 transition-all duration-300 hover:border-emerald-500/60">
+    <div className="relative group bg-gradient-to-br from-[#141416]/90 to-[#1e1e24]/90 border border-emerald-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 transition-theme hover:border-emerald-500/60">
       <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
         {/* Main Thumbnail or Video Preview */}
         <div className="relative w-full sm:w-36 h-24 bg-black rounded-xl overflow-hidden border border-gray-800 flex items-center justify-center shrink-0 shadow-inner">
@@ -187,7 +187,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
             <div className="w-full flex flex-col gap-2 mt-1">
               <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full transition-all duration-300 ${processingStage === 'uploading' ? 'bg-blue-500' : processingStage === 'transcoding' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                  className={`h-full transition-theme ${processingStage === 'uploading' ? 'bg-blue-500' : processingStage === 'transcoding' ? 'bg-amber-500' : 'bg-emerald-500'}`}
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -291,7 +291,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
                     setSelectedThumb(thumb);
                     if (onSelectThumbnail) onSelectThumbnail(thumb);
                   }}
-                  className={`relative rounded-xl overflow-hidden border transition-all aspect-video group/thumb cursor-pointer ${
+                  className={`relative rounded-xl overflow-hidden border transition-theme aspect-video group/thumb cursor-pointer ${
                     selectedThumb === thumb
                       ? 'border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/20'
                       : 'border-gray-800 hover:border-gray-600 opacity-70 hover:opacity-100'

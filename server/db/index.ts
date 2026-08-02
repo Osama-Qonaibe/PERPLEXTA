@@ -193,9 +193,8 @@ export async function initializePerplextaPools(
 
       console.log('[DB] Pools created. Verifying connectivity...');
 
-      const verify = async (p: any, name: string): Promise<boolean> => {
+      const verify = async (p: any, name: string, retries: number = 3): Promise<boolean> => {
         let delay = 1000;
-        const retries = 3;
         for (let attempt = 1; attempt <= retries; attempt++) {
           const success = await new Promise<boolean>((resolve) => {
             let settled = false;
@@ -234,13 +233,13 @@ export async function initializePerplextaPools(
         return false;
       };
 
-      const coreOk = await verify(pool, 'Core DB');
+      const coreOk = await verify(pool, 'Core DB', 3);
       coreOk
         ? console.log('[DB] Core DB connection verified.')
         : console.error('[DB] ❌ Core DB unreachable.');
 
       if (ledgerPool !== pool) {
-        if (!await verify(ledgerPool, 'Ledger DB')) {
+        if (!await verify(ledgerPool, 'Ledger DB', 1)) {
           console.warn('[DB] Ledger DB unreachable — falling back to Core pool.');
           try { await ledgerPool.end(); } catch {}
           ledgerPool = pool;
@@ -248,7 +247,7 @@ export async function initializePerplextaPools(
       } else { console.log('[DB] Ledger DB sharing Core pool.'); }
 
       if (externalPool !== pool) {
-        if (!await verify(externalPool, 'External DB')) {
+        if (!await verify(externalPool, 'External DB', 1)) {
           console.warn('[DB] External DB unreachable — falling back to Core pool.');
           try { await externalPool.end(); } catch {}
           externalPool = pool;
@@ -256,7 +255,7 @@ export async function initializePerplextaPools(
       } else { console.log('[DB] External DB sharing Core pool.'); }
 
       if (securityPool !== pool) {
-        if (!await verify(securityPool, 'Security DB')) {
+        if (!await verify(securityPool, 'Security DB', 1)) {
           console.warn('[DB] Security DB unreachable — falling back to Core pool.');
           try { await securityPool.end(); } catch {}
           securityPool = pool;

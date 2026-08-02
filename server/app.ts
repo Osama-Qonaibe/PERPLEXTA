@@ -740,6 +740,13 @@ import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
 
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`[API Request] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);

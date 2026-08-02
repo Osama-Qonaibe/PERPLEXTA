@@ -2,7 +2,7 @@ const CACHE_NAME = 'perplexta-cache-v3';
 const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
+  '/manifest.webmanifest',
   '/favicon.ico'
 ];
 

@@ -128,7 +128,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
           <button
             onClick={fetchAnalytics}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-theme shadow-sm shrink-0"
           >
             <RefreshCw size={15} />
             <span>{isRtl ? 'تحديث البيانات' : 'Refresh Data'}</span>
@@ -412,7 +412,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                     </div>
                     <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
+                        className="h-full rounded-full transition-theme"
                         style={{ width: `${dev.percentage}%`, backgroundColor: dev.color }}
                       />
                     </div>

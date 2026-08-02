@@ -222,7 +222,7 @@ export const SubscriptionPage: React.FC = () => {
     }
     const formatLimit = (v: any) => v === 'unlimited' ? '∞' : (v || 0);
     return (
-      <div className="flex flex-col gap-1 p-2.5 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-all hover:border-emerald-500/30 group">
+      <div className="flex flex-col gap-1 p-2.5 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-theme hover:border-emerald-500/30 group">
         <div className="flex items-center gap-2 mb-1">
           <div className="transition-transform group-hover:scale-110" style={{ color: color }}>{icon}</div>
           <span className="text-[10px] font-black uppercase tracking-tighter text-[var(--text-muted)] truncate">{label}</span>
@@ -265,12 +265,12 @@ export const SubscriptionPage: React.FC = () => {
         </div>
       )}
 
-      <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]">
+      <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-theme bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
+              className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500"
             >
               {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
@@ -284,7 +284,7 @@ export const SubscriptionPage: React.FC = () => {
           <div className="p-1.5 rounded-[var(--radius)] flex items-center shadow-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]">
             <button 
               onClick={() => setBillingCycle('monthly')}
-              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-theme ${
                 billingCycle === 'monthly' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-[var(--text-secondary)] hover:text-emerald-500'
@@ -294,7 +294,7 @@ export const SubscriptionPage: React.FC = () => {
             </button>
             <button 
               onClick={() => setBillingCycle('annual')}
-              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+              className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-theme ${
                 billingCycle === 'annual' 
                   ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
                   : 'text-[var(--text-secondary)] hover:text-emerald-500'
@@ -313,7 +313,7 @@ export const SubscriptionPage: React.FC = () => {
         <div className="p-1 rounded-[var(--radius)] flex items-center bg-[var(--bg-secondary)] border border-[var(--border-main)]/60 max-w-lg w-full">
           <button
             onClick={() => setActiveTab('user')}
-            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-theme flex items-center justify-center gap-2 ${
               activeTab === 'user'
                 ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
                 : 'text-[var(--text-secondary)] hover:text-emerald-500'
@@ -326,7 +326,7 @@ export const SubscriptionPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('developer')}
-            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
+            className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-theme flex items-center justify-center gap-2 ${
               activeTab === 'developer'
                 ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
                 : 'text-[var(--text-secondary)] hover:text-emerald-500'
@@ -350,7 +350,7 @@ export const SubscriptionPage: React.FC = () => {
           {/* Subtle glowing element background */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/60 to-emerald-500/0" />
           
-          <div className="w-16 h-16 rounded-[4px] bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 text-emerald-500 hover:scale-105 transition-all duration-300">
+          <div className="w-16 h-16 rounded-[4px] bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 text-emerald-500 hover:scale-105 transition-theme">
             <Code2 size={28} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
           </div>
 
@@ -373,7 +373,7 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold text-xs hover:bg-emerald-500/20 hover:scale-105 transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] active:scale-95"
+              className="px-6 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold text-xs hover:bg-emerald-500/20 hover:scale-105 transition-theme shadow-[0_0_15px_rgba(16,185,129,0.1)] active:scale-95"
             >
               {dir === 'rtl' ? 'العودة لمساحة العمل' : 'Return to Workspace'}
             </button>
@@ -384,14 +384,14 @@ export const SubscriptionPage: React.FC = () => {
           {displayedPlans.map((plan) => (
             <div 
               key={plan.id} 
-              className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
+              className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
                 isActivePlan(plan.id) 
                   ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
                   : 'hover:border-emerald-500/30'
               }`}
             >
               <div className="absolute inset-0 rounded-[var(--radius)] bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-300 pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-all duration-300 group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
+              <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-theme group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
               {plan.badge !== 'none' && (
                 <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
                   <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#10b981' }}>
@@ -423,7 +423,7 @@ export const SubscriptionPage: React.FC = () => {
                 <button 
                   onClick={() => handleUpgrade(plan.id)}
                   disabled={loading !== null || isActivePlan(plan.id)}
-                  className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
+                  className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-theme shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
                   style={{ 
                     backgroundColor: plan.color || '#10b981', 
                     boxShadow: isActivePlan(plan.id) ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
@@ -437,7 +437,7 @@ export const SubscriptionPage: React.FC = () => {
                 <button 
                   onClick={() => handlePayWithBalance(plan.id)}
                   disabled={loading !== null || isActivePlan(plan.id)}
-                  className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
+                  className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-theme border bg-transparent hover:bg-emerald-500/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
                   style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
                 >
                   {isActivePlan(plan.id) ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
@@ -581,14 +581,14 @@ export const SubscriptionPage: React.FC = () => {
                 <div className="p-6 bg-[var(--bg-primary)]/50 flex gap-3">
                   <button 
                     onClick={() => setConfirmingPlan(null)} disabled={loading !== null}
-                    className="flex-1 py-3 rounded-[var(--radius)] font-bold text-sm transition-all duration-300 border bg-[var(--bg-secondary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    className="flex-1 py-3 rounded-[var(--radius)] font-bold text-sm transition-theme border bg-[var(--bg-secondary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
                     {t('cancel')}
                   </button>
                   <button 
                     onClick={executePayment}
                     disabled={loading !== null || balanceUSD - getDisplayPrice(confirmingPlan, billingCycle) < 0}
-                    className="flex-1 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all duration-300 shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-theme shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                     {t('confirmAndActivate')}
@@ -654,7 +654,7 @@ export const SubscriptionPage: React.FC = () => {
                 </p>
                 {resultModal === 'success' && redirectCountdown !== null && (
                   <div 
-                    className="mb-5 md:mb-6 p-4 rounded-[var(--radius)] border flex flex-col items-center justify-center transition-all duration-300 shadow-sm bg-[var(--bg-secondary)] border-[var(--border-main)]"
+                    className="mb-5 md:mb-6 p-4 rounded-[var(--radius)] border flex flex-col items-center justify-center transition-theme shadow-sm bg-[var(--bg-secondary)] border-[var(--border-main)]"
                   >
                     <div 
                       className="flex items-center gap-2.5 text-xs md:text-sm font-black uppercase tracking-wider mb-2"
@@ -695,7 +695,7 @@ export const SubscriptionPage: React.FC = () => {
                   <div className="flex items-center gap-2 p-1.5 rounded-[var(--radius)] border bg-[var(--bg-base)] border-[var(--border)]">
                     <button 
                       onClick={handleCopyLink}
-                      className="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 text-white"
+                      className="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme text-white"
                       style={{ backgroundColor: copied ? '#10b981' : selectedPlanForModal?.color || '#10b981' }}
                     >
                       {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
@@ -708,7 +708,7 @@ export const SubscriptionPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
                   <button 
                     onClick={handleShare}
-                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-theme shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: selectedPlanForModal?.color || '#10b981', boxShadow: `0 10px 20px -5px ${(selectedPlanForModal?.color || '#10b981')}40` }}
                   >
                     <Share2 size={18} />
@@ -721,7 +721,7 @@ export const SubscriptionPage: React.FC = () => {
                         navigate('/');
                       }
                     }}
-                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-all duration-300 border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)] flex items-center justify-center gap-2"
+                    className="flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-theme border bg-[var(--bg-overlay)] border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)] flex items-center justify-center gap-2"
                   >
                     {resultModal === 'success' ? (
                       <>

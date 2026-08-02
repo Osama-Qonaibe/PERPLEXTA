@@ -526,7 +526,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <button
                 onClick={() => fetchContacts()}
                 disabled={isLoading}
-                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-all duration-300"
+                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-theme"
                 title={isAr ? 'تحديث جهات الاتصال' : 'Refresh contacts'}
               >
                 <RefreshCw size={16} className={isLoading ? 'animate-spin text-emerald-500' : ''} />
@@ -536,7 +536,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
 
               <button
                 onClick={handleDisconnect}
-                className="px-3 py-1.5 rounded-[var(--radius)] border border-red-500/20 hover:bg-red-500/10 text-red-500 transition-all duration-300 font-bold text-xs flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-[var(--radius)] border border-red-500/20 hover:bg-red-500/10 text-red-500 transition-theme font-bold text-xs flex items-center gap-1.5"
               >
                 <LogOut size={13} />
                 <span>{isAr ? 'قطع الاتصال' : 'Disconnect'}</span>
@@ -562,7 +562,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={isAr ? 'بحث بالاسم، البريد أو الهاتف...' : 'Search contacts, emails, titles...'}
-                      className="w-full pl-9 pr-4 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200 font-sans"
+                      className="w-full pl-9 pr-4 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme font-sans"
                     />
                   </div>
                   
@@ -586,7 +586,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         setActiveSource('connections');
                         setFilteredContacts(contacts);
                       }}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all duration-300 ${
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-theme ${
                         activeSource === 'connections' 
                           ? 'bg-white dark:bg-gray-700 text-emerald-500 shadow-sm' 
                           : 'text-gray-400 hover:text-emerald-500'
@@ -599,7 +599,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         setActiveSource('directory');
                         setFilteredContacts([]);
                       }}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all duration-300 ${
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-theme ${
                         activeSource === 'directory' 
                           ? 'bg-white dark:bg-gray-700 text-emerald-500 shadow-sm' 
                           : 'text-gray-400 hover:text-emerald-500'
@@ -611,7 +611,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
 
                   <button
                     onClick={handleStartCreate}
-                    className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-500 rounded-lg text-xs font-bold flex items-center gap-1 transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.05)]"
+                    className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-500 rounded-lg text-xs font-bold flex items-center gap-1 transition-theme shadow-[0_0_12px_rgba(16,185,129,0.05)]"
                   >
                     <Plus size={13} />
                     <span>{isAr ? 'إضافة اتصال' : 'Add Connection'}</span>
@@ -639,7 +639,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           setIsEditing(false);
                           setIsCreating(false);
                         }}
-                        className={`p-3 rounded-lg flex items-center justify-between cursor-pointer border transition-all duration-300 relative ${
+                        className={`p-3 rounded-lg flex items-center justify-between cursor-pointer border transition-theme relative ${
                           isSelected 
                             ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' 
                             : 'border-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/10 text-gray-400'
@@ -742,14 +742,14 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleStartEdit(selectedContact)}
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-[var(--border)] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-all duration-300"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-[var(--border)] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-theme"
                             title={isAr ? 'تعديل جهة الاتصال' : 'Edit details'}
                           >
                             <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDeleteTrigger(selectedContact)}
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-red-500/10 hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-red-500/10 hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-theme"
                             title={isAr ? 'حذف جهة الاتصال' : 'Delete Contact'}
                           >
                             <Trash2 size={14} />
@@ -846,7 +846,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       <button
                         type="button"
                         onClick={handleCancelForm}
-                        className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300"
+                        className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-theme"
                       >
                         <X size={14} />
                       </button>
@@ -863,7 +863,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formFirstName}
                           onChange={(e) => setFormFirstName(e.target.value)}
                           placeholder={isAr ? 'أدخل الاسم الأول' : 'First name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -875,7 +875,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formLastName}
                           onChange={(e) => setFormLastName(e.target.value)}
                           placeholder={isAr ? 'الاسم الأخير' : 'Last name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -887,7 +887,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formEmail}
                           onChange={(e) => setFormEmail(e.target.value)}
                           placeholder="name@company.com"
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -899,7 +899,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formPhone}
                           onChange={(e) => setFormPhone(e.target.value)}
                           placeholder="+1 (555) 000-0000"
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -911,7 +911,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formOrg}
                           onChange={(e) => setFormOrg(e.target.value)}
                           placeholder={isAr ? 'الشركة' : 'Enterprise / Org name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -923,7 +923,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formTitle}
                           onChange={(e) => setFormTitle(e.target.value)}
                           placeholder={isAr ? 'المسمى الوظيفي' : 'Software Architect'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-all duration-200"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -936,7 +936,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         value={formNotes}
                         onChange={(e) => setFormNotes(e.target.value)}
                         placeholder={isAr ? 'ملاحظات إضافية عن الاتصال...' : 'Write notes or context regarding your connection...'}
-                        className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none h-24 resize-none transition-all duration-200"
+                        className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none h-24 resize-none transition-theme"
                       />
                     </div>
                   </div>
@@ -946,14 +946,14 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     <button
                       type="button"
                       onClick={handleCancelForm}
-                      className="px-4 py-2 text-xs font-semibold rounded-[var(--radius)] border border-transparent hover:bg-gray-150 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-all duration-300"
+                      className="px-4 py-2 text-xs font-semibold rounded-[var(--radius)] border border-transparent hover:bg-gray-150 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-theme"
                     >
                       {isAr ? 'إلغاء' : 'Cancel'}
                     </button>
                     
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[var(--radius)] shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300"
+                      className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[var(--radius)] shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-theme"
                     >
                       {isAr ? 'حفظ جهة الاتصال' : 'Save Connection'}
                     </button>
@@ -1011,7 +1011,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                   <button
                     type="button"
                     onClick={() => setShowSaveModal(false)}
-                    className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                       theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-[#252528]' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
                     }`}
                   >
@@ -1022,7 +1022,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     type="button"
                     onClick={handleSaveConfirm}
                     disabled={isSaving}
-                    className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[4px] font-sans transition-all duration-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                    className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[4px] font-sans transition-theme flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                   >
                     {isSaving && <Loader2 size={12} className="animate-spin" />}
                     <span>{isAr ? 'تأكيد الحفظ' : 'Confirm & Save'}</span>
@@ -1071,7 +1071,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       setShowDeleteModal(false);
                       setContactToDelete(null);
                     }}
-                    className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
+                    className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                       theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-[#252528]' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
                     }`}
                   >
@@ -1082,7 +1082,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     type="button"
                     onClick={handleDeleteConfirm}
                     disabled={isDeleting}
-                    className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                    className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme flex items-center gap-1.5 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
                   >
                     {isDeleting && <Loader2 size={12} className="animate-spin" />}
                     <span>{isAr ? 'تأكيد الحذف' : 'Confirm & Delete'}</span>

@@ -930,7 +930,7 @@ export const AdsManagementView: React.FC<{
 
         <button
           onClick={handleOpenCreateModal}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all duration-300 shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-theme shrink-0"
         >
           <Plus size={16} />
           <span>{isRtl ? 'إضافة إعلان جديد' : 'Create New Ad'}</span>
@@ -941,7 +941,7 @@ export const AdsManagementView: React.FC<{
       <div className="flex items-center gap-3 border-b border-[var(--border-main)] pb-3">
         <button
           onClick={() => setActiveTab('platform')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'platform'
               ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
@@ -959,7 +959,7 @@ export const AdsManagementView: React.FC<{
             setActiveTab('bulletin');
             fetchBulletinAds();
           }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'bulletin'
               ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
@@ -979,7 +979,7 @@ export const AdsManagementView: React.FC<{
             setActiveTab('analytics');
             fetchAdminAnalytics();
           }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'analytics'
               ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
@@ -995,7 +995,7 @@ export const AdsManagementView: React.FC<{
             fetchEconomySettings();
             fetchGiftCatalog();
           }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'economy'
               ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
@@ -1010,7 +1010,7 @@ export const AdsManagementView: React.FC<{
             setActiveTab('approval');
             fetchApprovalQueue();
           }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'approval'
               ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-amber-500'
@@ -1030,7 +1030,7 @@ export const AdsManagementView: React.FC<{
             setActiveTab('audit');
             fetchAuditLogs();
           }}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'audit'
               ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-blue-500'
@@ -1303,7 +1303,7 @@ export const AdsManagementView: React.FC<{
                   <button
                     onClick={fetchRoiData}
                     disabled={isRoiLoading}
-                    className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-emerald-500 transition-all"
+                    className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
                   >
                     <RefreshCw size={14} className={isRoiLoading ? 'animate-spin' : ''} />
                   </button>
@@ -1426,7 +1426,7 @@ export const AdsManagementView: React.FC<{
                     </div>
                     <button
                       onClick={fetchHeatmapData}
-                      className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-amber-500 transition-all"
+                      className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-amber-500 transition-theme"
                     >
                       <RefreshCw size={14} className={isHeatmapLoading ? 'animate-spin' : ''} />
                     </button>
@@ -1476,7 +1476,7 @@ export const AdsManagementView: React.FC<{
                               <div 
                                 key={hour}
                                 title={`${day} ${hour}:00 - CR: ${cr.toFixed(2)}%`}
-                                className={`flex-1 h-8 rounded-sm border border-[var(--border-main)]/50 transition-all duration-500 cursor-help group relative ${bgColor} ${opacity} ${glow} hover:scale-110 hover:z-10 hover:border-emerald-500`}
+                                className={`flex-1 h-8 rounded-sm border border-[var(--border-main)]/50 transition-theme cursor-help group relative ${bgColor} ${opacity} ${glow} hover:scale-110 hover:z-10 hover:border-emerald-500`}
                               >
                                 {cr > 5 && (
                                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -1559,13 +1559,13 @@ export const AdsManagementView: React.FC<{
                     <div className="flex items-center gap-3">
                       <button
                         onClick={handleBulkReject}
-                        className="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black hover:bg-red-500 hover:text-white transition-all"
+                        className="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black hover:bg-red-500 hover:text-white transition-theme"
                       >
                         {isRtl ? 'رفض المحدد' : 'Reject Selected'}
                       </button>
                       <button
                         onClick={handleBulkVerifyOpen}
-                        className="px-6 py-2 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 text-[10px] font-black hover:bg-emerald-600 active:scale-95 transition-all"
+                        className="px-6 py-2 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 text-[10px] font-black hover:bg-emerald-600 active:scale-95 transition-theme"
                       >
                         {isRtl ? 'موافقة جماعية (2FA)' : 'Bulk Approve (2FA)'}
                       </button>
@@ -1604,7 +1604,7 @@ export const AdsManagementView: React.FC<{
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           key={req.id} 
-                          className={`group transition-all duration-300 border-l-4 ${
+                          className={`group transition-theme border-l-4 ${
                             selectedRequests.includes(req.id) ? 'bg-emerald-500/5 border-emerald-500' : 'hover:bg-[var(--bg-base)]/80 border-transparent'
                           } ${
                             req.status === 'approved' ? 'hover:border-emerald-500/50' :
@@ -1685,7 +1685,7 @@ export const AdsManagementView: React.FC<{
                                     actionType: req.action_type,
                                     payload: req.payload
                                   })}
-                                  className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-black text-[9px] hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                                  className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-black text-[9px] hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-theme"
                                 >
                                   {isRtl ? 'اعتماد' : 'APPROVE'}
                                 </button>
@@ -1694,7 +1694,7 @@ export const AdsManagementView: React.FC<{
                                     const reason = window.prompt('Reason for rejection?');
                                     if (reason) handleRejectApproval(req.id, reason);
                                   }}
-                                  className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                  className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-theme"
                                 >
                                   <X size={14} />
                                 </button>
@@ -1731,7 +1731,7 @@ export const AdsManagementView: React.FC<{
               <button 
                 onClick={fetchAuditLogs}
                 disabled={isAuditLoading}
-                className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-blue-500 transition-all shadow-sm disabled:opacity-50"
+                className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-blue-500 transition-theme shadow-sm disabled:opacity-50"
               >
                 <RefreshCw size={15} className={isAuditLoading ? 'animate-spin' : ''} />
               </button>
@@ -1904,7 +1904,7 @@ export const AdsManagementView: React.FC<{
                     setBatchAdjustmentPercent(0);
                   }}
                   disabled={batchAdjustmentPercent === 0}
-                  className="px-5 py-2.5 rounded-lg bg-emerald-500 text-white font-black text-xs hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="px-5 py-2.5 rounded-lg bg-emerald-500 text-white font-black text-xs hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed transition-theme shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
                   {isRtl ? 'تطبيق التعديل' : 'Apply Adjustment'}
                 </button>
@@ -1929,7 +1929,7 @@ export const AdsManagementView: React.FC<{
             </div>
             <button
               onClick={() => setShowAdPreview(true)}
-              className="px-6 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-main)] text-[var(--text-primary)] font-black text-xs flex items-center gap-2 hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group"
+              className="px-6 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-main)] text-[var(--text-primary)] font-black text-xs flex items-center gap-2 hover:border-emerald-500 hover:text-emerald-500 transition-theme shadow-sm group"
             >
               <ExternalLink size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               <span>{isRtl ? 'فتح المحاكي' : 'Open Simulator'}</span>
@@ -2092,7 +2092,7 @@ export const AdsManagementView: React.FC<{
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {giftCatalog.map((gift) => (
-                  <div key={gift.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-all hover:border-emerald-500/30">
+                  <div key={gift.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-theme hover:border-emerald-500/30">
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{gift.icon}</span>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${gift.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -2118,7 +2118,7 @@ export const AdsManagementView: React.FC<{
                           });
                           setIsGiftModalOpen(true);
                         }}
-                        className="flex-1 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold hover:bg-blue-500 hover:text-white transition-all"
+                        className="flex-1 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold hover:bg-blue-500 hover:text-white transition-theme"
                       >
                         {isRtl ? 'تعديل' : 'Edit'}
                       </button>
@@ -2243,7 +2243,7 @@ export const AdsManagementView: React.FC<{
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportSchedule}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-[var(--text-primary)] text-[10px] font-black hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-[var(--text-primary)] text-[10px] font-black hover:border-emerald-500 hover:text-emerald-500 transition-theme shadow-sm"
               >
                 <Download size={13} />
                 <span>{isRtl ? 'تصدير الجدول' : 'Export Schedule'}</span>
@@ -2267,7 +2267,7 @@ export const AdsManagementView: React.FC<{
                 {selectedBulletinIds.length > 0 && (
                   <button
                     onClick={() => handleBulkDeleteBulletinAds()}
-                    className="px-3 py-1 rounded bg-red-500 text-white font-bold text-[10px] hover:bg-red-600 transition-all flex items-center gap-1 shadow"
+                    className="px-3 py-1 rounded bg-red-500 text-white font-bold text-[10px] hover:bg-red-600 transition-theme flex items-center gap-1 shadow"
                   >
                     <Trash2 size={12} />
                     <span>{isRtl ? 'حذف المحدد' : 'Delete Selected'}</span>
@@ -2276,7 +2276,7 @@ export const AdsManagementView: React.FC<{
               </div>
               <button
                 onClick={handleDeleteAllExpiredOrRejected}
-                className="px-3 py-1 rounded border border-red-500/30 text-red-500 hover:bg-red-500/10 font-bold text-[10px] transition-all flex items-center gap-1"
+                className="px-3 py-1 rounded border border-red-500/30 text-red-500 hover:bg-red-500/10 font-bold text-[10px] transition-theme flex items-center gap-1"
               >
                 <Trash2 size={12} />
                 <span>{isRtl ? 'حذف جميع المنتهية والمرفوضة' : 'Delete All Expired & Rejected'}</span>
@@ -2388,7 +2388,7 @@ export const AdsManagementView: React.FC<{
                             <>
                               <button
                                 onClick={() => handleApproveBulletinAd(ad.id)}
-                                className="px-2.5 py-1 rounded bg-emerald-500 text-white font-bold text-[10px] hover:bg-emerald-600 transition-all flex items-center gap-1 shadow"
+                                className="px-2.5 py-1 rounded bg-emerald-500 text-white font-bold text-[10px] hover:bg-emerald-600 transition-theme flex items-center gap-1 shadow"
                               >
                                 <CheckCircle2 size={12} />
                                 <span>{isRtl ? 'اعتماد' : 'Approve'}</span>
@@ -2399,7 +2399,7 @@ export const AdsManagementView: React.FC<{
                                   setRejectingAdId(ad.id);
                                   setRejectionReason('');
                                 }}
-                                className="px-2.5 py-1 rounded bg-red-500/10 text-red-500 font-bold text-[10px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-1"
+                                className="px-2.5 py-1 rounded bg-red-500/10 text-red-500 font-bold text-[10px] hover:bg-red-500 hover:text-white transition-theme flex items-center gap-1"
                               >
                                 <XCircle size={12} />
                                 <span>{isRtl ? 'رفض' : 'Reject'}</span>
@@ -2413,7 +2413,7 @@ export const AdsManagementView: React.FC<{
                                 setStoppingAdId(ad.id);
                                 setStopReason('');
                               }}
-                              className="px-2.5 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1"
+                              className="px-2.5 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] hover:bg-amber-500 hover:text-white transition-theme flex items-center gap-1"
                               title={isRtl ? 'إيقاف الإعلان فوراً وإشعار المستخدم' : 'Stop Ad & Notify User'}
                             >
                               <XCircle size={12} />
@@ -2643,7 +2643,7 @@ export const AdsManagementView: React.FC<{
                         <td className="p-3 text-center">
                           <button
                             onClick={() => handleToggleActive(ad.id)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-theme ${
                               ad.is_active
                                 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
                                 : 'bg-gray-500/10 text-gray-400 border-gray-500/20 hover:bg-gray-500/20'
@@ -3012,7 +3012,7 @@ export const AdsManagementView: React.FC<{
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 rounded text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-theme flex items-center gap-1.5"
                 >
                   {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
                   <span>{editingAd ? (isRtl ? 'تحديث الإعلان' : 'Save Changes') : (isRtl ? 'نشر الإعلان' : 'Publish Ad')}</span>
@@ -3038,7 +3038,7 @@ export const AdsManagementView: React.FC<{
               </div>
               <button 
                 onClick={() => setShowAdPreview(false)}
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-red-500 hover:text-red-500 transition-all"
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-red-500 hover:text-red-500 transition-theme"
               >
                 <X size={24} />
               </button>
@@ -3072,7 +3072,7 @@ export const AdsManagementView: React.FC<{
                       <Monitor size={24} />
                       <span className="text-[10px] font-black">{isRtl ? 'سطح المكتب' : 'Desktop View'}</span>
                     </button>
-                    <button className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 text-gray-400 border border-white/5 hover:border-emerald-500/30 hover:text-white transition-all">
+                    <button className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 text-gray-400 border border-white/5 hover:border-emerald-500/30 hover:text-white transition-theme">
                       <Smartphone size={24} />
                       <span className="text-[10px] font-black">{isRtl ? 'الجوال' : 'Mobile View'}</span>
                     </button>
@@ -3118,7 +3118,7 @@ export const AdsManagementView: React.FC<{
                           <div className="absolute -top-3 -right-3 z-20 px-2 py-1 bg-amber-500 text-white text-[8px] font-black rounded shadow-lg animate-bounce">
                             {isRtl ? 'إعلان ممول' : 'SPONSORED'}
                           </div>
-                          <div className="bg-white dark:bg-[#1a1a1c] border-2 border-emerald-500/30 rounded-2xl overflow-hidden shadow-xl shadow-emerald-500/5 hover:border-emerald-500 transition-all">
+                          <div className="bg-white dark:bg-[#1a1a1c] border-2 border-emerald-500/30 rounded-2xl overflow-hidden shadow-xl shadow-emerald-500/5 hover:border-emerald-500 transition-theme">
                             <div className="h-40 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 relative flex items-center justify-center">
                               <Zap size={40} className="text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                               <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[9px] font-black text-white border border-white/10">

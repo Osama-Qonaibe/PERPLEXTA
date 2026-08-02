@@ -176,14 +176,14 @@ export const IncentiveCard: React.FC = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button 
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-theme shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
                   <Share2 size={14} />
                   {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
                 </button>
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs font-bold transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs font-bold transition-theme active:scale-95"
                 >
                   {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                   {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}

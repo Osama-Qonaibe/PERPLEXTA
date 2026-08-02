@@ -108,7 +108,7 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
+            className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
               theme === 'dark'
                 ? 'bg-[#161618] border-zinc-800 text-gray-100'
                 : 'bg-white border-gray-150 text-gray-900'
@@ -140,7 +140,7 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
                 type="button"
                 disabled={isSubmitting}
                 onClick={onClose}
-                className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 disabled:opacity-50 ${
+                className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme disabled:opacity-50 ${
                   theme === 'dark'
                     ? 'text-gray-400 hover:text-white hover:bg-[#252528]'
                     : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
@@ -153,7 +153,7 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleConfirm}
-                className={`px-4 py-2 text-xs font-bold rounded-[4px] font-sans flex items-center justify-center gap-1.5 transition-all duration-300 disabled:opacity-80 min-w-[100px] ${colorConfigs.btnClass}`}
+                className={`px-4 py-2 text-xs font-bold rounded-[4px] font-sans flex items-center justify-center gap-1.5 transition-theme disabled:opacity-80 min-w-[100px] ${colorConfigs.btnClass}`}
               >
                 {isSubmitting ? (
                   <Loader2 size={13} className="animate-spin" />

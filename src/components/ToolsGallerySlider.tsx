@@ -115,7 +115,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
           alt={title}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
-          className={`w-full h-full object-cover transition-all duration-550 ${isLoaded ? 'opacity-85 group-hover:opacity-100 group-hover:scale-105' : 'opacity-0'} pointer-events-none`}
+          className={`w-full h-full object-cover transition-theme ${isLoaded ? 'opacity-85 group-hover:opacity-100 group-hover:scale-105' : 'opacity-0'} pointer-events-none`}
           referrerPolicy="no-referrer"
         />
       ) : null}
@@ -219,7 +219,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handlePrev}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-theme hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronRight size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />
@@ -245,12 +245,12 @@ export const ToolsGallerySlider: React.FC = () => {
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: dir === 'rtl' ? 30 : -30, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                    className={`${responsiveClass} p-2.5 sm:p-4 rounded-[4px] border border-gray-200/50 dark:border-gray-800/60 bg-white/40 dark:bg-[#131315]/40 backdrop-blur-sm shadow-sm hover:border-emerald-500/25 transition-all duration-300 group flex flex-col justify-between`}
+                    className={`${responsiveClass} p-2.5 sm:p-4 rounded-[4px] border border-gray-200/50 dark:border-gray-800/60 bg-white/40 dark:bg-[#131315]/40 backdrop-blur-sm shadow-sm hover:border-emerald-500/25 transition-theme group flex flex-col justify-between`}
                   >
                     <div className="flex flex-col gap-2 sm:gap-3 h-full">
                       {/* Tool Header Icon + Title */}
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/25 transition-all duration-300">
+                        <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/25 transition-theme">
                           {tool.icon}
                         </div>
                         <h4 className="text-xs sm:text-sm font-black text-gray-850 dark:text-gray-100 group-hover:text-emerald-500 transition-colors duration-300 line-clamp-1 font-sans">
@@ -284,7 +284,7 @@ export const ToolsGallerySlider: React.FC = () => {
         <button
           onClick={handleNext}
           type="button"
-          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-[4px] border border-transparent bg-transparent text-gray-400 dark:text-gray-500 transition-theme hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:text-emerald-500 group cursor-pointer z-10"
         >
           {dir === 'rtl' ? (
             <ChevronLeft size={20} className="transition-transform group-hover:scale-110 text-gray-400 group-hover:text-emerald-500" />
@@ -302,7 +302,7 @@ export const ToolsGallerySlider: React.FC = () => {
             key={idx}
             type="button"
             onClick={() => setStartIndex(idx)}
-            className={`transition-all duration-300 rounded-full cursor-pointer ${
+            className={`transition-theme rounded-full cursor-pointer ${
               idx === startIndex
                 ? 'w-4 h-1.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
                 : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-700 hover:bg-emerald-500/60'
