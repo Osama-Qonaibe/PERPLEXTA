@@ -66,7 +66,37 @@ export default defineConfig(({ mode }) => {
           icons: [
             {
               src: '/app-assets/icon.png',
+              sizes: '72x72',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-assets/icon.png',
+              sizes: '96x96',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-assets/icon.png',
+              sizes: '128x128',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-assets/icon.png',
+              sizes: '144x144',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-assets/icon.png',
               sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/app-assets/icon.png',
+              sizes: '256x256',
               type: 'image/png',
               purpose: 'any'
             },
@@ -81,15 +111,6 @@ export default defineConfig(({ mode }) => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'
-            }
-          ],
-          screenshots: [
-            {
-              src: '/app-assets/og-image.png',
-              sizes: '1200x630',
-              type: 'image/png',
-              form_factor: 'wide',
-              label: 'Perplexta Platform - Desktop'
             }
           ],
           shortcuts: [
