@@ -626,7 +626,7 @@ const CommandCenterView = ({
             return (
               <div 
                 key={dbId}
-                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-theme hover:border-emerald-500/30"
+                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-all duration-300 hover:border-emerald-500/30"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -950,7 +950,7 @@ const CommandCenterView = ({
                           setLogEndDate("");
                           setSearch("");
                         }}
-                        className="mt-4 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold hover:bg-emerald-500/20 transition-theme"
+                        className="mt-4 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold hover:bg-emerald-500/20 transition-all duration-300"
                       >
                         {language === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
                       </button>
@@ -2552,9 +2552,9 @@ const ApiKeysVaultView = ({
               setNewCustomKey("");
               setNewCustomBudget("");
             }}
-            className="p-6 rounded-lg border border-dashed border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-lg transition-theme flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] min-h-[440px] text-gray-400 hover:text-emerald-500 group cursor-pointer"
+            className="p-6 rounded-lg border border-dashed border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] min-h-[440px] text-gray-400 hover:text-emerald-500 group cursor-pointer"
           >
-            <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 dark:border-gray-800 flex items-center justify-center group-hover:border-emerald-500/30 group-hover:bg-emerald-500/5 transition-theme">
+            <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 dark:border-gray-800 flex items-center justify-center group-hover:border-emerald-500/30 group-hover:bg-emerald-500/5 transition-all duration-300">
               <Plus size={24} className="group-hover:scale-110 transition-transform" />
             </div>
             <div className="text-center">
@@ -2764,7 +2764,7 @@ const ApiKeysVaultView = ({
                     setIsCreatingCustom(false);
                   }
                 }}
-                className={`h-11 text-[10px] uppercase tracking-widest font-black rounded-sm text-white transition-theme flex items-center justify-center gap-1.5 ${
+                className={`h-11 text-[10px] uppercase tracking-widest font-black rounded-sm text-white transition-all flex items-center justify-center gap-1.5 ${
                   isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl
                     ? "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
                     : "bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
@@ -5250,7 +5250,7 @@ const FinanceVaultView = ({
                         }
 
                         return (
-                          <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#0f0f11]/50 transition-theme">
+                          <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#0f0f11]/50 transition-all">
                             <td className="p-4 text-gray-900 dark:text-gray-100">
                               <div className="font-bold">{log.user?.full_name || log.user?.username || 'Unknown'}</div>
                               <div className="text-[10px] text-gray-400 font-normal">{log.user?.email}</div>
@@ -5279,7 +5279,7 @@ const FinanceVaultView = ({
                               {log.status !== 'pending' && (
                                 <button
                                   onClick={() => handleDeleteRequest(log.id, log.logType)}
-                                  className="px-2 py-1 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded text-[10px] uppercase font-black transition-theme cursor-pointer select-none"
+                                  className="px-2 py-1 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded text-[10px] uppercase font-black transition-all cursor-pointer select-none"
                                   title={language === "ar" ? "مسح هذا السجل المنتهي نهائيا" : "Delete expired or finished record"}
                                 >
                                   {language === "ar" ? "مسح" : "DELETE"}
@@ -5354,7 +5354,7 @@ const FinanceVaultView = ({
                     return (
                       <div
                         key={request.id}
-                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] duration-300 ${
+                        className={`p-5 rounded-[4px] border space-y-4 transition-all hover:scale-[1.005] duration-300 ${
                           theme === "dark" ? "bg-[#1e1e21] border-gray-800/80" : "bg-white border-gray-150/80"
                         }`}
                       >
@@ -5405,7 +5405,7 @@ const FinanceVaultView = ({
                             <button
                               onClick={() => handleDepositAction(request.id, 'approve')}
                               disabled={actioningId !== null}
-                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-all duration-200"
                             >
                               {actioningId === request.id.toString() ? (
                                 <RefreshCw className="animate-spin text-white mx-auto" size={12} />
@@ -5422,7 +5422,7 @@ const FinanceVaultView = ({
                                 handleDepositAction(request.id, 'reject');
                               }}
                               disabled={actioningId !== null}
-                              className="px-4 h-9 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white font-bold active:scale-[0.99] rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="px-4 h-9 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white font-bold active:scale-[0.99] rounded-[4px] text-[10px] uppercase tracking-wider transition-all duration-200"
                             >
                               {language === "ar" ? "رفض" : "REJECT"}
                             </button>
@@ -5458,7 +5458,7 @@ const FinanceVaultView = ({
                     return (
                       <div
                         key={request.id}
-                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] duration-300 ${
+                        className={`p-5 rounded-[4px] border space-y-4 transition-all hover:scale-[1.005] duration-300 ${
                           theme === "dark" ? "bg-[#1e1e21] border-gray-800/80" : "bg-white border-gray-150/80"
                         }`}
                       >
@@ -5496,7 +5496,7 @@ const FinanceVaultView = ({
                             <button
                               onClick={() => handleWithdrawalAction(request.id, 'approve')}
                               disabled={actioningId !== null}
-                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-all duration-200"
                             >
                               {actioningId === request.id.toString() ? (
                                 <RefreshCw className="animate-spin text-white mx-auto" size={12} />
@@ -5513,7 +5513,7 @@ const FinanceVaultView = ({
                                 handleWithdrawalAction(request.id, 'reject');
                               }}
                               disabled={actioningId !== null}
-                              className="px-4 h-9 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white font-bold active:scale-[0.99] rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="px-4 h-9 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white font-bold active:scale-[0.99] rounded-[4px] text-[10px] uppercase tracking-wider transition-all duration-200"
                             >
                               {language === "ar" ? "رفض مع الإرجاع" : "REJECT & REFUND"}
                             </button>
@@ -5563,7 +5563,7 @@ const FinanceVaultView = ({
                     theme === "dark"
                       ? "bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/20"
                       : "bg-white border-gray-150/80 hover:border-emerald-500/20"
-                  } transition-theme shadow-sm`}
+                  } transition-all duration-300 shadow-sm`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-gray-800/50">
@@ -5643,7 +5643,7 @@ const FinanceVaultView = ({
                           }`}
                         >
                           <div
-                            className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-theme ${
+                            className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-all duration-300 ${
                               stripeConfig.isLiveMode ? "bg-emerald-500" : "bg-gray-400 dark:bg-gray-500"
                             } ${
                               dir === "rtl"
@@ -5742,7 +5742,7 @@ const FinanceVaultView = ({
                     <button
                       onClick={handleSaveStripeConfig}
                       disabled={isSaving}
-                      className="flex-1 bg-[#635BFF] hover:bg-[#5249e5] text-white py-2.5 rounded-[4px] font-bold transition-theme hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 bg-[#635BFF] hover:bg-[#5249e5] text-white py-2.5 rounded-[4px] font-bold transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {isSaving ? (
                         <RefreshCw size={16} className="animate-spin" />
@@ -5755,7 +5755,7 @@ const FinanceVaultView = ({
                     <button
                       onClick={handleVerifyStripeConnection}
                       disabled={isSaving || isVerifyingStripe}
-                      className={`px-5 py-2.5 rounded-[4px] font-bold transition-theme flex items-center justify-center gap-2 ${
+                      className={`px-5 py-2.5 rounded-[4px] font-bold transition-all flex items-center justify-center gap-2 ${
                         theme === "dark"
                           ? "bg-transparent text-gray-400 border border-gray-800 hover:text-emerald-500 hover:border-emerald-500/30 font-medium"
                           : "bg-transparent text-gray-500 border border-gray-200 hover:text-emerald-600 hover:border-emerald-200 font-medium"
@@ -5777,7 +5777,7 @@ const FinanceVaultView = ({
                     theme === "dark"
                       ? "bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/20"
                       : "bg-white border-gray-150/80 hover:border-emerald-500/20"
-                  } transition-theme shadow-sm`}
+                  } transition-all duration-300 shadow-sm`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-gray-800/50">
@@ -5861,7 +5861,7 @@ const FinanceVaultView = ({
                           }`}
                         >
                           <div
-                            className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-theme ${
+                            className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-all duration-300 ${
                               paypalConfig.mode === "live" ? "bg-emerald-500" : "bg-gray-400 dark:bg-gray-500"
                             } ${
                               dir === "rtl"
@@ -5943,7 +5943,7 @@ const FinanceVaultView = ({
                     <button
                       onClick={handleSavePaypalConfig}
                       disabled={isSaving}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-[4px] font-bold transition-theme hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-[4px] font-bold transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
                     >
                       {isSaving ? (
                         <RefreshCw size={16} className="animate-spin" />
@@ -5956,7 +5956,7 @@ const FinanceVaultView = ({
                     <button
                       onClick={handleVerifyPaypalConnection}
                       disabled={isSaving || isVerifyingPaypal}
-                      className={`px-5 py-2.5 rounded-[4px] font-bold transition-theme flex items-center justify-center gap-2 ${
+                      className={`px-5 py-2.5 rounded-[4px] font-bold transition-all flex items-center justify-center gap-2 ${
                         theme === "dark"
                           ? "bg-transparent text-gray-400 border border-gray-800 hover:text-emerald-500 hover:border-emerald-500/30 font-medium"
                           : "bg-transparent text-gray-500 border border-gray-200 hover:text-emerald-600 hover:border-emerald-200 font-medium"
@@ -5988,7 +5988,7 @@ const FinanceVaultView = ({
               <div
                 className={`p-6 md:p-8 rounded-xl border ${
                   theme === "dark" ? "bg-[#161618] border-gray-800/80" : "bg-white border-gray-150"
-                } transition-theme shadow-sm`}
+                } transition-all duration-300 shadow-sm`}
               >
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100 dark:border-gray-800/60">
                   <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500">
@@ -6037,7 +6037,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="TPh7eWpY..."
-                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-emerald-500/35 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-emerald-500/35 font-mono text-xs transition-all ${
                             theme === "dark"
                               ? "bg-[#1e1e21] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -6077,7 +6077,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="paypal@yourdomain.com"
-                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-indigo-500/35 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-indigo-500/35 font-mono text-xs transition-all ${
                             theme === "dark"
                               ? "bg-[#1e1e21] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -6111,7 +6111,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="e.g. Bank Leumi"
-                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs transition-theme ${
+                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs transition-all ${
                             theme === "dark" ? "bg-[#1e1e21] border-gray-800 text-white" : "bg-white border-gray-200"
                           }`}
                         />
@@ -6130,7 +6130,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="e.g. Perplexta Platforms"
-                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs transition-theme ${
+                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs transition-all ${
                             theme === "dark" ? "bg-[#1e1e21] border-gray-800 text-white" : "bg-white border-gray-200"
                           }`}
                         />
@@ -6149,7 +6149,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="PPLXIL33"
-                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs font-mono transition-theme ${
+                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs font-mono transition-all ${
                             theme === "dark" ? "bg-[#1e1e21] border-gray-800 text-white" : "bg-white border-gray-200"
                           }`}
                           dir="ltr"
@@ -6169,7 +6169,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="IL..."
-                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs font-mono transition-theme ${
+                          className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-blue-500/35 text-xs font-mono transition-all ${
                             theme === "dark" ? "bg-[#1e1e21] border-gray-800 text-white" : "bg-white border-gray-200"
                           }`}
                           dir="ltr"
@@ -6183,7 +6183,7 @@ const FinanceVaultView = ({
                   <button
                     onClick={handleSaveWalletGateways}
                     disabled={isSaving}
-                    className="w-full sm:w-auto px-8 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold transition-theme hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-emerald-500/10"
+                    className="w-full sm:w-auto px-8 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-emerald-500/10"
                   >
                     {isSaving ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -7215,7 +7215,7 @@ const PlansSubscriptionsView = ({
                     </div>
                     <button
                       onClick={addFeature}
-                      className="w-full py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-theme shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2"
                     >
                       <Plus size={16} /> {t("addFeature")}
                     </button>
@@ -8549,7 +8549,7 @@ const UserManagementView = ({
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div
-                    className={`p-8 rounded-lg border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
+                    className={`p-8 rounded-lg border flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
@@ -8575,7 +8575,7 @@ const UserManagementView = ({
                                 role: e.target.value,
                               })
                             }
-                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           >
                             <option value="user">{t("role_user")}</option>
                             <option value="support">{t("role_support")}</option>
@@ -8604,7 +8604,7 @@ const UserManagementView = ({
                                     : null,
                               });
                             }}
-                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           >
                             <option value="none">{t("kycNone")}</option>
                             <option value="pending">{t("kycPending")}</option>
@@ -8857,7 +8857,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
+                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center gap-3">
@@ -9041,7 +9041,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
+                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-md bg-blue-500/10 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
@@ -9104,7 +9104,7 @@ const UserManagementView = ({
                               plan_id: e.target.value,
                             })
                           }
-                          className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         >
                           {plans.map((p) => (
                             <option key={p.id} value={p.id}>
@@ -9137,7 +9137,7 @@ const UserManagementView = ({
                   </div>
 
                   <div
-                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
+                    className={`p-8 rounded-[var(--radius)] border flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
                       <div className="p-2.5 rounded-md bg-pink-500/10 text-pink-500 shadow-[0_0_15px_rgba(219,39,119,0.15)]">
@@ -9828,7 +9828,7 @@ const SmartEmailHubView = ({
                   <button
                     onClick={handleSaveSettings}
                     disabled={isSavingSettings}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isSavingSettings ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -9840,7 +9840,7 @@ const SmartEmailHubView = ({
                   <button
                     onClick={handleTestConnection}
                     disabled={isTestingConnection}
-                    className={`px-6 py-3.5 rounded-md font-bold transition-theme border flex items-center justify-center gap-2 disabled:opacity-50 ${theme === "dark" ? "border-[var(--border-main)] hover:bg-[var(--bg-secondary)] text-white" : "border-[var(--border-main)] hover:bg-[var(--bg-input)] text-gray-900"}`}
+                    className={`px-6 py-3.5 rounded-md font-bold transition-all border flex items-center justify-center gap-2 disabled:opacity-50 ${theme === "dark" ? "border-[var(--border-main)] hover:bg-[var(--bg-secondary)] text-white" : "border-[var(--border-main)] hover:bg-[var(--bg-input)] text-gray-900"}`}
                   >
                     {isTestingConnection ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -10036,7 +10036,7 @@ const SmartEmailHubView = ({
                         })
                       }
                       disabled={selectedTemplate.type === "system"}
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white disabled:opacity-50" : "bg-[var(--bg-secondary)] border-[var(--border-main)] disabled:opacity-50"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white disabled:opacity-50" : "bg-[var(--bg-secondary)] border-[var(--border-main)] disabled:opacity-50"}`}
                     />
                   </div>
 
@@ -10054,7 +10054,7 @@ const SmartEmailHubView = ({
                             subject_en: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         dir="ltr"
                       />
                     </div>
@@ -10071,7 +10071,7 @@ const SmartEmailHubView = ({
                             subject_ar: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         dir="rtl"
                       />
                     </div>
@@ -10090,7 +10090,7 @@ const SmartEmailHubView = ({
                           body_en: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                       dir="ltr"
                     />
                   </div>
@@ -10108,7 +10108,7 @@ const SmartEmailHubView = ({
                           body_ar: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                       dir="rtl"
                     />
                   </div>
@@ -10117,7 +10117,7 @@ const SmartEmailHubView = ({
                     <button
                       onClick={handleSaveTemplate}
                       disabled={isSavingTemplate}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isSavingTemplate ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -10343,7 +10343,7 @@ const MassBroadcastView = ({
           className={`p-5 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"} group transition-theme hover:border-emerald-500/30`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-theme">
+            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all">
               <Send size={24} />
             </div>
             <div>
@@ -10356,10 +10356,10 @@ const MassBroadcastView = ({
           </div>
         </div>
         <div
-          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"} group transition-theme hover:border-blue-500/30`}
+          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"} group transition-all duration-300 hover:border-blue-500/30`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-md bg-blue-500/10 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-theme">
+            <div className="p-3 rounded-md bg-blue-500/10 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)] transition-all">
               <Users size={24} />
             </div>
             <div>
@@ -10374,7 +10374,7 @@ const MassBroadcastView = ({
           </div>
         </div>
         <div
-          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200 shadow-sm"} group transition-theme`}
+          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200 shadow-sm"} group transition-all duration-300`}
         >
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500">
@@ -10492,7 +10492,7 @@ const MassBroadcastView = ({
                         onClick={() =>
                           setForm({ ...form, target_group: group.id })
                         }
-                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-md border transition-theme ${
+                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-md border transition-all duration-300 ${
                           form.target_group === group.id
                             ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/5"
                             : `border-[var(--border-main)] dark:border-[var(--border-main)] text-gray-400 hover:border-[var(--border-main)] dark:hover:border-[var(--border-main)] ${theme === "dark" ? "bg-[#1a1a1c]" : "bg-[var(--bg-secondary)]"}`
@@ -10535,7 +10535,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_en: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                         dir="ltr"
                       />
                     </div>
@@ -10549,7 +10549,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_ar: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                         dir="rtl"
                       />
                     </div>
@@ -10568,7 +10568,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_en: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                     dir="ltr"
                   />
                 </div>
@@ -10582,7 +10582,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_ar: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                     dir="rtl"
                   />
                 </div>
@@ -10593,7 +10593,7 @@ const MassBroadcastView = ({
               <button
                 onClick={handleSend}
                 disabled={isSending}
-                className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-md font-bold transition-theme shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-md font-bold transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {isSending ? (
                   <RefreshCw size={22} className="animate-spin" />
@@ -10888,7 +10888,7 @@ const MemoryCenterView = ({
             </span>
             <Database
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
             />
           </div>
           <div className="mt-4 flex items-baseline">
@@ -10918,7 +10918,7 @@ const MemoryCenterView = ({
             </span>
             <Users
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
             />
           </div>
           <div className="mt-4 flex items-baseline">
@@ -10950,7 +10950,7 @@ const MemoryCenterView = ({
             </span>
             <Cpu
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300"
             />
           </div>
           <div className="mt-4 flex items-baseline">
@@ -10998,7 +10998,7 @@ const MemoryCenterView = ({
               onChange={(e) =>
                 setThreshold(Math.max(2, parseInt(e.target.value) || 2))
               }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono text-sm ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11025,7 +11025,7 @@ const MemoryCenterView = ({
               onChange={(e) =>
                 setTargetUserId(e.target.value.replace(/\D/g, ""))
               }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono text-sm ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11043,7 +11043,7 @@ const MemoryCenterView = ({
             <button
               onClick={handleRunConsolidation}
               disabled={isRunning}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/40 text-white rounded-[4px] font-medium text-sm transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
             >
               {isRunning ? (
                 <>
@@ -11095,7 +11095,7 @@ const MemoryCenterView = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme text-xs ${
+              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all text-xs ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11146,7 +11146,7 @@ const MemoryCenterView = ({
             {filteredReports.map((report) => (
               <div
                 key={report.userId}
-                className={`p-5 rounded-lg border transition-theme ${
+                className={`p-5 rounded-lg border transition-all duration-300 ${
                   report.success
                     ? theme === "dark"
                       ? "bg-[#0f0f11]/60 border-emerald-500/15 shadow-[0_0_15px_rgba(16,185,129,0.02)]"
@@ -11982,7 +11982,7 @@ const SystemSettingsView = ({
               value={siteName || ""}
               dir="ltr"
               onChange={(e) => setSiteName(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -11994,7 +11994,7 @@ const SystemSettingsView = ({
               value={siteNameAr || ""}
               dir="rtl"
               onChange={(e) => setSiteNameAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -12006,7 +12006,7 @@ const SystemSettingsView = ({
               value={siteDescription || ""}
               dir="ltr"
               onChange={(e) => setSiteDescription(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -12018,7 +12018,7 @@ const SystemSettingsView = ({
               value={siteDescriptionAr || ""}
               dir="rtl"
               onChange={(e) => setSiteDescriptionAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
         </div>
@@ -12026,7 +12026,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveGeneralSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12204,7 +12204,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveVisualSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12238,7 +12238,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={siteName || ""}
                 onChange={(e) => setSiteName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="e.g. Perplexta Platform"
               />
             </div>
@@ -12250,7 +12250,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={siteNameAr || ""}
                 onChange={(e) => setSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="مثال: منصة بيربليكستا"
               />
             </div>
@@ -12266,7 +12266,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={seoSiteNameEn || ""}
                 onChange={(e) => setSeoSiteNameEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="e.g. Perplexta | Premium Financial Analytics"
               />
               <p className="text-[10px] text-gray-400 mt-1">
@@ -12281,7 +12281,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={seoSiteNameAr || ""}
                 onChange={(e) => setSeoSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="مثال: منصة بيربليكستا | الاختيار الاحترافي للتحليل"
               />
               <p className="text-[10px] text-gray-400 mt-1">
@@ -12300,7 +12300,7 @@ const SystemSettingsView = ({
                 rows={2}
                 value={siteDescription || ""}
                 onChange={(e) => setSiteDescription(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="Enter general tagline description..."
               />
             </div>
@@ -12312,7 +12312,7 @@ const SystemSettingsView = ({
                 rows={2}
                 value={siteDescriptionAr || ""}
                 onChange={(e) => setSiteDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="اكتب نبذة تعريفية عامة هنا..."
               />
             </div>
@@ -12327,7 +12327,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionEn || ""}
                 onChange={(e) => setSeoDescriptionEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
             <div>
@@ -12338,7 +12338,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionAr || ""}
                 onChange={(e) => setSeoDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
           </div>
@@ -12351,7 +12351,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsEn || ""}
                 onChange={(e) => setKeywordsEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
             <div>
@@ -12362,7 +12362,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsAr || ""}
                 onChange={(e) => setKeywordsAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
           </div>
@@ -12375,7 +12375,7 @@ const SystemSettingsView = ({
               placeholder={t("googleAnalyticsDesc")}
               value={googleAnalyticsId || ""}
               onChange={(e) => setGoogleAnalyticsId(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5">
               {dir === "rtl" 
@@ -12393,7 +12393,7 @@ const SystemSettingsView = ({
               placeholder="e.g. google-site-verification=..."
               value={googleSiteVerification || ""}
               onChange={(e) => setGoogleSiteVerification(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5">
               {dir === "rtl" 
@@ -12411,7 +12411,7 @@ const SystemSettingsView = ({
               placeholder={dir === "rtl" ? "مثال: /api/auth, /confidential-page (مفصولة بفاصلة)" : "e.g. /api/auth, /confidential-page, /custom-dashboard (comma-separated)"}
               value={blockedPaths || ""}
               onChange={(e) => setBlockedPaths(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
               {dir === "rtl"
@@ -12479,7 +12479,7 @@ const SystemSettingsView = ({
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
                       <div 
-                        className={`h-full transition-theme ${
+                        className={`h-full transition-all duration-300 ${
                           seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
                             ? "bg-emerald-500"
                             : seoDescriptionAr.length > 160
@@ -12542,7 +12542,7 @@ const SystemSettingsView = ({
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
                       <div 
-                        className={`h-full transition-theme ${
+                        className={`h-full transition-all duration-300 ${
                           seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
                             ? "bg-emerald-500"
                             : seoDescriptionEn.length > 160
@@ -12569,7 +12569,7 @@ const SystemSettingsView = ({
               {/* Image Uploader */}
               <div className="space-y-4">
                 <div
-                  className={`p-6 rounded-[var(--radius)] border border-dashed transition-theme ${
+                  className={`p-6 rounded-[var(--radius)] border border-dashed transition-all duration-300 ${
                     theme === "dark" 
                       ? "border-gray-800 bg-[#161618] hover:border-emerald-500/50" 
                       : "border-gray-200 bg-gray-50/50 hover:border-emerald-500/50"
@@ -12604,7 +12604,7 @@ const SystemSettingsView = ({
                           e.stopPropagation();
                           setSeoImageUrl(null);
                         }}
-                        className="mt-3 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 transition-theme z-20"
+                        className="mt-3 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 transition-all z-20"
                       >
                         <Trash2 size={12} />
                         {t("seoRemoveImage")}
@@ -12706,7 +12706,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveSeoSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md transition-all duration-300 font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12745,14 +12745,14 @@ const SystemSettingsView = ({
             <button
               onClick={fetchRouteSeoList}
               disabled={loadingRouteSeo}
-              className="p-2.5 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a1a1c] text-gray-600 dark:text-gray-300 transition-theme"
+              className="p-2.5 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a1a1c] text-gray-600 dark:text-gray-300 transition-all duration-300"
               title={dir === "rtl" ? "تحديث القائمة" : "Refresh List"}
             >
               <RefreshCw size={16} className={loadingRouteSeo ? "animate-spin" : ""} />
             </button>
             <button
               onClick={handleOpenAddRouteModal}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md font-medium text-xs transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
             >
               <Plus size={16} />
               {dir === "rtl" ? "إضافة مسار جديد" : "Add Route SEO"}
@@ -13150,7 +13150,7 @@ const SystemSettingsView = ({
             <button
               onClick={runCrawlAuditScan}
               disabled={crawlScanning}
-              className="flex items-center gap-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="flex items-center gap-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-[var(--radius)] transition-all duration-300 font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
             >
               <RefreshCw className={crawlScanning ? "animate-spin" : ""} size={14} />
               {language === "ar" ? "تشغيل تدقيق الفهرسة" : "Execute Crawl Audit"}
@@ -13158,7 +13158,7 @@ const SystemSettingsView = ({
             
             <button
               onClick={downloadCrawlAuditReport}
-              className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c1c1e] text-gray-700 dark:text-gray-300 px-4 py-2 rounded-[var(--radius)] transition-theme font-medium"
+              className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c1c1e] text-gray-700 dark:text-gray-300 px-4 py-2 rounded-[var(--radius)] transition-all duration-300 font-medium"
             >
               <Download size={14} />
               {language === "ar" ? "تصدير التقرير الفني" : "Download JSON Report"}
@@ -13243,7 +13243,7 @@ const SystemSettingsView = ({
                 key={f.id}
                 onClick={() => setCrawlAuditFilter(f.id as any)}
                 type="button"
-                className={`text-[10px] uppercase font-bold px-3 py-1 transition-theme rounded-[3px] ${
+                className={`text-[10px] uppercase font-bold px-3 py-1 transition-all duration-300 rounded-[3px] ${
                   crawlAuditFilter === f.id
                     ? "bg-white dark:bg-[#27272a] text-emerald-500 dark:text-emerald-400 font-extrabold shadow-sm"
                     : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
@@ -13273,7 +13273,7 @@ const SystemSettingsView = ({
                   return r.status === crawlAuditFilter;
                 })
                 .map((route: any, idx: number) => (
-                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#151517]/30 transition-theme">
+                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#151517]/30 transition-all duration-200">
                     <td className={`py-3.5 font-mono text-xs ${language === "ar" ? "text-right" : "text-left"}`}>
                       <span className="text-gray-800 dark:text-gray-300 font-semibold">{route.path}</span>
                     </td>
@@ -13557,7 +13557,7 @@ const ComplianceAuditLogsView = ({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-bold cursor-pointer transition-all duration-300 shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
           >
             {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
             {isRtl ? "تطبيق التصفية" : "Apply Filter"}
@@ -13567,7 +13567,7 @@ const ComplianceAuditLogsView = ({
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-theme ${
+            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-all duration-300 ${
               theme === "dark" 
                 ? "border-gray-800 text-gray-300 hover:bg-gray-800"
                 : "border-gray-200 text-gray-600 hover:bg-gray-100"
@@ -13584,7 +13584,7 @@ const ComplianceAuditLogsView = ({
           {selectedLogIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95 duration-150"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm animate-in zoom-in-95 duration-150"
             >
               <Trash2 size={13} />
               {isRtl 
@@ -13596,7 +13596,7 @@ const ComplianceAuditLogsView = ({
 
         <button
           onClick={handleClearAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/30 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/30 rounded-md text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm"
         >
           <AlertTriangle size={13} className="text-purple-500" />
           {isRtl ? "تطهير كافة السجلات" : "Purge All Logs"}
@@ -13692,7 +13692,7 @@ const ComplianceAuditLogsView = ({
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="px-3 py-1 border border-emerald-500/20 rounded-md text-[10px] font-bold text-emerald-500 hover:border-emerald-500 hover:bg-emerald-500/10 cursor-pointer transition-theme"
+                        className="px-3 py-1 border border-emerald-500/20 rounded-md text-[10px] font-bold text-emerald-500 hover:border-emerald-500 hover:bg-emerald-500/10 cursor-pointer transition-all duration-300"
                       >
                         {isRtl ? "عرض التفاصيل" : "Inspect Payload"}
                       </button>
@@ -13718,7 +13718,7 @@ const ComplianceAuditLogsView = ({
             <button
               disabled={offset === 0}
               onClick={() => setOffset(Math.max(0, offset - limit))}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
+              className={`p-2 rounded-md border flex items-center justify-center transition-all duration-300 disabled:opacity-40 select-none ${
                 offset === 0 ? "cursor-not-allowed" : "cursor-pointer"
               } ${
                 theme === "dark" 
@@ -13731,7 +13731,7 @@ const ComplianceAuditLogsView = ({
             <button
               disabled={offset + limit >= total}
               onClick={() => setOffset(offset + limit)}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
+              className={`p-2 rounded-md border flex items-center justify-center transition-all duration-300 disabled:opacity-40 select-none ${
                 offset + limit >= total ? "cursor-not-allowed" : "cursor-pointer"
               } ${
                 theme === "dark" 
@@ -13763,7 +13763,7 @@ const ComplianceAuditLogsView = ({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               className={`relative max-w-2xl w-full rounded-xl border p-6 z-10 shadow-2xl ${
                 theme === "dark" ? "bg-[#111113] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
               }`}
@@ -13778,7 +13778,7 @@ const ComplianceAuditLogsView = ({
                 </div>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-theme`}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-all duration-300`}
                 >
                   <X size={15} />
                 </button>
@@ -13967,7 +13967,7 @@ export const AdminDashboard: React.FC = () => {
             ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
             : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
         </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
           {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
         </a>
       </div>
@@ -14241,7 +14241,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsPulseOpen(!isPulseOpen)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-theme hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-300 hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
             >
               <div className="relative flex items-center justify-center">
                 <div 
@@ -14269,7 +14269,7 @@ export const AdminDashboard: React.FC = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
+                    transition={{ duration: 0.2 }}
                     className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme duration-[var(--theme-transition-duration)] ${
                       theme === 'dark' 
                         ? 'bg-[#0f0f11] border-gray-800/80 text-white' 

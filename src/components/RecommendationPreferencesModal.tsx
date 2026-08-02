@@ -152,7 +152,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
                         key={cat.id}
                         type="button"
                         onClick={() => handleToggleCategory(cat.id)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-theme text-start ${
+                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all text-start ${
                           isSelected
                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 shadow-sm'
                             : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)] hover:border-gray-400 dark:hover:border-gray-700'

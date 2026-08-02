@@ -307,7 +307,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
         <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border)] self-end sm:self-auto">
           <button
             onClick={() => setTimeframe('7d')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
               timeframe === '7d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -315,7 +315,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           </button>
           <button
             onClick={() => setTimeframe('30d')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
               timeframe === '30d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -323,7 +323,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           </button>
           <button
             onClick={() => setTimeframe('90d')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
               timeframe === '90d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -336,7 +336,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button
           onClick={() => setActiveMetric('clicks')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-3 rounded-xl border text-start transition-all ${
             activeMetric === 'clicks'
               ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
               : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
@@ -352,7 +352,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
         <button
           onClick={() => setActiveMetric('matchScore')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-3 rounded-xl border text-start transition-all ${
             activeMetric === 'matchScore'
               ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
               : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
@@ -368,7 +368,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
         <button
           onClick={() => setActiveMetric('impressions')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-3 rounded-xl border text-start transition-all ${
             activeMetric === 'impressions'
               ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
               : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
@@ -384,7 +384,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
         <button
           onClick={() => setActiveMetric('conversions')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-3 rounded-xl border text-start transition-all ${
             activeMetric === 'conversions'
               ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
               : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'

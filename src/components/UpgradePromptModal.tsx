@@ -190,7 +190,7 @@ export const UpgradePromptModal: React.FC = () => {
           initial={{ opacity: 0, scale: 0.9, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 15 }}
-          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           onTouchStart={swipeHandlers.onTouchStart}
           onTouchMove={swipeHandlers.onTouchMove}
           onTouchEnd={swipeHandlers.onTouchEnd}
@@ -199,7 +199,7 @@ export const UpgradePromptModal: React.FC = () => {
         >
           {/* Subtle Ambient Glowing Background Aura */}
           <div 
-            className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-[0.13] blur-[80px] pointer-events-none transition-theme"
+            className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-[0.13] blur-[80px] pointer-events-none transition-all duration-500"
             style={{ backgroundColor: nextRequiredPlan?.color || '#10b981' }}
           />
 
@@ -207,7 +207,7 @@ export const UpgradePromptModal: React.FC = () => {
           <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/60 relative z-10 bg-[#161619]/40">
             <div className="flex items-center gap-3">
               <div 
-                className="w-10 h-10 rounded-sm flex items-center justify-center border transition-theme shadow-sm"
+                className="w-10 h-10 rounded-sm flex items-center justify-center border transition-all duration-300 shadow-sm"
                 style={{ 
                   color: nextRequiredPlan?.color || '#10b981', 
                   borderColor: `${nextRequiredPlan?.color || '#10b981'}30`,
@@ -228,7 +228,7 @@ export const UpgradePromptModal: React.FC = () => {
             </div>
             <button 
               onClick={closeUpgradePrompt}
-              className="w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 bg-transparent transition-theme"
+              className="w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 bg-transparent transition-all duration-300"
             >
               <X size={16} />
             </button>
@@ -298,7 +298,7 @@ export const UpgradePromptModal: React.FC = () => {
               <div className="p-0.5 rounded-sm bg-gray-900 border border-gray-800 flex items-center">
                 <button
                   onClick={() => setBillingCycle('monthly')}
-                  className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-theme ${
+                  className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
                     billingCycle === 'monthly'
                       ? 'bg-emerald-500 shadow-sm text-black'
                       : 'text-gray-400 hover:text-white bg-transparent'
@@ -308,7 +308,7 @@ export const UpgradePromptModal: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setBillingCycle('annual')}
-                  className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-theme flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1 ${
                     billingCycle === 'annual'
                       ? 'bg-emerald-500 shadow-sm text-black'
                       : 'text-gray-400 hover:text-white bg-transparent'
@@ -323,7 +323,7 @@ export const UpgradePromptModal: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
               {/* CURRENT PLAN BOX */}
-              <div className="p-5 rounded-sm bg-[#161619]/25 border border-gray-800/80 hover:border-gray-800 transition-theme relative flex flex-col justify-between">
+              <div className="p-5 rounded-sm bg-[#161619]/25 border border-gray-800/80 hover:border-gray-800 transition-all duration-300 relative flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[9px] font-black tracking-widest text-gray-500 uppercase px-1.5 py-0.5 bg-gray-800/50 border border-gray-800 rounded-sm">
@@ -363,7 +363,7 @@ export const UpgradePromptModal: React.FC = () => {
 
               {/* NEXT LEVEL REQUIRED TIERS BOX */}
               <div 
-                className="p-5 rounded-sm bg-[#161619]/50 border transition-theme relative flex flex-col justify-between shadow-xl"
+                className="p-5 rounded-sm bg-[#161619]/50 border transition-all duration-500 relative flex flex-col justify-between shadow-xl"
                 style={{ 
                   borderColor: `${nextRequiredPlan?.color || '#10b981'}40`,
                   boxShadow: `0 0 25px ${(nextRequiredPlan?.color || '#10b981')}05`
@@ -449,7 +449,7 @@ export const UpgradePromptModal: React.FC = () => {
                 closeUpgradePrompt();
                 navigate('/subscription');
               }}
-              className="w-full sm:w-auto text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-theme flex items-center justify-center gap-1.5 py-2.5 px-4 bg-transparent hover:bg-emerald-500/5 rounded-sm border border-emerald-500/10 hover:border-emerald-500/30"
+              className="w-full sm:w-auto text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-all duration-300 flex items-center justify-center gap-1.5 py-2.5 px-4 bg-transparent hover:bg-emerald-500/5 rounded-sm border border-emerald-500/10 hover:border-emerald-500/30"
             >
               <ExternalLink size={12} />
               <span>{language === 'ar' ? 'تصفح جميع الخطط المتاحة' : 'EXPLORE ALL TIERS & ADD-ONS'}</span>

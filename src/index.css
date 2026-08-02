@@ -3,9 +3,9 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --theme-transition-duration: 150ms;
-  --ms-duration: var(--theme-transition-duration);
+  --ms-duration: 200ms;
   --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --theme-transition-duration: 200ms;
 
   --bg-base: #F8FAFC;
   --bg-primary: #FFFFFF;
@@ -153,8 +153,14 @@
   }
 }
 
+.transition-perplexta {
+  transition-property: background-color, border-color, color, fill, stroke, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ms-easing);
+}
+
 .transition-theme {
-  transition-property: background-color, border-color, color, fill, stroke, opacity, transform, box-shadow;
+  transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: var(--theme-transition-duration);
   transition-timing-function: var(--ms-easing);
 }
@@ -168,7 +174,7 @@
   background-color: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius);
-  transition: background-color var(--theme-transition-duration) var(--ms-easing), color var(--theme-transition-duration) var(--ms-easing);
+  transition: background-color 150ms var(--ms-easing), color 150ms var(--ms-easing);
   color: var(--text-secondary);
   flex-shrink: 0;
 }

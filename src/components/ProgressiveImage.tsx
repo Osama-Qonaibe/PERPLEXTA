@@ -58,13 +58,13 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           opacity: (isLoaded || isError) ? 1 : 0,
           filter: isLoaded ? 'blur(0px)' : 'blur(5px)',
         }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
         onLoad={() => setIsLoaded(true)}
         onError={() => {
           setIsError(true);
           setIsLoaded(true);
         }}
-        className={`w-full h-full object-cover transition-theme ${className}`}
+        className={`w-full h-full object-cover transition-all duration-300 ${className}`}
         loading="lazy"
         referrerPolicy="no-referrer"
       />

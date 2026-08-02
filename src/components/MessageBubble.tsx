@@ -157,7 +157,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             layout
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
           >
             {/* AI message rendering logic... I need these props! */}

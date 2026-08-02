@@ -50,7 +50,7 @@ export const InactivityWarningModal: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          transition={{ duration: 0.3 }}
           onClick={extendSession} // any click on the backdrop also securely extends session
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         />
@@ -89,7 +89,7 @@ export const InactivityWarningModal: React.FC = () => {
               <motion.div
                 initial={{ width: '100%' }}
                 animate={{ width: `${(inactivityCountdown / 60) * 100}%` }}
-                transition={{ duration: 0.15, ease: 'linear' }}
+                transition={{ duration: 1, ease: 'linear' }}
                 className="bg-emerald-500 h-full"
               />
             </div>
@@ -100,7 +100,7 @@ export const InactivityWarningModal: React.FC = () => {
               <button
                 type="button"
                 onClick={extendSession}
-                className="flex-1 order-1 sm:order-2 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-theme bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 shadow-sm"
+                className="flex-1 order-1 sm:order-2 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-all duration-300 bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-2 shadow-sm"
               >
                 <Clock className="w-4 h-4" />
                 <span>{isAr ? 'البقاء متصلاً' : 'Stay Logged In'}</span>
@@ -110,7 +110,7 @@ export const InactivityWarningModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => logout(true)}
-                className="flex-1 order-2 sm:order-1 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-theme bg-transparent border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center gap-2"
+                className="flex-1 order-2 sm:order-1 px-5 py-2.5 rounded-[4px] font-medium text-sm transition-all duration-300 bg-transparent border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{isAr ? 'تسجيل الخروج الآن' : 'Logout Now'}</span>

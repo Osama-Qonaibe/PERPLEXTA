@@ -268,7 +268,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
         </p>
         <button
           onClick={onCreateAdClick}
-          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-theme"
+          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all"
         >
           {isRtl ? 'أنشئ إعلانك الآن' : 'Create Ad Now'}
         </button>
@@ -290,7 +290,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             id={`bulletin-ad-${ad.id}`}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-theme flex flex-col overflow-hidden touch-pan-y"
+            className="w-full rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden touch-pan-y"
           >
             {/* Creator Ad Insights Drawer Panel (Moved to top) */}
             <AnimatePresence>
@@ -424,7 +424,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {user && (user.id === ad.user_id || user.is_admin) && (
                   <button
                     onClick={() => setActiveInsightsAdId(activeInsightsAdId === ad.id ? null : ad.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-theme shadow-sm ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all shadow-sm ${
                       activeInsightsAdId === ad.id
                         ? 'bg-emerald-500 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/40'
                         : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
@@ -442,7 +442,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     {onEditAd && (
                       <button
                         onClick={() => onEditAd(ad)}
-                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-theme border border-transparent hover:border-emerald-500/20"
+                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all border border-transparent hover:border-emerald-500/20"
                         title={isRtl ? 'تعديل المنشور' : 'Edit Post'}
                       >
                         <Edit size={12} />
@@ -451,7 +451,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     {onDeleteAd && (
                       <button
                         onClick={() => onDeleteAd(ad)}
-                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20"
+                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20"
                         title={isRtl ? 'حذف المنشور' : 'Delete Post'}
                       >
                         <Trash2 size={12} />
@@ -464,7 +464,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {user && onToggleSave && (
                   <button
                     onClick={() => onToggleSave(ad)}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-theme border ${
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all border ${
                       ad.user_has_saved
                         ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/30'
                         : 'bg-gray-100 dark:bg-gray-800/80 text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-transparent hover:border-emerald-500/20'
@@ -478,7 +478,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {ad.page_id && onOpenPageDetail && (
                   <button
                     onClick={() => onOpenPageDetail(ad.page_id!)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-extrabold transition-theme"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-extrabold transition-all"
                   >
                     {isRtl ? 'زيارة الصفحة' : 'Visit Page'}
                   </button>
@@ -487,7 +487,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {onBoostAd && (
                   <button
                     onClick={() => onBoostAd(ad)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500 hover:to-emerald-500 text-amber-600 dark:text-amber-400 hover:text-white font-black text-[10px] flex items-center gap-1 border border-amber-500/30 transition-theme shadow-sm"
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500 hover:to-emerald-500 text-amber-600 dark:text-amber-400 hover:text-white font-black text-[10px] flex items-center gap-1 border border-amber-500/30 transition-all shadow-sm"
                     title={isRtl ? 'تمويل وتنشيط الإعلان لزيادة الوصول' : 'Boost Post for Higher Visibility'}
                   >
                     <Rocket size={11} className="shrink-0" />
@@ -502,7 +502,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                       e.stopPropagation();
                       setActiveMoreMenuId(activeMoreMenuId === ad.id ? null : ad.id);
                     }}
-                    className="w-7 h-7 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-theme flex items-center justify-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                    className="w-7 h-7 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center justify-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                     title={isRtl ? 'المزيد من الخيارات' : 'More options'}
                   >
                     <MoreVertical size={14} />
@@ -598,7 +598,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             {ad.image_url && !ad.video_url && (
               <div
                 onClick={() => onOpenLightbox(getMediaUrl(ad.image_url))}
-                className={`relative w-full bg-gray-100 dark:bg-gray-900 cursor-pointer overflow-hidden group border-y border-gray-100 dark:border-gray-800/60 transition-theme touch-pan-y ${
+                className={`relative w-full bg-gray-100 dark:bg-gray-900 cursor-pointer overflow-hidden group border-y border-gray-100 dark:border-gray-800/60 transition-all duration-500 touch-pan-y ${
                   ad.ad_format === 'reel' || ad.ad_format === 'story' 
                     ? 'aspect-[9/16] max-h-[550px] mx-auto' 
                     : ad.ad_format === 'video' || ad.ad_format === 'instream'
@@ -659,7 +659,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               {/* Like Button */}
               <button
                 onClick={() => onToggleLike(ad.id)}
-                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-bold transition-theme ${
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-bold transition-all ${
                   ad.user_has_liked
                     ? 'text-red-500 bg-red-500/10'
                     : 'hover:bg-gray-200/60 dark:hover:bg-gray-800'
@@ -672,7 +672,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               {/* Comments Toggle Button */}
               <button
                 onClick={() => onToggleComments(ad.id)}
-                className="flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-bold hover:bg-gray-200/60 dark:hover:bg-gray-800 transition-theme"
+                className="flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-bold hover:bg-gray-200/60 dark:hover:bg-gray-800 transition-all"
               >
                 <MessageSquare size={15} />
                 <span className="text-[11px]">{ad.comments_count}</span>
@@ -685,7 +685,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   if (onMessageAdvertiser) onMessageAdvertiser(ad);
                 }}
                 disabled={messagingAdId === ad.id}
-                className={`px-3 py-1.5 rounded-lg text-white font-bold flex items-center justify-center gap-1.5 transition-theme shadow-sm shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-white font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm shrink-0 ${
                   activeChatAdId === ad.id
                     ? 'bg-emerald-600 ring-2 ring-emerald-400/50 shadow-emerald-500/30'
                     : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
@@ -708,7 +708,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               {ad.whatsapp_number && (
                 <button
                   onClick={(e) => onWhatsApp(ad, e)}
-                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-emerald-700 transition-theme shadow-sm shrink-0"
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-emerald-700 transition-all shadow-sm shrink-0"
                   title={isRtl ? 'تواصل عبر الواتساب' : 'WhatsApp Contact'}
                 >
                   <Phone size={13} />
@@ -721,7 +721,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 <a
                   href={`tel:${ad.phone_number}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm shrink-0"
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-all shadow-sm shrink-0"
                   title={isRtl ? `اتصال مباشر: ${ad.phone_number}` : `Call: ${ad.phone_number}`}
                 >
                   <PhoneCall size={13} />
@@ -736,7 +736,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     e.stopPropagation();
                     setActiveShareMenuId(activeShareMenuId === ad.id ? null : ad.id);
                   }}
-                  className={`p-1.5 rounded-lg transition-theme flex items-center gap-1 shrink-0 ${
+                  className={`p-1.5 rounded-lg transition-all flex items-center gap-1 shrink-0 ${
                     activeShareMenuId === ad.id
                       ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
                       : 'hover:bg-gray-200/60 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400'
@@ -915,7 +915,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     <button
                       onClick={() => onAddComment(ad.id, replyToCommentId || undefined)}
                       disabled={!newCommentText.trim()}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold text-xs transition-theme shadow-sm"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold text-xs transition-all shadow-sm"
                     >
                       {isRtl ? 'إرسال' : 'Send'}
                     </button>
