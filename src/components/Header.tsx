@@ -55,6 +55,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const [windowWidth, setWindowWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+  const [logoError, setLogoError] = useState(false);
 
   const isHeaderThemeDark = theme === 'dark';
 
@@ -134,7 +135,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
-    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -179,9 +179,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     window.dispatchEvent(new Event('clear-chat'));
   };
 
-  const logoSrc = (theme === 'light' && siteSettings.logoLightBase64)
+  const rawLogoSrc = (theme === 'light' && siteSettings.logoLightBase64)
     ? siteSettings.logoLightBase64
     : siteSettings.logoBase64;
+
+  const logoSrc = logoError ? null : rawLogoSrc;
 
   return (
     <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
@@ -212,7 +214,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <img 
                         src={logoSrc} 
                         alt="Logo" 
-                        className="w-full h-full object-cover block" 
+                        className="w-full h-full object-cover block"
+                        onError={() => setLogoError(true)}
                       />
                     </motion.div>
                   ) : (
