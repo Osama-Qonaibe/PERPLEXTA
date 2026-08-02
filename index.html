@@ -20,9 +20,8 @@
           document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
           document.title = savedLang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Perplexta Platform - Professional Elite AI Platform';
 
-          // Language-specific dynamic font loading setup
           var isAr = savedLang === 'ar';
-          var fontUrl = isAr 
+          var fontUrl = isAr
             ? 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap'
             : 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
           var linkId = isAr ? 'font-stylesheet-tajawal' : 'font-stylesheet-space-grotesk';
@@ -60,11 +59,19 @@
           document.documentElement.style.backgroundColor = '#080809';
           document.documentElement.style.color = '#f8fafc';
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.remove('layout-locked');
+        });
       })();
     </script>
+    <style>
+      body.layout-locked * { visibility: hidden !important; }
+      body.layout-locked img { display: none !important; }
+    </style>
     <link rel="icon" type="image/png" href="/app-assets/icon.png" />
     <link rel="apple-touch-icon" href="/app-assets/icon.png" />
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://perplexta.com/" />
@@ -81,11 +88,10 @@
 
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
-  <body class="layout-locked">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-    // WebMCP - Expose site tools to AI agents via browser
     if (typeof navigator !== "undefined" && navigator.modelContext) {
       navigator.modelContext.provideContext({
         tools: [
