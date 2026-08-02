@@ -345,7 +345,7 @@ const GoogleHubPage: React.FC = () => {
                   href={window.location.href} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/5 border border-blue-500/10 text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:bg-blue-500/10 transition-theme ml-1"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/5 border border-blue-500/10 text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:bg-blue-500/10 transition-all ml-1"
                 >
                   <ExternalLink size={10} />
                   {isRtl ? 'فتح في نافذة جديدة' : 'Open in New Tab'}
@@ -358,14 +358,14 @@ const GoogleHubPage: React.FC = () => {
             <div className="relative w-full group">
               <Search 
                 size={16} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 group-focus-within:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 group-focus-within:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all" 
               />
               <input
                 type="text"
                 placeholder={isRtl ? 'بحث في الأدوات...' : 'Search tools...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 transition-theme"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 transition-all"
               />
               {searchQuery && (
                 <button 
@@ -381,12 +381,12 @@ const GoogleHubPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowSecurityModal(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme group relative"
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-all group relative"
             >
               <Shield size={18} className="group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme">
+            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-all">
               <Settings2 size={18} />
             </button>
           </div>
@@ -464,7 +464,7 @@ const GoogleHubPage: React.FC = () => {
                         }}
                         role="button"
                         tabIndex={tool.available ? 0 : -1}
-                        className={`w-full relative p-5 rounded-2xl border text-right transition-theme group cursor-pointer ${
+                        className={`w-full relative p-5 rounded-2xl border text-right transition-all duration-300 group cursor-pointer ${
                           tool.available 
                             ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
                             : 'bg-gray-50/50 dark:bg-gray-900/20 border-dashed border-gray-200 dark:border-gray-800 opacity-60 grayscale cursor-not-allowed'
@@ -489,7 +489,7 @@ const GoogleHubPage: React.FC = () => {
                           </>
                         )}
                         <div className="flex items-start justify-between mb-4">
-                          <div className={`w-12 h-12 rounded-2xl bg-${tool.color}-500/10 flex items-center justify-center transition-theme group-hover:scale-110 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)] relative`}>
+                          <div className={`w-12 h-12 rounded-2xl bg-${tool.color}-500/10 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)] relative`}>
                             {tool.icon}
                             {tool.unreadCount > 0 && (
                               <motion.div 
@@ -549,7 +549,7 @@ const GoogleHubPage: React.FC = () => {
               )}
 
               {/* Recent Activity / Integration Status */}
-              <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)] p-6 transition-theme hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+              <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)] p-6 transition-all duration-500 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
                 <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                   <Info size={16} className="text-emerald-500 animate-pulse" />
                   {isRtl ? 'حالة التكامل والاتصال' : 'Integration & Connection Status'}
@@ -697,7 +697,7 @@ const GoogleHubPage: React.FC = () => {
                     
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-gray-400 px-1">{isRtl ? 'الإعدادات' : 'Settings'}</label>
-                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-emerald-500/30 transition-theme group">
+                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-emerald-500/30 transition-all group">
                         <div className="flex items-center gap-3">
                           <Settings size={18} className="text-gray-400 group-hover:text-emerald-500" />
                           <span className="text-xs font-bold">{isRtl ? 'تخصيص المزامنة' : 'Sync Preferences'}</span>
@@ -706,7 +706,7 @@ const GoogleHubPage: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => handleDisconnectTool(selectedTool.id)}
-                        className="w-full p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between hover:bg-red-500/10 transition-theme group"
+                        className="w-full p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between hover:bg-red-500/10 transition-all group"
                       >
                         <div className="flex items-center gap-3">
                           <LogOut size={18} className="text-red-500" />
@@ -751,7 +751,7 @@ const GoogleHubPage: React.FC = () => {
                 {selectedTool.status !== 'connected' && (
                   <button 
                     onClick={() => handleConnectTool(selectedTool.id)}
-                    className="px-6 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95"
+                    className="px-6 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all active:scale-95"
                   >
                     {isRtl ? 'تفعيل الاتصال' : 'Activate Connection'}
                   </button>
@@ -853,7 +853,7 @@ const GoogleHubPage: React.FC = () => {
                   {isRtl ? 'إغلاق' : 'Close'}
                 </button>
                 <button 
-                  className="px-5 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95"
+                  className="px-5 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all active:scale-95"
                   onClick={() => {
                     if (guideTool.available) {
                       setActiveTab(guideTool.id as 'overview' | 'chat' | 'contacts' | 'drive' | 'gmail');

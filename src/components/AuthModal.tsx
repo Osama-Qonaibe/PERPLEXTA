@@ -172,7 +172,7 @@ export const AuthModal: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                 placeholder="name@example.com"
                 dir="ltr"
               />
@@ -193,7 +193,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -212,7 +212,7 @@ export const AuthModal: React.FC = () => {
                           localStorage.setItem('app_remember_me', e.target.checked ? 'true' : 'false');
                         }}
                       />
-                      <div className="w-5 h-5 rounded-sm border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-theme"></div>
+                      <div className="w-5 h-5 rounded-sm border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all duration-300"></div>
                       <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
@@ -248,7 +248,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-all duration-300 bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -261,7 +261,7 @@ export const AuthModal: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-bold transition-theme shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
+            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
           >
             {isLoading ? (
               <>
@@ -290,9 +290,9 @@ export const AuthModal: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={loginWithGoogle}
               type="button"
-              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-md border transition-theme bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
+              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-md border transition-all bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-theme">
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-all">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -311,7 +311,7 @@ export const AuthModal: React.FC = () => {
                 if (mode === 'forgot-password') setMode('login');
                 else setMode(mode === 'login' ? 'signup' : 'login');
               }}
-              className="mx-2 text-emerald-500 hover:text-emerald-400 decoration-emerald-500/30 hover:decoration-emerald-400 underline underline-offset-4 font-bold transition-theme"
+              className="mx-2 text-emerald-500 hover:text-emerald-400 decoration-emerald-500/30 hover:decoration-emerald-400 underline underline-offset-4 font-bold transition-all"
             >
               {mode === 'login' ? t('signup') : mode === 'signup' ? t('login') : t('login')}
             </button>

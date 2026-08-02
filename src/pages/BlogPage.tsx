@@ -472,7 +472,7 @@ export const BlogPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedCategory('All')}
-                        className={`px-3 h-9 rounded-[4px] border flex items-center gap-1.5 transition-theme text-xs font-black ${
+                        className={`px-3 h-9 rounded-[4px] border flex items-center gap-1.5 transition-all text-xs font-black ${
                           isThemeDark
                             ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 active:scale-95 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
                             : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 active:scale-95'
@@ -486,7 +486,7 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsMobileSidebarOpen(true)}
-                      className={`w-9 h-9 rounded-[4px] border flex items-center justify-center transition-theme ${
+                      className={`w-9 h-9 rounded-[4px] border flex items-center justify-center transition-all ${
                         isThemeDark
                           ? 'border-gray-800/80 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/35 active:scale-95'
                           : 'border-gray-200 bg-transparent text-slate-700 hover:bg-[#fafafa] active:scale-95'
@@ -512,7 +512,7 @@ export const BlogPage: React.FC = () => {
                         <button
                           key={cat.id}
                           onClick={() => setSelectedCategory(cat.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
                             isSelected
                               ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] font-black'
                               : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-650 hover:text-gray-800')
@@ -535,7 +535,7 @@ export const BlogPage: React.FC = () => {
                         onClick={() => {
                           setMobileCategoryPage(prev => (prev > 0 ? prev - 1 : 3));
                         }}
-                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
+                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-all shrink-0 ${
                           isThemeDark
                             ? 'text-gray-400 hover:text-emerald-500 hover:bg-gray-800'
                             : 'text-slate-500 hover:text-emerald-600 hover:bg-gray-100'
@@ -554,7 +554,7 @@ export const BlogPage: React.FC = () => {
                               key={cat.id}
                               type="button"
                               onClick={() => setSelectedCategory(cat.id)}
-                              className={`px-1.5 py-1 rounded-[4px] text-[10px] font-black whitespace-nowrap truncate cursor-pointer transition-theme border text-center flex items-center justify-center gap-1 min-w-0 ${
+                              className={`px-1.5 py-1 rounded-[4px] text-[10px] font-black whitespace-nowrap truncate cursor-pointer transition-all border text-center flex items-center justify-center gap-1 min-w-0 ${
                                 isSelected
                                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                                   : (isThemeDark 
@@ -574,7 +574,7 @@ export const BlogPage: React.FC = () => {
                         onClick={() => {
                           setMobileCategoryPage(prev => (prev < 3 ? prev + 1 : 0));
                         }}
-                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
+                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-all shrink-0 ${
                           isThemeDark
                             ? 'text-gray-400 hover:text-emerald-500 hover:bg-gray-800'
                             : 'text-slate-500 hover:text-emerald-600 hover:bg-gray-100'
@@ -590,7 +590,7 @@ export const BlogPage: React.FC = () => {
                       {[0, 1, 2, 3].map((page) => (
                         <div
                           key={page}
-                          className={`h-1 rounded-full transition-theme ${
+                          className={`h-1 rounded-full transition-all duration-300 ${
                             mobileCategoryPage === page
                               ? 'w-3.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.65)]'
                               : 'w-1 bg-gray-305 dark:bg-gray-800/80'
@@ -600,7 +600,7 @@ export const BlogPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
+                  <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-72 md:w-80 lg:w-96 flex-shrink-0 transition-all ${
                     isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
                   }`}>
                     <Search size={14} className="text-gray-400 shrink-0" />
@@ -737,7 +737,7 @@ export const BlogPage: React.FC = () => {
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
                               transition={{ duration: 0.15 }}
-                              className={`rounded-xl border overflow-hidden transition-theme flex flex-col h-[390px] cursor-pointer relative group ${
+                              className={`rounded-xl border overflow-hidden transition-all duration-300 flex flex-col h-[390px] cursor-pointer relative group ${
                                 isThemeDark
                                   ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
                                   : 'bg-white border-gray-150 hover:border-emerald-500/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
@@ -805,7 +805,7 @@ export const BlogPage: React.FC = () => {
 
                                   <button
                                     type="button"
-                                    className={`w-full py-1.5 rounded-[4px] text-[10px] font-bold flex items-center justify-center gap-1 border transition-theme ${
+                                    className={`w-full py-1.5 rounded-[4px] text-[10px] font-bold flex items-center justify-center gap-1 border transition-all ${
                                       isThemeDark
                                         ? 'bg-emerald-500/5 border-emerald-500/15 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-500/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                                         : 'bg-emerald-500/5 border-emerald-500/15 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
@@ -834,7 +834,7 @@ export const BlogPage: React.FC = () => {
                                 key={`mob-featured-${article.id}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className={`rounded-xl overflow-hidden border flex flex-col cursor-pointer active:scale-[0.98] transition-theme ${
+                                className={`rounded-xl overflow-hidden border flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                   isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                                 }`}
                                 onClick={() => navigate(`/blog/${article.slug}`)}
@@ -874,7 +874,7 @@ export const BlogPage: React.FC = () => {
                               key={`mob-list-row-${article.id}`}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className={`p-3.5 rounded-xl border flex gap-3.5 cursor-pointer active:scale-[0.98] transition-theme ${
+                              className={`p-3.5 rounded-xl border flex gap-3.5 cursor-pointer active:scale-[0.98] transition-all duration-300 ${
                                 isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-white border-gray-150'
                               }`}
                               onClick={() => navigate(`/blog/${article.slug}`)}
@@ -928,7 +928,7 @@ export const BlogPage: React.FC = () => {
                         setSearchQuery('');
                         setSelectedCategory('All');
                       }}
-                      className="mt-5 px-5 h-10 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-[4px] text-xs font-bold hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme cursor-pointer text-center"
+                      className="mt-5 px-5 h-10 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-[4px] text-xs font-bold hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-300 cursor-pointer text-center"
                     >
                       {isRtl ? 'إعادة ضبط التصفية والبحث' : 'Reset Filters & Search'}
                     </button>
@@ -974,7 +974,7 @@ export const BlogPage: React.FC = () => {
               
               <button
                 onClick={handleBackToList}
-                className="group flex items-center gap-1.5 text-xs font-black font-sans tracking-tight text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme cursor-pointer"
+                className="group flex items-center gap-1.5 text-xs font-black font-sans tracking-tight text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-300 cursor-pointer"
               >
                 <ArrowLeft size={16} className={`group-hover:scale-110 transition-transform text-emerald-500 ${isRtl ? 'rotate-180' : ''}`} />
                 <span>{isRtl ? 'العودة إلى المقالات' : 'Back to Articles'}</span>
@@ -1051,7 +1051,7 @@ export const BlogPage: React.FC = () => {
                             onMouseEnter={() => token && setRatingHover(starVal)}
                             onMouseLeave={() => token && setRatingHover(0)}
                             onClick={() => handleRateArticle(starVal)}
-                            className={`p-0.5 transition-theme ${!token ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125 cursor-pointer'} ${isActive ? 'text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]' : 'text-slate-300 dark:text-zinc-800'}`}
+                            className={`p-0.5 transition-all duration-300 ${!token ? 'opacity-50 cursor-not-allowed' : 'hover:scale-125 cursor-pointer'} ${isActive ? 'text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]' : 'text-slate-300 dark:text-zinc-800'}`}
                           >
                             <Star size={15} className={isActive ? 'fill-[currentColor]' : ''} />
                           </button>
@@ -1069,7 +1069,7 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsShareOpen(true)}
-                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-emerald-500/15 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-500 rounded-[4px] hover:shadow-[0_0_8px_rgba(16,185,129,0.25)] transition-theme font-bold text-[10px] cursor-pointer select-none"
+                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-emerald-500/15 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-500 rounded-[4px] hover:shadow-[0_0_8px_rgba(16,185,129,0.25)] transition-all duration-300 font-bold text-[10px] cursor-pointer select-none"
                     >
                       <Share2 size={11} className="text-emerald-500" />
                       <span>{isRtl ? 'مشاركة وتعميم المقال' : 'Share & Distribute'}</span>
@@ -1098,7 +1098,7 @@ export const BlogPage: React.FC = () => {
                           <div
                             key={item.id}
                             onClick={() => navigate(`/blog/${item.slug}`)}
-                            className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-emerald-500/5 transition-theme"
+                            className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-emerald-500/5 transition-all duration-300"
                           >
                             <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-white/5">
                               {item.image_url ? (
@@ -1165,7 +1165,7 @@ export const BlogPage: React.FC = () => {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                       <div 
-                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-all duration-150 rounded-full"
                         style={{ width: `${readingProgress}%` }}
                       />
                     </div>
@@ -1255,7 +1255,7 @@ export const BlogPage: React.FC = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-emerald-500/10 transition-theme"
+                            className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-emerald-500/10 transition-all duration-300"
                           >
                             {comment.author_avatar ? (
                               <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-full border border-slate-100 dark:border-white/5 shrink-0" />
@@ -1402,7 +1402,7 @@ export const BlogPage: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                   <div 
-                    className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                    className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-all duration-150 rounded-full"
                     style={{ width: `${readingProgress}%` }}
                   />
                 </div>
@@ -1438,7 +1438,7 @@ export const BlogPage: React.FC = () => {
                         onMouseEnter={() => token && setRatingHover(starVal)}
                         onMouseLeave={() => token && setRatingHover(0)}
                         onClick={() => handleRateArticle(starVal)}
-                        className={`p-1 transition-theme active:scale-125 cursor-pointer ${!token ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer'} ${isActive ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-slate-300 dark:text-zinc-800'}`}
+                        className={`p-1 transition-all active:scale-125 cursor-pointer ${!token ? 'opacity-55 cursor-not-allowed' : 'cursor-pointer'} ${isActive ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'text-slate-300 dark:text-zinc-800'}`}
                       >
                         <Star size={20} className={isActive ? 'fill-current' : ''} />
                       </button>
@@ -1457,7 +1457,7 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCommentsOpenOnMobile(!isCommentsOpenOnMobile)}
-                  className={`w-full p-4 rounded-xl border flex items-center justify-between text-xs font-black font-sans transition-theme active:scale-[0.99] cursor-pointer ${
+                  className={`w-full p-4 rounded-xl border flex items-center justify-between text-xs font-black font-sans transition-all active:scale-[0.99] cursor-pointer ${
                     isThemeDark ? 'bg-zinc-950/40 border-white/5 text-white active:bg-zinc-900/60' : 'bg-white border-gray-150 text-gray-900'
                   }`}
                 >
@@ -1528,7 +1528,7 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleBackToList}
-                  className="w-full h-11 border border-emerald-500/20 bg-emerald-500/5 font-black text-xs text-emerald-500 rounded-xl transition-theme active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full h-11 border border-emerald-500/20 bg-emerald-500/5 font-black text-xs text-emerald-500 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={14} className={isRtl ? 'rotate-180 text-emerald-500' : 'text-emerald-500'} />
                   <span>{isRtl ? 'العودة للمقالات والأبحاث' : 'Back to Insight Portal'}</span>
@@ -1574,7 +1574,7 @@ export const BlogPage: React.FC = () => {
                   href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(isRtl ? selectedArticle.title_ar : selectedArticle.title_en)}&url=${encodeURIComponent(window.location.href)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 h-11 bg-[#0f1419] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-theme cursor-pointer text-center"
+                  className="flex items-center justify-center gap-2 h-11 bg-[#0f1419] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-all duration-300 cursor-pointer text-center"
                 >
                   <span>X / Twitter</span>
                 </a>
@@ -1582,7 +1582,7 @@ export const BlogPage: React.FC = () => {
                   href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 h-11 bg-[#0077b5] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-theme cursor-pointer text-center"
+                  className="flex items-center justify-center gap-2 h-11 bg-[#0077b5] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-all duration-300 cursor-pointer text-center"
                 >
                   <span>LinkedIn</span>
                 </a>
@@ -1590,7 +1590,7 @@ export const BlogPage: React.FC = () => {
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent((isRtl ? selectedArticle.title_ar : selectedArticle.title_en) + ' ' + window.location.href)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 h-11 bg-[#25d366] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-theme cursor-pointer text-center"
+                  className="flex items-center justify-center gap-2 h-11 bg-[#25d366] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-all duration-300 cursor-pointer text-center"
                 >
                   <span>WhatsApp</span>
                 </a>
@@ -1598,7 +1598,7 @@ export const BlogPage: React.FC = () => {
                   href={`https://telegram.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(isRtl ? selectedArticle.title_ar : selectedArticle.title_en)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 h-11 bg-[#0088cc] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-theme cursor-pointer text-center"
+                  className="flex items-center justify-center gap-2 h-11 bg-[#0088cc] text-white hover:opacity-90 rounded-[4px] text-xs font-black transition-all duration-300 cursor-pointer text-center"
                 >
                   <span>Telegram</span>
                 </a>
@@ -1631,7 +1631,7 @@ export const BlogPage: React.FC = () => {
 
               <button
                 onClick={() => setIsShareOpen(false)}
-                className="mt-4 w-full h-10 bg-[var(--bg-base)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-xs text-[var(--text-primary)] font-black rounded-[4px] transition-theme cursor-pointer font-sans"
+                className="mt-4 w-full h-10 bg-[var(--bg-base)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-xs text-[var(--text-primary)] font-black rounded-[4px] transition-all duration-300 cursor-pointer font-sans"
               >
                 {isRtl ? 'إغلاق النافذة' : 'Close window'}
               </button>
@@ -1665,7 +1665,7 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMobileSidebarOpen(false)}
-                  className={`px-3 py-1.5 rounded-[4px] border flex items-center gap-1.5 transition-theme text-[11px] font-black cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-[4px] border flex items-center gap-1.5 transition-all text-[11px] font-black cursor-pointer ${
                     isThemeDark
                       ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)]'
                       : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-700'
@@ -1679,7 +1679,7 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMobileSidebarOpen(false)}
-                  className={`w-8 h-8 rounded-[4px] flex items-center justify-center border transition-theme ${
+                  className={`w-8 h-8 rounded-[4px] flex items-center justify-center border transition-all ${
                     isThemeDark
                       ? 'bg-white/5 border-white/10 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/45'
                       : 'bg-gray-50 border-gray-250 text-gray-750 hover:text-emerald-600 hover:border-emerald-500/20'
@@ -1703,7 +1703,7 @@ export const BlogPage: React.FC = () => {
                         setSelectedCategory('All');
                         setIsMobileSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between rounded px-3 py-2.5 text-[11px] font-black cursor-pointer transition-theme border mb-2 select-none ${
+                      className={`w-full flex items-center justify-between rounded px-3 py-2.5 text-[11px] font-black cursor-pointer transition-all border mb-2 select-none ${
                         selectedCategory === 'All'
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/35 border-r-2'
                           : (isThemeDark 
@@ -1829,7 +1829,7 @@ export const BlogPage: React.FC = () => {
                   setShowAdPopup(false);
                   localStorage.setItem('hide_blog_ad', 'true');
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-all duration-300"
               >
                 <X size={16} />
               </button>
@@ -1865,7 +1865,7 @@ export const BlogPage: React.FC = () => {
                       setShowAdPopup(false);
                       localStorage.setItem('hide_blog_ad', 'true');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-theme border border-[var(--border)]"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-bold uppercase text-[var(--text-secondary)] bg-[var(--bg-overlay)] hover:bg-[var(--bg-surface)] transition-all duration-300 border border-[var(--border)]"
                   >
                     {language === 'ar' ? 'ليس الآن' : 'Later'}
                   </button>
@@ -1875,7 +1875,7 @@ export const BlogPage: React.FC = () => {
                       localStorage.setItem('hide_blog_ad', 'true');
                       toast.success(language === 'ar' ? 'تم تسجيل بريدك بنجاح لتلقي نشرة النخبة!' : 'Successfully subscribed to Elite Insights!');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-all duration-300 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
                   >
                     <span>{language === 'ar' ? 'انضمام فوري' : 'Subscribe Now'}</span>
                     <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />

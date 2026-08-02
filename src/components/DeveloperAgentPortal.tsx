@@ -425,7 +425,7 @@ authenticateAgent();`;
                   type="text"
                   required
                   placeholder={isAr ? 'مثال: نظام التحليل الآلي، Slack Bot' : 'e.g., Analytical Python Script, Telegram Bot'}
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-all outline-none"
                   value={clientName}
                   onChange={e => setClientName(e.target.value)}
                 />
@@ -436,7 +436,7 @@ authenticateAgent();`;
                   {isAr ? 'نوع الهوية البرمجية' : 'Identity Persona Type'}
                 </label>
                 <select 
-                  className="w-full text-sm px-3.5 py-2.5 bg-[var(--bg-base)] border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-[var(--bg-base)] border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-all outline-none"
                   value={identityType}
                   onChange={e => setIdentityType(e.target.value)}
                 >
@@ -453,7 +453,7 @@ authenticateAgent();`;
                 <input 
                   type="text"
                   placeholder="e.g., PerplextaExternalAgent/1.0"
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-all outline-none"
                   value={userAgent}
                   onChange={e => setUserAgent(e.target.value)}
                 />
@@ -466,7 +466,7 @@ authenticateAgent();`;
                 <input 
                   type="text"
                   placeholder={isAr ? 'الرابط للتوثيق المنقسم (مفصولة بفاصلة)' : 'Comma-separated URLs, if using interactive auth flows'}
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-all outline-none"
                   value={redirectUris}
                   onChange={e => setRedirectUris(e.target.value)}
                 />
@@ -478,7 +478,7 @@ authenticateAgent();`;
               <button
                 type="submit"
                 disabled={isRegistering}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-black font-bold text-sm tracking-tight rounded-[4px] shadow-lg transition-theme disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-black font-bold text-sm tracking-tight rounded-[4px] shadow-lg transition-all duration-300 disabled:opacity-50"
               >
                 {isRegistering ? (
                   <RefreshCw size={16} className="animate-spin" />
@@ -553,7 +553,7 @@ authenticateAgent();`;
                       </span>
                       <button
                         onClick={() => handleRevokeAgent(agent.client_id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-theme border border-transparent hover:border-red-500/10"
+                        className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300 border border-transparent hover:border-red-500/10"
                         title={isAr ? 'إلغاء وتدمير المفتاح' : 'Revoke credentials'}
                       >
                         <Trash2 size={14} />
@@ -660,7 +660,7 @@ authenticateAgent();`;
             <div className="relative">
               <button
                 onClick={() => handleCopy(getCodeSnippet(), 'code-copy')}
-                className="absolute top-3 right-3 p-1.5 rounded-[4px] bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-theme"
+                className="absolute top-3 right-3 p-1.5 rounded-[4px] bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-all duration-200"
                 title={isAr ? 'نسخ الكود' : 'Copy Code'}
               >
                 {copiedId === 'code-copy' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
@@ -706,14 +706,14 @@ authenticateAgent();`;
                 <button
                   type="button"
                   onClick={() => setMcpMode('server')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'server' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-all duration-300 ${mcpMode === 'server' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'تشخيص الخادم المحلي' : 'Local Server Diagnostic'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMcpMode('federation')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'federation' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-all duration-300 ${mcpMode === 'federation' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'الترابط الفيدرالي الخارجي' : 'External Federation'}
                 </button>
@@ -742,7 +742,7 @@ authenticateAgent();`;
                       type="button"
                       onClick={handleFetchMcpCard}
                       disabled={isMcpWorking}
-                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
+                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-all duration-300 cursor-pointer disabled:opacity-50"
                     >
                       <Layers size={13} className="text-emerald-500" />
                       {isAr ? 'فحص بطاقة الاكتشاف' : 'Query Server Card'}
@@ -752,7 +752,7 @@ authenticateAgent();`;
                       type="button"
                       onClick={handleFetchMcpTools}
                       disabled={isMcpWorking}
-                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
+                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-all duration-300 cursor-pointer disabled:opacity-50"
                     >
                       <Database size={13} className="text-emerald-500" />
                       {isAr ? 'استرداد الأدوات النشطة' : 'List Active Tools'}
@@ -823,7 +823,7 @@ authenticateAgent();`;
                               type="button"
                               onClick={handleExecuteMcpTool}
                               disabled={isMcpWorking || !mcpSelectedTool}
-                              className="px-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-xs rounded-[4px] flex items-center justify-center transition-theme cursor-pointer"
+                              className="px-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-xs rounded-[4px] flex items-center justify-center transition-all duration-300 cursor-pointer"
                             >
                               <Play size={12} fill="currentColor" />
                             </button>
@@ -903,7 +903,7 @@ authenticateAgent();`;
                       value={externalMcpUrl}
                       onChange={(e) => setExternalMcpUrl(e.target.value)}
                       placeholder="https://mcp-server.example.com/sse"
-                      className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2.5 text-white focus:border-emerald-500 focus:outline-none transition-theme"
+                      className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2.5 text-white focus:border-emerald-500 focus:outline-none transition-all duration-300"
                       required
                     />
                     {externalMcpStatus === 'connected' && (
@@ -916,7 +916,7 @@ authenticateAgent();`;
                   <button
                     type="submit"
                     disabled={isMcpWorking}
-                    className="px-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded-[4px] flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50 blur-none shrink-0"
+                    className="px-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded-[4px] flex items-center gap-1.5 transition-all duration-300 cursor-pointer disabled:opacity-50 blur-none shrink-0"
                   >
                     <RefreshCw size={12} className={isMcpWorking ? 'animate-spin' : ''} />
                     {isAr ? 'ربط الخادم' : 'Federate'}
@@ -980,7 +980,7 @@ authenticateAgent();`;
                 <div className="relative">
                   <button
                     onClick={() => handleCopy(`_a2a._agents.${window.location.hostname || 'example.com'}. 3600 IN SVCB 1 ${window.location.hostname || 'example.com'}. alpn="a2a" port=443 mandatory=alpn,port`, 'dns-copy')}
-                    className="absolute top-2 right-2 p-1 rounded bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-theme text-[10px]"
+                    className="absolute top-2 right-2 p-1 rounded bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-all text-[10px]"
                     title={isAr ? 'نسخ السجل' : 'Copy DNS Record'}
                   >
                     {copiedId === 'dns-copy' ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}

@@ -290,7 +290,7 @@ export const AdminCommunityPage: React.FC = () => {
             ? 'تم تعطيل لوحة إدارة الأقسام الخارجية على أجهزة الهاتف لتخفيف حجم التطبيق وتحسين الأداء. يرجى المتابعة من شاشة حاسوبك الشخصي.' 
             : 'To maintain lightweight performance and high operational stability, external category admin panels are restricted to desktop sessions. Please open this view on a PC.'}
         </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">
           {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
         </a>
       </div>
@@ -305,7 +305,7 @@ export const AdminCommunityPage: React.FC = () => {
         </div>
         <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">{isRtl ? 'صلاحيات غير كافية' : 'Access Restricted'}</h2>
         <p className="text-xs text-gray-400 max-w-sm">{isRtl ? 'هذه اللوحة مخصصة لإدارة العمليات ومحميّة بالكامل ببروتوكولات التشفير الرقابية.' : 'This secure community administrative console requires verified staff credentials.'}</p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">{isRtl ? 'الرئيسية' : 'Go Home'}</a>
+        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-all duration-300">{isRtl ? 'الرئيسية' : 'Go Home'}</a>
       </div>
     );
   }
@@ -349,24 +349,24 @@ export const AdminCommunityPage: React.FC = () => {
         <div className="lg:col-span-3 space-y-3 select-none">
           <button
             onClick={() => setActiveTab('blog')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <BookOpen size={16} className={`transition-theme ${activeTab === 'blog' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+              <BookOpen size={16} className={`transition-all duration-300 ${activeTab === 'blog' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
               {isRtl ? 'المقالات والأخبار' : 'Publish Articles'}
             </span>
-            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-emerald-500' : 'text-gray-400'}`} />
+            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-emerald-500' : 'text-gray-400'}`} />
           </button>
 
           <button
             onClick={() => setActiveTab('marketplace')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'marketplace' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-all duration-300 font-sans text-xs sm:text-sm font-bold ${activeTab === 'marketplace' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <ShoppingBag size={16} className={`transition-theme ${activeTab === 'marketplace' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+              <ShoppingBag size={16} className={`transition-all duration-300 ${activeTab === 'marketplace' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
               {isRtl ? 'إدارة الماركت بليس' : 'Marketplace Admin'}
             </span>
-            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'marketplace' ? 'text-emerald-500' : 'text-gray-400'}`} />
+            <ChevronRight size={14} className={`transition-all duration-300 ${isRtl ? 'rotate-180' : ''} ${activeTab === 'marketplace' ? 'text-emerald-500' : 'text-gray-400'}`} />
           </button>
         </div>
 
@@ -457,7 +457,7 @@ export const AdminCommunityPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                       {/* Image Upload Area */}
                       <div className="md:col-span-5">
-                        <label className="relative flex flex-col items-center justify-center h-28 border border-dashed border-gray-200/10 dark:border-gray-800/20 rounded-[4px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] cursor-pointer hover:border-emerald-500/40 hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.05)] transition-theme group overflow-hidden">
+                        <label className="relative flex flex-col items-center justify-center h-28 border border-dashed border-gray-200/10 dark:border-gray-800/20 rounded-[4px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] cursor-pointer hover:border-emerald-500/40 hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.05)] transition-all duration-300 group overflow-hidden">
                           <input 
                             type="file" 
                             accept="image/*" 
@@ -472,7 +472,7 @@ export const AdminCommunityPage: React.FC = () => {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-1.5 text-center p-3 select-none">
-                              <Upload size={20} className="text-gray-400 group-hover:text-emerald-500 group-hover:scale-105 transition-theme" />
+                              <Upload size={20} className="text-gray-400 group-hover:text-emerald-500 group-hover:scale-105 transition-all duration-300" />
                               <span className="text-[10px] font-black font-sans text-gray-500 group-hover:text-gray-250 transition-colors">{isRtl ? 'رفع من الجهاز (كروب مربع)' : 'Upload from device (Auto crop)'}</span>
                               <span className="text-[8px] font-mono text-gray-550">{isRtl ? 'الحد الأقصى: 15 ميجابايت' : 'Max selection: 15MB'}</span>
                             </div>
@@ -551,7 +551,7 @@ export const AdminCommunityPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={cancelEditArticle}
-                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-6 rounded-sm border border-[var(--border-main)] text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] text-xs font-bold transition-theme cursor-pointer"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 h-11 px-6 rounded-sm border border-[var(--border-main)] text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] text-xs font-bold transition-all duration-300 cursor-pointer"
                       >
                         <span>{isRtl ? 'إلغاء التعديل' : 'Cancel Edit'}</span>
                       </button>
@@ -620,7 +620,7 @@ export const AdminCommunityPage: React.FC = () => {
                             {/* Edit Button with Emerald Glow pattern on hover */}
                             <button
                               onClick={() => startEditArticle(art)}
-                              className={`p-1.5 transition-theme rounded-[4px] cursor-pointer ${
+                              className={`p-1.5 transition-all duration-300 rounded-[4px] cursor-pointer ${
                                 isCurrentlyEditing 
                                   ? 'text-amber-550 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
                                   : 'text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
@@ -633,7 +633,7 @@ export const AdminCommunityPage: React.FC = () => {
                             {/* Delete Button */}
                             <button
                               onClick={() => handleDeleteArticle(art.id)}
-                              className="p-1.5 text-gray-400 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-theme rounded-[4px] cursor-pointer"
+                              className="p-1.5 text-gray-400 hover:text-rose-500 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all duration-300 rounded-[4px] cursor-pointer"
                               title={isRtl ? 'حذف المقال' : 'Delete Article'}
                             >
                               <Trash2 size={13} />

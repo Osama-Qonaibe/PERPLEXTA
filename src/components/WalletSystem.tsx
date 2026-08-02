@@ -635,8 +635,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   if (loading && !wallet) {
     return (
       <div className="space-y-10 animate-pulse w-full max-w-5xl mx-auto px-6 md:px-12 pt-6">
-        <div className="h-[280px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
-        <div className="h-[400px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
+        <div className="h-[280px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-[var(--theme-transition-duration)]" />
+        <div className="h-[400px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all duration-[var(--theme-transition-duration)]" />
       </div>
     );
   }
@@ -644,11 +644,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const currentBalance = wallet ? wallet.balance : 0;
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme duration-[var(--theme-transition-duration)] pt-12 pb-20">
+    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-all duration-[var(--theme-transition-duration)] pt-12 pb-20">
       
       {/* Centered Banking Hero Card - High Density Elite */}
       <div className="px-6 md:px-12 flex justify-center flex-none mt-4">
-        <div className="relative w-full max-w-5xl p-10 rounded-[var(--radius)] border shadow-2xl transition-theme duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
+        <div className="relative w-full max-w-5xl p-10 rounded-[var(--radius)] border shadow-2xl transition-all duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
           
           {/* Neon Top Accent Line for the Wallet Hero */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20 blur-[1px]" />
@@ -666,7 +666,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   </p>
                   <div className="flex items-baseline justify-center md:justify-start gap-2">
                     <span className="text-2xl font-medium opacity-40">$</span>
-                    <span className="text-5xl font-black tracking-tighter text-[var(--text-primary)] transition-theme">
+                    <span className="text-5xl font-black tracking-tighter text-[var(--text-primary)] transition-all duration-300">
                        {currentBalance.toLocaleString(undefined, { 
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2
@@ -681,7 +681,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <button 
                   onClick={() => setActiveTab('deposit')}
-                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-theme group w-full md:w-auto justify-center ${
+                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-all group w-full md:w-auto justify-center ${
                     activeTab === 'deposit'
                       ? 'bg-emerald-500 border-emerald-500/50 text-white drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                       : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-emerald-500 hover:border-emerald-500/30 shadow-sm'
@@ -692,7 +692,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 </button>
                 <button 
                   onClick={() => setActiveTab('withdraw')}
-                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-theme group w-full md:w-auto justify-center ${
+                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-all group w-full md:w-auto justify-center ${
                     activeTab === 'withdraw'
                       ? 'bg-emerald-500 border-emerald-500/50 text-white drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                       : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-emerald-500 hover:border-emerald-500/30 shadow-sm'
@@ -705,7 +705,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             </div>
 
             {/* Bottom Stats Row */}
-            <div className="pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t border-[var(--border)] transition-theme duration-[var(--theme-transition-duration)]">
+            <div className="pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t border-[var(--border)] transition-all duration-[var(--theme-transition-duration)]">
                <div className="space-y-1">
                   <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">
                     {dir === 'rtl' ? 'الرصيد بنقاط المكافآت' : 'Points Pool'}
@@ -743,7 +743,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
       {/* Perplexta Tabs - Emerald Glow Hierarchy */}
       <div className="px-6 md:px-12 mt-8 flex-none w-full max-w-5xl mx-auto">
-        <div className="flex items-center overflow-x-auto gap-4 border-b border-[var(--border)] no-scrollbar transition-theme duration-[var(--theme-transition-duration)]">
+        <div className="flex items-center overflow-x-auto gap-4 border-b border-[var(--border)] no-scrollbar transition-all duration-[var(--theme-transition-duration)]">
           {[
             { id: 'transactions', label: dir === 'rtl' ? 'سجل الإيداع' : 'Deposits Book' },
             { id: 'withdrawal_history', label: dir === 'rtl' ? 'سجل السحب' : 'Withdrawals Book' },
@@ -757,7 +757,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-theme relative shrink-0 overflow-hidden ${
+                className={`px-6 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-all duration-300 relative shrink-0 overflow-hidden ${
                   active 
                     ? 'text-emerald-500' 
                     : `text-[var(--text-muted)] hover:text-[var(--text-primary)]`
@@ -845,7 +845,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         type="button"
                         key={val}
                         onClick={() => selectPredefinedAmount(val)}
-                        className={`py-4 rounded-[var(--radius)] border text-xs font-black transition-theme flex flex-col items-center justify-center gap-1 ${
+                        className={`py-4 rounded-[var(--radius)] border text-xs font-black transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
                           depositAmount === val
                             ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] shadow-inner'
                             : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500 hover:text-emerald-500'
@@ -898,7 +898,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         type="button"
                         key={m.id}
                         onClick={() => setDepositMethod(m.id as any)}
-                        className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-theme relative overflow-hidden group ${
+                        className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-all duration-300 relative overflow-hidden group ${
                           depositMethod === m.id
                             ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]'
                             : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500/40 hover:text-[var(--text-primary)]'
@@ -928,7 +928,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 </div>
 
                 {/* Sub-Forms depending on Payment chosen */}
-                <div className="p-6 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme">
+                <div className="p-6 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all">
                   
                   {/* CREDIT CARD FIELDS */}
                   {depositMethod === 'card' && (
@@ -1080,7 +1080,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             />
                             <label
                               htmlFor="manual-proof-upload"
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
                             >
                               <Paperclip size={12} className="text-emerald-500" />
                               {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1191,7 +1191,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             />
                             <label
                               htmlFor="bank-proof-upload"
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
                             >
                               <Paperclip size={12} className="text-emerald-500" />
                               {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1293,7 +1293,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                                 />
                                 <label
                                   htmlFor="paypal-proof-upload"
-                                  className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                                  className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-all select-none duration-200"
                                 >
                                   <Paperclip size={12} className="text-emerald-500" />
                                   {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1367,7 +1367,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       (depositMethod === 'card' && !isStripeActive) ||
                       (depositMethod === 'paypal' && !isPaypalActive)
                     }
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-theme shadow-md hover:shadow-emerald-500/20"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-all duration-300 shadow-md hover:shadow-emerald-500/20"
                   >
                     {isSubmittingDeposit ? (
                       (depositMethod === 'card') ? (
@@ -1478,7 +1478,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           type="button"
                           key={m.id}
                           onClick={() => setWithdrawMethod(m.id as any)}
-                          className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-theme relative overflow-hidden group ${
+                          className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-all duration-300 relative overflow-hidden group ${
                             withdrawMethod === m.id
                               ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]'
                               : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500/40 hover:text-[var(--text-primary)]'
@@ -1501,7 +1501,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   </div>
 
                   {/* Form fields for payout methods */}
-                  <div className="p-6 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme">
+                  <div className="p-6 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-all">
                     
                     {withdrawMethod === 'paypal' && (
                       <div className="space-y-2">
@@ -1600,7 +1600,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   <button
                     type="submit"
                     disabled={isSubmittingWithdraw || parseFloat(withdrawAmount) > currentBalance}
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-theme shadow-md hover:shadow-emerald-500/20"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-black py-4 rounded-[var(--radius)] text-[10px] uppercase tracking-[0.4em] transition-all duration-300 shadow-md hover:shadow-emerald-500/20"
                   >
                     {isSubmittingWithdraw ? (dir === 'rtl' ? 'جاري إثبات طلب التسوية المالي مع البنك المركزي...' : 'SUBMITTING SECURED DISBURSEMENT FLOW...') : (dir === 'rtl' ? 'تقديم طلب السحب الفوري' : 'SUBMIT WITHDRAWAL SETTLEMENT')}
                   </button>
@@ -1617,13 +1617,13 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-full w-full rounded-[var(--radius)] border overflow-hidden transition-theme duration-[var(--theme-transition-duration)] flex flex-col bg-[var(--bg-base)] border-[var(--border)] shadow-sm shadow-[var(--color-shadow)]"
+              className="h-full w-full rounded-[var(--radius)] border overflow-hidden transition-all duration-[var(--theme-transition-duration)] flex flex-col bg-[var(--bg-base)] border-[var(--border)] shadow-sm shadow-[var(--color-shadow)]"
             >
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Premium Clean Up Utility Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-[var(--border)] bg-[var(--bg-surface)] gap-4 transition-theme">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-[var(--border)] bg-[var(--bg-surface)] gap-4 transition-all">
                   <div className="flex flex-col gap-1">
-                    <p className="text-[12px] font-black text-[var(--text-primary)] transition-theme flex items-center gap-2">
+                    <p className="text-[12px] font-black text-[var(--text-primary)] transition-all flex items-center gap-2">
                       <Sparkles size={14} className="text-emerald-500 animate-pulse" />
                       {dir === 'rtl' ? 'تنظيف وتبسيط واجهة الدفتر المالي' : 'Ledger Interface De-clutter'}
                     </p>
@@ -1636,7 +1636,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                   {transactions.length > 0 && (
                     <button
                       onClick={handleClearAllHistory}
-                      className="px-4 py-2 rounded-[4px] border border-[var(--border)] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[9px] font-black tracking-widest uppercase transition-theme flex items-center gap-2 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer self-start sm:self-auto"
+                      className="px-4 py-2 rounded-[4px] border border-[var(--border)] bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[9px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] cursor-pointer self-start sm:self-auto"
                     >
                       <Trash2 size={12} />
                       {dir === 'rtl' ? 'أرشفة السجل بالكامل' : 'Archive Entire Log'}
@@ -1772,7 +1772,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                                <span className="flex justify-end">
                                  <button
                                    onClick={() => handleHideTransaction(tx.id)}
-                                   className="bg-transparent border border-transparent transition-theme hover:bg-gray-150 dark:hover:bg-gray-800 rounded-[4px] w-8 h-8 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+                                   className="bg-transparent border border-transparent transition-all duration-300 hover:bg-gray-150 dark:hover:bg-gray-800 rounded-[4px] w-8 h-8 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
                                    title={dir === 'rtl' ? 'أرشفة المعاملة' : 'Archive Transaction'}
                                  >
                                    <Trash2 size={13} />

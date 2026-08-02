@@ -555,7 +555,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`h-8 px-3 rounded-sm text-[11px] font-bold whitespace-nowrap transition-theme ${
+              className={`h-8 px-3 rounded-sm text-[11px] font-bold whitespace-nowrap transition-all duration-300 ${
                 statusFilter === status
                   ? 'text-emerald-500 bg-emerald-500/5 border border-emerald-500/20'
                   : 'text-gray-400 hover:text-[var(--text-primary)] bg-[var(--bg-surface)] border border-[var(--border)]'
@@ -687,7 +687,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           <button
                             onClick={() => handleUpdateStatus(item.id, 'approved')}
                             disabled={actioningId === item.id}
-                            className="p-1.5 h-8 w-8 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-theme"
+                            className="p-1.5 h-8 w-8 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all duration-300"
                             title={language === 'ar' ? 'موافقة ونشر' : 'Approve & List'}
                           >
                             <Check size={14} className="mx-auto" />
@@ -695,7 +695,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           <button
                             onClick={() => handleUpdateStatus(item.id, 'rejected')}
                             disabled={actioningId === item.id}
-                            className="p-1.5 h-8 w-8 rounded-[4px] bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-theme"
+                            className="p-1.5 h-8 w-8 rounded-[4px] bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all duration-300"
                             title={language === 'ar' ? 'رفض' : 'Reject'}
                           >
                             <X size={14} className="mx-auto" />
@@ -707,7 +707,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'sold')}
                           disabled={actioningId === item.id}
-                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white text-[10px] font-bold transition-theme animate-pulse"
+                          className="h-8 px-2.5 rounded-[4px] bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white text-[10px] font-bold transition-all duration-300 animate-pulse"
                         >
                           {language === 'ar' ? 'تعليم كمباع' : 'Mark Sold'}
                         </button>
@@ -717,7 +717,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'approved')}
                           disabled={actioningId === item.id}
-                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black text-[10px] font-bold transition-theme"
+                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black text-[10px] font-bold transition-all duration-300"
                         >
                           {language === 'ar' ? 'إعادة عرض' : 'Re-List'}
                         </button>
@@ -726,7 +726,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       <button
                         onClick={() => handleStartEdit(item)}
                         disabled={actioningId === item.id}
-                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-500 transition-theme border border-transparent"
+                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-500 transition-all duration-300 border border-transparent"
                         title={language === 'ar' ? 'تعديل المعروض' : 'Edit listing'}
                       >
                         <Edit size={14} className="mx-auto" />
@@ -735,7 +735,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       <button
                         onClick={() => handleDeleteItem(item.id)}
                         disabled={actioningId === item.id}
-                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-theme border border-transparent"
+                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300 border border-transparent"
                         title={language === 'ar' ? 'حذف المعروض' : 'Delete listing'}
                       >
                         <Trash2 size={14} className="mx-auto" />
@@ -778,7 +778,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-theme"
+                  className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all duration-300"
                 >
                   <X size={16} />
                 </button>
@@ -1160,7 +1160,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   <button
                     type="submit"
                     disabled={updating || uploadingImage}
-                    className="px-5 h-10 bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+                    className="px-5 h-10 bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                   >
                     {updating ? (
                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />

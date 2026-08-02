@@ -17,9 +17,9 @@ const router = express.Router();
 
 export const pendingOAuthSessions = new Map<string, { data: any; expiresAt: number }>();
 
-const jwtSecret = process.env.JWT_SECRET || 'perplexta_secure_fallback_secret_2026';
-if (!process.env.JWT_SECRET) {
-  console.warn('[WARNING] JWT_SECRET is not set in authentication routes. Using fallback.');
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
 }
 
 const logAvatarProcess = (context: string, googleUser: any, url: any, isValid: boolean, error?: any) => {

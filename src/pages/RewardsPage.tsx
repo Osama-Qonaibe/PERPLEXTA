@@ -722,12 +722,12 @@ export const RewardsPage: React.FC = () => {
     >
       
       {/* Sticky Header with Back Button - Elite Standard */}
-      <div className={`sticky -top-0.5 z-[40] -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-theme bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
+      <div className={`sticky -top-0.5 z-[40] -mx-4 md:-mx-8 px-4 md:px-8 py-3 mb-6 transition-all duration-300 bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)]`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className={`w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
+              className={`w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
             >
               {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
@@ -745,7 +745,7 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/settings?tab=wallet')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-theme group`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 group`}
             >
               <Landmark size={14} className="group-hover:scale-110 transition-transform" />
               <span className="text-[10px] font-black uppercase tracking-tighter">
@@ -776,7 +776,7 @@ export const RewardsPage: React.FC = () => {
             </div>
             <button 
               onClick={() => navigate('/settings?tab=wallet')}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-theme group"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-all duration-300 group"
             >
               <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
               <span className="text-[var(--text-primary)] group-hover:text-emerald-500">{t('requestWithdrawal')}</span>
@@ -800,7 +800,7 @@ export const RewardsPage: React.FC = () => {
             </div>
             <button 
               onClick={() => setIsConvertModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-theme group"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-all duration-300 group"
             >
               <Zap size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
               <span className="text-[var(--text-primary)] group-hover:text-emerald-500">{t('convertPointsToBalance')}</span>
@@ -814,13 +814,13 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* How it works */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-theme hover:border-emerald-500/20`}>
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-all duration-300 hover:border-emerald-500/20`}>
           <h3 className="text-lg md:text-xl font-bold text-emerald-500 mb-6 md:mb-8 text-center drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">{t('howSystemWorks')}</h3>
           
           <div className="space-y-6 md:space-y-8">
             {/* Step 1 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 1
               </div>
               <div>
@@ -831,7 +831,7 @@ export const RewardsPage: React.FC = () => {
             
             {/* Step 2 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 2
               </div>
               <div>
@@ -842,7 +842,7 @@ export const RewardsPage: React.FC = () => {
 
             {/* Step 3 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-all">
                 3
               </div>
               <div>
@@ -854,7 +854,7 @@ export const RewardsPage: React.FC = () => {
         </div>
 
         {/* Invite Friends */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-emerald-500/20`}>
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-all duration-300 hover:border-emerald-500/20`}>
           <div className="text-center mb-6 md:mb-8">
             <h3 className="text-lg md:text-xl font-bold text-emerald-500 flex items-center justify-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
               {t('inviteFriendsAndEarn')}
@@ -894,7 +894,7 @@ export const RewardsPage: React.FC = () => {
                           setActivationMethod('stripe');
                         }
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius)] bg-amber-500 text-white hover:bg-amber-600 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-theme shadow-lg shadow-amber-500/10 border border-amber-400/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius)] bg-amber-500 text-white hover:bg-amber-600 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-amber-500/10 border border-amber-400/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                     >
                       <Zap size={14} className="animate-pulse" />
                       {dir === 'rtl' ? 'تفعيل نظام الأرباح الآن' : 'Activate Earnings Now'}
@@ -909,7 +909,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowActivationForm(false)}
-                        className="text-[10px] uppercase font-bold text-[var(--text-secondary)] hover:text-amber-500 transition-theme cursor-pointer"
+                        className="text-[10px] uppercase font-bold text-[var(--text-secondary)] hover:text-amber-500 transition-all cursor-pointer"
                       >
                         {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                       </button>
@@ -920,7 +920,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('balance')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
                           activationMethod === 'balance'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -932,7 +932,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('stripe')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
                           activationMethod === 'stripe'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -944,7 +944,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('crypto')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
                           activationMethod === 'crypto'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -956,7 +956,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('paypal')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
                           activationMethod === 'paypal'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -968,7 +968,7 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('bank')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-all cursor-pointer ${
                           activationMethod === 'bank'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -1001,7 +1001,7 @@ export const RewardsPage: React.FC = () => {
                               type="button"
                               disabled={isActivating}
                               onClick={handleActivateWithBalance}
-                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                             >
                               {isActivating ? (
                                 <RefreshCw size={12} className="animate-spin" />
@@ -1033,7 +1033,7 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                           >
                             {isActivating ? (
                               <RefreshCw size={12} className="animate-spin" />
@@ -1062,7 +1062,7 @@ export const RewardsPage: React.FC = () => {
                                     toast.success(dir === 'rtl' ? 'تم نسخ العنوان بنجاح!' : 'USDT TRC-20 Address Copied!');
                                   }
                                 }}
-                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-theme border border-emerald-500/20"
+                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-all border border-emerald-500/20"
                               >
                                 {dir === 'rtl' ? 'نسخ' : 'Copy'}
                               </button>
@@ -1079,7 +1079,7 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder="e.g. 0x82c1f301ae9f..."
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
                             />
                           </div>
 
@@ -1099,9 +1099,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار لقطة شاشة إثبات الدفع' : 'Click to select transaction screenshot')}
                               </span>
@@ -1111,7 +1111,7 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
@@ -1145,7 +1145,7 @@ export const RewardsPage: React.FC = () => {
                                     toast.success(dir === 'rtl' ? 'تم نسخ ايميل بايبال!' : 'PayPal Email Copied!');
                                   }
                                 }}
-                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-theme border border-emerald-500/20"
+                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-all border border-emerald-500/20"
                               >
                                 {dir === 'rtl' ? 'نسخ' : 'Copy'}
                               </button>
@@ -1162,7 +1162,7 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder="e.g. PP-581023 or sender@example.com"
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
                             />
                           </div>
 
@@ -1182,9 +1182,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إثبات بايبال' : 'Click to select PayPal screenshot')}
                               </span>
@@ -1194,7 +1194,7 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
@@ -1248,7 +1248,7 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder={dir === 'rtl' ? 'مثل: محمد أحمد أحمد / كود 58210' : 'e.g. John Doe / Ref ID 9821a'}
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold focus:outline-none focus:border-emerald-500 transition-all text-[var(--text-primary)]"
                             />
                           </div>
 
@@ -1268,9 +1268,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-all"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-all" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إيصال البنك' : 'Click to select transaction statement receipt')}
                               </span>
@@ -1280,7 +1280,7 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all cursor-pointer"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
@@ -1309,7 +1309,7 @@ export const RewardsPage: React.FC = () => {
                   </div>
                   <button 
                     onClick={handleCopy}
-                    className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-theme ${
+                    className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-all duration-300 ${
                       copied 
                         ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] px-6' 
                         : `bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20`
@@ -1344,13 +1344,13 @@ export const RewardsPage: React.FC = () => {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder={dir === 'rtl' ? 'البريد الإلكتروني للزميل (مثال: peer@example.com)' : 'Peer email address (e.g., peer@example.com)'}
-                    className="flex-1 px-3 md:px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[var(--radius)] text-xs md:text-sm focus:outline-none focus:border-emerald-500 font-sans text-[var(--text-primary)] transition-theme"
+                    className="flex-1 px-3 md:px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[var(--radius)] text-xs md:text-sm focus:outline-none focus:border-emerald-500 font-sans text-[var(--text-primary)] transition-all"
                     disabled={isInviting}
                   />
                   <button
                     type="submit"
                     disabled={isInviting}
-                    className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500 text-white font-bold text-xs md:text-sm shadow-md transition-theme ${
+                    className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500 text-white font-bold text-xs md:text-sm shadow-md transition-all duration-300 ${
                       isInviting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-emerald-600 hover:shadow-emerald-500/20'
                     }`}
                   >
@@ -1388,7 +1388,7 @@ export const RewardsPage: React.FC = () => {
                               type="button"
                               onClick={() => handleRemindInvitation(inv.email)}
                               disabled={remindingEmails[inv.email]}
-                              className="px-2 py-0.5 rounded-sm text-[9px] font-black uppercase bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-theme cursor-pointer flex items-center gap-1"
+                              className="px-2 py-0.5 rounded-sm text-[9px] font-black uppercase bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer flex items-center gap-1"
                             >
                               {remindingEmails[inv.email] ? (
                                 <RefreshCw size={10} className="animate-spin text-amber-500" />
@@ -1406,9 +1406,9 @@ export const RewardsPage: React.FC = () => {
               </div>
             )}
 
-            <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/30 transition-theme shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+            <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/30 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-theme">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
                   <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <span className="font-black text-xs md:text-base text-black dark:text-white group-hover:text-emerald-500 transition-colors duration-300 uppercase tracking-tight">
@@ -1425,7 +1425,7 @@ export const RewardsPage: React.FC = () => {
       </div>
 
       {/* Referred Friends & Deposit Verification History List */}
-      <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-emerald-500/20">
+      <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-all duration-300 hover:border-emerald-500/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[var(--border-main)] pb-6">
           <div>
             <h3 className="text-lg font-bold text-emerald-500 flex items-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
@@ -1456,7 +1456,7 @@ export const RewardsPage: React.FC = () => {
                     key={filterOpt}
                     type="button"
                     onClick={() => setFriendsFilter(filterOpt)}
-                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase text-center transition-theme cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase text-center transition-all cursor-pointer ${
                       friendsFilter === filterOpt
                         ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
@@ -1596,7 +1596,7 @@ export const RewardsPage: React.FC = () => {
                     }
 
                     return (
-                      <tr key={friend.referral_id} className="hover:bg-[var(--bg-primary)]/40 transition-theme">
+                      <tr key={friend.referral_id} className="hover:bg-[var(--bg-primary)]/40 transition-all">
                         <td className="py-4 pr-3">
                           <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
                             <div className="w-8 h-8 rounded-full bg-emerald-500/5 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase border border-emerald-500/10 select-none">
@@ -1650,7 +1650,7 @@ export const RewardsPage: React.FC = () => {
                                 <button
                                   onClick={() => handleRemindInvitation(friend.email)}
                                   disabled={remindingEmails[friend.email]}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 transition-theme cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
                                 >
                                   {remindingEmails[friend.email] ? (
                                     <RefreshCw size={10} className="animate-spin text-emerald-500" />
@@ -1680,7 +1680,7 @@ export const RewardsPage: React.FC = () => {
 
       {/* KYC Verification Card */}
       {contextUser?.kyc_required && contextUser?.kyc_status !== 'verified' && (
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
+        <div className={`rounded-[var(--radius)] p-5 md:p-8 border transition-all duration-300 bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
           contextUser?.kyc_status === 'pending' ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' : 
           contextUser?.kyc_status === 'rejected' ? 'bg-red-500/5 border-red-500/20 shadow-red-500/5' : ''
         }`}>
@@ -1755,7 +1755,7 @@ export const RewardsPage: React.FC = () => {
                     setSelfieData(null);
                     setKycFullName('');
                   }}
-                  className="mt-4 px-8 py-3 rounded-[var(--radius)] bg-emerald-500 text-white font-bold text-sm md:text-base hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
+                  className="mt-4 px-8 py-3 rounded-[var(--radius)] bg-emerald-500 text-white font-bold text-sm md:text-base hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
                 >
                   <RefreshCw size={18} />
                   {dir === 'rtl' ? 'إعادة المحاولة' : 'Try Again'}
@@ -1803,7 +1803,7 @@ export const RewardsPage: React.FC = () => {
                   <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
                     {t('fullNameAsPerIdUser')}
                   </label>
-                  <div className={`relative flex items-center rounded-[var(--radius)] border transition-theme bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50`}>
+                  <div className={`relative flex items-center rounded-[var(--radius)] border transition-all bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50`}>
                     <input 
                       type="text"
                       value={kycFullName || ''}
@@ -1830,7 +1830,7 @@ export const RewardsPage: React.FC = () => {
                     <button 
                       onClick={startCamera}
                       disabled={selfieCaptured}
-                      className={`w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 rounded-[var(--radius)] border-2 border-dashed transition-theme ${
+                      className={`w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 rounded-[var(--radius)] border-2 border-dashed transition-all duration-300 ${
                         selfieCaptured 
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 cursor-default shadow-sm'
                           : `border-[var(--border)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-secondary)] hover:text-emerald-500`
@@ -1856,7 +1856,7 @@ export const RewardsPage: React.FC = () => {
                 <button 
                   onClick={handleSubmitKYC}
                   disabled={!kycFullName.trim() || !selfieCaptured || isSubmitting}
-                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-base transition-theme ${
+                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-base transition-all duration-300 ${
                     !kycFullName.trim() || !selfieCaptured || isSubmitting
                       ? 'opacity-50 cursor-not-allowed bg-[var(--bg-primary)] text-[var(--text-muted)]'
                       : 'bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
@@ -1891,7 +1891,7 @@ export const RewardsPage: React.FC = () => {
               <button
                 onClick={handleClearHistory}
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[calc(var(--radius)/1.5)] border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-bold transition-theme disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[calc(var(--radius)/1.5)] border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-bold transition-all duration-300 disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw size={12} className={isSubmitting ? "animate-spin" : ""} />
                 {dir === 'rtl' ? 'مسح السجل' : 'Clear History'}
@@ -1973,7 +1973,7 @@ export const RewardsPage: React.FC = () => {
                           <td colSpan={4} className="px-6 py-4 text-center">
                             <button 
                               onClick={() => setTxOffset(prev => prev + TX_LIMIT)}
-                              className="text-emerald-500 hover:text-emerald-400 font-bold flex items-center gap-2 mx-auto transition-theme"
+                              className="text-emerald-500 hover:text-emerald-400 font-bold flex items-center gap-2 mx-auto transition-all"
                             >
                               <RefreshCw size={14} className={isSubmitting ? "animate-spin" : ""} />
                               {t('loadMore')}
@@ -2021,7 +2021,7 @@ export const RewardsPage: React.FC = () => {
               <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
                 {t('numberOfPoints')}
               </label>
-              <div className={`relative flex items-center rounded-[var(--radius)] border transition-theme bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
+              <div className={`relative flex items-center rounded-[var(--radius)] border transition-all bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
                 <input 
                   type="text"
                   value={convertAmount || ''}
@@ -2039,14 +2039,14 @@ export const RewardsPage: React.FC = () => {
             <div className="flex items-center gap-3 md:gap-4 mt-6 md:mt-8">
               <button 
                 onClick={() => setIsConvertModalOpen(false)}
-                className={`flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]`}
+                className={`flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-all duration-300 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]`}
               >
                 {t('cancel')}
               </button>
               <button 
                 onClick={handleConvertPoints}
                 disabled={isSubmitting}
-                className={`flex-[2] py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-theme bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-50`}
+                className={`flex-[2] py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-all duration-300 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-50`}
               >
                 {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : t('confirmConversion')}
               </button>
@@ -2072,7 +2072,7 @@ export const RewardsPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
+              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-all duration-300 z-10 ${
                 theme === 'dark' 
                   ? 'bg-[#161618] border-zinc-800 text-gray-100' 
                   : 'bg-white border-gray-150 text-gray-900'
@@ -2093,7 +2093,7 @@ export const RewardsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsClearHistoryConfirmOpen(false)}
-                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
+                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-all duration-300 ${
                     theme === 'dark' 
                       ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
                       : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
@@ -2105,7 +2105,7 @@ export const RewardsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleClearHistoryConfirm}
-                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-all duration-300 shadow-[0_0_12px_rgba(219,107,122,0.25)]"
                 >
                   {dir === 'rtl' ? 'تطهير السجل ومسحه' : 'Wipe & Clear History'}
                 </button>

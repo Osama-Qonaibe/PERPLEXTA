@@ -43,7 +43,7 @@ export const StudioPage = () => {
         </section>
 
         <section id="overview" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
+          <div className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-all duration-300">
             <BookOpen className="text-emerald-500 mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الأدوات وسير العمل' : 'Tools & Workflows'}</h3>
             <p className="text-gray-400">
@@ -52,7 +52,7 @@ export const StudioPage = () => {
                 : 'A sovereign platform designed for businesses and merchants to protect profits and eliminate financial waste. We combine intelligent AI content generation with local geo-targeted advertising for a pure, bot-free commercial environment.'}
             </p>
           </div>
-          <div id="api" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
+          <div id="api" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-all duration-300">
             <Cpu className="text-emerald-500 mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الربط البرمجي API' : 'API Integration'}</h3>
             <p className="text-gray-400">
@@ -61,7 +61,7 @@ export const StudioPage = () => {
                 : 'Your technical gateway to link your systems directly with Perplexta sovereign engines. Enjoy a flexible, secure API environment to automate commercial processes and integrate services with top-tier security.'}
             </p>
           </div>
-          <div id="subscription" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
+          <div id="subscription" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-all duration-300">
             <CreditCard className="text-emerald-500 mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الاشتراكات' : 'Subscriptions'}</h3>
             <p className="text-gray-400">
@@ -70,7 +70,7 @@ export const StudioPage = () => {
                 : 'Say goodbye to high commissions and exhausting advertising expenses that eat your profits. Choose the plan that fits your project size and enjoy unlimited powers that put you at the top of the competition.'}
             </p>
           </div>
-          <div id="legal" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
+          <div id="legal" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-all duration-300">
             <ShieldCheck className="text-emerald-500 mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'القوانين' : 'Legal'}</h3>
             <p className="text-gray-400">

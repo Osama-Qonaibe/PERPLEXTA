@@ -72,7 +72,7 @@ export const RecommendationsPage: React.FC = () => {
           </p>
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="w-full py-3.5 px-6 rounded-xl bg-emerald-500 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-theme flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-6 rounded-xl bg-emerald-500 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-all flex items-center justify-center gap-2"
           >
             <UserCheck size={18} />
             <span>{language === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</span>
@@ -85,7 +85,7 @@ export const RecommendationsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] pb-16">
       {/* Page Sticky Header */}
-      <div className="sticky top-0 z-30 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 py-3.5 transition-theme">
+      <div className="sticky top-0 z-30 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 py-3.5 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-sm">
@@ -109,7 +109,7 @@ export const RecommendationsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPrefModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/15 hover:bg-emerald-400 transition-theme"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/15 hover:bg-emerald-400 transition-all"
             >
               <Sliders size={14} />
               <span>{language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}</span>

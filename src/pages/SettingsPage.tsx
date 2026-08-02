@@ -221,7 +221,7 @@ export const SettingsPage: React.FC = () => {
            <div className="flex items-center gap-3">
               <button 
                 onClick={() => navigate('/')} 
-                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-theme group"
+                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-all duration-300 group"
               >
                 {dir === 'rtl' ? <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> : <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}
               </button>
@@ -235,7 +235,7 @@ export const SettingsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-theme group relative overflow-hidden ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-all duration-300 group relative overflow-hidden ${
                 activeTab === tab.id 
                   ? 'text-emerald-500'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
@@ -249,17 +249,17 @@ export const SettingsPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   />
                 )}
               </AnimatePresence>
 
-              <span className={`shrink-0 transition-theme relative z-10 ${
+              <span className={`shrink-0 transition-all duration-300 relative z-10 ${
                 activeTab === tab.id ? 'scale-110 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'group-hover:text-emerald-500'
               }`}>
                  {tab.icon}
               </span>
-              <span className={`font-bold text-sm tracking-tight relative z-10 transition-theme ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
+              <span className={`font-bold text-sm tracking-tight relative z-10 transition-all duration-300 ${activeTab === tab.id ? 'translate-x-1' : ''}`}>
                 {tab.label}
               </span>
             </button>
@@ -270,7 +270,7 @@ export const SettingsPage: React.FC = () => {
         <div className="p-4 border-t border-[var(--border)]/50">
           <button 
             onClick={() => logout()}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20 group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20 group"
           >
             <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
             <span className="font-bold text-sm tracking-tight">{t('logout')}</span>
@@ -281,7 +281,7 @@ export const SettingsPage: React.FC = () => {
       {/* Content Area - With Sticky Header */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Sticky Page Header */}
-        <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
+        <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-all duration-300 flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}

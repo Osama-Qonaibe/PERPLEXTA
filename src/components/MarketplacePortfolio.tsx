@@ -180,7 +180,7 @@ export const MarketplacePortfolio: React.FC = () => {
       <div className="flex border-b border-[var(--border)]/40 gap-2">
         <button
           onClick={() => setActiveSubTab('downloads')}
-          className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-theme border-b-2 cursor-pointer ${
+          className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-all border-b-2 cursor-pointer ${
             activeSubTab === 'downloads'
               ? 'border-emerald-500 text-emerald-500'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -190,7 +190,7 @@ export const MarketplacePortfolio: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveSubTab('affiliate')}
-          className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-theme border-b-2 cursor-pointer ${
+          className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-all border-b-2 cursor-pointer ${
             activeSubTab === 'affiliate'
               ? 'border-emerald-500 text-emerald-500'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -225,7 +225,7 @@ export const MarketplacePortfolio: React.FC = () => {
                 {purchased.map((item) => (
                   <div 
                     key={item.purchase_id} 
-                    className="flex flex-col border border-[var(--border)]/50 bg-[var(--bg-secondary)]/40 rounded-xl overflow-hidden shadow-xl hover:border-emerald-500/20 transition-theme group"
+                    className="flex flex-col border border-[var(--border)]/50 bg-[var(--bg-secondary)]/40 rounded-xl overflow-hidden shadow-xl hover:border-emerald-500/20 transition-all duration-300 group"
                   >
                     {/* Media Block */}
                     <div className="relative h-40 bg-[#0c0c0e] flex items-center justify-center overflow-hidden">
@@ -273,7 +273,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.download_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                              className="flex-1 h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-sm"
                             >
                               <Download size={13} />
                               <span>{isRtl ? 'تحميل الملف' : 'Download Package'}</span>
@@ -293,7 +293,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.preview_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-10 h-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 flex items-center justify-center transition-theme cursor-pointer active:scale-95"
+                              className="w-10 h-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 flex items-center justify-center transition-all cursor-pointer active:scale-95"
                               title={isRtl ? 'المعاينة المباشرة' : 'Live Preview'}
                             >
                               <Eye size={13} />
@@ -305,7 +305,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.video_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-10 h-9 rounded-lg border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/15 text-blue-400 flex items-center justify-center transition-theme cursor-pointer active:scale-95"
+                              className="w-10 h-9 rounded-lg border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/15 text-blue-400 flex items-center justify-center transition-all cursor-pointer active:scale-95"
                               title={isRtl ? 'الفيديو التوضيحي' : 'Video Explanation'}
                             >
                               <Play size={13} className="fill-current text-blue-400" />
@@ -346,7 +346,7 @@ export const MarketplacePortfolio: React.FC = () => {
 
               <button
                 onClick={handleCopyGlobalRefLink}
-                className="h-10 px-6 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[11px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-md shadow-emerald-500/10 hover:scale-102"
+                className="h-10 px-6 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-all font-black text-[11px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-md shadow-emerald-500/10 hover:scale-102"
               >
                 <Award size={14} />
                 <span>{isRtl ? 'نسخ رابط المتجر العام' : 'Copy General Store Link'}</span>

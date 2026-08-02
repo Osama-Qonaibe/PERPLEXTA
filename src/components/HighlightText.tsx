@@ -12,7 +12,7 @@ export const HighlightText: React.FC<HighlightTextProps> = ({
   text,
   query,
   className = '',
-  highlightClassName = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1 py-0.5 rounded-[3px] border border-emerald-500/20 transition-theme inline-block',
+  highlightClassName = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1 py-0.5 rounded-[3px] border border-emerald-500/20 transition-all inline-block',
   idPrefix = 'hl',
 }) => {
   if (!text) return null;

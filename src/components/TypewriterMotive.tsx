@@ -113,7 +113,7 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
     if (fullyTyped) {
       // White hot glow state when full sentence is typed (black in light mode)
       return (
-        <span className="text-gray-950 dark:text-white dark:drop-shadow-[0_0_12px_rgba(255,255,255,0.85)] transition-theme font-extrabold">
+        <span className="text-gray-950 dark:text-white dark:drop-shadow-[0_0_12px_rgba(255,255,255,0.85)] transition-all duration-500 font-extrabold">
           {text}
         </span>
       );
@@ -122,13 +122,13 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
     // Emerald Green state while actively typing or deleting
     return (
       <>
-        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme font-bold">
+        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-300 font-bold">
           {parts[0]}
         </span>
-        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.7)] transition-theme font-black">
+        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.7)] transition-all duration-300 font-black">
           {matchedHighlight}
         </span>
-        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme font-bold">
+        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-300 font-bold">
           {parts.slice(1).join(matchedHighlight)}
         </span>
       </>
@@ -148,10 +148,10 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
             style={{ fontFamily: "'29LT Bukra', '29lt bukra', 'Tajawal', sans-serif" }}
             className="text-[14px] sm:text-[16px] md:text-[21px] font-extrabold tracking-tight leading-none text-center flex items-center justify-center gap-1.5 h-full py-2"
           >
-            <span className="transition-theme inline-block">
+            <span className="transition-all duration-500 inline-block">
               {renderHighlightedText(displayedText, isFullyTyped)}
             </span>
-            <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-theme ${
+            <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-all duration-500 ${
               isFullyTyped 
                 ? 'bg-gray-950 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_12px_rgba(255,255,255,0.9)]' 
                 : 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]'

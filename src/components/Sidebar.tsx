@@ -527,7 +527,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                                 setNewTitle(chat.title);
                                                 setActiveOptionsMenuChatId(null);
                                               }}
-                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
+                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-all duration-200 text-start ${
                                                 theme === 'dark' 
                                                   ? 'text-gray-300 hover:bg-gray-800 hover:text-emerald-400' 
                                                   : 'text-gray-700 hover:bg-gray-100 hover:text-emerald-500'
@@ -544,7 +544,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                                 setDeletingChatConfirmId(chat.id);
                                                 setActiveOptionsMenuChatId(null);
                                               }}
-                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
+                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-all duration-200 text-start ${
                                                 theme === 'dark' 
                                                   ? 'text-red-405 hover:bg-red-500/10 hover:text-red-400' 
                                                   : 'text-red-500 hover:bg-red-50 hover:text-red-600'
