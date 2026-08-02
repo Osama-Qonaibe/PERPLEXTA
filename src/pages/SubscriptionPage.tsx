@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +33,7 @@ export const SubscriptionPage: React.FC = () => {
     if (params.get('success') === 'true') {
       const verifyAndRefresh = async () => {
         setIsVerifying(true);
-        const authToken = localStorage.getItem('app_token') || token;
+        const authToken = safeStorageGet('app_token') || token;
         if (sessionId && authToken) {
           try {
             await fetch(`/api/payments/verify-subscription-session?session_id=${sessionId}`, {

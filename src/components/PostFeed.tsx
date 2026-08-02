@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -121,7 +122,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   const [copiedAdId, setCopiedAdId] = useState<number | null>(null);
   const [activeChatAdId, setActiveChatAdId] = useState<number | null>(null);
   const [hiddenAdIds, setHiddenAdIds] = useState<number[]>(() => {
-    const saved = localStorage.getItem('perplexta_hidden_ads');
+    const saved = safeStorageGet('perplexta_hidden_ads');
     return saved ? JSON.parse(saved) : [];
   });
   const [activeMoreMenuId, setActiveMoreMenuId] = useState<number | null>(null);
@@ -129,7 +130,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   const handleHideAd = (adId: number) => {
     const newHidden = [...hiddenAdIds, adId];
     setHiddenAdIds(newHidden);
-    localStorage.setItem('perplexta_hidden_ads', JSON.stringify(newHidden));
+    safeStorageSet('perplexta_hidden_ads', JSON.stringify(newHidden));
     toast.success(isRtl ? 'تم إخفاء هذا المنشور من خلاصتك' : 'Post hidden from your feed');
     setActiveMoreMenuId(null);
   };

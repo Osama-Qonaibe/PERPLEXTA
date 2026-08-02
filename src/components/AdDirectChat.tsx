@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -197,7 +198,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     formDataUpload.append('file', file);
 
     try {
-      const authToken = token || localStorage.getItem('app_token') || '';
+      const authToken = token || safeStorageGet('app_token') || '';
       const res = await fetch('/api/files/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}` },

@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -29,7 +30,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [recentChats, setRecentChats] = useState<any[]>(() => {
     try {
-      const cached = localStorage.getItem('perplexta_recent_chats');
+      const cached = safeStorageGet('perplexta_recent_chats');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -37,7 +38,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   });
   const [isChatsLoading, setIsChatsLoading] = useState<boolean>(() => {
     try {
-      return !localStorage.getItem('perplexta_recent_chats');
+      return !safeStorageGet('perplexta_recent_chats');
     } catch {
       return true;
     }
@@ -64,7 +65,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   useEffect(() => {
     try {
-      localStorage.setItem('perplexta_recent_chats', JSON.stringify(recentChats));
+      safeStorageSet('perplexta_recent_chats', JSON.stringify(recentChats));
     } catch {}
   }, [recentChats]);
 

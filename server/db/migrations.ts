@@ -1891,24 +1891,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v79_language_font_config', 'Adding font_loading_config, font_config_ar, and font_config_en columns to system_settings', async (tx) => {
-      const defaultConfig = JSON.stringify({
-        ar: { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
-        en: { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
-        dynamicLoading: true
-      });
-      const defaultAr = JSON.stringify({ fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' });
-      const defaultEn = JSON.stringify({ fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' });
-
-      await ensureColumn(tx, 'system_settings', 'font_loading_config', 'TEXT');
-      await ensureColumn(tx, 'system_settings', 'font_config_ar', 'TEXT');
-      await ensureColumn(tx, 'system_settings', 'font_config_en', 'TEXT');
-
-      await tx.query(`
-        UPDATE system_settings 
-        SET font_loading_config = COALESCE(font_loading_config, $1),
-            font_config_ar = COALESCE(font_config_ar, $2),
-            font_config_en = COALESCE(font_config_en, $3)
-      `, [defaultConfig, defaultAr, defaultEn]);
+      await ensureColumn(tx, 'system_settings', 'font_loading_config', 'TEXT', null);
+      await ensureColumn(tx, 'system_settings', 'font_config_ar', 'TEXT', null);
+      await ensureColumn(tx, 'system_settings', 'font_config_en', 'TEXT', null);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');

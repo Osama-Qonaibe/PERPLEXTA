@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -9,7 +10,7 @@ export const AuthModal: React.FC = () => {
   const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const ref = searchParams.get('ref') || localStorage.getItem('app_ref') || undefined;
+  const ref = searchParams.get('ref') || safeStorageGet('app_ref') || undefined;
   
   const swipeHandlers = useSwipeToClose({
     onSwipeClose: () => setIsAuthModalOpen(false),
@@ -209,7 +210,7 @@ export const AuthModal: React.FC = () => {
                         checked={rememberMe}
                         onChange={(e) => {
                           setRememberMe(e.target.checked);
-                          localStorage.setItem('app_remember_me', e.target.checked ? 'true' : 'false');
+                          safeStorageSet('app_remember_me', e.target.checked ? 'true' : 'false');
                         }}
                       />
                       <div className="w-5 h-5 rounded-sm border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-theme"></div>

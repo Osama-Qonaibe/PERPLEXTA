@@ -66,7 +66,6 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         }}
         className={`w-full h-full object-cover transition-theme ${className}`}
         loading="lazy"
-        referrerPolicy="no-referrer"
       />
     </div>
   );

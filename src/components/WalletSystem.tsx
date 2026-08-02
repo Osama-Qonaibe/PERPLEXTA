@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -61,7 +62,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const uploadProofImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
-    const authToken = token || localStorage.getItem('app_token') || '';
+    const authToken = token || safeStorageGet('app_token') || '';
     const res = await fetch('/api/files/upload', {
       method: 'POST',
       headers: {

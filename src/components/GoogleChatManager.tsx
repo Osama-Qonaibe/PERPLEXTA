@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
@@ -73,7 +74,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
 
   useEffect(() => {
     // Restore token from localStorage if available
-    const savedToken = localStorage.getItem('google_chat_token');
+    const savedToken = safeStorageGet('google_chat_token');
     if (savedToken) {
       cachedChatToken = savedToken;
     }
@@ -105,7 +106,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
         throw new Error('Failed to obtain Google Chat access token.');
       }
       cachedChatToken = credential.accessToken;
-      localStorage.setItem('google_chat_token', credential.accessToken);
+      safeStorageSet('google_chat_token', credential.accessToken);
       setIsConnected(true);
       setGoogleUser(result.user);
       toast.success(isAr ? 'تم الاتصال بجوجل شات بنجاح' : 'Connected to Google Chat successfully');
@@ -138,7 +139,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
   const handleSignOut = async () => {
     await auth.signOut();
     cachedChatToken = null;
-    localStorage.removeItem('google_chat_token');
+    safeStorageRemove('google_chat_token');
     setIsConnected(false);
     setGoogleUser(null);
     setSpaces([]);

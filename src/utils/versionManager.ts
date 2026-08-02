@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 export class VersionManager {
   private static STORAGE_KEY = 'perplexta_build_hash';
 
@@ -16,13 +17,13 @@ export class VersionManager {
       const serverHash = data.buildHash || data.timestamp?.toString();
       if (!serverHash) return;
 
-      const localHash = localStorage.getItem(this.STORAGE_KEY);
+      const localHash = safeStorageGet(this.STORAGE_KEY);
 
       if (!localHash) {
-        localStorage.setItem(this.STORAGE_KEY, serverHash);
+        safeStorageSet(this.STORAGE_KEY, serverHash);
       } else if (localHash !== serverHash) {
         console.log('[VersionManager] New build detected. Reloading to apply fresh assets...');
-        localStorage.setItem(this.STORAGE_KEY, serverHash);
+        safeStorageSet(this.STORAGE_KEY, serverHash);
         
         // Unregister service workers to clear old cache
         if ('serviceWorker' in navigator) {

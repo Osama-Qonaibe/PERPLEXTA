@@ -140,7 +140,7 @@ app.use((req: any, res: any, next: any) => {
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
+    imgSrc: ["'self'", "data:", "blob:", "https:", "https://images.unsplash.com", "https://*.stripe.com", "https://*.googleapis.com", "https://*.googleusercontent.com", "https://lh3.googleusercontent.com", "https://profiles.google.com", "https://api.dicebear.com"],
     connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
     frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"],
@@ -395,15 +395,19 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const rawFilename = req.params.filename || '';
-    const filename = rawFilename.split('?')[0];
+    const filename = path.basename(rawFilename.split('?')[0]);
     const filePath = path.join(uploadsPath, filename);
+
+    console.log(`[Uploads] Requesting file: ${filename}, Full Path: ${filePath}`);
 
     let resolvedPath = path.resolve(filePath);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
+      console.warn(`[Uploads] Path traversal attempt blocked: ${filename}`);
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
     }
 
     if (!fs.existsSync(resolvedPath)) {
+      console.log(`[Uploads] File not found directly: ${filename}, searching for fallbacks...`);
       const ext = path.extname(filename);
       const nameWithoutExt = path.basename(filename, ext);
       const candidates = [
@@ -412,36 +416,44 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         path.join(uploadsPath, `${nameWithoutExt}.png`),
         path.join(uploadsPath, `${nameWithoutExt}.jpg`),
         path.join(uploadsPath, `${nameWithoutExt}.jpeg`),
-        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.webp`),
-        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.png`),
-        path.join(uploadsPath, `${nameWithoutExt.replace(/_opt$/, '')}.jpg`),
       ];
       let foundFallback = false;
       for (const cand of candidates) {
         if (fs.existsSync(cand)) {
+          console.log(`[Uploads] Fallback found: ${cand}`);
           resolvedPath = cand;
           foundFallback = true;
           break;
         }
       }
       if (!foundFallback) {
+        console.warn(`[Uploads] File not found: ${filename}`);
         return res.status(404).json({ error: 'File not found' });
       }
     }
 
     const actualExt = path.extname(resolvedPath).toLowerCase();
-    const reqExt = path.extname(filename).toLowerCase();
+    const mimeType = mediaMimeTypes[actualExt] || 'application/octet-stream';
 
-    if (mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt]) {
-      const mime = mediaMimeTypes[actualExt] || mediaMimeTypes[reqExt] || 'image/webp';
-      res.setHeader('Content-Type', mime);
+    const serveFile = (pathToSend: string) => {
+      console.log(`[Uploads] Serving file: ${pathToSend}, MIME: ${mimeType}`);
+      res.setHeader('Content-Type', mimeType);
       res.setHeader('Cache-Control', 'public, max-age=86400');
-      return res.sendFile(resolvedPath);
+      const readStream = fs.createReadStream(pathToSend);
+      readStream.on('error', (err) => {
+        console.error(`[Uploads] Streaming error for ${pathToSend}:`, err);
+        if (!res.headersSent) res.status(500).json({ error: 'Streaming error' });
+      });
+      return readStream.pipe(res);
+    };
+
+    if (mediaMimeTypes[actualExt]) {
+      return serveFile(resolvedPath);
     }
 
     const isPublic = await checkIsPublicFile(filename);
     if (isPublic) {
-      return res.sendFile(resolvedPath);
+      return serveFile(resolvedPath);
     }
 
     const authHeader = req.headers['authorization'];
@@ -465,7 +477,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
 
       const user = decoded as any;
-      if (user.role === 'admin') return res.sendFile(resolvedPath);
+      if (user.role === 'admin') return serveFile(resolvedPath);
 
       const cacheKey = `${user.id}:${filename}`;
       const now = Date.now();
@@ -473,7 +485,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         const cached = filePermissionCache.get(cacheKey)!;
         if (now < cached.expiresAt) {
           return cached.authorized
-            ? res.sendFile(resolvedPath)
+            ? serveFile(resolvedPath)
             : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
         }
         filePermissionCache.delete(cacheKey);
@@ -488,7 +500,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0 || isPublic;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
         return authorized
-          ? res.sendFile(resolvedPath)
+          ? serveFile(resolvedPath)
           : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
       } catch (dbErr) {
         console.error('[Upload Secure Handler] Database error:', dbErr);
@@ -496,6 +508,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       }
     });
   } catch (error) {
+    console.error('[Uploads] Error in /uploads/:filename route:', error);
     next(error);
   }
 });

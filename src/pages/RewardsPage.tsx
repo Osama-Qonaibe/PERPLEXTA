@@ -1,3 +1,4 @@
+import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -435,7 +436,7 @@ export const RewardsPage: React.FC = () => {
       try {
         const formData = new FormData();
         formData.append('file', activationProofFile);
-        const authToken = token || localStorage.getItem('app_token') || '';
+        const authToken = token || safeStorageGet('app_token') || '';
         const uploadRes = await fetch('/api/files/upload', {
           method: 'POST',
           headers: {
