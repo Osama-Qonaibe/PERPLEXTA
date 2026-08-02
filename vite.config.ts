@@ -156,34 +156,7 @@ export default defineConfig(({ mode }) => {
     ],
     define: {},
     build: {
-      chunkSizeWarningLimit: 1200,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'vendor-react';
-              }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              if (id.includes('recharts') || id.includes('d3')) {
-                return 'vendor-charts';
-              }
-              if (id.includes('framer-motion') || id.includes('motion')) {
-                return 'vendor-motion';
-              }
-              if (id.includes('html2canvas') || id.includes('pdfjs-dist') || id.includes('exceljs') || id.includes('jspdf')) {
-                return 'vendor-docs';
-              }
-              if (id.includes('katex') || id.includes('prismjs')) {
-                return 'vendor-syntax';
-              }
-              return 'vendor-misc';
-            }
-          }
-        }
-      }
+      chunkSizeWarningLimit: 2000,
     },
     resolve: {
       alias: {
