@@ -30,16 +30,18 @@ const queryClient = new QueryClient({
   },
 });
 
-/*
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
-*/
-
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
     <App />
-  </QueryClientProvider>,
+  </QueryClientProvider>
 );
+
+// Force unregister all service workers to ensure no stale cache issues
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
+

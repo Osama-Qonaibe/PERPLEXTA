@@ -12,19 +12,12 @@ export function getImageUrl(url?: string | null): string {
 
   // If already full URL or data/blob, return as is
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
-    return getAssetUrl(trimmed);
+    return trimmed;
   }
 
-  // Handle paths that already start with /uploads/
-  if (trimmed.startsWith('/uploads/')) {
-    return getAssetUrl(trimmed);
-  }
-
-  // Handle paths that start with uploads/
-  if (trimmed.startsWith('uploads/')) {
-    return getAssetUrl(`/${trimmed}`);
-  }
-
-  // Default: prepend /uploads/
-  return getAssetUrl(`/uploads/${trimmed}`);
+  // Ensure absolute path from root
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  
+  // Return absolute URL relative to domain
+  return getAssetUrl(path);
 }
