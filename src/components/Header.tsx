@@ -52,7 +52,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const titleEditRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [windowWidth, setWindowWidth] = useState(1200);
 
   const isHeaderThemeDark = theme === 'dark';
 

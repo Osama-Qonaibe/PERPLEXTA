@@ -438,7 +438,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const serveFile = (pathToSend: string) => {
       console.log(`[Uploads] Serving file: ${pathToSend}, MIME: ${mimeType}`);
       res.setHeader('Content-Type', mimeType);
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       const readStream = fs.createReadStream(pathToSend);
       readStream.on('error', (err) => {
         console.error(`[Uploads] Streaming error for ${pathToSend}:`, err);
