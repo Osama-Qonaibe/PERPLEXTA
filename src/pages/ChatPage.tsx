@@ -4351,7 +4351,15 @@ export const ChatPage: React.FC = () => {
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [generatedShareId, setGeneratedShareId] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isChatMessagesLoading, setIsChatMessagesLoading] = useState(false);
+  const [isChatMessagesLoading, setIsChatMessagesLoading] = useState<boolean>(() => {
+    try {
+      if (!routeChatId || routeChatId === 'new') return false;
+      const cached = localStorage.getItem(`perplexta_chat_messages_${routeChatId}`);
+      return !cached;
+    } catch {
+      return false;
+    }
+  });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [liveElapsed, setLiveElapsed] = useState<number>(0);
   const [imageProgress, setImageProgress] = useState<{ progress?: number; statusLabel?: string } | null>(null);
@@ -4414,11 +4422,27 @@ export const ChatPage: React.FC = () => {
   const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<any>(null);
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const activeId = routeChatId && routeChatId !== 'new' ? routeChatId : localStorage.getItem('last_chat_id');
+      const cached = activeId ? localStorage.getItem(`perplexta_chat_messages_${activeId}`) : null;
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [chatId, setChatId] = useState<string | null>(routeChatId && routeChatId !== 'new' ? routeChatId : null);
 
-  const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active') || (balance > 0 || balanceUSD > 0);
-  const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active') && (balance <= 0 && balanceUSD <= 0));
+  useEffect(() => {
+    if (chatId) {
+      try {
+        localStorage.setItem(`perplexta_chat_messages_${chatId}`, JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages, chatId]);
+
+  const hasActiveSub = !user || !!(user.subscription && user.subscription.status === 'active') || (balance > 0 || balanceUSD > 0) || !isAuthReady;
+  const isInputDisabled = !!(user && (!user.subscription || user.subscription.status !== 'active') && (balance <= 0 && balanceUSD <= 0) && isAuthReady);
 
   useEffect(() => {
     if (!query) {

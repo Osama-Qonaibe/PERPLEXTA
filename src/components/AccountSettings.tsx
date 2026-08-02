@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Sparkles, Languages, Monitor, Briefcase, Zap, Target, BookOpen, Code2, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { resolveImageUrl } from '../utils/imageResolver';
 
 interface AccountSettingsProps {
   user: any;
@@ -220,7 +221,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                 <div className="relative">
                   {user.avatar ? (
                     <img 
-                      src={user.avatar} 
+                      src={resolveImageUrl(user.avatar, 'avatar')} 
                       alt="Avatar" 
                       className="w-20 h-20 rounded-[var(--radius)] object-cover border-4 transition-theme shadow-xl"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}

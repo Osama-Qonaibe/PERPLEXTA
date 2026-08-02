@@ -74,6 +74,7 @@ export function createInternalPool(connectionString: string, max = 1, connection
   });
 }
 
+export function getLedgerPool() { return ledgerPool || pool; }
 export function getExternalPool() { return externalPool || pool; }
 export function getSecurityPool() { return securityPool || pool; }
 

@@ -5,11 +5,13 @@ import { Advertisement } from '../db/types.js';
 
 const router = express.Router();
 
+let isAdsTableEnsured = false;
+
 /**
  * Self-Healing helper: ensures the advertisements table exists and has initial seed data
  */
 export async function ensureAdsTable() {
-  if (!pool) return;
+  if (isAdsTableEnsured || !pool) return;
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS advertisements (
@@ -25,6 +27,7 @@ export async function ensureAdsTable() {
         badge_text_en VARCHAR(50) DEFAULT 'Sponsored',
         position VARCHAR(50) DEFAULT 'sidebar',
         format VARCHAR(50) DEFAULT 'sidebar',
+        video_url TEXT,
         display_order INTEGER DEFAULT 0,
         is_active BOOLEAN DEFAULT true,
         click_count INTEGER DEFAULT 0,
@@ -35,15 +38,6 @@ export async function ensureAdsTable() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    try {
-      await pool.query("ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'sidebar'");
-      await pool.query("ALTER TABLE advertisements ADD COLUMN IF NOT EXISTS video_url TEXT");
-      console.log('[Ads API] ✅ Format and video_url columns verified/added to advertisements table.');
-    } catch (e: any) {
-      console.error('[Ads API] Migration error (format/video_url column):', e.message);
-    }
-
     const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM advertisements');
     if (checkRes.rows[0].count === 0) {
       await pool.query(`
@@ -82,6 +76,7 @@ export async function ensureAdsTable() {
       `);
       console.log('[Ads API] 📢 Default sample advertisements created and seeded.');
     }
+    isAdsTableEnsured = true;
   } catch (err: any) {
     console.error('[Ads API] Failed to ensure advertisements table:', err.message);
   }

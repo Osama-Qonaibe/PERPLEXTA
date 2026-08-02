@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { pool, getLedgerPool } from '../db/index.js';
 import { 
   getUserWallet, 
   getTransactionHistory, 
@@ -44,10 +45,7 @@ router.post("/deposit-manual", authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'Transaction reference is required', error_ar: 'الرقم المرجعي أو الإثبات مطلوب' });
     }
 
-    const { ledgerPool } = await import('../db/index.js');
-    if (!ledgerPool) {
-      return res.status(500).json({ error: 'Ledger database not available' });
-    }
+    const ledger = getLedgerPool();
 
     const proofPayload = JSON.stringify({
       reference_id,
@@ -59,7 +57,7 @@ router.post("/deposit-manual", authenticateToken, async (req: any, res) => {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const result = await ledgerPool.query(query, [
+    const result = await ledger.query(query, [
       req.user.id,
       Number(amount),
       method,
@@ -75,11 +73,8 @@ router.post("/deposit-manual", authenticateToken, async (req: any, res) => {
 
 router.get("/manual-deposits", authenticateToken, async (req: any, res) => {
   try {
-    const { ledgerPool } = await import('../db/index.js');
-    if (!ledgerPool) {
-      return res.status(500).json({ error: 'Ledger database not available' });
-    }
-    const result = await ledgerPool.query(
+    const ledger = getLedgerPool();
+    const result = await ledger.query(
       'SELECT id, amount, currency, method, status, rejection_reason, created_at, proof_url FROM deposit_requests WHERE user_id = $1 ORDER BY created_at DESC',
       [req.user.id]
     );
@@ -92,11 +87,8 @@ router.get("/manual-deposits", authenticateToken, async (req: any, res) => {
 
 router.post("/clear", authenticateToken, async (req: any, res) => {
   try {
-    const { ledgerPool } = await import('../db/index.js');
-    if (!ledgerPool) {
-      return res.status(500).json({ error: 'Ledger database not available' });
-    }
-    await ledgerPool.query(
+    const ledger = getLedgerPool();
+    await ledger.query(
       'UPDATE ledger_transactions SET is_hidden = true WHERE user_id = $1',
       [req.user.id]
     );
@@ -113,11 +105,8 @@ router.post("/hide", authenticateToken, async (req: any, res) => {
     if (!transactionId) {
       return res.status(400).json({ error: 'Transaction ID is required' });
     }
-    const { ledgerPool } = await import('../db/index.js');
-    if (!ledgerPool) {
-      return res.status(500).json({ error: 'Ledger database not available' });
-    }
-    await ledgerPool.query(
+    const ledger = getLedgerPool();
+    await ledger.query(
       'UPDATE ledger_transactions SET is_hidden = true WHERE id = $1 AND user_id = $2',
       [transactionId, req.user.id]
     );
@@ -178,10 +167,7 @@ router.get("/history", authenticateToken, async (req: any, res) => {
 
 router.post("/activate-referral-balance", authenticateToken, async (req: any, res) => {
   try {
-    const { ledgerPool } = await import('../db/index.js');
-    if (!ledgerPool) {
-      return res.status(500).json({ error: 'Ledger database not available' });
-    }
+    const ledger = getLedgerPool();
     
     const { getUserWallet, getEconomySettings } = await import('../services/wallet.js');
     const { createNotification } = await import('../services/notifications.js');
@@ -208,7 +194,7 @@ router.post("/activate-referral-balance", authenticateToken, async (req: any, re
       });
     }
     
-    const client = await ledgerPool.connect();
+    const client = await ledger.connect();
     try {
       await client.query('BEGIN');
       
@@ -272,10 +258,7 @@ router.post("/activate-referral-balance", authenticateToken, async (req: any, re
 
 router.get("/referred-friends-detailed", authenticateToken, async (req: any, res) => {
   try {
-    const { ledgerPool, pool } = await import('../db/index.js');
-    if (!ledgerPool || !pool) {
-      return res.status(500).json({ error: 'Database service is temporarily unavailable' });
-    }
+    const ledger = getLedgerPool();
 
     const referrerId = req.user.id;
 
@@ -301,7 +284,7 @@ router.get("/referred-friends-detailed", authenticateToken, async (req: any, res
       ORDER BY r.created_at DESC
     `;
 
-    const ledgerRes = await ledgerPool.query(ledgerQuery, [referrerId]);
+    const ledgerRes = await ledger.query(ledgerQuery, [referrerId]);
     const referrals = ledgerRes.rows;
 
     if (referrals.length === 0) {

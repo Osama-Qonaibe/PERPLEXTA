@@ -72,18 +72,12 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      const headers: any = {
-        'Authorization': `Bearer ${token}`,
-        'Cache-Control': 'no-cache, no-store',
-        'Pragma': 'no-cache',
-      };
-
-      const bust = `_t=${Date.now()}`;
+      const headers: any = { 'Authorization': `Bearer ${token}` };
       const endpoint = (filterType && filterType !== 'all')
-        ? `/api/recommendations/${filterType}?${bust}`
-        : `/api/recommendations?limit=${limit * 2}&${bust}`;
+        ? `/api/recommendations/${filterType}`
+        : `/api/recommendations?limit=${limit * 2}`;
 
-      const res = await fetch(endpoint, { headers, cache: 'no-store' });
+      const res = await fetch(endpoint, { headers });
       const data = await res.json();
 
       if (data.success && Array.isArray(data.items)) {
@@ -261,7 +255,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
             </h3>
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] truncate">
               {subtitle || (isBulletinOnly
-                ? (language === 'ar' ? 'إعلانات وخدمات مقترحة وفقًا لتفضيلاتك' : 'Tailored ad suggestions based on your interests')
+                ? (language === 'ar' ? 'إعلانات وخدمات مقترحة وفقاً لتفضيلاتك' : 'Tailored ad suggestions based on your interests')
                 : (language === 'ar' ? 'مقترحات مخصصة بناءً على سلوكك واهتماماتك' : 'Tailored suggestions based on activity'))}
             </p>
           </div>
@@ -339,7 +333,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
         <div className="p-5 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 text-center space-y-2">
           <Megaphone size={24} className="mx-auto text-emerald-500/40" />
           <h4 className="text-xs font-bold text-[var(--text-primary)]">
-            {language === 'ar' ? 'لا تتوفر إعلانات موصى بها حاليًا' : 'No ad recommendations currently'}
+            {language === 'ar' ? 'لا تتوفر إعلانات موصى بها حالياً' : 'No ad recommendations currently'}
           </h4>
           <p className="text-[11px] text-[var(--text-muted)] max-w-xs mx-auto">
             {language === 'ar' 

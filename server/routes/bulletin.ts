@@ -7,11 +7,13 @@ import { io } from '../config/socket.js';
 
 const router = express.Router();
 
+let isBulletinTablesEnsured = false;
+
 /**
  * Self-healing helper: ensures bulletin board tables exist
  */
 export async function ensureBulletinTables() {
-  if (!pool) return;
+  if (isBulletinTablesEnsured || !pool) return;
   console.log('[Bulletin] Ensuring bulletin tables exist...');
   try {
     const tableQueries = [
@@ -257,6 +259,7 @@ export async function ensureBulletinTables() {
       `);
       console.log('[Bulletin] Bulletin tables verified/created successfully.');
     }
+    isBulletinTablesEnsured = true;
   } catch (err: any) {
     console.error('[Bulletin API] Error ensuring bulletin tables:', err.message);
   }

@@ -1,5 +1,3 @@
-import { ensureAdsTable } from '../routes/ads.js';
-import { ensureBulletinTables } from '../routes/bulletin.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import type { Pool as PgPool, PoolClient as PgPoolClient } from 'pg';
@@ -179,13 +177,6 @@ export async function ensureColumn(
 }
 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
-  try {
-    await ensureAdsTable();
-    await ensureBulletinTables();
-  } catch (e: any) {
-    console.error('[Migrations] Error running ads/bulletin migrations:', e.message);
-  }
-
   if (!pool) return;
   const client = await pool.connect();
   let ledgerClient: PgPoolClient | null = null;
@@ -1899,6 +1890,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_google_tool_connections_tool_id ON google_tool_connections(tool_id)`);
     });
 
+    await runVersioned('v79_language_font_config', 'Adding font_loading_config, font_config_ar, and font_config_en columns to system_settings', async (tx) => {
+      const defaultConfig = JSON.stringify({
+        ar: { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
+        en: { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
+        dynamicLoading: true
+      });
+      const defaultAr = JSON.stringify({ fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' });
+      const defaultEn = JSON.stringify({ fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' });
+
+      await ensureColumn(tx, 'system_settings', 'font_loading_config', 'TEXT', `'${defaultConfig}'`);
+      await ensureColumn(tx, 'system_settings', 'font_config_ar', 'TEXT', `'${defaultAr}'`);
+      await ensureColumn(tx, 'system_settings', 'font_config_en', 'TEXT', `'${defaultEn}'`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
   } catch (error: unknown) {
     const err = error as Error;
@@ -2453,6 +2458,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         blocked_paths TEXT DEFAULT '',
         seo_site_name_en TEXT,
         seo_site_name_ar TEXT,
+        font_loading_config TEXT,
+        font_config_ar TEXT,
+        font_config_en TEXT,
         bulletin_ad_daily_price NUMERIC(10,2) DEFAULT 5.00,
         live_gift_commission_percent INTEGER DEFAULT 30,
         sidebar_ad_impression_price NUMERIC(10,4) DEFAULT 0.0100,
@@ -2720,6 +2728,11 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         boost_tier VARCHAR(50),
         boost_price NUMERIC(10,2) DEFAULT 0,
         audience VARCHAR(50) DEFAULT 'public',
+        ad_format VARCHAR(50) DEFAULT 'post',
+        quick_questions JSONB DEFAULT '[]',
+        feeling VARCHAR(100),
+        tagged_users JSONB DEFAULT '[]',
+        is_ai_generated BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -2767,6 +2780,70 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         ads_count INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_page_followers',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_page_followers (
+        id SERIAL PRIMARY KEY,
+        page_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(page_id, user_id)
+      )`
+    },
+    {
+      name: 'bulletin_page_inquiries',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_page_inquiries (
+        id SERIAL PRIMARY KEY,
+        page_id INTEGER,
+        ad_id INTEGER,
+        sender_id INTEGER NOT NULL,
+        sender_name VARCHAR(255),
+        sender_phone VARCHAR(50),
+        message TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'unread',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_ad_likes',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_ad_likes (
+        id SERIAL PRIMARY KEY,
+        ad_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ad_id, user_id)
+      )`
+    },
+    {
+      name: 'bulletin_ad_comments',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_ad_comments (
+        id SERIAL PRIMARY KEY,
+        ad_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        author_name VARCHAR(255),
+        author_avatar TEXT,
+        content TEXT NOT NULL,
+        parent_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'bulletin_ad_messages',
+      query: `CREATE TABLE IF NOT EXISTS bulletin_ad_messages (
+        id SERIAL PRIMARY KEY,
+        ad_id INTEGER NOT NULL,
+        sender_id INTEGER NOT NULL,
+        recipient_id INTEGER NOT NULL,
+        sender_name VARCHAR(255),
+        sender_avatar TEXT,
+        message TEXT NOT NULL,
+        media_url TEXT,
+        is_encrypted BOOLEAN DEFAULT TRUE,
+        encryption_hash VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'sent',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -2852,33 +2929,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   for (const table of schema) {
     const p = table.pool || targetPool;
     await p.query(table.query);
-
-    const match = table.query.match(/\(([\s\S]+)\)/);
-    if (match) {
-      const columns = match[1].split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0 && !line.startsWith('--') && !line.match(/^(UNIQUE|PRIMARY KEY|FOREIGN KEY|CONSTRAINT)/i));
-
-      for (const colDef of columns) {
-        const colMatch = colDef.match(/^([a-zA-Z0-9_]+)\s+([\s\S]+)/);
-        if (colMatch) {
-          const colName = colMatch[1];
-          let colType = colMatch[2].trim();
-          if (colType.endsWith(',')) colType = colType.slice(0, -1).trim();
-
-          try {
-            await p.query(`ALTER TABLE "${table.name}" ADD COLUMN IF NOT EXISTS "${colName}" ${colType}`);
-          } catch (e: any) {
-            if (e.message && (e.message.includes('contains no default') || e.message.includes('null value'))) {
-               const fallbackType = colType.replace(/\s+NOT NULL/i, '');
-               try {
-                 await p.query(`ALTER TABLE "${table.name}" ADD COLUMN IF NOT EXISTS "${colName}" ${fallbackType}`);
-               } catch (fallbackErr) {}
-            }
-          }
-        }
-      }
-    }
   }
 
   try {
@@ -3479,10 +3529,38 @@ export async function verifySchemaIntegrity() {
           referral_activation_min_deposit: "NUMERIC(10, 2) DEFAULT '10.00'"
         }
       }
+    },
+    external: {
+      blog_articles: {
+        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at'],
+        repairCols: {}
+      },
+      blog_comments: {
+        columns: ['id', 'article_id', 'user_id', 'content', 'created_at', 'updated_at'],
+        repairCols: {}
+      },
+      blog_ratings: {
+        columns: ['id', 'article_id', 'user_id', 'rating', 'created_at'],
+        repairCols: {}
+      }
+    },
+    security: {
+      token_blacklist: {
+        columns: ['id', 'token', 'expires_at', 'created_at'],
+        repairCols: {}
+      },
+      security_alerts: {
+        columns: ['id', 'user_id', 'type', 'severity', 'description', 'metadata', 'is_resolved', 'ip_address', 'created_at', 'updated_at'],
+        repairCols: {}
+      },
+      admin_audit_logs: {
+        columns: ['id', 'admin_id', 'admin_email', 'action', 'target_resource', 'details', 'ip_address', 'user_agent', 'created_at'],
+        repairCols: {}
+      }
     }
   };
 
-  const verifyDbGroup = async (groupName: 'core' | 'ledger', targetPool: any) => {
+  const verifyDbGroup = async (groupName: 'core' | 'ledger' | 'external' | 'security', targetPool: any) => {
     if (!targetPool) return;
     try {
       const activeTables = await queryColumns(targetPool);
@@ -3538,8 +3616,9 @@ export async function verifySchemaIntegrity() {
   };
 
   await verifyDbGroup('core', pool);
-
   await verifyDbGroup('ledger', ledgerPool || pool);
+  await verifyDbGroup('external', externalPool || pool);
+  await verifyDbGroup('security', securityPool || pool);
 
   if (report.passed) {
     console.log('[Schema Integrity] 🛡️ All expected tables and columns verified successfully across all active pools!');

@@ -59,6 +59,18 @@ export async function getSystemSettings() {
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic blocked_paths column addition failed:', innerErr.message);
       }
+    } else if (errMsg.includes('font_loading_config')) {
+      console.log('[SystemSettings] font_loading_config column seems to be missing. Attempting dynamic self-healing...');
+      try {
+        await pool.query("ALTER TABLE system_settings ADD COLUMN font_loading_config TEXT");
+        await pool.query("ALTER TABLE system_settings ADD COLUMN font_config_ar TEXT");
+        await pool.query("ALTER TABLE system_settings ADD COLUMN font_config_en TEXT");
+        console.log('[SystemSettings] Successfully added font config columns dynamically!');
+        invalidateSystemSettingsCache();
+        return getCachedSystemSettings();
+      } catch (innerErr: any) {
+        console.error('[SystemSettings] Dynamic font config column addition failed:', innerErr.message);
+      }
     }
     throw err;
   }
@@ -126,6 +138,29 @@ export async function updateSystemSettings(settings: any) {
   const sidebar_ad_impression_price = settings.sidebar_ad_impression_price !== undefined ? settings.sidebar_ad_impression_price : (existing.sidebar_ad_impression_price || 0.0100);
   const sidebar_ad_click_price = settings.sidebar_ad_click_price !== undefined ? settings.sidebar_ad_click_price : (existing.sidebar_ad_click_price || 0.10);
 
+  let font_loading_config = settings.font_loading_config !== undefined 
+    ? (typeof settings.font_loading_config === 'object' ? JSON.stringify(settings.font_loading_config) : settings.font_loading_config)
+    : existing.font_loading_config;
+
+  let font_config_ar = settings.font_config_ar !== undefined 
+    ? (typeof settings.font_config_ar === 'object' ? JSON.stringify(settings.font_config_ar) : settings.font_config_ar)
+    : existing.font_config_ar;
+
+  let font_config_en = settings.font_config_en !== undefined 
+    ? (typeof settings.font_config_en === 'object' ? JSON.stringify(settings.font_config_en) : settings.font_config_en)
+    : existing.font_config_en;
+
+  if (settings.fontConfig) {
+    try {
+      const parsedFC = typeof settings.fontConfig === 'string' ? JSON.parse(settings.fontConfig) : settings.fontConfig;
+      font_loading_config = JSON.stringify(parsedFC);
+      if (parsedFC.ar) font_config_ar = JSON.stringify(parsedFC.ar);
+      if (parsedFC.en) font_config_en = JSON.stringify(parsedFC.en);
+    } catch (e) {
+      console.warn('[System] Failed to parse fontConfig payload:', e);
+    }
+  }
+
   // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
     ? settings.logo_url 
@@ -148,6 +183,7 @@ export async function updateSystemSettings(settings: any) {
       blocked_paths = $15, seo_site_name_en = $16, seo_site_name_ar = $17, 
       bulletin_ad_daily_price = $18, live_gift_commission_percent = $19, 
       sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21,
+      font_loading_config = $22, font_config_ar = $23, font_config_en = $24,
       updated_at = CURRENT_TIMESTAMP
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
@@ -155,7 +191,8 @@ export async function updateSystemSettings(settings: any) {
     google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
     blocked_paths, seo_site_name_en || '', seo_site_name_ar || '',
     bulletin_ad_daily_price, live_gift_commission_percent,
-    sidebar_ad_impression_price, sidebar_ad_click_price
+    sidebar_ad_impression_price, sidebar_ad_click_price,
+    font_loading_config, font_config_ar, font_config_en
   ]);
   
   await clearSettingsCache();

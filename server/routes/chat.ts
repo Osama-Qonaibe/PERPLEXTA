@@ -7,6 +7,7 @@ import {
   generateChatTitle, 
   createChat, 
   getUserChats, 
+  getUserChatById,
   getChatMessages, 
   addChatMessage, 
   getMessageCount,
@@ -83,6 +84,17 @@ router.get("/", authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     const status = error.message === 'Database initializing' ? 503 : 500;
     res.status(status).json({ error: error.message || 'Failed to fetch chats' });
+  }
+});
+
+router.get("/:id", authenticateToken, async (req: any, res) => {
+  try {
+    const chat = await getUserChatById(req.params.id, req.user.id);
+    if (!chat) return res.status(404).json({ error: 'Chat not found' });
+    res.json(chat);
+  } catch (error: any) {
+    const status = error.message === 'Database initializing' ? 503 : 500;
+    res.status(status).json({ error: error.message || 'Failed to fetch chat' });
   }
 });
 

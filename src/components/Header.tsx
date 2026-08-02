@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone, openInstallPrompt, installApp } = useAppContext();
   
   const [isOffline, setIsOffline] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -72,16 +72,15 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         return;
       }
       try {
-        const res = await fetch(`/api/chats`, {
+        const res = await fetch(`/api/chats/${chatId}`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
           }
         });
         if (res.ok) {
-          const chats = await res.json();
-          const currentChat = chats.find((c: any) => c.id === chatId || c.id?.toString() === chatId?.toString());
-          if (currentChat) {
+          const currentChat = await res.json();
+          if (currentChat && currentChat.title) {
             setChatTitle(currentChat.title);
           }
         }
@@ -247,6 +246,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 ) : null}
               </NavLink>
               
+              {!isStandalone && (
+                <button 
+                  onClick={installApp}
+                  className="hidden md:flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-500 transition-all active:scale-95 group shrink-0 shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] ms-1 cursor-pointer whitespace-nowrap"
+                  title={language === 'ar' ? 'تثبيت التطبيق على جهازك' : 'Install App to Device'}
+                >
+                  <Download size={14} className="text-emerald-500 group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="text-[12px] font-bold font-sans tracking-tight">{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
+                </button>
+              )}
+
               {shouldShowMenuButton && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
@@ -430,7 +440,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 navigate('/bulletin');
                 window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
               }}
-              className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
+              className="hidden md:flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
               title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
             >
               <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />

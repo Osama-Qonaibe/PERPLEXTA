@@ -8,7 +8,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 import { HighlightText } from './HighlightText';
-import { getMediaUrl } from '../utils/mediaUtils';
+import { resolveImageUrl } from '../utils/imageResolver';
+
+const getMediaUrl = resolveImageUrl;
 
 interface MarketplaceItem {
   id: number;
@@ -636,7 +638,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       {item.seller_avatar ? (
-                        <img src={item.seller_avatar} className="w-6 h-6 rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
+                        <img src={resolveImageUrl(item.seller_avatar, 'avatar')} className="w-6 h-6 rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-[10px]">
                           {item.seller_name.charAt(0)}

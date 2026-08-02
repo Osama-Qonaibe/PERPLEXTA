@@ -1,8 +1,9 @@
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { logSecurityAlert } from '../services/notifications.js';
 
 const isProd = process.env.NODE_ENV === 'production';
-const limitMultiplier = isProd ? 1 : 100;
+const limitMultiplier = 500;
 
 const resolveClientKey = (req: any): string => {
   if (req.user?.id) {
@@ -12,11 +13,23 @@ const resolveClientKey = (req: any): string => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
     if (token && token !== 'null' && token !== 'undefined') {
-      return `auth_${token.slice(-20)}`;
+      try {
+        const decoded: any = jwt.decode(token);
+        if (decoded && decoded.id) {
+          return `user_${decoded.id}`;
+        }
+      } catch (e) {}
+      return `auth_${token.slice(-32)}`;
     }
   }
   if (req.cookies && req.cookies.token) {
-    return `cookie_${req.cookies.token.slice(-20)}`;
+    try {
+      const decoded: any = jwt.decode(req.cookies.token);
+      if (decoded && decoded.id) {
+        return `user_${decoded.id}`;
+      }
+    } catch (e) {}
+    return `cookie_${req.cookies.token.slice(-32)}`;
   }
   return ipKeyGenerator(req.ip || 'anonymous');
 };
@@ -38,13 +51,17 @@ const createRateLimitHandler = (type: string) => {
       req
     ).catch(err => console.error('[RateLimit Log] Failed to record block:', err));
 
-    res.status(options.statusCode).send(options.message);
+    res.status(options.statusCode).json(
+      typeof options.message === 'object' 
+        ? options.message 
+        : { error: options.message || 'Rate limit exceeded' }
+    );
   };
 };
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1500 * limitMultiplier,
+  max: 5000 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -54,7 +71,7 @@ export const globalLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30 * limitMultiplier,
+  max: 100 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -64,7 +81,7 @@ export const authLimiter = rateLimit({
 
 export const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,       // 1 minute window
-  max: 40 * limitMultiplier,                    // 40 refreshes per minute per user — well above normal need
+  max: 100 * limitMultiplier,                    // 100 refreshes per minute per user
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -74,7 +91,7 @@ export const refreshLimiter = rateLimit({
 
 export const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60 * limitMultiplier,
+  max: 300 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -84,7 +101,7 @@ export const chatLimiter = rateLimit({
 
 export const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10 * limitMultiplier,
+  max: 20 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,
@@ -94,7 +111,7 @@ export const forgotPasswordLimiter = rateLimit({
 
 export const tokenLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 150 * limitMultiplier,
+  max: 1000 * limitMultiplier,
   keyGenerator: resolveClientKey,
   standardHeaders: true,
   legacyHeaders: false,

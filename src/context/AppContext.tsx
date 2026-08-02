@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 import { performSilentTokenRefresh } from '../lib/axios';
+import { applyLanguageFont, FontLoadingConfig, FontLanguageConfig } from '../utils/fontLoader';
 
 type Language = 'ar' | 'en';
 type Theme = 'dark' | 'light' | 'system';
@@ -54,6 +55,9 @@ export interface SiteSettings {
   googleSiteVerification: string;
   seoImageUrl: string | null;
   blocked_paths?: string;
+  fontLoadingConfig?: FontLoadingConfig | null;
+  fontConfigAr?: FontLanguageConfig | null;
+  fontConfigEn?: FontLanguageConfig | null;
 }
 
 interface AppContextType {
@@ -99,9 +103,15 @@ interface AppContextType {
   setMilestoneData: (data: any) => void;
   isMobile: boolean;
   isIOS: boolean;
+  isAndroid: boolean;
   isInstallable: boolean;
   isInstalling: boolean;
   isStandalone: boolean;
+  showInstallPromptModal: boolean;
+  setShowInstallPromptModal: (val: boolean) => void;
+  openInstallPrompt: () => void;
+  closeInstallPromptModal: () => void;
+  dismissInstallPrompt: () => void;
   isInstallationRunning: boolean;
   installProgress: number;
   installLogs: string[];
@@ -1683,8 +1693,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthReady(true);
     }, remaining);
   };
-  const [balance, setBalance] = useState<number>(0);
-  const [balanceUSD, setBalanceUSD] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('app_user_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && parsed.points !== undefined) {
+          return Number(parsed.points || 0);
+        }
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [balanceUSD, setBalanceUSD] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('app_user_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && parsed.balance !== undefined) {
+          return Number(parsed.balance || 0);
+        }
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isIOS] = useState(() => {
@@ -1803,10 +1839,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
            (window.navigator as any).standalone === true ||
            document.referrer.includes('android-app://');
   });
+  const [isAndroid] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android/i.test(navigator.userAgent);
+  });
+  const [showInstallPromptModal, setShowInstallPromptModal] = useState<boolean>(false);
   const [isInstallationRunning, setIsInstallationRunning] = useState<boolean>(false);
   const [installProgress, setInstallProgress] = useState<number>(0);
   const [installLogs, setInstallLogs] = useState<string[]>([]);
   const [installSuccess, setInstallSuccess] = useState<boolean>(false);
+
+  const openInstallPrompt = useCallback(() => {
+    setShowInstallPromptModal(true);
+  }, []);
+
+  const closeInstallPromptModal = useCallback(() => {
+    setShowInstallPromptModal(false);
+  }, []);
+
+  const dismissInstallPrompt = useCallback(() => {
+    setShowInstallPromptModal(false);
+    try {
+      sessionStorage.setItem('perplexta_pwa_prompt_dismissed', 'true');
+    } catch (e) {}
+  }, []);
 
   const closeInstallationModal = () => {
     setIsInstallationRunning(false);
@@ -1825,6 +1881,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const handleAppInstalled = () => {
       setIsStandalone(true);
       setIsInstallable(false);
+      setShowInstallPromptModal(false);
       setDeferredPrompt(null);
     };
 
@@ -1834,12 +1891,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
 
+    // Prompt user on arrival if app is not standalone and prompt was not dismissed in this session
+    if (typeof window !== 'undefined') {
+      try {
+        const isDismissed = sessionStorage.getItem('perplexta_pwa_prompt_dismissed') === 'true';
+        const isAppStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                               (window.navigator as any).standalone === true ||
+                               document.referrer.includes('android-app://');
+
+        if (!isAppStandalone && !isDismissed) {
+          const timer = setTimeout(() => {
+            setShowInstallPromptModal(true);
+          }, 1200);
+          return () => {
+            clearTimeout(timer);
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+            window.removeEventListener('resize', handleResize);
+          };
+        }
+      } catch (e) {}
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isIOS]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1857,7 +1936,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const installApp = async () => {
     if (typeof window === 'undefined') return;
 
-    if (isInstallable && deferredPrompt) {
+    if (deferredPrompt) {
       try {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
@@ -1865,6 +1944,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (outcome === 'accepted') {
           setDeferredPrompt(null);
           setIsInstallable(false);
+          setShowInstallPromptModal(false);
+          setIsStandalone(true);
           toast.success(
             language === 'ar' 
               ? 'تم تثبيت التطبيق بنجاح' 
@@ -1874,6 +1955,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
         console.error('PWA install prompt error:', err);
       }
+    } else {
+      setShowInstallPromptModal(true);
     }
   };
 
@@ -3122,6 +3205,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const fetchSettings = async () => {
         try {
           const settingsData = await fetchWithRetry('/api/system/settings', options, 1, 300);
+          let parsedFontConfig: FontLoadingConfig | null = null;
+          let parsedAr: FontLanguageConfig | null = null;
+          let parsedEn: FontLanguageConfig | null = null;
+          try {
+            if (settingsData.font_loading_config) {
+              parsedFontConfig = typeof settingsData.font_loading_config === 'string'
+                ? JSON.parse(settingsData.font_loading_config)
+                : settingsData.font_loading_config;
+            }
+            if (settingsData.font_config_ar) {
+              parsedAr = typeof settingsData.font_config_ar === 'string'
+                ? JSON.parse(settingsData.font_config_ar)
+                : settingsData.font_config_ar;
+            }
+            if (settingsData.font_config_en) {
+              parsedEn = typeof settingsData.font_config_en === 'string'
+                ? JSON.parse(settingsData.font_config_en)
+                : settingsData.font_config_en;
+            }
+          } catch (err) {
+            console.warn('[AppContext] Failed to parse font configs:', err);
+          }
+
           setSiteSettings({
             siteName: settingsData.site_name_en || '',
             siteNameAr: settingsData.site_name_ar || '',
@@ -3138,7 +3244,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             logoBase64: settingsData.logo_url || null,
             logoLightBase64: settingsData.logo_light_url || null,
             faviconBase64: settingsData.favicon_url || null,
-            seoImageUrl: settingsData.seo_image_url || null
+            seoImageUrl: settingsData.seo_image_url || null,
+            fontLoadingConfig: parsedFontConfig,
+            fontConfigAr: parsedAr,
+            fontConfigEn: parsedEn
           });
         } catch (err) {
           console.error('[AppContext] Settings fetch error:', err);
@@ -3208,6 +3317,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.dir = dir;
     document.documentElement.lang = language;
     localStorage.setItem('language', language);
+
+    applyLanguageFont(language, siteSettings.fontLoadingConfig);
 
     const resolvedTheme = theme === 'system' ? systemTheme : theme;
 
@@ -3374,9 +3485,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMilestoneData,
       isMobile,
       isIOS,
+      isAndroid,
       isInstallable,
       isInstalling,
       isStandalone,
+      showInstallPromptModal,
+      setShowInstallPromptModal,
+      openInstallPrompt,
+      closeInstallPromptModal,
+      dismissInstallPrompt,
       isInstallationRunning,
       installProgress,
       installLogs,

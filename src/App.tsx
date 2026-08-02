@@ -28,6 +28,8 @@ import { Toaster } from 'sonner';
 import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { InactivityWarningModal } from './components/InactivityWarningModal';
+import { PWAInstallPromptModal } from './components/PWAInstallPromptModal';
+import { MobileInstallBanner } from './components/MobileInstallBanner';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
@@ -58,6 +60,13 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         if (Array.isArray(data)) setDbRouteSeo(data);
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.body.classList.remove('layout-locked');
+    }, 100);
+    return () => clearTimeout(timer);
   }, []); // Only fetch once on mount
 
   useEffect(() => {
@@ -200,10 +209,14 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <IncentiveCard />
       <UpgradePromptModal />
       <InactivityWarningModal />
+      <PWAInstallPromptModal />
+      <MobileInstallBanner />
 
       <motion.div
-        animate={{ opacity: isAuthReady ? 1 : 0.6 }}
-        transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        key={location.pathname}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
         className="block h-full w-full"
       >
         {children}

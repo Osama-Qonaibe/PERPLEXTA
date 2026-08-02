@@ -39,34 +39,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Special handling for uploads: Network-first so users always get latest uploaded images
-  if (url.pathname.startsWith('/uploads/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(networkRes => {
-          // cache fresh successful responses for offline fallback
-          if (networkRes && networkRes.status === 200) {
-            const copy = networkRes.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
-          return networkRes;
-        })
-        .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(event.request).then(cached => {
-            if (cached) return cached;
-            // Optional: return a placeholder image from cache or public assets
-            return caches.match('/app-assets/placeholder-image.png').then(ph => ph || new Response('', { status: 404 }));
-          });
-        })
-    );
-    return;
-  }
-
   // Exclude security boundaries, dynamic APIs, and real-time WebSockets
   if (
     url.pathname.startsWith('/api/') || 
     url.pathname.includes('socket.io') ||
+    url.pathname.includes('/uploads/') ||
+    url.pathname.includes('/avatar') ||
     event.request.method !== 'GET'
   ) {
     return; // Pass through to browser network layer natively
@@ -96,28 +74,24 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // B. Static & Asset Requests (CSS, JS, Fonts, Images) -> Stale-While-Revalidate
+  // B. Static & Asset Requests (CSS, JS, Fonts, Images) -> Cache-First
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      const fetchPromise = fetch(event.request)
-        .then(networkResponse => {
-          // Cache successful asset responses
-          if (networkResponse.status === 200 || networkResponse.status === 304) {
-            const cacheCopy = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, cacheCopy);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(err => {
-          console.debug('[PWA SW] Network fetch failed for asset:', url.pathname, err);
-          // Return cached response if available, else let request fail
-          return cachedResponse;
-        });
-
-      // Serve immediately from cache if available, updating in the background; else wait for network
-      return cachedResponse || fetchPromise;
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then(networkResponse => {
+        if (networkResponse.status === 200 || networkResponse.status === 304) {
+          const cacheCopy = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, cacheCopy);
+          });
+        }
+        return networkResponse;
+      }).catch(err => {
+        console.debug('[PWA SW] Network fetch failed for asset:', url.pathname, err);
+        return cachedResponse;
+      });
     })
   );
 });
@@ -127,13 +101,89 @@ self.addEventListener('fetch', event => {
 function openPwaDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('perplexta-pwa-db', 2);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-    request.onupgradeneeded = (e) => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('outgoing')) {
-        db.createObjectStore('outgoing', { autoIncrement: true });
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('failed-messages')) {
+        db.createObjectStore('failed-messages', { keyPath: 'id' });
       }
     };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
 }
+
+function getFailedMessages() {
+  return openPwaDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('failed-messages', 'readonly');
+      const store = transaction.objectStore('failed-messages');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+function deleteFailedMessage(id) {
+  return openPwaDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('failed-messages', 'readwrite');
+      const store = transaction.objectStore('failed-messages');
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+async function syncFailedMessages() {
+  const messages = await getFailedMessages();
+  console.log('[PWA SW] Found failed messages to sync:', messages.length);
+  for (const msg of messages) {
+    try {
+      const response = await fetch('/api/chats/sync-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${msg.token}`
+        },
+        body: JSON.stringify({
+          chatId: msg.chatId,
+          content: msg.content,
+          toolId: msg.toolId,
+          modelId: msg.modelId
+        })
+      });
+
+      if (response.ok) {
+        console.log('[PWA SW] Message synced successfully:', msg.id);
+        await deleteFailedMessage(msg.id);
+        
+        // Broadcast to clients
+        const clients = await self.clients.matchAll();
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'sync-complete',
+            chatId: msg.chatId,
+            messageId: msg.id
+          });
+        });
+      } else if (response.status >= 400 && response.status < 500) {
+        // Discard validation/auth errors
+        console.warn('[PWA SW] Discarding invalid status sync:', msg.id, response.status);
+        await deleteFailedMessage(msg.id);
+      } else {
+        throw new Error(`Temporary status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('[PWA SW] Message sync failed, retaining inside DB state:', msg.id, err);
+      throw err; // Allows background sync retry
+    }
+  }
+}
+
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-failed-messages') {
+    event.waitUntil(syncFailedMessages());
+  }
+});

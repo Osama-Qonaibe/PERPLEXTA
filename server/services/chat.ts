@@ -20,6 +20,12 @@ export async function getUserChats(userId: string) {
   return result.rows;
 }
 
+export async function getUserChatById(chatId: string, userId: string) {
+  if (!pool) throw new Error('Database initializing');
+  const result = await pool.query('SELECT * FROM chats WHERE id = $1 AND user_id = $2', [chatId, userId]);
+  return result.rows[0] || null;
+}
+
 export async function getChatMessages(chatId: string, userId: string) {
   if (!pool) throw new Error('Database initializing');
   

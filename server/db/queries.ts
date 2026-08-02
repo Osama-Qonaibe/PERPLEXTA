@@ -203,7 +203,8 @@ export async function getCachedSystemSettings(): Promise<any> {
       google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
       stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, stripe_live_mode,
       paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
-      blocked_paths, seo_site_name_en, seo_site_name_ar
+      blocked_paths, seo_site_name_en, seo_site_name_ar,
+      font_loading_config, font_config_ar, font_config_en
     FROM system_settings LIMIT 1
   `);
 
@@ -220,10 +221,25 @@ export async function getCachedSystemSettings(): Promise<any> {
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
         stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, stripe_live_mode,
         paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
-        blocked_paths, seo_site_name_en, seo_site_name_ar
+        blocked_paths, seo_site_name_en, seo_site_name_ar,
+        font_loading_config, font_config_ar, font_config_en
       FROM system_settings LIMIT 1
     `);
     settings = secondTry.rows[0];
+  }
+
+  if (!settings.font_loading_config) {
+    settings.font_loading_config = JSON.stringify({
+      ar: { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
+      en: { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
+      dynamicLoading: true
+    });
+  }
+  if (!settings.font_config_ar) {
+    settings.font_config_ar = JSON.stringify({ fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' });
+  }
+  if (!settings.font_config_en) {
+    settings.font_config_en = JSON.stringify({ fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' });
   }
 
   if (settings.stripe_publishable_key) {

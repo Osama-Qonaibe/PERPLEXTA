@@ -1,5 +1,3 @@
-import { ensureAdsTable } from './routes/ads.js';
-import { ensureBulletinTables } from './routes/bulletin.js';
 import 'dotenv/config';
 import { createServer } from 'http';
 import app from './app.js';
@@ -10,6 +8,7 @@ import { runDatabaseMigrations, setIo, verifySchemaIntegrity } from './db/migrat
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { initCronJobs } from './jobs/cron.js';
+import { validateRequiredSecrets } from './utils/validateSecrets.js';
 
 const PORT = 3000;
 const MAX_DB_ATTEMPTS = 3;
@@ -52,10 +51,7 @@ async function startServer() {
   try {
     console.log('[Server] Initializing Perplexta Ecosystem...');
 
-    if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32) {
-      console.error('[FATAL] ENCRYPTION_KEY must be defined and at least 32 characters long.');
-      process.exit(1);
-    }
+    validateRequiredSecrets();
 
     if (process.env.NODE_ENV !== 'production') {
       const vite = await createViteServer({
@@ -89,8 +85,6 @@ async function startServer() {
     if (dbReady) {
       setIo(ioInstance);
       initCronJobs();
-      ensureAdsTable().catch(() => {});
-      ensureBulletinTables().catch(() => {});
       console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
     } else {
       console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');

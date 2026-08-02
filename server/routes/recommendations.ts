@@ -6,13 +6,6 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 
-const NO_CACHE_HEADERS = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-  'Pragma': 'no-cache',
-  'Surrogate-Control': 'no-store',
-  'CDN-Cache-Control': 'no-store',
-};
-
 const optionalAuth = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.split(' ')[1];
@@ -259,7 +252,6 @@ router.get('/', authenticateToken, async (req: any, res: any) => {
     const userId = req.user.id;
     const limit = Number(req.query.limit) || 12;
     const data = await generateRecommendationsForUser(userId, { limit });
-    res.set(NO_CACHE_HEADERS);
     res.json({
       success: true,
       recommendations: data.top_picks,
@@ -279,7 +271,6 @@ router.get('/marketplace', authenticateToken, async (req: any, res: any) => {
   try {
     const userId = req.user.id;
     const data = await generateRecommendationsForUser(userId, { limit: 20 });
-    res.set(NO_CACHE_HEADERS);
     res.json({
       success: true,
       items: data.by_type.marketplace
@@ -296,7 +287,6 @@ router.get('/bulletin', authenticateToken, async (req: any, res: any) => {
   try {
     const userId = req.user.id;
     const data = await generateRecommendationsForUser(userId, { limit: 20 });
-    res.set(NO_CACHE_HEADERS);
     res.json({
       success: true,
       items: data.by_type.bulletin
@@ -392,8 +382,6 @@ router.get('/preferences', authenticateToken, async (req: any, res: any) => {
       'SELECT preferred_categories, preferred_price_range, explicit_interests FROM user_recommendation_preferences WHERE user_id = $1',
       [userId]
     );
-
-    res.set(NO_CACHE_HEADERS);
 
     if (prefRes.rows.length === 0) {
       return res.json({

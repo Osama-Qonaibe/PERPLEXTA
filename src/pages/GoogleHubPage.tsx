@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { 
   LayoutGrid, MessageSquare, Users, Mail, HardDrive, 
-  Calendar, Shield, ExternalLink, ChevronRight, Search,
-  ArrowLeft, Bell, Settings2, Info, GripVertical, X, HelpCircle,
+  Calendar, Shield, ExternalLink, ChevronRight, ChevronLeft, Search,
+  ArrowLeft, ArrowRight, Bell, Settings2, Info, GripVertical, X, HelpCircle,
   Key, Zap, Lock, ShieldAlert, AlertTriangle, RefreshCw,
   Link2, Settings, LogOut
 } from 'lucide-react';
@@ -27,6 +27,85 @@ interface GoogleTool {
   };
 }
 
+const TOOL_DEFINITIONS: Record<string, {
+  title: { ar: string; en: string };
+  description: { ar: string; en: string };
+  steps: { ar: string[]; en: string[] };
+}> = {
+  chat: {
+    title: { ar: 'قوقل شات', en: 'Google Chat' },
+    description: { ar: 'تواصل فورياً مع فرق العمل والمجموعات', en: 'Collaborate instantly with teams and groups' },
+    steps: {
+      ar: [
+        'اضغط على "قوقل شات" لفتح واجهة المحادثة',
+        'سيطلب منك قوقل الموافقة على صلاحيات الوصول',
+        'بعد الموافقة، ستظهر غرف الدردشة والمساحات الخاصة بك',
+        'يمكنك إرسال الرسائل واستقبال التنبيهات فوراً'
+      ],
+      en: [
+        'Click on Google Chat to open the conversation interface',
+        'Google will request authorization for chat access',
+        'Once approved, your spaces and rooms will appear',
+        'You can send messages and receive notifications instantly'
+      ]
+    }
+  },
+  contacts: {
+    title: { ar: 'جهات اتصال قوقل', en: 'Google Contacts' },
+    description: { ar: 'إدارة ومزامنة جهات اتصالك باحترافية', en: 'Manage and sync your professional contacts' },
+    steps: {
+      ar: [
+        'افتح قسم جهات الاتصال للبدء',
+        'وافق على صلاحية الوصول لجهات الاتصال في حسابك',
+        'سيتم سحب جميع الأسماء والأرقام والبريد الإلكتروني',
+        'يمكنك البحث والتعديل والمزامنة مباشرة من هنا'
+      ],
+      en: [
+        'Open the Contacts section to begin',
+        'Authorize access to your Google account contacts',
+        'All names, numbers, and emails will be imported',
+        'You can search, edit, and sync directly from here'
+      ]
+    }
+  },
+  drive: {
+    title: { ar: 'قوقل درايف', en: 'Google Drive' },
+    description: { ar: 'الوصول إلى ملفاتك ومستنداتك السحابية', en: 'Access your cloud files and documents' },
+    steps: {
+      ar: [
+        'التكامل قيد التطوير حالياً',
+        'سيتيح لك استعراض ورفع الملفات مباشرة',
+        'يدعم المستندات والجداول والعروض التقديمية',
+        'مزامنة فورية مع مساحتك التخزينية'
+      ],
+      en: [
+        'Integration is currently under development',
+        'Will allow you to browse and upload files directly',
+        'Supports Docs, Sheets, and Slides',
+        'Instant sync with your cloud storage space'
+      ]
+    }
+  },
+  gmail: {
+    title: { ar: 'جي ميل', en: 'Gmail' },
+    description: { ar: 'إدارة رسائل البريد الإلكتروني الذكية', en: 'Smart email management and automation' },
+    steps: {
+      ar: [
+        'التكامل قيد التطوير حالياً',
+        'قراءة وإرسال رسائل البريد الإلكتروني',
+        'تصنيف ذكي للرسائل باستخدام الذكاء الاصطناعي',
+        'إشعارات فورية للرسائل الهامة'
+      ],
+      en: [
+        'Integration is currently under development',
+        'Read and send emails directly',
+        'Smart categorization using AI',
+        'Instant notifications for important emails'
+      ]
+    }
+  }
+};
+
 const GoogleHubPage: React.FC = () => {
   const { language, theme, dir, user } = useAppContext();
   const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'contacts' | 'drive' | 'gmail'>('overview');
@@ -36,102 +115,81 @@ const GoogleHubPage: React.FC = () => {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
-  const isRtl = language === 'ar';
+
+  const isRtl = language === 'ar' || dir === 'rtl';
+  const effectiveDir = isRtl ? 'rtl' : 'ltr';
 
   const [tools, setTools] = useState<GoogleTool[]>([
     {
       id: 'chat',
-      title: isRtl ? 'قوقل شات' : 'Google Chat',
-      description: isRtl ? 'تواصل فورياً مع فرق العمل والمجموعات' : 'Collaborate instantly with teams and groups',
+      title: isRtl ? TOOL_DEFINITIONS.chat.title.ar : TOOL_DEFINITIONS.chat.title.en,
+      description: isRtl ? TOOL_DEFINITIONS.chat.description.ar : TOOL_DEFINITIONS.chat.description.en,
       icon: <MessageSquare size={24} className="text-emerald-500" />,
       color: 'emerald',
       available: true,
       status: 'connected',
       unreadCount: 3,
       guide: {
-        steps: isRtl ? [
-          'اضغط على "قوقل شات" لفتح واجهة المحادثة',
-          'سيطلب منك قوقل الموافقة على صلاحيات الوصول',
-          'بعد الموافقة، ستظهر غرف الدردشة والمساحات الخاصة بك',
-          'يمكنك إرسال الرسائل واستقبال التنبيهات فوراً'
-        ] : [
-          'Click on Google Chat to open the conversation interface',
-          'Google will request authorization for chat access',
-          'Once approved, your spaces and rooms will appear',
-          'You can send messages and receive notifications instantly'
-        ]
+        steps: isRtl ? TOOL_DEFINITIONS.chat.steps.ar : TOOL_DEFINITIONS.chat.steps.en
       }
     },
     {
       id: 'contacts',
-      title: isRtl ? 'جهات اتصال قوقل' : 'Google Contacts',
-      description: isRtl ? 'إدارة ومزامنة جهات اتصالك باحترافية' : 'Manage and sync your professional contacts',
+      title: isRtl ? TOOL_DEFINITIONS.contacts.title.ar : TOOL_DEFINITIONS.contacts.title.en,
+      description: isRtl ? TOOL_DEFINITIONS.contacts.description.ar : TOOL_DEFINITIONS.contacts.description.en,
       icon: <Users size={24} className="text-blue-500" />,
       color: 'blue',
       available: true,
       status: 'syncing',
       unreadCount: 0,
       guide: {
-        steps: isRtl ? [
-          'افتح قسم جهات الاتصال للبدء',
-          'وافق على صلاحية الوصول لجهات الاتصال في حسابك',
-          'سيتم سحب جميع الأسماء والأرقام والبريد الإلكتروني',
-          'يمكنك البحث والتعديل والمزامنة مباشرة من هنا'
-        ] : [
-          'Open the Contacts section to begin',
-          'Authorize access to your Google account contacts',
-          'All names, numbers, and emails will be imported',
-          'You can search, edit, and sync directly from here'
-        ]
+        steps: isRtl ? TOOL_DEFINITIONS.contacts.steps.ar : TOOL_DEFINITIONS.contacts.steps.en
       }
     },
     {
       id: 'drive',
-      title: isRtl ? 'قوقل درايف' : 'Google Drive',
-      description: isRtl ? 'الوصول إلى ملفاتك ومستنداتك السحابية' : 'Access your cloud files and documents',
+      title: isRtl ? TOOL_DEFINITIONS.drive.title.ar : TOOL_DEFINITIONS.drive.title.en,
+      description: isRtl ? TOOL_DEFINITIONS.drive.description.ar : TOOL_DEFINITIONS.drive.description.en,
       icon: <HardDrive size={24} className="text-amber-500" />,
       color: 'amber',
       available: false,
       status: 'disconnected',
       unreadCount: 0,
       guide: {
-        steps: isRtl ? [
-          'التكامل قيد التطوير حالياً',
-          'سيتيح لك استعراض ورفع الملفات مباشرة',
-          'يدعم المستندات والجداول والعروض التقديمية',
-          'مزامنة فورية مع مساحتك التخزينية'
-        ] : [
-          'Integration is currently under development',
-          'Will allow you to browse and upload files directly',
-          'Supports Docs, Sheets, and Slides',
-          'Instant sync with your cloud storage space'
-        ]
+        steps: isRtl ? TOOL_DEFINITIONS.drive.steps.ar : TOOL_DEFINITIONS.drive.steps.en
       }
     },
     {
       id: 'gmail',
-      title: isRtl ? 'جي ميل' : 'Gmail',
-      description: isRtl ? 'إدارة رسائل البريد الإلكتروني الذكية' : 'Smart email management and automation',
+      title: isRtl ? TOOL_DEFINITIONS.gmail.title.ar : TOOL_DEFINITIONS.gmail.title.en,
+      description: isRtl ? TOOL_DEFINITIONS.gmail.description.ar : TOOL_DEFINITIONS.gmail.description.en,
       icon: <Mail size={24} className="text-red-500" />,
       color: 'red',
       available: false,
       status: 'disconnected',
       unreadCount: 0,
       guide: {
-        steps: isRtl ? [
-          'التكامل قيد التطوير حالياً',
-          'قراءة وإرسال رسائل البريد الإلكتروني',
-          'تصنيف ذكي للرسائل باستخدام الذكاء الاصطناعي',
-          'إشعارات فورية للرسائل الهامة'
-        ] : [
-          'Integration is currently under development',
-          'Read and send emails directly',
-          'Smart categorization using AI',
-          'Instant notifications for important emails'
-        ]
+        steps: isRtl ? TOOL_DEFINITIONS.gmail.steps.ar : TOOL_DEFINITIONS.gmail.steps.en
       }
     }
   ]);
+
+  // Update localized text dynamically when language or direction changes
+  useEffect(() => {
+    setTools(prev => prev.map(tool => {
+      const def = TOOL_DEFINITIONS[tool.id];
+      if (!def) return tool;
+      const langKey = isRtl ? 'ar' : 'en';
+      return {
+        ...tool,
+        title: def.title[langKey],
+        description: def.description[langKey],
+        guide: {
+          steps: def.steps[langKey]
+        }
+      };
+    }));
+  }, [isRtl]);
 
   useEffect(() => {
     fetchConnections();
@@ -146,10 +204,6 @@ const GoogleHubPage: React.FC = () => {
 
   const fetchChatNotifications = async () => {
     try {
-      // We need the Google Chat token from localStorage or similar
-      // Since GoogleChatManager handles its own auth, we might need a shared way to get the token
-      // For now, we'll try to fetch it if it's available in the manager's cached token
-      // In a real app, this would be managed in a shared context or secure backend cookie
       const chatToken = localStorage.getItem('google_chat_token');
       if (!chatToken) return;
 
@@ -184,7 +238,7 @@ const GoogleHubPage: React.FC = () => {
           return {
             ...tool,
             status: conn?.is_connected ? 'connected' : 'disconnected',
-            available: true // For this UI we want them available to be connected
+            available: true
           };
         }));
       }
@@ -258,7 +312,6 @@ const GoogleHubPage: React.FC = () => {
           unreadCount: 0
         })));
         
-        // Also clear local chat token
         localStorage.removeItem('google_chat_token');
         
         toast.success(isRtl ? 'تم سحب جميع صلاحيات الوصول بنجاح' : 'All access tokens revoked successfully', {
@@ -323,54 +376,63 @@ const GoogleHubPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] pb-20">
-      {/* Premium Header */}
+    <div 
+      className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] pb-20 font-sans"
+      dir={effectiveDir}
+    >
+      {/* Premium Sticky Header */}
       <div className="sticky top-0 z-40 bg-[var(--bg-main)]/80 backdrop-blur-xl border-b border-[var(--border-main)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <button 
               onClick={() => activeTab !== 'overview' ? setActiveTab('overview') : window.history.back()}
-              className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
+              className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+              title={isRtl ? 'رجوع' : 'Back'}
             >
-              <ArrowLeft size={20} className={isRtl ? 'rotate-180' : ''} />
+              {isRtl ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
             </button>
-            <div>
-              <h1 className="text-lg font-black font-sans tracking-tight flex items-center gap-2">
-                <LayoutGrid size={20} className="text-emerald-500" />
-                {isRtl ? 'تكاملات قوقل الذكية' : 'Google Smart Integrations'}
+            <div className="text-start">
+              <h1 className="text-base sm:text-lg font-black font-sans tracking-tight flex items-center gap-2">
+                <LayoutGrid size={20} className="text-emerald-500 shrink-0" />
+                <span>{isRtl ? 'تكاملات قوقل الذكية' : 'Google Smart Integrations'}</span>
               </h1>
-              <p className="text-[10px] text-gray-500 font-medium flex items-center gap-3">
-                {isRtl ? 'إدارة مركزية لجميع أدوات قوقل وورك سبيس' : 'Centralized management for Google Workspace'}
+              <p className="text-[10px] text-gray-500 font-medium flex items-center gap-2 flex-wrap">
+                <span>{isRtl ? 'إدارة مركزية لجميع أدوات قوقل وورك سبيس' : 'Centralized management for Google Workspace'}</span>
                 <a 
                   href={window.location.href} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/5 border border-blue-500/10 text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:bg-blue-500/10 transition-theme ml-1"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/5 border border-blue-500/10 text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:bg-blue-500/10 transition-theme ms-1"
                 >
                   <ExternalLink size={10} />
-                  {isRtl ? 'فتح في نافذة جديدة' : 'Open in New Tab'}
+                  <span>{isRtl ? 'فتح في نافذة جديدة' : 'Open in New Tab'}</span>
                 </a>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-1 max-w-md mx-4">
+          {/* Search bar with directional precision */}
+          <div className="flex items-center gap-2 flex-1 max-w-md mx-2 sm:mx-4">
             <div className="relative w-full group">
               <Search 
                 size={16} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 group-focus-within:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
+                className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 group-focus-within:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme pointer-events-none`} 
               />
               <input
                 type="text"
                 placeholder={isRtl ? 'بحث في الأدوات...' : 'Search tools...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 transition-theme"
+                className={`w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl py-2 ${
+                  isRtl ? 'pr-10 pl-8 text-right' : 'pl-10 pr-8 text-left'
+                } text-xs font-bold outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 transition-theme`}
+                dir={effectiveDir}
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                  className={`absolute ${isRtl ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer`}
+                  title={isRtl ? 'مسح البحث' : 'Clear search'}
                 >
                   <X size={14} />
                 </button>
@@ -378,15 +440,19 @@ const GoogleHubPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={() => setShowSecurityModal(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme group relative"
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme group relative cursor-pointer"
+              title={isRtl ? 'إدارة أمان الحساب' : 'Account Security Management'}
             >
               <Shield size={18} className="group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <div className="absolute -top-1 -end-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme">
+            <button 
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme cursor-pointer"
+              title={isRtl ? 'الإعدادات' : 'Settings'}
+            >
               <Settings2 size={18} />
             </button>
           </div>
@@ -403,23 +469,23 @@ const GoogleHubPage: React.FC = () => {
               className="space-y-8"
             >
               {/* Hero Section */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/5 border border-emerald-500/20 p-8">
-                <div className="relative z-10 max-w-2xl">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/5 border border-emerald-500/20 p-6 sm:p-8">
+                <div className={`relative z-10 max-w-2xl text-start`}>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-4 uppercase tracking-widest">
                     {isRtl ? 'تكامل احترافي' : 'Professional Integration'}
                   </span>
-                  <h2 className="text-3xl font-black mb-4 leading-tight">
-                    {isRtl ? 'قوة قوقل وورك سبيس، في قلب بيربليكستا' : 'The Power of Workspace, inside Perplexta'}
+                  <h2 className="text-2xl sm:text-3xl font-black mb-4 leading-tight text-[var(--text-main)]">
+                    {isRtl ? 'قوة قوقل وورك سبيس، في قلب بيربليكستا' : 'The Power of Workspace, Inside Perplexta'}
                   </h2>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm leading-relaxed mb-6">
                     {isRtl 
                       ? 'قمنا بتصميم هذا القسم ليكون مركز القيادة الخاص بك لجميع أدوات قوقل. يمكنك الآن إدارة المحادثات، جهات الاتصال، والملفات دون مغادرة المنصة.'
                       : 'We designed this section to be your command center for all Google tools. Manage chats, contacts, and files seamlessly without leaving the platform.'}
                   </p>
                 </div>
                 {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full -ml-24 -mb-24" />
+                <div className={`absolute top-0 ${isRtl ? 'left-0 -ml-32' : 'right-0 -mr-32'} w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mt-32 pointer-events-none`} />
+                <div className={`absolute bottom-0 ${isRtl ? 'right-0 -mr-24' : 'left-0 -ml-24'} w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full -mb-24 pointer-events-none`} />
               </div>
 
               {/* Tools Grid with Reorder Capability */}
@@ -464,7 +530,7 @@ const GoogleHubPage: React.FC = () => {
                         }}
                         role="button"
                         tabIndex={tool.available ? 0 : -1}
-                        className={`w-full relative p-5 rounded-2xl border text-right transition-theme group cursor-pointer ${
+                        className={`w-full relative p-5 rounded-2xl border text-start transition-theme group cursor-pointer ${
                           tool.available 
                             ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
                             : 'bg-gray-50/50 dark:bg-gray-900/20 border-dashed border-gray-200 dark:border-gray-800 opacity-60 grayscale cursor-not-allowed'
@@ -478,7 +544,8 @@ const GoogleHubPage: React.FC = () => {
                                   e.stopPropagation();
                                   setGuideTool(tool);
                                 }}
-                                className="p-1 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                                className="p-1 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors cursor-pointer"
+                                title={isRtl ? 'دليل الأداة' : 'Tool Guide'}
                               >
                                 <HelpCircle size={14} />
                               </button>
@@ -488,6 +555,7 @@ const GoogleHubPage: React.FC = () => {
                             </div>
                           </>
                         )}
+
                         <div className="flex items-start justify-between mb-4">
                           <div className={`w-12 h-12 rounded-2xl bg-${tool.color}-500/10 flex items-center justify-center transition-theme group-hover:scale-110 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)] relative`}>
                             {tool.icon}
@@ -495,16 +563,23 @@ const GoogleHubPage: React.FC = () => {
                               <motion.div 
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                               >
                                 {tool.unreadCount}
                               </motion.div>
                             )}
                           </div>
                         </div>
-                        <h3 className="font-black text-sm mb-2 flex items-center justify-between text-[var(--text-primary)]">
-                          {tool.title}
-                          {tool.available && <ChevronRight size={16} className={`transition-transform duration-300 group-hover:translate-x-${isRtl ? '-1' : '1'}`} />}
+
+                        <h3 className="font-black text-sm mb-2 flex items-center justify-between text-[var(--text-main)]">
+                          <span>{tool.title}</span>
+                          {tool.available && (
+                            isRtl ? (
+                              <ChevronLeft size={16} className="transition-transform duration-300 group-hover:-translate-x-1" />
+                            ) : (
+                              <ChevronRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                            )
+                          )}
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors min-h-[3rem]">
                           {tool.description}
@@ -512,12 +587,12 @@ const GoogleHubPage: React.FC = () => {
                         
                         {tool.available && (
                           <div className="absolute bottom-3 end-3 z-10">
-                             {getStatusBadge(tool.status)}
+                            {getStatusBadge(tool.status)}
                           </div>
                         )}
                         {!tool.available && (
-                          <div className="absolute top-4 left-4 flex flex-col gap-2">
-                             <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-gray-500/10 text-gray-400">
+                          <div className="absolute top-4 end-4 flex flex-col gap-2">
+                            <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-gray-500/10 text-gray-400">
                               {isRtl ? 'قريباً' : 'Soon'}
                             </span>
                           </div>
@@ -536,12 +611,12 @@ const GoogleHubPage: React.FC = () => {
                     <Search size={24} className="text-gray-400" />
                   </div>
                   <h3 className="font-bold text-lg mb-2">{isRtl ? 'لا توجد نتائج' : 'No tools found'}</h3>
-                  <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                  <p className="text-sm text-gray-500 max-w-xs mx-auto mb-4">
                     {isRtl ? 'لم نجد أي أدوات تطابق بحثك. جرب كلمات مفتاحية أخرى.' : 'We couldn\'t find any tools matching your search. Try different keywords.'}
                   </p>
                   <button 
                     onClick={() => setSearchQuery('')}
-                    className="mt-6 text-emerald-500 font-bold hover:underline"
+                    className="text-emerald-500 font-bold hover:underline cursor-pointer"
                   >
                     {isRtl ? 'عرض جميع الأدوات' : 'View all tools'}
                   </button>
@@ -550,11 +625,11 @@ const GoogleHubPage: React.FC = () => {
 
               {/* Recent Activity / Integration Status */}
               <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)] p-6 transition-theme hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
-                <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-                  <Info size={16} className="text-emerald-500 animate-pulse" />
-                  {isRtl ? 'حالة التكامل والاتصال' : 'Integration & Connection Status'}
+                <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-start">
+                  <Info size={16} className="text-emerald-500 animate-pulse shrink-0" />
+                  <span>{isRtl ? 'حالة التكامل والاتصال' : 'Integration & Connection Status'}</span>
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-start">
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
                     className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
@@ -573,6 +648,7 @@ const GoogleHubPage: React.FC = () => {
                       />
                     </div>
                   </motion.div>
+
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
                     className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
@@ -584,15 +660,16 @@ const GoogleHubPage: React.FC = () => {
                     </div>
                     <p className="text-[10px] text-gray-400 mt-2">SSL v3 / OAuth 2.0</p>
                   </motion.div>
+
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
                     className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
                   >
                     <p className="text-[10px] text-gray-500 mb-1">{isRtl ? 'المزامنة الأخيرة' : 'Last Sync'}</p>
                     <span className="text-sm font-bold">{isRtl ? 'منذ دقيقتين' : '2 minutes ago'}</span>
-                    <button className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors font-bold group">
+                    <button className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors font-bold group cursor-pointer">
                       <ExternalLink size={10} className="group-hover:rotate-12 transition-transform" />
-                      {isRtl ? 'تحديث الآن' : 'Refresh Now'}
+                      <span>{isRtl ? 'تحديث الآن' : 'Refresh Now'}</span>
                     </button>
                   </motion.div>
                 </div>
@@ -602,56 +679,61 @@ const GoogleHubPage: React.FC = () => {
 
           {activeTab === 'chat' && (
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: isRtl ? -20 : 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: isRtl ? 20 : -20 }}
               className="space-y-6"
             >
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-black flex items-center gap-3">
                   <MessageSquare className="text-emerald-500" />
-                  {isRtl ? 'مساعد قوقل شات' : 'Google Chat Assistant'}
+                  <span>{isRtl ? 'مساعد قوقل شات' : 'Google Chat Assistant'}</span>
                 </h2>
                 <button 
                   onClick={() => setActiveTab('overview')}
-                  className="text-xs font-bold text-emerald-500 hover:underline"
+                  className="text-xs font-bold text-emerald-500 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  {isRtl ? 'العودة للمركز' : 'Back to Hub'}
+                  {isRtl ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                  <span>{isRtl ? 'العودة للمركز' : 'Back to Hub'}</span>
                 </button>
               </div>
-              <GoogleChatManager dir={dir} theme={theme} />
+              <GoogleChatManager dir={effectiveDir} theme={theme} />
             </motion.div>
           )}
 
           {activeTab === 'contacts' && (
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: isRtl ? -20 : 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: isRtl ? 20 : -20 }}
               className="space-y-6"
             >
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-black flex items-center gap-3">
                   <Users className="text-blue-500" />
-                  {isRtl ? 'إدارة جهات الاتصال' : 'Contacts Management'}
+                  <span>{isRtl ? 'إدارة جهات الاتصال' : 'Contacts Management'}</span>
                 </h2>
                 <button 
                   onClick={() => setActiveTab('overview')}
-                  className="text-xs font-bold text-emerald-500 hover:underline"
+                  className="text-xs font-bold text-emerald-500 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  {isRtl ? 'العودة للمركز' : 'Back to Hub'}
+                  {isRtl ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                  <span>{isRtl ? 'العودة للمركز' : 'Back to Hub'}</span>
                 </button>
               </div>
-              <GoogleContacts dir={dir} theme={theme} />
+              <GoogleContacts dir={effectiveDir} theme={theme} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Help/Guide Modal */}
+      {/* Select / Manage Tool Modal */}
       <AnimatePresence>
         {selectedTool && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            dir={effectiveDir}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -666,8 +748,8 @@ const GoogleHubPage: React.FC = () => {
               className="relative w-full max-w-lg bg-[var(--bg-main)] rounded-3xl border border-[var(--border-main)] shadow-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-emerald-500/5 to-transparent">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl bg-${selectedTool.color}-500/10 flex items-center justify-center`}>
+                <div className="flex items-center gap-4 text-start">
+                  <div className={`w-12 h-12 rounded-2xl bg-${selectedTool.color}-500/10 flex items-center justify-center shrink-0`}>
                     {selectedTool.icon}
                   </div>
                   <div>
@@ -677,12 +759,12 @@ const GoogleHubPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedTool(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                <button onClick={() => setSelectedTool(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors cursor-pointer">
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-6 space-y-6 text-start">
                 {selectedTool.status === 'connected' ? (
                   <div className="space-y-4">
                     <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
@@ -697,16 +779,16 @@ const GoogleHubPage: React.FC = () => {
                     
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-gray-400 px-1">{isRtl ? 'الإعدادات' : 'Settings'}</label>
-                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-emerald-500/30 transition-theme group">
+                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-emerald-500/30 transition-theme group cursor-pointer">
                         <div className="flex items-center gap-3">
                           <Settings size={18} className="text-gray-400 group-hover:text-emerald-500" />
                           <span className="text-xs font-bold">{isRtl ? 'تخصيص المزامنة' : 'Sync Preferences'}</span>
                         </div>
-                        <ChevronRight size={16} className="text-gray-300" />
+                        {isRtl ? <ChevronLeft size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
                       </button>
                       <button 
                         onClick={() => handleDisconnectTool(selectedTool.id)}
-                        className="w-full p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between hover:bg-red-500/10 transition-theme group"
+                        className="w-full p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center justify-between hover:bg-red-500/10 transition-theme group cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <LogOut size={18} className="text-red-500" />
@@ -747,11 +829,11 @@ const GoogleHubPage: React.FC = () => {
               </div>
 
               <div className="p-4 bg-[var(--bg-secondary)] flex items-center justify-end gap-3 border-t border-[var(--border-main)]">
-                <button onClick={() => setSelectedTool(null)} className="px-4 py-2 text-xs font-bold text-gray-500">{isRtl ? 'إلغاء' : 'Cancel'}</button>
+                <button onClick={() => setSelectedTool(null)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer">{isRtl ? 'إلغاء' : 'Cancel'}</button>
                 {selectedTool.status !== 'connected' && (
                   <button 
                     onClick={() => handleConnectTool(selectedTool.id)}
-                    className="px-6 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95"
+                    className="px-6 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95 cursor-pointer"
                   >
                     {isRtl ? 'تفعيل الاتصال' : 'Activate Connection'}
                   </button>
@@ -765,7 +847,10 @@ const GoogleHubPage: React.FC = () => {
       {/* Help/Guide Modal */}
       <AnimatePresence>
         {guideTool && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            dir={effectiveDir}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -781,8 +866,8 @@ const GoogleHubPage: React.FC = () => {
             >
               {/* Modal Header */}
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-emerald-500/5 to-transparent">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl bg-${guideTool.color}-500/10 flex items-center justify-center`}>
+                <div className="flex items-center gap-4 text-start">
+                  <div className={`w-12 h-12 rounded-2xl bg-${guideTool.color}-500/10 flex items-center justify-center shrink-0`}>
                     {guideTool.icon}
                   </div>
                   <div>
@@ -792,19 +877,19 @@ const GoogleHubPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setGuideTool(null)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+              <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto text-start">
                 <div className="grid grid-cols-1 gap-4">
                   <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
                     <h4 className="text-xs font-black mb-3 flex items-center gap-2">
-                      <Key size={14} className="text-emerald-500" />
-                      {isRtl ? 'متطلبات الوصول' : 'Access Requirements'}
+                      <Key size={14} className="text-emerald-500 shrink-0" />
+                      <span>{isRtl ? 'متطلبات الوصول' : 'Access Requirements'}</span>
                     </h4>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
                       {isRtl 
@@ -815,16 +900,16 @@ const GoogleHubPage: React.FC = () => {
 
                   <div className="space-y-3">
                     <h4 className="text-xs font-black mb-1 flex items-center gap-2">
-                      <Zap size={14} className="text-amber-500" />
-                      {isRtl ? 'خطوات التفعيل' : 'Activation Steps'}
+                      <Zap size={14} className="text-amber-500 shrink-0" />
+                      <span>{isRtl ? 'خطوات التفعيل' : 'Activation Steps'}</span>
                     </h4>
                     <div className="space-y-2">
                       {guideTool.guide.steps.map((step: string, idx: number) => (
-                        <div key={idx} className="flex gap-3 group">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center text-[10px] font-black group-hover:border-emerald-500/50 transition-colors">
+                        <div key={idx} className="flex items-start gap-3 group text-start">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center text-[10px] font-black group-hover:border-emerald-500/50 transition-colors mt-0.5">
                             {idx + 1}
                           </span>
-                          <p className="text-[11px] text-gray-500 leading-tight py-0.5">{step}</p>
+                          <p className="text-[11px] text-gray-500 leading-relaxed py-0.5">{step}</p>
                         </div>
                       ))}
                     </div>
@@ -832,8 +917,8 @@ const GoogleHubPage: React.FC = () => {
 
                   <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
                     <h4 className="text-xs font-black mb-3 flex items-center gap-2">
-                      <Lock size={14} className="text-blue-500" />
-                      {isRtl ? 'الخصوصية والأمان' : 'Privacy & Security'}
+                      <Lock size={14} className="text-blue-500 shrink-0" />
+                      <span>{isRtl ? 'الخصوصية والأمان' : 'Privacy & Security'}</span>
                     </h4>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
                       {isRtl 
@@ -848,12 +933,12 @@ const GoogleHubPage: React.FC = () => {
               <div className="p-4 bg-[var(--bg-secondary)] flex items-center justify-end gap-3 border-t border-[var(--border-main)]">
                 <button 
                   onClick={() => setGuideTool(null)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-emerald-500 transition-colors"
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-emerald-500 transition-colors cursor-pointer"
                 >
                   {isRtl ? 'إغلاق' : 'Close'}
                 </button>
                 <button 
-                  className="px-5 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95"
+                  className="px-5 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95 cursor-pointer"
                   onClick={() => {
                     if (guideTool.available) {
                       setActiveTab(guideTool.id as 'overview' | 'chat' | 'contacts' | 'drive' | 'gmail');
@@ -894,7 +979,7 @@ const GoogleHubPage: React.FC = () => {
           en: 'Cancel'
         }}
         extraContent={
-          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
+          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-3 text-start">
             <Info size={16} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[10px] text-amber-600 font-bold leading-tight">
               {isRtl 
@@ -909,3 +994,4 @@ const GoogleHubPage: React.FC = () => {
 };
 
 export default GoogleHubPage;
+

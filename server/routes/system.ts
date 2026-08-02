@@ -54,6 +54,102 @@ router.get("/settings", async (req, res) => {
   }
 });
 
+const handleGetFontConfig = async (req: express.Request, res: express.Response) => {
+  try {
+    const settings = await getSystemSettings();
+    const reqLang = req.query.lang as string;
+    
+    let parsedConfig: any = {};
+    try {
+      parsedConfig = typeof settings.font_loading_config === 'string'
+        ? JSON.parse(settings.font_loading_config)
+        : (settings.font_loading_config || {});
+    } catch {
+      parsedConfig = {};
+    }
+
+    let parsedAr: any = {};
+    try {
+      parsedAr = typeof settings.font_config_ar === 'string'
+        ? JSON.parse(settings.font_config_ar)
+        : (settings.font_config_ar || {});
+    } catch {
+      parsedAr = {};
+    }
+
+    let parsedEn: any = {};
+    try {
+      parsedEn = typeof settings.font_config_en === 'string'
+        ? JSON.parse(settings.font_config_en)
+        : (settings.font_config_en || {});
+    } catch {
+      parsedEn = {};
+    }
+
+    const fontConfig = {
+      dynamicLoading: parsedConfig.dynamicLoading !== false,
+      ar: {
+        fontFamily: parsedAr.fontFamily || parsedConfig.ar?.fontFamily || 'Tajawal',
+        enabled: parsedAr.enabled !== false && parsedConfig.ar?.enabled !== false,
+        url: parsedAr.url || parsedConfig.ar?.url || 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap'
+      },
+      en: {
+        fontFamily: parsedEn.fontFamily || parsedConfig.en?.fontFamily || 'Space Grotesk',
+        enabled: parsedEn.enabled !== false && parsedConfig.en?.enabled !== false,
+        url: parsedEn.url || parsedConfig.en?.url || 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+      }
+    };
+
+    if (reqLang === 'ar' || reqLang === 'en') {
+      return res.json({
+        language: reqLang,
+        fontConfig: fontConfig[reqLang],
+        dynamicLoading: fontConfig.dynamicLoading
+      });
+    }
+
+    res.json(fontConfig);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch font configurations' });
+  }
+};
+
+const handlePostFontConfig = async (req: express.Request, res: express.Response) => {
+  try {
+    const { ar, en, dynamicLoading, font_loading_config, font_config_ar, font_config_en } = req.body;
+    
+    let fontConfigToSave = font_loading_config;
+    if (!fontConfigToSave && (ar || en || dynamicLoading !== undefined)) {
+      fontConfigToSave = {
+        ar: ar || { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
+        en: en || { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
+        dynamicLoading: dynamicLoading !== false
+      };
+    }
+
+    const updatePayload: any = {};
+    if (fontConfigToSave) updatePayload.font_loading_config = fontConfigToSave;
+    if (font_config_ar || ar) updatePayload.font_config_ar = font_config_ar || ar;
+    if (font_config_en || en) updatePayload.font_config_en = font_config_en || en;
+
+    await updateSystemSettings(updatePayload);
+    res.json({ success: true, message: 'Font loading configuration updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update font configuration' });
+  }
+};
+
+router.get("/settings/fonts", handleGetFontConfig);
+router.get("/fonts", handleGetFontConfig);
+router.get("/font-config", handleGetFontConfig);
+router.get("/settings/font-config", handleGetFontConfig);
+
+router.post("/settings/fonts", handlePostFontConfig);
+router.post("/fonts", handlePostFontConfig);
+router.post("/font-config", handlePostFontConfig);
+router.post("/settings/font-config", handlePostFontConfig);
+router.put("/settings/font-config", handlePostFontConfig);
+
 router.get("/economy", async (req, res) => {
   try {
     const economy = { ...await getEconomySettings() };

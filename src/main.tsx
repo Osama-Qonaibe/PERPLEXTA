@@ -1,8 +1,11 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
 import './index.css';
+import { VersionManager } from './utils/versionManager';
+
+// Initialize version auto-checker to prevent stale asset cache issues
+VersionManager.initAutoCheck();
 
 // Silence non-critical console calls in production to prevent telemetry / token leakage.
 // console.error is intentionally kept alive so ErrorBoundary crash reports
@@ -34,9 +37,7 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>,
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>,
 );

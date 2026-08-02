@@ -3,6 +3,8 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag, MoreHorizontal, Sparkles, Megaphone, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { SkeletonLoader } from './SkeletonLoader';
+import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { PERPLEXTA_TRANSITION, SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
 import { useSwipeToClose } from '../utils/swipe';
@@ -11,7 +13,7 @@ const sidebarSpring = SIDEBAR_MOTION_TRANSITION;
 const elasticSpring = SIDEBAR_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isStandalone } = useAppContext();
+  const { t, theme, dir: globalDir, language: globalLang, isSidebarOpen, setIsSidebarOpen, user, logout, setIsAuthModalOpen, siteSettings, token, plans, isMobile, isStandalone, openInstallPrompt, installApp } = useAppContext();
   
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -25,8 +27,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [recentChats, setRecentChats] = useState<any[]>([]);
-  const [isChatsLoading, setIsChatsLoading] = useState(true);
+  const [recentChats, setRecentChats] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('perplexta_recent_chats');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isChatsLoading, setIsChatsLoading] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem('perplexta_recent_chats');
+    } catch {
+      return true;
+    }
+  });
   const [streamingChatId, setStreamingChatId] = useState<string | null>(null);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
@@ -46,6 +61,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const [isContextCollapsed, setIsContextCollapsed] = useState(true);
 
   const currentChat = recentChats.find((c: any) => c.id?.toString() === activeChatId?.toString());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('perplexta_recent_chats', JSON.stringify(recentChats));
+    } catch {}
+  }, [recentChats]);
 
   useEffect(() => {
     if (currentChat) {
@@ -404,19 +425,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-4 min-h-0">
                   <div className="min-h-[200px]">
                     {isChatsLoading ? (
-                      <div className="space-y-1 px-3 py-2 animate-pulse w-full">
-                        {[...Array(5)].map((_, i) => (
-                          <div 
-                            key={i} 
-                            className={`flex items-center gap-3 w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} rounded-[4px] bg-gray-150/20 dark:bg-gray-800/10 border border-transparent`}
-                          >
-                            <div className="w-4 h-4 rounded-[4px] bg-gray-200/60 dark:bg-gray-800/60 shrink-0" />
-                            {isSidebarOpen && (
-                              <div className="h-2.5 bg-gray-200/40 dark:bg-gray-800/40 rounded w-1/2" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <SkeletonLoader type="chat-history" count={6} />
                     ) : recentChats.length > 0 ? (
                       <div className={isMobile ? "space-y-1" : "space-y-1"}>
                         {recentChats.map((chat) => {
@@ -797,6 +806,28 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
+                          {!isStandalone && (
+                            <button 
+                              onClick={() => { installApp(); setIsDropdownOpen(false); }} 
+                              className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 group/item`}
+                            >
+                              <Download size={isMobile ? 16 : 16} className="flex-shrink-0 text-emerald-500 group-hover/item:scale-110 transition-transform" />
+                              <AnimatePresence mode="wait" initial={false}>
+                                {isSidebarOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={sidebarTransition}
+                                    className="overflow-hidden whitespace-nowrap text-start"
+                                  >
+                                    <span className={`font-bold text-emerald-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </button>
+                          )}
+
                            <button 
                              onClick={() => { logout(); setIsDropdownOpen(false); }} 
                              className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-theme`}
@@ -834,7 +865,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             }}
                           >
                             {user.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              <img src={resolveImageUrl(user.avatar, 'avatar')} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
                               <User size={isMobile ? 18 : 20} className="text-gray-400 group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                             )}

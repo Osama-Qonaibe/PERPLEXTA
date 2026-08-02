@@ -33,14 +33,29 @@ export default defineConfig(({ mode }) => {
               handler: 'NetworkOnly',
             },
             {
+              urlPattern: ({ url }) => url.pathname.includes('/uploads/') || url.pathname.includes('/avatar') || url.pathname.includes('avatar'),
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'uploads-and-avatars-fresh',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 0,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
               urlPattern: ({ request, url }) =>
                 ['script', 'style', 'font', 'image'].includes(request.destination) ||
                 /\.(?:js|css|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot|ico)$/i.test(url.pathname),
-              handler: 'StaleWhileRevalidate',
+              handler: 'CacheFirst',
               options: {
                 cacheName: 'core-static-assets',
                 expiration: {
-                  maxEntries: 120,
+                  maxEntries: 200,
                   maxAgeSeconds: 30 * 24 * 60 * 60,
                 },
                 cacheableResponse: {
