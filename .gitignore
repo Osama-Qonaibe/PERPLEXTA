@@ -7,3 +7,9 @@ coverage/
 audit.txt
 .env*
 !.env.example
+
+uploads/*
+!uploads/.gitkeep
+google699d703f81d65612.html
+public/google699d703f81d65612.html
+*.bak

@@ -1,3 +1,4 @@
+import { resolveImageUrl } from '../utils/imageResolver';
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -8072,7 +8073,7 @@ const UserManagementView = ({
                           <div className="w-11 h-11 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-emerald-500/50 transition-theme">
                             {user.avatar ? (
                               <img
-                                src={user.avatar}
+                                src={resolveImageUrl(user.avatar, 'avatar')}
                                 alt=""
                                 className="w-full h-full object-cover"
                                 referrerPolicy="no-referrer"
@@ -8497,7 +8498,7 @@ const UserManagementView = ({
                   >
                     {selectedUser.avatar ? (
                       <img
-                        src={selectedUser.avatar}
+                        src={resolveImageUrl(selectedUser.avatar, 'avatar')}
                         alt=""
                         className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-300"
                         referrerPolicy="no-referrer"
