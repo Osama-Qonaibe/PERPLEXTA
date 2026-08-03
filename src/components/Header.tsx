@@ -201,7 +201,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
               <NavLink 
                 to="/" 
-                onClick={handleNewChat} 
+                 
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
