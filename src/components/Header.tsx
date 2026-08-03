@@ -55,6 +55,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const [windowWidth, setWindowWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
   const isHeaderThemeDark = theme === 'dark';
@@ -135,6 +136,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -185,6 +187,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const logoSrc = logoError ? null : rawLogoSrc;
 
+  useEffect(() => {
+    setLogoLoaded(false);
+    setLogoError(false);
+  }, [rawLogoSrc]);
+
   return (
     <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)] transition-theme`} />
@@ -214,9 +221,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <img 
                         src={logoSrc} 
                         alt="Logo" 
-                        className="w-full h-full object-cover block"
-                        onError={() => setLogoError(true)}
+                        className={`w-full h-full object-cover block transition-opacity duration-200 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        onLoad={() => setLogoLoaded(true)}
+                        onError={() => { setLogoError(true); setLogoLoaded(false); }}
                       />
+                      {!logoLoaded && (
+                        <div className="absolute inset-0 bg-[var(--bg-secondary)]" />
+                      )}
                     </motion.div>
                   ) : (
                     <motion.div
