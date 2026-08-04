@@ -1,4 +1,4 @@
-const CACHE_NAME = 'perplexta-pwa-v3';
+const CACHE_NAME = 'perplexta-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Never intercept or cache API requests or uploaded media/images (/uploads/)
+  // CRITICAL: Never intercept or cache API requests or uploaded media/images (/uploads/)
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || event.request.method !== 'GET') {
     return;
   }
@@ -39,6 +39,13 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
+        // Optionally cache successful static GET requests
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
         return networkResponse;
       })
       .catch(() => {

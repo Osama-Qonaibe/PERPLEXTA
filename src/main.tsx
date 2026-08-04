@@ -7,12 +7,34 @@ import { VersionManager } from './utils/versionManager';
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
-// Register PWA Service Worker
+// Register PWA Service Worker with automatic update detection
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // New update available, reload to apply
+                console.log('New PWA version available.');
+              }
+            }
+          };
+        }
+      };
+    }).catch((err) => {
       console.log('SW registration failed: ', err);
     });
+  });
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 
