@@ -1,5 +1,5 @@
-const CACHE_NAME = 'perplexta-pwa-v2';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'perplexta-pwa-v3';
+const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/app-assets/icon.png'
@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll(STATIC_ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
@@ -28,24 +28,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('/api/') || event.request.url.includes('/uploads/')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
+  const url = new URL(event.request.url);
+
+  // Never intercept or cache API requests or uploaded media/images (/uploads/)
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || event.request.method !== 'GET') {
     return;
   }
+
+  // Network-first strategy for navigation and static assets to prevent stale cache issues
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, response.clone());
-          return response;
+    fetch(event.request)
+      .then((networkResponse) => {
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
         });
-      });
-    }).catch(() => caches.match('/index.html'))
+      })
   );
 });
