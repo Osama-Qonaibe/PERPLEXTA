@@ -23,6 +23,7 @@ import {
   Info
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { getMediaUrl } from '../utils/mediaUtils';
 import { toast } from 'sonner';
 
 export interface MessengerThread {
@@ -276,7 +277,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 >
                   <div className="relative shrink-0">
                     {inq.sender_avatar ? (
-                      <img src={inq.sender_avatar} alt={inq.sender_name} className="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20" />
+                      <img src={getMediaUrl(inq.sender_avatar)} alt={inq.sender_name} className="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20" />
                     ) : (
                       <div className="w-11 h-11 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-extrabold text-sm ring-2 ring-emerald-500/20">
                         {(inq.sender_name || 'U')[0].toUpperCase()}
@@ -325,7 +326,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 </button>
                 <div className="relative">
                   {selectedThread.sender_avatar ? (
-                    <img src={selectedThread.sender_avatar} alt={selectedThread.sender_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30" />
+                    <img src={getMediaUrl(selectedThread.sender_avatar)} alt={selectedThread.sender_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-sm ring-2 ring-emerald-500/30">
                       <User size={18} />

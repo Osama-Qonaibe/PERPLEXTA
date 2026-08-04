@@ -2142,7 +2142,7 @@ export const BulletinBoardPage: React.FC = () => {
                   >
                     {/* Cover Banner */}
                     <div className="h-44 sm:h-56 w-full bg-gray-200 dark:bg-gray-800 relative cursor-pointer" onClick={() => handleOpenPageDetail(page.id)}>
-                      <img src={page.cover_url} alt={page.name} className="w-full h-full object-cover" />
+                      <img src={getMediaUrl(page.cover_url)} alt={page.name} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                       <span className="absolute top-3 start-3 px-3 py-1 rounded-full bg-black/60 text-white text-[11px] font-bold backdrop-blur-md">
                         {page.category}
@@ -2154,7 +2154,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                         <div className="flex items-end gap-3 cursor-pointer" onClick={() => handleOpenPageDetail(page.id)}>
                           <img
-                            src={page.avatar_url}
+                            src={getMediaUrl(page.avatar_url)}
                             alt={page.name}
                             className="w-20 h-20 sm:w-22 sm:h-22 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-lg shrink-0"
                           />
@@ -2471,7 +2471,7 @@ export const BulletinBoardPage: React.FC = () => {
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <img
-                            src={page.avatar_url}
+                            src={getMediaUrl(page.avatar_url)}
                             alt={page.name}
                             className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
                           />
@@ -2727,7 +2727,7 @@ export const BulletinBoardPage: React.FC = () => {
                 {/* Facebook Cover Image */}
                 <div className="h-48 sm:h-56 w-full bg-gray-200 dark:bg-gray-800 relative">
                   <img
-                    src={selectedPageDetail.page.cover_url}
+                    src={getMediaUrl(selectedPageDetail.page.cover_url)}
                     alt={selectedPageDetail.page.name}
                     className="w-full h-full object-cover"
                   />
@@ -2740,7 +2740,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <div className="px-6 -mt-14 pb-4 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <img
-                      src={selectedPageDetail.page.avatar_url}
+                      src={getMediaUrl(selectedPageDetail.page.avatar_url)}
                       alt={selectedPageDetail.page.name}
                       className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-xl shrink-0"
                     />
@@ -3088,7 +3088,7 @@ export const BulletinBoardPage: React.FC = () => {
                             className="relative w-26 h-42 sm:w-30 sm:h-48 rounded-2xl overflow-hidden bg-gray-900 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-theme p-2 flex flex-col justify-between border border-gray-200/50 dark:border-gray-800/80"
                           >
                             <img
-                              src={page.cover_url || page.avatar_url}
+                              src={getMediaUrl(page.cover_url || page.avatar_url)}
                               alt={page.name}
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-85"
                             />
@@ -3097,7 +3097,7 @@ export const BulletinBoardPage: React.FC = () => {
                             {/* Story Ring Avatar */}
                             <div className="relative z-10 w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-emerald-500 via-teal-400 to-blue-500 shadow-md">
                               <img
-                                src={page.avatar_url}
+                                src={getMediaUrl(page.avatar_url)}
                                 alt={page.name}
                                 className="w-full h-full rounded-full object-cover border border-black"
                               />
