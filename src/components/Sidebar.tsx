@@ -936,28 +936,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </div>
               )}
               
-              {deferredPrompt && !isStandalone && (
-                <div className={`mt-2 ${isMobile ? 'px-2' : 'px-6'}`}>
-                  <button
-                    onClick={installApp}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 transition-all duration-300 group"
-                  >
-                    <Download size={16} className="flex-shrink-0 group-hover:scale-110 transition-transform" />
-                    <AnimatePresence>
-                      {isSidebarOpen && (
-                        <motion.span
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
-                        >
-                          {language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </button>
-                </div>
-              )}
+
               
               <div className={`flex flex-col w-full h-4 overflow-hidden flex-shrink-0 mt-2 ${isMobile ? 'px-2' : 'px-6'} relative`}>
                 <AnimatePresence mode="wait">

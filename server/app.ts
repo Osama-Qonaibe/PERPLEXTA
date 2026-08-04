@@ -437,8 +437,28 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
     const serveFile = (pathToSend: string) => {
       console.log(`[Uploads] Serving file: ${pathToSend}, MIME: ${mimeType}`);
+      const stat = fs.statSync(pathToSend);
+      const mtime = stat.mtime.toUTCString();
+      const etag = `W/"${stat.size}-${stat.mtimeMs}"`;
+
       res.setHeader('Content-Type', mimeType);
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Last-Modified', mtime);
+      res.setHeader('ETag', etag);
+
+      const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav'].includes(actualExt);
+      if (isMedia) {
+        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+      } else {
+        res.setHeader('Cache-Control', 'private, max-age=3600');
+      }
+
+      const ifNoneMatch = req.headers['if-none-match'];
+      const ifModifiedSince = req.headers['if-modified-since'];
+
+      if (ifNoneMatch === etag || (ifModifiedSince && new Date(ifModifiedSince) >= stat.mtime)) {
+        return res.status(304).end();
+      }
+
       const readStream = fs.createReadStream(pathToSend);
       readStream.on('error', (err) => {
         console.error(`[Uploads] Streaming error for ${pathToSend}:`, err);

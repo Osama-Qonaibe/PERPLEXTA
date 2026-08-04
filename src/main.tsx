@@ -7,6 +7,15 @@ import { VersionManager } from './utils/versionManager';
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
+// Register PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.log('SW registration failed: ', err);
+    });
+  });
+}
+
 // Silence non-critical console calls in production to prevent telemetry / token leakage.
 // console.error is intentionally kept alive so ErrorBoundary crash reports
 // reach the server logger and are never silently swallowed.
