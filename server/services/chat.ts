@@ -5,32 +5,36 @@ import { io } from '../config/socket.js';
 import { callAIProvider } from './ai.js';
 import { decrypt } from '../utils/crypto.js';
 import { getAppName } from './system.js';
-import { CORE_PROTOCOL } from '../config/protocol.js';
+import { getProtocolString } from '../config/protocol.js';
 import { VideoResourceProvider } from './videoResourceProvider.js';
 
-export async function createChat(userId: string, title?: string) {
+export async function createChat(userId: string | number, title?: string) {
   if (!pool) throw new Error('Database initializing');
+  const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+  if (userCheck.rows.length === 0) {
+    throw new Error('User not found');
+  }
   const result = await pool.query('INSERT INTO chats (user_id, title) VALUES ($1, $2) RETURNING *', [userId, title || 'New Chat']);
   return result.rows[0];
 }
 
-export async function getUserChats(userId: string) {
+export async function getUserChats(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
   const result = await pool.query('SELECT * FROM chats WHERE user_id = $1 ORDER BY updated_at DESC', [userId]);
   return result.rows;
 }
 
-export async function getUserChatById(chatId: string, userId: string) {
+export async function getUserChatById(chatId: string | number, userId: string | number) {
   if (!pool) throw new Error('Database initializing');
   const result = await pool.query('SELECT * FROM chats WHERE id = $1 AND user_id = $2', [chatId, userId]);
   return result.rows[0] || null;
 }
 
-export async function getChatMessages(chatId: string, userId: string) {
+export async function getChatMessages(chatId: string | number, userId: string | number) {
   if (!pool) throw new Error('Database initializing');
   
   const chatCheck = await pool.query('SELECT user_id FROM chats WHERE id = $1', [chatId]);
-  if (chatCheck.rows.length === 0 || chatCheck.rows[0].user_id !== userId) {
+  if (chatCheck.rows.length === 0 || String(chatCheck.rows[0].user_id) !== String(userId)) {
     return null;
   }
 
@@ -265,7 +269,7 @@ export async function generateChatTitle(chatId: string, firstMessageContent: str
 
     const route = routeResult.rows[0];
     const appName = getAppName('en');
-    const systemPrompt = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName) + "\n\nGenerate a professional title for this chat based on the user's first message. Keep it short (max 50 chars).";
+    const systemPrompt = getProtocolString(appName) + "\n\nGenerate a professional title for this chat based on the user's first message. Keep it short (max 50 chars).";
 
     const keyRes = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [route.primary_provider]);
     if (keyRes.rows.length === 0) return;

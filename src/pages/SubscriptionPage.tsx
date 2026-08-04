@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
+import { ALL_TOOLS } from '../constants';
 import { toast } from 'sonner';
 
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -485,23 +486,6 @@ export const SubscriptionPage: React.FC = () => {
                         storage_mb: <Cloud size={12} className="md:w-3.5 md:h-3.5" />,
                         marketplace_listings: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
                       };
-
-                      const ALL_TOOLS = [
-                        "chat",
-                        "chat_fast",
-                        "chat_pro",
-                        "chat_reasoning",
-                        "perplexta_analysis",
-                        "legal_analysis",
-                        "notebook",
-                        "image",
-                        "video",
-                        "stt",
-                        "tts",
-                        "learning",
-                        "code",
-                        "canvas"
-                      ];
 
                       return ALL_TOOLS.map((toolId) => {
                         const limitVal = (plan.limits && plan.limits[toolId] !== undefined)

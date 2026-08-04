@@ -36,12 +36,3 @@ createRoot(document.getElementById('root')!).render(
   </QueryClientProvider>
 );
 
-// Force unregister all service workers to ensure no stale cache issues
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister();
-    }
-  });
-}
-

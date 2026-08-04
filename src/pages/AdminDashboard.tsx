@@ -1,10 +1,14 @@
-import { resolveImageUrl } from '../utils/imageResolver';
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { useToast } from "../hooks/useToast";
 import { motion, AnimatePresence } from "motion/react";
 import { perplextaPageTransition } from "../constants/motions";
+import { ALL_TOOLS } from "../constants";
+import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../utils/adminUtils";
+import { AdminService } from "../services/adminService";
+import { useAdminAuth } from "../hooks/useAdminAuth";
 import { HighlightText } from "../components/HighlightText";
 import {
   Music,
@@ -94,9 +98,11 @@ import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 const CommandCenterView = ({
   theme,
   t,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { token, language, socket, dir } = useAppContext();
   const [stats, setStats] = useState<{
@@ -117,10 +123,7 @@ const CommandCenterView = ({
   const [apiHealth, setApiHealth] = useState<any[]>([]);
   const [serverHealth, setServerHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const hasFetched = useRef(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -131,12 +134,7 @@ const CommandCenterView = ({
     onConfirm: () => Promise<void> | void;
   } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -162,19 +160,26 @@ const CommandCenterView = ({
       }
     } catch (error) {
       if (error instanceof Error && error.message === "Failed to fetch") {
-        console.debug(
-          "[Admin] Initial fetch failed, likely server starting...",
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.debug(
+            "[Admin] Initial fetch failed, likely server starting...",
+          );
+        }
       } else {
-        console.error("Error fetching admin data:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error fetching admin data:", error);
+        }
       }
     } finally {
       setLoading(false);
+      hasFetched.current = true;
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    if (token) fetchData();
+    if (token && !hasFetched.current) {
+      fetchData();
+    }
 
     // Live Broadcasting Listener
     if (socket) {
@@ -200,7 +205,7 @@ const CommandCenterView = ({
         socket.off("admin_stats_update", handleStatsUpdate);
       };
     }
-  }, [token, socket]);
+  }, [token, socket, fetchData]);
 
   const handleDeleteActivity = (id: string, type: string) => {
     if (!token) return;
@@ -259,33 +264,6 @@ const CommandCenterView = ({
     });
   };
 
-  const handleReconcile = (userId: string) => {
-    if (!token) return;
-    setConfirmModal({
-      isOpen: true,
-      title: { ar: "تدقيق الرصيد؟", en: "Reconcile Balance?" },
-      description: {
-        ar: language === "ar" ? "هل أنت متأكد من رغبتك في إعادة تسوية وتدقيق رصيد هذا المستخدم؟" : "Are you sure you want to audit and reconcile this user's wallet?",
-        en: t("reconcileConfirm") || "Are you sure you want to audit and reconcile this user's wallet?"
-      },
-      variant: 'warning',
-      onConfirm: async () => {
-        try {
-          const res = await fetch(`/api/admin/reconcile-wallet/${userId}`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            showToast(t("reconcileSuccess") || "Wallet reconciled successfully", "success");
-            fetchData();
-          }
-        } catch (err) {
-          console.error("Reconciliation failed", err);
-        }
-      }
-    });
-  };
-
   const handleBulkDeleteActivity = (type: "ai_generation" | "system_event" | "all" | "log") => {
     if (!token) return;
     const mappedType = type;
@@ -324,7 +302,7 @@ const CommandCenterView = ({
             if (mappedType === "ai_generation") {
               setActivity((prev) => prev.filter((a) => a.type !== "ai_generation"));
             } else if (mappedType === "system_event") {
-              setActivity((prev) => prev.filter((a) => a.type === "ai_generation"));
+              setActivity((prev) => prev.filter((a) => a.type !== "system_event"));
             } else {
               setActivity([]);
             }
@@ -386,7 +364,7 @@ const CommandCenterView = ({
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ ids, type: type === "activity" ? "log" : type }),
+            body: JSON.stringify({ ids, type: type === "activity" ? "log" : "alert" }),
           });
 
           if (res.ok) {
@@ -1375,24 +1353,6 @@ const CommandCenterView = ({
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? "bg-[var(--bg-surface)] border border-emerald-500/30 text-emerald-500"
-              : "bg-[var(--bg-surface)] border border-red-500/30 text-red-500"
-          } border`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
-
       {/* Action Confirmation Modal */}
       {confirmModal && confirmModal.isOpen && (
         <ActionConfirmationModal
@@ -1416,6 +1376,7 @@ const ApiKeysVaultView = ({
   dir,
   providerModels,
   setProviderModels,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
@@ -1424,12 +1385,9 @@ const ApiKeysVaultView = ({
   setProviderModels: React.Dispatch<
     React.SetStateAction<Record<string, any[]>>
   >;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
-  const { token, language } = useAppContext();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const { token, language, user } = useAppContext();
   const [syncModal, setSyncModal] = useState<{
     isOpen: boolean;
     type: "models" | "usage" | "test";
@@ -1716,16 +1674,16 @@ const ApiKeysVaultView = ({
     );
   };
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
   const handleTestKeyConnection = async (
     id: string,
     key: string,
     urlKey?: string,
   ) => {
+    if (user?.role !== 'admin') {
+      showToast(language === 'ar' ? "غير مصرح لك بالقيام بهذا الإجراء" : "Unauthorized action", "error");
+      return false;
+    }
+
     if (
       !key &&
       !urlKey &&
@@ -1808,6 +1766,10 @@ const ApiKeysVaultView = ({
   };
 
   const handleSaveKey = async (id: string, key: string, urlKey?: string) => {
+    if (user?.role !== 'admin') {
+      showToast(language === 'ar' ? "غير مصرح لك بالقيام بهذا الإجراء" : "Unauthorized action", "error");
+      return;
+    }
     if (!key && !urlKey) return;
 
     // First, force a test. We MUST verify before saving as per Perplexta mandate.
@@ -2044,30 +2006,6 @@ const ApiKeysVaultView = ({
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto relative">
-      {/* Toast Notification */}
-      {toast &&
-        createPortal(
-          <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-              toast.type === "success"
-                ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                  : "bg-white border border-emerald-200 text-emerald-600"
-                : theme === "dark"
-                  ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                  : "bg-white border border-red-200 text-red-600"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle size={20} />
-            ) : (
-              <AlertCircle size={20} />
-            )}
-            <span className="font-medium text-sm">{toast.message}</span>
-          </div>,
-          document.body,
-        )}
-
       {/* Sync Modal */}
       {syncModal?.isOpen &&
         createPortal(
@@ -3754,25 +3692,36 @@ const OrchestratorView = ({
   t,
   dir,
   providerModels,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
   providerModels: Record<string, any[]>;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { token, language } = useAppContext();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const [tools, setTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const providerOptions = useMemo(() => (
+    <>
+      <option value="">
+        {language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
+      </option>
+      <option value="openai">OpenAI</option>
+      <option value="anthropic">Anthropic</option>
+      <option value="google">Google Gemini</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="groq">Groq (LPU)</option>
+      <option value="mistral">Mistral AI</option>
+      <option value="openrouter">OpenRouter</option>
+      <option value="together">Together AI</option>
+      <option value="xai">xAI (Grok)</option>
+      <option value="ollama">Ollama (Local/Cloud)</option>
+    </>
+  ), [language]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -4013,28 +3962,6 @@ const OrchestratorView = ({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto relative">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
-
       {loadingTools ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <RefreshCw size={40} className="text-emerald-500 animate-spin" />
@@ -4231,7 +4158,7 @@ const OrchestratorView = ({
                           className={`w-full h-10 px-3 rounded-md border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                           dir="ltr"
                         >
-                          {renderProviderOptions()}
+                          {providerOptions}
                         </select>
                         <select
                           value={tool.primaryModel || ""}
@@ -4286,7 +4213,7 @@ const OrchestratorView = ({
                             className="w-full h-9 px-2 rounded-sm border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
                             dir="ltr"
                           >
-                            {renderProviderOptions()}
+                            {providerOptions}
                           </select>
                           <select
                             value={tool.fallback1Model || ""}
@@ -4336,7 +4263,7 @@ const OrchestratorView = ({
                           className="w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme"
                           dir="ltr"
                         >
-                          {renderProviderOptions()}
+                          {providerOptions}
                         </select>
                       </div>
                       <div className="flex-1">
@@ -4386,7 +4313,7 @@ const OrchestratorView = ({
                           className="w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme"
                           dir="ltr"
                         >
-                          {renderProviderOptions()}
+                          {providerOptions}
                         </select>
                       </div>
                       <div className="flex-1">
@@ -4434,18 +4361,16 @@ const FinanceVaultView = ({
   theme,
   t,
   dir,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { token, language, setIsOperationPending } = useAppContext();
   const [activeTab, setActiveTab] = useState("economy");
   const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string | { ar: string; en: string };
@@ -4475,11 +4400,6 @@ const FinanceVaultView = ({
     bank_swift: "",
     paypal_email: "",
   });
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   // Manual Transaction States & Verification Logic
   const [financialRequests, setFinancialRequests] = useState<{
@@ -4952,28 +4872,6 @@ const FinanceVaultView = ({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto relative">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
-
       <div
         className={`flex space-x-2 rtl:space-x-reverse border-b ${theme === "dark" ? "border-[var(--border-main)]" : "border-[var(--border-main)]"} pb-px overflow-x-auto custom-scrollbar`}
       >
@@ -6216,28 +6114,6 @@ const FinanceVaultView = ({
   );
 };
 
-const ALL_TOOLS = [
-  "chat",
-  "chat_fast",
-  "chat_pro",
-  "chat_reasoning",
-  "perplexta_analysis",
-  "legal_analysis",
-  "notebook",
-  "image",
-  "video",
-  "stt",
-  "tts",
-  "learning",
-  "code",
-  "canvas",
-  "sovereign_memory",
-  "sovereign_search",
-  "x402_api",
-  "storage_mb",
-  "marketplace_listings",
-];
-
 const PlansSubscriptionsView = ({
   theme,
   t,
@@ -7235,10 +7111,12 @@ const UserManagementView = ({
   theme,
   t,
   dir,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { plans, token, user: currentUser, refreshUser } = useAppContext();
   const [users, setUsers] = useState<any[]>([]);
@@ -7263,10 +7141,6 @@ const UserManagementView = ({
   });
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   // Ledger Card State
   const [ledgerAmount, setLedgerAmount] = useState("");
@@ -7275,15 +7149,16 @@ const UserManagementView = ({
   const [ledgerUnit, setLedgerUnit] = useState<"PTS" | "USD">("PTS");
   const [supportNotes, setSupportNotes] = useState("");
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const fetchUsers = async () => {
+  /**
+   * جلب قائمة المستخدمين من الخادم
+   * @param signal - AbortSignal لإلغاء الطلب
+   * @returns void
+   */
+  const fetchUsers = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/users", {
+        signal,
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -7297,21 +7172,28 @@ const UserManagementView = ({
         // Handle session expiry
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
       if (error instanceof Error && error.message === "Failed to fetch") {
-        console.debug(
-          "[Admin] User fetch failed, likely server initializing...",
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.debug(
+            "[Admin] User fetch failed, likely server initializing...",
+          );
+        }
       } else {
-        console.error("Error fetching users:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error fetching users:", error);
+        }
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    if (token) fetchUsers();
-  }, [token]);
+    const controller = new AbortController();
+    if (token) fetchUsers(controller.signal);
+    return () => controller.abort();
+  }, [token, fetchUsers]);
 
   const handleUpdatePermissions = async (
     userId: string,
@@ -7919,26 +7801,6 @@ const UserManagementView = ({
 
   return (
     <div className="space-y-6 relative">
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[100] flex items-center gap-3 px-6 py-4 rounded-md shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
       <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-lg border border-[var(--border-main)] shadow-sm relative overflow-hidden">
         <div className="absolute inset-0 bg-emerald-500/[0.01] pointer-events-none" />
         <div className={`relative w-full lg:w-[450px] flex items-center group`}>
@@ -8073,7 +7935,7 @@ const UserManagementView = ({
                           <div className="w-11 h-11 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-emerald-500/50 transition-theme">
                             {user.avatar ? (
                               <img
-                                src={resolveImageUrl(user.avatar, 'avatar')}
+                                src={user.avatar}
                                 alt=""
                                 className="w-full h-full object-cover"
                                 referrerPolicy="no-referrer"
@@ -8498,7 +8360,7 @@ const UserManagementView = ({
                   >
                     {selectedUser.avatar ? (
                       <img
-                        src={resolveImageUrl(selectedUser.avatar, 'avatar')}
+                        src={selectedUser.avatar}
                         alt=""
                         className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-300"
                         referrerPolicy="no-referrer"
@@ -9243,26 +9105,19 @@ const SmartEmailHubView = ({
   theme,
   t,
   dir,
+  showToast,
 }: {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const [activeTab, setActiveTab] = useState<"settings" | "templates">(
     "settings",
   );
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [status, setStatus] = useState<{
-    type: "success" | "error" | "none";
-    msg: string;
-  }>({ type: "none", msg: "" });
   const { token, language, siteSettings, setIsOperationPending } =
     useAppContext();
-
-  const showStatus = (type: "success" | "error", msg: string) => {
-    setStatus({ type, msg });
-    setTimeout(() => setStatus({ type: "none", msg: "" }), 6000);
-  };
 
   const [settings, setSettings] = useState<any>({
     mailer_type: "smtp",
@@ -9299,11 +9154,9 @@ const SmartEmailHubView = ({
     setIsOperationPending,
   ]);
 
-
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem("app_token");
         const res = await fetch("/api/mail-services-v3/config", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -9314,23 +9167,24 @@ const SmartEmailHubView = ({
           console.error("Failed to fetch settings: ", res.status);
           const text = await res.text();
           if (text.includes("<html>")) {
-            showStatus(
-              "error",
+            showToast(
               "WAF/Firewall blocked the request (403 HTML received)",
+              "error",
             );
           }
         }
       } catch (error) {
-        console.error("Failed to fetch email settings:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to fetch email settings:", error);
+        }
       }
     };
-    fetchSettings();
-  }, []);
+    if (token) fetchSettings();
+  }, [token, showToast]);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     setIsLoadingTemplates(true);
     try {
-      const token = localStorage.getItem("app_token");
       const res = await fetch("/api/mail-services-v3/templates", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -9339,11 +9193,13 @@ const SmartEmailHubView = ({
         setTemplates(data);
       }
     } catch (error) {
-      console.error("Failed to fetch email templates:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to fetch email templates:", error);
+      }
     } finally {
       setIsLoadingTemplates(false);
     }
-  };
+  }, [token]);
 
   const handleImportDefaults = async () => {
     if (
@@ -9357,19 +9213,17 @@ const SmartEmailHubView = ({
 
     setIsImportingDefaults(true);
     try {
-      const token = localStorage.getItem("app_token");
-
       const res = await fetch("/api/mail-services-v3/sync", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
-        showStatus(
-          "success",
+        showToast(
           dir === "rtl"
             ? "تم جلب القوالب بنجاح"
             : "Templates imported successfully",
+          "success",
         );
         setTimeout(() => {
           fetchTemplates();
@@ -9378,15 +9232,17 @@ const SmartEmailHubView = ({
         const errorData = await res
           .json()
           .catch(() => ({ error: "Security Filter Intervention" }));
-        showStatus(
-          "error",
+        showToast(
           (dir === "rtl" ? "فشل جلب القوالب: " : "Failed: ") +
             (errorData.error || "Unknown error"),
+          "error",
         );
       }
     } catch (error: any) {
-      console.error("Failed to import templates:", error);
-      showStatus("error", error.message || "Error");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to import templates:", error);
+      }
+      showToast(error.message || "Error", "error");
     } finally {
       setIsImportingDefaults(false);
     }
@@ -9396,12 +9252,11 @@ const SmartEmailHubView = ({
     if (activeTab === "templates") {
       fetchTemplates();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchTemplates]);
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
-      const token = localStorage.getItem("app_token");
       const res = await fetch("/api/mail-services-v3/config", {
         method: "PUT",
         headers: {
@@ -9411,26 +9266,26 @@ const SmartEmailHubView = ({
         body: JSON.stringify(settings),
       });
       if (res.ok) {
-        showStatus(
-          "success",
+        showToast(
           dir === "rtl"
             ? "تم حفظ الإعدادات بنجاح"
             : "Settings saved successfully!",
+          "success",
         );
       } else {
         const text = await res.text();
         if (text.includes("<html>")) {
-          showStatus("error", "Blocked by Firewall (403 HTML)");
+          showToast("Blocked by Firewall (403 HTML)", "error");
         } else {
-          showStatus(
-            "error",
+          showToast(
             dir === "rtl" ? "فشل حفظ الإعدادات" : "Failed to save settings",
+            "error"
           );
         }
       }
     } catch (error) {
       console.error("Failed to save settings:", error);
-      showStatus("error", "Network/Security Error");
+      showToast("Network/Security Error", "error");
     } finally {
       setIsSavingSettings(false);
     }
@@ -9454,17 +9309,17 @@ const SmartEmailHubView = ({
       try {
         data = JSON.parse(text);
       } catch (e) {
-        showStatus("error", "Security filter blocked the response body.");
+        showToast("Security filter blocked the response body.", "error");
         setIsTestingConnection(false);
         return;
       }
 
       if (res.ok) {
-        showStatus(
-          "success",
+        showToast(
           dir === "rtl"
             ? "تم التحقق من الاتصال بنجاح!"
             : "Connection verified successfully!",
+          "success",
         );
         // Refresh settings
         const refreshRes = await fetch("/api/mail-services-v3/config", {
@@ -9475,11 +9330,11 @@ const SmartEmailHubView = ({
           setSettings(freshData);
         }
       } else {
-        showStatus("error", data.error || "Connection Failed");
+        showToast(data.error || "Connection Failed", "error");
       }
     } catch (error: any) {
       console.error("Failed to test connection:", error);
-      showStatus("error", error.message || "Error");
+      showToast(error.message || "Error", "error");
     } finally {
       setIsTestingConnection(false);
     }
@@ -9502,11 +9357,11 @@ const SmartEmailHubView = ({
       missingFields.push(dir === "rtl" ? "المحتوى (AR)" : "Body (AR)");
 
     if (missingFields.length > 0) {
-      showStatus(
-        "error",
+      showToast(
         dir === "rtl"
           ? `يرجى ملء الحقول التالية: ${missingFields.join("، ")}`
           : `Required: ${missingFields.join(", ")}`,
+        "error"
       );
       return;
     }
@@ -9525,16 +9380,16 @@ const SmartEmailHubView = ({
       if (res.ok) {
         await fetchTemplates();
         setSelectedTemplate(null);
-        showStatus(
-          "success",
+        showToast(
           dir === "rtl" ? "تم حفظ القالب بنجاح" : "Template saved successfully",
+          "success"
         );
       } else {
         const errorData = await res.json().catch(() => ({ error: "Blocked" }));
-        showStatus("error", errorData.error || "Failed to save");
+        showToast(errorData.error || "Failed to save", "error");
       }
     } catch (error) {
-      showStatus("error", "Connection Error");
+      showToast("Connection Error", "error");
     } finally {
       setIsSavingTemplate(false);
     }
@@ -9549,41 +9404,16 @@ const SmartEmailHubView = ({
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        showStatus("success", "Template deleted");
+        showToast("Template deleted", "success");
         await fetchTemplates();
       }
     } catch (error) {
-      showStatus("error", "Error");
+      showToast("Error", "error");
     }
   };
 
   return (
     <div className="space-y-6">
-      <AnimatePresence>
-        {status.type !== "none" && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className={`p-4 rounded-[var(--radius)] border flex items-center gap-3 shadow-lg ${
-              status.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500"
-                : "bg-red-500/10 border-red-500/50 text-red-500"
-            }`}
-          >
-            {status.type === "success" ? (
-              <CheckCircle
-                size={20}
-                className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-              />
-            ) : (
-              <AlertTriangle size={20} />
-            )}
-            <span className="text-sm font-bold">{status.msg}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="flex gap-2 border-b border-[var(--border-main)] dark:border-[var(--border-main)] pb-4">
         <button
           onClick={() => setActiveTab("settings")}
@@ -11467,7 +11297,6 @@ const SystemSettingsView = ({
 
   // --- SEO CRAWLABILITY AND ROUTE INDEXING AUDIT REPORT STATE ---
   const [crawlScanning, setCrawlScanning] = useState(false);
-  const [crawlAuditScores, setCrawlAuditScores] = useState<{ total: number; protected: number; indexed: number } | null>(null);
   const [crawlAuditFilter, setCrawlAuditFilter] = useState<"all" | "index" | "noindex">("all");
   const [crawlAuditLogs, setCrawlAuditLogs] = useState<string[]>([]);
   const [crawlComplianceRate, setCrawlComplianceRate] = useState<string>("100.00% SECURE");
@@ -11837,7 +11666,6 @@ const SystemSettingsView = ({
         ? "⏳ يرجى الانتظار... جاري إنشاء بروتوكول اتصال آمن مع خادم التدقيق..." 
         : "⏳ Initiating secure diagnostic connection to strict compliance core..."
     ]);
-    setCrawlAuditScores(null);
     setCrawlComplianceRate(language === "ar" ? "معلق" : "PENDING");
     
     const controller = new AbortController();
@@ -11870,11 +11698,6 @@ const SystemSettingsView = ({
         } else {
           clearInterval(timer);
           setCrawlScanning(false);
-          setCrawlAuditScores({
-            total: routesSchema.length,
-            protected: routesSchema.filter((r: any) => r.status === "noindex").length,
-            indexed: routesSchema.filter((r: any) => r.status === "index").length
-          });
         }
       }, 500);
 
@@ -11886,11 +11709,6 @@ const SystemSettingsView = ({
       const isTimeout = err.name === "AbortError";
       
       setCrawlComplianceRate("0.00% HIGH_RISK");
-      setCrawlAuditScores({
-        total: routesSchema.length,
-        protected: 0,
-        indexed: 0
-      });
       
       setCrawlAuditLogs([
         isTimeout
@@ -13895,15 +13713,7 @@ export const AdminDashboard: React.FC = () => {
   const [providerModels, setProviderModels] = useState<Record<string, any[]>>(
     {},
   );
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  const { toast, showToast } = useToast(3000);
 
   const fetchProviderModels = async () => {
     if (!token) return;
@@ -14418,7 +14228,7 @@ export const AdminDashboard: React.FC = () => {
       >
         <ErrorBoundary name="Admin Command Panels">
           {path === "dashboard" ? (
-            <CommandCenterView theme={theme} t={t} />
+            <CommandCenterView theme={theme} t={t} showToast={showToast} />
           ) : path === "radar" ? (
             <AdminRateLimitMetricsView theme={theme} t={t} />
           ) : path === "metrics" ? (
@@ -14430,6 +14240,7 @@ export const AdminDashboard: React.FC = () => {
               dir={dir}
               providerModels={providerModels}
               setProviderModels={setProviderModels}
+              showToast={showToast}
             />
           ) : path === "databases" ? (
             <DatabaseOrchestrationView
@@ -14444,17 +14255,18 @@ export const AdminDashboard: React.FC = () => {
               t={t}
               dir={dir}
               providerModels={providerModels}
+              showToast={showToast}
             />
           ) : path === "finance" ? (
-            <FinanceVaultView theme={theme} t={t} dir={dir} />
+            <FinanceVaultView theme={theme} t={t} dir={dir} showToast={showToast} />
           ) : path === "plans" ? (
             <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
           ) : path === "users" ? (
-            <UserManagementView theme={theme} t={t} dir={dir} />
+            <UserManagementView theme={theme} t={t} dir={dir} showToast={showToast} />
           ) : path === "memories" ? (
             <MemoryCenterView theme={theme} t={t} dir={dir} language={language} />
           ) : path === "emails" ? (
-            <SmartEmailHubView theme={theme} t={t} dir={dir} />
+            <SmartEmailHubView theme={theme} t={t} dir={dir} showToast={showToast} />
           ) : path === "broadcast" ? (
             <MassBroadcastView
               theme={theme}
@@ -14484,6 +14296,36 @@ export const AdminDashboard: React.FC = () => {
           )}
         </ErrorBoundary>
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+              toast.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                : toast.type === "error"
+                  ? "bg-red-500/10 border-red-500/20 text-red-500"
+                  : "bg-blue-500/10 border-blue-500/20 text-blue-500"
+            }`}
+            style={{
+              boxShadow:
+                toast.type === "success"
+                  ? "0 10px 30px rgba(16,185,129,0.15)"
+                  : "0 10px 30px rgba(239,68,68,0.15)",
+            }}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${toast.type === "success" ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+            />
+            <span className="font-bold text-sm tracking-tight">
+              {toast.message}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

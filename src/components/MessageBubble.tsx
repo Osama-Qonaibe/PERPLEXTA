@@ -44,7 +44,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       key={msg.client_id || msg.id || idx} 
       id={`message-${idx}`}
       className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
-      layout="position"
     >
       <div className={`w-full min-h-[44px] ${msg.role === 'user' ? 'bg-transparent' : 'bg-transparent'} px-0`}>
         {msg.role === 'user' ? (

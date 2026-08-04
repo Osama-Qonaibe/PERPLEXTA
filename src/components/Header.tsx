@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone, openInstallPrompt, installApp } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone } = useAppContext();
   
   const [isOffline, setIsOffline] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -52,11 +52,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const titleEditRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const [windowWidth, setWindowWidth] = useState<number>(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
-  const [logoLoaded, setLogoLoaded] = useState(false);
-  const [logoError, setLogoError] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const isHeaderThemeDark = theme === 'dark';
 
@@ -175,22 +171,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
     }
   };
 
-  const handleNewChat = () => {
-    if (location.pathname === '/' || location.pathname === '/chat') return;
-    navigate('/chat');
+  const handleNewChat = (e: React.MouseEvent) => {
     window.dispatchEvent(new Event('clear-chat'));
+    if (location.pathname === '/' || location.pathname === '/chat') {
+      e.preventDefault();
+    }
   };
-
-  const rawLogoSrc = (theme === 'light' && siteSettings.logoLightBase64)
-    ? siteSettings.logoLightBase64
-    : siteSettings.logoBase64;
-
-  const logoSrc = logoError ? null : rawLogoSrc;
-
-  useEffect(() => {
-    setLogoLoaded(false);
-    setLogoError(false);
-  }, [rawLogoSrc]);
 
   return (
     <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
@@ -200,12 +186,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         <div className="flex items-center h-full">
           <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
               <NavLink 
-                to="/" 
-                 
+                to="/chat" 
+                onClick={handleNewChat} 
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
-                  {logoSrc ? (
+                  {((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64) ? (
                     <motion.div 
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
@@ -219,15 +205,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       } : {}}
                     >
                       <img 
-                        src={logoSrc} 
+                        src={(theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64!} 
                         alt="Logo" 
-                        className={`w-full h-full object-cover block transition-opacity duration-200 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
-                        onLoad={() => setLogoLoaded(true)}
-                        onError={() => { setLogoError(true); setLogoLoaded(false); }}
+                        className="w-full h-full object-cover block" 
                       />
-                      {!logoLoaded && (
-                        <div className="absolute inset-0 bg-[var(--bg-secondary)]" />
-                      )}
                     </motion.div>
                   ) : (
                     <motion.div
@@ -267,17 +248,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 ) : null}
               </NavLink>
               
-              {!isStandalone && (
-                <button 
-                  onClick={installApp}
-                  className="hidden md:flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-500 transition-all active:scale-95 group shrink-0 shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] ms-1 cursor-pointer whitespace-nowrap"
-                  title={language === 'ar' ? 'تثبيت التطبيق على جهازك' : 'Install App to Device'}
-                >
-                  <Download size={14} className="text-emerald-500 group-hover:scale-110 transition-transform shrink-0" />
-                  <span className="text-[12px] font-bold font-sans tracking-tight">{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
-                </button>
-              )}
-
               {shouldShowMenuButton && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
@@ -593,6 +563,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       </div>
     </div>
 
+    {/* Sovereign Top Progress Loader Line */}
     <AnimatePresence>
       {(isStreaming || isOperationPending) && (
         <motion.div

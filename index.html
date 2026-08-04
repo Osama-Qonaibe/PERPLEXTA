@@ -8,9 +8,46 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Perplexta" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="Perplexta AI" />
+    <meta name="msapplication-TileColor" content="#080809" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <title>Perplexta Platform - Professional Elite AI Platform</title>
+    <style>
+      :root {
+        --pwa-theme-color: #080809;
+        --pwa-bg-color: #080809;
+      }
+      :root.light {
+        --pwa-theme-color: #fcfcfc;
+        --pwa-bg-color: #fcfcfc;
+      }
+      html {
+        background-color: var(--pwa-bg-color);
+        color-scheme: dark light;
+      }
+      body {
+        background-color: var(--pwa-bg-color);
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    
+    <!-- PWA Icons & Splash -->
+    <link rel="apple-touch-icon" href="/app-assets/icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/app-assets/icon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/app-assets/icon.png" />
+    <link rel="mask-icon" href="/app-assets/icon.png" color="#10b981" />
     <meta name="description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations with dual-database ledgers." />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://perplexta.com/" />
+    <meta property="og:title" content="Perplexta Platform - Elite AI Orchestration" />
+    <meta property="og:description" content="Advanced AI analysis and model orchestration for professionals." />
+    <meta property="og:image" content="/app-assets/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/app-assets/og-image.png" />
 
     <script>
       (function() {
@@ -20,8 +57,9 @@
           document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
           document.title = savedLang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Perplexta Platform - Professional Elite AI Platform';
 
+          // Language-specific dynamic font loading setup
           var isAr = savedLang === 'ar';
-          var fontUrl = isAr
+          var fontUrl = isAr 
             ? 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap'
             : 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
           var linkId = isAr ? 'font-stylesheet-tajawal' : 'font-stylesheet-space-grotesk';
@@ -42,80 +80,88 @@
           } else {
             isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           }
+          
           var meta = document.getElementById('theme-color-meta');
+          var root = document.documentElement;
+          
           if (isDark) {
-            document.documentElement.className = 'dark';
-            document.documentElement.style.backgroundColor = '#080809';
-            document.documentElement.style.color = '#f8fafc';
+            root.classList.add('dark');
+            root.classList.remove('light');
+            root.style.setProperty('--pwa-theme-color', '#080809');
+            root.style.setProperty('--pwa-bg-color', '#080809');
+            root.style.backgroundColor = '#080809';
+            root.style.color = '#f8fafc';
             if (meta) meta.setAttribute('content', '#080809');
           } else {
-            document.documentElement.className = 'light';
-            document.documentElement.style.backgroundColor = '#fcfcfc';
-            document.documentElement.style.color = '#0f172a';
+            root.classList.add('light');
+            root.classList.remove('dark');
+            root.style.setProperty('--pwa-theme-color', '#fcfcfc');
+            root.style.setProperty('--pwa-bg-color', '#fcfcfc');
+            root.style.backgroundColor = '#fcfcfc';
+            root.style.color = '#0f172a';
             if (meta) meta.setAttribute('content', '#fcfcfc');
           }
         } catch (e) {
-          document.documentElement.className = 'dark';
+          document.documentElement.classList.add('dark');
           document.documentElement.style.backgroundColor = '#080809';
           document.documentElement.style.color = '#f8fafc';
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-          document.body.classList.remove('layout-locked');
-        });
       })();
     </script>
-    <style>
-      body.layout-locked * { visibility: hidden !important; }
-      body.layout-locked img { display: none !important; }
-    </style>
-    <link rel="icon" type="image/png" href="/app-assets/icon.png" />
-    <link rel="apple-touch-icon" href="/app-assets/icon.png" />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://perplexta.com/" />
-    <meta property="og:title" content="Perplexta Platform - Professional Elite AI Platform" />
-    <meta property="og:description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations." />
-    <meta property="og:image" content="/app-assets/og-image.png" />
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://perplexta.com/" />
-    <meta property="twitter:title" content="Perplexta Platform - Professional Elite AI Platform" />
-    <meta property="twitter:description" content="Perplexta defines elite professional technical analysis and intelligent AI model orchestrations." />
-    <meta property="twitter:image" content="/app-assets/og-image.png" />
-
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
-  <body>
+  <body class="layout-locked">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- WebMCP & PWA Analytics -->
     <script>
-    if (typeof navigator !== "undefined" && navigator.modelContext) {
-      navigator.modelContext.provideContext({
-        tools: [
-          {
-            name: "search",
-            description: "Search Perplexta platform content and AI models",
-            inputSchema: { type: "object", properties: { query: { type: "string", description: "Search query" } }, required: ["query"] },
-            execute: async ({ query }) => fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json())
-          },
-          {
-            name: "get_models",
-            description: "Get available AI models on Perplexta platform",
-            inputSchema: { type: "object", properties: {} },
-            execute: async () => fetch("/api/models").then(r => r.json())
-          },
-          {
-            name: "get_status",
-            description: "Get Perplexta platform health and status",
-            inputSchema: { type: "object", properties: {} },
-            execute: async () => fetch("/api/health").then(r => r.json())
-          }
-        ]
-      });
-    }
+      (function() {
+        // 1. WebMCP Tooling
+        if (typeof navigator !== "undefined" && navigator.modelContext) {
+          navigator.modelContext.provideContext({
+            tools: [
+              {
+                name: "search",
+                description: "Search Perplexta platform content",
+                inputSchema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+                execute: async ({ query }) => fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json())
+              },
+              {
+                name: "get_models",
+                description: "Get active AI models",
+                inputSchema: { type: "object", properties: {} },
+                execute: async () => fetch("/api/models").then(r => r.json())
+              }
+            ]
+          });
+        }
+
+        // 2. PWA Launch & Performance Intelligence
+        try {
+          window.addEventListener('load', function() {
+            setTimeout(function() {
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+              const sessionKey = 'perplexta_init_' + new Date().toISOString().split('T')[0];
+              if (sessionStorage.getItem(sessionKey)) return;
+
+              const nav = performance.getEntriesByType('navigation')[0];
+              const paint = performance.getEntriesByType('paint');
+              const timing = {
+                load: nav ? nav.loadEventEnd : 0,
+                dom: nav ? nav.domContentLoadedEventEnd : 0,
+                fcp: (paint.find(p => p.name === 'first-contentful-paint') || {}).startTime || 0
+              };
+
+              fetch('/api/system/launch-telemetry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: isStandalone ? 'standalone' : 'browser', timing, ts: new Date().toISOString() }),
+                keepalive: true
+              }).then(() => sessionStorage.setItem(sessionKey, '1')).catch(() => {});
+            }, 3000);
+          });
+        } catch (e) {}
+      })();
     </script>
   </body>
 </html>

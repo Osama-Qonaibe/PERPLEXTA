@@ -30,186 +30,15 @@ import { TypewriterMotive } from '../components/TypewriterMotive';
 import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
 import { HighlightText } from '../components/HighlightText';
+import { stripProtocolMarkers, showSuccessToast, showErrorToast } from '../utils/chatUtils';
+import { fileToBase64 } from '../utils/fileUtils';
+import { getAuthHeaders, formatExactTimestamp, formatTimeSeconds } from '../utils/adminUtils';
+import { ChatService } from '../services/chatService';
 
-const ASPECT_RATIO_CLASSES: { [key: string]: string } = {
-  '1:1': 'aspect-square max-w-[240px] sm:max-w-[260px]',
-  '4:3': 'aspect-[4/3] max-w-[280px] sm:max-w-[300px]',
-  '3:2': 'aspect-[3/2] max-w-[290px] sm:max-w-[310px]',
-  '16:9': 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]',
-  '9:16': 'aspect-[9/16] max-w-[185px] max-h-[320px] sm:max-h-[340px]'
-};
+import { ResponseSkeleton } from '../components/ResponseSkeleton';
+import { ASPECT_RATIO_CLASSES } from '../constants/chat';
 
-const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
-  <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
-    <div className="flex items-center gap-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
-      <div className="h-1.5 w-32 bg-[var(--bg-overlay)] rounded-full" />
-    </div>
-    <div className="space-y-3">
-      <div className="h-2 w-full bg-[var(--bg-overlay)] rounded-full" />
-      <div className="h-2 w-[85%] bg-[var(--bg-overlay)] rounded-full" />
-      <div className="h-2 w-[60%] bg-[var(--bg-overlay)] rounded-full" />
-    </div>
-  </div>
-);
-
-const ImageGenerationPlaceholder = ({ 
-  dir, 
-  aspectRatio = '1:1', 
-  liveElapsed = 0, 
-  style = 'Cinematic', 
-  quality = 'HD',
-  t,
-  isFailed = false,
-  errorMessage = '',
-  onRetry,
-  progress,
-  statusLabel
-}: { 
-  dir: 'ltr' | 'rtl'; 
-  aspectRatio?: string; 
-  liveElapsed?: number; 
-  style?: string;
-  quality?: string;
-  t: any;
-  isFailed?: boolean;
-  errorMessage?: string;
-  onRetry?: () => void;
-  progress?: number;
-  statusLabel?: string;
-}) => {
-  const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
-
-  const getAIStatusLabel = () => {
-    if (statusLabel) return statusLabel;
-    if (liveElapsed < 4) {
-      return dir === 'rtl' 
-        ? 'تحليل المطلب الفني وتجهيز الأنماط العصبية الدقيقة...' 
-        : 'Analyzing artistic prompt & aligning neural style maps...';
-    } else if (liveElapsed < 8) {
-      return dir === 'rtl' 
-        ? 'رسم تفاصيل الشكل والهيكل الهندسي وتوزيع الكتلة والضوء...' 
-        : 'Synthesizing layout structure, composition geometry & volumetric lighting...';
-    } else if (liveElapsed < 14) {
-      return dir === 'rtl' 
-        ? 'توليد البيكسلات الفائقة بدقة عالية وتنسيق التفاصيل البصرية...' 
-        : 'Executing deep pixel matrix synthesis & forming high-fidelity textures...';
-    } else {
-      return dir === 'rtl' 
-        ? 'تنقيح الألوان الجمالية واللمسات السينمائية المتقدمة وتأصيل النتيجة...' 
-        : 'Refining stylistic color grading & preparing masterwork presentation...';
-    }
-  };
-
-  return (
-    <div className="w-full flex justify-start">
-      <div className="flex flex-col gap-4 w-full my-4 items-start">
-        <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
-        >
-          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
-
-          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${isFailed ? 'bg-rose-500/5' : 'bg-emerald-500/5'} blur-[50px] pointer-events-none`} />
-
-          <motion.div 
-            animate={{ y: ['0%', '100%', '0%'] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-${isFailed ? 'rose' : 'emerald'}-500/45 to-transparent shadow-[0_0_12px_rgba(${isFailed ? '244,63,94' : '16,185,129'},0.6)] pointer-events-none`}
-          />
-
-          <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none overflow-hidden select-none">
-            <svg className={`w-full h-full max-w-sm max-h-xs ${isFailed ? 'text-rose-500/10' : 'text-emerald-500/20'}`} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <motion.circle cx="100" cy="100" r="4" className={isFailed ? 'fill-rose-400/40' : 'fill-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.6)]'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2 }} />
-              <motion.circle cx="40" cy="60" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [0.9, 1.2, 0.9] }} transition={{ repeat: Infinity, duration: 2.5 }} />
-              <motion.circle cx="160" cy="60" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1.1, 0.8, 1.1] }} transition={{ repeat: Infinity, duration: 1.8 }} />
-              <motion.circle cx="70" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} />
-              <motion.circle cx="130" cy="150" r="3" className={isFailed ? 'fill-rose-400/30' : 'fill-emerald-400'} animate={{ scale: [0.8, 1.1, 0.8] }} transition={{ repeat: Infinity, duration: 2.7 }} />
-
-              <motion.path d="M40 60 L100 100 M160 60 L100 100 M70 150 L100 100 M130 150 L100 100" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4,4" animate={{ strokeDashoffset: [0, -20] }} transition={{ repeat: Infinity, duration: 5, ease: 'linear' }} />
-              <motion.path d="M40 60 L160 60 L130 150 L70 150 Z" stroke="currentColor" strokeWidth="0.5" opacity="0.6" />
-            </svg>
-          </div>
-
-          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isFailed ? 'bg-rose-400' : 'bg-emerald-400'} opacity-75`} />
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-              </span>
-              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-emerald-400'} tracking-wider`}>
-                {isFailed 
-                  ? (dir === 'rtl' ? 'فشل النظام الفني' : 'AI ART ENGINE CRITICAL') 
-                  : (dir === 'rtl' ? 'جاري التركيز البصري' : 'AI ART ENGINE LIVE')}
-              </span>
-            </div>
-            <span className="text-[9px] font-mono text-gray-500 font-bold whitespace-nowrap">
-              {quality} • {style} • {aspectRatio}
-            </span>
-          </div>
-
-          {isFailed ? (
-            <div className="flex flex-col items-center justify-center p-6 gap-3.5 select-none text-center z-10 flex-1">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-bounce-slow">
-                <AlertTriangle size={22} />
-              </div>
-
-              <div className="flex flex-col items-center max-w-[90%] gap-1">
-                <span className="text-[11px] md:text-sm font-bold text-gray-200">
-                  {dir === 'rtl' ? 'عذراً، تعذر إنشاء العمل الفني المطلوب' : 'Artwork synthesis encountered an issue'}
-                </span>
-                <span className="text-[9px] font-medium text-rose-400/80 bg-rose-950/30 border border-rose-500/10 px-2.5 py-1 rounded-[4px] font-mono select-text text-center break-words max-w-full">
-                  {errorMessage || (dir === 'rtl' ? 'خطأ غير معروف في خادم التوليد.' : 'Unspecified generator fault occurred.')}
-                </span>
-              </div>
-
-              {onRetry && (
-                <button 
-                  onClick={onRetry}
-                  className="group relative flex items-center gap-1.5 px-4.5 py-1.5 text-[10px] md:text-xs font-semibold text-slate-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-400/55 rounded-[4px] transition-theme shadow-[0_0_15px_rgba(244,63,94,0.1)] focus:outline-none cursor-pointer pointer-events-auto active:scale-95"
-                >
-                  <RefreshCw size={12} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>{dir === 'rtl' ? 'إعادة محاولة التوليد' : 'Retry Image Generation'}</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-6 gap-3 select-none text-center z-10 flex-1">
-              <div className="relative flex items-center justify-center">
-                <motion.div 
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                  className="w-16 h-16 rounded-full border border-dashed border-emerald-500/40 flex items-center justify-center"
-                />
-                <motion.div 
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="absolute w-12 h-12 rounded-full border border-t-emerald-500 border-r-transparent border-b-emerald-500/20 border-l-transparent"
-                />
-                <div className="absolute text-[10px] font-mono font-black text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]">
-                  {progress !== undefined ? `${progress}%` : `${liveElapsed.toFixed(1)}s`}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center max-w-[85%] mt-1">
-                <span className="text-[10px] md:text-[11px] font-bold text-gray-200 uppercase tracking-wide leading-relaxed animate-pulse">
-                  {getAIStatusLabel()}
-                </span>
-                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest mt-0.5">
-                  {dir === 'rtl' ? 'خوارزميات التوليف الفني من بريليكستا' : 'PERPLEXTA HIGH-FIDELITY ENGINE'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className={`p-2.5 w-full bg-zinc-950/50 border-t ${isFailed ? 'border-rose-500/5' : 'border-emerald-500/5'} backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500`}>
-            <span>{isFailed ? 'CORES: DISENGAGED' : 'CORES: ALLOCATED'}</span>
-            <span>{isFailed ? 'STATUS: HALTED 500' : `LATENCY: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { ImageGenerationPlaceholder } from '../components/ImageGenerationPlaceholder';
 
 const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
@@ -1814,23 +1643,6 @@ interface Message {
     base64?: string;
   };
 }
-
-const formatExactTimestamp = (createdAt: string | Date | undefined, dir: 'ltr' | 'rtl') => {
-  const dateObj = createdAt ? new Date(createdAt) : new Date();
-  if (isNaN(dateObj.getTime())) return '';
-  const pad = (num: number, size = 2) => String(num).padStart(size, '0');
-
-  const yyyy = dateObj.getFullYear();
-  const mm = pad(dateObj.getMonth() + 1);
-  const dd = pad(dateObj.getDate());
-
-  const hh = pad(dateObj.getHours());
-  const min = pad(dateObj.getMinutes());
-  const ss = pad(dateObj.getSeconds());
-  const ms = pad(dateObj.getMilliseconds(), 3);
-
-  return `[${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${ms}]`;
-};
 
 const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) => {
   const normId = toolId || 'chat';
@@ -3930,15 +3742,6 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
   );
 };
 
-const stripProtocolMarkers = (text: string) => {
-  if (!text) return text;
-  return text
-    .replace(/\[FOLLOW_UPS\][\s\S]*$/, '')
-    .replace(/\[FOLLOW_UPS_START\][\s\S]*$/, '')
-    .replace(/\[أسئلة_متابعة\][\s\S]*$/, '')
-    .trim();
-};
-
 export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr' }) => (
   <motion.div 
     initial={{ opacity: 0 }}
@@ -4251,18 +4054,6 @@ const toolbarVariants = {
   exit: {
     opacity: 0,
     transition: { duration: 0.2 }
-  }
-} as const;
-
-const toolbarItemVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    
-    transition: {
-      duration: 0.6,
-      ease: [0.0, 0.0, 0.2, 1],
-    }
   }
 } as const;
 
@@ -4651,16 +4442,9 @@ export const ChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  const lastMessageContent = messages[messages.length - 1]?.content;
-
   useEffect(() => {
     if (messages.length > 0) {
-      if (isGenerating) {
-
-        scrollToBottom('auto');
-      } else {
-        scrollToBottom('smooth');
-      }
+      scrollToBottom('auto');
     }
   }, [messages.length, chatId]);
 
@@ -5028,25 +4812,12 @@ export const ChatPage: React.FC = () => {
   const handleThreadRename = async () => {
     if (!chatId || !chatRenameTitle.trim()) return;
     try {
-      const res = await fetch(`/api/chats/${chatId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ title: chatRenameTitle.trim() })
-      });
-      if (res.ok) {
-        toast.success(dir === 'rtl' ? 'تم تغيير العنوان' : 'Title updated');
-        window.dispatchEvent(new Event('chat-updated'));
-        setIsRenaming(false);
-      } else {
-        const errorData = await res.json();
-        toast.error(errorData.error || (dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title'));
-      }
-    } catch (e) {
-
-      toast.error(dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title');
+      await ChatService.updateChatTitle(token || '', chatId, chatRenameTitle.trim());
+      toast.success(dir === 'rtl' ? 'تم تغيير العنوان' : 'Title updated');
+      window.dispatchEvent(new Event('chat-updated'));
+      setIsRenaming(false);
+    } catch (e: any) {
+      toast.error(e.message || (dir === 'rtl' ? 'فشل تعديل اسم المحادثة' : 'Failed to update chat title'));
     }
   };
 
@@ -5059,17 +4830,12 @@ export const ChatPage: React.FC = () => {
     setIsDeleteModalOpen(false);
     if (!chatId) return;
     try {
-      const res = await fetch(`/api/chats/${chatId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        toast.success(dir === 'rtl' ? 'تم حذف المحادثة بنجاح' : 'Chat deleted successfully');
-        window.dispatchEvent(new Event('chat-updated'));
-        navigate('/chat');
-      }
-    } catch (e) {
-
+      await ChatService.deleteChat(token || '', chatId);
+      toast.success(dir === 'rtl' ? 'تم حذف المحادثة بنجاح' : 'Chat deleted successfully');
+      window.dispatchEvent(new Event('chat-updated'));
+      navigate('/chat');
+    } catch (e: any) {
+      toast.error(e.message || (dir === 'rtl' ? 'فشل حذف المحادثة' : 'Failed to delete chat'));
     }
   };
 
@@ -5820,32 +5586,18 @@ export const ChatPage: React.FC = () => {
 
       abortControllerRef.current = new AbortController();
 
-      const encodeHex = (str: string) => {
-        return Array.from(new TextEncoder().encode(str))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-      };
-
       try {
         const authToken = token || localStorage.getItem('app_token');
 
         let currentChatId = chatId;
         if (!currentChatId) {
-          const res = await fetch('/api/chats', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json', 
-              'Authorization': `Bearer ${authToken}` 
-            },
-            body: JSON.stringify({ 
-              title: currentQuery.substring(0, 50),
-              message: currentQuery,
-              tool: toolToUse
-            })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
+          try {
+            const data = await ChatService.createChat(
+              authToken || '',
+              currentQuery.substring(0, 50),
+              currentQuery,
+              toolToUse
+            );
             currentChatId = data.id;
             setChatId(currentChatId);
             chatIdRef.current = currentChatId; 
@@ -5854,9 +5606,8 @@ export const ChatPage: React.FC = () => {
               window.dispatchEvent(new Event('chat-created'));
               window.dispatchEvent(new Event('chat-updated'));
             }, 100);
-          } else {
-            const errorData = await res.json();
-            throw new Error(errorData.error || 'Failed to create chat');
+          } catch (createErr: any) {
+            toast.error(createErr.message || (dir === 'rtl' ? 'فشل إنشاء المحادثة' : 'Failed to create chat'));
           }
         } else {
           const msgRes = await fetch(`/api/chats/${currentChatId}/messages`, {
@@ -5882,15 +5633,6 @@ export const ChatPage: React.FC = () => {
           throw new Error(dir === 'rtl' ? 'لم يتم العثور على اتصال' : 'Socket connection not found');
         }
 
-      const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = error => reject(error);
-        });
-      };
-
       let fileData = null;
       if (selectedFile) {
         const MAX_SIZE = 100 * 1024 * 1024;
@@ -5909,7 +5651,7 @@ export const ChatPage: React.FC = () => {
             type: selectedFile.type
           };
         } catch (error) {
-
+          console.error('[ChatPage] Error processing file base64:', error);
         }
       }
 
@@ -6425,7 +6167,6 @@ export const ChatPage: React.FC = () => {
 
   const currentModel = models.find(m => m.id === selectedModel) || models[2];
   const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
-  const isToolActive = selectedTool !== 'chat';
 
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto pb-safe">
@@ -7221,9 +6962,9 @@ export const ChatPage: React.FC = () => {
           <div 
             id="chat-messages-container" 
             onScroll={handleScroll}
-            className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-none relative flex flex-col scroll-smooth"
+            className="flex-1 min-h-0 overflow-y-scroll scrollbar-none custom-scrollbar w-full overflow-anchor-auto relative flex flex-col"
           >
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="wait">
             {isChatMessagesLoading && messages.length === 0 ? (
               <motion.div
                 key="chat-messages-skeleton"
@@ -7304,7 +7045,6 @@ export const ChatPage: React.FC = () => {
                     key={msg.client_id || msg.id || idx} 
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
-                    layout="position"
                   >
                     <div className={`w-full min-h-[44px] ${msg.role === 'user' ? 'bg-transparent' : 'bg-transparent'} px-0`}>
                       {msg.role === 'user' ? (

@@ -10,7 +10,7 @@ import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps, normalizeArabicNumerals } from '../utils/helpers.js';
 import { SEARCH_KEYWORDS } from '../config/searchKeywords.js';
-import { CORE_PROTOCOL } from '../config/protocol.js';
+import { getProtocolString } from '../config/protocol.js';
 import { executeWithBillingMiddleware } from './billing.js';
 import { getEconomySettings } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
@@ -18,7 +18,6 @@ import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT
 import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
 import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCachedApiKeysVault } from '../db/queries.js';
 
-const THINK_TAG_REGEX = /<think>[\s\S]*?<\/think>/gi;
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 const SEARCH_TAG_REGEX = /<search_query>([\s\S]*?)<\/search_query>/gi;
 const WIKI_TAG_REGEX = /<wiki_search>([\s\S]*?)<\/wiki_search>/gi;
@@ -29,6 +28,22 @@ const AUTH_TAG_REGEX = /<auth_token>([\s\S]*?)<\/auth_token>/gi;
 
 const UPDATE_SUMMARY_LIMIT = 20;
 const UPDATE_SUMMARY_TIMEOUT_MS = 30000;
+
+async function recordProviderUsage(provider: string, route: any) {
+  try {
+    const settings = await getEconomySettings();
+    const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
+    const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
+    if (estimatedCost > 0) {
+      await pool.query(
+        'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
+        [estimatedCost, provider.toLowerCase()]
+      );
+    }
+  } catch (err) {
+    console.error('[Orchestrator] Failed to record provider usage:', err);
+  }
+}
 
 export const isSocialGreeting = (text: string): boolean => {
   const socialKeywords = [
@@ -186,7 +201,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const [route, chatRes, user, activeKeys, memoryRes, systemSettings] = await Promise.all([
     getCachedOrchestratorConfig(toolIdStr),
-    chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1', [chatIdNum]) : Promise.resolve({ rows: [] }),
+    chatIdNum > 0 ? pool.query('SELECT context_summary FROM chats WHERE id = $1 AND user_id = $2', [chatIdNum, userId]) : Promise.resolve({ rows: [] }),
     userLoader.load(userId),
     getCachedApiKeysVault(),
     pool.query(
@@ -270,7 +285,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const userLang = user?.language || 'en';
   const appName = getAppName(userLang);
-  const protocol = CORE_PROTOCOL.replace(/\[SITE_NAME\]/g, appName);
+  const protocol = getProtocolString(appName);
 
   const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
     SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
@@ -335,15 +350,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
         'tts'
       );
 
-       const settings = await getEconomySettings();
-       const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-       const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
-       if (estimatedCost > 0) {
-         await pool.query(
-           'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-           [estimatedCost, route.primary_provider.toLowerCase()]
-         );
-       }
+       await recordProviderUsage(route.primary_provider, route);
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `TTS generated via ElevenLabs voice=${voiceId}`, { toolIdStr });
       await onSuccess('');
@@ -402,15 +409,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       const data = await safeParseResponse(res, 'STT API error');
       const transcription = data.text || '';
 
-      const settings = await getEconomySettings();
-      const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-      const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
-      if (estimatedCost > 0) {
-        await pool.query(
-          'UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2',
-          [estimatedCost, providerId]
-        );
-      }
+      await recordProviderUsage(providerId, route);
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `STT transcription via ${route.primary_provider}/${route.primary_model}`, { toolIdStr });
       await onSuccess('');
@@ -640,12 +639,7 @@ ${refinedSystemPromptSegment}`.trim();
         );
         successfulModel = target;
 
-        const settings = await getEconomySettings();
-        const pointsPerDollar = parseFloat(settings.points_per_dollar || '1000');
-        const estimatedCost = (route.cost_per_usage || 0) / pointsPerDollar;
-        if (estimatedCost > 0) {
-          await pool.query('UPDATE api_keys_vault SET used_today = used_today + $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [estimatedCost, target.provider.toLowerCase()]);
-        }
+        await recordProviderUsage(target.provider, route);
 
         if (chatIdNum > 0) {
           scheduleChatSummaryUpdate(chatIdNum, userId, target.provider, target.model, apiKey);

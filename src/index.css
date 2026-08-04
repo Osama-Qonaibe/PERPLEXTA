@@ -7,7 +7,7 @@
   --ms-duration: var(--theme-transition-duration);
   --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --bg-base: #F8FAFC;
+  --bg-base: var(--pwa-bg-color, #F8FAFC);
   --bg-primary: #FFFFFF;
   --bg-secondary: #F7F9FB;
   --bg-dropdown: #FFFFFF;
@@ -52,7 +52,7 @@
 }
 
 .dark {
-  --bg-base: #121212;
+  --bg-base: var(--pwa-bg-color, #121212);
   --bg-primary: #1E1E1E;
   --bg-secondary: #141416;
   --bg-dropdown: #1a1a1c;

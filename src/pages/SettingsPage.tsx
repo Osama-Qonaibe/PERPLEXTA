@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useToast } from '../hooks/useToast';
+import { User as AppUser } from '../context/AppContext';
 import { AccountSettings } from '../components/AccountSettings';
 import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
@@ -10,75 +12,122 @@ import { DeveloperAgentPortal } from '../components/DeveloperAgentPortal';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { 
-  User, Users, Settings2, Shield, CreditCard, 
+  User as UserIcon, Users, Settings2, Shield, CreditCard, 
   Wallet, Palette, Keyboard, BrainCircuit, Globe,
   ChevronRight, ChevronLeft, LogOut, Link2,
   Trash2, Edit2, Save, X, Plus, Loader2,
   Command, Terminal, MousePointer2, Type,
-  MessageSquare, Image as ImageIcon, Video, LayoutGrid,
+  MessageSquare, ImageIcon, Video, LayoutGrid,
   Activity, Clock, Zap, ShieldCheck, Brain, MapPin, 
   FileText, Mic, Volume2, Code, ShoppingBag
 } from 'lucide-react';
 
+interface ProfileUpdate {
+  name?: string;
+  email?: string;
+  avatar?: string;
+  theme?: string;
+  language?: string;
+  [key: string]: any;
+}
+
+interface ApiError extends Error {
+  code?: string;
+  status?: number;
+}
+
 export const SettingsPage: React.FC = () => {
   const { t, dir, theme, setTheme, user, setUser, logout, token, language, setLanguage } = useAppContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast, showToast } = useToast(4000);
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab');
     if (tab === 'preferences' || tab === 'shortcuts') return 'account';
     return tab || 'account';
   });
   const [localUser, setLocalUser] = useState(user);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const navigate = useNavigate();
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  };
+  // Reference trackers for performance optimization
+  const hasFetchedProfile = useRef(false);
+  const hasFetchedMemories = useRef(false);
+
+  const getAuthHeaders = useCallback(() => ({
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }), [token]);
+
+  const handleApiError = useCallback((error: ApiError | any, logMessage: string, toastMessage?: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(logMessage, error);
+    }
+    if (toastMessage) showToast(toastMessage, 'error');
+  }, [showToast]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab && tab !== activeTab) {
       if (tab === 'preferences' || tab === 'shortcuts') {
         setActiveTab('account');
-        setSearchParams({ tab: 'account' });
+        navigate('?tab=account', { replace: true });
       } else {
         setActiveTab(tab);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab, navigate]);
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
-    setSearchParams({ tab: tabId });
-  };
+    navigate(`?tab=${tabId}`, { replace: true });
+  }, [navigate]);
+
+  const fetchProfile = useCallback(async () => {
+    if (!token || token === 'null') return;
+    try {
+      const res = await fetch('/api/user/profile', {
+        headers: { 'Authorization': getAuthHeaders().Authorization }
+      });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        setLocalUser(data);
+        setUser(data);
+        hasFetchedProfile.current = true;
+      }
+    } catch (error) {
+      handleApiError(error, 'Failed to fetch profile');
+    }
+  }, [token, setUser, getAuthHeaders, handleApiError, logout]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch('/api/user/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setLocalUser(data);
-          setUser(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile', error);
-      }
-    };
-    if (token && token !== 'null') fetchProfile();
-  }, [token]);
+    if (token && token !== 'null' && !hasFetchedProfile.current) {
+      fetchProfile();
+    }
+  }, [token, fetchProfile]);
 
-  const handleUpdateProfile = async (updates: any) => {
+  const handleUpdateProfile = useCallback(async (updates: ProfileUpdate | AppUser) => {
+    if (!token || token === 'null') return;
+    
+    // Validation
+    if (updates && 'name' in updates && updates.name && updates.name.length < 2) {
+      showToast(language === 'ar' ? 'الاسم قصير جداً' : 'Name is too short', 'error');
+      return;
+    }
+    if (updates && 'email' in updates && updates.email && !updates.email.includes('@')) {
+      showToast(language === 'ar' ? 'البريد الإلكتروني غير صالح' : 'Invalid email address', 'error');
+      return;
+    }
+
     // If updates is already a full user object (from avatar upload return)
-    if (updates && updates.id && updates.email) {
-      setLocalUser(updates);
-      setUser(updates);
+    const isFullUser = updates && typeof updates === 'object' && 'id' in updates && 'email' in updates;
+    
+    if (isFullUser) {
+      const userData = updates as AppUser;
+      setLocalUser(userData);
+      setUser(userData);
       showToast(t('saveSuccess'), 'success');
       return;
     }
@@ -86,119 +135,122 @@ export const SettingsPage: React.FC = () => {
     try {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updates)
       });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
       if (res.ok) {
         const updatedUser = await res.json();
         setLocalUser(updatedUser);
         setUser(updatedUser);
         showToast(t('saveSuccess'), 'success');
       } else {
-        showToast(t('saveFailed'), 'error');
+        const errorData = await res.json().catch(() => ({}));
+        showToast(errorData.error || t('saveFailed'), 'error');
       }
     } catch (error) {
-      console.error('Failed to update profile', error);
-      showToast(t('saveFailed'), 'error');
+      handleApiError(error, 'Failed to update profile', t('saveFailed'));
     }
-  };
+  }, [token, setUser, showToast, t, getAuthHeaders, handleApiError, language, logout]);
 
   // Memory Center State
   const [memories, setMemories] = useState<any[]>([]);
   const [isLoadingMemories, setIsLoadingMemories] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'memory') {
-      fetchMemories();
-    }
-  }, [activeTab]);
-
-  const fetchMemories = async () => {
+  const fetchMemories = useCallback(async () => {
     if (!token || token === 'null') return;
     setIsLoadingMemories(true);
     try {
       const res = await fetch('/api/memories', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': getAuthHeaders().Authorization }
       });
       if (res.ok) {
         const data = await res.json();
         setMemories(data);
+        hasFetchedMemories.current = true;
       }
     } catch (error) {
-      console.error('Failed to fetch memories', error);
+      handleApiError(error, 'Failed to fetch memories');
     } finally {
       setIsLoadingMemories(false);
     }
-  };
+  }, [token, getAuthHeaders, handleApiError]);
 
-  const handleAddMemory = async (fact: string, category: string = 'general') => {
+  useEffect(() => {
+    if (activeTab === 'memory' && !hasFetchedMemories.current) {
+      fetchMemories();
+    }
+  }, [activeTab, fetchMemories]);
+
+  const handleAddMemory = useCallback(async (fact: string, category: string = 'general') => {
+    if (!token || token === 'null') return;
     try {
       const res = await fetch('/api/memories', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ fact, category, source: 'user' })
       });
       if (res.ok) {
         const newMemory = await res.json();
-        setMemories([newMemory, ...memories]);
+        setMemories(prev => [newMemory, ...prev]);
       }
     } catch (error) {
-      console.error('Failed to add memory', error);
+      handleApiError(error, 'Failed to add memory');
     }
-  };
+  }, [token, getAuthHeaders, handleApiError]);
 
-  const handleUpdateMemory = async (id: number, fact: string, category?: string) => {
+  const handleUpdateMemory = useCallback(async (id: number, fact: string, category?: string) => {
+    if (!token || token === 'null') return;
     try {
       const res = await fetch(`/api/memories/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ fact, category })
       });
       if (res.ok) {
         const updatedMemory = await res.json();
-        setMemories(memories.map(m => m.id === id ? updatedMemory : m));
+        setMemories(prev => prev.map(m => m.id === id ? updatedMemory : m));
       }
     } catch (error) {
-      console.error('Failed to update memory', error);
+      handleApiError(error, 'Failed to update memory');
     }
-  };
+  }, [token, getAuthHeaders, handleApiError]);
 
-  const handleDeleteMemory = async (id: number) => {
+  const handleDeleteMemory = useCallback(async (id: number) => {
+    if (!token || token === 'null') return;
     try {
       const res = await fetch(`/api/memories/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': getAuthHeaders().Authorization }
       });
       if (res.ok) {
-        setMemories(memories.filter(m => m.id !== id));
+        setMemories(prev => prev.filter(m => m.id !== id));
       }
     } catch (error) {
-      console.error('Failed to delete memory', error);
+      handleApiError(error, 'Failed to delete memory');
     }
-  };
+  }, [token, getAuthHeaders, handleApiError]);
 
-  const handlePruneMemory = async () => {
+  const handlePruneMemory = useCallback(async () => {
+    if (!token || token === 'null') return;
     try {
       const res = await fetch('/api/memories/prune', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': getAuthHeaders().Authorization }
       });
       if (res.ok) {
         await fetchMemories();
       }
     } catch (error) {
-      console.error('Failed to prune memories', error);
+      handleApiError(error, 'Failed to prune memories');
     }
-  };
+  }, [token, fetchMemories, getAuthHeaders, handleApiError]);
 
   const tabs = [
-    { id: 'account', icon: <User size={18} />, label: t('profile') },
+    { id: 'account', icon: <UserIcon size={18} />, label: t('profile') },
     { id: 'usage', icon: <Activity size={18} />, label: t('consumption') },
     { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
     { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'سوق المنصة' : 'Marketplace Hub' },
@@ -373,7 +425,9 @@ export const SettingsPage: React.FC = () => {
             style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(16,185,129,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
           >
             <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="font-bold text-sm tracking-tight">{toast.message}</span>
+            <span className="font-bold text-sm tracking-tight">
+              {typeof toast.message === 'string' ? toast.message.replace(/[<>]/g, '') : toast.message}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

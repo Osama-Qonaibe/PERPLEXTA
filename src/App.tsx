@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeEngineProvider } from './context/ThemeContext';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { MainLayout } from './layouts/MainLayout';
@@ -28,8 +29,7 @@ import { Toaster } from 'sonner';
 import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { InactivityWarningModal } from './components/InactivityWarningModal';
-import { PWAInstallPromptModal } from './components/PWAInstallPromptModal';
-import { MobileInstallBanner } from './components/MobileInstallBanner';
+import { ServiceUpdateToast } from './components/ServiceUpdateToast';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
@@ -209,11 +209,9 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <IncentiveCard />
       <UpgradePromptModal />
       <InactivityWarningModal />
-      <PWAInstallPromptModal />
-      <MobileInstallBanner />
+      <ServiceUpdateToast />
 
       <motion.div
-        key={location.pathname}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
@@ -228,7 +226,8 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
+      <ThemeEngineProvider>
+        <AppProvider>
         <VideoResourceProvider>
           <ErrorBoundary name="Perplexta Core Runtime">
             <PWAWrapper>
@@ -267,6 +266,7 @@ export default function App() {
         </ErrorBoundary>
       </VideoResourceProvider>
     </AppProvider>
+    </ThemeEngineProvider>
     </BrowserRouter>
   );
 }

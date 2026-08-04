@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 import { performSilentTokenRefresh } from '../lib/axios';
+import { Theme, useTheme } from '../context/ThemeContext';
 import { applyLanguageFont, FontLoadingConfig, FontLanguageConfig } from '../utils/fontLoader';
 
 type Language = 'ar' | 'en';
-type Theme = 'dark' | 'light' | 'system';
 
 export interface User {
   id?: number;
@@ -103,24 +103,12 @@ interface AppContextType {
   setMilestoneData: (data: any) => void;
   isMobile: boolean;
   isIOS: boolean;
-  isAndroid: boolean;
-  isInstallable: boolean;
-  isInstalling: boolean;
   isStandalone: boolean;
-  showInstallPromptModal: boolean;
-  setShowInstallPromptModal: (val: boolean) => void;
-  openInstallPrompt: () => void;
-  closeInstallPromptModal: () => void;
-  dismissInstallPrompt: () => void;
-  isInstallationRunning: boolean;
-  installProgress: number;
-  installLogs: string[];
-  installSuccess: boolean;
-  closeInstallationModal: () => void;
   rememberMe: boolean;
   isOperationPending: boolean;
   setIsOperationPending: (val: boolean) => void;
   setRememberMe: (val: boolean) => void;
+  deferredPrompt: any;
   installApp: () => Promise<void>;
   memoryNotification: {
     isVisible: boolean;
@@ -160,8 +148,6 @@ const translations = {
     dashboard: 'لوحة التحكم',
     newChat: 'محادثة جديدة',
     settings: 'الإعدادات',
-    install_app: 'تثبيت التطبيق',
-    howCanIHelp: 'ما الذي تود القيام به؟',
     askAssistant: 'اسأل بيربليكستا',
     fast: 'سريع',
     pro: 'احترافي',
@@ -872,8 +858,6 @@ const translations = {
     dashboard: 'Dashboard',
     newChat: 'New Chat',
     settings: 'Settings',
-    install_app: 'Install App',
-    installing: 'Installing...',
     howCanIHelp: 'What would you like to do?',
     askAssistant: 'Ask Perplexta',
     fast: 'Fast',
@@ -1582,13 +1566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      return (localStorage.getItem('theme') as Theme) || 'system';
-    } catch (e) {
-      return 'system';
-    }
-  });
+  const { theme, setTheme: setThemeContext } = useTheme();
   const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window === 'undefined') return 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -1728,10 +1706,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   });
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
   const [isOperationPending, setIsOperationPending] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const installApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+  const [economySettings, setEconomySettings] = useState<any>({ 
+    welcome_bonus_points: 600, 
+    referral_bonus_points: 1000, 
+    points_per_dollar: 1000, 
+    conversion_rate: 0.001 
+  });
 
   const [memoryNotification, setMemoryNotification] = useState<{
     isVisible: boolean;
@@ -1801,8 +1805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleThemeChange = async (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
+    setThemeContext(newTheme);
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1839,86 +1842,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
            (window.navigator as any).standalone === true ||
            document.referrer.includes('android-app://');
   });
-  const [isAndroid] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return /Android/i.test(navigator.userAgent);
-  });
-  const [showInstallPromptModal, setShowInstallPromptModal] = useState<boolean>(false);
-  const [isInstallationRunning, setIsInstallationRunning] = useState<boolean>(false);
-  const [installProgress, setInstallProgress] = useState<number>(0);
-  const [installLogs, setInstallLogs] = useState<string[]>([]);
-  const [installSuccess, setInstallSuccess] = useState<boolean>(false);
-
-  const openInstallPrompt = useCallback(() => {
-    setShowInstallPromptModal(true);
-  }, []);
-
-  const closeInstallPromptModal = useCallback(() => {
-    setShowInstallPromptModal(false);
-  }, []);
-
-  const dismissInstallPrompt = useCallback(() => {
-    setShowInstallPromptModal(false);
-    try {
-      sessionStorage.setItem('perplexta_pwa_prompt_dismissed', 'true');
-    } catch (e) {}
-  }, []);
-
-  const closeInstallationModal = () => {
-    setIsInstallationRunning(false);
-    setInstallSuccess(false);
-    setIsInstalling(false);
-  };
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      if (isIOS) return;
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    const handleAppInstalled = () => {
-      setIsStandalone(true);
-      setIsInstallable(false);
-      setShowInstallPromptModal(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
 
-    // Prompt user on arrival if app is not standalone and prompt was not dismissed in this session
-    if (typeof window !== 'undefined') {
-      try {
-        const isDismissed = sessionStorage.getItem('perplexta_pwa_prompt_dismissed') === 'true';
-        const isAppStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                               (window.navigator as any).standalone === true ||
-                               document.referrer.includes('android-app://');
-
-        if (!isAppStandalone && !isDismissed) {
-          const timer = setTimeout(() => {
-            setShowInstallPromptModal(true);
-          }, 1200);
-          return () => {
-            clearTimeout(timer);
-            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-            window.removeEventListener('appinstalled', handleAppInstalled);
-            window.removeEventListener('resize', handleResize);
-          };
-        }
-      } catch (e) {}
-    }
-
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isIOS]);
+  }, []);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1932,40 +1864,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isOperationPending]);
-
-  const installApp = async () => {
-    if (typeof window === 'undefined') return;
-
-    if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === 'accepted') {
-          setDeferredPrompt(null);
-          setIsInstallable(false);
-          setShowInstallPromptModal(false);
-          setIsStandalone(true);
-          toast.success(
-            language === 'ar' 
-              ? 'تم تثبيت التطبيق بنجاح' 
-              : 'Application installed successfully'
-          );
-        }
-      } catch (err) {
-        console.error('PWA install prompt error:', err);
-      }
-    } else {
-      setShowInstallPromptModal(true);
-    }
-  };
-
-  const [economySettings, setEconomySettings] = useState<any>({ 
-    welcome_bonus_points: 600, 
-    referral_bonus_points: 1000, 
-    points_per_dollar: 1000, 
-    conversion_rate: 0.001 
-  });
 
   const handleAuthSuccess = (userData: any) => {
     if (isSyncingAuth.current) return;
@@ -2338,7 +2236,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBalance(Number(userProfile.points || 0));
         setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
-        if (userProfile.theme) setTheme(userProfile.theme as Theme);
+        if (userProfile.theme) useTheme().setTheme(userProfile.theme as Theme);
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
@@ -2409,7 +2307,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const ref = localStorage.getItem('app_ref');
       const lang = localStorage.getItem('language') || 'en';
-      const theme = localStorage.getItem('theme') || 'dark';
+      const currentTheme = theme || 'dark';
 
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -2420,7 +2318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
-      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${theme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
 
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
@@ -3336,7 +3234,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       document.documentElement.style.color = '#0f172a';
       if (meta) meta.setAttribute('content', '#fcfcfc');
     }
-    localStorage.setItem('theme', theme);
   }, [language, theme, systemTheme, dir]);
 
   useEffect(() => {
@@ -3485,25 +3382,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMilestoneData,
       isMobile,
       isIOS,
-      isAndroid,
-      isInstallable,
-      isInstalling,
       isStandalone,
-      showInstallPromptModal,
-      setShowInstallPromptModal,
-      openInstallPrompt,
-      closeInstallPromptModal,
-      dismissInstallPrompt,
-      isInstallationRunning,
-      installProgress,
-      installLogs,
-      installSuccess,
-      closeInstallationModal,
       rememberMe,
       setRememberMe,
+      deferredPrompt,
+      installApp,
       isOperationPending,
       setIsOperationPending,
-      installApp,
       memoryNotification,
       triggerMemoryNotification,
       closeMemoryNotification,

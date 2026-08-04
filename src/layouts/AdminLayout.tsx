@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
-  const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile, isInstallable } = useAppContext();
+  const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile } = useAppContext();
 
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
 

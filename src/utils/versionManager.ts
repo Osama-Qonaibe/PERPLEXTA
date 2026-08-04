@@ -22,34 +22,11 @@ export class VersionManager {
       if (!localHash) {
         safeStorageSet(this.STORAGE_KEY, serverHash);
       } else if (localHash !== serverHash) {
-        console.log('[VersionManager] New build detected. Reloading to apply fresh assets...');
+        console.log('[VersionManager] New build detected. Signalling update...');
         safeStorageSet(this.STORAGE_KEY, serverHash);
         
-        // Unregister service workers to clear old cache
-        if ('serviceWorker' in navigator) {
-          try {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (const registration of registrations) {
-              await registration.unregister();
-            }
-          } catch (e) {
-            console.error('[VersionManager] SW unregister error:', e);
-          }
-        }
-
-        // Clear browser cache storage
-        if ('caches' in window) {
-          try {
-            const cacheNames = await caches.keys();
-            for (const name of cacheNames) {
-              await caches.delete(name);
-            }
-          } catch (e) {
-            console.error('[VersionManager] Caches delete error:', e);
-          }
-        }
-
-        window.location.reload();
+        // Signal that a version change was detected without force-reloading
+        window.dispatchEvent(new CustomEvent('pwa-version-mismatch', { detail: { serverHash } }));
       }
     } catch (err) {
       console.warn('[VersionManager] Version check failed:', err);
