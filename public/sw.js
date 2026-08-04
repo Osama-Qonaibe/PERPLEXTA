@@ -1,7 +1,9 @@
-const CACHE_NAME = 'perplexta-pwa-v5';
+const CACHE_NAME = 'perplexta-pwa-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/manifest.json',
+  '/manifest.webmanifest',
   '/app-assets/icon.png'
 ];
 
@@ -30,18 +32,39 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // ABSOLUTE BYPASS: Never intercept, cache, or modify /api/ or /uploads/ requests.
-  // This ensures uploaded images, media files, and backend APIs are fetched directly from the server without SW interference.
+  // CRITICAL: NEVER intercept or modify API requests, file uploads, media, or dynamic images.
+  // Using event.respondWith(fetch(event.request)) satisfies PWA audit rules without caching media/images.
   if (
     url.pathname.startsWith('/api/') || 
     url.pathname.startsWith('/uploads/') || 
     url.pathname.includes('/uploads/') ||
-    event.request.method !== 'GET'
+    event.request.destination === 'image' ||
+    /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i.test(url.pathname) ||
+    url.hostname.includes('unsplash.com') ||
+    url.hostname.includes('googleusercontent.com') ||
+    url.hostname.includes('githubusercontent.com')
   ) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
-  // For navigation and static app assets, use network-first with cache fallback
+  // Navigation requests (HTML pages) -> NetworkFirst with offline index.html fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
+  // Non-GET requests: direct fetch
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Core static assets (js, css bundles)
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -55,12 +78,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
+          return cachedResponse || fetch(event.request);
         });
       })
   );

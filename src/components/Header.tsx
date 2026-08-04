@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone, deferredPrompt, installApp } = useAppContext();
   
   const [isOffline, setIsOffline] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -423,6 +423,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   <Moon size={18} className="text-gray-400 group-hover:text-blue-500 transition-theme" />
                 )}
               </button>
+
+          {deferredPrompt && !isStandalone && (
+            <button
+              onClick={installApp}
+              className="flex items-center justify-center gap-1.5 text-[11px] font-bold px-2.5 h-10 rounded-[10px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-500 transition-theme active:scale-95 group shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+              title={language === 'ar' ? 'تثبيت التطبيق الأصلي' : 'Install Native App'}
+            >
+              <Smartphone size={15} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline font-sans">{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
+            </button>
+          )}
         
         {(user || token) && (
           <div className="flex items-center gap-1.5 h-full">
