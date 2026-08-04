@@ -1,10 +1,11 @@
-const CACHE_NAME = 'perplexta-pwa-v7';
+const CACHE_NAME = 'perplexta-pwa-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/manifest.webmanifest',
-  '/app-assets/icon.png'
+  '/app-assets/pwa-192x192.png',
+  '/app-assets/pwa-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {

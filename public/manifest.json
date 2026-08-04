@@ -13,49 +13,25 @@
   "categories": ["productivity", "utilities", "artificial intelligence", "finance", "business"],
   "icons": [
     {
-      "src": "/app-assets/icon.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/app-assets/icon.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/app-assets/icon.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/app-assets/icon.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/app-assets/icon.png",
+      "src": "/app-assets/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/app-assets/icon.png",
+      "src": "/app-assets/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/app-assets/icon.png",
+      "src": "/app-assets/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/app-assets/icon.png",
+      "src": "/app-assets/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -67,14 +43,14 @@
       "short_name": "Chat",
       "description": "Start a fresh AI session",
       "url": "/",
-      "icons": [{ "src": "/app-assets/icon.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/app-assets/pwa-192x192.png", "sizes": "192x192" }]
     },
     {
       "name": "Rewards Center",
       "short_name": "Rewards",
       "description": "Manage points & rewards",
       "url": "/rewards",
-      "icons": [{ "src": "/app-assets/icon.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/app-assets/pwa-192x192.png", "sizes": "192x192" }]
     }
   ]
 }
