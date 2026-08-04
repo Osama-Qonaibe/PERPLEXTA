@@ -1,4 +1,4 @@
-const CACHE_NAME = 'perplexta-pwa-v4';
+const CACHE_NAME = 'perplexta-pwa-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -30,16 +30,21 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // CRITICAL: Never intercept or cache API requests or uploaded media/images (/uploads/)
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/') || event.request.method !== 'GET') {
+  // ABSOLUTE BYPASS: Never intercept, cache, or modify /api/ or /uploads/ requests.
+  // This ensures uploaded images, media files, and backend APIs are fetched directly from the server without SW interference.
+  if (
+    url.pathname.startsWith('/api/') || 
+    url.pathname.startsWith('/uploads/') || 
+    url.pathname.includes('/uploads/') ||
+    event.request.method !== 'GET'
+  ) {
     return;
   }
 
-  // Network-first strategy for navigation and static assets to prevent stale cache issues
+  // For navigation and static app assets, use network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Optionally cache successful static GET requests
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
