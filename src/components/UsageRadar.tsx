@@ -79,14 +79,14 @@ export const UsageRadar: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-10 animate-pulse transition-theme duration-[var(--theme-transition-duration)]">
+      <div className="space-y-10 animate-pulse transition-theme">
         {/* Skeleton Header - Precision matched to 412px loaded state */}
-        <div className="h-[412px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
+        <div className="h-[412px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
         
         {/* Skeleton Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
+            <div key={i} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
           ))}
         </div>
       </div>
@@ -117,9 +117,9 @@ export const UsageRadar: React.FC = () => {
   const startDate = data.plan.subscription_start ? new Date(data.plan.subscription_start).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="space-y-10 transition-theme duration-[var(--theme-transition-duration)]">
+    <div className="space-y-10 transition-theme">
       {/* Usage Radar Header - Elite Design (Perplexta Static) */}
-      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-theme duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
+      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
         
         {/* Fixed Header Row */}
         <div className="flex justify-between items-start mb-12">
@@ -191,7 +191,7 @@ export const UsageRadar: React.FC = () => {
           const isExpanded = expanded === item.id;
 
           return (
-            <div className={`rounded-[var(--radius)] min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-theme duration-[var(--theme-transition-duration)] overflow-hidden shadow-sm`}
+            <div className={`rounded-[var(--radius)] min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-theme overflow-hidden shadow-sm`}
               key={item.id}
               style={{ borderColor: isExpanded ? `${planColor}40` : undefined, boxShadow: isExpanded ? `0 0 20px ${planColor}05` : 'none' }}
             >

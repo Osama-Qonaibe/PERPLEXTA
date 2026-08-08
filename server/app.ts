@@ -224,6 +224,9 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
     if (fileName.endsWith('.webmanifest') || fileName.endsWith('.json')) {
       res.type('application/manifest+json');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     } else if (fileName.endsWith('.js')) {
       res.type('application/javascript');
       res.setHeader('Service-Worker-Allowed', '/');
@@ -320,23 +323,25 @@ const mediaMimeTypes: Record<string, string> = {
 };
 
 async function checkIsPublicFile(filename: string): Promise<boolean> {
-  const cleanName = filename.split('?')[0];
+  const cleanName = path.basename(filename.split('?')[0].replace(/^(\/)?(uploads\/)+/i, ''));
   const cacheKey = `public_ref:${cleanName}`;
   const now = Date.now();
-  if (filePermissionCache.has(cacheKey)) {
-    const cached = filePermissionCache.get(cacheKey)!;
-    if (now < cached.expiresAt) return cached.authorized;
-    filePermissionCache.delete(cacheKey);
-  }
-
+  
   const ext = path.extname(cleanName).toLowerCase();
   const isMediaExt = Boolean(mediaMimeTypes[ext]);
   const diskPath = path.join(uploadsPath, cleanName);
   const fileExistsOnDisk = fs.existsSync(diskPath);
 
-  if (isMediaExt || (fileExistsOnDisk && Boolean(mediaMimeTypes[ext]))) {
+  // If file physically exists on disk or is a media extension, it is always public/accessible
+  if (fileExistsOnDisk || isMediaExt) {
     filePermissionCache.set(cacheKey, { authorized: true, expiresAt: now + FILE_CACHE_TTL_MS });
     return true;
+  }
+
+  if (filePermissionCache.has(cacheKey)) {
+    const cached = filePermissionCache.get(cacheKey)!;
+    if (now < cached.expiresAt && cached.authorized) return true;
+    filePermissionCache.delete(cacheKey);
   }
 
   try {
@@ -378,24 +383,23 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
       }
     }
 
-    if (!isPublic && (isMediaExt || fileExistsOnDisk)) {
-      isPublic = true;
+    if (isPublic) {
+      filePermissionCache.set(cacheKey, { authorized: true, expiresAt: now + FILE_CACHE_TTL_MS });
+      return true;
     }
 
-    filePermissionCache.set(cacheKey, { authorized: isPublic, expiresAt: now + FILE_CACHE_TTL_MS });
-    return isPublic;
+    return false;
   } catch (dbErr) {
     console.error('[Upload Secure Handler] checkIsPublicFile error:', dbErr);
-    const fallbackIsPublic = isMediaExt || fileExistsOnDisk;
-    filePermissionCache.set(cacheKey, { authorized: fallbackIsPublic, expiresAt: now + FILE_CACHE_TTL_MS });
-    return fallbackIsPublic;
+    return isMediaExt || fileExistsOnDisk;
   }
 }
 
 app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const rawFilename = req.params.filename || '';
-    const filename = path.basename(rawFilename.split('?')[0]);
+    const cleanRaw = rawFilename.replace(/^(\/)?(uploads\/)+/i, '');
+    const filename = path.basename(cleanRaw.split('?')[0]);
     const filePath = path.join(uploadsPath, filename);
 
     console.log(`[Uploads] Requesting file: ${filename}, Full Path: ${filePath}`);
@@ -403,6 +407,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     let resolvedPath = path.resolve(filePath);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       console.warn(`[Uploads] Path traversal attempt blocked: ${filename}`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
     }
 
@@ -428,6 +433,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       }
       if (!foundFallback) {
         console.warn(`[Uploads] File not found: ${filename}`);
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         return res.status(404).json({ error: 'File not found' });
       }
     }
@@ -435,11 +441,25 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const actualExt = path.extname(resolvedPath).toLowerCase();
     const mimeType = mediaMimeTypes[actualExt] || 'application/octet-stream';
 
-    const serveFile = (pathToSend: string) => {
+    const serveFile = async (pathToSend: string) => {
       console.log(`[Uploads] Serving file: ${pathToSend}, MIME: ${mimeType}`);
       const stat = fs.statSync(pathToSend);
       const mtime = stat.mtime.toUTCString();
-      const etag = `W/"${stat.size}-${stat.mtimeMs}"`;
+
+      let fileVersion = 1;
+      try {
+        const fileVerRes = await pool.query(
+          'SELECT file_version FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3 LIMIT 1',
+          [filename, path.basename(pathToSend), `%${filename}%`]
+        );
+        if (fileVerRes.rows.length > 0 && fileVerRes.rows[0].file_version) {
+          fileVersion = fileVerRes.rows[0].file_version;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const etag = `"${stat.size}-${stat.mtimeMs}-v${fileVersion}"`;
 
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Last-Modified', mtime);
@@ -447,9 +467,9 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
       const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav'].includes(actualExt);
       if (isMedia) {
-        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+        res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
       } else {
-        res.setHeader('Cache-Control', 'private, max-age=3600');
+        res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
       }
 
       const ifNoneMatch = req.headers['if-none-match'];
@@ -468,12 +488,12 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     };
 
     if (mediaMimeTypes[actualExt]) {
-      return serveFile(resolvedPath);
+      return await serveFile(resolvedPath);
     }
 
     const isPublic = await checkIsPublicFile(filename);
     if (isPublic) {
-      return serveFile(resolvedPath);
+      return await serveFile(resolvedPath);
     }
 
     const authHeader = req.headers['authorization'];
@@ -485,16 +505,21 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     }
 
     if (!token || token === 'null' || token === 'undefined') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.status(401).json({ error: 'Unauthorized: Authentication is required to access this file.' });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       console.error('[FATAL] JWT_SECRET is not configured for document server authentication.');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       return res.status(500).json({ error: 'Server misconfiguration: Secure verification key not configured.' });
     }
     jwt.verify(token, jwtSecret, async (err: any, decoded: any) => {
-      if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
+      if (err) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        return res.status(403).json({ error: 'Forbidden: Invalid token' });
+      }
 
       const user = decoded as any;
       if (user.role === 'admin') return serveFile(resolvedPath);
@@ -504,6 +529,9 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       if (filePermissionCache.has(cacheKey)) {
         const cached = filePermissionCache.get(cacheKey)!;
         if (now < cached.expiresAt) {
+          if (!cached.authorized) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          }
           return cached.authorized
             ? serveFile(resolvedPath)
             : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
@@ -519,11 +547,14 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         
         const authorized = isUserFileRes.rows.length > 0 || isProofRes.rows.length > 0 || isPublic;
         filePermissionCache.set(cacheKey, { authorized, expiresAt: now + FILE_CACHE_TTL_MS });
-        return authorized
-          ? serveFile(resolvedPath)
-          : res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+        if (!authorized) {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          return res.status(403).json({ error: 'Unauthorized: Access to this private document is denied.' });
+        }
+        return serveFile(resolvedPath);
       } catch (dbErr) {
         console.error('[Upload Secure Handler] Database error:', dbErr);
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         return res.status(500).json({ error: 'Database verification failure' });
       }
     });

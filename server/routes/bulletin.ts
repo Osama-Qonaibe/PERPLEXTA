@@ -2902,42 +2902,35 @@ router.post('/admin/:id/stop', authenticateAdmin, async (req, res) => {
     const stopReason = reason || 'Violation of platform terms or administrative decision';
 
     try {
-      await createNotification(
+      const { dispatchNotification } = await import('../services/notifications.js');
+      await dispatchNotification(
         ad.user_id,
         'bulletin_ad',
         'Advertisement Stopped',
         'إيقاف إعلانك فورياً ⚠️',
         `Your advertisement "${ad.title}" has been stopped by administrators. Reason: ${stopReason}`,
         `تم إيقاف إعلانك "${ad.title}" من قبل الإدارة فورياً. السبب: ${stopReason}`,
-        { ad_id: adId }
+        { ad_id: adId },
+        {
+          sendEmail: true,
+          emailBody: (user) => `
+            <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+              <h2 style="color: #EF4444; border-bottom: 2px solid #EF4444; padding-bottom: 10px;">Advertisement Stoppage Notice</h2>
+              <p>Dear <strong>${user.name || 'Advertiser'}</strong>,</p>
+              <p>We are writing to inform you that your active bulletin ad <strong>"${ad.title}"</strong> (ID: #${ad.id}) has been stopped by the platform administration.</p>
+              <div style="background-color: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; margin: 20px 0; color: #991b1b;">
+                <p style="margin: 0 0 5px 0;"><strong>Reason for Stoppage:</strong></p>
+                <p style="margin: 0; font-weight: bold;">${stopReason}</p>
+              </div>
+              <p>If you believe this was an error or would like to request clarification, please contact our support team.</p>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #9ca3af; text-align: center;">Perplexta Enterprise Administration Protocol</p>
+            </div>
+          `
+        }
       );
     } catch (nErr) {
       console.error('[Admin Bulletin API] Stop notification error:', nErr);
-    }
-
-    try {
-      if (ad.u_email) {
-        const { sendEmail } = await import('../services/email.js');
-        const subject = `⚠️ Important Notice: Your Advertisement "${ad.title}" Has Been Stopped - Perplexta`;
-        const html = `
-          <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
-            <h2 style="color: #EF4444; border-bottom: 2px solid #EF4444; padding-bottom: 10px;">Advertisement Stoppage Notice</h2>
-            <p>Dear <strong>${ad.u_name || 'Advertiser'}</strong>,</p>
-            <p>We are writing to inform you that your active bulletin ad <strong>"${ad.title}"</strong> (ID: #${ad.id}) has been stopped by the platform administration.</p>
-            <div style="background-color: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; margin: 20px 0; color: #991b1b;">
-              <p style="margin: 0 0 5px 0;"><strong>Reason for Stoppage:</strong></p>
-              <p style="margin: 0; font-weight: bold;">${stopReason}</p>
-            </div>
-            <p>If you believe this was an error or would like to request clarification, please contact our support team.</p>
-            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
-            <p style="font-size: 11px; color: #9ca3af; text-align: center;">Perplexta Enterprise Administration Protocol</p>
-          </div>
-        `;
-        await sendEmail(ad.u_email, subject, html);
-        // Email sent successfully
-      }
-    } catch (mailErr) {
-      console.error('[Admin Bulletin API] Stop email error:', mailErr);
     }
 
     res.json({ success: true, message: 'تم إيقاف الإعلان بنجاح وإشعار صاحب الإعلان عبر المنصة والبريد الإلكتروني' });

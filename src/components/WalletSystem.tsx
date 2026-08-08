@@ -636,8 +636,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   if (loading && !wallet) {
     return (
       <div className="space-y-10 animate-pulse w-full max-w-5xl mx-auto px-6 md:px-12 pt-6">
-        <div className="h-[280px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
-        <div className="h-[400px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme duration-[var(--theme-transition-duration)]" />
+        <div className="h-[280px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
+        <div className="h-[400px] w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
       </div>
     );
   }
@@ -645,11 +645,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const currentBalance = wallet ? wallet.balance : 0;
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme duration-[var(--theme-transition-duration)] pt-12 pb-20">
+    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme pt-12 pb-20">
       
       {/* Centered Banking Hero Card - High Density Elite */}
       <div className="px-6 md:px-12 flex justify-center flex-none mt-4">
-        <div className="relative w-full max-w-5xl p-10 rounded-[var(--radius)] border shadow-2xl transition-theme duration-[var(--theme-transition-duration)] bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
+        <div className="relative w-full max-w-5xl p-10 rounded-[var(--radius)] border shadow-2xl transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
           
           {/* Neon Top Accent Line for the Wallet Hero */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20 blur-[1px]" />
@@ -706,7 +706,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             </div>
 
             {/* Bottom Stats Row */}
-            <div className="pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t border-[var(--border)] transition-theme duration-[var(--theme-transition-duration)]">
+            <div className="pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t border-[var(--border)] transition-theme">
                <div className="space-y-1">
                   <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">
                     {dir === 'rtl' ? 'الرصيد بنقاط المكافآت' : 'Points Pool'}
@@ -744,7 +744,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
 
       {/* Perplexta Tabs - Emerald Glow Hierarchy */}
       <div className="px-6 md:px-12 mt-8 flex-none w-full max-w-5xl mx-auto">
-        <div className="flex items-center overflow-x-auto gap-4 border-b border-[var(--border)] no-scrollbar transition-theme duration-[var(--theme-transition-duration)]">
+        <div className="flex items-center overflow-x-auto gap-4 border-b border-[var(--border)] no-scrollbar transition-theme">
           {[
             { id: 'transactions', label: dir === 'rtl' ? 'سجل الإيداع' : 'Deposits Book' },
             { id: 'withdrawal_history', label: dir === 'rtl' ? 'سجل السحب' : 'Withdrawals Book' },
@@ -1081,7 +1081,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             />
                             <label
                               htmlFor="manual-proof-upload"
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none"
                             >
                               <Paperclip size={12} className="text-emerald-500" />
                               {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1192,7 +1192,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             />
                             <label
                               htmlFor="bank-proof-upload"
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                              className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none"
                             >
                               <Paperclip size={12} className="text-emerald-500" />
                               {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1294,7 +1294,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                                 />
                                 <label
                                   htmlFor="paypal-proof-upload"
-                                  className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none duration-200"
+                                  className="flex items-center justify-center gap-2 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-[var(--radius)] cursor-pointer text-[10px] font-black uppercase tracking-wider text-[var(--text-primary)] transition-theme select-none"
                                 >
                                   <Paperclip size={12} className="text-emerald-500" />
                                   {manualProofFile ? (manualProofFile.name.length > 20 ? manualProofFile.name.substring(0, 20) + '...' : manualProofFile.name) : (dir === 'rtl' ? 'اختر ملف الإثبات' : 'SELECT PROOF IMAGE')}
@@ -1618,7 +1618,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-full w-full rounded-[var(--radius)] border overflow-hidden transition-theme duration-[var(--theme-transition-duration)] flex flex-col bg-[var(--bg-base)] border-[var(--border)] shadow-sm shadow-[var(--color-shadow)]"
+              className="h-full w-full rounded-[var(--radius)] border overflow-hidden transition-theme flex flex-col bg-[var(--bg-base)] border-[var(--border)] shadow-sm shadow-[var(--color-shadow)]"
             >
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Premium Clean Up Utility Bar */}

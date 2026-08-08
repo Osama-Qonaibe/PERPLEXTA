@@ -1,1 +1,0 @@
-424:                <Route path="discover" element={<RecommendationsPage />} />

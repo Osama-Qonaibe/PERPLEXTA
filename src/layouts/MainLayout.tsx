@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SIDEBAR_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
-  const { isSidebarOpen, setIsSidebarOpen, language, isMobile } = useAppContext();
+  const { isSidebarOpen, setIsSidebarOpen, language, isMobile, resolvedTheme, themeTransitioning } = useAppContext();
 
   const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 80);
 

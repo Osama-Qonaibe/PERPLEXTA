@@ -22,7 +22,7 @@ interface EngagementTrendsChartProps {
 export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
   initialTimeframe = '30d',
 }) => {
-  const { language, theme } = useAppContext();
+  const { language, theme, resolvedTheme } = useAppContext();
   const isRtl = language === 'ar';
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -94,7 +94,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Color definitions
-    const isDark = theme === 'dark' || document.documentElement.classList.contains('dark');
+    const isDark = resolvedTheme === 'dark';
     const strokeColor = '#10b981'; // Emerald 500
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)';
     const textColor = isDark ? '#9ca3af' : '#6b7280';

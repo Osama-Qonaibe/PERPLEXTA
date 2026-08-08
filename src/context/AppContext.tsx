@@ -5,8 +5,12 @@ import { toast } from 'sonner';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 import { performSilentTokenRefresh } from '../lib/axios';
+import { useQueryClient } from '@tanstack/react-query';
+import { SessionPurge } from '../utils/SessionPurge';
 import { Theme, useTheme } from '../context/ThemeContext';
+import { ThemeSync } from '../utils/ThemeSync';
 import { applyLanguageFont, FontLoadingConfig, FontLanguageConfig } from '../utils/fontLoader';
+import { resolveImageUrl } from '../utils/imageResolver';
 
 type Language = 'ar' | 'en';
 
@@ -22,6 +26,7 @@ export interface User {
   custom_instructions?: string;
   referral_code?: string;
   memory?: string;
+  email_notifications?: boolean;
   subscription?: {
     plan_id: string;
     status: string;
@@ -65,6 +70,8 @@ interface AppContextType {
   setLanguage: (lang: Language) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  resolvedTheme: 'dark' | 'light';
+  themeTransitioning: boolean;
   dir: 'rtl' | 'ltr';
   t: (key: string, replacements?: Record<string, string | number>) => string;
   isSidebarOpen: boolean;
@@ -79,6 +86,7 @@ interface AppContextType {
   signup: (email: string, password: string, name: string, ref?: string) => Promise<{ success: boolean, error?: string }>;
   loginWithGoogle: () => void;
   logout: (forceRedirect?: boolean) => void;
+  purgeSession: (forceRedirect?: boolean) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (isOpen: boolean) => void;
   plans: any[];
@@ -103,13 +111,10 @@ interface AppContextType {
   setMilestoneData: (data: any) => void;
   isMobile: boolean;
   isIOS: boolean;
-  isStandalone: boolean;
   rememberMe: boolean;
   isOperationPending: boolean;
   setIsOperationPending: (val: boolean) => void;
   setRememberMe: (val: boolean) => void;
-  deferredPrompt: any;
-  installApp: () => Promise<void>;
   memoryNotification: {
     isVisible: boolean;
     type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup';
@@ -1563,10 +1568,11 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
-  const { theme, setTheme: setThemeContext } = useTheme();
+  const { theme, setTheme: setThemeContext, resolvedTheme, themeTransitioning } = useTheme();
   const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window === 'undefined') return 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -1707,29 +1713,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   });
   const [isOperationPending, setIsOperationPending] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const installApp = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
   const [economySettings, setEconomySettings] = useState<any>({ 
     welcome_bonus_points: 600, 
     referral_bonus_points: 1000, 
@@ -1835,13 +1819,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return next;
     });
   }, []);
-
-  const [isStandalone, setIsStandalone] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(display-mode: standalone)').matches || 
-           (window.navigator as any).standalone === true ||
-           document.referrer.includes('android-app://');
-  });
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -2236,7 +2213,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBalance(Number(userProfile.points || 0));
         setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
-        if (userProfile.theme) useTheme().setTheme(userProfile.theme as Theme);
+        if (userProfile.theme) setThemeContext(userProfile.theme as Theme);
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
@@ -2483,58 +2460,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const logout = async (forceRedirect = true) => {
-
-    if (!token && !user) {
-
-      return;
-    }
-
-    const storedToken = token;
-    const storedRefreshToken = localStorage.getItem('app_refresh_token');
-
-    if (forceRedirect) {
-      localStorage.setItem('app_logged_out_toast', '1');
-    }
-
-    localStorage.removeItem('app_token');
-    localStorage.removeItem('app_refresh_token');
-    localStorage.removeItem('app_oauth_user');
-    localStorage.removeItem('app_oauth_trigger');
-    localStorage.removeItem('app_user_profile');
-
-    localStorage.removeItem('last_active_tool');
-    localStorage.removeItem('last_active_model');
-    localStorage.removeItem('last_chat_id');
-    localStorage.removeItem('perplexta_last_activity');
-    localStorage.removeItem('perplexta_marketplace_cart');
-    localStorage.removeItem('perplexta_marketplace_ref');
-    localStorage.removeItem('perplexta_deleted_virtual_items');
-    localStorage.removeItem('socket_polling_fallback');
-    sessionStorage.removeItem('draft_query');
-
-    localStorage.setItem('last_active_tool', 'chat');
-    localStorage.setItem('last_active_model', 'fast');
-
-    if (storedToken) {
-      fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${storedToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ refreshToken: storedRefreshToken })
-      }).catch((e) => {
-
-      });
-    }
-
+  const purgeSession = useCallback((forceRedirect = true) => {
     if (socket) {
       try {
         socket.disconnect();
-      } catch (e) {
-
-      }
+      } catch (e) {}
     }
 
     setIsAuthModalOpen(false);
@@ -2548,11 +2478,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMilestoneData(null);
     isSyncingAuth.current = false;
 
+    SessionPurge.purgeAll({
+      queryClient,
+      preserveTheme: true,
+      preserveLanguage: true,
+    });
+
     if (forceRedirect) {
+      localStorage.setItem('app_logged_out_toast', '1');
       window.location.replace('/');
     } else {
       localStorage.removeItem('app_loader_type');
     }
+  }, [socket, queryClient]);
+
+  const logout = async (forceRedirect = true) => {
+    if (!token && !user) {
+      purgeSession(forceRedirect);
+      return;
+    }
+
+    const storedToken = token;
+    const storedRefreshToken = localStorage.getItem('app_refresh_token');
+
+    if (storedToken) {
+      fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refreshToken: storedRefreshToken })
+      }).catch((e) => {});
+    }
+
+    purgeSession(forceRedirect);
   };
 
   useEffect(() => {
@@ -2658,6 +2618,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       seoImageUrl: null
     };
   });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          const newSettings: SiteSettings = {
+            siteName: data.site_name_en || '',
+            siteNameAr: data.site_name_ar || '',
+            seoSiteNameEn: data.seo_site_name_en || '',
+            seoSiteNameAr: data.seo_site_name_ar || '',
+            siteDescription: data.site_description_en || '',
+            siteDescriptionAr: data.site_description_ar || '',
+            logoBase64: data.logo_url || null,
+            logoLightBase64: data.logo_light_url || null,
+            faviconBase64: data.favicon_url || null,
+            seoDescriptionEn: data.seo_description_en || '',
+            seoDescriptionAr: data.seo_description_ar || '',
+            keywordsEn: data.keywords_en || '',
+            keywordsAr: data.keywords_ar || '',
+            googleAnalyticsId: data.google_analytics_id || '',
+            googleSiteVerification: data.google_site_verification || '',
+            seoImageUrl: data.seo_image_url || null,
+            blocked_paths: data.blocked_paths || '',
+            fontLoadingConfig: data.font_loading_config ? (typeof data.font_loading_config === 'string' ? JSON.parse(data.font_loading_config) : data.font_loading_config) : null,
+            fontConfigAr: data.font_config_ar ? (typeof data.font_config_ar === 'string' ? JSON.parse(data.font_config_ar) : data.font_config_ar) : null,
+            fontConfigEn: data.font_config_en ? (typeof data.font_config_en === 'string' ? JSON.parse(data.font_config_en) : data.font_config_en) : null,
+          };
+          setSiteSettings(newSettings);
+        }
+      } catch (err) {
+        console.warn('[AppContext] Failed to fetch live site settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('site_settings', JSON.stringify(siteSettings));
@@ -2819,9 +2816,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMilestoneData(data);
     });
 
-    newSocket.on('user_profile_updated', () => {
+    const handleUserProfileOrWalletChange = () => {
       refreshUser();
-    });
+    };
+
+    newSocket.on('user_profile_updated', handleUserProfileOrWalletChange);
+    newSocket.on('balance_update', handleUserProfileOrWalletChange);
+    newSocket.on('wallet_updated', handleUserProfileOrWalletChange);
+    newSocket.on('subscription_updated', handleUserProfileOrWalletChange);
+    newSocket.on('subscription_canceled', handleUserProfileOrWalletChange);
+    newSocket.on('quota_reset', handleUserProfileOrWalletChange);
 
     newSocket.on('usage_update', (data: { toolId: string; usageCount: number }) => {
       setUser(prev => {
@@ -2840,12 +2844,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newSocket.disconnect();
     };
   }, [token, language, usePollingFallback]);
-
-  useEffect(() => {
-    if (socket && user?.id) {
-      socket.emit('register_user', user.id);
-    }
-  }, [socket, user]);
 
   const markAsRead = async (id: number) => {
     if (!token) return;
@@ -3217,24 +3215,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('language', language);
 
     applyLanguageFont(language, siteSettings.fontLoadingConfig);
-
-    const resolvedTheme = theme === 'system' ? systemTheme : theme;
-
-    const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
-    if (resolvedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-      document.documentElement.style.backgroundColor = '#080809';
-      document.documentElement.style.color = '#f8fafc';
-      if (meta) meta.setAttribute('content', '#080809');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-      document.documentElement.style.backgroundColor = '#fcfcfc';
-      document.documentElement.style.color = '#0f172a';
-      if (meta) meta.setAttribute('content', '#fcfcfc');
-    }
-  }, [language, theme, systemTheme, dir]);
+    ThemeSync.apply(theme);
+  }, [language, theme, dir, siteSettings.fontLoadingConfig]);
 
   useEffect(() => {
     const currentSiteName = language === 'ar' ? (siteSettings.seoSiteNameAr || siteSettings.siteNameAr || siteSettings.siteName) : (siteSettings.seoSiteNameEn || siteSettings.siteName);
@@ -3271,7 +3253,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    ogImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
+    const resolvedSeoImg = resolveImageUrl(siteSettings.seoImageUrl || '/app-assets/og-image.png', 'general');
+    ogImage.setAttribute('content', resolvedSeoImg);
 
     let twitterTitle = document.querySelector('meta[name="twitter:title"]');
     if (!twitterTitle) {
@@ -3295,7 +3278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       twitterImage.setAttribute('name', 'twitter:image');
       document.head.appendChild(twitterImage);
     }
-    twitterImage.setAttribute('content', siteSettings.seoImageUrl || '/app-assets/og-image.png');
+    twitterImage.setAttribute('content', resolvedSeoImg);
 
     let metaKeywords = document.querySelector('meta[name="keywords"]');
     if (!metaKeywords) {
@@ -3312,7 +3295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         link.rel = 'icon';
         document.head.appendChild(link);
       }
-      link.href = siteSettings.faviconBase64;
+      link.href = resolveImageUrl(siteSettings.faviconBase64, 'general');
     }
 
     if (siteSettings.googleAnalyticsId) {
@@ -3362,13 +3345,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       language, setLanguage: handleLanguageChange, 
-      theme, setTheme: handleThemeChange, 
+      theme, setTheme: handleThemeChange, resolvedTheme, themeTransitioning, 
       dir, t, 
       isSidebarOpen, setIsSidebarOpen,
       user, setUser, isAuthReady,
       token, balance,
       login, signup,
-      loginWithGoogle, logout,
+      loginWithGoogle, logout, purgeSession,
       isAuthModalOpen, setIsAuthModalOpen,
       plans, setPlans, plansLoaded,
       siteSettings, setSiteSettings,
@@ -3382,11 +3365,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMilestoneData,
       isMobile,
       isIOS,
-      isStandalone,
       rememberMe,
       setRememberMe,
-      deferredPrompt,
-      installApp,
       isOperationPending,
       setIsOperationPending,
       memoryNotification,

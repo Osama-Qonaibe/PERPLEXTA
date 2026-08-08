@@ -11,14 +11,14 @@ export const DefaultLogo: React.FC<DefaultLogoProps> = ({
 }) => {
   return (
     <div 
-      className={`${className} rounded-[10px] bg-emerald-500 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)] select-none flex-shrink-0 overflow-hidden relative group`}
+      className={`${className} rounded-[10px] bg-black dark:bg-white text-white dark:text-black flex items-center justify-center border border-neutral-800 dark:border-neutral-200 select-none flex-shrink-0 overflow-hidden relative group`}
     >
-      {/* Background radial gradient to give it a premium 3D/ambient shine */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10" />
+      {/* Background ambient shine */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-neutral-900/40 via-transparent to-neutral-100/10 dark:from-white/10 dark:to-transparent" />
       
       {/* High-fidelity continuous-line neural-network/infinite-node symbol */}
       <svg 
-        className={`${iconClassName} text-white filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)]`} 
+        className={`${iconClassName} filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)]`} 
         viewBox="0 0 24 24" 
         fill="none" 
         stroke="currentColor" 

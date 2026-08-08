@@ -7,35 +7,13 @@ import { VersionManager } from './utils/versionManager';
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
-// Register PWA Service Worker with automatic update detection
+// Unregister legacy service workers to eliminate caching conflicts and image loading issues
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((registration) => {
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker) {
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                // New update available, reload to apply
-                console.log('New PWA version available.');
-              }
-            }
-          };
-        }
-      };
-    }).catch((err) => {
-      console.log('SW registration failed: ', err);
-    });
-  });
-
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
     }
-  });
+  }).catch(() => {});
 }
 
 // Silence non-critical console calls in production to prevent telemetry / token leakage.
@@ -49,7 +27,7 @@ if (!import.meta.env.DEV) {
   // console.error — intentionally NOT silenced (required for ErrorBoundary reporting)
 }
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 10 * 60 * 1000,

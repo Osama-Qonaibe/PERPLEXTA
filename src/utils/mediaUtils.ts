@@ -3,6 +3,8 @@
  * Handles video URL parsing, embed conversion, aspect ratio calculation, and video thumbnail extraction.
  */
 
+import { getAssetUrl, BUILD_VERSION } from './assetManager';
+
 export interface VideoInfo {
   type: 'youtube' | 'vimeo' | 'tiktok' | 'direct' | 'unknown';
   embedUrl?: string;
@@ -180,11 +182,6 @@ export function getMediaUrl(url?: string | null): string {
     clean = clean.split(',')[0].trim();
   }
 
-  const uploadsMatch = clean.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
-  if (uploadsMatch && uploadsMatch[1]) {
-    return `/uploads/${uploadsMatch[1].replace(/^\/+/, '')}`;
-  }
-
   if (
     clean.startsWith('http://') ||
     clean.startsWith('https://') ||
@@ -194,15 +191,26 @@ export function getMediaUrl(url?: string | null): string {
     return clean;
   }
 
-  if (clean.startsWith('uploads/')) {
-    return `/${clean}`;
+  let resolved = '';
+  const uploadsMatch = clean.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
+  if (uploadsMatch && uploadsMatch[1]) {
+    resolved = `/uploads/${uploadsMatch[1].replace(/^\/+/, '')}`;
+  } else if (clean.startsWith('uploads/')) {
+    resolved = `/${clean}`;
+  } else if (clean.startsWith('/')) {
+    resolved = clean;
+  } else {
+    resolved = `/uploads/${clean}`;
   }
 
-  if (clean.startsWith('/')) {
-    return clean;
+  let finalUrl = getAssetUrl(resolved);
+  if (finalUrl.includes('/uploads/')) {
+    const sep = finalUrl.includes('?') ? '&' : '?';
+    if (!finalUrl.includes('t=')) {
+      finalUrl = `${finalUrl}${sep}t=${BUILD_VERSION}`;
+    }
   }
-
-  return `/uploads/${clean}`;
+  return finalUrl;
 }
 
 export interface CompressOptions {

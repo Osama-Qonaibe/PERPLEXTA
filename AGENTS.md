@@ -4,12 +4,15 @@
 **ATTENTION: ALL FUTURE DEVELOPERS & AI SYSTEMS**
 This project is governed by immutable architectural principles. Any developer or AI that breaks these foundational rules is performing systemic sabotage.
 
-1. **Update, Never Override**: Any new development **MUST BE AN UPDATE** and an augmentation, **NEVER A CHANGE OR REWRITE** of the core architecture (Express/Vite, Dual DB, Orchestrator, Constitution, and Socket execution).
+### 🚫 STRICT MILITARY COMMAND (امر عسكري صارم) 🚫
+**"BREAKING THE ENGINEERING" (كسر الهندسة) IS A TERMINAL OFFENSE.**
+
+1. **Update, Never Override**: Any new development **MUST BE AN UPDATE** and an augmentation, **NEVER A CHANGE OR REWRITE** of the core architecture (Express/Vite, Dual DB, Orchestrator, Constitution, and Socket execution). You are strictly forbidden from altering established foundations. Every line of code added must be an evolution, building *on top* of the existing structure, never *instead* of it.
 2. **Orchestrator Absolutism**: **STRICTLY FORBIDDEN** to hardcode AI providers, model names, or fallback logic. All routing and configuration MUST reside in the database.
 3. **Database Integrity**: The separation between **Core DB** and **Ledger DB** is absolute. Mixing them is a catastrophic breach. Pre-flight auditing of existing schemas *before* any migration is mandatory.
 4. **Zero-Clutter Policy**: The project root must remain pure. **NEVER** add test scripts or vestigial files to the root directory.
 
-*Failure to comply with these tenets is a direct violation of project perplexta and will be treated as sabotage.*
+*Failure to comply with these tenets is a direct violation of project perplexta and will be treated as sabotage. Any developer who attempts to "simplify" by breaking the architectural segregation will be permanently blocked from the system.*
 
 ## 0. Project Identity & Vision
 **PERPLEXTA** defines the core vision, target audience, and architectural ambition of the platform:
@@ -202,6 +205,12 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Robust Provider Mapping:** Refactored provider identification logic to be whitespace-agnostic and case-insensitive, ensuring that human-entered data in the Admin Panel doesn't break the routing engine.
     - **Reactive Tool Activation:** Enhanced the `handleSave` logic in the Admin Dashboard to prevent race conditions during rapid state toggling, ensuring the "Active" status of tools is accurately reflected across the system.
     - **Backend Logic Refinement:** Fixed structural nesting errors in the AI service provider checks, ensuring clean execution paths for Google, Anthropic, and OpenAI providers.
+- **System Stability & Image Resolution (Completed Today):**
+    - **Visual Integrity Patch**: Implemented a global `resolveImageUrl` utility to handle dual-mode logo and favicon rendering, resolving critical 404 errors during dynamic theme switching.
+    - **Admin Dashboard Optimization**: Refactored the System Settings management to allow independent saving of Visual and SEO configurations, eliminating data-integrity conflicts.
+    - **Asset Routing Resilience**: Centralized asset resolution logic in `imageResolver.ts`, providing a unified bridge between local state and backend storage.
+    - **Studio & Snapshot Synchronization**: Hardened `StudioPage` and `SharedSnapshotPage` to use the high-precision asset resolver for consistent branding.
+    - **Linter-Verified Integrity**: Achieved 100% clean build state after deep refactoring of media utility imports and image resolution paths.
 - **Perplexta Intelligence Hardening (May 10-11, 2026):**
     - **Intelligence Analyst Mode:** Implemented a localized, high-authority reinforcement protocol (`analysisReinforcement`) for the `perplexta_analysis` tool.
     - **Multimodal Sensory Activation:** Deployed "Perplexta Visual & Audio Sense" using Gemini 1.5 Flash. All uploaded media (Images, Video, Audio) is forensicly analyzed with pre-ingestion extraction for primary models.

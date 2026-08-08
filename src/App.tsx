@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { ThemeEngineProvider } from './context/ThemeContext';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
+import { PwaProvider } from './context/PwaContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ChatPage } from './pages/ChatPage';
@@ -28,8 +29,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
+import { resolveImageUrl } from './utils/imageResolver';
 import { InactivityWarningModal } from './components/InactivityWarningModal';
 import { ServiceUpdateToast } from './components/ServiceUpdateToast';
+import { PwaInstallBanner } from './components/PwaInstallBanner';
+import { PwaInstallSuccessService } from './components/PwaInstallSuccessService';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
@@ -52,6 +56,15 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const { theme, isAuthReady, siteSettings, language } = useAppContext();
   const location = useLocation();
   const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handleVersionMismatch = () => {
+      console.log('PWA version mismatch detected. Triggering forced reload...');
+      window.location.reload();
+    };
+    window.addEventListener('pwa-version-mismatch', handleVersionMismatch);
+    return () => window.removeEventListener('pwa-version-mismatch', handleVersionMismatch);
+  }, []);
 
   useEffect(() => {
     fetch('/api/seo-routes')
@@ -109,7 +122,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
     const siteName = language === 'ar' ? (siteSettings?.siteNameAr || siteSettings?.siteName) : siteSettings?.siteName;
     const resolvedSiteName = siteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
-    const resolvedOGImage = siteSettings?.seoImageUrl || '/app-assets/og-image.png';
+    const resolvedOGImage = resolveImageUrl(siteSettings?.seoImageUrl || '/app-assets/og-image.png', 'general');
     const finalOGImage = resolvedOGImage.startsWith('/') ? `${window.location.origin}${resolvedOGImage}` : resolvedOGImage;
     const currentUrl = window.location.href;
 
@@ -210,6 +223,8 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <UpgradePromptModal />
       <InactivityWarningModal />
       <ServiceUpdateToast />
+      <PwaInstallBanner />
+      <PwaInstallSuccessService />
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -228,10 +243,11 @@ export default function App() {
     <BrowserRouter>
       <ThemeEngineProvider>
         <AppProvider>
-        <VideoResourceProvider>
-          <ErrorBoundary name="Perplexta Core Runtime">
-            <PWAWrapper>
-            <Routes>
+          <PwaProvider>
+            <VideoResourceProvider>
+              <ErrorBoundary name="Perplexta Core Runtime">
+                <PWAWrapper>
+                  <Routes>
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Navigate to="/chat" replace />} />
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
@@ -265,6 +281,7 @@ export default function App() {
           </PWAWrapper>
         </ErrorBoundary>
       </VideoResourceProvider>
+    </PwaProvider>
     </AppProvider>
     </ThemeEngineProvider>
     </BrowserRouter>

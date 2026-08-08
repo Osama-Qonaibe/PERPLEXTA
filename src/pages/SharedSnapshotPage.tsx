@@ -20,6 +20,7 @@ import { motion } from 'motion/react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
+import { resolveImageUrl } from '../utils/imageResolver';
 
 interface SnapshotData {
   id: string;
@@ -143,7 +144,7 @@ export const SharedSnapshotPage: React.FC = () => {
         >
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-emerald-500/20 flex items-center justify-center shadow-md shadow-emerald-500/5 group-hover:border-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-theme">
             {siteSettings?.logoBase64 ? (
-              <img src={siteSettings.logoBase64} alt="Logo" className="w-7 h-7 object-cover rounded-sm" />
+              <img src={resolveImageUrl(siteSettings.logoBase64, 'general')} alt="Logo" className="w-7 h-7 object-cover rounded-sm" />
             ) : (
               <Sparkles size={18} className="text-emerald-500 animate-pulse" />
             )}

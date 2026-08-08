@@ -2,18 +2,21 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { getUserProfile, updateUserProfile, getUserUsage } from '../services/users.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { uploadValidator } from '../middleware/uploadValidator.js';
+import { optimizeUploadedImage, normalizeMediaUrl } from '../services/mediaOptimizationService.js';
 import { walletLoader } from '../db/queries.js';
 
 const router = express.Router();
 
-router.post("/avatar", authenticateToken, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+router.post("/avatar", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
-    const { filename } = req.file;
-    const avatarUrl = `/uploads/${filename}`;
+    const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
+    const avatarUrl = normalizeMediaUrl(optResult.fileUrl);
     const updated = await updateUserProfile(req.user.id, { avatar: avatarUrl });
     res.json({ success: true, url: avatarUrl, user: updated });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[AvatarUpload] Failed to process avatar:', error);
     res.status(500).json({ error: 'Avatar upload failed' });
   }
 });

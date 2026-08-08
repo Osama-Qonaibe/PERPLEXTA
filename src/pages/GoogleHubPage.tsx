@@ -443,14 +443,14 @@ const GoogleHubPage: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={() => setShowSecurityModal(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme group relative cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme group relative cursor-pointer"
               title={isRtl ? 'إدارة أمان الحساب' : 'Account Security Management'}
             >
               <Shield size={18} className="group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
               <div className="absolute -top-1 -end-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </button>
             <button 
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 transition-theme cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme cursor-pointer"
               title={isRtl ? 'الإعدادات' : 'Settings'}
             >
               <Settings2 size={18} />
@@ -469,9 +469,9 @@ const GoogleHubPage: React.FC = () => {
               className="space-y-8"
             >
               {/* Hero Section */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/5 border border-emerald-500/20 p-6 sm:p-8">
+              <div className="relative overflow-hidden rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] p-6 sm:p-8">
                 <div className={`relative z-10 max-w-2xl text-start`}>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-4 uppercase tracking-widest">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-4 uppercase tracking-widest">
                     {isRtl ? 'تكامل احترافي' : 'Professional Integration'}
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black mb-4 leading-tight text-[var(--text-main)]">
@@ -506,8 +506,8 @@ const GoogleHubPage: React.FC = () => {
                     >
                       <motion.div
                         whileHover={tool.available ? { 
-                          y: -8, 
-                          scale: 1.02,
+                          y: -4, 
+                          scale: 1.01,
                           transition: { type: 'spring', stiffness: 400, damping: 15 }
                         } : {}}
                         whileTap={tool.available ? { scale: 0.98 } : {}}
@@ -530,7 +530,7 @@ const GoogleHubPage: React.FC = () => {
                         }}
                         role="button"
                         tabIndex={tool.available ? 0 : -1}
-                        className={`w-full relative p-5 rounded-2xl border text-start transition-theme group cursor-pointer ${
+                        className={`w-full relative p-5 rounded-[var(--radius)] border text-start transition-theme group cursor-pointer ${
                           tool.available 
                             ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
                             : 'bg-gray-50/50 dark:bg-gray-900/20 border-dashed border-gray-200 dark:border-gray-800 opacity-60 grayscale cursor-not-allowed'

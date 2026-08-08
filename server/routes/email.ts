@@ -1,8 +1,7 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
 import { pool } from '../db/index.js';
 import { authenticateAdmin } from '../middleware/auth.js';
-import { syncSystemTemplates } from '../services/email.js';
+import { syncSystemTemplates, verifySmtpConnection } from '../services/email.js';
 
 const router = express.Router();
 
@@ -97,19 +96,14 @@ router.post('/verify', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'SMTP Host and Port are required for verification.' });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: smtp_host,
-      port: parseInt(smtp_port || '587'),
-      secure: smtp_encryption === 'ssl',
-      auth: {
-        user: smtp_username,
-        pass: smtp_password
-      },
-      connectionTimeout: 10000
-    });
-
     try {
-      await transporter.verify();
+      await verifySmtpConnection({
+        smtp_host,
+        smtp_port,
+        smtp_encryption,
+        smtp_username,
+        smtp_password
+      });
     } catch (verifyErr: any) {
       console.error('[EmailConfig] Verification failed:', verifyErr);
       return res.status(400).json({ error: `Connection failed: ${verifyErr.message}` });

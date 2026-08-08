@@ -382,10 +382,16 @@ export async function getUserProfile(userId: string) {
 export async function updateUserProfile(userId: string | number, data: any) {
   if (!pool) throw new Error('Database initializing');
   
-  const { name, avatar, language, theme, custom_instructions, password, email } = data;
+  const { name, avatar, language, theme, custom_instructions, password, email, email_notifications } = data;
   const updates: string[] = [];
   const values: any[] = [];
   let idx = 1;
+
+  if (email_notifications !== undefined) {
+    if (typeof email_notifications !== 'boolean') throw new Error('Email notifications must be a boolean');
+    updates.push(`email_notifications = $${idx++}`);
+    values.push(email_notifications);
+  }
 
   if (name !== undefined) {
     if (name !== null && typeof name !== 'string') throw new Error('Name must be a string');

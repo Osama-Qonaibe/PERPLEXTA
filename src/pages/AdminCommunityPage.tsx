@@ -317,7 +317,7 @@ export const AdminCommunityPage: React.FC = () => {
         <div className="flex items-center gap-4">
           <a
             href="/admin"
-            className="p-2.5 rounded-md transition-theme duration-300 flex items-center justify-center bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] text-gray-400 hover:text-[var(--text-primary)] border border-[var(--border-main)] shadow-sm hover:shadow-md"
+            className="p-2.5 rounded-md transition-theme flex items-center justify-center bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] text-gray-400 hover:text-[var(--text-primary)] border border-[var(--border-main)] shadow-sm hover:shadow-md"
             title={isRtl ? 'العودة للمركز الرئيسي' : 'Back to Control Center'}
           >
             {isRtl ? (

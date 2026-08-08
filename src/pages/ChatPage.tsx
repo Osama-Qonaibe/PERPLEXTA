@@ -687,7 +687,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             </div>
           )}
 
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors duration-300 pointer-events-none" />
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-theme pointer-events-none" />
 
           <div 
             onClick={togglePlay}
@@ -945,7 +945,7 @@ const BlockquoteWithActions = ({ children, dir }: any) => {
 };
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
-  const { dir } = useAppContext();
+  const { dir, resolvedTheme } = useAppContext();
   const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : 'text';
@@ -1067,7 +1067,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
       setIsRunning(true);
       try {
         let fullHtml = '';
-        const isDark = document.body.classList.contains('dark') || document.documentElement.className.includes('dark');
+        const isDark = resolvedTheme === 'dark';
         const documentClass = isDark ? 'dark' : 'light';
 
         if (language === 'html') {
@@ -2142,7 +2142,7 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
           <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
             <HighlightText text={displayTitle} query={query} />
           </span>
-          <ExternalLink size={10} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-2px] group-hover:translate-x-0 transition-transform duration-300" />
+          <ExternalLink size={10} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-2px] group-hover:translate-x-0" />
         </div>
 
         {displayDesc ? (
@@ -3264,7 +3264,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     <div className="flex flex-col items-center gap-2">
                       <Paperclip 
                         size={18} 
-                        className={`transition-colors duration-300 ${
+                        className={`transition-theme ${
                           isDragging ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400'
                         }`} 
                       />
@@ -6350,7 +6350,7 @@ export const ChatPage: React.FC = () => {
                       onChange={(e) => setForensicMode(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-300 ${forensicMode ? 'bg-emerald-500/80 dark:bg-emerald-500/50' : ''}`} />
+                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-theme ${forensicMode ? 'bg-emerald-500/80 dark:bg-emerald-500/50' : ''}`} />
                     <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-emerald-500' : ''}`} />
                   </div>
                   <span className={`text-[10px] font-bold ${forensicMode ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-[var(--text-muted)]'}`}>
@@ -6549,7 +6549,7 @@ export const ChatPage: React.FC = () => {
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'model'
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                      : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'
+                      : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)]'
                 }`}
               >
                 <span className={activeDropdown === 'model' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
@@ -6573,7 +6573,7 @@ export const ChatPage: React.FC = () => {
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight hover:bg-emerald-500/10 text-[var(--text-secondary)] hover:text-emerald-500 group`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white group`}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`${model.color} group-hover:scale-110 transition-transform`}>{model.icon}</span>
@@ -6851,9 +6851,9 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <Bookmark size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <Bookmark size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
                             </button>
 
@@ -6863,9 +6863,9 @@ export const ChatPage: React.FC = () => {
                                 setIsExportMenuOpen(false);
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FolderPlus size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <FolderPlus size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
                             </button>
 
@@ -6892,9 +6892,9 @@ export const ChatPage: React.FC = () => {
                                 setChatRenameTitle(messages[0]?.content.substring(0, 30) || 'New Title');
                               }}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <Pencil size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <Pencil size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
                             </button>
 
@@ -6903,27 +6903,27 @@ export const ChatPage: React.FC = () => {
                             <button 
                               onClick={() => handleExportChat('pdf')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileDown size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <FileDown size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
                             </button>
 
                             <button 
                               onClick={() => handleExportChat('md')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileCode size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <FileCode size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
                             </button>
 
                             <button 
                               onClick={() => handleExportChat('docx')}
                               disabled={isExporting}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5 rounded-sm transition-theme group disabled:opacity-50"
+                              className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileText size={14} className="group-hover:drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+                              <FileText size={14} className="group-hover:text-emerald-500" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
                             </button>
 
@@ -7128,7 +7128,7 @@ export const ChatPage: React.FC = () => {
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
                                     <button 
                                       onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
-                                      className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-colors duration-200 shrink-0 ${
+                                      className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-theme shrink-0 ${
                                         msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
                                       }`}
                                       title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
@@ -7140,7 +7140,7 @@ export const ChatPage: React.FC = () => {
                                         setEditingMessageIndex(idx);
                                         setEditValue(msg.content);
                                       }}
-                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 transition-colors duration-200 shrink-0"
+                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 transition-theme shrink-0"
                                       title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                                     >
                                       <Pencil size={13} />
@@ -7895,7 +7895,7 @@ export const ChatPage: React.FC = () => {
               <div className="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
                 <button
                   onClick={() => setIsForensicModalOpen(false)}
-                  className="px-5 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer border-transparent"
+                  className="px-5 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs uppercase tracking-widest transition-theme cursor-pointer border-transparent"
                 >
                   {dir === 'rtl' ? 'إغلاق نافذة الفحص' : 'Close Forensic Console'}
                 </button>

@@ -106,7 +106,7 @@ export const UserAdAnalyticsView: React.FC = () => {
   const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 transition-theme [will-change:background-color,border-color,color]">
       <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-[var(--bg-secondary)] border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
         <div className="absolute -top-12 -end-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         

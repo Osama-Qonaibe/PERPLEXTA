@@ -10,6 +10,7 @@ import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../utils/admin
 import { AdminService } from "../services/adminService";
 import { useAdminAuth } from "../hooks/useAdminAuth";
 import { HighlightText } from "../components/HighlightText";
+import { resolveImageUrl } from "../utils/imageResolver";
 import {
   Music,
   Activity,
@@ -91,6 +92,7 @@ import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { validateToolRoutePricing } from "../utils/orchestratorValidator";
 import { ReferralDashboardView } from "./ReferralDashboardView";
 import { AdsManagementView } from "./AdsManagementView";
+import { UserManagementView } from "./UserManagementView";
 import { AdminRateLimitMetricsView } from "./AdminRateLimitMetricsView";
 import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 
@@ -5253,7 +5255,7 @@ const FinanceVaultView = ({
                     return (
                       <div
                         key={request.id}
-                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] duration-300 ${
+                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] ${
                           theme === "dark" ? "bg-[#1e1e21] border-gray-800/80" : "bg-white border-gray-150/80"
                         }`}
                       >
@@ -5357,7 +5359,7 @@ const FinanceVaultView = ({
                     return (
                       <div
                         key={request.id}
-                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] duration-300 ${
+                        className={`p-5 rounded-[4px] border space-y-4 transition-theme hover:scale-[1.005] ${
                           theme === "dark" ? "bg-[#1e1e21] border-gray-800/80" : "bg-white border-gray-150/80"
                         }`}
                       >
@@ -6132,6 +6134,7 @@ const PlansSubscriptionsView = ({
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [planFilter, setPlanFilter] = useState<string>("all");
 
   useEffect(() => {
     setIsOperationPending(isSaving);
@@ -6432,117 +6435,358 @@ const PlansSubscriptionsView = ({
           document.body,
         )}
 
-      {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            className={`p-6 rounded-lg border ${theme === "dark" ? "border-[var(--border-main)] bg-[#111111]" : "border-[var(--border-main)] bg-white"} transition-theme hover:border-[var(--border-main)] flex flex-col relative overflow-hidden`}
-          >
-            {/* Top Color Accent */}
-            <div
-              className="absolute top-0 left-0 right-0 h-1"
-              style={{ backgroundColor: plan.color || "#10b981" }}
-            ></div>
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-4">
+        <button
+          onClick={() => setPlanFilter("all")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            planFilter === "all"
+              ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+          }`}
+        >
+          <CreditCard size={14} />
+          {dir === "rtl" ? "جميع الخطط" : "All Plans"} ({plans.length})
+        </button>
+        <button
+          onClick={() => setPlanFilter("user")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            planFilter === "user"
+              ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+          }`}
+        >
+          <Users size={14} />
+          {dir === "rtl" ? "خطط المستخدمين العاديين" : "User Plans"} ({plans.filter(p => (p.planType || "user") === "user").length})
+        </button>
+        <button
+          onClick={() => setPlanFilter("developer")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            planFilter === "developer"
+              ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+          }`}
+        >
+          <Terminal size={14} />
+          {dir === "rtl" ? "خطط المطورين والوكلاء" : "Developer Plans"} ({plans.filter(p => (p.planType || "user") === "developer").length})
+        </button>
+      </div>
 
-            <div className="flex justify-between items-start mb-4 mt-2">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <span
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: plan.color || "#10b981" }}
-                  ></span>
-                  {dir === "rtl" ? plan.nameAr : plan.nameEn}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {dir === "rtl" ? plan.descAr : plan.descEn}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-emerald-500">
-                  ${plan.monthlyPrice}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  / {t("monthly")}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-3 mb-6">
-              {plan.features.slice(0, 4).map((feature: any) => (
-                <div
-                  key={feature.id}
-                  className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
-                >
-                  <CheckCircle2
-                    size={16}
-                    className="text-emerald-500 shrink-0 mt-0.5"
-                  />
-                  <span>{dir === "rtl" ? feature.textAr : feature.textEn}</span>
+      {/* Grouped Plans View */}
+      <div className="space-y-10">
+        {/* User Plans Section */}
+        {(planFilter === "all" || planFilter === "user") && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                  <Users size={18} />
                 </div>
-              ))}
-              {plan.features.length > 4 && (
-                <p className="text-xs text-gray-500 italic">
-                  +{plan.features.length - 4} more features...
-                </p>
-              )}
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    {dir === "rtl" ? "خطط المستخدمين العاديين" : "Standard User Plans"}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono font-bold">
+                      {plans.filter(p => (p.planType || "user") === "user").length}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {dir === "rtl" ? "خطط الاشتراكات المخصصة للمستخدمين والأفراد للاستخدام اليومي" : "Subscription plans tailored for end users and standard usage"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="mb-6 pt-4 border-t border-gray-100 dark:border-gray-800/60">
-              <span className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider block mb-2">
-                {dir === "rtl" ? "حصص الأدوات والملفات النشطة" : "Active Tool & File Quotas"}
-              </span>
-              <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
-                {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any]) => {
-                  if (limitVal === undefined || limitVal === null) return null;
-                  const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
-                  const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
-                  const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
-
-                  return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans
+                .filter(p => (p.planType || "user") === "user")
+                .map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`p-6 rounded-xl border transition-all relative overflow-hidden flex flex-col ${
+                      theme === "dark"
+                        ? "bg-[#111113] border-gray-800 hover:border-emerald-500/40"
+                        : "bg-white border-gray-200 hover:border-emerald-400 shadow-sm"
+                    }`}
+                  >
+                    {/* Top Color Accent */}
                     <div
-                      key={key}
-                      className="text-[9px] font-bold px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800/60 bg-gray-50 dark:bg-gray-800/30 flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
-                    >
-                      <span className="text-emerald-500 font-extrabold">{t(key)}</span>
-                      <span className="font-mono text-[8px]">
-                        {daily !== undefined && daily !== null && (
-                          <>D: <strong className="text-gray-900 dark:text-white">{formatLimit(daily)}</strong></>
-                        )}
-                        {monthly !== null && monthly !== 0 && monthly !== undefined && (
-                          <>; M: <strong className="text-emerald-500">{formatLimit(monthly)}</strong></>
-                        )}
+                      className="absolute top-0 left-0 right-0 h-1"
+                      style={{ backgroundColor: plan.color || "#10b981" }}
+                    ></div>
+
+                    {/* Badge */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        <Users size={12} />
+                        {dir === "rtl" ? "مستخدم عام" : "Standard User"}
+                      </span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${plan.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-gray-500/10 text-gray-500"}`}>
+                        {plan.isActive ? (dir === "rtl" ? "نشط" : "Active") : (dir === "rtl" ? "متوقف" : "Inactive")}
                       </span>
                     </div>
-                  );
-                })}
+
+                    <div className="flex justify-between items-start mb-4 mt-1">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: plan.color || "#10b981" }}
+                          ></span>
+                          {dir === "rtl" ? plan.nameAr : plan.nameEn}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {dir === "rtl" ? plan.descAr : plan.descEn}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-emerald-500">
+                          ${plan.monthlyPrice}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          / {t("monthly")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-3 mb-6">
+                      {plan.features.slice(0, 4).map((feature: any) => (
+                        <div
+                          key={feature.id}
+                          className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+                        >
+                          <CheckCircle2
+                            size={16}
+                            className="text-emerald-500 shrink-0 mt-0.5"
+                          />
+                          <span>{dir === "rtl" ? feature.textAr : feature.textEn}</span>
+                        </div>
+                      ))}
+                      {plan.features.length > 4 && (
+                        <p className="text-xs text-gray-500 italic">
+                          +{plan.features.length - 4} more features...
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mb-6 pt-4 border-t border-gray-100 dark:border-gray-800/60">
+                      <span className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider block mb-2">
+                        {dir === "rtl" ? "حصص الأدوات والملفات النشطة" : "Active Tool & File Quotas"}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
+                        {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any]) => {
+                          if (limitVal === undefined || limitVal === null) return null;
+                          const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
+                          const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
+                          const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
+
+                          return (
+                            <div
+                              key={key}
+                              className="text-[9px] font-bold px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800/60 bg-gray-50 dark:bg-gray-800/30 flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+                            >
+                              <span className="text-emerald-500 font-extrabold">{t(key)}</span>
+                              <span className="font-mono text-[8px]">
+                                {daily !== undefined && daily !== null && (
+                                  <>D: <strong className="text-gray-900 dark:text-white">{formatLimit(daily)}</strong></>
+                                )}
+                                {monthly !== null && monthly !== 0 && monthly !== undefined && (
+                                  <>; M: <strong className="text-emerald-500">{formatLimit(monthly)}</strong></>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleOpenModal(plan)}
+                        className={`flex-1 py-2.5 rounded-md border transition-theme font-medium text-sm flex items-center justify-center gap-2 ${
+                          theme === "dark"
+                            ? "border-[var(--border-main)] bg-[#1a1a1c] hover:bg-[var(--bg-secondary)] text-gray-300"
+                            : "border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-input)] text-gray-600"
+                        }`}
+                      >
+                        <Settings2 size={16} /> {t("edit")}
+                      </button>
+                      <button
+                        onClick={() => handleDeletePlan(plan.id)}
+                        className={`px-4 py-2.5 rounded-md border transition-theme flex items-center justify-center ${
+                          theme === "dark"
+                            ? "border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                            : "border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                        }`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Developer Plans Section */}
+        {(planFilter === "all" || planFilter === "developer") && (
+          <div className="space-y-4 pt-4 border-t border-gray-200/60 dark:border-gray-800/60">
+            <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Terminal size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    {dir === "rtl" ? "خطط المطورين والوكلاء الذكية" : "Developer & Agent API Plans"}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-mono font-bold">
+                      {plans.filter(p => (p.planType || "user") === "developer").length}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {dir === "rtl" ? "خطط متخصصة للمطورين وبناء الوكلاء والربط البرمجي عالي السعة" : "Dedicated plans for developer API access, AI agents, and custom integrations"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleOpenModal(plan)}
-                className={`flex-1 py-2.5 rounded-md border transition-theme font-medium text-sm flex items-center justify-center gap-2 ${
-                  theme === "dark"
-                    ? "border-[var(--border-main)] bg-[#1a1a1c] hover:bg-[var(--bg-secondary)] text-gray-300"
-                    : "border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-input)] text-gray-600"
-                }`}
-              >
-                <Settings2 size={16} /> {t("edit")}
-              </button>
-              <button
-                onClick={() => handleDeletePlan(plan.id)}
-                className={`px-4 py-2.5 rounded-md border transition-theme flex items-center justify-center ${
-                  theme === "dark"
-                    ? "border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500"
-                    : "border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
-                }`}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
+            {plans.filter(p => (p.planType || "user") === "developer").length === 0 ? (
+              <div className="p-8 rounded-xl border border-dashed border-indigo-500/30 bg-indigo-500/5 text-center">
+                <Terminal className="mx-auto w-8 h-8 text-indigo-400 mb-2 opacity-60" />
+                <p className="text-xs text-gray-400 font-medium">
+                  {dir === "rtl" ? "لا توجد خطط مطورين حالياً. يمكنك إضافة خطة جديدة وتعيين نوعها كـ 'مطورين'." : "No developer plans found. Click 'Add Plan' and set type to 'Developer'."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {plans
+                  .filter(p => (p.planType || "user") === "developer")
+                  .map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`p-6 rounded-xl border transition-all relative overflow-hidden flex flex-col ${
+                        theme === "dark"
+                          ? "bg-[#13121f] border-indigo-500/30 hover:border-indigo-500/60 shadow-[0_0_15px_rgba(99,102,241,0.08)]"
+                          : "bg-indigo-50/30 border-indigo-200 hover:border-indigo-400 shadow-sm"
+                      }`}
+                    >
+                      {/* Top Color Accent */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"
+                      ></div>
+
+                      {/* Badge */}
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          <Terminal size={12} />
+                          {dir === "rtl" ? "مطور / API" : "Developer & API"}
+                        </span>
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${plan.isActive ? "bg-indigo-500/10 text-indigo-400" : "bg-gray-500/10 text-gray-500"}`}>
+                          {plan.isActive ? (dir === "rtl" ? "نشط" : "Active") : (dir === "rtl" ? "متوقف" : "Inactive")}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-4 mt-1">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: plan.color || "#6366f1" }}
+                            ></span>
+                            {dir === "rtl" ? plan.nameAr : plan.nameEn}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {dir === "rtl" ? plan.descAr : plan.descEn}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-indigo-400">
+                            ${plan.monthlyPrice}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            / {t("monthly")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 space-y-3 mb-6">
+                        {plan.features.slice(0, 4).map((feature: any) => (
+                          <div
+                            key={feature.id}
+                            className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+                          >
+                            <CheckCircle2
+                              size={16}
+                              className="text-indigo-400 shrink-0 mt-0.5"
+                            />
+                            <span>{dir === "rtl" ? feature.textAr : feature.textEn}</span>
+                          </div>
+                        ))}
+                        {plan.features.length > 4 && (
+                          <p className="text-xs text-gray-500 italic">
+                            +{plan.features.length - 4} more features...
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mb-6 pt-4 border-t border-indigo-500/10 dark:border-indigo-500/20">
+                        <span className="text-[10px] font-black uppercase text-indigo-400/80 tracking-wider block mb-2">
+                          {dir === "rtl" ? "حصص المطور والوكلاء الذكية" : "Developer & Agent Quotas"}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
+                          {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any]) => {
+                            if (limitVal === undefined || limitVal === null) return null;
+                            const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
+                            const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
+                            const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
+
+                            return (
+                              <div
+                                key={key}
+                                className="text-[9px] font-bold px-2 py-0.5 rounded border border-indigo-500/20 bg-indigo-500/5 flex items-center gap-1.5 text-gray-600 dark:text-gray-300"
+                              >
+                                <span className="text-indigo-400 font-extrabold">{t(key)}</span>
+                                <span className="font-mono text-[8px]">
+                                  {daily !== undefined && daily !== null && (
+                                    <>D: <strong className="text-gray-900 dark:text-white">{formatLimit(daily)}</strong></>
+                                  )}
+                                  {monthly !== null && monthly !== 0 && monthly !== undefined && (
+                                    <>; M: <strong className="text-indigo-400">{formatLimit(monthly)}</strong></>
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleOpenModal(plan)}
+                          className={`flex-1 py-2.5 rounded-md border transition-theme font-medium text-sm flex items-center justify-center gap-2 ${
+                            theme === "dark"
+                              ? "border-indigo-500/30 bg-[#1e1c30] hover:bg-indigo-900/40 text-indigo-200"
+                              : "border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700"
+                          }`}
+                        >
+                          <Settings2 size={16} /> {t("edit")}
+                        </button>
+                        <button
+                          onClick={() => handleDeletePlan(plan.id)}
+                          className={`px-4 py-2.5 rounded-md border transition-theme flex items-center justify-center ${
+                            theme === "dark"
+                              ? "border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                              : "border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                          }`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Modal */}
@@ -7107,7 +7351,7 @@ const PlansSubscriptionsView = ({
   );
 };
 
-const UserManagementView = ({
+const LegacyUserManagementView = ({
   theme,
   t,
   dir,
@@ -9827,7 +10071,7 @@ const SmartEmailHubView = ({
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={() => setSelectedTemplate(null)}
-                className={`p-2.5 rounded-md transition-theme duration-300 flex items-center justify-center ${
+                className={`p-2.5 rounded-md transition-theme flex items-center justify-center ${
                   theme === "dark"
                     ? "bg-[var(--bg-secondary)]/40 hover:bg-gray-700 text-gray-400 hover:text-white border border-[var(--border-main)]/50"
                     : "bg-white hover:bg-[var(--bg-secondary)] text-gray-500 hover:text-gray-900 border border-[var(--border-main)] shadow-sm"
@@ -11168,6 +11412,42 @@ const SystemSettingsView = ({
     type: "success" | "error";
   } | null>(null);
 
+  const [clearingCache, setClearingCache] = useState<string | null>(null);
+
+  const handleClearCache = async (target: string) => {
+    setClearingCache(target);
+    try {
+      const res = await fetch("/api/admin/cache/clear", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ target }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToast({
+          message: data.message || (language === "ar" ? "تم مسح الذاكرة المؤقتة بنجاح" : "Cache cleared successfully"),
+          type: "success",
+        });
+      } else {
+        const err = await res.json();
+        setToast({
+          message: err.error || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+          type: "error",
+        });
+      }
+    } catch (error: any) {
+      setToast({
+        message: error.message || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+        type: "error",
+      });
+    } finally {
+      setClearingCache(null);
+    }
+  };
+
   // --- DYNAMIC ROUTE SEO MANAGEMENT STATE ---
   const [routeSeoList, setRouteSeoList] = useState<any[]>([]);
   const [loadingRouteSeo, setLoadingRouteSeo] = useState(false);
@@ -11274,7 +11554,7 @@ const SystemSettingsView = ({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch("/api/admin/settings/upload-seo-image", {
+      const response = await fetch("/api/admin/settings/upload-asset", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -11380,65 +11660,62 @@ const SystemSettingsView = ({
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (type === "seo") {
-        if (file.size > 2 * 1024 * 1024) {
-          showToast(
-            dir === "rtl" 
-              ? "حجم الصورة يتجاوز الحد الأقصى المسموح به وهو 2 ميغابايت" 
-              : "SEO Image must be less than 2MB", 
-            "error"
-          );
-          return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast(
+          dir === "rtl" 
+            ? "حجم الصورة يتجاوز الحد الأقصى المسموح به وهو 2 ميغابايت" 
+            : "Image size must be less than 2MB", 
+          "error"
+        );
+        return;
+      }
+
+      setIsOperationPending(true);
+      if (type === "seo") setIsSeoUploading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/admin/settings/upload-asset", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image");
         }
 
-        setIsSeoUploading(true);
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          if (type === "seo") setSeoImageUrl(data.imageUrl);
+          else if (type === "logo") setLogoBase64(data.imageUrl);
+          else if (type === "logo_light") setLogoLightBase64(data.imageUrl);
+          else if (type === "favicon") setFaviconBase64(data.imageUrl);
 
-          const response = await fetch("/api/admin/settings/upload-seo-image", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to upload image");
-          }
-
-          const data = await response.json();
-          if (data.success && data.imageUrl) {
-            setSeoImageUrl(data.imageUrl);
-            showToast(
-              dir === "rtl" 
-                ? "تم رفع صورة محركات البحث بنجاح" 
-                : "SEO preview image uploaded successfully", 
-              "success"
-            );
-          } else {
-            throw new Error("Upload response was unsuccessful");
-          }
-        } catch (error) {
-          console.error('[SEOImageUpload] Frontend upload error:', error);
           showToast(
             dir === "rtl" 
-              ? "فشل رفع الصورة المخصصة، يرجى المحاولة لاحقاً" 
-              : "Failed to upload SEO image. Please try again.", 
-            "error"
+              ? "تم رفع الملف بنجاح" 
+              : "Asset uploaded successfully", 
+            "success"
           );
-        } finally {
-          setIsSeoUploading(false);
+        } else {
+          throw new Error("Upload response was unsuccessful");
         }
-      } else {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (type === "logo") setLogoBase64(reader.result as string);
-          else if (type === "logo_light") setLogoLightBase64(reader.result as string);
-          else if (type === "favicon") setFaviconBase64(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('[AssetUpload] Frontend upload error:', error);
+        showToast(
+          dir === "rtl" 
+            ? "فشل رفع الصورة، يرجى المحاولة لاحقاً" 
+            : "Failed to upload asset. Please try again.", 
+          "error"
+        );
+      } finally {
+        setIsOperationPending(false);
+        if (type === "seo") setIsSeoUploading(false);
       }
     }
   };
@@ -11499,13 +11776,6 @@ const SystemSettingsView = ({
   };
 
   const handleSaveVisualSettings = async () => {
-    if (!logoBase64 || !faviconBase64) {
-      showToast(
-        t("imagesRequired") || "Both logo and favicon are required",
-        "error",
-      );
-      return;
-    }
     setIsSaving(true);
     try {
       const res = await fetch("/api/admin/settings", {
@@ -11515,20 +11785,9 @@ const SystemSettingsView = ({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          site_name_en: siteSettings.siteName,
-          site_name_ar: siteSettings.siteNameAr,
-          site_description_en: siteSettings.siteDescription,
-          site_description_ar: siteSettings.siteDescriptionAr,
-          seo_description_en: seoDescriptionEn,
-          seo_description_ar: seoDescriptionAr,
-          keywords_en: keywordsEn,
-          keywords_ar: keywordsAr,
-          google_analytics_id: googleAnalyticsId,
-          google_site_verification: googleSiteVerification,
           logo_url: logoBase64,
           logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
-          seo_image_url: seoImageUrl,
         }),
       });
 
@@ -11538,14 +11797,14 @@ const SystemSettingsView = ({
           logoBase64,
           logoLightBase64,
           faviconBase64,
-          seoImageUrl: seoImageUrl,
         });
         showToast(t("saveSuccess") || "Visual settings saved", "success");
       } else {
-        showToast(t("saveFailed") || "Failed", "error");
+        const err = await res.json();
+        showToast(err.error || t("saveFailed") || "Failed", "error");
       }
-    } catch (error) {
-      showToast(t("saveFailed") || "Failed", "error");
+    } catch (error: any) {
+      showToast(error.message || t("saveFailed") || "Failed", "error");
     } finally {
       setIsSaving(false);
     }
@@ -11577,9 +11836,6 @@ const SystemSettingsView = ({
           keywords_ar: keywordsAr,
           google_analytics_id: googleAnalyticsId || "",
           google_site_verification: googleSiteVerification || "",
-          logo_url: logoBase64 || siteSettings.logoBase64,
-          logo_light_url: logoLightBase64 || siteSettings.logoLightBase64,
-          favicon_url: faviconBase64 || siteSettings.faviconBase64,
           seo_image_url: seoImageUrl,
           blocked_paths: blockedPaths || "",
         }),
@@ -11605,10 +11861,11 @@ const SystemSettingsView = ({
         });
         showToast(t("saveSuccess") || "SEO settings saved", "success");
       } else {
-        showToast(t("saveFailed") || "Failed", "error");
+        const err = await res.json();
+        showToast(err.error || t("saveFailed") || "Failed", "error");
       }
-    } catch (error) {
-      showToast(t("saveFailed") || "Failed", "error");
+    } catch (error: any) {
+      showToast(error.message || t("saveFailed") || "Failed", "error");
     } finally {
       setIsSaving(false);
     }
@@ -11882,7 +12139,7 @@ const SystemSettingsView = ({
             <div className="mb-4 flex items-center justify-center h-8">
               {logoBase64 ? (
                 <img
-                  src={logoBase64}
+                  src={resolveImageUrl(logoBase64, 'general')}
                   alt="Dark Logo"
                   className="w-8 h-8 rounded-md object-contain"
                 />
@@ -11923,10 +12180,7 @@ const SystemSettingsView = ({
             <h3 className="font-medium text-sm mb-1">
               {language === "ar" ? "الشعار للثيم الداكن" : "Logo (Dark Theme)"}
             </h3>
-            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 1MB)</p>
-            <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-              Base64 Encoded
-            </p>
+            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
           </div>
 
           {/* Logo Upload (Light theme) */}
@@ -11942,7 +12196,7 @@ const SystemSettingsView = ({
             <div className="mb-4 flex items-center justify-center h-8">
               {logoLightBase64 ? (
                 <img
-                  src={logoLightBase64}
+                  src={resolveImageUrl(logoLightBase64, 'general')}
                   alt="Light Logo"
                   className="w-8 h-8 rounded-md object-contain"
                 />
@@ -11983,10 +12237,7 @@ const SystemSettingsView = ({
             <h3 className="font-medium text-sm mb-1">
               {language === "ar" ? "الشعار للثيم الفاتح" : "Logo (Light Theme)"}
             </h3>
-            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 1MB)</p>
-            <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-              Base64 Encoded
-            </p>
+            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
           </div>
 
           {/* Favicon Upload */}
@@ -12002,7 +12253,7 @@ const SystemSettingsView = ({
             <div className="mb-4 w-8 h-8 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center overflow-hidden">
               {faviconBase64 ? (
                 <img
-                  src={faviconBase64}
+                  src={resolveImageUrl(faviconBase64, 'general')}
                   alt="Favicon"
                   className="w-full h-full object-cover"
                 />
@@ -12014,9 +12265,6 @@ const SystemSettingsView = ({
               {language === "ar" ? "أيقونة المفضلة" : "Favicon"}
             </h3>
             <p className="text-xs text-gray-500">32x32 PNG or ICO</p>
-            <p className="text-[10px] text-emerald-500 mt-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-              Base64 Encoded
-            </p>
           </div>
         </div>
         <div className="flex justify-end mt-6">
@@ -12412,7 +12660,7 @@ const SystemSettingsView = ({
                   ) : seoImageUrl ? (
                     <div className="relative w-full h-full flex flex-col items-center">
                       <img
-                        src={seoImageUrl}
+                        src={resolveImageUrl(seoImageUrl, 'general')}
                         alt="SEO Preview"
                         className="max-h-[160px] rounded-md object-contain aspect-[1.91/1] shadow-md border dark:border-gray-800"
                         referrerPolicy="no-referrer"
@@ -13152,6 +13400,119 @@ const SystemSettingsView = ({
           </table>
         </div>
       </div>
+
+      {/* Cache Management Utility Center */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${
+          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <Cpu size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              {dir === "rtl" ? "إدارة ذاكرة التخزين المؤقت ونظام الـ Caches" : "System Caches & Memory Management"}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {dir === "rtl"
+                ? "مسح وإعادة تحميل ذاكرات التخزين المؤقت (صلاحيات الملفات، مسارات SEO، وإعدادات النظام) بشكل فردي أو جماعي."
+                : "Clear and refresh system caches (file permissions, route SEO, system settings) individually or globally with instant UI feedback."}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* File Permission Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-emerald-500">FILE PERMISSIONS</span>
+                <ShieldCheck size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "صلاحيات الملفات" : "File Permission Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة التحقق من الأمان وصلاحيات الوصول للملفات المرفوعة." : "Invalidates cached authorization checks for secure file access."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('file_permission')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'file_permission' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح ذاكرة الملفات" : "Clear File Cache"}
+            </button>
+          </div>
+
+          {/* Route SEO Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-emerald-500">ROUTE SEO</span>
+                <Globe size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسارات SEO" : "Route SEO Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة بيانات وسوم Meta وعناوين الصفحات الديناميكية." : "Flushes cached Open Graph and meta tag configs per route."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('route_seo')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'route_seo' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح ذاكرة SEO" : "Clear SEO Cache"}
+            </button>
+          </div>
+
+          {/* System Settings Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-emerald-500">SYSTEM CONFIG</span>
+                <Settings size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "إعدادات النظام" : "System Settings Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة إعدادات المنصة العامة (الشعارات، العناوين، الثيمات)." : "Refreshes global platform parameters and site branding configs."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('system_settings')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'system_settings' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح إعدادات النظام" : "Clear Settings Cache"}
+            </button>
+          </div>
+
+          {/* Global All Caches */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-emerald-500/30" : "bg-emerald-50/40 border-emerald-500/30"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-emerald-500">GLOBAL PURGE</span>
+                <Zap size={16} className="text-emerald-500" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسح شامل (Global)" : "Global Cache Purge"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح جميع الذاكرات (الاقتصاد، الخطط، الموديلات والمفاتيح) دفعة واحدة." : "Clears all system, SEO, file permission, economy, and orchestrator caches."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('global')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+            >
+              {clearingCache === 'global' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
+              {dir === "rtl" ? "مسح جميع الذاكرات" : "Purge All Caches"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -13403,7 +13764,7 @@ const ComplianceAuditLogsView = ({
           {selectedLogIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95 duration-150"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95"
             >
               <Trash2 size={13} />
               {isRtl 
@@ -13423,7 +13784,7 @@ const ComplianceAuditLogsView = ({
       </div>
 
       {/* Main Audit Logs Table Container */}
-      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme duration-350 ${
+      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme ${
         theme === "dark" ? "bg-[#18181b] border-gray-800/60" : "bg-white border-gray-100"
       }`}>
         <div className="overflow-x-auto min-w-full">
@@ -13466,7 +13827,7 @@ const ComplianceAuditLogsView = ({
                 logs.map((log) => (
                   <tr 
                     key={log.id} 
-                    className={`transition-colors duration-200 ${
+                    className={`transition-theme ${
                       selectedLogIds.includes(log.id)
                         ? "bg-emerald-500/5 hover:bg-emerald-500/10"
                         : theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
@@ -14003,7 +14364,7 @@ export const AdminDashboard: React.FC = () => {
     >
       {/* Sticky Admin Header - Elite Command Layer */}
       <div
-        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme duration-[var(--theme-transition-duration)] ${
+        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme ${
           theme === "dark" ? "bg-[var(--bg-base)]/95" : "bg-[var(--bg-surface)]/95"
         } backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between`}
       >
@@ -14011,7 +14372,7 @@ export const AdminDashboard: React.FC = () => {
           {path !== "dashboard" && (
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className="p-2.5 rounded-md transition-theme duration-[var(--theme-transition-duration)] flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
+              className="p-2.5 rounded-md transition-theme flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
               title={t("back")}
             >
               {dir === "rtl" ? (
@@ -14023,7 +14384,7 @@ export const AdminDashboard: React.FC = () => {
           )}
           <div className="flex items-center gap-4">
             <div
-              className="p-2.5 rounded-md bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-theme duration-[var(--theme-transition-duration)]"
+              className="p-2.5 rounded-md bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-theme"
             >
               {getIcon()}
             </div>
@@ -14042,7 +14403,7 @@ export const AdminDashboard: React.FC = () => {
           {showAddButton && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-md transition-theme duration-300 font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
             >
               <Plus size={18} />
               {getAddButtonText()}
@@ -14081,7 +14442,7 @@ export const AdminDashboard: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme duration-[var(--theme-transition-duration)] ${
+                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme ${
                       theme === 'dark' 
                         ? 'bg-[#0f0f11] border-gray-800/80 text-white' 
                         : 'bg-white border-gray-200 text-gray-900'
@@ -14218,7 +14579,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Main Content Area */}
       <div
-        className={`relative transition-theme duration-[var(--theme-transition-duration)] ${
+        className={`relative transition-theme ${
           ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics"].includes(
             path,
           )

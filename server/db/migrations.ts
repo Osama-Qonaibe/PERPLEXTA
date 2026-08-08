@@ -676,7 +676,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         password_hash: { type: 'TEXT' },
         status: { type: 'VARCHAR(20)', default: `'active'` },
         avatar: { type: 'TEXT' },
-        referral_code: { type: 'VARCHAR(6)' }
+        referral_code: { type: 'VARCHAR(6)' },
+        email_notifications: { type: 'BOOLEAN', default: 'true' }
       });
 
       await ensureColumnsBulk(tx, 'chats', {
@@ -713,7 +714,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         file_size: { type: 'INTEGER' },
         file_url: { type: 'TEXT' },
         file_content: { type: 'TEXT' },
-        mime_type: { type: 'VARCHAR(100)' }
+        mime_type: { type: 'VARCHAR(100)' },
+        file_version: { type: 'INTEGER', default: '1' }
       });
 
       await ensureColumnsBulk(tx, 'system_settings', {
@@ -2105,7 +2107,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         provider VARCHAR(50) DEFAULT 'local',
         avatar TEXT,
-        referral_code VARCHAR(6)
+        referral_code VARCHAR(6),
+        email_notifications BOOLEAN DEFAULT true
       )`
     },
     {
@@ -2670,6 +2673,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         file_url TEXT,
         file_content TEXT,
         metadata JSONB DEFAULT '{}',
+        file_version INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -3460,7 +3464,7 @@ export async function verifySchemaIntegrity() {
   const expectedSchema: Record<string, Record<string, { columns: string[]; repairCols?: Record<string, string> }>> = {
     core: {
       users: {
-        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code']
+        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications']
       },
       chats: {
         columns: ['id', 'user_id', 'title', 'tool_id', 'context_summary', 'is_pinned', 'created_at', 'updated_at', 'tool']

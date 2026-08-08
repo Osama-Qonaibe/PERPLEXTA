@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, Plus, Download, Smartphone, Share, WifiOff, ShoppingBag, Megaphone, Cpu, LayoutGrid } from 'lucide-react';
+import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, WifiOff, Megaphone, Cpu } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
+import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
+import { ThemeToggleButton } from './ThemeToggleButton';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, dir: globalDir, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending, isStandalone, deferredPrompt, installApp } = useAppContext();
+  const { language: globalLang, setLanguage, theme, setTheme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending } = useAppContext();
   
   const [isOffline, setIsOffline] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -62,8 +64,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const chatId = location.pathname.startsWith('/chat/') ? location.pathname.split('/chat/')[1] : null;
   const isBulletinActive = location.pathname.startsWith('/bulletin');
-  const isMarketplaceActive = location.pathname.startsWith('/marketplace');
-  const isBlogActive = location.pathname.startsWith('/blog');
 
   useEffect(() => {
     const fetchChatTitle = async () => {
@@ -191,7 +191,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
-                  {((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64) ? (
+                  {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
                     <motion.div 
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
@@ -205,7 +205,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       } : {}}
                     >
                       <img 
-                        src={(theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64!} 
+                        src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
                         alt="Logo" 
                         className="w-full h-full object-cover block" 
                       />
@@ -230,7 +230,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   <div className="flex items-center select-none px-1">
                     {/[\u0600-\u06FF]/.test(String(t('appName') || "Perplexta")) ? (
                       <motion.span
-                        className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme"
+                        className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-gray-900 dark:group-hover:text-white transition-theme"
                       >
                         {t('appName')}
                       </motion.span>
@@ -238,7 +238,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       String(t('appName') || "Perplexta").split("").map((char, index) => (
                         <span 
                           key={index}
-                          className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme"
+                          className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-gray-900 dark:group-hover:text-white transition-theme"
                         >
                           {char === " " ? "\u00A0" : char}
                         </span>
@@ -339,7 +339,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
             <NavLink
               to="/bulletin"
-              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
+              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
                 isBulletinActive 
                   ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
@@ -350,12 +350,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   isBulletinActive 
-                    ? 'text-emerald-500' 
-                    : 'text-gray-400 group-hover:text-emerald-500'
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isBulletinActive ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-emerald-500'
+                isBulletinActive ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
               }`}>{language === 'ar' ? 'لوحة الإعلانات' : 'Bulletin Board'}</span>
             </NavLink>
 
@@ -363,7 +363,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
             <NavLink
               to="/Studio"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
                 location.pathname === '/Studio' 
                   ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
@@ -374,12 +374,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   location.pathname === '/Studio' 
-                    ? 'text-emerald-500' 
-                    : 'text-gray-400 group-hover:text-emerald-500'
+                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                location.pathname === '/Studio' ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-emerald-500'
+                location.pathname === '/Studio' ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
               }`}>{language === 'ar' ? 'الاستوديو' : 'Studio'}</span>
             </NavLink>
           <AnimatePresence>
@@ -406,34 +406,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
-            <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
-            <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-emerald-500 transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
+            <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+            <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
           </button>
 
-           <button 
-                onClick={() => setTheme(isHeaderThemeDark ? 'light' : 'dark')}
-                className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
-                aria-label={isHeaderThemeDark ? 'Light Mode' : 'Dark Mode'}
-              >
-                {isHeaderThemeDark ? (
-                  <Sun size={18} className="text-gray-400 group-hover:text-amber-500 transition-theme" />
-                ) : (
-                  <Moon size={18} className="text-gray-400 group-hover:text-blue-500 transition-theme" />
-                )}
-              </button>
-
-          {deferredPrompt && !isStandalone && (
-            <button
-              onClick={installApp}
-              className="flex items-center justify-center gap-1.5 text-[11px] font-bold px-2.5 h-10 rounded-[10px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-500 transition-theme active:scale-95 group shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
-              title={language === 'ar' ? 'تثبيت التطبيق الأصلي' : 'Install Native App'}
-            >
-              <Smartphone size={15} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline font-sans">{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
-            </button>
-          )}
+          <ThemeToggleButton variant="icon-button" />
         
         {(user || token) && (
           <div className="flex items-center gap-1.5 h-full">
@@ -442,18 +421,18 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 navigate('/bulletin');
                 window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
               }}
-              className="hidden md:flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
+              className="hidden md:flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
               title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
             >
-              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
+              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
             </button>
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
               <button 
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className={`flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-emerald-500/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
+                className={`flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-emerald-500/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
               >
-                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500" : "text-gray-400 group-hover:text-emerald-500"}`} />
+                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
                 {unreadCount > 0 && (
                   <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
                 )}

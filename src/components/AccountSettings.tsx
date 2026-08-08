@@ -3,6 +3,7 @@ import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loa
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { resolveImageUrl } from '../utils/imageResolver';
+import { ThemeToggleButton } from './ThemeToggleButton';
 
 interface AccountSettingsProps {
   user: any;
@@ -338,7 +339,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             {/* Theme Selection */}
             <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
                <div className="flex items-center gap-6">
-                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-amber-500 transition-theme">
+                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-[var(--text-primary)] transition-theme">
                     <Monitor size={20} />
                   </div>
                   <div>
@@ -346,32 +347,36 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     <p className="font-bold text-base text-slate-800 dark:text-slate-100 uppercase">{theme === 'system' ? t('systemMode') : theme === 'dark' ? t('darkMode') : t('lightMode')}</p>
                   </div>
                </div>
+               <ThemeToggleButton variant="segmented" />
+            </div>
+
+            {/* Email Notifications */}
+            <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
+               <div className="flex items-center gap-6">
+                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-blue-500 transition-theme">
+                    <Mail size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{dir === 'rtl' ? 'إشعارات البريد' : 'Email Notifications'}</p>
+                    <p className="font-bold text-base text-slate-800 dark:text-slate-100 uppercase">{user.email_notifications !== false ? (dir === 'rtl' ? 'مفعل' : 'Enabled') : (dir === 'rtl' ? 'معطل' : 'Disabled')}</p>
+                  </div>
+               </div>
                <div className="flex gap-2 p-1 bg-white dark:bg-zinc-900 rounded-[var(--radius)] border border-slate-200 dark:border-zinc-800">
                   <button 
-                    onClick={() => setTheme('light')}
-                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${theme === 'light' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/40' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
+                    onClick={() => onUpdate({ email_notifications: true })}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${user.email_notifications !== false ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/40' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
                   >
-                    {t('lightMode')}
+                    {dir === 'rtl' ? 'تفعيل' : 'Enable'}
                   </button>
                   <button 
-                    onClick={() => setTheme('dark')}
+                    onClick={() => onUpdate({ email_notifications: false })}
                     className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${
-                      theme === 'dark' 
-                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' 
+                      user.email_notifications === false 
+                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/40' 
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
                     }`}
                   >
-                    {t('darkMode')}
-                  </button>
-                  <button 
-                    onClick={() => setTheme('system')}
-                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${
-                      theme === 'system' 
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' 
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
-                    }`}
-                  >
-                    {t('systemMode')}
+                    {dir === 'rtl' ? 'تعطيل' : 'Disable'}
                   </button>
                </div>
             </div>

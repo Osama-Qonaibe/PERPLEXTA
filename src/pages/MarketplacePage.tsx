@@ -142,21 +142,21 @@ const getHighlightDetails = (tag: string, className?: string) => {
       return {
         labelAr: 'رائج',
         labelEn: 'Trending',
-        colorClass: 'bg-orange-500/10 border-orange-500/25 text-orange-600 dark:text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.12)] animate-pulse',
+        colorClass: 'bg-[var(--bg-surface)] border-[var(--border-accent)] text-[var(--text-primary)] shadow-sm animate-pulse',
         icon: <Flame className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'exclusive':
       return {
         labelAr: 'عرض حصري',
         labelEn: 'Exclusive',
-        colorClass: 'bg-purple-500/10 border-purple-500/25 text-purple-650 dark:text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.12)]',
+        colorClass: 'bg-[var(--bg-surface)] border-[var(--border-main)] text-[var(--text-primary)] shadow-sm',
         icon: <Star className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'free':
       return {
         labelAr: 'مجاني',
         labelEn: 'Free / OSS',
-        colorClass: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.12)]',
+        colorClass: 'bg-[var(--bg-hover)] border-[var(--border-main)] text-[var(--text-primary)] shadow-sm',
         icon: <Gift className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'best_seller':
@@ -164,14 +164,14 @@ const getHighlightDetails = (tag: string, className?: string) => {
       return {
         labelAr: 'الأكثر مبيعاً',
         labelEn: 'Best Seller',
-        colorClass: 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.12)]',
+        colorClass: 'bg-[var(--bg-surface)] border-[var(--border-accent)] text-[var(--text-primary)] shadow-sm',
         icon: <TrendingUp className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'new':
       return {
         labelAr: 'جديد',
         labelEn: 'New',
-        colorClass: 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.12)]',
+        colorClass: 'bg-[var(--bg-hover)] border-[var(--border-accent)] text-[var(--text-primary)] shadow-sm',
         icon: <Sparkles className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'featured':
@@ -179,7 +179,7 @@ const getHighlightDetails = (tag: string, className?: string) => {
       return {
         labelAr: 'مميز',
         labelEn: 'Featured',
-        colorClass: 'bg-amber-500/10 border-amber-500/25 text-amber-600 dark:text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.12)]',
+        colorClass: 'bg-[var(--bg-surface)] border-[var(--border-main)] text-[var(--text-primary)] shadow-sm',
         icon: <Award className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
   }
@@ -1597,18 +1597,18 @@ export const MarketplacePage: React.FC = () => {
         <header className={`p-6 md:px-8 md:py-6 border-b relative select-none flex-shrink-0 ${
           isThemeDark ? 'border-white/5 bg-[#080808]' : 'border-gray-200/80 bg-white'
         }`}>
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-[var(--border-main)]" />
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
               <div className="space-y-1">
                 <h1 className="text-xl md:text-2xl font-black tracking-tight">
                   {language === 'ar' ? (
                     <>
-                      <span className="text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.15)] dark:drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">سوق بيربليكستا </span>
-                      <span className="text-gray-900 dark:text-white">للمنتجات الرقمية</span>
+                      <span className="text-[var(--text-primary)]">سوق بيربليكستا </span>
+                      <span className="text-[var(--text-secondary)]">للمنتجات الرقمية</span>
                     </>
                   ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.15)] dark:drop-shadow-[0_0_12px_rgba(52,211,153,0.35)]">{t.title}</span>
+                    <span className="text-[var(--text-primary)]">{t.title}</span>
                   )}
                 </h1>
                 <p className={`text-[10px] md:text-xs font-semibold leading-relaxed ${
@@ -1623,7 +1623,7 @@ export const MarketplacePage: React.FC = () => {
                   <>
                     <button
                       onClick={() => navigate('/settings?tab=marketplace_purchases')}
-                      className="h-10 px-4 rounded-[4px] bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] cursor-pointer"
+                      className="h-10 px-4 rounded-[4px] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <ShoppingBag size={14} />
                       <span>{language === 'ar' ? 'حقيبة تنزيلاتي ومشترياتي' : 'My Purchases & Downloads'}</span>
@@ -1635,7 +1635,7 @@ export const MarketplacePage: React.FC = () => {
                           resetForm();
                           setIsCreateOpen(true);
                         }}
-                        className="h-10 px-4 rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/25 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer"
+                        className="h-10 px-4 rounded-[4px] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Plus size={14} />
                         <span>{t.listNewAsset}</span>
@@ -1644,12 +1644,12 @@ export const MarketplacePage: React.FC = () => {
 
                     <button
                       onClick={() => setIsCartOpen(true)}
-                      className="w-10 h-10 rounded-[4px] border border-emerald-500/25 bg-emerald-500/5 text-emerald-500 flex items-center justify-center relative active:scale-95 cursor-pointer transition-theme hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="w-10 h-10 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-primary)] flex items-center justify-center relative active:scale-95 cursor-pointer transition-theme hover:bg-[var(--bg-hover)]"
                       title={language === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
                     >
                       <ShoppingCart size={16} />
                       {cart.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
+                        <span className="absolute -top-1 -right-1 bg-[var(--text-primary)] text-[var(--bg-primary)] text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
                           {cart.length}
                         </span>
                       )}
@@ -1678,7 +1678,7 @@ export const MarketplacePage: React.FC = () => {
                   onClick={() => fCat('all')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-colors ${
                     selectedCategory === 'all'
-                      ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] font-black'
+                      ? 'bg-[var(--bg-hover)] border border-[var(--border-accent)] text-[var(--text-primary)] font-black'
                       : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-850')
                   }`}
                 >
@@ -1693,12 +1693,12 @@ export const MarketplacePage: React.FC = () => {
                       onClick={() => fCat(p.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                         isParentActive
-                          ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] font-black'
+                          ? 'bg-[var(--bg-hover)] border border-[var(--border-accent)] text-[var(--text-primary)] font-black'
                           : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-800')
                       }`}
                     >
                       <span className="inline-flex items-center gap-1.5">
-                        <span style={{ color: p.co }}>{getCategoryIcon(p.id, "w-3 h-3")}</span>
+                        <span className="text-[var(--text-primary)]">{getCategoryIcon(p.id, "w-3 h-3")}</span>
                         <span>{language === 'ar' ? p.nAr : p.nEn}</span>
                       </span>
                     </button>
@@ -1708,7 +1708,7 @@ export const MarketplacePage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                 <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-64 md:w-72 transition-theme ${
-                  isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
+                  isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-[var(--border-accent)]' : 'bg-white border-gray-200 focus-within:border-[var(--border-accent)]'
                 }`}>
                   <Search size={14} className="text-gray-400 shrink-0" />
                   <input
@@ -1727,7 +1727,7 @@ export const MarketplacePage: React.FC = () => {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
                     className={`h-8 px-2 border rounded-lg text-[11px] font-bold outline-none cursor-pointer transition-theme ${
-                      isThemeDark ? 'bg-black/45 border-white/10 focus:border-emerald-500/40 text-gray-200' : 'bg-white border-gray-250 focus:border-emerald-500/40 text-gray-750'
+                      isThemeDark ? 'bg-black/45 border-white/10 focus:border-[var(--border-accent)] text-gray-200' : 'bg-white border-gray-250 focus:border-[var(--border-accent)] text-gray-750'
                     }`}
                   >
                     <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="recent">
@@ -1764,11 +1764,11 @@ export const MarketplacePage: React.FC = () => {
                     onClick={() => fCat('all')}
                     className={`flex items-center gap-2 rounded px-2.5 py-1.5 text-[10px] font-bold cursor-pointer transition-colors ${
                       selectedCategory === 'all'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500'
+                        ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] border-r-2 border-[var(--border-accent)]'
                         : (isThemeDark ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900')
                     }`}
                   >
-                    <Grid size={11} className="text-emerald-400 shrink-0" />
+                    <Grid size={11} className="text-[var(--text-primary)] shrink-0" />
                     <span>{t.allCategories}</span>
                   </div>
 
@@ -1787,12 +1787,12 @@ export const MarketplacePage: React.FC = () => {
                           }}
                           className={`flex items-center justify-between rounded px-2.5 py-1.5 text-[10px] font-black cursor-pointer transition-colors ${
                             isParentSelected || hasActiveChild
-                              ? 'bg-emerald-500/5 text-emerald-400'
+                              ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]'
                               : (isThemeDark ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900')
                           }`}
                         >
                           <span className="flex items-center gap-1.5 truncate">
-                            <span style={{ color: p.co }}>{getCategoryIcon(p.id, "w-3 h-3 shrink-0")}</span>
+                            <span className="text-[var(--text-primary)]">{getCategoryIcon(p.id, "w-3 h-3 shrink-0")}</span>
                             <span className="truncate">{language === 'ar' ? p.nAr : p.nEn}</span>
                           </span>
                           <ChevronDown
@@ -1818,7 +1818,7 @@ export const MarketplacePage: React.FC = () => {
                                     onClick={() => fCat(c.id)}
                                     className={`rounded px-2.5 py-1 text-[9px] font-bold cursor-pointer transition-colors duration-200 ${
                                       isChildSelected
-                                        ? 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500 font-extrabold'
+                                        ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] border-r-2 border-[var(--border-accent)] font-extrabold'
                                         : (isThemeDark ? 'hover:bg-white/5 text-gray-500 hover:text-gray-300' : 'hover:bg-gray-100 text-gray-650 hover:text-gray-900')
                                     }`}
                                   >
@@ -1852,7 +1852,7 @@ export const MarketplacePage: React.FC = () => {
                       key={pItem.val}
                       className={`flex items-center gap-2 text-[10px] font-bold cursor-pointer transition-colors ${
                         selectedPriceRange === pItem.val
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-[var(--text-primary)]'
                           : (isThemeDark ? 'text-gray-400 hover:text-gray-250' : 'text-gray-600 hover:text-gray-950')
                       }`}
                     >
@@ -1862,7 +1862,7 @@ export const MarketplacePage: React.FC = () => {
                         value={pItem.val}
                         checked={selectedPriceRange === pItem.val}
                         onChange={(e) => setSelectedPriceRange(e.target.value)}
-                        className="accent-emerald-500 w-3 h-3"
+                        className="accent-[var(--text-primary)] w-3 h-3"
                       />
                       <span>{pItem.label}</span>
                     </label>
@@ -1948,8 +1948,8 @@ export const MarketplacePage: React.FC = () => {
                           onClick={() => navigate(`/marketplace/${item.id}`)}
                           className={`rounded-xl border overflow-hidden transition-theme flex flex-col h-full cursor-pointer relative group ${
                             isThemeDark
-                              ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
-                              : 'bg-white border-gray-150 hover:border-emerald-500/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
+                              ? 'bg-[#090a0c] border-white/5 hover:border-[var(--border-accent)] hover:shadow-lg'
+                              : 'bg-white border-gray-150 hover:border-[var(--border-accent)] hover:shadow-md'
                           }`}
                         >
                           {/* Bento Product Header Cover */}
@@ -1967,10 +1967,10 @@ export const MarketplacePage: React.FC = () => {
                               <div className="absolute top-2 left-10 z-10">
                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded-[4px] backdrop-blur-md border uppercase inline-flex items-center gap-1 ${
                                   item.status === 'approved' 
-                                    ? 'bg-emerald-500/80 border-emerald-400 text-black'
+                                    ? 'bg-[var(--bg-surface)] border-[var(--border-accent)] text-[var(--text-primary)]'
                                     : item.status === 'rejected'
-                                      ? 'bg-rose-500/80 border-rose-400 text-white'
-                                      : 'bg-amber-500/80 border-amber-400 text-black'
+                                      ? 'bg-gray-800 border-gray-700 text-gray-200'
+                                      : 'bg-[var(--bg-hover)] border-[var(--border-main)] text-[var(--text-primary)]'
                                 }`}>
                                   {language === 'ar' 
                                     ? (item.status === 'approved' ? 'مقبول / منشور' : item.status === 'rejected' ? 'مرفوض / محجوب' : 'معلق للمراجعة') 
@@ -1981,7 +1981,7 @@ export const MarketplacePage: React.FC = () => {
 
                             <div className="absolute bottom-2 right-2 flex items-center gap-1.5 select-none">
                               <span className="text-[8px] font-black px-2 py-0.5 rounded bg-black/70 backdrop-blur-md border border-white/10 text-white flex items-center gap-1">
-                                {getCategoryIcon(getSubcategoryKey(item), 'w-2.5 h-2.5 text-emerald-400')}
+                                {getCategoryIcon(getSubcategoryKey(item), 'w-2.5 h-2.5 text-[var(--text-primary)]')}
                                 <span>{language === 'ar' ? item.category_ar : item.category_en}</span>
                               </span>
                             </div>
@@ -1990,7 +1990,7 @@ export const MarketplacePage: React.FC = () => {
                           {/* Bento Body */}
                           <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                             <div className="space-y-1">
-                              <h3 className={`text-xs font-black tracking-tight line-clamp-1 leading-snug transition-colors group-hover:text-emerald-500 dark:group-hover:text-emerald-400 ${isThemeDark ? 'text-white' : 'text-gray-900'}`}>
+                              <h3 className={`text-xs font-black tracking-tight line-clamp-1 leading-snug transition-colors group-hover:text-[var(--text-primary)] ${isThemeDark ? 'text-white' : 'text-gray-900'}`}>
                                 {language === 'ar' ? item.title_ar : item.title_en}
                               </h3>
                               <p className={`text-[9px] line-clamp-2 leading-relaxed ${
@@ -2002,7 +2002,7 @@ export const MarketplacePage: React.FC = () => {
 
                             <div className="pt-2 border-t border-[var(--border-main)] dark:border-white/5 flex items-center justify-between gap-1">
                               <div className="flex flex-col gap-1 min-w-0">
-                                <span className="text-xs sm:text-sm font-black font-sans text-emerald-600 dark:text-emerald-400 tracking-tight shrink-0">
+                                <span className="text-xs sm:text-sm font-black font-sans text-[var(--text-primary)] tracking-tight shrink-0">
                                   {parseFloat(item.price.toString()) <= 0
                                     ? (language === 'ar' ? 'مجانًا' : 'FREE')
                                     : `$${parseFloat(item.price.toString()).toLocaleString()}`}
@@ -2027,11 +2027,11 @@ export const MarketplacePage: React.FC = () => {
                               
                               <button className={`px-2 py-1 text-[10px] font-black rounded-[4px] transition-theme flex items-center gap-1 border shrink-0 ${
                                 isThemeDark
-                                  ? 'bg-[#10b981]/5 border-[#10b981]/15 text-emerald-400 hover:bg-[#10b981]/15 hover:border-[#10b981]/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                                  : 'bg-emerald-500/5 border-emerald-500/15 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                                  ? 'bg-[var(--bg-hover)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[var(--border-accent)]'
+                                  : 'bg-[var(--bg-hover)] border-[var(--border-main)] text-[var(--text-primary)] hover:border-[var(--border-accent)]'
                               }`}>
                                 <span>{language === 'ar' ? 'عرض التفاصيل' : 'View Details'}</span>
-                                {dir === 'rtl' ? <ArrowLeft size={10} strokeWidth={3} className="text-emerald-500" /> : <ArrowRight size={10} strokeWidth={3} className="text-emerald-500" />}
+                                {dir === 'rtl' ? <ArrowLeft size={10} strokeWidth={3} className="text-[var(--text-primary)]" /> : <ArrowRight size={10} strokeWidth={3} className="text-[var(--text-primary)]" />}
                               </button>
                             </div>
                           </div>
@@ -2054,7 +2054,7 @@ export const MarketplacePage: React.FC = () => {
                 <span className="font-sans font-black tracking-widest text-[9px] uppercase">
                   PERPLEXTA PLATFORM MARKETPLACE SYSTEM
                 </span>
-                <div className="flex items-center justify-center gap-2.5 text-[9px] text-emerald-500 font-bold">
+                <div className="flex items-center justify-center gap-2.5 text-[9px] text-[var(--text-primary)] font-bold">
                   <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
                   <span className="text-gray-500/20">•</span>
                   <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
@@ -2112,11 +2112,11 @@ export const MarketplacePage: React.FC = () => {
                     }}
                     className={`flex items-center gap-2 rounded px-2.5 py-2 text-[10px] font-bold cursor-pointer transition-colors ${
                       selectedCategory === 'all'
-                        ? 'bg-emerald-500/10 text-emerald-400'
+                        ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]'
                         : 'text-gray-400'
                     }`}
                   >
-                    <Grid size={11} className="text-emerald-400" />
+                    <Grid size={11} className="text-[var(--text-primary)]" />
                     <span>{t.allCategories}</span>
                   </div>
 
@@ -2135,12 +2135,12 @@ export const MarketplacePage: React.FC = () => {
                           }}
                           className={`flex items-center justify-between rounded px-2.5 py-2 text-[10px] font-black cursor-pointer transition-colors ${
                             isParentSelected || hasActiveChild
-                              ? 'bg-emerald-500/10 text-emerald-400'
+                              ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]'
                               : 'text-gray-400'
                           }`}
                         >
                           <span className="flex items-center gap-1.5 select-none">
-                            <span style={{ color: p.co }}>{getCategoryIcon(p.id, "w-3 h-3 shrink-0")}</span>
+                            <span className="text-[var(--text-primary)]">{getCategoryIcon(p.id, "w-3 h-3 shrink-0")}</span>
                             <span>{language === 'ar' ? p.nAr : p.nEn}</span>
                           </span>
                           <ChevronDown
@@ -2168,7 +2168,7 @@ export const MarketplacePage: React.FC = () => {
                                       setIsMobileMenuOpen(false);
                                     }}
                                     className={`rounded px-2.5 py-1.5 text-[9px] font-bold cursor-pointer transition-colors duration-200 ${
-                                      isChildSelected ? 'text-emerald-400 font-extrabold bg-emerald-500/5' : 'text-gray-500 hover:text-gray-300'
+                                      isChildSelected ? 'text-[var(--text-primary)] font-extrabold bg-[var(--bg-hover)]' : 'text-gray-500 hover:text-gray-300'
                                     }`}
                                   >
                                     {language === 'ar' ? c.nAr : c.nEn}
@@ -2197,7 +2197,7 @@ export const MarketplacePage: React.FC = () => {
                     <label
                       key={pItem.val}
                       className={`flex items-center gap-2.5 text-[10px] font-bold cursor-pointer transition-colors ${
-                        selectedPriceRange === pItem.val ? 'text-emerald-400 font-black' : 'text-gray-400'
+                        selectedPriceRange === pItem.val ? 'text-[var(--text-primary)] font-black' : 'text-gray-400'
                       }`}
                     >
                       <input
@@ -2209,7 +2209,7 @@ export const MarketplacePage: React.FC = () => {
                           setSelectedPriceRange(e.target.value);
                           setIsMobileMenuOpen(false);
                         }}
-                        className="accent-emerald-500 w-3 h-3"
+                        className="accent-[var(--text-primary)] w-3 h-3"
                       />
                       <span>{pItem.label}</span>
                     </label>
@@ -2265,9 +2265,9 @@ export const MarketplacePage: React.FC = () => {
                 
                 {/* Glowing Overlay indicating "Click to view screenshots/documents" */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
-                  <div className="flex flex-col items-center gap-1.5 px-4 py-2 bg-black/75 rounded-lg border border-emerald-500/30 backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-theme">
-                    <Eye size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                    <span className="text-[10px] font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">
+                  <div className="flex flex-col items-center gap-1.5 px-4 py-2 bg-black/75 rounded-lg border border-[var(--border-accent)] backdrop-blur-sm transform translate-y-2 group-hover:translate-y-0 transition-theme">
+                    <Eye size={18} className="text-[var(--text-primary)]" />
+                    <span className="text-[10px] font-black text-[var(--text-primary)]">
                       {language === 'ar' ? 'انقر للمعاينة والتكبير التفاعلي بملء الشاشة' : 'Click for Interactive Fullscreen Zoom & Preview'}
                     </span>
                   </div>
@@ -2282,7 +2282,7 @@ export const MarketplacePage: React.FC = () => {
                     setBuyingProgress('idle');
                     navigate('/marketplace');
                   }}
-                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-theme hover:bg-black/80 hover:text-emerald-500 text-white cursor-pointer z-20"
+                  className="absolute top-4 left-4 w-9 h-9 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center transition-theme hover:bg-black/80 hover:text-[var(--text-primary)] text-white cursor-pointer z-20"
                 >
                   <X size={15} />
                 </button>
@@ -2294,12 +2294,12 @@ export const MarketplacePage: React.FC = () => {
                 {/* Title block */}
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1 shrink-0">
-                      {getCategoryIcon(getSubcategoryKey(selectedProduct), 'w-2.5 h-2.5 text-emerald-400')}
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center gap-1 shrink-0">
+                      {getCategoryIcon(getSubcategoryKey(selectedProduct), 'w-2.5 h-2.5 text-[var(--text-primary)]')}
                       <span>{language === 'ar' ? selectedProduct.category_ar : selectedProduct.category_en}</span>
                     </span>
                     {getProgrammingLanguage(selectedProduct) !== '-' && (
-                      <span className="text-[9px] font-black px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/15 shrink-0 select-none">
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)] shrink-0 select-none">
                         {getProgrammingLanguage(selectedProduct)}
                       </span>
                     )}
@@ -2316,14 +2316,10 @@ export const MarketplacePage: React.FC = () => {
                           href={selectedProduct.preview_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider ${
-                            isThemeDark
-                              ? 'border-emerald-500/35 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                          }`}
+                          className="h-9 px-3 rounded-lg border border-[var(--border-main)] bg-[var(--bg-hover)] text-[var(--text-primary)] flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider hover:border-[var(--border-accent)]"
                           title={language === 'ar' ? 'معاينة مباشرة' : 'Live Preview'}
                         >
-                          <Eye size={13} className="text-emerald-500" />
+                          <Eye size={13} className="text-[var(--text-primary)]" />
                           <span>{language === 'ar' ? 'معاينة مباشرة' : 'Live Preview'}</span>
                         </a>
                       )}
@@ -2333,14 +2329,10 @@ export const MarketplacePage: React.FC = () => {
                           href={selectedProduct.video_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`h-9 px-3 rounded-lg border flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider ${
-                            isThemeDark
-                              ? 'border-blue-500/35 bg-blue-500/5 text-blue-400 hover:bg-blue-500/15'
-                              : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                          }`}
+                          className="h-9 px-3 rounded-lg border border-[var(--border-main)] bg-[var(--bg-hover)] text-[var(--text-primary)] flex items-center gap-1.5 transition-theme text-[10px] font-black uppercase tracking-wider hover:border-[var(--border-accent)]"
                           title={language === 'ar' ? 'فيديو توضيحي' : 'Video Explanation'}
                         >
-                          <Play size={13} className="fill-current text-blue-500" />
+                          <Play size={13} className="fill-current text-[var(--text-primary)]" />
                           <span>{language === 'ar' ? 'فيديو توضيحي' : 'Video Explanation'}</span>
                         </a>
                       )}
@@ -2355,7 +2347,7 @@ export const MarketplacePage: React.FC = () => {
                         onClick={() => {
                           startEditing(selectedProduct);
                         }}
-                        className="h-8 px-4 rounded-[4px] bg-blue-500/15 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
+                        className="h-8 px-4 rounded-[4px] bg-[var(--bg-hover)] border border-[var(--border-main)] text-[var(--text-primary)] font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                       >
                         <Edit size={12} />
                         <span>{language === 'ar' ? 'تعديل المعروض' : 'Edit Listing'}</span>
@@ -2385,7 +2377,7 @@ export const MarketplacePage: React.FC = () => {
                               console.error(e);
                             }
                           }}
-                          className="h-8 px-4 rounded-[4px] bg-amber-500/15 hover:bg-amber-500/20 border border-amber-500/30 text-amber-500 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
+                          className="h-8 px-4 rounded-[4px] bg-[var(--bg-hover)] border border-[var(--border-main)] text-[var(--text-primary)] font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                         >
                           <span>{language === 'ar' ? 'تعليم كمباع' : 'Mark as Sold'}</span>
                         </button>
@@ -2415,7 +2407,7 @@ export const MarketplacePage: React.FC = () => {
                               console.error(e);
                             }
                           }}
-                          className="h-8 px-4 rounded-[4px] bg-emerald-500/15 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
+                          className="h-8 px-4 rounded-[4px] bg-[var(--bg-hover)] border border-[var(--border-main)] text-[var(--text-primary)] font-extrabold flex items-center gap-1 cursor-pointer transition-theme active:scale-95 text-[10px]"
                         >
                           <span>{language === 'ar' ? 'إعادة عرض المنتج' : 'Re-List Item'}</span>
                         </button>
@@ -2424,7 +2416,7 @@ export const MarketplacePage: React.FC = () => {
                   )}
 
                   {user?.role !== 'admin' && selectedProduct.user_id === user?.id && (
-                    <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 flex items-center gap-2 text-[10px] text-amber-500 select-none">
+                    <div className="p-3 rounded-lg border border-[var(--border-main)] bg-[var(--bg-hover)] flex items-center gap-2 text-[10px] text-[var(--text-primary)] select-none">
                       <AlertCircle size={14} className="shrink-0" />
                       <span>
                         {selectedProduct.status === 'pending' || !selectedProduct.status
@@ -2454,7 +2446,7 @@ export const MarketplacePage: React.FC = () => {
                   </p>
 
                   {/* Screenshots & Document Grid Previewer inside Details modal */}
-                  <div className="space-y-2 pt-1 border-t border-dashed border-gray-100 dark:border-white/5">
+                  <div className="space-y-2 pt-1 border-t border-dashed border-[var(--border-main)]">
                     <div className="flex items-center justify-between">
                       <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
                         {language === 'ar' ? 'معرض الصور وملفات التوثيق للمعاينة' : 'Screenshot Gallery & Preview Files'}
@@ -2466,9 +2458,9 @@ export const MarketplacePage: React.FC = () => {
                           setLightboxScale(1);
                           setLightboxRotation(0);
                         }}
-                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer select-none transition-theme hover:underline"
+                        className="text-[9px] font-bold text-[var(--text-primary)] hover:underline flex items-center gap-1 cursor-pointer select-none transition-theme"
                       >
-                        <Eye size={10} className="text-emerald-500" />
+                        <Eye size={10} className="text-[var(--text-primary)]" />
                         {language === 'ar' ? 'تصفح بملء الشاشة' : 'Browse Screen Lightbox'}
                       </span>
                     </div>
@@ -2487,142 +2479,48 @@ export const MarketplacePage: React.FC = () => {
                               setLightboxScale(1);
                               setLightboxRotation(0);
                             }}
-                            className={`relative h-14 sm:h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-emerald-500/50 group transition-theme ${
-                              isThemeDark ? 'bg-black/40 border-white/5' : 'bg-gray-100 border-gray-200'
+                            className={`relative h-14 sm:h-16 rounded-lg overflow-hidden border cursor-pointer hover:border-[var(--border-accent)] group transition-theme ${
+                              isThemeDark ? 'border-white/10 bg-black/40' : 'border-gray-200 bg-gray-100'
                             }`}
                           >
                             {isPdf ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-gradient-to-br from-red-500/10 to-red-600/5 group-hover:from-emerald-500/10 transition-colors">
-                                <BookOpen size={16} className="text-red-400 group-hover:text-emerald-400 transition-colors" />
-                                <span className="text-[7px] font-black text-red-500/85 group-hover:text-emerald-500 mt-0.5 uppercase">PDF DOC</span>
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-white/5">
+                                <BookOpen size={16} className="text-[var(--text-primary)]" />
+                                <span className="text-[7px] font-black text-[var(--text-primary)] uppercase mt-0.5">PDF</span>
                               </div>
                             ) : isWeb ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-gradient-to-br from-purple-500/10 to-purple-600/5 group-hover:from-emerald-500/10 transition-colors">
-                                <Smartphone size={16} className="text-purple-400 group-hover:text-emerald-400 transition-colors" />
-                                <span className="text-[7px] font-black text-purple-500/85 group-hover:text-emerald-500 mt-0.5 uppercase">WEB DEMO</span>
+                              <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-white/5">
+                                <Smartphone size={16} className="text-[var(--text-primary)]" />
+                                <span className="text-[7px] font-black text-[var(--text-primary)] uppercase mt-0.5">WEB</span>
                               </div>
                             ) : (
                               <img
                                 src={asset.url}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 referrerPolicy="no-referrer"
                                 alt=""
                               />
                             )}
-                            
-                            <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                              <Eye size={11} className="text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.8)]" />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Eye size={12} className="text-white" />
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                </div>
 
-                {/* Features & Tech Bento Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                  <div className="space-y-2">
-                    <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
-                      {t.featuresTitle}
-                    </h4>
-                    <div className="space-y-1.5 select-none">
-                      {getProductFeatures(selectedProduct, language === 'ar').map((feat, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-[10px] font-bold">
-                          <Check size={12} className="text-emerald-400 shrink-0 mt-0.5" />
-                          <span className={isThemeDark ? 'text-gray-300' : 'text-gray-700'}>{feat}</span>
-                        </div>
-                      ))}
+                    {/* Viraly LinkUp Limited Copyright Signature */}
+                    <div className="mt-3.5 pt-2.5 border-t border-[var(--border-main)] flex flex-col gap-1 text-[8px] leading-relaxed text-gray-500 font-medium">
+                      <div className="flex items-center justify-between font-black text-[var(--text-primary)]">
+                        <span>{language === 'ar' ? 'حماية الملكية والناشر' : 'PROPRIETARY IP PROTECTION'}</span>
+                        <span className="font-sans font-black select-none">© VIRALY LINKUP LTD</span>
+                      </div>
+                      <p className="italic text-gray-400/80">
+                        {language === 'ar'
+                          ? 'حقوق الملكية البرمجية والفكرية لهذا الإصدار محفوظة بالكامل لشركة فيرالي لينك اب المحدودة والناشر المعتمد ولا يجوز إعادة التوزيع خارج الأطر المرخصة.'
+                          : 'All software copyright and intellectual property rights are fully secured and owned by Viraly LinkUp Limited and authorized publishers under international provisions.'}
+                      </p>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
-                      {t.techTitle}
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5 select-none">
-                      {getProductTech(selectedProduct).map((tech, idx) => (
-                        <span
-                          key={idx}
-                          className={`text-[9px] font-black px-2 py-1 rounded border ${
-                            isThemeDark
-                              ? 'bg-white/5 border-white/5 text-gray-400'
-                              : 'bg-gray-50 border-gray-150 text-gray-650'
-                          }`}
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`h-px w-full bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent`} />
-
-                {/* Licenses and Purchase cards */}
-                <div className={`grid grid-cols-1 md:grid-cols-5 gap-6 p-4 rounded-xl border border-dashed select-none ${
-                  isThemeDark ? 'border-white/10 bg-black/10' : 'border-gray-200 bg-gray-50/50'
-                }`}>
-                  
-                  {/* License checklist Column */}
-                  <div className="md:col-span-3 space-y-3">
-                    <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
-                      {language === 'ar' ? 'تفاصيل ترخيص المنتج الحصري' : 'Exclusive Product License Details'}
-                    </h4>
-                    
-                    {(() => {
-                      const licKey = selectedProduct.license_type || 'commercial_standard';
-                      const details = getLicenseDetails(licKey);
-                      return (
-                        <div className={`p-4 rounded-xl border transition-theme ${
-                          isThemeDark
-                            ? 'bg-emerald-400/5 border-emerald-500/15'
-                            : 'bg-emerald-500/5 border-emerald-500/15'
-                        }`}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="p-1 rounded bg-emerald-500/10 text-emerald-500 shrink-0">
-                              <Check size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                            </span>
-                            <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
-                              {language === 'ar' ? details.nameAr : details.nameEn}
-                            </span>
-                          </div>
-
-                          <p className={`text-[10px] leading-relaxed mb-3.5 italic ${
-                            isThemeDark ? 'text-gray-300' : 'text-gray-650'
-                          }`}>
-                            {language === 'ar' ? details.descAr : details.descEn}
-                          </p>
-
-                          <div className="space-y-1.5 pt-2 border-t border-emerald-555/10 dark:border-emerald-500/10">
-                            <div className="text-[8px] font-black uppercase text-gray-400/80 tracking-wider mb-1">
-                              {language === 'ar' ? 'صلاحيات الاستخدام:' : 'License Permissions:'}
-                            </div>
-                            {details.permissions.map((p, pIdx) => (
-                              <div key={pIdx} className="flex items-center gap-1.5 text-[9px] font-bold">
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.ok ? 'bg-emerald-500' : 'bg-orange-400'}`} />
-                                <span className={isThemeDark ? 'text-gray-350' : 'text-gray-650'}>
-                                  {language === 'ar' ? p.ar : p.en}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Viraly LinkUp Limited Copyright Signature */}
-                          <div className="mt-3.5 pt-2.5 border-t border-emerald-500/10 flex flex-col gap-1 text-[8px] leading-relaxed text-gray-500 font-medium">
-                            <div className="flex items-center justify-between font-black text-emerald-600/90 dark:text-emerald-450">
-                              <span>{language === 'ar' ? 'حماية الملكية والناشر' : 'PROPRIETARY IP PROTECTION'}</span>
-                              <span className="font-sans font-black select-none">© VIRALY LINKUP LTD</span>
-                            </div>
-                            <p className="italic text-gray-400/80">
-                              {language === 'ar'
-                                ? 'حقوق الملكية البرمجية والفكرية لهذا الإصدار محفوظة بالكامل لشركة فيرالي لينك اب المحدودة والناشر المعتمد ولا يجوز إعادة التوزيع خارج الأطر المرخصة.'
-                                : 'All software copyright and intellectual property rights are fully secured and owned by Viraly LinkUp Limited and authorized publishers under international provisions.'}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })()}
                   </div>
 
                   {/* Pricing summary widget */}
@@ -2635,7 +2533,7 @@ export const MarketplacePage: React.FC = () => {
                         <div className="flex items-center justify-between select-none">
                           <span className="text-[10px] text-gray-500 font-bold">Price</span>
                           <div className="flex items-center gap-1">
-                            <span className="text-base font-black font-sans text-emerald-600 dark:text-emerald-400">
+                            <span className="text-base font-black font-sans text-[var(--text-primary)]">
                               {getComputedPrice() <= 0 ? (language === 'ar' ? 'مجانًا' : 'FREE') : `$${getComputedPrice().toLocaleString()}`}
                             </span>
                           </div>
@@ -2643,7 +2541,7 @@ export const MarketplacePage: React.FC = () => {
 
                         <div className="flex items-center justify-between select-none">
                           <span className="text-[10px] text-gray-500 font-bold">{t.byBalancePoints}</span>
-                          <span className="text-xs font-black font-sans text-purple-400">
+                          <span className="text-xs font-black font-sans text-[var(--text-secondary)]">
                             {getComputedPrice() <= 0
                               ? (language === 'ar' ? 'مجانًا' : 'FREE')
                               : `${(getComputedPrice() * 10).toLocaleString()} ${t.points}`}
@@ -2655,19 +2553,19 @@ export const MarketplacePage: React.FC = () => {
 
                       {buyingProgress === 'purchasing' ? (
                         <div className="flex flex-col items-center justify-center py-2 text-center space-y-2">
-                          <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
                           <span className="text-[9px] text-gray-400 font-bold animate-pulse">{t.purchaseProgress}</span>
                         </div>
                       ) : buyingProgress === 'success' ? (
-                        <div className="flex flex-col items-center justify-center py-2 text-center text-emerald-400 space-y-1">
+                        <div className="flex flex-col items-center justify-center py-2 text-center text-[var(--text-primary)] space-y-1">
                           <Check size={16} />
                           <span className="text-[9px] font-black">{language === 'ar' ? 'تم الشراء بنجاح!' : 'Purchase Successful!'}</span>
                         </div>
                       ) : buyingProgress === 'insufficient' ? (
                         <div className="space-y-2">
                           <div className="flex items-start gap-1 pb-1">
-                            <AlertCircle size={12} className="text-red-500 shrink-0 mt-0.5" />
-                            <span className="text-[9px] text-red-400 font-black leading-normal">{t.insufficientHeadline}</span>
+                            <AlertCircle size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                            <span className="text-[9px] text-gray-300 font-black leading-normal">{t.insufficientHeadline}</span>
                           </div>
                           <p className="text-[8px] text-gray-500 leading-relaxed">{t.insufficientBody}</p>
                           <button
@@ -2684,7 +2582,7 @@ export const MarketplacePage: React.FC = () => {
                               href={selectedProduct.download_url || selectedProduct.preview_url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
+                              className="w-full h-9 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 transition-theme font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg"
                             >
                               <ExternalLink size={12} strokeWidth={2.5} />
                               <span>{language === 'ar' ? 'تحميل مجاني / زيارة الرابط' : 'Get / Free Download'}</span>
@@ -2693,7 +2591,7 @@ export const MarketplacePage: React.FC = () => {
                             <>
                               <button
                                 onClick={() => handleAddToCart(selectedProduct, selectedLicenseType)}
-                                className="w-full h-9 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/35 text-emerald-500 transition-theme font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                className="w-full h-9 rounded-lg bg-[var(--bg-hover)] border border-[var(--border-main)] text-[var(--text-primary)] transition-theme font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer hover:border-[var(--border-accent)]"
                               >
                                 <ShoppingCart size={12} />
                                 <span>{language === 'ar' ? 'إضافة إلى السلة' : 'Add to Shopping Cart'}</span>
@@ -2701,7 +2599,7 @@ export const MarketplacePage: React.FC = () => {
 
                               <button
                                 onClick={handleBuyWithWallet}
-                                className="w-full h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10"
+                                className="w-full h-9 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 transition-theme font-black text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer shadow-lg"
                               >
                                 <Wallet size={12} />
                                 <span>{t.buyWithBalance}</span>
@@ -2711,8 +2609,8 @@ export const MarketplacePage: React.FC = () => {
                                 onClick={handleBuyWithStripe}
                                 className={`w-full h-9 rounded-lg border transition-theme font-bold text-[10px] flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
                                   isThemeDark
-                                    ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
-                                    : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
+                                    ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-[var(--text-primary)] hover:border-[var(--border-accent)]'
+                                    : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-[var(--text-primary)] hover:border-[var(--border-accent)]'
                                 }`}
                               >
                                 <CreditCard size={12} />
@@ -2735,11 +2633,11 @@ export const MarketplacePage: React.FC = () => {
                                 }}
                                 className={`w-full h-9 rounded-lg border transition-theme font-bold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                                   isThemeDark
-                                    ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15'
-                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                    ? 'border-[var(--border-main)] bg-[var(--bg-hover)] text-[var(--text-primary)] hover:border-[var(--border-accent)]'
+                                    : 'border-[var(--border-main)] bg-[var(--bg-hover)] text-[var(--text-primary)] hover:border-[var(--border-accent)]'
                                 }`}
                               >
-                                <Gift size={12} className="text-emerald-400 animate-pulse" />
+                                <Gift size={12} className="text-[var(--text-primary)] animate-pulse" />
                                 <span>{language === 'ar' ? 'رابط الإحالة (عمولة 20٪)' : 'Referral Link (25% Earn)'}</span>
                               </button>
                             </>
@@ -2753,14 +2651,13 @@ export const MarketplacePage: React.FC = () => {
                 </div>
 
                 {/* Secondary Launcher Promo card banner */}
-                <div className="relative rounded-2xl overflow-hidden border border-emerald-500/10 bg-gradient-to-l from-emerald-500/5 via-[#0c0d10] to-[#0c0d10] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="absolute top-0 left-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-3xl -translate-x-8 -translate-y-8" />
+                <div className="relative rounded-2xl overflow-hidden border border-[var(--border-main)] bg-[var(--bg-hover)] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-start gap-3 relative z-10">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Rocket size={18} className="text-emerald-400" />
+                    <div className="w-10 h-10 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-main)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Rocket size={18} className="text-[var(--text-primary)]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black bg-gradient-to-l from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+                      <h4 className="text-xs font-black text-[var(--text-primary)]">
                         {t.ctaHeading}
                       </h4>
                       <p className="text-[9px] text-gray-400 mt-1 leading-relaxed max-w-lg">
@@ -2775,7 +2672,7 @@ export const MarketplacePage: React.FC = () => {
                         resetForm();
                         setIsCreateOpen(true);
                       }}
-                      className="flex-shrink-0 relative z-10 text-[9px] font-black bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2.5 rounded-lg transition-theme active:scale-95 flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
+                      className="flex-shrink-0 relative z-10 text-[9px] font-black bg-[var(--text-primary)] hover:opacity-90 text-[var(--bg-primary)] px-4 py-2.5 rounded-lg transition-theme active:scale-95 flex items-center gap-1 shadow-lg cursor-pointer"
                     >
                       <Plus size={10} />
                       <span>{t.ctaBtn}</span>
@@ -2794,13 +2691,10 @@ export const MarketplacePage: React.FC = () => {
         {isLightboxOpen && selectedProduct && (
           <div className="fixed inset-0 z-[150] flex flex-col bg-black/95 backdrop-blur-xl text-white select-none overflow-hidden font-sans">
             
-            {/* Soft background ambient gradient */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
-
             {/* Top Toolbar */}
             <div className="relative z-10 w-full h-16 border-b border-white/5 bg-black/40 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/15">
+                <span className="text-[10px] font-mono tracking-widest text-[var(--text-primary)] font-extrabold uppercase px-2 py-0.5 rounded bg-[var(--bg-hover)] border border-[var(--border-main)]">
                   {lightboxIndex + 1} / {getPreviewAssets(selectedProduct).length}
                 </span>
                 <div className="flex flex-col">
@@ -2821,14 +2715,14 @@ export const MarketplacePage: React.FC = () => {
                   <>
                     <button
                       onClick={() => setLightboxScale(prev => Math.min(prev + 0.25, 3))}
-                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)]"
                       title={language === 'ar' ? 'تكبير' : 'Zoom In'}
                     >
                       <Plus size={16} />
                     </button>
                     <button
                       onClick={() => setLightboxScale(prev => Math.max(prev - 0.25, 0.5))}
-                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)]"
                       title={language === 'ar' ? 'تصغير' : 'Zoom Out'}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2837,7 +2731,7 @@ export const MarketplacePage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setLightboxRotation(prev => (prev + 90) % 360)}
-                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)]"
                       title={language === 'ar' ? 'تدوير' : 'Rotate'}
                     >
                       <RefreshCw size={14} className="hover:animate-spin" />
@@ -2847,7 +2741,7 @@ export const MarketplacePage: React.FC = () => {
                         setLightboxScale(1);
                         setLightboxRotation(0);
                       }}
-                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                      className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)]"
                       title={language === 'ar' ? 'إعادة ضبط' : 'Reset View'}
                     >
                       <SlidersHorizontal size={14} />
@@ -2859,7 +2753,7 @@ export const MarketplacePage: React.FC = () => {
 
                 <button
                   onClick={() => setIsLightboxOpen(false)}
-                  className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                  className="bg-transparent border border-transparent transition-theme hover:bg-white/10 rounded-[4px] w-10 h-10 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)]"
                 >
                   <X size={18} />
                 </button>
@@ -2877,7 +2771,7 @@ export const MarketplacePage: React.FC = () => {
                   setLightboxScale(1);
                   setLightboxRotation(0);
                 }}
-                className="absolute left-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+                className="absolute left-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-[var(--border-accent)] transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)] animate-pulse"
               >
                 <ArrowLeft size={18} />
               </button>
@@ -2994,7 +2888,7 @@ export const MarketplacePage: React.FC = () => {
                   setLightboxScale(1);
                   setLightboxRotation(0);
                 }}
-                className="absolute right-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-emerald-500/30 transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse"
+                className="absolute right-4 z-20 bg-black/60 border border-white/5 hover:bg-black/80 hover:border-[var(--border-accent)] transition-theme rounded-[4px] w-12 h-12 flex items-center justify-center cursor-pointer text-gray-300 hover:text-[var(--text-primary)] animate-pulse"
               >
                 <ArrowRight size={18} />
               </button>
@@ -3017,19 +2911,19 @@ export const MarketplacePage: React.FC = () => {
                     }}
                     className={`relative h-14 w-20 rounded-lg overflow-hidden border cursor-pointer transition-theme flex-shrink-0 flex items-center justify-center ${
                       isActive 
-                        ? 'border-emerald-500 bg-emerald-500/10 scale-105 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                        ? 'border-[var(--border-accent)] bg-[var(--bg-hover)] scale-105' 
                         : 'border-white/5 opacity-50 hover:opacity-100'
                     }`}
                   >
                     {isPdf ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-red-950/20">
-                        <BookOpen size={14} className="text-red-400" />
-                        <span className="text-[6px] font-black text-red-400/80 uppercase mt-0.5">PDF</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-white/5">
+                        <BookOpen size={14} className="text-[var(--text-primary)]" />
+                        <span className="text-[6px] font-black text-[var(--text-primary)] uppercase mt-0.5">PDF</span>
                       </div>
                     ) : isWeb ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-purple-950/20">
-                        <Smartphone size={14} className="text-purple-400" />
-                        <span className="text-[6px] font-black text-purple-400/80 uppercase mt-0.5">WEB</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center p-1 bg-white/5">
+                        <Smartphone size={14} className="text-[var(--text-primary)]" />
+                        <span className="text-[6px] font-black text-[var(--text-primary)] uppercase mt-0.5">WEB</span>
                       </div>
                     ) : (
                       <img
@@ -3041,7 +2935,7 @@ export const MarketplacePage: React.FC = () => {
                     )}
 
                     {isActive && (
-                      <div className="absolute inset-0 border border-emerald-500/30 bg-emerald-500/5" />
+                      <div className="absolute inset-0 border border-[var(--border-accent)] bg-black/10" />
                     )}
                   </div>
                 );
@@ -3073,7 +2967,7 @@ export const MarketplacePage: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between border-b border-[var(--border-main)] dark:border-white/5 pb-3">
-                <h3 className="font-black text-xs text-emerald-400 flex items-center gap-1.5 select-none text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                <h3 className="font-black text-xs text-[var(--text-primary)] flex items-center gap-1.5 select-none">
                   <Grid size={13} />
                   <span>{editingProduct ? (language === 'ar' ? 'تعديل بيانات منتج السوق الأساسية' : 'Edit Base Marketplace Product Details') : t.insertModalTitle}</span>
                 </h3>
@@ -3089,7 +2983,7 @@ export const MarketplacePage: React.FC = () => {
 
               {submitSuccess ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <div className="w-12 h-12 rounded-full bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center">
                     <Check size={24} />
                   </div>
                   <h4 className="font-black text-xs">
@@ -3114,7 +3008,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemTitleAr(e.target.value)}
                         placeholder="الأكواد والربط البرمجي ERPv4"
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       />
                     </div>
@@ -3129,7 +3023,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemTitleEn(e.target.value)}
                         placeholder="ERP Integration Suite v4"
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       />
                     </div>
@@ -3144,7 +3038,7 @@ export const MarketplacePage: React.FC = () => {
                         value={itemCategory}
                         onChange={(e) => setItemCategory(e.target.value)}
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       >
                         {parents.map(p => (
@@ -3172,7 +3066,7 @@ export const MarketplacePage: React.FC = () => {
                           onChange={(e) => setItemPrice(e.target.value)}
                           placeholder="99"
                           className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                           }`}
                         />
                       </div>
@@ -3188,7 +3082,7 @@ export const MarketplacePage: React.FC = () => {
                           onChange={(e) => setItemDiscount(e.target.value)}
                           placeholder="0"
                           className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                           }`}
                         />
                       </div>
@@ -3196,8 +3090,8 @@ export const MarketplacePage: React.FC = () => {
                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
                           {language === 'ar' ? 'النهائي' : 'Final'}
                         </label>
-                        <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
-                          isThemeDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/20 border-emerald-500/10'
+                        <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-[var(--text-primary)] select-none ${
+                          isThemeDark ? 'bg-[var(--bg-hover)] border-[var(--border-main)]' : 'bg-gray-50 border-gray-200'
                         }`}>
                           ${Math.round((Number(itemPrice) || 0) * (1 - (Number(itemDiscount) || 0) / 100))}
                         </div>
@@ -3207,10 +3101,10 @@ export const MarketplacePage: React.FC = () => {
 
                   {/* Immersive Affiliate & Referral Configuration */}
                   <div className={`p-4 border rounded-[4px] space-y-3 ${
-                    isThemeDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                    isThemeDark ? 'bg-[var(--bg-hover)] border-[var(--border-main)]' : 'bg-gray-50 border-gray-200'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                      <h4 className="text-xs font-black text-[var(--text-primary)] select-none flex items-center gap-1.5">
                         <Share2 size={13} />
                         <span>{language === 'ar' ? 'نظام التسويق بالعمولة (الإحالة)' : 'Affiliate & Referral Settings'}</span>
                       </h4>
@@ -3233,7 +3127,7 @@ export const MarketplacePage: React.FC = () => {
                             onChange={(e) => setItemReferralPercent(e.target.value)}
                             placeholder="20"
                             className={`w-full h-10 pl-3 pr-8 border rounded-[4px] outline-none text-xs ${
-                              isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                              isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                             }`}
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400 select-none">%</span>
@@ -3244,7 +3138,7 @@ export const MarketplacePage: React.FC = () => {
                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
                           {language === 'ar' ? 'قيمة عمولة المنتج لكل عملية بيع' : 'Referral Commission Value'}
                         </label>
-                        <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
+                        <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-[var(--text-primary)] select-none ${
                           isThemeDark ? 'bg-black/60 border-white/5' : 'bg-gray-50 border-gray-200'
                         }`}>
                           ${Math.round((Number(itemPrice) || 0) * (1 - (Number(itemDiscount) || 0) / 100) * (Number(itemReferralPercent) || 0) / 100 * 100) / 100}
@@ -3255,10 +3149,10 @@ export const MarketplacePage: React.FC = () => {
 
                   {/* Highlights and Licensing Setup */}
                   <div className={`p-4 border rounded-[4px] space-y-3 ${
-                    isThemeDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                    isThemeDark ? 'bg-[var(--bg-hover)] border-[var(--border-main)]' : 'bg-gray-50 border-gray-200'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                      <h4 className="text-xs font-black text-[var(--text-primary)] select-none flex items-center gap-1.5">
                         <Award size={13} />
                         <span>{language === 'ar' ? 'التمييز وتراخيص الاستخدام' : 'Highlight Tag & License Type'}</span>
                       </h4>
@@ -3274,7 +3168,7 @@ export const MarketplacePage: React.FC = () => {
                           value={itemHighlightTag}
                           onChange={(e) => setItemHighlightTag(e.target.value)}
                           className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                           }`}
                         >
                           <option value="">{language === 'ar' ? 'بدون تمييز' : 'No Highlight'}</option>
@@ -3295,7 +3189,7 @@ export const MarketplacePage: React.FC = () => {
                           value={itemLicenseType}
                           onChange={(e) => setItemLicenseType(e.target.value)}
                           className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                           }`}
                         >
                           <option value="mit">MIT License</option>
@@ -3319,7 +3213,7 @@ export const MarketplacePage: React.FC = () => {
                       
                       {/* Grid of uploaded images */}
                       {itemImages.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 p-2 rounded-lg border border-emerald-500/10 bg-emerald-500/[0.01] max-h-[140px] overflow-y-auto mb-1.5 animate-fade-in">
+                        <div className="grid grid-cols-3 gap-2 p-2 rounded-lg border border-[var(--border-main)] bg-[var(--bg-hover)] max-h-[140px] overflow-y-auto mb-1.5 animate-fade-in">
                           {itemImages.map((img, idx) => (
                             <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-gray-200/50 dark:border-white/10 group shadow-sm shrink-0">
                               <img src={getMediaUrl(img)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
@@ -3330,7 +3224,7 @@ export const MarketplacePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setItemImages(prev => prev.filter((_, i) => i !== idx))}
-                                  className="w-5 h-5 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center transition-theme cursor-pointer shadow"
+                                  className="w-5 h-5 bg-gray-800 hover:bg-gray-900 text-white rounded-full flex items-center justify-center transition-theme cursor-pointer shadow"
                                   title={language === 'ar' ? 'حذف الصورة' : 'Delete photo'}
                                 >
                                   <X size={10} />
@@ -3342,20 +3236,20 @@ export const MarketplacePage: React.FC = () => {
                       )}
 
                       <label className={`flex flex-col items-center justify-center w-full h-[76px] border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
-                        isThemeDark ? 'border-white/10 hover:border-emerald-500/30 hover:bg-white/5' : 'border-gray-200 hover:border-emerald-500/35 hover:bg-gray-50'
+                        isThemeDark ? 'border-white/10 hover:border-[var(--border-accent)] hover:bg-white/5' : 'border-gray-200 hover:border-[var(--border-accent)] hover:bg-gray-50'
                       }`}>
                         <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
                         
                         {uploadingImage ? (
                           <div className="flex flex-col items-center gap-1">
-                            <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                            <p className="text-[7.5px] font-bold text-emerald-400">
+                            <div className="w-4 h-4 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
+                            <p className="text-[7.5px] font-bold text-[var(--text-primary)]">
                               {language === 'ar' ? 'جاري رفع الصور...' : 'Uploading...'}
                             </p>
                           </div>
                         ) : (
                           <div className="text-center select-none text-gray-500">
-                            <Upload className="w-4 h-4 mx-auto mb-0.5 opacity-50 text-emerald-500" />
+                            <Upload className="w-4 h-4 mx-auto mb-0.5 opacity-50 text-[var(--text-primary)]" />
                             <p className="text-[8px] font-bold">
                               {language === 'ar' ? 'انقر لرفع صور المنتج' : 'Click to Upload Product Images'}
                             </p>
@@ -3365,7 +3259,7 @@ export const MarketplacePage: React.FC = () => {
                           </div>
                         )}
                       </label>
-                      {uploadError && <p className="text-[8px] text-red-500 mt-1">{uploadError}</p>}
+                      {uploadError && <p className="text-[8px] text-gray-400 mt-1">{uploadError}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -3433,7 +3327,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemDescAr(e.target.value)}
                         placeholder="شرح موجز لخصائص برمجيتك أو منصتك وما تقدمه..."
                         className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       />
                     </div>
@@ -3446,7 +3340,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemDescEn(e.target.value)}
                         placeholder="A concise summary detailing the core architecture and value preposition..."
                         className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/35' : 'bg-white border-gray-250 focus:border-emerald-500/35'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       />
                     </div>
@@ -3467,10 +3361,10 @@ export const MarketplacePage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={submitting || uploadingImage}
-                      className="px-5 h-10 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+                      className="px-5 h-10 bg-[var(--text-primary)] hover:opacity-90 disabled:opacity-50 text-[var(--bg-primary)] font-extrabold text-xs rounded-[4px] transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                     >
                       {submitting ? (
-                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       ) : (
                         editingProduct ? (language === 'ar' ? 'حفظ التغييرات' : 'Save Changes') : t.publishBtn
                       )}
@@ -3511,8 +3405,8 @@ export const MarketplacePage: React.FC = () => {
               {/* Header */}
               <div className="p-5 border-b border-[var(--border-main)] dark:border-white/5 flex items-center justify-between select-none">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-[4px] bg-emerald-500/10 text-emerald-500">
-                    <ShoppingCart size={18} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <div className="p-2 rounded-[4px] bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)]">
+                    <ShoppingCart size={18} />
                   </div>
                   <div>
                     <h3 className="text-sm font-black tracking-tight select-none">
@@ -3542,7 +3436,7 @@ export const MarketplacePage: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 select-none">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/5 border border-dashed border-emerald-500/10 flex items-center justify-center text-gray-500">
+                    <div className="w-16 h-16 rounded-full bg-[var(--bg-hover)] border border-[var(--border-main)] flex items-center justify-center text-gray-500">
                       <ShoppingCart size={24} className="opacity-40" />
                     </div>
                     <div className="space-y-1">
@@ -3579,24 +3473,24 @@ export const MarketplacePage: React.FC = () => {
                           </h4>
                           <button
                             onClick={() => handleRemoveFromCart(item.id)}
-                            className="p-1 rounded-[4px] hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 transition-colors shrink-0 -mt-0.5 cursor-pointer"
+                            className="p-1 rounded-[4px] hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 -mt-0.5 cursor-pointer"
                             title={language === 'ar' ? 'إزالة' : 'Remove'}
                           >
                             <Trash2 size={12} />
                           </button>
                         </div>
 
-                        <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">
+                        <p className="text-[9px] text-[var(--text-primary)] font-bold uppercase tracking-wider mt-0.5">
                           {item.licenseType === 'mit' ? 'MIT' : item.licenseType === 'apache_2' ? 'Apache 2.0' : item.licenseType === 'gpl_3' ? 'GNU GPL v3' : item.licenseType === 'bsd_3' ? 'BSD 3' : item.licenseType === 'cc_by_sa' ? 'CC BY-SA 4.0' : item.licenseType === 'commercial_standard' ? (language === 'ar' ? 'تجاري قياسي' : 'Proprietary Commercial Standard') : (language === 'ar' ? 'تجاري ممتد / مكرر' : 'Proprietary Commercial Extended')}
                         </p>
 
                         <div className="flex items-center justify-between mt-2.5">
                           {/* Price Display */}
-                          <span className="text-[11px] font-black font-sans text-emerald-400">
+                          <span className="text-[11px] font-black font-sans text-[var(--text-primary)]">
                             {item.price <= 0 ? (language === 'ar' ? 'مجانًا' : 'FREE') : `$${item.price.toLocaleString()}`}
                           </span>
 
-                          <span className="text-[9px] text-purple-400 font-bold font-sans">
+                          <span className="text-[9px] text-gray-400 font-bold font-sans">
                             {item.price <= 0 ? '' : `${(item.price * 10).toLocaleString()} ${language === 'ar' ? 'نقطة رصيد' : 'Points'}`}
                           </span>
                         </div>
@@ -3612,14 +3506,14 @@ export const MarketplacePage: React.FC = () => {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between select-none">
                       <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{language === 'ar' ? 'المجموع الكلي' : 'Grand Total'}</span>
-                      <span className="text-base font-black font-sans text-emerald-400">
+                      <span className="text-base font-black font-sans text-[var(--text-primary)]">
                         ${cart.reduce((sum, item) => sum + item.price, 0).toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between select-none">
                       <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{language === 'ar' ? 'القيمة الإجمالية بالنقاط' : 'Grand Total Points'}</span>
-                      <span className="text-xs font-black font-sans text-purple-400">
+                      <span className="text-xs font-black font-sans text-gray-400">
                         {(cart.reduce((sum, item) => sum + item.price, 0) * 10).toLocaleString()} {language === 'ar' ? 'نقطة' : 'Points'}
                       </span>
                     </div>
@@ -3629,19 +3523,19 @@ export const MarketplacePage: React.FC = () => {
 
                   {buyingProgress === 'purchasing' ? (
                     <div className="flex flex-col items-center justify-center py-4 text-center space-y-2 select-none">
-                      <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
                       <span className="text-[10px] text-gray-400 font-bold animate-pulse">{t.purchaseProgress}</span>
                     </div>
                   ) : buyingProgress === 'success' ? (
-                    <div className="flex flex-col items-center justify-center py-4 text-center text-emerald-400 space-y-1.5 select-none">
+                    <div className="flex flex-col items-center justify-center py-4 text-center text-[var(--text-primary)] space-y-1.5 select-none">
                       <Check size={20} className="animate-bounce" />
                       <span className="text-[10px] font-black">{language === 'ar' ? 'تهانينا! تم شراء المنتجات بنجاح!' : 'Congratulations! All items purchased successfully!'}</span>
                     </div>
                   ) : buyingProgress === 'insufficient' ? (
                     <div className="space-y-3">
                       <div className="flex items-start gap-1 pb-1">
-                        <AlertCircle size={14} className="text-rose-500 shrink-0 mt-0.5" />
-                        <span className="text-[10px] text-rose-400 font-black leading-normal">{t.insufficientHeadline}</span>
+                        <AlertCircle size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                        <span className="text-[10px] text-gray-300 font-black leading-normal">{t.insufficientHeadline}</span>
                       </div>
                       <p className="text-[9px] text-gray-500 leading-relaxed">{t.insufficientBody}</p>
                       <button
@@ -3655,7 +3549,7 @@ export const MarketplacePage: React.FC = () => {
                     <div className="space-y-2">
                       <button
                         onClick={handleCartCheckoutWithWallet}
-                        className="w-full h-10 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/10 transition-theme"
+                        className="w-full h-10 rounded-[4px] bg-[var(--text-primary)] hover:opacity-90 text-[var(--bg-primary)] font-extrabold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer transition-theme"
                       >
                         <Wallet size={14} />
                         <span>{language === 'ar' ? 'شراء كافة المنتجات بالرصيد المحفظة' : 'Buy Cart with Wallet Balance'}</span>
@@ -3665,8 +3559,8 @@ export const MarketplacePage: React.FC = () => {
                         onClick={handleCartCheckoutWithStripe}
                         className={`w-full h-10 rounded-[4px] border transition-theme font-bold text-[11px] flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                           isThemeDark
-                            ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-emerald-400 hover:border-emerald-500/30'
-                            : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-500/30'
+                            ? 'border-white/5 bg-[#141416] hover:bg-[#1a1a1c] text-white hover:text-[var(--text-primary)] hover:border-[var(--border-accent)]'
+                            : 'border-gray-250 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400'
                         }`}
                       >
                         <CreditCard size={14} />
@@ -3702,7 +3596,7 @@ export const MarketplacePage: React.FC = () => {
                   setShowAdPopup(false);
                   localStorage.setItem('hide_marketplace_ad', 'true');
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
+                className="absolute top-4 right-4 text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
               >
                 <X size={16} />
               </button>
@@ -3710,14 +3604,14 @@ export const MarketplacePage: React.FC = () => {
               <div className="flex flex-col gap-4">
                 {/* Promo Badge */}
                 <div className="flex items-center gap-2">
-                  <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
+                  <span className="bg-[var(--bg-hover)] border border-[var(--border-main)] text-[var(--text-primary)] text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
                     {language === 'ar' ? 'عرض الماركت بليس' : 'Marketplace Special'}
                   </span>
                   <div className="h-px flex-1 bg-[var(--border-main)]/50" />
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <div className="w-12 h-12 rounded-lg bg-[var(--bg-hover)] border border-[var(--border-main)] flex items-center justify-center shrink-0 text-[var(--text-primary)]">
                     <Gift size={24} />
                   </div>
                   <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
@@ -3748,7 +3642,7 @@ export const MarketplacePage: React.FC = () => {
                       localStorage.setItem('hide_marketplace_ad', 'true');
                       navigate('/subscription');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-90 transition-theme flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>{language === 'ar' ? 'استفد من الخصم' : 'Claim Offer'}</span>
                     <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />

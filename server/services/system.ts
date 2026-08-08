@@ -2,6 +2,7 @@ import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
 import { getEconomySettings, updateEconomySettings } from './wallet.js';
 import { getCachedSystemSettings, invalidateSystemSettingsCache } from '../db/queries.js';
+import { normalizeMediaUrl } from './mediaOptimizationService.js';
 
 export { getEconomySettings, updateEconomySettings };
 
@@ -163,16 +164,16 @@ export async function updateSystemSettings(settings: any) {
 
   // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
-    ? settings.logo_url 
+    ? normalizeMediaUrl(settings.logo_url) 
     : existing.logo_url;
   const logo_light_url = (settings.logo_light_url !== undefined && settings.logo_light_url !== null && settings.logo_light_url !== '') 
-    ? settings.logo_light_url 
+    ? normalizeMediaUrl(settings.logo_light_url) 
     : existing.logo_light_url;
   const favicon_url = (settings.favicon_url !== undefined && settings.favicon_url !== null && settings.favicon_url !== '') 
-    ? settings.favicon_url 
+    ? normalizeMediaUrl(settings.favicon_url) 
     : existing.favicon_url;
   const seo_image_url = (settings.seo_image_url !== undefined && settings.seo_image_url !== null && settings.seo_image_url !== '') 
-    ? settings.seo_image_url 
+    ? normalizeMediaUrl(settings.seo_image_url) 
     : existing.seo_image_url;
   
   await pool.query(`

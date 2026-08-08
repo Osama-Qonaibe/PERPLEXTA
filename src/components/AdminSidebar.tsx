@@ -44,7 +44,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
     <aside 
       className={`fixed top-[72px] bottom-0 h-[calc(100dvh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
         dir === 'rtl' ? 'right-0 border-l' : 'left-0 border-r'
-      } translate-x-0 visible transition-colors duration-[var(--theme-transition-duration)]`}
+      } translate-x-0 visible transition-colors`}
       style={{ width: isMobile ? '68%' : '240px', maxWidth: isMobile ? '260px' : 'none' }}
     >
         <nav className="flex-1 px-3 space-y-1 pt-[25px] overflow-y-auto custom-scrollbar scroll-smooth">
@@ -53,7 +53,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
               key={index}
               to={item.path}
               className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme duration-[var(--theme-transition-duration)] border border-transparent ${
+              `group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
                 isActive
                   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
@@ -62,14 +62,14 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
             >
               {({ isActive }) => (
                 <>
-                  <div className={`transition-theme duration-[var(--theme-transition-duration)] ${
+                  <div className={`transition-theme ${
                     isActive 
                       ? 'text-emerald-500' 
                       : 'text-[var(--text-muted)] group-hover:text-emerald-500'
                   }`}>
                     {item.icon}
                   </div>
-                  <span className={`font-medium text-sm transition-colors duration-[var(--theme-transition-duration)] ${isActive ? 'text-emerald-500' : ''}`}>
+                  <span className={`font-medium text-sm transition-colors ${isActive ? 'text-emerald-500' : ''}`}>
                     {item.label}
                   </span>
                 </>
@@ -79,18 +79,18 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
         </nav>
 
         {/* Bottom Navigation Lock */}
-        <div className="p-4 border-t border-[var(--border)] mt-auto transition-colors duration-[var(--theme-transition-duration)]">
+        <div className="p-4 border-t border-[var(--border)] mt-auto transition-colors">
           <NavLink 
             to="/"
-            className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-theme duration-[var(--theme-transition-duration)] border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-emerald-500/30 shadow-sm hover:shadow-md"
+            className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-theme border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-emerald-500/30 shadow-sm hover:shadow-md"
           >
             <div className="flex items-center gap-3">
-              <div className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme duration-[var(--theme-transition-duration)]">
+              <div className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme">
                 <ArrowRight size={18} className={dir === 'rtl' ? 'rotate-180' : ''} />
               </div>
-              <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors duration-[var(--theme-transition-duration)]">{t('home')}</span>
+              <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">{t('home')}</span>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-theme duration-[var(--theme-transition-duration)]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-theme"></div>
           </NavLink>
         </div>
       </aside>

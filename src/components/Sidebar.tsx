@@ -2,7 +2,7 @@ import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeS
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Download, Loader2, Smartphone, Activity, ShoppingBag, MoreHorizontal, Sparkles, Megaphone, LayoutGrid } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, Megaphone, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { SkeletonLoader } from './SkeletonLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
@@ -27,10 +27,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     siteSettings, 
     token, 
     plans, 
-    isMobile, 
-    isStandalone,
-    deferredPrompt,
-    installApp
+    isMobile
   } = useAppContext();
   
   const language = activeLanguage || globalLang;
@@ -378,7 +375,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                                 transition={sidebarTransition}
                                 className={`font-bold text-sm whitespace-nowrap transition-theme ${
-                                  active ? 'text-emerald-500 font-bold' : 'text-gray-400 group-hover:text-emerald-500'
+                                  active ? 'text-emerald-500 font-bold' : 'text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                                 } ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
                               >
                                 {item.label}
@@ -480,10 +477,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     size={isMobile ? 16 : 16} 
                                     className={`relative z-10 transition-theme ${
                                       isActive 
-                                        ? 'text-emerald-500' 
+                                        ? 'text-[var(--text-primary)]' 
                                         : streamingChatId === chat.id 
-                                          ? 'text-emerald-500 animate-pulse' 
-                                          : 'text-gray-400 group-hover:text-emerald-500'
+                                          ? 'text-[var(--text-primary)] animate-pulse' 
+                                          : 'text-gray-400 group-hover:text-[var(--text-primary)]'
                                     }`} 
                                   />
                                 </div>
@@ -496,10 +493,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                       transition={sidebarTransition}
                                       className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
                                         isActive 
-                                          ? 'text-emerald-500 font-extrabold' 
+                                          ? 'text-[var(--text-primary)] font-extrabold' 
                                           : streamingChatId === chat.id 
-                                            ? 'text-emerald-500 font-extrabold' 
-                                            : 'text-gray-400 group-hover:text-emerald-500'
+                                            ? 'text-[var(--text-primary)] font-extrabold' 
+                                            : 'text-gray-400 group-hover:text-[var(--text-primary)]'
                                       }`}
                                     >
                                       {chat.title}
@@ -525,8 +522,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                         }}
                                         className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
                                           activeOptionsMenuChatId === chat.id 
-                                            ? 'bg-gray-50 dark:bg-gray-800 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
-                                            : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800/80'
+                                            ? 'bg-gray-50 dark:bg-gray-800 text-[var(--text-primary)]' 
+                                            : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/80'
                                         }`}
                                         title={language === 'ar' ? 'خيارات' : 'Options'}
                                       >
@@ -556,8 +553,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                               }}
                                               className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
                                                 theme === 'dark' 
-                                                  ? 'text-gray-300 hover:bg-gray-800 hover:text-emerald-400' 
-                                                  : 'text-gray-700 hover:bg-gray-100 hover:text-emerald-500'
+                                                  ? 'text-gray-300 hover:bg-gray-800 hover:text-[var(--text-primary)]' 
+                                                  : 'text-gray-700 hover:bg-gray-100 hover:text-[var(--text-primary)]'
                                               }`}
                                             >
                                               <Edit2 size={12} className="text-gray-400" />
@@ -573,11 +570,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                               }}
                                               className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
                                                 theme === 'dark' 
-                                                  ? 'text-red-405 hover:bg-red-500/10 hover:text-red-400' 
-                                                  : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                                                  ? 'text-[var(--text-primary)] hover:bg-gray-800' 
+                                                  : 'text-[var(--text-primary)] hover:bg-gray-100'
                                               }`}
                                             >
-                                              <Trash2 size={12} className={theme === 'dark' ? 'text-red-400' : 'text-red-500'} />
+                                              <Trash2 size={12} className="text-[var(--text-primary)]" />
                                               <span>{language === 'ar' ? 'حذف' : 'Delete'}</span>
                                             </button>
                                           </motion.div>
@@ -589,7 +586,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               </AnimatePresence>
                               {/* Left or Right indicator bar for active item */}
                               {isActive && (
-                                <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 ${
+                                <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-[var(--text-primary)] ${
                                   dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
                                 }`} />
                               )}
@@ -605,7 +602,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10 flex flex-col transition-theme`}>
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <BrainCircuit size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] flex-shrink-0" />
+                        <BrainCircuit size={14} className="text-[var(--text-primary)] flex-shrink-0" />
                         <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate font-sans">
                           {language === 'ar' ? 'ملخص السياق النشط' : 'Context Summary'}
                         </span>
@@ -614,7 +611,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {!isEditingContext && (
                           <button
                             onClick={() => setIsEditingContext(true)}
-                            className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme"
+                            className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme"
                             title={language === 'ar' ? 'تعديل المعرفة' : 'Edit Context'}
                           >
                             <Edit2 size={11} />
@@ -622,7 +619,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         )}
                         <button
                           onClick={() => setIsContextCollapsed(!isContextCollapsed)}
-                          className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-emerald-500 hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme transform ${isContextCollapsed ? 'rotate-180' : ''}`}
+                          className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme transform ${isContextCollapsed ? 'rotate-180' : ''}`}
                         >
                           <ChevronLeft size={12} className="rotate-270" style={{ transform: isContextCollapsed ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
                         </button>
@@ -642,7 +639,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               <textarea
                                 value={editedContext}
                                 onChange={(e) => setEditedContext(e.target.value)}
-                                className="w-full h-24 text-[11px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-emerald-500/20 focus:border-emerald-500/40 outline-none resize-none transition-theme"
+                                className="w-full h-24 text-[11px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-main)] focus:border-[var(--border-accent)] outline-none resize-none transition-theme"
                                 placeholder={language === 'ar' ? 'اكتب سياق المعرفة هنا...' : 'Type active context summary here...'}
                                 disabled={isSavingContext}
                                 autoFocus
@@ -654,7 +651,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     setEditedContext(currentChat?.context_summary || '');
                                   }}
                                   disabled={isSavingContext}
-                                  className="text-[10px] text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1"
+                                  className="text-[10px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-800 transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1"
                                 >
                                   <X size={10} />
                                   {language === 'ar' ? 'إلغاء' : 'Cancel'}
@@ -662,7 +659,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 <button
                                   onClick={handleSaveContext}
                                   disabled={isSavingContext}
-                                  className="text-[10px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold"
+                                  className="text-[10px] text-[var(--text-primary)] bg-[var(--bg-hover)] border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold"
                                 >
                                   {isSavingContext ? (
                                     <Loader2 size={10} className="animate-spin" />
@@ -689,7 +686,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               {!editedContext && (
                                 <button
                                   onClick={() => setIsEditingContext(true)}
-                                  className="self-start text-[9px] font-bold text-emerald-500 hover:text-emerald-400 transition-theme flex items-center gap-1 mt-1"
+                                  className="self-start text-[9px] font-bold text-[var(--text-primary)] hover:opacity-80 transition-theme flex items-center gap-1 mt-1"
                                 >
                                   <Plus size={10} />
                                   {language === 'ar' ? 'إضافة ملخص يدوي' : 'Add summary manually'}
@@ -724,9 +721,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`p-2 ${isMobile ? 'space-y-1.5' : 'space-y-1'}`}>
                           <button 
                             onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
                           >
-                            <User size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-theme" />
+                            <User size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -744,9 +741,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
                           >
-                            <Activity size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-theme" />
+                            <Activity size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -766,9 +763,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=wallet'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
                           >
-                            <Wallet size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-theme" />
+                            <Wallet size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -786,9 +783,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=marketplace_purchases'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
                           >
-                            <ShoppingBag size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-theme" />
+                            <ShoppingBag size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -806,9 +803,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-850 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-850 group/item`}
                           >
-                            <BrainCircuit size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-emerald-500 group-hover/item:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400 transition-theme" />
+                            <BrainCircuit size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -826,7 +823,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                            <button 
                              onClick={() => { logout(); setIsDropdownOpen(false); }} 
-                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-pink-500 hover:bg-pink-500/10 transition-theme`}
+                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-800 transition-theme`}
                            >
                             <LogOut size={isMobile ? 16 : 16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -849,13 +846,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </AnimatePresence>
                     <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-theme`}
+                      className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme`}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className={`${isMobile ? 'w-8' : 'w-[80px]'} ${isMobile ? 'h-[44px]' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-emerald-500/5 group-hover:border-emerald-500/20`} />
+                          <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]`} />
                           <div 
-                            className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-emerald-500/50 shadow-[0_0_15px_rgba(0,0,0,0.1)] group-hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-105`}
+                            className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-[var(--border-accent)] shadow-sm group-hover:scale-105`}
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'var(--border)'
                             }}
@@ -863,13 +860,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             {user.avatar ? (
                               <img src={resolveImageUrl(user.avatar, 'avatar')} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <User size={isMobile ? 18 : 20} className="text-gray-400 group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                              <User size={isMobile ? 18 : 20} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-theme ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                             <span 
                               className="text-[8px] font-black uppercase tracking-tighter leading-none whitespace-nowrap drop-shadow-[0_0_5px_rgba(0,0,0,0.2)]"
-                              style={{ color: user.subscription?.plan_color || '#10b981' }}
+                              style={{ color: user.subscription?.plan_color || 'var(--text-primary)' }}
                             >
                               {user.subscription?.plan_name_en || ''}
                             </span>
@@ -886,7 +883,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                             >
                               <span className={`font-bold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap leading-tight text-[var(--text-primary)] transition-theme`}>{user.name}</span>
-                              <span className={`text-[10px] text-emerald-500/80 truncate whitespace-nowrap uppercase tracking-widest font-black leading-tight mt-0.5`}>
+                              <span className={`text-[10px] text-[var(--text-secondary)] truncate whitespace-nowrap uppercase tracking-widest font-black leading-tight mt-0.5`}>
                                 {t(`role_${(user.role || 'user').toLowerCase()}`) || (user.subscription?.plan_id 
                                   ? (plans.find((p: any) => p.id.toString() === user.subscription?.plan_id.toString())?.name || t('activePlan'))
                                   : t('noPlan'))}
@@ -903,7 +900,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 </>
               ) : (
                   <div 
-                    className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-emerald-500 transition-theme`}
+                    className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme`}
                     onClick={() => {
                       setIsAuthModalOpen(true);
                       if (isMobile) {
@@ -913,8 +910,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   >
                     <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                       <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
-                      <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-emerald-500/30 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]`}>
-                        <User size={isMobile ? 16 : 18} className="text-gray-400 group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                      <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]`}>
+                        <User size={isMobile ? 16 : 18} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                       </div>
                     </div>
                     <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-2' : 'pl-2'} justify-center`}>
@@ -928,7 +925,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                           >
                             <span className="text-[10px] text-gray-500 truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
-                            <span className={`font-bold text-sm truncate whitespace-nowrap text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme`}>{t('login')}</span>
+                            <span className={`font-bold text-sm truncate whitespace-nowrap text-gray-400 group-hover:text-[var(--text-primary)] transition-theme`}>{t('login')}</span>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -949,15 +946,15 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       transition={sidebarTransition}
                       className={`flex items-center ${isMobile ? 'justify-start gap-1.5' : 'justify-between gap-1'} opacity-35 hover:opacity-100 transition-theme pointer-events-auto w-full`}
                     >
-                      <NavLink to="/terms" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/terms" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {t('termsOfUse')}
                       </NavLink>
                       {!isMobile && <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />}
-                      <NavLink to="/privacy" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/privacy" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {t('privacyPolicy')}
                       </NavLink>
                       {!isMobile && <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />}
-                      <NavLink to="/about" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-emerald-500 transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/about" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
                         {language === 'ar' ? 'عن المنصة' : 'About'}
                       </NavLink>
                     </motion.div>
@@ -1001,7 +998,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   : 'bg-white border-gray-150 text-gray-900'
               }`}
             >
-              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400">
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-[var(--text-primary)]">
                 {language === 'ar' ? 'حذف الجلسة؟' : 'Delete session?'}
               </h3>
               
@@ -1036,7 +1033,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     await handleDelete(e, deletingChatConfirmId);
                     setDeletingChatConfirmId(null);
                   }}
-                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[var(--text-primary)] hover:opacity-90 text-[var(--bg-primary)] rounded-[4px] font-sans transition-theme"
                 >
                   {language === 'ar' ? 'حذف' : 'Delete'}
                 </button>
@@ -1070,7 +1067,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   : 'bg-white border-gray-150 text-gray-900'
               }`}
             >
-              <h3 className="text-base font-bold tracking-tight font-sans text-start text-emerald-500 dark:text-emerald-400">
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-[var(--text-primary)]">
                 {language === 'ar' ? 'إعادة تسمية الجلسة؟' : 'Rename session?'}
               </h3>
               
@@ -1091,8 +1088,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   }}
                   className={`w-full px-3 py-2 text-xs font-semibold leading-relaxed text-start border rounded-lg outline-none transition-theme ${
                     theme === 'dark' 
-                      ? 'bg-[#212124] border-[#2d2d31] text-gray-100 focus:border-emerald-500/50 focus:shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.1)]'
+                      ? 'bg-[#212124] border-[#2d2d31] text-gray-100 focus:border-[var(--border-accent)]' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-[var(--border-accent)]'
                   }`}
                   autoFocus
                   placeholder={language === 'ar' ? 'اسم الجلسة...' : 'Session name...'}
@@ -1120,7 +1117,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       await handleRename(editingChatId);
                     }
                   }}
-                  className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[var(--text-primary)] hover:opacity-90 disabled:opacity-50 text-[var(--bg-primary)] rounded-[4px] font-sans transition-theme"
                 >
                   {language === 'ar' ? 'حفظ' : 'Save'}
                 </button>

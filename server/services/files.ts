@@ -19,11 +19,29 @@ export async function saveFileMetadata(userId: string, data: {
   metadata: any;
 }) {
   if (!pool) throw new Error('Database initializing');
-  const result = await pool.query(
-    `INSERT INTO user_files (user_id, file_name, file_url, file_size, mime_type, file_type, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [userId, data.file_name, data.file_url, data.file_size, data.mime_type, data.file_type, JSON.stringify(data.metadata)]
+
+  const existing = await pool.query(
+    'SELECT id, file_version FROM user_files WHERE user_id = $1 AND file_url = $2 LIMIT 1',
+    [userId, data.file_url]
   );
+
+  let result;
+  if (existing.rows.length > 0) {
+    const newVersion = (existing.rows[0].file_version || 1) + 1;
+    result = await pool.query(
+      `UPDATE user_files 
+       SET file_name = $1, file_size = $2, mime_type = $3, file_type = $4, metadata = $5, file_version = $6, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $7 AND file_url = $8 RETURNING *`,
+      [data.file_name, data.file_size, data.mime_type, data.file_type, JSON.stringify(data.metadata), newVersion, userId, data.file_url]
+    );
+  } else {
+    result = await pool.query(
+      `INSERT INTO user_files (user_id, file_name, file_url, file_size, mime_type, file_type, metadata, file_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 1) RETURNING *`,
+      [userId, data.file_name, data.file_url, data.file_size, data.mime_type, data.file_type, JSON.stringify(data.metadata)]
+    );
+  }
+
   triggerFileCacheInvalidation(data.file_url);
   return result.rows[0];
 }

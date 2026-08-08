@@ -9,10 +9,13 @@ import { runDatabaseMigrations } from '../db/migrations.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
+import { createNotification, logSystemActivity } from '../services/notifications.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
 import { getSystemSettings, updateSystemSettings } from '../services/system.js';
 import { isSafeHost } from '../utils/helpers.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { uploadValidator } from '../middleware/uploadValidator.js';
+import { optimizeUploadedImage, normalizeMediaUrl } from '../services/mediaOptimizationService.js';
 import { authLimiter, adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
@@ -25,7 +28,16 @@ import {
   getAdminStats,
   getServerHealth
 } from '../services/admin.js';
-import { invalidateRouteSeoCache } from '../db/queries.js';
+import { 
+  invalidateRouteSeoCache, 
+  invalidateSystemSettingsCache, 
+  invalidateEconomySettingsCache, 
+  invalidateOrchestratorConfigCache, 
+  invalidatePlansCache, 
+  invalidateApiKeysVaultCache 
+} from '../db/queries.js';
+import { invalidateFilePermissionCache } from '../services/filePermissionCache.js';
+import { io } from '../config/socket.js';
 
 const router = express.Router();
 router.use(adminLimiter);
@@ -86,10 +98,7 @@ router.use((req, res, next) => {
 
 async function auditLog(userId: any, action: string, type: string, details: object, req?: any) {
   try {
-    await pool.query(
-      'INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)',
-      [userId, action, type, JSON.stringify(details)]
-    );
+    await logSystemActivity(userId, action, type, details, req);
 
     const secPool = getSecurityPool();
     if (secPool) {
@@ -1014,48 +1023,20 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
     const broadcastId = result.rows[0].id;
 
     (async () => {
-      let successCount = 0;
-      let failCount = 0;
       try {
-        for (const user of targetUsers) {
-          try {
-            const userLang = (user.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
-            const subject = userLang === 'ar' ? (title_ar || title_en) : title_en;
-            const body = userLang === 'ar' ? (content_ar || content_en) : content_en;
-
-            if (finalType === 'notification' || finalType === 'both') {
-              await pool.query(`
-                INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
-                VALUES ($1, $2, $3, $4, $5, $6)
-              `, [
-                user.id, 
-                title_en, 
-                title_ar || '', 
-                content_en, 
-                content_ar || '', 
-                'broadcast'
-              ]).catch((e: any) => console.error('[Broadcast Background] Notification failed:', e));
-            }
-
-            if (finalType === 'email' || finalType === 'both') {
-              const mailRes = await sendEmail(user.email, subject, body, adminId);
-              if (mailRes.success) {
-                successCount++;
-              } else {
-                failCount++;
-              }
-            } else {
-              successCount++;
-            }
-          } catch (itemErr: any) {
-            console.error(`[Broadcast Background] User ${user.id} delivery error:`, itemErr);
-            failCount++;
-          }
-        }
+        const userIds = targetUsers.map((u: any) => u.id);
+        const { dispatchNotification } = await import('../services/notifications.js');
+        
+        await dispatchNotification(userIds, 'broadcast', title_en, title_ar || '', content_en, content_ar || '', {}, {
+          sendEmail: finalType === 'email' || finalType === 'both',
+          emailBody: content_en,
+          emailBodyAr: content_ar || content_en,
+          adminId: adminId
+        });
 
         await pool.query(
           `UPDATE system_broadcasts SET status = 'completed', sent_count = $1 WHERE id = $2`,
-          [successCount, broadcastId]
+          [userIds.length, broadcastId]
         ).catch((e: any) => console.error('[Broadcast Background] Final state update failed:', e));
 
         await auditLog(adminId, 'Send Broadcast Completed', 'system', {
@@ -1063,8 +1044,8 @@ router.post("/broadcasts/send", authenticateAdmin, broadcastLimiter, async (req,
           finalType,
           target_group,
           total: sentCount,
-          successes: successCount,
-          failures: failCount
+          successes: userIds.length,
+          failures: 0
         });
       } catch (globalBgError: any) {
         console.error('[Broadcast Background] Fatal execution error:', globalBgError);
@@ -1363,14 +1344,12 @@ router.post("/referrals/remind", authenticateAdmin, async (req, res) => {
     );
 
     try {
-      await pool.query(
-        "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
-        [
-          (req as any).user.id,
-          `Admins manual reminder sent to ${invite.email}`,
-          'referral_reminder',
-          JSON.stringify({ invitationId, email: invite.email })
-        ]
+      await logSystemActivity(
+        (req as any).user.id,
+        `Admins manual reminder sent to ${invite.email}`,
+        'referral_reminder',
+        { invitationId, email: invite.email },
+        req
       );
     } catch (logErr) {
       console.warn('[Admin] System log reference warning:', logErr);
@@ -1450,14 +1429,12 @@ router.post("/referrals/remind-bulk", authenticateAdmin, async (req, res) => {
       );
 
       try {
-        await pool.query(
-          "INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)",
-          [
-            (req as any).user.id,
-            `Admins bulk manual reminders sent to ${processedIds.length} invitees`,
-            'referral_reminder_bulk',
-            JSON.stringify({ invitationIds: processedIds })
-          ]
+        await logSystemActivity(
+          (req as any).user.id,
+          `Admins bulk manual reminders sent to ${processedIds.length} invitees`,
+          'referral_reminder_bulk',
+          { invitationIds: processedIds },
+          req
         );
       } catch (logErr) {
         console.warn('[Admin] System log bulk reference warning:', logErr);
@@ -1493,7 +1470,9 @@ router.get("/security-alerts", authenticateAdmin, async (req, res) => {
 
 router.get("/activity-stream", authenticateAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 50');
+    const result = await pool.query(
+      'SELECT id, user_id, action, type, description, details, metadata, ip_address, created_at FROM system_logs ORDER BY created_at DESC LIMIT 50'
+    );
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
@@ -1547,6 +1526,12 @@ router.post("/users", authenticateAdmin, async (req, res) => {
 
       await client.query('COMMIT');
       await auditLog((req as any).user?.id, 'Create User Manually', 'system', { targetUser: userId, email });
+      if (io) {
+        io.to('admin_room').emit('user_management_update', { action: 'user_created', userId });
+      }
+
+      await notifyUserAccountModification(userId, 'created', { adminId: (req as any).user?.id });
+
       res.json({ success: true, userId });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -1585,6 +1570,9 @@ router.delete("/users/:id", authenticateAdmin, async (req, res) => {
 
       await client.query('COMMIT');
       await auditLog(adminId, 'Delete User', 'system', { targetUser: id });
+      if (io) {
+        io.to('admin_room').emit('user_management_update', { action: 'user_deleted', userId: id });
+      }
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -1615,6 +1603,101 @@ router.get("/users/:id/permissions", authenticateAdmin, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+async function notifyUserAccountModification(
+  userId: number,
+  changeType: 'role' | 'status' | 'plan' | 'kyc' | 'created',
+  details: {
+    role?: string;
+    status?: string;
+    planId?: string;
+    planName?: string;
+    kycStatus?: string;
+    rejectionReason?: string;
+    adminId?: number;
+  }
+) {
+  try {
+    let titleEn = '';
+    let titleAr = '';
+    let msgEn = '';
+    let msgAr = '';
+
+    if (changeType === 'role' && details.role) {
+      const roleUpper = details.role.toUpperCase();
+      titleEn = `Account Access Role Updated: ${roleUpper}`;
+      titleAr = `تحديث مستوى صلاحيات حسابك: ${roleUpper}`;
+      msgEn = `Your account role has been updated to ${roleUpper} by system management.`;
+      msgAr = `تم تحديث صلاحية حسابك إلى ${roleUpper} من قِبل إدارة النظام.`;
+    } else if (changeType === 'status' && details.status) {
+      const isSuspended = details.status === 'suspended';
+      titleEn = isSuspended ? 'Account Access Suspended' : 'Account Access Activated';
+      titleAr = isSuspended ? 'تم تعليق وصول الحساب' : 'تم تنشيط وصول الحساب';
+      msgEn = isSuspended
+        ? 'Your account access has been suspended by administration. Contact support for assistance.'
+        : 'Your account access has been reactivated. You now have full platform functionality.';
+      msgAr = isSuspended
+        ? 'تم تعليق وصول حسابك مؤقتاً بواسطة الإدارة. يرجى التواصل مع الدعم الفني لمزيد من الاستفسارات.'
+        : 'تم تنشيط حسابك بنجاح. يمكنك الآن الاستفادة الكاملة من كافة خدمات المنصة.';
+    } else if (changeType === 'plan' && details.planName) {
+      titleEn = `Subscription Tier Updated: ${details.planName}`;
+      titleAr = `تحديث باقة الاشتراك: ${details.planName}`;
+      msgEn = `Your active subscription tier has been modified to ${details.planName}.`;
+      msgAr = `تم تحديث مستوى اشتراكك إلى باقة ${details.planName}.`;
+    } else if (changeType === 'kyc' && details.kycStatus) {
+      const isVerified = details.kycStatus === 'verified';
+      const isRejected = details.kycStatus === 'rejected';
+      titleEn = isVerified ? 'KYC Verification Approved' : isRejected ? 'KYC Verification Rejected' : 'KYC Verification Status Notice';
+      titleAr = isVerified ? 'تم قبول توثيق الهوية (KYC)' : isRejected ? 'تم رفض طلب توثيق الهوية' : 'تحديث حالة توثيق الهوية';
+      msgEn = isVerified
+        ? 'Your identity verification documents have been officially approved.'
+        : isRejected
+        ? `Your identity verification request was rejected.${details.rejectionReason ? ` Reason: ${details.rejectionReason}` : ''}`
+        : `Your identity verification status is now: ${details.kycStatus}.`;
+      msgAr = isVerified
+        ? 'تهانينا! تم اعتماد وثائق توثيق الهوية الخاصة بك بنجاح.'
+        : isRejected
+        ? `تم رفض طلب توثيق الهوية الخاصة بك.${details.rejectionReason ? ` السبب: ${details.rejectionReason}` : ''}`
+        : `حالة توثيق الهوية الخاصة بك هي الآن: ${details.kycStatus}.`;
+    } else if (changeType === 'created') {
+      titleEn = 'Welcome to Perplexta Platform';
+      titleAr = 'أهلاً بك في منصة بيربليكستا';
+      msgEn = 'Your account has been successfully created by system management.';
+      msgAr = 'تم إنشاء حسابك بنجاح بواسطة إدارة المنصة. أهلاً بك معنا!';
+    }
+
+    if (!titleEn) return;
+
+    const { dispatchNotification } = await import('../services/notifications.js');
+    
+    await dispatchNotification(userId, 'system', titleEn, titleAr, msgEn, msgAr, details, {
+      sendEmail: true,
+      emailBody: (user) => `
+      <div style="font-family: sans-serif; background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #f1f5f9;">
+        <h2 style="color: #10b981; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleEn}</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.8;">Hello <strong>${user.name || 'Valued User'}</strong>,</p>
+        <p style="color: #475569; font-size: 14px; line-height: 1.8;">${msgEn}</p>
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <span style="color: #64748b; font-size: 13px;">Automated notification from Perplexta Core Platform Engine.</span>
+        </div>
+      </div>
+    `,
+      emailBodyAr: (user) => `
+      <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #f1f5f9;">
+        <h2 style="color: #10b981; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleAr}</h2>
+        <p style="color: #334155; font-size: 15px; line-height: 1.8;">مرحباً <strong>${user.name || 'عزيزنا المستخدم'}</strong>،</p>
+        <p style="color: #475569; font-size: 14px; line-height: 1.8;">${msgAr}</p>
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <span style="color: #64748b; font-size: 13px;">تنبيه آلي صادق عن نظام إدارة المنصة (Perplexta Core Engine).</span>
+        </div>
+      </div>
+    `,
+      adminId: details.adminId || null
+    });
+  } catch (err) {
+    console.error('[notifyUserAccountModification] Error sending notification/email:', err);
+  }
+}
 
 async function updateUserPermissionsInternal(
   userIdNum: number,
@@ -1691,6 +1774,17 @@ router.patch("/users/:id/permissions", authenticateAdmin, async (req, res) => {
       await client.query('COMMIT');
       invalidateUserCache(userIdNum);
       await auditLog((req as any).user?.id, 'Update User Permissions', 'system', { targetUser: userIdNum, changes: { role, status, kyc_status } });
+      if (io) {
+        io.to('admin_room').emit('user_management_update', { action: 'permissions_updated', userId: userIdNum, role, status, kyc_status });
+        io.to(`user_${userIdNum}`).emit('user_profile_updated', { userId: userIdNum, role, status, kyc_status });
+      }
+
+      // Dispatch notifications & emails
+      const adminId = (req as any).user?.id;
+      if (role) await notifyUserAccountModification(userIdNum, 'role', { role, adminId });
+      if (status) await notifyUserAccountModification(userIdNum, 'status', { status, adminId });
+      if (kyc_status) await notifyUserAccountModification(userIdNum, 'kyc', { kycStatus: kyc_status, rejectionReason: kyc_rejection_reason, adminId });
+
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -1744,6 +1838,20 @@ router.patch("/users/:id/kyc-verification", authenticateAdmin, async (req, res) 
       }, client);
       await client.query('COMMIT');
       invalidateUserCache(userIdNum);
+      if (io) {
+        io.to('admin_room').emit('user_management_update', { action: 'kyc_updated', userId: userIdNum, kyc_status });
+        io.to(`user_${userIdNum}`).emit('user_profile_updated', { userId: userIdNum, kyc_status });
+      }
+
+      // Dispatch notifications & emails
+      if (kyc_status) {
+        await notifyUserAccountModification(userIdNum, 'kyc', {
+          kycStatus: kyc_status,
+          rejectionReason: rejection_reason,
+          adminId: (req as any).user?.id
+        });
+      }
+
       res.json({ success: true });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -1781,101 +1889,58 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
     
     await auditLog((req as any).user?.id, 'Adjust Balance', 'finance', { targetUser: userIdNum, amount: parsedAmount, type, unit, reason });
 
+    if (io) {
+      io.to('admin_room').emit('user_management_update', { action: 'balance_updated', userId: userIdNum, newBalance: result?.newBalance, newPoints: result?.newPoints });
+      io.to(`user_${userIdNum}`).emit('wallet_updated', { userId: userIdNum, balance: result?.newBalance, points: result?.newPoints });
+    }
+
     try {
-      const userRes = await pool.query('SELECT name, email, language FROM users WHERE id = $1', [userIdNum]);
-      if (userRes.rows.length > 0) {
-        const user = userRes.rows[0];
-        const userLang = user.language === 'ar' ? 'ar' : 'en';
-        
-        let titleEn = '';
-        let titleAr = '';
-        let msgEn = '';
-        let msgAr = '';
+      const isAdd = type === 'credit' || type === 'add';
+      const formattedAmount = target === 'balance' ? `$${parsedAmount.toFixed(2)}` : `${parsedAmount} PTS`;
+      
+      let titleEn = '';
+      let titleAr = '';
+      let msgEn = '';
+      let msgAr = '';
 
-        const isAdd = type === 'credit' || type === 'add';
-        const formattedAmount = target === 'balance' ? `$${parsedAmount.toFixed(2)}` : `${parsedAmount} PTS`;
-
-        if (target === 'balance') {
-          if (isAdd) {
-            titleEn = "USD Wallet Credited";
-            titleAr = "إيداع رصيد دولار";
-            msgEn = `Administrator has credited $${parsedAmount.toFixed(2)} to your wallet. Reason: ${reason}`;
-            msgAr = `قام المسؤول بإضافة $${parsedAmount.toFixed(2)} إلى محفظتك. السبب: ${reason}`;
-          } else {
-            titleEn = "USD Wallet Debited";
-            titleAr = "خصم رصيد دولار";
-            msgEn = `Administrator has debited $${parsedAmount.toFixed(2)} from your wallet. Reason: ${reason}`;
-            msgAr = `قام المسؤول بخصم $${parsedAmount.toFixed(2)} من محفظتك. السبب: ${reason}`;
-          }
+      if (target === 'balance') {
+        if (isAdd) {
+          titleEn = "USD Wallet Credited";
+          titleAr = "إيداع رصيد دولار";
+          msgEn = `Administrator has credited $${parsedAmount.toFixed(2)} to your wallet. Reason: ${reason}`;
+          msgAr = `قام المسؤول بإضافة $${parsedAmount.toFixed(2)} إلى محفظتك. السبب: ${reason}`;
         } else {
-          if (isAdd) {
-            titleEn = "Reward Points Added";
-            titleAr = "إضافة نقاط مكافأة";
-            msgEn = `Administrator has credited ${parsedAmount} points to your account. Reason: ${reason}`;
-            msgAr = `قام المسؤول بإضافة ${parsedAmount} نقطة مكافأة إلى حسابك. السبب: ${reason}`;
-          } else {
-            titleEn = "Reward Points Deducted";
-            titleAr = "خصم نقاط مكافأة";
-            msgEn = `Administrator has deducted ${parsedAmount} points from your account. Reason: ${reason}`;
-            msgAr = `قام المسؤول بخصم ${parsedAmount} نقطة من حسابك. السبب: ${reason}`;
-          }
+          titleEn = "USD Wallet Debited";
+          titleAr = "خصم رصيد دولار";
+          msgEn = `Administrator has debited $${parsedAmount.toFixed(2)} from your wallet. Reason: ${reason}`;
+          msgAr = `قام المسؤول بخصم $${parsedAmount.toFixed(2)} من محفظتك. السبب: ${reason}`;
         }
+      } else {
+        if (isAdd) {
+          titleEn = "Reward Points Added";
+          titleAr = "إضافة نقاط مكافأة";
+          msgEn = `Administrator has credited ${parsedAmount} points to your account. Reason: ${reason}`;
+          msgAr = `قام المسؤول بإضافة ${parsedAmount} نقطة مكافأة إلى حسابك. السبب: ${reason}`;
+        } else {
+          titleEn = "Reward Points Deducted";
+          titleAr = "خصم نقاط مكافأة";
+          msgEn = `Administrator has deducted ${parsedAmount} points from your account. Reason: ${reason}`;
+          msgAr = `قام المسؤول بخصم ${parsedAmount} نقطة من حسابك. السبب: ${reason}`;
+        }
+      }
 
-        const { createNotification } = await import('../services/notifications.js');
-        await createNotification(userIdNum, 'finance', titleEn, titleAr, msgEn, msgAr, {
-          amount: parsedAmount,
-          unit: target === 'balance' ? 'USD' : 'PTS',
-          type,
-          new_balance: result.newBalance,
-          new_points: result.newPoints
-        });
-
-        const { sendEmail } = await import('../services/email.js');
-        const subject = userLang === 'ar' 
-          ? (isAdd ? 'تحديث مالي: تم إيداع رصيد جديد' : 'تحديث مالي: تم سحب رصيد من الحساب') 
-          : (isAdd ? 'Financial Update: Wallet Capital Adjustment' : 'Financial Update: Wallet Deduction Notice');
-        
-        const htmlBody = userLang === 'ar' ? `
-          <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-            <div style="text-align: center; margin-bottom: 25px;">
-              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
-            </div>
-            <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
-              تنبيه كشف الحساب المالي
-            </h2>
-            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
-              أهلاً <strong>${user.name || 'عزيزنا العميل'}</strong>، مزار توازن وحسابات المحفظة تم تحديثه بنجاح.
-            </p>
-            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
-              يرجى العلم بأنه تم إجراء تعديل رسمي على رصيد محفظتك المعتمد من قِبل إدارة النظام كالتالي:
-            </p>
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 20px 0;">
-              <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
-                <tr>
-                  <td style="color: #64748b; padding: 6px 0;"><strong>نوع المعاملة:</strong></td>
-                  <td style="color: #0f172a; text-align: left;"><strong>${isAdd ? 'إيداع / شحن' : 'سحب / خصم'}</strong></td>
-                </tr>
-                <tr>
-                  <td style="color: #64748b; padding: 6px 0;"><strong>القيمة المعدلة:</strong></td>
-                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: left; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
-                </tr>
-                <tr>
-                  <td style="color: #64748b; padding: 6px 0;"><strong>السبب المعتمد:</strong></td>
-                  <td style="color: #334155; text-align: left;">${reason || 'تعديل إداري'}</td>
-                </tr>
-              </table>
-            </div>
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
-              <span style="color: #166534; font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">رصيدك المعتمد الجديد:</span>
-              <span style="color: #15803d; font-size: 16px; font-weight: 800;">
-                $${parseFloat(result.newBalance).toFixed(2)} USD | ${parseFloat(result.newPoints || 0)} PTS
-              </span>
-            </div>
-            <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-              هذه رسالة تلقائية صادرة عن نظام التدقيق الإلكتروني لبيربليكستا. لحماية حسابك المالي، نقوم بإبلاغك بجميع عمليات تعديل الأرصدة لحظة حدوثها.
-            </p>
-          </div>
-        ` : `
+      const { dispatchNotification } = await import('../services/notifications.js');
+      
+      await dispatchNotification(userIdNum, 'finance', titleEn, titleAr, msgEn, msgAr, {
+        amount: parsedAmount,
+        unit: target === 'balance' ? 'USD' : 'PTS',
+        type,
+        new_balance: result.newBalance,
+        new_points: result.newPoints
+      }, {
+        sendEmail: true,
+        adminId: (req as any).user?.id,
+        emailBody: (user) => `
           <div style="font-family: 'Inter', sans-serif; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="text-align: center; margin-bottom: 25px;">
               <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
@@ -1915,10 +1980,49 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
               This is an automated statement dispatched immediately by the Perplexta Security Engine. For safety verification, all ledger adjustments prompt an instantaneous notification broadcast.
             </p>
           </div>
-        `;
-
-        await sendEmail(user.email, subject, htmlBody, (req as any).user?.id);
-      }
+        `,
+        emailBodyAr: (user) => `
+          <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="text-align: center; margin-bottom: 25px;">
+              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
+            </div>
+            <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
+              تنبيه كشف الحساب المالي
+            </h2>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              أهلاً <strong>${user.name || 'عزيزنا العميل'}</strong>، مزار توازن وحسابات المحفظة تم تحديثه بنجاح.
+            </p>
+            <p style="color: #475569; font-size: 15px; line-height: 1.8;">
+              يرجى العلم بأنه تم إجراء تعديل رسمي على رصيد محفظتك المعتمد من قِبل إدارة النظام كالتالي:
+            </p>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 20px 0;">
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>نوع المعاملة:</strong></td>
+                  <td style="color: #0f172a; text-align: left;"><strong>${isAdd ? 'إيداع / شحن' : 'سحب / خصم'}</strong></td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>القيمة المعدلة:</strong></td>
+                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: left; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
+                </tr>
+                <tr>
+                  <td style="color: #64748b; padding: 6px 0;"><strong>السبب المعتمد:</strong></td>
+                  <td style="color: #334155; text-align: left;">${reason || 'تعديل إداري'}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
+              <span style="color: #166534; font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">رصيدك المعتمد الجديد:</span>
+              <span style="color: #15803d; font-size: 16px; font-weight: 800;">
+                $${parseFloat(result.newBalance).toFixed(2)} USD | ${parseFloat(result.newPoints || 0)} PTS
+              </span>
+            </div>
+            <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+              هذه رسالة تلقائية صادرة عن نظام التدقيق الإلكتروني لبيربليكستا. لحماية حسابك المالي، نقوم بإبلاغك بجميع عمليات تعديل الأرصدة لحظة حدوثها.
+            </p>
+          </div>
+        `
+      });
     } catch (notifErr: any) {
       console.error('[Admin Balance Notification] Processing failed:', notifErr);
     }
@@ -1988,10 +2092,14 @@ router.post("/users/:id/notify", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid User ID format' });
     }
 
-    await pool.query(`
-      INSERT INTO notifications (user_id, title_en, title_ar, message_en, message_ar, type)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [userIdNum, titleEn, titleAr, messageEn, messageAr, type || 'system']);
+    await createNotification(
+      userIdNum, 
+      type || 'system', 
+      titleEn, 
+      titleAr || '', 
+      messageEn || '', 
+      messageAr || ''
+    );
     
     await auditLog((req as any).user?.id, 'Send Manual Notification', 'system', { 
       targetUser: userIdNum, 
@@ -2016,8 +2124,9 @@ router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid User ID format' });
     }
 
-    const planRes = await pool.query('SELECT id FROM plans WHERE id = $1', [planId]);
+    const planRes = await pool.query('SELECT id, name_en FROM plans WHERE id = $1', [planId]);
     if (planRes.rows.length === 0) return res.status(400).json({ error: 'Invalid plan ID' });
+    const planName = planRes.rows[0].name_en || planId;
 
     await pool.query(`
       INSERT INTO subscriptions (user_id, plan_id, status, updated_at)
@@ -2029,6 +2138,17 @@ router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
     `, [userIdNum, planId]);
     
     await auditLog((req as any).user?.id, 'Update User Plan', 'system', { targetUser: userIdNum, planId });
+    if (io) {
+      io.to('admin_room').emit('user_management_update', { action: 'plan_updated', userId: userIdNum, planId });
+      io.to(`user_${userIdNum}`).emit('subscription_updated', { userId: userIdNum, planId });
+    }
+
+    await notifyUserAccountModification(userIdNum, 'plan', {
+      planId,
+      planName,
+      adminId: (req as any).user?.id
+    });
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update subscription' });
@@ -2038,7 +2158,10 @@ router.patch("/users/:id/plan", authenticateAdmin, async (req, res) => {
 router.get("/users/:id/usage", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM user_usage WHERE user_id = $1 ORDER BY usage_date DESC LIMIT 100', [id]);
+    const result = await pool.query(
+      'SELECT id, user_id, tool_id, usage_count, usage_date, created_at, updated_at FROM user_usage WHERE user_id = $1 ORDER BY usage_date DESC LIMIT 100', 
+      [id]
+    );
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
@@ -2048,10 +2171,62 @@ router.get("/users/:id/usage", authenticateAdmin, async (req, res) => {
 router.get("/users/:id/activity-logs", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM system_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100', [id]);
+    const result = await pool.query(
+      'SELECT id, user_id, action, type, description, details, metadata, ip_address, created_at FROM system_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100', 
+      [id]
+    );
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.get("/users/:id/subscription", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) return res.status(400).json({ error: 'Invalid User ID' });
+
+    const result = await pool.query(`
+      SELECT 
+        s.*,
+        p.name_en, p.name_ar, p.desc_en, p.desc_ar, p.monthly_price, p.annual_price,
+        p.color, p.badge, p.plan_type, p.features, p.limits
+      FROM subscriptions s
+      LEFT JOIN plans p ON s.plan_id = p.id
+      WHERE s.user_id = $1
+    `, [userIdNum]);
+
+    if (result.rows.length === 0) {
+      return res.json({ status: 'none', plan_id: null });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[Admin] Get subscription error:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription' });
+  }
+});
+
+router.get("/users/:id/transactions", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userIdNum = parseInt(id, 10);
+    if (isNaN(userIdNum)) return res.status(400).json({ error: 'Invalid User ID' });
+
+    const targetLedger = ledgerPool || pool;
+    const walletRes = await targetLedger.query('SELECT id FROM wallets WHERE user_id = $1', [userIdNum]);
+    if (walletRes.rows.length === 0) {
+      return res.json([]);
+    }
+    const walletId = walletRes.rows[0].id;
+    const result = await targetLedger.query(
+      'SELECT * FROM ledger_transactions WHERE wallet_id = $1 ORDER BY created_at DESC LIMIT 100',
+      [walletId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[Admin] Get transactions error:', error);
+    res.status(500).json({ error: 'Failed to fetch user transactions' });
   }
 });
 
@@ -2205,6 +2380,39 @@ router.delete("/notifications/prune", authenticateAdmin, async (req, res) => {
     res.json({ success: true, count: result.rowCount });
   } catch {
     res.status(500).json({ error: 'Prune failed' });
+  }
+});
+
+router.post("/cache/clear", authenticateAdmin, async (req, res) => {
+  try {
+    const { target } = req.body || req.query;
+    const cleared: string[] = [];
+
+    if (!target || target === 'file_permission' || target === 'global') {
+      invalidateFilePermissionCache();
+      cleared.push('file_permission');
+    }
+    if (!target || target === 'route_seo' || target === 'global') {
+      invalidateRouteSeoCache();
+      cleared.push('route_seo');
+    }
+    if (!target || target === 'system_settings' || target === 'global') {
+      invalidateSystemSettingsCache();
+      cleared.push('system_settings');
+    }
+    if (target === 'global') {
+      invalidateEconomySettingsCache();
+      invalidateOrchestratorConfigCache();
+      invalidatePlansCache();
+      invalidateApiKeysVaultCache();
+      cleared.push('economy', 'orchestrator', 'plans', 'api_keys');
+    }
+
+    await auditLog((req as any).user?.id, 'Clear Cache', 'system', { target: target || 'global', cleared });
+    res.json({ success: true, cleared, message: `Successfully cleared cache: ${cleared.join(', ')}` });
+  } catch (error: any) {
+    console.error('[AdminCache] Failed to clear cache:', error);
+    res.status(500).json({ error: error.message || 'Failed to clear cache' });
   }
 });
 
@@ -3189,13 +3397,27 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file'), handleMulterError, async (req: any, res: any) => {
+router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
-    const filename = req.file.filename;
-    const imageUrl = `/uploads/${filename}`;
+    const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
+    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
+    res.json({ success: true, imageUrl });
+  } catch (error: any) {
+    console.error('[AssetUpload] Upload failed:', error);
+    res.status(500).json({ error: error.message || 'Image upload failed' });
+  }
+});
+
+router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded or file invalid' });
+    }
+    const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
+    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
     res.json({ success: true, imageUrl });
   } catch (error: any) {
     console.error('[SEOImageUpload] Upload failed:', error);

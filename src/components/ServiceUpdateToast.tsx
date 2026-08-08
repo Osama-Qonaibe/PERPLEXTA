@@ -1,22 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RefreshCw, X, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 
 export const ServiceUpdateToast: React.FC = () => {
-  const {
-    offlineReady: [offlineReady, setOfflineReady],
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
-
   const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (needRefresh) {
-      setVisible(true);
-    }
-  }, [needRefresh]);
 
   useEffect(() => {
     const handleManualMismatch = () => {
@@ -27,18 +14,11 @@ export const ServiceUpdateToast: React.FC = () => {
   }, []);
 
   const close = () => {
-    setOfflineReady(false);
-    setNeedRefresh(false);
     setVisible(false);
   };
 
   const handleUpdate = () => {
-    if (needRefresh) {
-      updateServiceWorker(true);
-    } else {
-      // Manual mismatch fallback
-      window.location.reload();
-    }
+    window.location.reload();
   };
 
   return (

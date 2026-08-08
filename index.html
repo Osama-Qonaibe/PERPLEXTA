@@ -3,24 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta id="theme-color-meta" name="theme-color" content="#080809" />
+    <meta id="theme-color-meta" name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Perplexta" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Perplexta AI" />
-    <meta name="msapplication-TileColor" content="#080809" />
+    <meta name="msapplication-TileColor" content="#000000" />
     <meta name="msapplication-tap-highlight" content="no" />
     <meta name="format-detection" content="telephone=no" />
 
     <style>
       :root {
-        --pwa-theme-color: #080809;
-        --pwa-bg-color: #080809;
+        --pwa-theme-color: #000000;
+        --pwa-bg-color: #000000;
       }
       :root.light {
-        --pwa-theme-color: #fcfcfc;
-        --pwa-bg-color: #fcfcfc;
+        --pwa-theme-color: #ffffff;
+        --pwa-bg-color: #ffffff;
       }
       html {
         background-color: var(--pwa-bg-color);
@@ -71,7 +71,7 @@
             document.head.appendChild(fontLink);
           }
 
-          var savedTheme = localStorage.getItem('theme');
+          var savedTheme = localStorage.getItem('perplexta_theme') || localStorage.getItem('theme');
           var isDark = false;
           if (savedTheme === 'dark') {
             isDark = true;
@@ -87,24 +87,24 @@
           if (isDark) {
             root.classList.add('dark');
             root.classList.remove('light');
-            root.style.setProperty('--pwa-theme-color', '#080809');
-            root.style.setProperty('--pwa-bg-color', '#080809');
-            root.style.backgroundColor = '#080809';
-            root.style.color = '#f8fafc';
-            if (meta) meta.setAttribute('content', '#080809');
+            root.style.setProperty('--pwa-theme-color', '#000000');
+            root.style.setProperty('--pwa-bg-color', '#000000');
+            root.style.backgroundColor = '#000000';
+            root.style.color = '#ffffff';
+            if (meta) meta.setAttribute('content', '#000000');
           } else {
             root.classList.add('light');
             root.classList.remove('dark');
-            root.style.setProperty('--pwa-theme-color', '#fcfcfc');
-            root.style.setProperty('--pwa-bg-color', '#fcfcfc');
-            root.style.backgroundColor = '#fcfcfc';
-            root.style.color = '#0f172a';
-            if (meta) meta.setAttribute('content', '#fcfcfc');
+            root.style.setProperty('--pwa-theme-color', '#ffffff');
+            root.style.setProperty('--pwa-bg-color', '#ffffff');
+            root.style.backgroundColor = '#ffffff';
+            root.style.color = '#000000';
+            if (meta) meta.setAttribute('content', '#ffffff');
           }
         } catch (e) {
           document.documentElement.classList.add('dark');
-          document.documentElement.style.backgroundColor = '#080809';
-          document.documentElement.style.color = '#f8fafc';
+          document.documentElement.style.backgroundColor = '#000000';
+          document.documentElement.style.color = '#ffffff';
         }
       })();
     </script>

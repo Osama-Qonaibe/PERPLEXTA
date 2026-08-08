@@ -593,45 +593,36 @@ async function notifySellerOfSale(item: any, lic: string, finalPrice: number, co
     const sellerProceeds = Math.max(0, Math.round((finalPrice - commissionPaid) * 100) / 100);
     if (sellerProceeds > 0) {
       try {
-        const { createNotification } = await import('../services/notifications.js');
-        await createNotification(
+        const { dispatchNotification } = await import('../services/notifications.js');
+        await dispatchNotification(
           Number(item.user_id),
           'success',
           'Your Product was Sold!',
           'تم بيع منتجك بنجاح!',
           `Congratulations! Your listed asset "${item.title_en}" was purchased by another user. $${sellerProceeds} has been credited to your wallet balance.`,
-          `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`
+          `تهانينا! تم شراء منتجك المعروض "${item.title_ar || item.title_en}" من قِبل مستخدم آخر. تم إيداع $${sellerProceeds} في رصيد محفظتك.`,
+          {},
+          {
+            sendEmail: true,
+            emailBody: (user) => `
+              <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <h2 style="color: #10B981; border-bottom: 2px solid #10B981; padding-bottom: 10px;">Great News, ${user.name || 'Seller'}!</h2>
+                <p>Your listed asset <strong>"${item.title_en}"</strong> has been purchased under the <strong>${lic.toUpperCase()}</strong> license.</p>
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><strong>Product:</strong> ${item.title_en}</p>
+                  <p style="margin: 5px 0;"><strong>License Option:</strong> ${lic.toUpperCase()}</p>
+                  <p style="margin: 5px 0;"><strong>Your Sale Proceeds:</strong> $${sellerProceeds}</p>
+                </div>
+                <p>The funds of <strong>$${sellerProceeds}</strong> have been credited directly to your secure platform wallet.</p>
+                <p>Keep listing premium assets of high compliance on the platform to earn more!</p>
+                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+                <p style="font-size: 11px; color: #9ca3af; text-align: center;">This is an automated transaction notification from Perplexta Secure Server.</p>
+              </div>
+            `
+          }
         );
       } catch (nErr) {
         console.warn('Failed to notify seller in notifySellerOfSale:', nErr);
-      }
-
-      try {
-        const sellerUserRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [item.user_id]);
-        if (sellerUserRes.rows.length > 0) {
-          const sellerUser = sellerUserRes.rows[0];
-          const { sendEmail } = await import('../services/email.js');
-          const subject = `🎉 Congratulations! Your Listed Asset Was Sold - Perplexta`;
-          const html = `
-            <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
-              <h2 style="color: #10B981; border-bottom: 2px solid #10B981; padding-bottom: 10px;">Great News, ${sellerUser.name}!</h2>
-              <p>Your listed asset <strong>"${item.title_en}"</strong> has been purchased under the <strong>${lic.toUpperCase()}</strong> license.</p>
-              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 5px 0;"><strong>Product:</strong> ${item.title_en}</p>
-                <p style="margin: 5px 0;"><strong>License Option:</strong> ${lic.toUpperCase()}</p>
-                <p style="margin: 5px 0;"><strong>Your Sale Proceeds:</strong> $${sellerProceeds}</p>
-              </div>
-              <p>The funds of <strong>$${sellerProceeds}</strong> have been credited directly to your secure platform wallet.</p>
-              <p>Keep listing premium assets of high compliance on the platform to earn more!</p>
-              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
-              <p style="font-size: 11px; color: #9ca3af; text-align: center;">This is an automated transaction notification from Perplexta Secure Server.</p>
-            </div>
-          `;
-          await sendEmail(sellerUser.email, subject, html);
-          console.log(`[Email Sent] Successfully notified seller of sale: ${sellerUser.email}`);
-        }
-      } catch (mailErr) {
-        console.error('Failed to send sales email notification to seller:', mailErr);
       }
     }
   }

@@ -163,7 +163,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
-      className="p-3.5 sm:p-4 bg-gray-900 text-white rounded-2xl border border-emerald-500/30 space-y-4 my-2 shadow-xl overflow-hidden"
+      className="p-3.5 sm:p-4 bg-gray-900 text-white rounded-2xl border border-emerald-500/30 space-y-4 my-2 shadow-xl overflow-hidden transition-theme [will-change:background-color,border-color,color]"
     >
       <div className="flex items-center justify-between border-b border-gray-800 pb-2.5">
         <div className="flex items-center gap-2">

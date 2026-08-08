@@ -1,7 +1,12 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { getUserNotifications, markNotificationsAsRead } from '../services/notifications.js';
-import { pool } from '../db/index.js';
+import { 
+  getUserNotifications, 
+  markNotificationsAsRead, 
+  markSingleNotificationAsRead, 
+  clearAllUserNotifications, 
+  deleteSingleNotification 
+} from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -28,10 +33,7 @@ router.patch("/read-all", authenticateToken, handleReadAll);
 router.patch("/:id/read", authenticateToken, async (req: any, res) => {
   try {
     const { id } = req.params;
-    await pool.query(
-      'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2',
-      [id, req.user.id]
-    );
+    await markSingleNotificationAsRead(id, req.user.id);
     res.json({ success: true, message: 'Notification marked as read' });
   } catch (error) {
     console.error('[Notification] Mark read error:', error);
@@ -41,10 +43,7 @@ router.patch("/:id/read", authenticateToken, async (req: any, res) => {
 
 router.delete("/all", authenticateToken, async (req: any, res) => {
   try {
-    await pool.query(
-      'DELETE FROM notifications WHERE user_id = $1',
-      [req.user.id]
-    );
+    await clearAllUserNotifications(req.user.id);
     res.json({ success: true, message: 'All notifications cleared successfully' });
   } catch (error) {
     console.error('[Notification] Clear all error:', error);
@@ -55,10 +54,7 @@ router.delete("/all", authenticateToken, async (req: any, res) => {
 router.delete("/:id", authenticateToken, async (req: any, res) => {
   try {
     const { id } = req.params;
-    await pool.query(
-      'DELETE FROM notifications WHERE id = $1 AND user_id = $2',
-      [id, req.user.id]
-    );
+    await deleteSingleNotification(id, req.user.id);
     res.json({ success: true, message: 'Notification deleted' });
   } catch (error) {
     console.error('[Notification] Delete error:', error);

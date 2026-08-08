@@ -728,15 +728,15 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className={`w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500`}
+              className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer group"
             >
-              {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {dir === 'rtl' ? <ChevronRight size={18} className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" /> : <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" />}
             </button>
             <div className="flex items-center gap-2 md:gap-3">
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('rewards')}</h1>
               {contextUser?.kyc_status === 'verified' && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                  <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                  <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 text-emerald-500" />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{t('verified')}</span>
                 </div>
               )}
@@ -746,16 +746,16 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/settings?tab=wallet')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] border bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-theme group`}
+              className="flex items-center gap-2 px-3.5 md:px-4 py-2 rounded-[4px] border border-gray-300 dark:border-gray-800 bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1c] dark:hover:bg-[#222225] text-gray-900 dark:text-white transition-all duration-300 cursor-pointer group shadow-sm font-bold"
             >
-              <Landmark size={14} className="group-hover:scale-110 transition-transform" />
+              <Landmark size={14} className="text-emerald-500 transition-all duration-300" />
               <span className="text-[10px] font-black uppercase tracking-tighter">
                 {dir === 'rtl' ? 'إيداع أموال / Deposit Funds' : 'Deposit Funds / إيداع أموال'}
               </span>
             </button>
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] border bg-[var(--bg-secondary)] border-[var(--border-main)]`}>
-               <Landmark size={14} className="text-[var(--text-muted)]" />
-               <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-tighter">PLATFORM LEDGER</span>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[4px] border bg-[var(--bg-secondary)] border-[var(--border-main)]">
+               <Landmark size={14} className="text-emerald-500" />
+               <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tighter">PLATFORM LEDGER</span>
             </div>
           </div>
         </div>
@@ -765,46 +765,46 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* Withdrawable Balance Card */}
-        <div className={`relative overflow-hidden rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] md:text-[180px] font-bold text-emerald-500/5 select-none pointer-events-none">
+        <div className="relative overflow-hidden rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[120px] md:text-[180px] font-bold text-gray-400/5 dark:text-gray-600/5 select-none pointer-events-none">
             $
           </div>
           <div className="relative z-10 space-y-2 md:space-y-4">
-            <h3 className="text-[11px] md:text-base text-[var(--text-secondary)] font-medium uppercase tracking-wider">{t('withdrawableBalance')}</h3>
+            <h3 className="text-[11px] md:text-base text-gray-700 dark:text-gray-300 font-bold uppercase tracking-wider">{t('withdrawableBalance')}</h3>
             <div className="flex items-baseline justify-center gap-1.5 md:gap-2">
-              <span className="text-sm md:text-xl font-bold text-emerald-500">USD</span>
+              <span className="text-sm md:text-xl font-bold text-gray-700 dark:text-gray-300">USD</span>
               <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">${withdrawableUSD}</span>
             </div>
             <button 
               onClick={() => navigate('/settings?tab=wallet')}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-theme group"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
             >
-              <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
-              <span className="text-[var(--text-primary)] group-hover:text-emerald-500">{t('requestWithdrawal')}</span>
+              <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 transition-all duration-300" />
+              <span>{t('requestWithdrawal')}</span>
             </button>
           </div>
         </div>
 
         {/* Points Balance Card */}
-        <div className={`relative overflow-hidden rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]`}>
+        <div className="relative overflow-hidden rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col items-center justify-center text-center min-h-[180px] md:min-h-[240px]">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none pointer-events-none opacity-5">
-            <Gift className="text-rose-500 w-[140px] h-[140px] md:w-[200px] md:h-[200px]" />
+            <Gift className="text-gray-400 dark:text-gray-600 w-[140px] h-[140px] md:w-[200px] md:h-[200px]" />
           </div>
           <div className="relative z-10 space-y-2 md:space-y-4">
-            <h3 className="text-[11px] md:text-base text-[var(--text-secondary)] font-medium uppercase tracking-wider">{t('pointsBalance')}</h3>
+            <h3 className="text-[11px] md:text-base text-gray-700 dark:text-gray-300 font-bold uppercase tracking-wider">{t('pointsBalance')}</h3>
             <div className="flex flex-col items-center justify-center gap-0.5 md:gap-1">
               <div className="flex items-baseline gap-1.5 md:gap-2">
-                <span className="text-sm md:text-xl font-bold text-rose-500">PTS</span>
+                <span className="text-sm md:text-xl font-bold text-gray-700 dark:text-gray-300">PTS</span>
                 <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">{Math.floor(Number(wallet.points || 0)).toLocaleString()}</span>
               </div>
-              <span className="text-[10px] md:text-sm text-[var(--text-secondary)]">≈ ${estimatedPointsWorth}</span>
+              <span className="text-[10px] md:text-sm text-gray-600 dark:text-gray-300 font-semibold">≈ ${estimatedPointsWorth}</span>
             </div>
             <button 
               onClick={() => setIsConvertModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[var(--radius)] bg-transparent border border-[var(--border-main)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-primary)] text-xs md:text-base font-bold transition-theme group"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
             >
-              <Zap size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform" />
-              <span className="text-[var(--text-primary)] group-hover:text-emerald-500">{t('convertPointsToBalance')}</span>
+              <Zap size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 transition-all duration-300" />
+              <span>{t('convertPointsToBalance')}</span>
             </button>
           </div>
         </div>
@@ -815,70 +815,73 @@ export const RewardsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         
         {/* How it works */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-theme hover:border-emerald-500/20`}>
-          <h3 className="text-lg md:text-xl font-bold text-emerald-500 mb-6 md:mb-8 text-center drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">{t('howSystemWorks')}</h3>
+        <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-theme hover:border-gray-300 dark:hover:border-gray-700">
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-6 md:mb-8 text-center flex items-center justify-center gap-2">
+            <Zap size={20} className="text-emerald-500" />
+            <span>{t('howSystemWorks')}</span>
+          </h3>
           
           <div className="space-y-6 md:space-y-8">
             {/* Step 1 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 text-sm md:text-lg font-bold group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-all duration-300">
                 1
               </div>
               <div>
-                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('shareYourLink')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1 font-medium leading-relaxed">{t('shareYourLinkDesc')}</p>
+                <h4 className="font-bold text-gray-900 dark:text-white text-base md:text-lg tracking-tight group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300">{t('shareYourLink')}</h4>
+                <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1 font-medium leading-relaxed">{t('shareYourLinkDesc')}</p>
               </div>
             </div>
             
             {/* Step 2 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 text-sm md:text-lg font-bold group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-all duration-300">
                 2
               </div>
               <div>
-                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('registration')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('registrationDesc')}</p>
+                <h4 className="font-bold text-gray-900 dark:text-white text-base md:text-lg tracking-tight group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300">{t('registration')}</h4>
+                <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('registrationDesc')}</p>
               </div>
             </div>
 
             {/* Step 3 */}
             <div className="flex items-start gap-3 md:gap-4 group">
-              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-sm md:text-lg font-bold group-hover:bg-emerald-500/20 transition-theme">
+              <div className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[4px] bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 text-sm md:text-lg font-bold group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:text-gray-900 dark:group-hover:text-white transition-all duration-300">
                 3
               </div>
               <div>
-                <h4 className="font-bold text-emerald-500 text-base md:text-lg tracking-tight">{t('activationAndProfit')}</h4>
-                <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('activationAndProfitDesc')}</p>
+                <h4 className="font-bold text-gray-900 dark:text-white text-base md:text-lg tracking-tight group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300">{t('activationAndProfit')}</h4>
+                <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1 font-medium leading-relaxed">{formatTranslation('activationAndProfitDesc')}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Invite Friends */}
-        <div className={`rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-emerald-500/20`}>
+        <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-gray-300 dark:hover:border-gray-700">
           <div className="text-center mb-6 md:mb-8">
-            <h3 className="text-lg md:text-xl font-bold text-emerald-500 flex items-center justify-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
-              {t('inviteFriendsAndEarn')}
-              <Zap className="text-rose-500 animate-pulse" size={18} />
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
+              <Zap size={18} className="text-emerald-500" />
+              <span>{t('inviteFriendsAndEarn')}</span>
             </h3>
-            <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-1.5 md:mt-2 max-w-sm mx-auto font-medium leading-relaxed">
+            <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2 max-w-sm mx-auto font-medium leading-relaxed">
               {formatTranslation('inviteFriendsDesc')}
             </p>
           </div>
 
           <div className="mt-auto space-y-4 md:space-y-6">
             {!wallet?.referral_activated ? (
-              <div className="p-4 md:p-6 rounded-[var(--radius)] border border-amber-500/20 bg-amber-500/[0.02] flex flex-col gap-4 text-center">
+              <div className="p-4 md:p-6 rounded-[var(--radius)] border border-gray-200 dark:border-gray-800 bg-[var(--bg-primary)] flex flex-col gap-4 text-center">
                 {!showActivationForm ? (
                   <>
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mx-auto">
-                      <Zap className="animate-bounce" size={18} />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 mx-auto border border-gray-200 dark:border-gray-700">
+                      <Zap size={18} className="text-emerald-500" />
                     </div>
                     <div className="space-y-1.5">
-                      <h4 className="text-xs md:text-sm font-extrabold text-amber-500 uppercase tracking-wider">
+                      <h4 className="text-xs md:text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
                         {dir === 'rtl' ? 'مطلوب تفعيل نظام الأرباح' : 'Earnings Activation Required'}
                       </h4>
-                      <p className="text-[10px] md:text-xs text-[var(--text-secondary)] font-medium leading-relaxed max-w-sm mx-auto">
+                      <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-sm mx-auto">
                         {dir === 'rtl'
                           ? `سعر تفعيل خدمة الأرباح والحصول على رابط إحالة خاص بك هو إيداع حد أدنى بقيمة $${economySettings?.referral_activation_min_deposit || 10}. يمكنك شحن رصيدك أو التنشيط الفوري للاشتراك وجني المكافآت.`
                           : `To activate your referral link and start receiving rewards, you must first deposit or pay a minimum of $${economySettings?.referral_activation_min_deposit || 10}.`}
@@ -895,36 +898,37 @@ export const RewardsPage: React.FC = () => {
                           setActivationMethod('stripe');
                         }
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-[var(--radius)] bg-amber-500 text-white hover:bg-amber-600 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-theme shadow-lg shadow-amber-500/10 border border-amber-400/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-[4px] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-all duration-300 border border-gray-800 dark:border-gray-200 cursor-pointer shadow-sm group"
                     >
-                      <Zap size={14} className="animate-pulse" />
-                      {dir === 'rtl' ? 'تفعيل نظام الأرباح الآن' : 'Activate Earnings Now'}
+                      <Zap size={14} className="text-emerald-500 transition-all duration-300" />
+                      <span>{dir === 'rtl' ? 'تفعيل نظام الأرباح الآن' : 'Activate Earnings Now'}</span>
                     </button>
                   </>
                 ) : (
                   <form onSubmit={handleActivateWithDeposit} className="text-left space-y-4">
                     <div className="flex items-center justify-between border-b border-[var(--border-main)] pb-2 mb-2">
-                      <span className="text-xs font-black text-amber-500 uppercase tracking-widest">
+                      <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-1.5">
+                        <Zap size={14} className="text-emerald-500" />
                         {dir === 'rtl' ? 'تفعيل حساب الإحالات والعمولات' : 'Referral Activation Hub'}
                       </span>
                       <button
                         type="button"
                         onClick={() => setShowActivationForm(false)}
-                        className="text-[10px] uppercase font-bold text-[var(--text-secondary)] hover:text-amber-500 transition-theme cursor-pointer"
+                        className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 cursor-pointer"
                       >
                         {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                       </button>
                     </div>
 
                     {/* Method Selector Tabs */}
-                    <div className="grid grid-cols-5 gap-1 bg-[var(--bg-primary)] p-0.5 rounded-sm border border-[var(--border-main)]">
+                    <div className="grid grid-cols-5 gap-1 bg-[var(--bg-primary)] p-0.5 rounded-[4px] border border-[var(--border-main)]">
                       <button
                         type="button"
                         onClick={() => setActivationMethod('balance')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-[4px] text-[9px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                           activationMethod === 'balance'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                         }`}
                         title={dir === 'rtl' ? 'رصيد المحفظة' : 'Wallet Balance'}
                       >
@@ -933,10 +937,10 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('stripe')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-[4px] text-[9px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                           activationMethod === 'stripe'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                         }`}
                         title={dir === 'rtl' ? 'بطاقة الائتمان' : 'Credit Card'}
                       >
@@ -945,10 +949,10 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('crypto')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-[4px] text-[9px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                           activationMethod === 'crypto'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                         }`}
                         title={dir === 'rtl' ? 'عملة USDT' : 'USDT Crypto'}
                       >
@@ -957,10 +961,10 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('paypal')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-[4px] text-[9px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                           activationMethod === 'paypal'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                         }`}
                         title="PayPal"
                       >
@@ -969,10 +973,10 @@ export const RewardsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setActivationMethod('bank')}
-                        className={`py-1.5 rounded-sm text-[9px] font-black uppercase text-center transition-theme cursor-pointer ${
+                        className={`py-1.5 rounded-[4px] text-[9px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                           activationMethod === 'bank'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                         }`}
                         title={dir === 'rtl' ? 'تحويل بنكي' : 'Bank Transfer'}
                       >
@@ -984,35 +988,35 @@ export const RewardsPage: React.FC = () => {
                     <div className="bg-[var(--bg-primary)] p-3 rounded-md border border-[var(--border-main)] text-xs space-y-3">
                       {activationMethod === 'balance' && (
                         <div className="space-y-3 text-left">
-                          <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-semibold">
                             {dir === 'rtl'
                               ? `يمكنك تفعيل حساب الأرباح فوراً باستخدام رصيدك المتوفر حالياً في المحفظة التقنية.`
                               : `Directly activate your referrals and earnings using your available tech wallet balance.`}
                           </p>
-                          <div className="flex items-center justify-between bg-emerald-500/[0.02] border border-emerald-500/10 p-2 rounded-sm text-[11px] font-black">
-                            <span className="text-[var(--text-secondary)]">{dir === 'rtl' ? 'الرصيد المتاح:' : 'Available Balance:'}</span>
-                            <span className="text-emerald-500 font-mono">${wallet?.balance || 0}</span>
+                          <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 p-2 rounded-[4px] text-[11px] font-black">
+                            <span className="text-gray-500 dark:text-gray-400">{dir === 'rtl' ? 'الرصيد المتاح:' : 'Available Balance:'}</span>
+                            <span className="text-gray-900 dark:text-white font-mono">${wallet?.balance || 0}</span>
                           </div>
-                          <div className="flex items-center justify-between bg-amber-500/[0.02] border border-amber-500/10 p-2 rounded-sm text-[11px] font-black">
-                            <span className="text-[var(--text-secondary)]">{dir === 'rtl' ? 'رسوم التفعيل:' : 'Activation Fee:'}</span>
-                            <span className="text-amber-500 font-mono">${economySettings?.referral_activation_min_deposit || 10}</span>
+                          <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 p-2 rounded-[4px] text-[11px] font-black">
+                            <span className="text-gray-500 dark:text-gray-400">{dir === 'rtl' ? 'رسوم التفعيل:' : 'Activation Fee:'}</span>
+                            <span className="text-gray-900 dark:text-white font-mono">${economySettings?.referral_activation_min_deposit || 10}</span>
                           </div>
                           {Number(wallet?.balance || 0) >= Number(economySettings?.referral_activation_min_deposit || 10) ? (
                             <button
                               type="button"
                               disabled={isActivating}
                               onClick={handleActivateWithBalance}
-                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                              className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                             >
                               {isActivating ? (
-                                <RefreshCw size={12} className="animate-spin" />
+                                <RefreshCw size={12} className="animate-spin text-emerald-500" />
                               ) : (
-                                <ShieldCheck size={12} />
+                                <ShieldCheck size={12} className="text-emerald-500" />
                               )}
-                              {dir === 'rtl' ? 'تفعيل فوري وخصم من الرصيد' : 'Deduct Balance & Activate Now'}
+                              <span>{dir === 'rtl' ? 'تفعيل فوري وخصم من الرصيد' : 'Deduct Balance & Activate Now'}</span>
                             </button>
                           ) : (
-                            <div className="p-2 border border-rose-500/10 bg-rose-500/[0.02] rounded-sm text-[9px] text-rose-500 font-bold leading-relaxed flex items-center gap-2">
+                            <div className="p-2 border border-rose-500/10 bg-rose-500/[0.02] rounded-[4px] text-[9px] text-rose-500 font-bold leading-relaxed flex items-center gap-2">
                               <AlertTriangle size={12} className="flex-shrink-0" />
                               <span>
                                 {dir === 'rtl'
@@ -1026,7 +1030,7 @@ export const RewardsPage: React.FC = () => {
 
                       {activationMethod === 'stripe' && (
                         <div className="space-y-3 text-left">
-                          <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed font-semibold">
                             {dir === 'rtl'
                               ? `سوف تصدر معاملة إيداع فوري بمبلغ التفعيل ($${economySettings?.referral_activation_min_deposit || 10})، وسيتم تحويلك لبوابة Stripe الآمنة لتأكيد الدفع بالبطاقة.`
                               : `Initiate a secure card checkout session for exactly the activation fee ($${economySettings?.referral_activation_min_deposit || 10}) via Stripe.`}
@@ -1034,14 +1038,14 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                           >
                             {isActivating ? (
-                              <RefreshCw size={12} className="animate-spin" />
+                              <RefreshCw size={12} className="animate-spin text-emerald-500" />
                             ) : (
-                              <CreditCard size={12} />
+                              <CreditCard size={12} className="text-emerald-500" />
                             )}
-                            {dir === 'rtl' ? 'الدفع الآمن بالبطاقة والتفعيل الفوري' : 'Pay Safely & Activate Instantly'}
+                            <span>{dir === 'rtl' ? 'الدفع الآمن بالبطاقة والتفعيل الفوري' : 'Pay Safely & Activate Instantly'}</span>
                           </button>
                         </div>
                       )}
@@ -1049,8 +1053,8 @@ export const RewardsPage: React.FC = () => {
                       {/* Manual USDT Deposit Channel */}
                       {activationMethod === 'crypto' && (
                         <div className="space-y-3.5 text-left">
-                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-1.5">
-                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">USDT TRC-20 Address</span>
+                          <div className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/40 rounded-[4px] space-y-1.5">
+                            <span className="text-[9px] uppercase font-black text-gray-700 dark:text-gray-300 tracking-wider block">USDT TRC-20 Address</span>
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-[9px] text-[var(--text-primary)] select-all truncate block flex-1 bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] py-1 shadow-inner rounded-[3px]">
                                 {economySettings?.crypto_address || 'No Address available'}
@@ -1063,7 +1067,7 @@ export const RewardsPage: React.FC = () => {
                                     toast.success(dir === 'rtl' ? 'تم نسخ العنوان بنجاح!' : 'USDT TRC-20 Address Copied!');
                                   }
                                 }}
-                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-theme border border-emerald-500/20"
+                                className="px-2 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-[3px] text-[9px] font-black cursor-pointer transition-all duration-300 border border-gray-300 dark:border-gray-600"
                               >
                                 {dir === 'rtl' ? 'نسخ' : 'Copy'}
                               </button>
@@ -1071,7 +1075,7 @@ export const RewardsPage: React.FC = () => {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'الرقم المرجعي أو هاش العملية *' : 'Transaction Hash / TxID *'}
                             </label>
                             <input
@@ -1080,12 +1084,12 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder="e.g. 0x82c1f301ae9f..."
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] text-[10px] font-bold font-mono focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-all duration-300 text-[var(--text-primary)]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'صورة إثبات التحويل (اختياري)' : 'Proof Screenshot / Image (Optional)'}
                             </label>
                             <input
@@ -1100,9 +1104,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-gray-400 dark:hover:border-gray-500 p-2 py-3 rounded-[4px] flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-gray-500 dark:text-gray-400 group hover:text-gray-900 dark:hover:text-white transition-all duration-300"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-all duration-300" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار لقطة شاشة إثبات الدفع' : 'Click to select transaction screenshot')}
                               </span>
@@ -1112,17 +1116,17 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin" />
+                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} />
-                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                                <Send size={11} className="text-emerald-500" />
+                                <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
                           </button>
@@ -1132,8 +1136,8 @@ export const RewardsPage: React.FC = () => {
                       {/* Manual PayPal Channel */}
                       {activationMethod === 'paypal' && (
                         <div className="space-y-3.5 text-left">
-                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-1.5">
-                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">PayPal Recipient Email</span>
+                          <div className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/40 rounded-[4px] space-y-1.5">
+                            <span className="text-[9px] uppercase font-black text-gray-700 dark:text-gray-300 tracking-wider block">PayPal Recipient Email</span>
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-[9px] text-[var(--text-primary)] select-all truncate block flex-1 bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] py-1 shadow-inner rounded-[3px]">
                                 {economySettings?.paypal_email || 'No email configured'}
@@ -1146,7 +1150,7 @@ export const RewardsPage: React.FC = () => {
                                     toast.success(dir === 'rtl' ? 'تم نسخ ايميل بايبال!' : 'PayPal Email Copied!');
                                   }
                                 }}
-                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-[3px] text-[9px] font-black cursor-pointer transition-theme border border-emerald-500/20"
+                                className="px-2 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-[3px] text-[9px] font-black cursor-pointer transition-all duration-300 border border-gray-300 dark:border-gray-600"
                               >
                                 {dir === 'rtl' ? 'نسخ' : 'Copy'}
                               </button>
@@ -1154,7 +1158,7 @@ export const RewardsPage: React.FC = () => {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'الرقم المرجعي أو بريد الدافع *' : 'Transaction Reference / Email *'}
                             </label>
                             <input
@@ -1163,12 +1167,12 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder="e.g. PP-581023 or sender@example.com"
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold font-mono focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] text-[10px] font-bold font-mono focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-all duration-300 text-[var(--text-primary)]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'لقطة شاشة تثبت الدفع والخصم (اختياري)' : 'Proof Screenshot / Image (Optional)'}
                             </label>
                             <input
@@ -1183,9 +1187,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-gray-400 dark:hover:border-gray-500 p-2 py-3 rounded-[4px] flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-gray-500 dark:text-gray-400 group hover:text-gray-900 dark:hover:text-white transition-all duration-300"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-all duration-300" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إثبات بايبال' : 'Click to select PayPal screenshot')}
                               </span>
@@ -1195,17 +1199,17 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin" />
+                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} />
-                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                                <Send size={11} className="text-emerald-500" />
+                                <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
                           </button>
@@ -1215,24 +1219,24 @@ export const RewardsPage: React.FC = () => {
                       {/* Manual Bank Transfer Channel */}
                       {activationMethod === 'bank' && (
                         <div className="space-y-3 text-left">
-                          <div className="p-2 border border-emerald-500/15 bg-emerald-500/[0.02] rounded-sm space-y-2 text-[9px] font-bold">
-                            <span className="text-[9px] uppercase font-black text-emerald-500 tracking-wider block">Official Bank Details</span>
+                          <div className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/40 rounded-[4px] space-y-2 text-[9px] font-bold">
+                            <span className="text-[9px] uppercase font-black text-gray-700 dark:text-gray-300 tracking-wider block">Official Bank Details</span>
                             <div className="grid grid-cols-2 gap-2 text-[9px]">
                               <div>
-                                <span className="text-[var(--text-secondary)] block">Bank Name:</span>
+                                <span className="text-gray-500 dark:text-gray-400 block">Bank Name:</span>
                                 <span className="text-[var(--text-primary)] block font-black truncate">{economySettings?.bank_name || 'Bank'}</span>
                               </div>
                               <div>
-                                <span className="text-[var(--text-secondary)] block">Recipient / Name:</span>
+                                <span className="text-gray-500 dark:text-gray-400 block">Recipient / Name:</span>
                                 <span className="text-[var(--text-primary)] block font-black truncate">{economySettings?.bank_recipient || 'Perplexta Tech'}</span>
                               </div>
                               <div className="col-span-2">
-                                <span className="text-[var(--text-secondary)] block">IBAN Number:</span>
+                                <span className="text-gray-500 dark:text-gray-400 block">IBAN Number:</span>
                                 <span className="text-[var(--text-primary)] font-mono block font-black select-all whitespace-normal bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] mb-1 rounded-[3px]">{economySettings?.bank_iban || 'SA0380000000000'}</span>
                               </div>
                               {economySettings?.bank_swift && (
                                 <div className="col-span-2">
-                                  <span className="text-[var(--text-secondary)] block">Bank SWIFT / BIC:</span>
+                                  <span className="text-gray-500 dark:text-gray-400 block">Bank SWIFT / BIC:</span>
                                   <span className="text-[var(--text-primary)] font-mono block font-black select-all bg-[var(--bg-secondary)] p-1 border border-[var(--border-main)] rounded-[3px]">{economySettings.bank_swift}</span>
                                 </div>
                               )}
@@ -1240,7 +1244,7 @@ export const RewardsPage: React.FC = () => {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'اسم المحول أو الرقم المرجعي *' : 'Sender Name / Transaction ID *'}
                             </label>
                             <input
@@ -1249,12 +1253,12 @@ export const RewardsPage: React.FC = () => {
                               value={activationRefId}
                               onChange={(e) => setActivationRefId(e.target.value)}
                               placeholder={dir === 'rtl' ? 'مثل: محمد أحمد أحمد / كود 58210' : 'e.g. John Doe / Ref ID 9821a'}
-                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-sm text-[10px] font-bold focus:outline-none focus:border-emerald-500 transition-theme text-[var(--text-primary)]"
+                              className="w-full px-2.5 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-[4px] text-[10px] font-bold focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-all duration-300 text-[var(--text-primary)]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight block">
+                            <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight block">
                               {dir === 'rtl' ? 'صورة إيصال التحويل البنكي (اختياري)' : 'Bank Receipt Image / Copy (Optional)'}
                             </label>
                             <input
@@ -1269,9 +1273,9 @@ export const RewardsPage: React.FC = () => {
                             />
                             <div
                               onClick={() => activationFileInputRef.current?.click()}
-                              className="border border-dashed border-[var(--border-main)] hover:border-emerald-500 p-2 py-3 rounded-sm flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-[var(--text-secondary)] group hover:text-[var(--text-primary)] transition-theme"
+                              className="border border-dashed border-[var(--border-main)] hover:border-gray-400 dark:hover:border-gray-500 p-2 py-3 rounded-[4px] flex flex-col items-center justify-center gap-1 bg-[var(--bg-secondary)] cursor-pointer text-center text-[9px] text-gray-500 dark:text-gray-400 group hover:text-gray-900 dark:hover:text-white transition-all duration-300"
                             >
-                              <Camera size={14} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme" />
+                              <Camera size={14} className="text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-all duration-300" />
                               <span className="font-semibold select-none">
                                 {activationProofFile ? activationProofFile.name : (dir === 'rtl' ? 'انقر لاختيار صورة إيصال البنك' : 'Click to select transaction statement receipt')}
                               </span>
@@ -1281,17 +1285,17 @@ export const RewardsPage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={isActivating}
-                            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 transition-theme cursor-pointer"
+                            className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin" />
+                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} />
-                                {dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}
+                                <Send size={11} className="text-emerald-500" />
+                                <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
                           </button>
@@ -1303,20 +1307,20 @@ export const RewardsPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-1.5 md:space-y-2">
-                <label className="text-xs md:text-sm text-[var(--text-secondary)] font-bold uppercase tracking-widest">{t('yourReferralLink')}</label>
+                <label className="text-xs md:text-sm text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">{t('yourReferralLink')}</label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 p-2.5 md:p-3 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-mono text-[11px] md:text-xs overflow-hidden text-ellipsis whitespace-nowrap shadow-inner">
+                  <div className="flex-1 p-2.5 md:p-3 rounded-[4px] border bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-900 dark:text-white font-mono text-[11px] md:text-xs overflow-hidden text-ellipsis whitespace-nowrap shadow-inner">
                     {referralLink}
                   </div>
                   <button 
                     onClick={handleCopy}
-                    className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[var(--radius)] border transition-theme ${
+                    className={`flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-[4px] border transition-all duration-300 cursor-pointer ${
                       copied 
-                        ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] px-6' 
-                        : `bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20`
+                        ? 'bg-gray-900 dark:bg-white border-gray-800 dark:border-gray-200 text-white dark:text-gray-900 font-bold' 
+                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white font-extrabold'
                     }`}
                   >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} className="text-emerald-500" />}
                     <span className="hidden sm:inline text-xs md:text-sm font-bold">{copied ? t('copied') : t('copy')}</span>
                   </button>
                 </div>
@@ -1327,11 +1331,11 @@ export const RewardsPage: React.FC = () => {
             {wallet?.referral_activated && (
               <div className="pt-6 border-t border-[var(--border-main)] space-y-4">
                 <div className="space-y-1.5" style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
-                  <label className={`text-xs md:text-sm text-[var(--text-secondary)] font-bold uppercase tracking-widest flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+                  <label className={`text-xs md:text-sm text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
                     <Mail size={14} className="text-emerald-500" />
                     <span>{dir === 'rtl' ? 'دعوة صديق عبر البريد الإلكتروني' : 'Invite Friend via Email'}</span>
                   </label>
-                  <p className="text-[10px] md:text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                  <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
                     {dir === 'rtl'
                       ? 'أدخل البريد الإلكتروني لصديقك لإرسال دعوة انضمام مهنية مشفرة وموثقة برمز الإحالة الخاص بك تلقائياً.'
                       : "Send a professional, cryptographically certified invitation directly to your peer's inbox with your referral credentials."}
@@ -1345,20 +1349,20 @@ export const RewardsPage: React.FC = () => {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder={dir === 'rtl' ? 'البريد الإلكتروني للزميل (مثال: peer@example.com)' : 'Peer email address (e.g., peer@example.com)'}
-                    className="flex-1 px-3 md:px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[var(--radius)] text-xs md:text-sm focus:outline-none focus:border-emerald-500 font-sans text-[var(--text-primary)] transition-theme"
+                    className="flex-1 px-3 md:px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-[4px] text-xs md:text-sm focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 font-sans text-[var(--text-primary)] transition-all duration-300"
                     disabled={isInviting}
                   />
                   <button
                     type="submit"
                     disabled={isInviting}
-                    className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500 text-white font-bold text-xs md:text-sm shadow-md transition-theme ${
-                      isInviting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-emerald-600 hover:shadow-emerald-500/20'
+                    className={`flex items-center justify-center gap-2 px-4 md:px-5 py-2 rounded-[4px] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs md:text-sm shadow-md transition-all duration-300 cursor-pointer ${
+                      isInviting ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
                   >
                     {isInviting ? (
-                      <RefreshCw size={14} className="animate-spin" />
+                      <RefreshCw size={14} className="animate-spin text-emerald-500" />
                     ) : (
-                      <Send size={14} />
+                      <Send size={14} className="text-emerald-500" />
                     )}
                     <span>{isInviting ? (dir === 'rtl' ? 'جاري الإرسال...' : 'Sending...') : (dir === 'rtl' ? 'إرسال الدعوة' : 'Send Invite')}</span>
                   </button>
@@ -1370,10 +1374,10 @@ export const RewardsPage: React.FC = () => {
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] block" style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
                       {dir === 'rtl' ? 'سجل الدعوات المرسلة' : 'Sent Invitations Ledger'}
                     </span>
-                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin border border-[var(--border-main)] rounded-[var(--radius)] bg-[var(--bg-primary)]/40 p-2 md:p-3">
+                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin border border-[var(--border-main)] rounded-[4px] bg-[var(--bg-primary)]/40 p-2 md:p-3">
                       {sentInvitations.map((inv: any) => (
                         <div key={inv.id} className="flex items-center justify-between text-[11px] py-1 border-b border-[var(--border-main)]/40 last:border-0" style={{ direction: dir === 'rtl' ? 'rtl' : 'ltr' }}>
-                          <span className="font-mono text-[var(--text-secondary)] font-bold">{inv.email}</span>
+                          <span className="font-mono text-gray-600 dark:text-gray-300 font-bold">{inv.email}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-[var(--text-muted)] font-medium">
                               {new Date(inv.created_at).toLocaleDateString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
@@ -1382,19 +1386,19 @@ export const RewardsPage: React.FC = () => {
                                 year: 'numeric'
                               })}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
                               {inv.status === 'reminded' ? (dir === 'rtl' ? 'تم التذكير' : 'Reminded') : (dir === 'rtl' ? 'تم الإرسال' : 'Sent')}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleRemindInvitation(inv.email)}
                               disabled={remindingEmails[inv.email]}
-                              className="px-2 py-0.5 rounded-sm text-[9px] font-black uppercase bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-theme cursor-pointer flex items-center gap-1"
+                              className="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-[10px] font-bold rounded-[4px] transition-all duration-300 cursor-pointer flex items-center gap-1"
                             >
                               {remindingEmails[inv.email] ? (
-                                <RefreshCw size={10} className="animate-spin text-amber-500" />
+                                <RefreshCw size={10} className="animate-spin text-emerald-500" />
                               ) : (
-                                <Zap size={10} className="text-amber-500 fill-amber-500/20" />
+                                <Zap size={10} className="text-emerald-500" />
                               )}
                               <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
                             </button>
@@ -1407,16 +1411,16 @@ export const RewardsPage: React.FC = () => {
               </div>
             )}
 
-            <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/30 transition-theme shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+            <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-theme">
-                  <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300" />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[4px] bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 transition-all duration-300">
+                  <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300 text-emerald-500" />
                 </div>
-                <span className="font-black text-xs md:text-base text-black dark:text-white group-hover:text-emerald-500 transition-colors duration-300 uppercase tracking-tight">
+                <span className="font-black text-xs md:text-base text-gray-900 dark:text-white uppercase tracking-tight">
                   {t('totalSuccessfulReferralsUser')}
                 </span>
               </div>
-              <span className="text-2xl md:text-3xl font-black text-black dark:text-white group-hover:text-emerald-500 transition-colors duration-300">
+              <span className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white">
                 {referralCount}
               </span>
             </div>
@@ -1426,14 +1430,14 @@ export const RewardsPage: React.FC = () => {
       </div>
 
       {/* Referred Friends & Deposit Verification History List */}
-      <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-emerald-500/20">
+      <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-gray-300 dark:hover:border-gray-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[var(--border-main)] pb-6">
           <div>
-            <h3 className="text-lg font-bold text-emerald-500 flex items-center gap-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Users size={20} className="text-emerald-500" />
-              {dir === 'rtl' ? 'سجل الأصدقاء والعمولات' : 'Invited Friends & Verification Status'}
+              <span>{dir === 'rtl' ? 'سجل الأصدقاء والعمولات' : 'Invited Friends & Verification Status'}</span>
             </h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium select-none">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium select-none">
               {dir === 'rtl' 
                 ? 'تتبع الأصدقاء المسجلين، وثائق الإثبات وعمليات المراجعة الخاصة بمدفوعاتهم.' 
                 : 'Track your invited friends, their manual deposit receipts, and verification cycles.'}
@@ -1443,7 +1447,7 @@ export const RewardsPage: React.FC = () => {
           {/* Filters & Sorting */}
           <div className="flex flex-wrap items-center gap-3 self-start sm:self-center">
             {/* Filters */}
-            <div className="flex flex-wrap gap-1 bg-[var(--bg-primary)] p-1 rounded-sm border border-[var(--border-main)]">
+            <div className="flex flex-wrap gap-1 bg-[var(--bg-primary)] p-1 rounded-[4px] border border-[var(--border-main)]">
               {(['all', 'verified', 'pending', 'nodeposityet'] as const).map((filterOpt) => {
                 const label = {
                   all: dir === 'rtl' ? 'الكل' : 'All',
@@ -1457,10 +1461,10 @@ export const RewardsPage: React.FC = () => {
                     key={filterOpt}
                     type="button"
                     onClick={() => setFriendsFilter(filterOpt)}
-                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase text-center transition-theme cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-[4px] text-[10px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
                       friendsFilter === filterOpt
-                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+                        ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 font-extrabold'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-transparent'
                     }`}
                   >
                     {label}
@@ -1559,12 +1563,12 @@ export const RewardsPage: React.FC = () => {
                   {sortedAndFiltered.map((friend) => {
                     // Decide deposit badge styling
                     let depBadgeProps = {
-                      bg: 'bg-gray-500/10 border-gray-500/20 text-gray-500 dark:bg-gray-400/5 dark:text-gray-400',
+                      bg: 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300',
                       label: dir === 'rtl' ? 'بانتظار الإيداع' : 'Pending First Deposit'
                     };
                     if (friend.referral_status === 'active') {
                       depBadgeProps = {
-                        bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500',
+                        bg: 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300',
                         label: dir === 'rtl' ? 'مقبول وتم التأكيد' : 'Approved & Verified'
                       };
                     } else if (friend.deposit_status === 'pending') {
@@ -1586,12 +1590,12 @@ export const RewardsPage: React.FC = () => {
                     };
                     if (friend.referral_status === 'active') {
                       refStatusProps = {
-                        bg: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 drop-shadow-[0_0_8px_rgba(16,185,129,0.1)]',
+                        bg: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700',
                         label: dir === 'rtl' ? 'مكافأة مكتسبة' : 'Earned & Counted'
                       };
                     } else {
                       refStatusProps = {
-                        bg: 'bg-gray-500/10 text-[var(--text-secondary)] border border-gray-500/20',
+                        bg: 'bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700',
                         label: dir === 'rtl' ? 'غير مسدد' : 'Inactive Account'
                       };
                     }
@@ -1600,7 +1604,7 @@ export const RewardsPage: React.FC = () => {
                       <tr key={friend.referral_id} className="hover:bg-[var(--bg-primary)]/40 transition-theme">
                         <td className="py-4 pr-3">
                           <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/5 text-emerald-500 flex items-center justify-center font-bold text-xs uppercase border border-emerald-500/10 select-none">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs uppercase border border-gray-200 dark:border-gray-700 select-none">
                               {friend.name ? friend.name.charAt(0) : 'U'}
                             </div>
                             <div>
@@ -1651,12 +1655,12 @@ export const RewardsPage: React.FC = () => {
                                 <button
                                   onClick={() => handleRemindInvitation(friend.email)}
                                   disabled={remindingEmails[friend.email]}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 transition-theme cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-theme cursor-pointer"
                                 >
                                   {remindingEmails[friend.email] ? (
                                     <RefreshCw size={10} className="animate-spin text-emerald-500" />
                                   ) : (
-                                    <Zap size={10} className="text-emerald-500 fill-emerald-500/20" />
+                                    <Zap size={10} className="text-emerald-500" />
                                   )}
                                   <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
                                 </button>
@@ -1682,15 +1686,15 @@ export const RewardsPage: React.FC = () => {
       {/* KYC Verification Card */}
       {contextUser?.kyc_required && contextUser?.kyc_status !== 'verified' && (
         <div className={`rounded-[var(--radius)] p-5 md:p-8 border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] col-span-1 md:col-span-2 shadow-sm ${
-          contextUser?.kyc_status === 'pending' ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' : 
+          contextUser?.kyc_status === 'pending' ? 'bg-gray-100/50 dark:bg-gray-800/30 border-gray-300 dark:border-gray-700' : 
           contextUser?.kyc_status === 'rejected' ? 'bg-red-500/5 border-red-500/20 shadow-red-500/5' : ''
         }`}>
           
           {contextUser?.kyc_status === 'pending' ? (
             <div className="flex flex-col items-center text-center py-6 md:py-10 space-y-4 md:space-y-6">
               <div className="relative">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center animate-pulse">
-                  <ShieldCheck size={40} className="md:w-[48px] md:h-[48px] text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-[var(--radius)] bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                  <ShieldCheck size={40} className="md:w-[48px] md:h-[48px] text-emerald-500" />
                 </div>
                 <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] border-[3px] md:border-4 border-[var(--bg-base)] flex items-center justify-center">
                   <Clock size={16} className="text-amber-500" />
@@ -1709,7 +1713,7 @@ export const RewardsPage: React.FC = () => {
               </div>
 
               <div className={`mt-4 md:mt-8 p-4 md:p-6 rounded-[var(--radius)] border flex flex-col md:flex-row items-center gap-4 md:gap-6 max-w-3xl bg-[var(--bg-primary)]/50 border-[var(--border-main)]`}>
-                <div className="flex-shrink-0 p-3 md:p-4 rounded-[var(--radius)] bg-blue-500/10 text-blue-500">
+                <div className="flex-shrink-0 p-3 md:p-4 rounded-[var(--radius)] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                   <Lock size={20} className="md:w-6 md:h-6" />
                 </div>
                 <div className={`text-[10px] md:text-sm leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
@@ -1728,7 +1732,7 @@ export const RewardsPage: React.FC = () => {
             <div className="flex flex-col items-center text-center py-6 md:py-10 space-y-4 md:space-y-6">
               <div className="relative">
                 <div className="w-20 h-20 md:w-24 md:h-24 rounded-[var(--radius)] bg-red-500/10 flex items-center justify-center">
-                  <XCircle size={40} className="md:w-[48px] md:h-[48px] text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
+                  <XCircle size={40} className="md:w-[48px] md:h-[48px] text-red-500" />
                 </div>
               </div>
 
@@ -1756,9 +1760,9 @@ export const RewardsPage: React.FC = () => {
                     setSelfieData(null);
                     setKycFullName('');
                   }}
-                  className="mt-4 px-8 py-3 rounded-[var(--radius)] bg-emerald-500 text-white font-bold text-sm md:text-base hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
+                  className="mt-4 px-8 py-3 rounded-[var(--radius)] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-sm md:text-base transition-all duration-300 shadow-md flex items-center gap-2 mx-auto cursor-pointer"
                 >
-                  <RefreshCw size={18} />
+                  <RefreshCw size={18} className="text-emerald-500" />
                   {dir === 'rtl' ? 'إعادة المحاولة' : 'Try Again'}
                 </button>
               </div>
@@ -1768,8 +1772,8 @@ export const RewardsPage: React.FC = () => {
               {/* Left Side: Info */}
               <div className="flex-1 space-y-4 md:space-y-6">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
-                    <ShieldCheck size={20} className="md:w-6 md:h-6" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <ShieldCheck size={20} className="md:w-6 md:h-6 text-emerald-500" />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -1788,10 +1792,10 @@ export const RewardsPage: React.FC = () => {
                 </p>
 
                 <div className={`p-4 rounded-[var(--radius)] border flex items-start gap-3 ${
-                  theme === 'dark' ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-100'
+                  theme === 'dark' ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-100 border-gray-200'
                 }`}>
-                  <Lock className="text-rose-500 mt-0.5 flex-shrink-0" size={16} />
-                  <p className="text-[10px] md:text-sm text-rose-600 dark:text-rose-400 leading-relaxed font-medium">
+                  <Lock className="text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" size={16} />
+                  <p className="text-[10px] md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
                     {t('selfieSecurityNote')}
                   </p>
                 </div>
@@ -1804,7 +1808,7 @@ export const RewardsPage: React.FC = () => {
                   <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
                     {t('fullNameAsPerIdUser')}
                   </label>
-                  <div className={`relative flex items-center rounded-[var(--radius)] border transition-theme bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50`}>
+                  <div className={`relative flex items-center rounded-[var(--radius)] border transition-theme bg-[var(--bg-input)] border-[var(--border)] focus-within:border-gray-400 dark:focus-within:border-gray-600`}>
                     <input 
                       type="text"
                       value={kycFullName || ''}
@@ -1822,7 +1826,7 @@ export const RewardsPage: React.FC = () => {
                       <video ref={videoRef} className="w-full rounded-[var(--radius)] bg-black" autoPlay playsInline />
                       <button 
                         onClick={captureImage}
-                        className="w-full py-2.5 md:py-3 rounded-[var(--radius)] bg-emerald-500 text-white font-bold text-xs md:text-base"
+                        className="w-full py-2.5 md:py-3 rounded-[var(--radius)] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs md:text-base cursor-pointer transition-all duration-300"
                       >
                         {t('capture')}
                       </button>
@@ -1833,18 +1837,18 @@ export const RewardsPage: React.FC = () => {
                       disabled={selfieCaptured}
                       className={`w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 rounded-[var(--radius)] border-2 border-dashed transition-theme ${
                         selfieCaptured 
-                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 cursor-default shadow-sm'
-                          : `border-[var(--border)] hover:border-emerald-500/50 hover:bg-emerald-500/5 text-[var(--text-secondary)] hover:text-emerald-500`
+                          ? 'border-gray-800 dark:border-gray-200 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white cursor-default shadow-sm'
+                          : `border-[var(--border)] hover:border-gray-400 dark:hover:border-gray-600 text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white`
                       }`}
                     >
                       {selfieCaptured ? (
                         <>
-                          <CheckCircle2 size={16} className="md:w-5 md:h-5" />
+                          <CheckCircle2 size={16} className="md:w-5 md:h-5 text-emerald-500" />
                           <span className="font-bold text-xs md:text-base">{t('selfieCaptured')}</span>
                         </>
                       ) : (
                         <>
-                          <Camera size={16} className="md:w-5 md:h-5" />
+                          <Camera size={16} className="md:w-5 md:h-5 text-gray-500 dark:text-gray-400" />
                           <span className="font-bold text-xs md:text-base">{t('takeSelfieWithId')}</span>
                         </>
                       )}
@@ -1857,20 +1861,22 @@ export const RewardsPage: React.FC = () => {
                 <button 
                   onClick={handleSubmitKYC}
                   disabled={!kycFullName.trim() || !selfieCaptured || isSubmitting}
-                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-[var(--radius)] font-bold text-xs md:text-base transition-theme ${
+                  className={`w-full flex items-center justify-center gap-2 py-3 md:py-4 rounded-[4px] font-bold text-xs md:text-base transition-all duration-300 cursor-pointer ${
                     !kycFullName.trim() || !selfieCaptured || isSubmitting
-                      ? 'opacity-50 cursor-not-allowed bg-[var(--bg-primary)] text-[var(--text-muted)]'
-                      : 'bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+                      ? 'opacity-50 cursor-not-allowed bg-gray-200 dark:bg-gray-800 text-gray-400'
+                      : 'bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 shadow-md'
                   }`}
                 >
                   {isSubmitting ? (
-                    <RefreshCw className="animate-spin" size={16} />
+                    <RefreshCw className="animate-spin text-emerald-500" size={16} />
                   ) : (
-                    <ShieldCheck size={16} />
+                    <ShieldCheck size={16} className="text-emerald-500" />
                   )}
-                  {isSubmitting 
-                    ? (dir === 'rtl' ? 'جاري الإرسال...' : 'Sending...') 
-                    : t('submitKyc')}
+                  <span>
+                    {isSubmitting 
+                      ? (dir === 'rtl' ? 'جاري الإرسال...' : 'Sending...') 
+                      : t('submitKyc')}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1886,13 +1892,13 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
               <History className="text-emerald-500 md:w-5 md:h-5" size={18} />
-              <h3 className="text-base md:text-lg font-bold text-emerald-500">{t('transactionHistory')}</h3>
+              <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">{t('transactionHistory')}</h3>
             </div>
             {transactions.length > 0 && (
               <button
                 onClick={handleClearHistory}
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[calc(var(--radius)/1.5)] border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-bold transition-theme disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-bold transition-theme disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw size={12} className={isSubmitting ? "animate-spin" : ""} />
                 {dir === 'rtl' ? 'مسح السجل' : 'Clear History'}
@@ -1938,11 +1944,11 @@ export const RewardsPage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 font-bold text-[var(--text-primary)] whitespace-nowrap">
                               {hasPoints ? (
-                                <span className={pts > 0 ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+                                <span className={pts > 0 ? 'text-gray-900 dark:text-white font-bold' : 'text-rose-500 font-bold'}>
                                   {pts > 0 ? '+' : ''}{pts.toLocaleString()} PTS
                                 </span>
                               ) : hasAmount ? (
-                                <span className={amt > 0 ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
+                                <span className={amt > 0 ? 'text-gray-900 dark:text-white font-bold' : 'text-rose-500 font-bold'}>
                                   {amt > 0 ? '+' : '-'}${Math.abs(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                               ) : (
@@ -1958,7 +1964,7 @@ export const RewardsPage: React.FC = () => {
                                   day: 'numeric'
                                 })}
                               </span>
-                              <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
+                              <span className="text-[9px] text-[var(--text-muted)] font-mono block mt-0.5">
                                 {new Date(tx.created_at).toLocaleTimeString(dir === 'rtl' ? 'ar-EG' : 'en-US', {
                                   hour: '2-digit',
                                   minute: '2-digit',
@@ -1974,9 +1980,9 @@ export const RewardsPage: React.FC = () => {
                           <td colSpan={4} className="px-6 py-4 text-center">
                             <button 
                               onClick={() => setTxOffset(prev => prev + TX_LIMIT)}
-                              className="text-emerald-500 hover:text-emerald-400 font-bold flex items-center gap-2 mx-auto transition-theme"
+                              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-2 mx-auto transition-theme cursor-pointer"
                             >
-                              <RefreshCw size={14} className={isSubmitting ? "animate-spin" : ""} />
+                              <RefreshCw size={14} className={`text-emerald-500 ${isSubmitting ? "animate-spin" : ""}`} />
                               {t('loadMore')}
                             </button>
                           </td>
@@ -2011,18 +2017,18 @@ export const RewardsPage: React.FC = () => {
             
             {/* Header */}
             <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
-              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">
+              <Zap className="text-emerald-500 md:w-7 md:h-7" size={24} />
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                 {t('convertPoints')}
               </h2>
-              <Zap className="text-rose-500 md:w-7 md:h-7" size={24} />
             </div>
 
             {/* Input Area */}
             <div className="space-y-1.5 md:space-y-2 mb-5 md:mb-6">
-              <label className="block text-xs md:text-sm font-medium text-[var(--text-secondary)]">
+              <label className="block text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400">
                 {t('numberOfPoints')}
               </label>
-              <div className={`relative flex items-center rounded-[var(--radius)] border transition-theme bg-[var(--bg-input)] border-[var(--border)] focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50`}>
+              <div className={`relative flex items-center rounded-[4px] border transition-all duration-300 bg-[var(--bg-input)] border-[var(--border)] focus-within:border-gray-400 dark:focus-within:border-gray-600`}>
                 <input 
                   type="text"
                   value={convertAmount || ''}
@@ -2031,7 +2037,7 @@ export const RewardsPage: React.FC = () => {
                   dir="ltr"
                 />
               </div>
-              <p className="text-[11px] md:text-sm text-[var(--text-secondary)] mt-1.5 md:mt-2">
+              <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2">
                 {t('currentBalancePoints').replace('{points}', Math.floor(wallet.points || 0).toLocaleString())}
               </p>
             </div>
@@ -2040,16 +2046,16 @@ export const RewardsPage: React.FC = () => {
             <div className="flex items-center gap-3 md:gap-4 mt-6 md:mt-8">
               <button 
                 onClick={() => setIsConvertModalOpen(false)}
-                className={`flex-1 py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]`}
+                className="flex-1 py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
               >
                 {t('cancel')}
               </button>
               <button 
                 onClick={handleConvertPoints}
                 disabled={isSubmitting}
-                className={`flex-[2] py-3 md:py-4 rounded-[var(--radius)] font-bold text-sm md:text-base transition-theme bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-50`}
+                className="flex-[2] py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 cursor-pointer disabled:opacity-50 shadow-md"
               >
-                {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : t('confirmConversion')}
+                {isSubmitting ? <RefreshCw className="animate-spin text-emerald-500" size={16} /> : t('confirmConversion')}
               </button>
             </div>
 

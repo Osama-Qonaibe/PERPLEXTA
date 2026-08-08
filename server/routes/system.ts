@@ -4,6 +4,7 @@ import { authenticateAdmin, authenticateToken } from '../middleware/auth.js';
 import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEconomySettings } from '../services/system.js';
 import { pool } from '../db/index.js';
 import { getStripe, getPayPalCredentials } from '../services/payments.js';
+import { logSystemActivity } from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -391,12 +392,13 @@ router.post("/launch-telemetry", (req, res) => {
     );
     
     // In a real scenario, we could save this to the 'logs' table
-    if (pool) {
-      pool.query(
-        "INSERT INTO system_logs (type, action, description, metadata, ip_address) VALUES ($1, $2, $3, $4, $5)",
-        ['info', 'PWA_LAUNCH', `PWA Launch detected in ${mode} mode`, JSON.stringify({ timing, userAgent }), ip]
-      ).catch((e: any) => console.error('[Telemetry] Failed to save to DB:', e));
-    }
+    logSystemActivity(
+      null,
+      'PWA_LAUNCH',
+      `PWA Launch detected in ${mode} mode`,
+      { timing, userAgent },
+      req
+    ).catch((e: any) => console.error('[Telemetry] Failed to save to DB:', e));
     
     res.status(204).end();
   } catch {

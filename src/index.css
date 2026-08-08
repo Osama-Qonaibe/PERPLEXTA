@@ -3,35 +3,36 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --theme-transition-duration: 150ms;
+  --theme-transition-duration: 180ms;
+  --theme-transition-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --ms-duration: var(--theme-transition-duration);
-  --ms-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --ms-easing: var(--theme-transition-easing);
 
-  --bg-base: var(--pwa-bg-color, #F8FAFC);
+  --bg-base: var(--pwa-bg-color, #FFFFFF);
   --bg-primary: #FFFFFF;
-  --bg-secondary: #F7F9FB;
+  --bg-secondary: #F7F7F7;
   --bg-dropdown: #FFFFFF;
-  --bg-hover: #F1F5F9;
+  --bg-hover: #EFEFEF;
   --bg-surface: #FFFFFF;
-  --bg-input: #F1F5F9;
+  --bg-input: #F7F7F7;
   
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --text-muted: #64748B;
+  --text-primary: #000000;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
   
-  --border-subtle: #E2E8F0;
-  --border-main: #E2E8F0;
-  --border-perplexta: #E2E8F0;
+  --border-subtle: #E4E4E7;
+  --border-main: #D4D4D8;
+  --border-perplexta: #D4D4D8;
   --border: var(--border-subtle);
-  --border-accent: #2563EB;
+  --border-accent: #000000;
   
-  --accent-emerald: #2563EB;
-  --accent-primary: #2563EB;
+  --accent-emerald: #000000;
+  --accent-primary: #000000;
   --accent-glow: transparent;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --danger: #000000;
+  --warning: #52525b;
 
-  --bg-overlay: rgba(15, 23, 42, 0.04);
+  --bg-overlay: rgba(0, 0, 0, 0.05);
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -51,32 +52,67 @@
   color-scheme: light;
 }
 
-.dark {
-  --bg-base: var(--pwa-bg-color, #121212);
-  --bg-primary: #1E1E1E;
-  --bg-secondary: #141416;
-  --bg-dropdown: #1a1a1c;
-  --bg-hover: #242424;
-  --bg-surface: #1E1E1E;
-  --bg-input: #242424;
+.dark,
+[data-theme="dark"] {
+  --bg-base: var(--pwa-bg-color, #000000);
+  --bg-primary: #0A0A0C;
+  --bg-secondary: #121215;
+  --bg-dropdown: #121215;
+  --bg-hover: #1a1a1e;
+  --bg-surface: #0A0A0C;
+  --bg-input: #121215;
 
-  --text-primary: #F3F4F6;
-  --text-secondary: #9CA3AF;
-  --text-muted: #64748b;
+  --text-primary: #FFFFFF;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-main: rgba(255, 255, 255, 0.08);
-  --border-perplexta: rgba(255, 255, 255, 0.08);
+  --border-subtle: #27272a;
+  --border-main: #27272a;
+  --border-perplexta: #27272a;
   --border: var(--border-main);
-  --border-accent: #2563EB;
+  --border-accent: #FFFFFF;
 
-  --accent-emerald: #2563EB;
-  --accent-primary: #3B82F6;
+  --accent-emerald: #FFFFFF;
+  --accent-primary: #FFFFFF;
   --accent-glow: transparent;
+  --danger: #FFFFFF;
+  --warning: #a1a1aa;
 
-  --bg-overlay: rgba(255, 255, 255, 0.05);
+  --bg-overlay: rgba(255, 255, 255, 0.06);
 
   color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light) {
+    --bg-base: var(--pwa-bg-color, #000000);
+    --bg-primary: #0A0A0C;
+    --bg-secondary: #121215;
+    --bg-dropdown: #121215;
+    --bg-hover: #1a1a1e;
+    --bg-surface: #0A0A0C;
+    --bg-input: #121215;
+
+    --text-primary: #FFFFFF;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+
+    --border-subtle: #27272a;
+    --border-main: #27272a;
+    --border-perplexta: #27272a;
+    --border: var(--border-main);
+    --border-accent: #FFFFFF;
+
+    --accent-emerald: #FFFFFF;
+    --accent-primary: #FFFFFF;
+    --accent-glow: transparent;
+    --danger: #FFFFFF;
+    --warning: #a1a1aa;
+
+    --bg-overlay: rgba(255, 255, 255, 0.06);
+
+    color-scheme: dark;
+  }
 }
 
 @theme {
@@ -151,12 +187,42 @@
     transition-timing-function: var(--ms-easing);
     border-radius: var(--radius-sm);
   }
+
+  /* Standardized Monochrome Text Hover Utilities */
+  .text-hover-primary {
+    color: var(--text-muted);
+    transition: color var(--theme-transition-duration, 180ms) var(--theme-transition-easing, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+  .text-hover-primary:hover {
+    color: var(--text-primary);
+  }
+
+  .text-hover-contrast {
+    color: var(--text-secondary);
+    transition: color var(--theme-transition-duration, 180ms) var(--theme-transition-easing, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+  .text-hover-contrast:hover {
+    color: #000000;
+  }
+  .dark .text-hover-contrast:hover {
+    color: #FFFFFF;
+  }
 }
 
-.transition-theme {
-  transition-property: background-color, border-color, color, fill, stroke, opacity, transform, box-shadow;
+.transition-theme,
+[class*="transition-colors"],
+[class*="transition-all"],
+[class*="transition-bg"],
+[class*="transition-theme"],
+[data-framer-component],
+[class*="motion-"],
+.ad-dashboard-card,
+.ad-card,
+.ads-management-container {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
   transition-duration: var(--theme-transition-duration);
-  transition-timing-function: var(--ms-easing);
+  transition-timing-function: var(--theme-transition-easing);
+  will-change: background-color, border-color, color;
 }
 
 .btn-icon-perplexta {
@@ -211,12 +277,12 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(120, 120, 120, 0.2);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(37, 99, 235, 0.4);
+  background: rgba(120, 120, 120, 0.4);
 }
 
 .scrollbar-none {
@@ -314,7 +380,7 @@ html, body, #root {
 .markdown-body code:not(pre code) {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  color: var(--accent-primary);
+  color: var(--text-primary);
   background-color: var(--bg-secondary);
   padding: 2px 5px;
   border-radius: var(--radius-xs);

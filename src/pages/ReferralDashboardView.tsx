@@ -695,7 +695,7 @@ export const ReferralDashboardView = ({
                   placeholder={isRtl ? "البحث بالاسم، المعرّف أو البريد..." : "Search by ID, Name or Email..."}
                   value={referrerSearch}
                   onChange={(e) => setReferrerSearch(e.target.value)}
-                  className={`w-full text-xs pl-8 pr-3 py-1.5 rounded-[4px] border focus:outline-none transition-theme duration-[var(--theme-transition-duration)] ${
+                  className={`w-full text-xs pl-8 pr-3 py-1.5 rounded-[4px] border focus:outline-none transition-theme ${
                     theme === "dark"
                       ? "bg-[#252528] border-gray-700/60 text-[var(--text-primary)] focus:border-emerald-500"
                       : "bg-gray-50 border-gray-200 text-[var(--text-primary)] focus:border-emerald-500 focus:bg-white"
@@ -837,7 +837,7 @@ export const ReferralDashboardView = ({
             <select
               value={inviteStatusFilter}
               onChange={(e) => setInviteStatusFilter(e.target.value as "all" | "accepted" | "pending")}
-              className={`text-[10px] uppercase font-bold px-2 py-1.5 rounded-[4px] border focus:outline-none cursor-pointer transition-theme duration-[var(--theme-transition-duration)] ${
+              className={`text-[10px] uppercase font-bold px-2 py-1.5 rounded-[4px] border focus:outline-none cursor-pointer transition-theme ${
                 theme === "dark" 
                   ? "bg-[#252528] border-gray-700/60 text-gray-300 focus:border-emerald-500" 
                   : "bg-gray-50 border-gray-200 text-gray-700 focus:border-emerald-500"

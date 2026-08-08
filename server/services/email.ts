@@ -1,15 +1,19 @@
 import nodemailer from 'nodemailer';
 import { pool } from '../db/index.js';
 import { systemTemplates } from '../config/templates.js';
+import { logSystemActivity } from './notifications.js';
 
-export async function sendEmail(to: string, subject: string, html: string, adminId: number | null = null) {
+export async function sendEmail(to: string, subject: string, html: string, adminId: number | null = null, preloadedSettings: any = null) {
   try {
-    const settings = await pool.query('SELECT * FROM email_settings LIMIT 1');
-    if (settings.rows.length === 0) {
-      throw new Error('Email SMTP settings are not configured in the admin panel.');
+    let s = preloadedSettings;
+    if (!s) {
+      const settings = await pool.query('SELECT * FROM email_settings LIMIT 1');
+      if (settings.rows.length === 0) {
+        throw new Error('Email SMTP settings are not configured in the admin panel.');
+      }
+      s = settings.rows[0];
     }
 
-    const s = settings.rows[0];
     if (!s.smtp_host || !s.smtp_port) {
       throw new Error('SMTP Host or Port is not specified in settings.');
     }
@@ -36,22 +40,14 @@ export async function sendEmail(to: string, subject: string, html: string, admin
       html
     });
 
-    await pool.query(
-      `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
-      [
-        adminId,
-        'Send Outgoing Email',
-        'communication',
-        JSON.stringify({
-          to,
-          subject,
-          messageId: info.messageId,
-          status: 'success',
-          sender: s.sender_email,
-          timestamp: new Date().toISOString()
-        })
-      ]
-    ).catch((logErr: any) => console.error('[Email Log] DB logging failed on success:', logErr));
+    await logSystemActivity(adminId, 'Send Outgoing Email', 'communication', {
+      to,
+      subject,
+      messageId: info.messageId,
+      status: 'success',
+      sender: s.sender_email,
+      timestamp: new Date().toISOString()
+    });
 
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
@@ -62,31 +58,47 @@ export async function sendEmail(to: string, subject: string, html: string, admin
       console.warn('[Email] Failed to send email to:', to, 'Error:', error);
     }
 
-    await pool.query(
-      `INSERT INTO system_logs (user_id, action, type, details) VALUES ($1, $2, $3, $4)`,
-      [
-        adminId,
-        'Send Outgoing Email Failed',
-        'communication',
-        JSON.stringify({
-          to,
-          subject,
-          status: 'failed',
-          error: error.message || 'Unknown SMTP error',
-          timestamp: new Date().toISOString()
-        })
-      ]
-    ).catch((logErr: any) => console.error('[Email Log] DB logging failed on fallback error:', logErr));
+    await logSystemActivity(adminId, 'Send Outgoing Email Failed', 'communication', {
+      to,
+      subject,
+      status: 'failed',
+      error: error.message || 'Unknown SMTP error',
+      timestamp: new Date().toISOString()
+    });
 
     return { success: false, error: error.message || 'Unknown email transfer error.' };
   }
 }
 
+export async function verifySmtpConnection(config: {
+  smtp_host: string;
+  smtp_port: string | number;
+  smtp_encryption?: string;
+  smtp_username?: string;
+  smtp_password?: string;
+}) {
+  const { smtp_host, smtp_port, smtp_encryption, smtp_username, smtp_password } = config;
+  if (!smtp_host || !smtp_port) {
+    throw new Error('SMTP Host and Port are required for verification.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtp_host,
+    port: parseInt(String(smtp_port || '587'), 10),
+    secure: smtp_encryption === 'ssl',
+    auth: {
+      user: smtp_username || '',
+      pass: smtp_password || ''
+    },
+    connectionTimeout: 10000
+  });
+
+  await transporter.verify();
+  return true;
+}
+
 export const sendSmartEmail = async (userId: number | null, toEmail: string, templateName: string, variables: Record<string, string>, language: 'en' | 'ar' = 'en') => {
   try {
-    const settings = await pool.query('SELECT * FROM email_settings LIMIT 1');
-    if (settings.rows.length === 0) return false;
-
     const templateRes = await pool.query('SELECT * FROM email_templates WHERE name = $1', [templateName]);
     if (templateRes.rows.length === 0) return false;
 

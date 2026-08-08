@@ -1,6 +1,77 @@
 import { pool, getSecurityPool } from '../db/index.js';
 import { io } from '../config/socket.js';
 
+export async function dispatchNotification(
+  userIdOrIds: number | string | (number | string)[],
+  type: string,
+  titleEn: string,
+  titleAr: string,
+  messageEn: string,
+  messageAr: string,
+  metadata: any = {},
+  options?: { 
+    sendEmail?: boolean; 
+    emailBody?: string | ((user: any) => string); 
+    emailBodyAr?: string | ((user: any) => string); 
+    adminId?: number | null 
+  }
+) {
+  try {
+    const userIds = Array.isArray(userIdOrIds) ? userIdOrIds : [userIdOrIds];
+    if (userIds.length === 0) return;
+
+    // 1. Single database query to check user preference flags and fetch email settings for all recipients
+    const userRes = await pool.query(
+      `SELECT 
+         u.id, u.email, u.language, u.status as user_status, u.email_notifications, u.name,
+         e.smtp_host, e.smtp_port, e.smtp_encryption, e.smtp_username, e.smtp_password, e.sender_name, e.sender_email, e.status as email_settings_status
+       FROM users u
+       LEFT JOIN email_settings e ON true
+       WHERE u.id = ANY($1)`,
+      [userIds]
+    );
+
+    if (userRes.rows.length === 0) return;
+    const users = userRes.rows;
+
+    // 2. Dispatch notifications and emails
+    for (const user of users) {
+      await createNotification(user.id, type, titleEn, titleAr, messageEn, messageAr, metadata);
+
+      if (options?.sendEmail && user.email_notifications && user.user_status === 'active') {
+        const { sendEmail } = await import('./email.js');
+        const subject = user.language === 'ar' ? titleAr : titleEn;
+        
+        let body = '';
+        if (user.language === 'ar' && options.emailBodyAr) {
+          body = typeof options.emailBodyAr === 'function' ? options.emailBodyAr(user) : options.emailBodyAr;
+        } else if (options.emailBody) {
+          body = typeof options.emailBody === 'function' ? options.emailBody(user) : options.emailBody;
+        }
+
+        if (body) {
+          const emailSettings = {
+            smtp_host: user.smtp_host,
+            smtp_port: user.smtp_port,
+            smtp_encryption: user.smtp_encryption,
+            smtp_username: user.smtp_username,
+            smtp_password: user.smtp_password,
+            sender_name: user.sender_name,
+            sender_email: user.sender_email
+          };
+          if (!emailSettings.smtp_host) {
+            console.warn('[Email] Outgoing email skipped (SMTP is not configured in DB).');
+            continue;
+          }
+          await sendEmail(user.email, subject, body, options.adminId, emailSettings);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Notification] Dispatch failed:', error);
+  }
+}
+
 export async function createNotification(userId: number | string, type: string, titleEn: string, titleAr: string, messageEn: string, messageAr: string, metadata: any = {}) {
   try {
     const res = await pool.query(`
@@ -19,12 +90,30 @@ export async function createNotification(userId: number | string, type: string, 
 }
 
 export async function getUserNotifications(userId: string | number) {
-  const result = await pool.query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [userId]);
+  const result = await pool.query(
+    'SELECT id, user_id, type, title_en, title_ar, message_en, message_ar, is_read, metadata, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', 
+    [userId]
+  );
   return result.rows;
 }
 
 export async function markNotificationsAsRead(userId: string | number) {
-  await pool.query('UPDATE notifications SET is_read = true WHERE user_id = $1', [userId]);
+  await pool.query('UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false', [userId]);
+  return { success: true };
+}
+
+export async function markSingleNotificationAsRead(id: string | number, userId: string | number) {
+  await pool.query('UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2 AND is_read = false', [id, userId]);
+  return { success: true };
+}
+
+export async function clearAllUserNotifications(userId: string | number) {
+  await pool.query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+  return { success: true };
+}
+
+export async function deleteSingleNotification(id: string | number, userId: string | number) {
+  await pool.query('DELETE FROM notifications WHERE id = $1 AND user_id = $2', [id, userId]);
   return { success: true };
 }
 
@@ -114,11 +203,12 @@ export async function logSecurityAlert(userId: number | null, alertType: string,
 
 export async function logSystemActivity(userId: number | null, action: string, description: string, metadata: any = {}, req?: any) {
   try {
-    const ip = req ? (req.headers['x-forwarded-for'] || req.socket.remoteAddress) : null;
+    const ip = req ? (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || null) : null;
+    const metaStr = typeof metadata === 'string' ? metadata : JSON.stringify(metadata || {});
     await pool.query(`
-      INSERT INTO system_logs (user_id, action, type, description, metadata, ip_address)
-      VALUES ($1, $2, $2, $3, $4, $5)
-    `, [userId, action, description, JSON.stringify(metadata), ip]);
+      INSERT INTO system_logs (user_id, action, type, description, details, metadata, ip_address)
+      VALUES ($1, $2, $2, $3, $4, $4, $5)
+    `, [userId, action, description, metaStr, ip]);
   } catch (err) {
     console.error('[SystemLog] Failed:', err);
   }

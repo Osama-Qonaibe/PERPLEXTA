@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { ShieldCheck, BookOpen, Cpu, CreditCard, Lock, FileText, Zap } from 'lucide-react';
 import { DefaultLogo } from '../components/DefaultLogo';
+import { resolveImageUrl } from '../utils/imageResolver';
 
 export const StudioPage = () => {
   const { theme, language, siteSettings } = useAppContext();
@@ -15,7 +16,7 @@ export const StudioPage = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {logo ? (
-              <img src={logo} alt={siteName} className="w-8 h-8 rounded-[12px] object-cover" />
+              <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-8 h-8 rounded-[12px] object-cover" />
             ) : (
               <DefaultLogo className="w-8 h-8" iconClassName="w-5 h-5" />
             )}

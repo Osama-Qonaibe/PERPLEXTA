@@ -124,7 +124,7 @@ export const AuthModal: React.FC = () => {
             onTouchStart={swipeHandlers.onTouchStart}
             onTouchMove={swipeHandlers.onTouchMove}
             onTouchEnd={swipeHandlers.onTouchEnd}
-            className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-xl shadow-2xl border bg-[var(--bg-surface)] border-[var(--border)] overflow-hidden mx-auto`}
+            className={`relative w-full max-w-[380px] md:p-7 p-6 rounded-[var(--radius)] shadow-2xl border bg-[var(--bg-secondary)] border-[var(--border-main)] overflow-hidden mx-auto`}
             dir={dir}
             onClick={(e) => e.stopPropagation()}
           >
@@ -262,7 +262,7 @@ export const AuthModal: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-bold transition-theme shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
+            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[4px] font-bold transition-theme shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
           >
             {isLoading ? (
               <>
@@ -291,7 +291,7 @@ export const AuthModal: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={loginWithGoogle}
               type="button"
-              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-md border transition-theme bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
+              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[4px] border transition-theme bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-theme">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

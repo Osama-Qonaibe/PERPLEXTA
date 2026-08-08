@@ -911,7 +911,7 @@ export const AdsManagementView: React.FC<{
   const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ads-management-container transition-theme [will-change:background-color,border-color,color]">
       {/* Top Header & Stat Cards */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg-secondary)] border border-[var(--border-main)] p-5 rounded-lg shadow-sm">
         <div>

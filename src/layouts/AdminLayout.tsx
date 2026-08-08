@@ -8,12 +8,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
-  const { theme, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile } = useAppContext();
+  const { theme, resolvedTheme, themeTransitioning, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile } = useAppContext();
 
   const localDir = language === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)]`}>
+    <div 
+      className={`flex h-screen w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)]`}
+    >
       <div className={`absolute inset-0 z-0 bg-[var(--bg-base)]`} />
 
       <AnimatePresence mode="wait" initial={false}>
